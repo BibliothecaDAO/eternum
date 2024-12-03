@@ -1,51 +1,46 @@
-import { useConnect, useDisconnect } from "@starknet-react/core";
-import { Button } from "../ui/button";
+import { useAccount, useConnect, useDisconnect, useSendTransaction } from "@starknet-react/core";
 
-import useAccountOrBurner from "@/hooks/useAccountOrBurner";
-import { displayAddress } from "@/lib/utils";
-import { TypeH2 } from "../typography/type-h2";
-import { SidebarTrigger } from "../ui/sidebar";
-import { ModeToggle } from "./mode-toggle";
+import { lordsAddress } from "@/config";
+import { useLords } from "@/hooks/use-lords";
+import { Uint256 } from "starknet";
+import { TopNavigationView } from "./top-navigation-view";
 
 export const TopNavigation = () => {
-  const { account } = useAccountOrBurner();
+  const { account } = useAccount();
+
+  const { address } = useAccount();
+
+  const { send, error } = useSendTransaction({
+    calls: [
+      {
+        contractAddress: lordsAddress,
+        entrypoint: "mint_test_lords",
+        calldata: [],
+      },
+    ],
+  });
+
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  /*useEffect(() => {
-    if (status === "disconnected") {
-      // on disconnect
-    } else if (status === "connected") {
-      // on connect
-    }
-  }, [address, status]);*/
+  const { lordsBalance } = useLords();
 
-  /*const { connectors } = useInjectedConnectors({
-    recommended: [argent(), braavos()],
-    includeRecommended: "onlyIfNoConnectors",
-    order: "random",
-  });*/
+  const handleMintTestLords = async () => {
+    if (!address) return;
+    send();
+  };
+
+  const handleConnect = (connector: any) => {
+    connect({ connector });
+  };
 
   return (
-    <div className="flex justify-between items-center w-full">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger />
-        <TypeH2>Season 0</TypeH2>
-      </div>
-      <div className="flex gap-2">
-        <ModeToggle />
-        {!account?.address ? (
-          <>
-            {connectors.map((connector, index) => (
-              <Button key={index} onClick={() => connect({ connector })} variant="cta">
-                <img className="w-5" src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark} />{" "}
-                Connect {connector.name}
-              </Button>
-            ))}
-          </>
-        ) : (
-          <Button onClick={() => disconnect()}>{displayAddress(account?.address)}</Button>
-        )}
-      </div>
-    </div>
+    <TopNavigationView
+      lordsBalance={lordsBalance as Uint256}
+      onMintTestLords={handleMintTestLords}
+      connectors={connectors}
+      onConnect={handleConnect}
+      onDisconnect={disconnect}
+      accountAddress={account?.address}
+    />
   );
 };

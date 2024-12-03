@@ -6,6 +6,28 @@ interface SystemSigner {
   signer: AccountInterface | Account;
 }
 
+export interface BridgeResourceIntoRealmProps extends SystemSigner {
+  token: num.BigNumberish;
+  through_bank_id: num.BigNumberish;
+  recipient_realm_entity_id: num.BigNumberish;
+  amount: num.BigNumberish;
+  client_fee_recipient: num.BigNumberish;
+}
+
+export interface BridgeStartWithdrawFromRealmProps extends SystemSigner {
+  through_bank_id: num.BigNumberish;
+  from_realm_entity_id: num.BigNumberish;
+  token: num.BigNumberish;
+  amount: num.BigNumberish;
+}
+
+export interface BridgeFinishWithdrawFromRealmProps extends SystemSigner {
+  through_bank_id: num.BigNumberish;
+  from_entity_id: num.BigNumberish;
+  token: num.BigNumberish;
+  recipient_address: num.BigNumberish;
+  client_fee_recipient: num.BigNumberish;
+}
 export interface CreateSoldiersProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
   quantity: num.BigNumberish;
@@ -347,8 +369,6 @@ export interface WhitelistPlayerProps extends SystemSigner {
   guild_entity_id: num.BigNumberish;
 }
 
-export interface LeaveGuild extends SystemSigner {}
-
 export interface TransferGuildOwnership extends SystemSigner {
   guild_entity_id: num.BigNumberish;
   to_player_address: num.BigNumberish;
@@ -441,7 +461,8 @@ export interface SetBankConfigProps extends SystemSigner {
 
 export interface SetBattleConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
-  battle_grace_tick_count: num.BigNumberish;
+  regular_immunity_ticks: num.BigNumberish;
+  hyperstructure_immunity_ticks: num.BigNumberish;
   battle_delay_seconds: num.BigNumberish;
 }
 export interface SetTroopConfigProps extends SystemSigner {
@@ -508,6 +529,7 @@ export interface SetSeasonConfigProps extends SystemSigner {
   season_pass_address: num.BigNumberish;
   realms_address: num.BigNumberish;
   lords_address: num.BigNumberish;
+  start_at: num.BigNumberish;
 }
 
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
@@ -557,6 +579,15 @@ export interface EndGameProps extends SystemSigner {
   hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
 }
 
+export interface RegisterToLeaderboardProps extends SystemSigner {
+  hyperstructure_contributed_to: number[];
+  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
+}
+
+export interface ClaimLeaderboardRewardsProps extends SystemSigner {
+  token: num.BigNumberish;
+}
+
 export interface SetCoOwnersProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
   co_owners: Record<number, BigNumberish>[];
@@ -585,14 +616,13 @@ export interface SetMercenariesConfigProps extends SystemSigner {
 }
 
 export interface SetSettlementConfigProps extends SystemSigner {
-  radius: num.BigNumberish;
-  angle_scaled: num.BigNumberish;
   center: num.BigNumberish;
-  min_distance: num.BigNumberish;
-  max_distance: num.BigNumberish;
-  min_scaling_factor_scaled: num.BigNumberish;
-  min_angle_increase: num.BigNumberish;
-  max_angle_increase: num.BigNumberish;
+  base_distance: num.BigNumberish;
+  min_first_layer_distance: num.BigNumberish;
+  points_placed: num.BigNumberish;
+  current_layer: num.BigNumberish;
+  current_side: num.BigNumberish;
+  current_point_on_side: num.BigNumberish;
 }
 
 export interface MintTestRealmProps extends SystemSigner {
@@ -603,4 +633,21 @@ export interface MintSeasonPassesProps extends SystemSigner {
   recipient: num.BigNumberish;
   token_ids: num.BigNumberish[];
   season_pass_address: num.BigNumberish;
+}
+
+export interface AttachLordsProps extends SystemSigner {
+  token_id: num.BigNumberish;
+  amount: num.BigNumberish;
+  season_pass_address: num.BigNumberish;
+  lords_address: num.BigNumberish;
+}
+
+export interface DetachLordsProps extends SystemSigner {
+  token_id: num.BigNumberish;
+  amount: num.BigNumberish;
+  season_pass_address: num.BigNumberish;
+}
+
+export interface MintTestLordsProps extends SystemSigner {
+  lords_address: num.BigNumberish;
 }

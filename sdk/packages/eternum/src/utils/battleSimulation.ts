@@ -60,6 +60,14 @@ export class TroopsSimulator {
     this.lifetime_crossbowman_count = crossbowman_count;
   }
 
+  troops() {
+    return {
+      knight_count: this.knight_count,
+      paladin_count: this.paladin_count,
+      crossbowman_count: this.crossbowman_count,
+    };
+  }
+
   count() {
     return this.knight_count + this.paladin_count + this.crossbowman_count;
   }
@@ -69,7 +77,10 @@ export class TroopsSimulator {
     const totalKnightHealth = singleTroopHealth * this.knight_count;
     const totalPaladinHealth = singleTroopHealth * this.paladin_count;
     const totalCrossbowmanHealth = singleTroopHealth * this.crossbowman_count;
-    return totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth;
+    return {
+      current: totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth,
+      lifetime: totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth,
+    };
   }
 
   static normalizationFactor() {

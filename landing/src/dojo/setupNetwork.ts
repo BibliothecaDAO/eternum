@@ -1,5 +1,6 @@
 import { EternumProvider } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
+import { defineContractComponents } from "./contractComponents";
 import { world } from "./world";
 
 import { BurnerManager } from "@dojoengine/create-burner";
@@ -24,11 +25,15 @@ export async function setupNetwork({ ...config }: DojoConfig) {
     rpcProvider: provider.provider,
     feeTokenAddress: config.feeTokenAddress,
   });
+  await burnerManager.init();
 
   try {
-    await burnerManager.init();
-    if (burnerManager.list().length === 0) {
-      await burnerManager.create();
+    if (import.meta.env.VITE_PUBLIC_CHAIN === "local") {
+      if (burnerManager.list().length === 0) {
+        await burnerManager.create();
+      }
+    } else {
+      await burnerManager.clear();
     }
   } catch (e) {
     console.error(e);
@@ -36,6 +41,7 @@ export async function setupNetwork({ ...config }: DojoConfig) {
 
   return {
     toriiClient,
+    contractComponents: defineContractComponents(world),
     provider,
     world,
     burnerManager,

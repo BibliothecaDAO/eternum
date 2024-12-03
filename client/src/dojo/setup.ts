@@ -15,8 +15,16 @@ export async function setup({ ...config }: DojoConfig) {
   const systemCalls = createSystemCalls(network);
 
   // fetch all existing entities from torii
-  const sync = await getSyncEntities(network.toriiClient, network.contractComponents as any, undefined, [], 20_000);
-  const eventSync = getSyncEvents(network.toriiClient, network.contractComponents.events as any, undefined, [], 20_000);
+  const sync = await getSyncEntities(network.toriiClient, network.contractComponents as any, undefined, [], 10_000);
+  const eventSync = getSyncEvents(
+    network.toriiClient,
+    network.contractComponents.events as any,
+    undefined,
+    [],
+    20_000,
+    false,
+    false,
+  );
 
   configManager.setDojo(components);
 

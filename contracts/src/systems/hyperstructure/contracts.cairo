@@ -1,12 +1,14 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::alias::ID;
-use eternum::{
-    models::{position::Coord, config::HyperstructureResourceConfigCustomTrait, hyperstructure::Access},
+use s0_eternum::alias::ID;
+use s0_eternum::{
+    models::{position::Coord, config::HyperstructureResourceConfigTrait, hyperstructure::Access},
     constants::{get_contributable_resources_with_rarity, RESOURCE_PRECISION}
 };
 use starknet::ContractAddress;
+
+const LEADERBOARD_REGISTRATION_PERIOD: u64 = 604800; // one week
 
 #[starknet::interface]
 trait IHyperstructureSystems<T> {
@@ -24,40 +26,42 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 mod hyperstructure_systems {
-    use bushido_trophy::store::{Store, StoreTrait};
+    use achievement::store::{Store, StoreTrait};
     use core::array::ArrayIndex;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::constants::DEFAULT_NS;
-    use eternum::models::season::SeasonImpl;
-    use eternum::utils::tasks::index::{Task, TaskTrait};
-    use eternum::{
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s0_eternum::{
         alias::ID,
         constants::{
-            HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
+            WORLD_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
             get_contributable_resources_with_rarity, RESOURCE_PRECISION
         },
         models::{
-            config::{HyperstructureResourceConfigCustomTrait, HyperstructureConfig, CapacityConfigCategory},
+            config::{HyperstructureResourceConfigTrait, HyperstructureConfig, CapacityConfigCategory},
             capacity::{CapacityCategory},
-            hyperstructure::{Progress, Contribution, Hyperstructure, HyperstructureCustomImpl, Epoch, Access},
-            owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait},
+            hyperstructure::{Progress, Contribution, Hyperstructure, HyperstructureImpl, Epoch, Access},
+            owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait}, season::{Leaderboard},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
-            resources::{Resource, ResourceCustomImpl, ResourceCost},
-            structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory}, guild::{GuildMember}
+            resources::{Resource, ResourceImpl, ResourceCost},
+            structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember}
         },
         systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
     };
 
     use starknet::{ContractAddress, contract_address_const};
 
-    use super::calculate_total_contributable_amount;
+    use super::{calculate_total_contributable_amount, LEADERBOARD_REGISTRATION_PERIOD};
+
+    const SCALE_FACTOR: u128 = 1_000_000;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct HyperstructureFinished {
         #[key]
         id: ID,
@@ -68,7 +72,7 @@ mod hyperstructure_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct HyperstructureCoOwnersChange {
         #[key]
         id: ID,
@@ -79,7 +83,7 @@ mod hyperstructure_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct HyperstructureContribution {
         #[key]
         id: ID,
@@ -91,7 +95,7 @@ mod hyperstructure_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct GameEnded {
         #[key]
         winner_address: ContractAddress,
@@ -114,13 +118,11 @@ mod hyperstructure_systems {
             let structure_count: StructureCount = world.read_model(coord);
             structure_count.assert_none();
 
-            let hyperstructure_shards_config = HyperstructureResourceConfigCustomTrait::get(
+            let hyperstructure_shards_config = HyperstructureResourceConfigTrait::get(
                 world, ResourceTypes::EARTHEN_SHARD
             );
 
-            let mut creator_resources = ResourceCustomImpl::get(
-                ref world, (creator_entity_id, ResourceTypes::EARTHEN_SHARD)
-            );
+            let mut creator_resources = ResourceImpl::get(ref world, (creator_entity_id, ResourceTypes::EARTHEN_SHARD));
 
             creator_resources.burn(hyperstructure_shards_config.amount_for_completion);
             creator_resources.save(ref world);
@@ -252,6 +254,10 @@ mod hyperstructure_systems {
 
             assert!(co_owners.len() <= 10, "too many co-owners");
 
+            // ensure the structure is a hyperstructure
+            let structure: Structure = world.read_model(hyperstructure_entity_id);
+            assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
+
             let caller = starknet::get_caller_address();
 
             let owner: Owner = world.read_model(hyperstructure_entity_id);
@@ -307,6 +313,10 @@ mod hyperstructure_systems {
             let owner: Owner = world.read_model(hyperstructure_entity_id);
             owner.assert_caller_owner();
 
+            // ensure the structure is a hyperstructure
+            let structure: Structure = world.read_model(hyperstructure_entity_id);
+            assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
+
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
             hyperstructure.access = access;
 
@@ -345,6 +355,10 @@ mod hyperstructure_systems {
             let winner_address = starknet::get_caller_address();
             world.emit_event(@GameEnded { winner_address, timestamp: starknet::get_block_timestamp() });
 
+            let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+            leaderboard.registration_end_timestamp = starknet::get_block_timestamp() + LEADERBOARD_REGISTRATION_PERIOD;
+            world.write_model(@leaderboard);
+
             // [Achievement] Win the game
             let player_id: felt252 = winner_address.into();
             let task_id: felt252 = Task::Warlord.identifier();
@@ -379,7 +393,7 @@ mod hyperstructure_systems {
         fn burn_player_resources(
             ref world: WorldStorage, resource_type: u8, resource_amount: u128, contributor_entity_id: ID
         ) {
-            let mut creator_resources = ResourceCustomImpl::get(ref world, (contributor_entity_id, resource_type));
+            let mut creator_resources = ResourceImpl::get(ref world, (contributor_entity_id, resource_type));
 
             creator_resources.burn(resource_amount);
             creator_resources.save(ref world);
@@ -389,7 +403,7 @@ mod hyperstructure_systems {
             world: WorldStorage, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128
         ) -> (u128, bool) {
             let resource_progress: Progress = world.read_model((hyperstructure_entity_id, resource_type));
-            let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
+            let hyperstructure_resource_config = HyperstructureResourceConfigTrait::get(world, resource_type);
             let resource_amount_for_completion = hyperstructure_resource_config.amount_for_completion;
 
             let amount_left_for_completion = resource_amount_for_completion - resource_progress.amount;
@@ -438,7 +452,7 @@ mod hyperstructure_systems {
         fn check_if_resource_completed(world: WorldStorage, hyperstructure_entity_id: ID, resource_type: u8) -> bool {
             let resource_progress: Progress = world.read_model((hyperstructure_entity_id, resource_type));
 
-            let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
+            let hyperstructure_resource_config = HyperstructureResourceConfigTrait::get(world, resource_type);
             let resource_amount_for_completion = hyperstructure_resource_config.amount_for_completion;
 
             resource_progress.amount == resource_amount_for_completion
@@ -505,6 +519,9 @@ mod hyperstructure_systems {
 
             while (i < hyperstructures_contributed_to.len()) {
                 let hyperstructure_entity_id = *hyperstructures_contributed_to.at(i);
+                // ensure the structure is a hyperstructure
+                let structure: Structure = world.read_model(hyperstructure_entity_id);
+                assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
 
                 let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
 
@@ -561,15 +578,15 @@ mod hyperstructure_systems {
             let percentage = Self::get_total_points_percentage(
                 total_contributable_amount, resource_rarity, resource_quantity
             );
-            percentage * points_on_completion / 1_000_000
+            percentage * points_on_completion / SCALE_FACTOR
         }
 
         fn get_total_points_percentage(
             total_contributable_amount: u128, resource_rarity: u128, resource_quantity: u128,
         ) -> u128 {
             // resource rarity already has a x100 factor in
-            let effective_contribution = (resource_quantity / RESOURCE_PRECISION) * (resource_rarity);
-            effective_contribution * 1_000_000 / total_contributable_amount
+            let effective_contribution = (resource_quantity * resource_rarity) / RESOURCE_PRECISION;
+            (effective_contribution * SCALE_FACTOR) / total_contributable_amount
         }
     }
 }
@@ -584,10 +601,10 @@ fn calculate_total_contributable_amount(world: WorldStorage) -> u128 {
         }
 
         let (resource_type, rarity) = *resources_with_rarity.at(i);
-        let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
+        let hyperstructure_resource_config = HyperstructureResourceConfigTrait::get(world, resource_type);
         let amount = hyperstructure_resource_config.amount_for_completion;
 
-        total += (amount / RESOURCE_PRECISION) * rarity.into();
+        total += (amount * rarity) / RESOURCE_PRECISION;
 
         i += 1;
     };

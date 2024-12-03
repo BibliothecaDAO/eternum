@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -14,10 +14,10 @@ mod ownership_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::models::owner::{Owner, OwnerCustomImpl, OwnerCustomTrait};
-    use eternum::models::season::SeasonImpl;
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::models::owner::{Owner, OwnerImpl, OwnerTrait};
+    use s0_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
 
     #[abi(embed_v0)]

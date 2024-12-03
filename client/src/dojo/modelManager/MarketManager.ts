@@ -1,8 +1,8 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { ComponentValue, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { configManager, SetupResult } from "../setup";
 import { ClientComponents } from "../createClientComponents";
+import { configManager, SetupResult } from "../setup";
 
 export class MarketManager {
   bankEntityId: ID;

@@ -2,7 +2,7 @@ import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { SceneName } from "@/types";
 import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
-import _ from "lodash";
+import throttle from "lodash/throttle";
 import {
   BloomEffect,
   BrightnessContrastEffect,
@@ -212,7 +212,7 @@ export default class GameRenderer {
     }
     this.controls.addEventListener(
       "change",
-      _.throttle(() => {
+      throttle(() => {
         if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
           this.worldmapScene.updateVisibleChunks();
         }

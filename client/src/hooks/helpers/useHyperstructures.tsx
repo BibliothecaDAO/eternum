@@ -1,10 +1,9 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
-import { divideByPrecision, toHexString } from "@/ui/utils/utils";
+import { divideByPrecision, toHexString, toInteger } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { toInteger } from "lodash";
 import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";

@@ -13,8 +13,7 @@ use crate::{
 
 use super::{ToDiscordMessage, UNKNOWN_USER};
 
-#[allow(dead_code)]
-#[derive(CairoSerde)]
+#[derive(CairoSerde, Clone, Copy)]
 pub struct SettleRealm {
     pub id: u32,
     pub event_id: u32,
@@ -39,8 +38,9 @@ impl ToDiscordMessage for SettleRealm {
         let normalized_position = self.position.get_normalized();
         let embed = CreateEmbed::new()
             .title(format!(
-                "{} has settled a realm at ({}, {})",
+                "{} has settled {} at ({}, {})",
                 felt_to_string(&self.owner_name).unwrap_or(UNKNOWN_USER.to_string()),
+                felt_to_string(&self.realm_name).unwrap_or("Unknown Realm".to_string()),
                 normalized_position.0,
                 normalized_position.1
             ))

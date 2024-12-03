@@ -1,4 +1,4 @@
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -9,7 +9,7 @@ pub struct Orders {
 }
 
 #[generate_trait]
-impl OrdersCustomImpl of OrdersCustomTrait {
+impl OrdersImpl of OrdersTrait {
     fn get_bonus_multiplier(self: Orders) -> u128 {
         self.hyperstructure_count.into() * 25
     }

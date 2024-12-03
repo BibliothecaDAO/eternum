@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { throttle } from "lodash";
+import throttle from "lodash/throttle";
 import React, { useEffect, useRef } from "react";
 
 type BaseThreeTooltipProps = {

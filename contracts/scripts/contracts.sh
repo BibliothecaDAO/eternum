@@ -1,66 +1,58 @@
 #!/bin/bash
 
-get_world_address() {
-    local contract_name="dojo-world"
-    awk -v name="$contract_name" '
-    $1 == "address" { last_address = $3 }  # Store the last seen address
-    $1 == "manifest_name" && $3 == "\"" name "\"" { gsub(/"/, "", last_address); print last_address; exit; }  # Remove quotes before printing
-    ' "$KATANA_TOML_PATH"
-}
-
 get_contract_address() {
     local contract_name="$1"
     awk -v name="$contract_name" '
-    $1 == "address" { last_address = $3 }  # Store the last seen address
-    $1 == "tag" && $3 == "\"" name "\"" { print last_address; exit; }  # When name matches, print the last stored address
+    /"address":/ { gsub(/[",]/, "", $2); last_address = $2 }  # Store the last seen address, removing quotes and commas
+    /"tag":/ && $2 ~ name { print last_address; exit; }  # When name matches, print the last stored address
     ' "$KATANA_TOML_PATH"
 }
 
-export DOJO_WORLD_ADDRESS=$(get_world_address)
+export DOJO_WORLD_ADDRESS=$SOZO_WORLD
 
-export CONFIG_SYSTEMS=$(get_contract_address "eternum-config_systems")
+export CONFIG_SYSTEMS=$(get_contract_address "s0_eternum-config_systems")
 
-export TRADE_SYSTEMS=$(get_contract_address "eternum-trade_systems")
+export TRADE_SYSTEMS=$(get_contract_address "s0_eternum-trade_systems")
 
-export RESOURCE_SYSTEMS=$(get_contract_address "eternum-resource_systems")
+export RESOURCE_SYSTEMS=$(get_contract_address "s0_eternum-resource_systems")
 
-export RESOURCE_BRIDGE_SYSTEMS=$(get_contract_address "eternum-resource_bridge_systems")
+export RESOURCE_BRIDGE_SYSTEMS=$(get_contract_address "s0_eternum-resource_bridge_systems")
 
-export DONKEY_SYSTEMS=$(get_contract_address "eternum-donkey_systems")
+export DONKEY_SYSTEMS=$(get_contract_address "s0_eternum-donkey_systems")
 
-export TRAVEL_SYSTEMS=$(get_contract_address "eternum-travel_systems")
+export TRAVEL_SYSTEMS=$(get_contract_address "s0_eternum-travel_systems")
 
-export REALM_SYSTEMS=$(get_contract_address "eternum-realm_systems")
+export REALM_SYSTEMS=$(get_contract_address "s0_eternum-realm_systems")
 
-export DEV_RESOURCE_SYSTEMS=$(get_contract_address "eternum-dev_resource_systems")
+export DEV_RESOURCE_SYSTEMS=$(get_contract_address "s0_eternum-dev_resource_systems")
 
-export TROOP_SYSTEMS=$(get_contract_address "eternum-troop_systems")
+export TROOP_SYSTEMS=$(get_contract_address "s0_eternum-troop_systems")
 
-export BATTLE_SYSTEMS=$(get_contract_address "eternum-battle_systems")
+export BATTLE_SYSTEMS=$(get_contract_address "s0_eternum-battle_systems")
 
-export BATTLE_PILLAGE_SYSTEMS=$(get_contract_address "eternum-battle_pillage_systems")
+export BATTLE_PILLAGE_SYSTEMS=$(get_contract_address "s0_eternum-battle_pillage_systems")
 
-export NAME_SYSTEMS=$(get_contract_address "eternum-name_systems")
+export NAME_SYSTEMS=$(get_contract_address "s0_eternum-name_systems")
 
-export BANK_SYSTEMS=$(get_contract_address "eternum-bank_systems")
+export BANK_SYSTEMS=$(get_contract_address "s0_eternum-bank_systems")
 
-export SWAP_SYSTEMS=$(get_contract_address "eternum-swap_systems")
+export SWAP_SYSTEMS=$(get_contract_address "s0_eternum-swap_systems")
 
-export LIQUIDITY_SYSTEMS=$(get_contract_address "eternum-liquidity_systems")
+export LIQUIDITY_SYSTEMS=$(get_contract_address "s0_eternum-liquidity_systems")
 
-export HYPERSTRUCTURE_SYSTEMS=$(get_contract_address "eternum-hyperstructure_systems")
+export HYPERSTRUCTURE_SYSTEMS=$(get_contract_address "s0_eternum-hyperstructure_systems")
 
-export BUILDINGS_SYSTEMS=$(get_contract_address "eternum-building_systems")
+export BUILDINGS_SYSTEMS=$(get_contract_address "s0_eternum-building_systems")
 
-export MAP_SYSTEMS=$(get_contract_address "eternum-map_systems")
+export MAP_SYSTEMS=$(get_contract_address "s0_eternum-map_systems")
 
-export DEV_BANK_SYSTEMS=$(get_contract_address "eternum-dev_bank_systems")
+export DEV_BANK_SYSTEMS=$(get_contract_address "s0_eternum-dev_bank_systems")
 
-export GUILD_SYSTEMS=$(get_contract_address "eternum-guild_systems")
+export GUILD_SYSTEMS=$(get_contract_address "s0_eternum-guild_systems")
 
-export OWNERSHIP_SYSTEMS=$(get_contract_address "eternum-ownership_systems")
+export OWNERSHIP_SYSTEMS=$(get_contract_address "s0_eternum-ownership_systems")
 
-export DEV_REALM_SYSTEMS=$(get_contract_address "eternum-dev_realm_systems")
+export DEV_REALM_SYSTEMS=$(get_contract_address "s0_eternum-dev_realm_systems")
 
 # Display the addresses
 echo "-------------------------ADDRESS----------------------------------------"

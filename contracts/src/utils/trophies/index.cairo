@@ -1,5 +1,5 @@
-use bushido_trophy::types::task::{Task as BushidoTask};
-use eternum::utils::trophies;
+use achievement::types::task::{Task as BushidoTask};
+use s0_eternum::utils::trophies;
 
 // Constants
 

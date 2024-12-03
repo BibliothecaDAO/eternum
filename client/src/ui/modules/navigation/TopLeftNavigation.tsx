@@ -5,6 +5,7 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { Position } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
@@ -20,8 +21,8 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { ArrowLeft, Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
@@ -107,15 +108,38 @@ export const TopLeftNavigation = () => {
 
   const { getEntityInfo } = useEntitiesUtils();
 
+  const structures = playerStructures();
+
+  const [favorites, setFavorites] = useState<number[]>(() => {
+    const saved = localStorage.getItem("favoriteStructures");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const entityInfo = getEntityInfo(structureEntityId);
   const structure = useMemo(() => {
-    return getEntityInfo(structureEntityId);
-  }, [structureEntityId]);
+    return { ...entityInfo, isFavorite: favorites.includes(entityInfo.entityId) };
+  }, [structureEntityId, getEntityInfo, favorites]);
 
   const structurePosition = useMemo(() => {
     return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();
   }, [structure]);
 
-  const structures = playerStructures();
+  const structuresWithFavorites = useMemo(() => {
+    return structures
+      .map((structure) => ({
+        ...structure,
+        isFavorite: favorites.includes(structure.entity_id),
+      }))
+      .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
+  }, [favorites, structures]);
+
+  const toggleFavorite = useCallback((entityId: number) => {
+    setFavorites((prev) => {
+      const newFavorites = prev.includes(entityId) ? prev.filter((id) => id !== entityId) : [...prev, entityId];
+      localStorage.setItem("favoriteStructures", JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  }, []);
 
   const pointToWorldButton =
     (selectedQuest?.id === QuestId.Travel || selectedQuest?.id === QuestId.Hyperstructure) &&
@@ -143,6 +167,7 @@ export const TopLeftNavigation = () => {
   };
 
   const setTooltip = useUIStore((state) => state.setTooltip);
+
   const population = useComponentValue(
     setup.components.Population,
     getEntityIdFromKeys([BigInt(structureEntityId || 0)]),
@@ -170,7 +195,7 @@ export const TopLeftNavigation = () => {
   return (
     <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
       <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
-        <div className="flex max-w-[150px] md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown/90 border-gold/10 relative">
+        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -179,27 +204,32 @@ export const TopLeftNavigation = () => {
                   isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="truncate">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
                 <SelectContent className="bg-brown/80">
-                  {structures.map((structure, index) => (
-                    <SelectItem
-                      className="flex justify-between"
-                      key={index}
-                      value={structure.entity_id?.toString() || ""}
-                    >
-                      <h5 className="self-center flex gap-4">
-                        {structureIcons[structure.category]}
-                        {structure.name}
-                      </h5>
-                    </SelectItem>
+                  {structuresWithFavorites.map((structure, index) => (
+                    <div key={index} className="flex flex-row items-center">
+                      <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entity_id)}>
+                        {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
+                      </button>
+                      <SelectItem
+                        className="flex justify-between"
+                        key={index}
+                        value={structure.entity_id?.toString() || ""}
+                      >
+                        <h5 className="self-center flex gap-4">
+                          {structure.name}
+                          {IS_MOBILE ? structureIcons[structure.category] : ""}
+                        </h5>
+                      </SelectItem>
+                    </div>
                   ))}
                 </SelectContent>
               </Select>
             ) : (
               <div className="w-full px-4 py-2">
-                <h5 className="flex items-center gap-4">
+                <h5 className="flex items-center gap-4 truncate">
                   {isSpectatorMode ? (
                     <>
                       {structureIcons.SpectatorMode}
@@ -216,7 +246,7 @@ export const TopLeftNavigation = () => {
             )}
           </div>
         </div>
-        <div className=" bg-brown/90 rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
+        <div className="bg-brown/90 rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -312,14 +342,26 @@ const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
   const cycleTime = configManager.getTick(TickIds.Armies);
+  const { play } = useUiSounds(soundSelector.gong);
 
   const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
+  const lastProgressRef = useRef(0);
+
   const progress = useMemo(() => {
     const elapsedTime = nextBlockTimestamp % cycleTime;
-    return (elapsedTime / cycleTime) * 100;
+    const currentProgress = (elapsedTime / cycleTime) * 100;
+
+    return currentProgress;
   }, [nextBlockTimestamp, cycleTime]);
+
+  useEffect(() => {
+    if (lastProgressRef.current > progress) {
+      play();
+    }
+    lastProgressRef.current = progress;
+  }, [progress]);
 
   const updateTooltip = useCallback(() => {
     if (!isTooltipOpen) return;
@@ -327,7 +369,7 @@ const TickProgress = () => {
     setTooltip({
       position: "bottom",
       content: (
-        <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
+        <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
           <div>
             A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
           </div>
@@ -351,31 +393,6 @@ const TickProgress = () => {
 
     return () => clearInterval(interval);
   }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
-  // }, [nextBlockTimestamp]);
-  // }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
-
-  //   const progress = useMemo(() => {
-  //     return ((cycleTime - timeUntilNextCycle) / cycleTime) * 100;
-  //   }, [timeUntilNextCycle]);
-
-  //   const updateTooltip = useCallback(() => {
-  //     if (isTooltipOpen) {
-  //       setTooltip({
-  //         position: "bottom",
-  //         content: (
-  //           <div className="whitespace-nowrap pointer-events-none flex flex-col text-sm capitalize">
-  //             <div>
-  //               A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
-  //             </div>
-  //             <div>
-  //               Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
-  //             </div>
-  //           </div>
-  //         ),
-  //       });
-  //     }
-  //   // }, [isTooltipOpen, timeUntilNextCycle, setTooltip]);
-  // }, [isTooltipOpen, cycleTime, timeUntilNextCycle, setTooltip]);
 
   useEffect(() => {
     if (isTooltipOpen) {

@@ -4,53 +4,54 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
-use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
+use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 
-use eternum::models::combat::{Battle};
-use eternum::models::combat::{Health, Troops};
-use eternum::models::config::{
+use s0_eternum::models::combat::{Battle};
+use s0_eternum::models::combat::{Health, Troops};
+use s0_eternum::models::config::{
     TickConfig, TickImpl, StaminaConfig, TravelStaminaCostConfig, CapacityConfig, CapacityConfigCategory
 };
-use eternum::models::map::Tile;
-use eternum::models::movable::{Movable};
-use eternum::models::owner::{EntityOwner, Owner};
-use eternum::models::position::{Position, Coord, CoordTrait, Direction};
-use eternum::models::production::{Production, ProductionDeadline};
-use eternum::models::quantity::Quantity;
+use s0_eternum::models::map::Tile;
+use s0_eternum::models::movable::{Movable};
+use s0_eternum::models::owner::{EntityOwner, Owner};
+use s0_eternum::models::position::{Position, Coord, CoordTrait, Direction};
+use s0_eternum::models::production::{Production, ProductionDeadline};
+use s0_eternum::models::quantity::Quantity;
 
-use eternum::models::realm::Realm;
-use eternum::models::resources::{Resource, RESOURCE_PRECISION, ResourceFoodImpl};
-use eternum::models::stamina::Stamina;
-use eternum::models::structure::{Structure, StructureCategory, StructureCount,};
-use eternum::models::weight::Weight;
+use s0_eternum::models::realm::Realm;
+use s0_eternum::models::resources::{Resource, RESOURCE_PRECISION, ResourceFoodImpl};
+use s0_eternum::models::stamina::Stamina;
+use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount,};
+use s0_eternum::models::weight::Weight;
 
-use eternum::systems::combat::contracts::battle_systems::{
+use s0_eternum::systems::combat::contracts::battle_systems::{
     battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait, IBattlePillageContractDispatcher,
     IBattlePillageContractDispatcherTrait
 };
-use eternum::systems::combat::contracts::troop_systems::{
+use s0_eternum::systems::combat::contracts::troop_systems::{
     troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait
 };
 
-use eternum::systems::config::contracts::{
+use s0_eternum::systems::config::contracts::{
     config_systems, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
     IWeightConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait, IMercenariesConfigDispatcher,
     IMercenariesConfigDispatcherTrait,
 };
 
-use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
+use s0_eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 
-use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
+use s0_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
-use eternum::systems::map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
+use s0_eternum::systems::map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
+use s0_eternum::systems::map::map_generation::map_generation_systems::{InternalMapGenerationSystemsImpl};
 
-use eternum::systems::transport::contracts::travel_systems::{
+use s0_eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{
+use s0_eternum::utils::testing::{
     world::{spawn_eternum},
     systems::{
         deploy_realm_systems, deploy_battle_systems, deploy_system, deploy_map_systems, deploy_dev_resource_systems,
@@ -142,11 +143,11 @@ fn map_test_map_explore__mine_mercenaries_protector() {
 
     let army_position: Position = world.read_model(realm_army_unit_id);
 
-    let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
+    let mine_entity_id = InternalMapGenerationSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
     let mine_entity_owner: EntityOwner = world.read_model(mine_entity_id);
     assert_eq!(mine_entity_owner.entity_owner_id, mine_entity_id, "wrong initial owner");
 
-    let mercenary_entity_id = InternalMapSystemsImpl::add_mercenaries_to_structure(ref world, mine_entity_id);
+    let mercenary_entity_id = InternalMapGenerationSystemsImpl::add_mercenaries_to_structure(ref world, mine_entity_id);
 
     let battle_entity_id = battle_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
     let battle: Battle = world.read_model(battle_entity_id);
@@ -178,8 +179,8 @@ fn map_test_map_explore__mine_production_deadline() {
     map_systems_dispatcher.explore(realm_army_unit_id, explore_tile_direction);
 
     let army_position: Position = world.read_model(realm_army_unit_id);
-    let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
-    InternalMapSystemsImpl::add_production_deadline(ref world, mine_entity_id);
+    let mine_entity_id = InternalMapGenerationSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
+    InternalMapGenerationSystemsImpl::add_production_deadline(ref world, mine_entity_id);
     let mine_earthen_shard_production_deadline: ProductionDeadline = world.read_model(mine_entity_id);
 
     let current_ts = starknet::get_block_timestamp();

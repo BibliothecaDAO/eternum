@@ -1,4 +1,4 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
+import { type ClientComponents } from "@/dojo/createClientComponents";
 import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { type HexPosition, ResourceMiningTypes } from "@/types";
@@ -12,11 +12,14 @@ import {
   ResourcesIds,
   TickIds,
 } from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
+import { type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
+import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
+
+export const toInteger = (value: number): number => Math.floor(value);
 
 export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
@@ -58,6 +61,14 @@ export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
 }
 
+export function roundDownToPrecision(value: bigint, precision: number) {
+  return BigInt(Number(value) - (Number(value) % Number(precision)));
+}
+
+export function roundUpToPrecision(value: bigint, precision: number) {
+  return BigInt(Number(value) + (Number(precision) - (Number(value) % Number(precision))));
+}
+
 export function addressToNumber(address: string) {
   // Convert the address to a big integer
   let numericValue = ContractAddress(address);
@@ -70,7 +81,7 @@ export function addressToNumber(address: string) {
   }
 
   // Map the sum to a number between 1 and 10
-  let result = (sum % 5) + 1;
+  const result = (sum % 5) + 1;
 
   // Pad with a 0 if the result is less than 10
   return result < 10 ? `0${result}` : result.toString();
@@ -413,4 +424,64 @@ export const separateCamelCase = (str: string): string => {
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+};
+
+export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortKey: SortInterface): T[] {
+  const compareValues = (a: T, b: T, sortKey: string, sortDirection: "asc" | "desc" | "none"): number => {
+    const valueA = getNestedPropertyValue(a, sortKey);
+    const valueB = getNestedPropertyValue(b, sortKey);
+
+    let comparison = 0;
+
+    if (sortKey === "age" && typeof valueA === "string" && typeof valueB === "string") {
+      comparison = timeStringToSeconds(valueA) - timeStringToSeconds(valueB);
+    } else if (typeof valueA === "string" && typeof valueB === "string") {
+      comparison = valueA.localeCompare(valueB);
+    } else if (typeof valueA === "number" && typeof valueB === "number") {
+      comparison = valueA - valueB;
+    }
+
+    return sortDirection === "asc" ? comparison : -comparison;
+  };
+
+  if (activeSort.sort !== "none") {
+    return items.sort((a, b) => compareValues(a, b, activeSort.sortKey, activeSort.sort));
+  } else {
+    return items.sort((a, b) => compareValues(a, b, defaultSortKey.sortKey, defaultSortKey.sort));
+  }
+}
+
+function getNestedPropertyValue<T>(item: T, propertyPath: string) {
+  return propertyPath
+    .split(".")
+    .reduce(
+      (currentObject, propertyName) =>
+        currentObject ? (currentObject as Record<string, any>)[propertyName] : undefined,
+      item,
+    );
+}
+
+function timeStringToSeconds(timeStr: string): number {
+  const value = parseInt(timeStr);
+  const unit = timeStr.slice(-1).toLowerCase();
+
+  switch (unit) {
+    case "d":
+      return value * 86400;
+    case "h":
+      return value * 3600;
+    case "m":
+      return value * 60;
+    case "s":
+      return value;
+    default:
+      return 0;
+  }
+}
+
+export const getRandomBackgroundImage = () => {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const imageNumber = (timestamp % 7) + 1;
+  const paddedNumber = imageNumber.toString().padStart(2, "0");
+  return paddedNumber;
 };

@@ -1,9 +1,9 @@
 use core::fmt::{Display, Formatter, Error};
 use core::zeroable::Zeroable;
-use eternum::alias::ID;
-
-use eternum::utils::number::{NumberTrait};
 use option::OptionTrait;
+use s0_eternum::alias::ID;
+
+use s0_eternum::utils::number::{NumberTrait};
 use traits::Into;
 use traits::TryInto;
 
@@ -235,7 +235,7 @@ impl PositionIntoCube of Into<Position, Cube> {
 
 
 #[generate_trait]
-impl PositionCustomImpl of PositionCustomTrait {
+impl PositionImpl of PositionTrait {
     // world is divided into 10 timezones
     fn get_zone(self: Position) -> u32 {
         // use highest and lowest x to divide map into 10 timezones
@@ -255,8 +255,8 @@ impl PositionCustomImpl of PositionCustomTrait {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
-    use eternum::alias::ID;
-    use super::{Position, PositionCustomTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
+    use s0_eternum::alias::ID;
+    use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;
 

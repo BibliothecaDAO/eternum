@@ -1,76 +1,95 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-//import { useIsCorrectChain } from "./useChain";
-//import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
-//import { bigintEquals } from "../utils/types";
-//import { goToTokenPage } from "../utils/karat";
-import { toast } from "react-toastify";
+
+import { lordsAddress, seasonPassAddress } from "@/config";
+import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
+
+import { abi } from "@/abi/SeasonPass";
 import { useDojo } from "./context/DojoContext";
-import useAccountOrBurner from "./useAccountOrBurner";
 
 export const useMintSeasonPass = () => {
-  const {
-    setup: {
-      systemCalls: { mint_season_passes },
-    },
-  } = useDojo();
-
-  const season_pass_address = BigInt(import.meta.env.VITE_SEASON_PASS_ADDRESS);
-
-  const { account } = useAccountOrBurner();
-
-  //const { contractAddress } = useTokenContract();
-  //const { isCoolDown, maxSupply, availableSupply } = useConfig();
-  //  const { isConnected } = useAccount();
-  //const { isCorrectChain } = useIsCorrectChain()
-  // const { totalSupply } = useTotalSupply()
-
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(["0"]);
 
-  const canMint = useMemo(
-    () => account /*&& isConnected /*&& isCorrectChain*/ && !isMinting,
-    [account, /*isConnected, /*isCorrectChain,*/ isMinting],
-  );
+  const { address } = useAccount();
+
+  const { contract } = useContract({
+    abi,
+    address: seasonPassAddress,
+  });
+
+  const { send, error, isPending, isSuccess } = useSendTransaction({});
+  const {
+    setup: {
+      systemCalls: { attach_lords, detach_lords },
+    },
+  } = useDojo();
+
+  const { account } = useAccount();
+
+  const canMint = useMemo(() => account && !isMinting, [account, isMinting]);
 
   const _mint = useCallback(
-    async (token_ids: string[]) => {
+    async (token_ids: string[], recipient?: string) => {
+      console.log(token_ids);
       const tokenIdsNumberArray: number[] = token_ids.map((tokenId) => parseInt(tokenId, 16));
       if (account && canMint) {
         setIsMinting(true);
         setMintingTokenId(token_ids);
-        await mint_season_passes({
+        /*await mint_season_passes({
           signer: account,
-          recipient: account.address,
+          recipient: recipient ?? account.address,
           token_ids: tokenIdsNumberArray,
-          season_pass_address,
-        })
-          .then(() => {
-            toast("Season Passes Minted");
-            // wait supply to change...
-          })
-          .catch((e) => {
-            console.error(`mint error:`, e);
-            setMintingTokenId(["0"]);
-            setIsMinting(false);
-          });
+          season_pass_address: seasonPassAddress,
+        })*/
+        const calls = token_ids.map((tokenId) => contract.populate("mint", [recipient ?? account.address, tokenId]));
+        try {
+          send(calls);
+        } catch (e) {
+          console.error(`mint error:`, e);
+          setMintingTokenId(["0"]);
+          setIsMinting(false);
+        }
       }
     },
-    [account, canMint, season_pass_address, mint_season_passes],
+    [account, canMint],
   );
 
   useEffect(() => {
-    if (isMinting /*&& totalSupply >= mintingTokenId*/) {
-      // ...supply changed, to to token!
+    if (isMinting) {
       setIsMinting(false);
-      //goToTokenPage(mintingTokenId);
     }
-  }, [mintingTokenId /*, totalSupply*/]);
+  }, [mintingTokenId]);
 
-  //const { ownerAddress: lastOwnerAddress } = useTokenOwner(totalSupply);
+  // TODO: use Starknet React in production
+
+  const attachLords = useCallback(
+    async (token_id: number, amount: number) => {
+      if (!account) return;
+      await attach_lords({
+        signer: account,
+        token_id,
+        amount,
+        season_pass_address: seasonPassAddress,
+        lords_address: lordsAddress,
+      });
+    },
+    [account, seasonPassAddress],
+  );
+
+  const detachLords = useCallback(
+    async (token_id: number, amount: number) => {
+      if (!account) return;
+      await detach_lords({ signer: account, token_id, amount, season_pass_address: seasonPassAddress });
+    },
+    [account, seasonPassAddress],
+  );
 
   return {
     canMint,
-    isMinting,
+    isMinting: isPending ?? isMinting,
+    isMintSuccess: isSuccess,
     mint: canMint ? _mint : undefined,
+    attachLords,
+    detachLords,
   };
 };

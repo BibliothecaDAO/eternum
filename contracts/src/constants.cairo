@@ -1,4 +1,4 @@
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 
 // Config ID to fetch global configs
@@ -28,6 +28,10 @@ const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
 
 // resource precision
 const RESOURCE_PRECISION: u128 = 1_000;
+
+
+// WONDER QUEST REWARD BOOST
+const WONDER_QUEST_REWARD_BOOST: u128 = 3;
 
 // pillage config
 // TODO: Move to Onchain config
@@ -338,9 +342,9 @@ mod TravelTypes {
 
 
 fn DEFAULT_NS() -> @ByteArray {
-    @"eternum"
+    @"s0_eternum"
 }
 
 fn DEFAULT_NS_STR() -> ByteArray {
-    "eternum"
+    "s0_eternum"
 }

@@ -3,19 +3,19 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
-use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
-use eternum::models::name::EntityName;
-use eternum::models::owner::Owner;
-use eternum::models::position::Position;
+use s0_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
+use s0_eternum::models::name::EntityName;
+use s0_eternum::models::owner::Owner;
+use s0_eternum::models::position::Position;
 
-use eternum::systems::guild::contracts::{
+use s0_eternum::systems::guild::contracts::{
     guild_systems, IGuildSystems, IGuildSystemsDispatcher, IGuildSystemsDispatcherTrait
 };
-use eternum::systems::name::contracts::{
+use s0_eternum::systems::name::contracts::{
     name_systems, INameSystems, INameSystemsDispatcher, INameSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 use starknet::contract_address_const;
 
 
@@ -191,7 +191,7 @@ fn guild_test_leave_guild() {
     starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.join_guild(guild_entity_id);
 
-    guild_systems_dispatcher.leave_guild();
+    guild_systems_dispatcher.remove_guild_member(contract_address_const::<'player2'>());
 
     let guild: Guild = world.read_model(guild_entity_id);
     assert(guild.member_count == 1, 'Member count incorrect');
@@ -206,7 +206,7 @@ fn guild_test_leave_guild_as_owner() {
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
-    guild_systems_dispatcher.leave_guild();
+    guild_systems_dispatcher.remove_guild_member(contract_address_const::<'player1'>());
 
     let guild_owner: Owner = world.read_model(guild_entity_id);
     assert(guild_owner.address != contract_address_const::<'player1'>(), 'Wrong guild owner');
@@ -227,7 +227,7 @@ fn guild_test_leave_guild_with_members_as_owner() {
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
-    guild_systems_dispatcher.leave_guild();
+    guild_systems_dispatcher.remove_guild_member(contract_address_const::<'player1'>());
 }
 
 #[test]
@@ -238,7 +238,8 @@ fn guild_test_leave_guild_not_member() {
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
-    guild_systems_dispatcher.leave_guild();
+
+    guild_systems_dispatcher.remove_guild_member(contract_address_const::<'player1'>());
 }
 
 #[test]
@@ -327,7 +328,7 @@ fn guild_test_remove_guild_member() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ('Player not guildmember', 'ENTRYPOINT_FAILED'))]
+#[should_panic(expected: ('Not member of a guild', 'ENTRYPOINT_FAILED'))]
 fn guild_test_remove_guild_member_not_guild_member() {
     let (_, guild_systems_dispatcher) = setup();
 

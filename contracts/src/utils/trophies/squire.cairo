@@ -1,4 +1,4 @@
-use eternum::utils::trophies::interface::{TrophyTrait, BushidoTask, Task, TaskTrait};
+use s0_eternum::utils::trophies::interface::{TrophyTrait, BushidoTask, Task, TaskTrait};
 
 impl Squire of TrophyTrait {
     #[inline]

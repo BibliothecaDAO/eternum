@@ -3,11 +3,11 @@ import "react-toastify/dist/ReactToastify.css";
 import "./index.css";
 import { World } from "./ui/layouts/World";
 
-function App() {
+function App({ backgroundImage }: { backgroundImage: string }) {
   return (
     <>
       <ToastContainer style={{ zIndex: 1100 }} />
-      <World />
+      <World backgroundImage={backgroundImage} />
     </>
   );
 }

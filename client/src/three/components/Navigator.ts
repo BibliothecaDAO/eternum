@@ -1,9 +1,9 @@
-import { HexPosition } from "@/types";
+import { type HexPosition } from "@/types";
 import { calculateDistanceInHexes, getWorldPositionForHex } from "@/ui/utils/utils";
-import { throttle } from "lodash";
+import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { type MapControls } from "three/examples/jsm/controls/MapControls";
 import { gltfLoader } from "../helpers/utils";
 
 const dummyObject = new THREE.Object3D();

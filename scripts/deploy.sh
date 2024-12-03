@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create a Slot -> if deploying to slot
-slot deployments create -t epic eternum-rc1-1 katana --version v1.0.0-rc.1 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
+slot deployments create -t epic eternum-rc1-1 katana --version v1.0.3 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
 
 # get accounts 
 # -> update prod env_variables.sh
@@ -31,20 +31,20 @@ cd ../scripts/deployment && npm run deploy::prod
 
 # update the .env.production file with the season pass and test realms contracts addresses
 VITE_SEASON_PASS_ADDRESS=$(cat ./addresses/prod/season_pass.json | jq -r '.address')
-VITE_REALMS_ADDRESS=$(cat ./addresses/prod/test_realms.json | jq -r '.address')
-VITE_LORDS_ADDRESS=$(cat ./addresses/prod/test_lords.json | jq -r '.address')
+# VITE_REALMS_ADDRESS=$(cat ./addresses/prod/test_realms.json | jq -r '.address')
+# VITE_LORDS_ADDRESS=$(cat ./addresses/prod/test_lords.json | jq -r '.address')
 
 # remove the old addresses if they exist
 ENV_FILE=../../../client/.env.production
 sed -i '' '/VITE_SEASON_PASS_ADDRESS=/d' $ENV_FILE
-sed -i '' '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
-sed -i '' '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
+# sed -i '' '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
+# sed -i '' '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
 
 # add the new addresses to the ENV file
 echo "" >> $ENV_FILE
 echo "VITE_SEASON_PASS_ADDRESS=$VITE_SEASON_PASS_ADDRESS" >> $ENV_FILE
-echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
-echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
+    # echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
+    # echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
 
 cd ../../../
 printf "\n\n"
@@ -61,16 +61,27 @@ echo "Build contracts..."
 sozo build --profile prod
 
 echo "Deleting previous indexer and network..."
-# slot deployments delete eternum-40 torii
+# slot deployments delete realms-world-1 torii
 # slot deployments delete eternum-40 katana
 
 echo "Migrating world..."
 sozo migrate --profile prod 
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-rc1-1 torii --version v1.0.0-rc.1 --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --rpc https://api.cartridge.gg/x/eternum-rc1-1/katana --start-block 0  --index-pending true
+slot deployments create -t epic realms-world-03 torii --version preview--c148789 --world 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --rpc https://api.cartridge.gg/x/starknet/mainnet --indexing.pending true --config ./torii.toml
 
 echo "Setting up config..."
 
 # NOTE: THE SEASON PASS MUST BE SETUP BEFORE THE CONFIG IS SETUP
 bun --env-file=../client/.env.production ../config/index.ts
+
+# ------------------------------------------------------------------------------------------------
+# Build and deploy season resources (ERC20) contracts
+# @dev: only run this if deploying to slot
+# ------------------------------------------------------------------------------------------------
+printf "\n\n"
+echo "----- Building Season Resources Contract ----- "
+# build and deploy season resources contract
+cd ..
+cd season_resources/contracts && scarb --release build
+cd ../scripts/deployment && npm run deploy 

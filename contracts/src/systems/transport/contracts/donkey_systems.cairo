@@ -1,32 +1,32 @@
 #[dojo::contract]
 mod donkey_systems {
-    use bushido_trophy::store::{Store, StoreTrait};
+    use achievement::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
 
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
 
-    use eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION};
-    use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigCategory, CapacityConfigCustomImpl};
-    use eternum::models::movable::{Movable, MovableCustomImpl, ArrivalTime};
-    use eternum::models::order::{Orders, OrdersCustomTrait};
-    use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait};
-    use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction, PositionCustomTrait};
-    use eternum::models::realm::Realm;
-    use eternum::models::resources::{Resource, ResourceCustomImpl};
-    use eternum::models::weight::Weight;
+    use s0_eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION};
+    use s0_eternum::models::capacity::{CapacityCategory};
+    use s0_eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigCategory, CapacityConfigImpl};
+    use s0_eternum::models::movable::{Movable, MovableImpl, ArrivalTime};
+    use s0_eternum::models::order::{Orders, OrdersTrait};
+    use s0_eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
+    use s0_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction, PositionTrait};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::models::resources::{Resource, ResourceImpl};
+    use s0_eternum::models::weight::Weight;
 
-    use eternum::systems::resources::contracts::resource_systems::resource_systems::{
+    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{
         ResourceSystemsImpl, InternalResourceSystemsImpl
     };
-    use eternum::utils::tasks::index::{Task, TaskTrait};
+    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct BurnDonkey {
         #[key]
         player_address: ContractAddress,
@@ -43,7 +43,7 @@ mod donkey_systems {
             let donkey_amount = Self::get_donkey_needed(ref world, weight);
 
             // burn amount of donkey needed
-            let mut donkeys: Resource = ResourceCustomImpl::get(ref world, (payer_id, ResourceTypes::DONKEY));
+            let mut donkeys: Resource = ResourceImpl::get(ref world, (payer_id, ResourceTypes::DONKEY));
             donkeys.burn(donkey_amount);
             donkeys.save(ref world);
 
@@ -77,7 +77,7 @@ mod donkey_systems {
             let donkey_amount = Self::get_donkey_needed(ref world, weight);
 
             // return amount of donkey needed
-            let mut donkeys: Resource = ResourceCustomImpl::get(ref world, (payer_id, ResourceTypes::DONKEY));
+            let mut donkeys: Resource = ResourceImpl::get(ref world, (payer_id, ResourceTypes::DONKEY));
             donkeys.add(donkey_amount);
             donkeys.save(ref world);
         }
@@ -95,7 +95,7 @@ mod donkey_systems {
                     ref world,
                     start_coord,
                     intermediate_coord,
-                    MovableCustomImpl::sec_per_km(ref world, DONKEY_ENTITY_TYPE),
+                    MovableImpl::sec_per_km(ref world, DONKEY_ENTITY_TYPE),
                     is_round_trip
                 );
 
@@ -109,7 +109,7 @@ mod donkey_systems {
         }
 
         fn get_donkey_needed(ref world: WorldStorage, resources_weight: u128,) -> u128 {
-            let donkey_capacity = CapacityConfigCustomImpl::get(ref world, CapacityConfigCategory::Donkey);
+            let donkey_capacity = CapacityConfigImpl::get(ref world, CapacityConfigCategory::Donkey);
             let reminder = resources_weight % donkey_capacity.weight_gram;
             let donkeys = if reminder == 0 {
                 resources_weight / donkey_capacity.weight_gram

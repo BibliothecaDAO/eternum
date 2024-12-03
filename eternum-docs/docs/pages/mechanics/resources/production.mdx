@@ -1,0 +1,45 @@
+import ResourceIcon from "../../../../components/ResourceIcon";
+
+## Production
+
+### Resource Requirements
+
+Producing resources requires careful planning and management:
+
+- **Food Production**: Food is unique as it can be produced without any input resources.
+- **Input Dependencies**: Most resources need other resources as inputs.
+
+  > **Ex:** Wood production requires Stone, Coal, and Wheat.
+  >
+  > <div className="flex flex-row items-center gap-8">
+  >   <div className="flex flex-col items-center gap-1">
+  >     <ResourceIcon name="Stone" id="2" />
+  >     <ResourceIcon name="Coal" id="3" />
+  >     <ResourceIcon name="Wheat" id="254" />
+  >   </div>
+  >   <div className="text-4xl">➡</div>
+  >   <ResourceIcon name="Wood" id="1" />
+  > </div>
+
+### Automated Production
+
+Your production buildings work tirelessly to keep your realm thriving:
+
+- **Automatic Operation**: Resources are produced automatically when all input requirements are met, the building is
+  active, and storage isn't full.
+- **Efficiency**: Ensure your buildings are always operational by managing inputs and storage effectively.
+
+### Resource Management
+
+Effective resource management is crucial for maintaining production efficiency:
+
+- **Monitor Levels**: Keep a close eye on your resource levels to avoid shortages.
+- **Input Consumption**: Be aware that inputs are consumed even if production halts due to missing resources.
+
+> ⚠️ **Important**  
+> To optimize resource efficiency:
+>
+> - Keep track of input resource levels
+> - Pause production buildings when input resources are running low
+> - Resume production once you have sufficient input resources
+> - Consider setting up alerts or reminders to check resource levels

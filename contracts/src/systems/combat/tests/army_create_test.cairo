@@ -5,24 +5,24 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::alias::ID;
-use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
-use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
-use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig};
-use eternum::models::movable::{Movable};
-use eternum::models::owner::{Owner, EntityOwner};
-use eternum::models::position::{Coord, Position};
+use s0_eternum::alias::ID;
+use s0_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
+use s0_eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
+use s0_eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig};
+use s0_eternum::models::movable::{Movable};
+use s0_eternum::models::owner::{Owner, EntityOwner};
+use s0_eternum::models::position::{Coord, Position};
 
-use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION};
-use eternum::models::stamina::Stamina;
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::{
+use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION};
+use s0_eternum::models::stamina::Stamina;
+use s0_eternum::systems::config::contracts::config_systems;
+use s0_eternum::systems::{
     realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
     combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
-use eternum::utils::testing::{
-    config::get_combat_config, world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_troop_systems,
-    general::{mint, get_default_realm_pos, spawn_realm}
+use s0_eternum::utils::testing::{
+    config::{get_combat_config, set_settlement_config}, world::spawn_eternum, systems::deploy_realm_systems,
+    systems::{deploy_troop_systems, deploy_system}, general::{mint, get_default_realm_pos, spawn_realm}
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -41,27 +41,16 @@ fn set_configurations(ref world: WorldStorage) {
         .write_model_test(
             @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
         );
-    world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300000, });
-    world
-        .write_model_test(
-            @SettlementConfig {
-                config_id: WORLD_CONFIG_ID,
-                radius: 50,
-                angle_scaled: 0,
-                center: 2147483646,
-                min_distance: 1,
-                max_distance: 5,
-                min_scaling_factor_scaled: 1844674407370955161,
-                min_angle_increase: 30,
-                max_angle_increase: 100,
-            }
-        );
+    world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300_000, });
 }
 
 fn setup() -> (WorldStorage, ITroopContractDispatcher, ID,) {
     let mut world = spawn_eternum();
     set_configurations(ref world);
     let troop_system_dispatcher = deploy_troop_systems(ref world);
+
+    let config_systems_address = deploy_system(ref world, "config_systems");
+    set_settlement_config(config_systems_address);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());

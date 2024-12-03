@@ -4,9 +4,9 @@ use dojo::world::WorldStorage;
 use dojo::world::WorldStorageTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo_cairo_test::deploy_contract;
-use eternum::systems::config::contracts::config_systems;
+use s0_eternum::systems::config::contracts::config_systems;
 
-use eternum::systems::{
+use s0_eternum::systems::{
     realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
     combat::contracts::battle_systems::{
         battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait, battle_pillage_systems,
@@ -16,6 +16,7 @@ use eternum::systems::{
     hyperstructure::contracts::{
         hyperstructure_systems, IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait
     },
+    season::contracts::{season_systems, ISeasonSystemsDispatcher, ISeasonSystemsDispatcherTrait},
     map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait},
     dev::contracts::resource::{dev_resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait},
 };
@@ -41,6 +42,13 @@ fn deploy_hyperstructure_systems(ref world: WorldStorage) -> IHyperstructureSyst
     };
 
     hyperstructure_systems_dispatcher
+}
+
+fn deploy_season_systems(ref world: WorldStorage) -> (ISeasonSystemsDispatcher, starknet::ContractAddress) {
+    let season_systems_address = deploy_system(ref world, "season_systems");
+    let season_systems_dispatcher = ISeasonSystemsDispatcher { contract_address: season_systems_address };
+
+    (season_systems_dispatcher, season_systems_address)
 }
 
 fn deploy_troop_systems(ref world: WorldStorage) -> ITroopContractDispatcher {

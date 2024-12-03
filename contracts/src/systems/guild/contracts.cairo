@@ -1,4 +1,4 @@
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -6,7 +6,6 @@ trait IGuildSystems<T> {
     fn create_guild(ref self: T, is_public: bool, guild_name: felt252) -> ID;
     fn join_guild(ref self: T, guild_entity_id: ID);
     fn whitelist_player(ref self: T, player_address_to_whitelist: ContractAddress, guild_entity_id: ID);
-    fn leave_guild(ref self: T);
     fn transfer_guild_ownership(ref self: T, guild_entity_id: ID, to_player_address: ContractAddress);
     fn remove_guild_member(ref self: T, player_address_to_remove: ContractAddress);
     fn remove_player_from_whitelist(ref self: T, player_address_to_remove: ContractAddress, guild_entity_id: ID);
@@ -19,14 +18,14 @@ mod guild_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::models::event::{CreateGuild, JoinGuild};
-    use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
-    use eternum::models::name::AddressName;
-    use eternum::models::name::EntityName;
-    use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
-    use eternum::models::season::SeasonImpl;
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::models::event::{CreateGuild, JoinGuild};
+    use s0_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
+    use s0_eternum::models::name::AddressName;
+    use s0_eternum::models::name::EntityName;
+    use s0_eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
+    use s0_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
 
@@ -113,33 +112,6 @@ mod guild_systems {
                 );
         }
 
-        fn leave_guild(ref self: ContractState) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
-
-            let caller_address = starknet::get_caller_address();
-
-            let mut guild_member: GuildMember = world.read_model(caller_address);
-            guild_member.assert_has_guild();
-
-            let mut guild_owner: Owner = world.read_model(guild_member.guild_entity_id);
-
-            let mut guild: Guild = world.read_model(guild_member.guild_entity_id);
-
-            if (guild_member.address == guild_owner.address) {
-                assert(guild.member_count == 1, 'Guild not empty');
-
-                world.erase_model(@guild);
-                world.erase_model(@guild_member);
-                world.erase_model(@guild_owner);
-            } else {
-                guild.member_count -= 1;
-
-                world.write_model(@GuildMember { address: caller_address, guild_entity_id: 0 });
-                world.write_model(@guild);
-            }
-        }
-
         fn transfer_guild_ownership(ref self: ContractState, guild_entity_id: ID, to_player_address: ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -161,19 +133,30 @@ mod guild_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let guild_member: GuildMember = world.read_model(starknet::get_caller_address());
-            let guild_entity_id: ID = guild_member.guild_entity_id;
-            let owner: Owner = world.read_model(guild_entity_id);
-            owner.assert_caller_owner();
+            let caller_address = starknet::get_caller_address();
 
-            let mut guild_member_to_remove: GuildMember = world.read_model(player_address_to_remove);
-            assert(guild_member_to_remove.guild_entity_id == guild_entity_id, 'Player not guildmember');
+            let guild_member: GuildMember = world.read_model(player_address_to_remove);
+            guild_member.assert_has_guild();
 
-            let mut guild: Guild = world.read_model(guild_entity_id);
-            guild.member_count -= 1;
+            let mut guild: Guild = world.read_model(guild_member.guild_entity_id);
+            let guild_owner: Owner = world.read_model(guild_member.guild_entity_id);
 
-            world.erase_model(@guild_member_to_remove);
-            world.write_model(@guild);
+            let isGuildMaster = caller_address == guild_owner.address;
+            let isSelf = caller_address == player_address_to_remove;
+
+            assert(isGuildMaster || isSelf, 'Cannot remove guildmember');
+
+            if (isGuildMaster && isSelf) {
+                assert(guild.member_count == 1, 'Guild not empty');
+
+                world.erase_model(@guild);
+                world.erase_model(@guild_member);
+                world.erase_model(@guild_owner);
+            } else {
+                guild.member_count -= 1;
+                world.erase_model(@guild_member);
+                world.write_model(@guild);
+            }
         }
 
         fn remove_player_from_whitelist(

@@ -1,5 +1,5 @@
-import { ResourcesIds } from ".";
 import { ResourceInputs, ResourceOutputs, Resources } from "../types";
+import { ResourcesIds } from "./index";
 
 export const resources: Array<Resources> = [
   {
@@ -402,13 +402,13 @@ export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Mithral]: 50,
   [ResourcesIds.Dragonhide]: 50,
   [ResourcesIds.Donkey]: 0.5,
-  [ResourcesIds.Knight]: 0.05,
-  [ResourcesIds.Crossbowman]: 0.05,
-  [ResourcesIds.Paladin]: 0.05,
+  [ResourcesIds.Knight]: 0.04,
+  [ResourcesIds.Crossbowman]: 0.04,
+  [ResourcesIds.Paladin]: 0.04,
   [ResourcesIds.Lords]: 5,
-  [ResourcesIds.Wheat]: 75,
-  [ResourcesIds.Fish]: 75,
-  [ResourcesIds.AncientFragment]: 15,
+  [ResourcesIds.Wheat]: 60,
+  [ResourcesIds.Fish]: 60,
+  [ResourcesIds.AncientFragment]: 10,
 };
 
 export const RESOURCE_INPUTS: ResourceInputs = {
@@ -524,7 +524,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   ],
   [ResourcesIds.Donkey]: [
     { resource: ResourcesIds.Wheat, amount: 0.025 },
-    { resource: ResourcesIds.Lords, amount: 0.001 },
+    { resource: ResourcesIds.Lords, amount: 0.00005 },
   ],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 0.05 },

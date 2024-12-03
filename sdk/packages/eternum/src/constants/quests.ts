@@ -25,8 +25,8 @@ export enum QuestType {
 
 export const QUEST_RESOURCES: { [key in QuestType]: ResourceCost[] } = {
   [QuestType.Food]: [
-    { resource: ResourcesIds.Wheat, amount: 1000 },
-    { resource: ResourcesIds.Fish, amount: 1000 },
+    { resource: ResourcesIds.Wheat, amount: 1200 },
+    { resource: ResourcesIds.Fish, amount: 1200 },
   ],
   [QuestType.CommonResources]: [
     { resource: ResourcesIds.Wood, amount: 5 },
@@ -64,18 +64,18 @@ export const QUEST_RESOURCES: { [key in QuestType]: ResourceCost[] } = {
   ],
   [QuestType.Trade]: [{ resource: ResourcesIds.Donkey, amount: 2 }],
   [QuestType.Military]: [
-    { resource: ResourcesIds.Knight, amount: 2 },
-    { resource: ResourcesIds.Crossbowman, amount: 2 },
-    { resource: ResourcesIds.Paladin, amount: 2 },
+    { resource: ResourcesIds.Knight, amount: 0.5 },
+    { resource: ResourcesIds.Crossbowman, amount: 0.5 },
+    { resource: ResourcesIds.Paladin, amount: 0.5 },
   ],
   [QuestType.FragmentMine]: [{ resource: ResourcesIds.Donkey, amount: 1 }],
   [QuestType.Travel]: [{ resource: ResourcesIds.Donkey, amount: 1 }],
-  [QuestType.Population]: [{ resource: ResourcesIds.Knight, amount: 1 }],
-  [QuestType.Market]: [{ resource: ResourcesIds.Paladin, amount: 1 }],
-  [QuestType.Mine]: [{ resource: ResourcesIds.Crossbowman, amount: 1 }],
-  [QuestType.Pillage]: [{ resource: ResourcesIds.AncientFragment, amount: 5 }],
-  [QuestType.Hyperstructure]: [{ resource: ResourcesIds.AncientFragment, amount: 5 }],
-  [QuestType.Contribution]: [{ resource: ResourcesIds.AncientFragment, amount: 5 }],
-  [QuestType.PauseProduction]: [{ resource: ResourcesIds.AncientFragment, amount: 2.5 }],
-  [QuestType.CreateDefenseArmy]: [{ resource: ResourcesIds.AncientFragment, amount: 2.5 }],
+  [QuestType.Population]: [{ resource: ResourcesIds.Knight, amount: 0.5 }],
+  [QuestType.Market]: [{ resource: ResourcesIds.Paladin, amount: 0.5 }],
+  [QuestType.Mine]: [{ resource: ResourcesIds.Crossbowman, amount: 0.5 }],
+  [QuestType.Pillage]: [{ resource: ResourcesIds.Donkey, amount: 0.3 }],
+  [QuestType.Hyperstructure]: [{ resource: ResourcesIds.Paladin, amount: 1 }],
+  [QuestType.Contribution]: [{ resource: ResourcesIds.Knight, amount: 1 }],
+  [QuestType.PauseProduction]: [{ resource: ResourcesIds.Wood, amount: 0.5 }],
+  [QuestType.CreateDefenseArmy]: [{ resource: ResourcesIds.AncientFragment, amount: 0.5 }],
 };

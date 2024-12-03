@@ -13,7 +13,7 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
-import { throttle } from "lodash";
+import throttle from "lodash/throttle";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
@@ -96,14 +96,18 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize);
+    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.exploredTiles);
     this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
     this.battleManager = new BattleManager(this.scene);
 
     this.armySubscription?.unsubscribe();
-    this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) =>
-      this.armyManager.onUpdate(update),
-    );
+    this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
+      this.armyManager.onUpdate(update).then((needsUpdate) => {
+        if (needsUpdate) {
+          this.updateVisibleChunks();
+        }
+      });
+    });
 
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
@@ -295,8 +299,7 @@ export default class WorldmapScene extends HexagonScene {
         const isExplored = travelPath.isExplored ?? false;
         if (selectedPath.length > 0) {
           const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-          const marchSound = selectedEntityId % 2 === 0 ? soundSelector.unitMarching1 : soundSelector.unitMarching2;
-          playSound(marchSound, this.state.isSoundOn, this.state.effectsLevel);
+          playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
           armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
         }
       }
@@ -455,9 +458,56 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private computeInteractiveHexes(startRow: number, startCol: number, rows: number, cols: number) {
+    this.interactiveHexManager.clearHexes();
+
+    let currentIndex = 0;
+    const batchSize = 25;
+
+    const processBatch = () => {
+      const endIndex = Math.min(currentIndex + batchSize, rows * cols);
+
+      for (let i = currentIndex; i < endIndex; i++) {
+        const row = Math.floor(i / cols) - rows / 2;
+        const col = (i % cols) - cols / 2;
+
+        const globalRow = startRow + row;
+        const globalCol = startCol + col;
+
+        const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
+
+        if (!isExplored) {
+          const neighborOffsets = getNeighborOffsets(globalRow);
+          const isBorder = neighborOffsets.some(({ i, j }) => {
+            const neighborCol = globalCol + i;
+            const neighborRow = globalRow + j;
+            return this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
+          });
+
+          if (isBorder) {
+            this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+          }
+        } else {
+          this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+        }
+      }
+
+      currentIndex = endIndex;
+
+      if (currentIndex < rows * cols) {
+        requestAnimationFrame(processBatch);
+      } else {
+        this.interactiveHexManager.renderHexes();
+      }
+    };
+
+    requestAnimationFrame(processBatch);
+  }
+
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
+      this.computeInteractiveHexes(startRow, startCol, rows, cols);
       return;
     }
 
@@ -536,6 +586,8 @@ export default class WorldmapScene extends HexagonScene {
         if (isExplored) {
           biomeHexes[biome].push(dummy.matrix.clone());
         } else {
+          dummy.position.y = 0.01;
+          dummy.updateMatrix();
           biomeHexes["Outline"].push(dummy.matrix.clone());
         }
       }

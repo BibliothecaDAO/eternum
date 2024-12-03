@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextInput from "@/ui/elements/TextInput";
 import { toHexString } from "@/ui/utils/utils";
 import { ContractAddress, Player } from "@bibliothecadao/eternum";
+import { EventStream } from "../stream/EventStream";
 import { useChatStore } from "./ChatState";
 import { ChatTab, DEFAULT_TAB } from "./ChatTab";
 import { CHAT_COLORS, GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
@@ -26,6 +27,8 @@ export const Chat = () => {
       components: { Message, AddressName },
     },
   } = useDojo();
+
+  const [displayMessages, setDisplayMessages] = useState(false);
 
   const { getGuildFromPlayerAddress } = useGuilds();
   const guildName = getGuildFromPlayerAddress(ContractAddress(account.address))?.name;
@@ -50,6 +53,12 @@ export const Chat = () => {
 
   useEffect(() => {
     scrollToElement(bottomChatRef);
+
+    if (currentTab.name === "Events") {
+      setDisplayMessages(false);
+    } else {
+      setDisplayMessages(true);
+    }
   }, [currentTab]);
 
   useEffect(() => {
@@ -97,7 +106,7 @@ export const Chat = () => {
         key: getMessageKey(account.address, BigInt(address)),
       });
     },
-    [guildName, guildKey, account.address, addTab, setCurrentTab],
+    [guildName, guildKey, account.address, addTab, setCurrentTab, setDisplayMessages],
   );
 
   const renderTabs = useMemo(() => {
@@ -132,15 +141,19 @@ export const Chat = () => {
           hideChat ? "p-0" : "p-1"
         }`}
       >
-        <Messages
-          account={account}
-          currentTab={currentTab}
-          guildName={guildName}
-          guildKey={guildKey}
-          hideChat={hideChat}
-          bottomChatRef={bottomChatRef}
-          changeTabs={changeTabs}
-        />
+        {displayMessages ? (
+          <Messages
+            account={account}
+            currentTab={currentTab}
+            guildName={guildName}
+            guildKey={guildKey}
+            hideChat={hideChat}
+            bottomChatRef={bottomChatRef}
+            changeTabs={changeTabs}
+          />
+        ) : (
+          <EventStream />
+        )}
         <div
           style={{
             color:

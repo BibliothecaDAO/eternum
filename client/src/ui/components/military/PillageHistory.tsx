@@ -2,50 +2,120 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision, formatResources, formatTime } from "@/ui/utils/utils";
-import { BattleSide, ID, Resource } from "@bibliothecadao/eternum";
+import TwitterShareButton from "@/ui/elements/TwitterShareButton";
+import { formatSocialText, twitterTemplates } from "@/ui/socials";
+import { divideByPrecision, formatNumber, formatResources, formatTime } from "@/ui/utils/utils";
+import { BattleSide, ID, Resource, resources } from "@bibliothecadao/eternum";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
+import { TroopDisplay } from "./TroopChip";
 
 type PillageEvent = ComponentValue<ClientComponents["events"]["BattlePillageData"]["schema"]>;
 
 const PillageHistoryItem = ({ addressName, history }: { addressName: string; history: PillageEvent }) => {
+  const {
+    setup: {
+      account: { account },
+    },
+  } = useDojo();
+
   const isSuccess = history.winner === BattleSide[BattleSide.Attack];
   const formattedResources = useMemo(() => formatResources(history.pillaged_resources), [history.pillaged_resources]);
 
+  const { getPlayerAddressFromEntity, getAddressNameFromEntity } = useEntitiesUtils();
+
+  const attackerIsPlayer = useMemo(
+    () => getPlayerAddressFromEntity(history.pillager_army_entity_id) === BigInt(account.address),
+    [getPlayerAddressFromEntity, history.pillager_army_entity_id, account.address],
+  );
+
+  const twitterText = useMemo(() => {
+    if (isSuccess && formattedResources.length > 0 && attackerIsPlayer) {
+      return formatSocialText(twitterTemplates.pillage, {
+        enemyName: getAddressNameFromEntity(history.pillaged_structure_entity_id) || "Unknown",
+        addressName,
+        resources: formattedResources
+          .map(
+            (pillagedResource) =>
+              `${formatNumber(divideByPrecision(pillagedResource.amount), 0)} ${resources.find(
+                (resource) => resource.id === pillagedResource.resourceId,
+              )?.trait}`,
+          )
+          .join(", "),
+        url: window.location.origin,
+      });
+    }
+  }, [isSuccess, addressName]);
   return (
-    <div className="group hover:bg-gold/10 relative bg-gold/20 text-gold p-3">
-      <div className="flex w-full justify-between font-bold ">
-        <div className={` ${isSuccess ? "text-order-brilliance" : "text-order-giants"}`}>
-          {isSuccess ? "success" : "fail"}
+    <div className="group relative bg-gold/20 hover:bg-gold/10 rounded-lg p-4 transition-all duration-300">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`text-base font-semibold uppercase tracking-wider ${isSuccess ? "text-green" : "text-red"}`}>
+          {isSuccess ? "Successful Raid" : "Failed Raid"}
         </div>
-        <div>{`player: ${addressName}`}</div>
-      </div>
-      <div className="flex text-xs justify-between mb-2 mt-2">
-        <div className="flex flex-col text-xs items-center">
-          <div>Stolen Resources</div>
-          <div className="flex mt-1 flex-wrap gap-2 justify-center">
-            {formattedResources.length > 0
-              ? formattedResources.map((resource: Resource) => (
-                  <ResourceCost
-                    size="sm"
-                    textSize="xs"
-                    key={resource.resourceId}
-                    resourceId={resource.resourceId}
-                    amount={divideByPrecision(resource.amount)}
-                  />
-                ))
-              : "None"}
-          </div>
-        </div>
-        <div className="flex flex-col text-xs items-center">
-          <div>Destroyed Building</div>
-          <div className="text-center mt-1">
-            {history.destroyed_building_category.replace(/([A-Z])/g, " $1").trim()}
-          </div>
+        {twitterText && <TwitterShareButton text={twitterText} buttonSize={"xs"} />}
+        <div className={`text-gold/80 font-medium ${attackerIsPlayer ? "font-bold" : ""}`}>
+          {attackerIsPlayer ? "You" : `by: ${addressName}`}
         </div>
       </div>
-      <div className="absolute bottom-1 right-2 text-xs text-gold/60">
+
+      <div className="grid grid-cols-4 gap-6 mb-4">
+        {/* Stolen Resources */}
+        <div className="flex flex-col items-center">
+          <div className="text-xs font-semibold mb-2 text-gold/90">Stolen Resources</div>
+          <div className="flex flex-wrap gap-2 justify-center min-h-[60px] items-center">
+            {formattedResources.length > 0 ? (
+              formattedResources.map((resource: Resource) => (
+                <ResourceCost
+                  size="sm"
+                  textSize="xs"
+                  key={resource.resourceId}
+                  resourceId={resource.resourceId}
+                  amount={divideByPrecision(resource.amount)}
+                />
+              ))
+            ) : (
+              <span className="text-gold/60 text-sm">None</span>
+            )}
+          </div>
+        </div>
+
+        {/* Pillager Troops Lost */}
+        <div className="flex flex-col">
+          <div className="text-xs font-semibold mb-2 text-gold/90">Pillagers</div>
+          <TroopDisplay
+            troops={history.attacker_lost_troops}
+            className="origin-top-left"
+            negative
+            iconSize="sm"
+            direction="column"
+          />
+        </div>
+
+        {/* Structure Troops Lost */}
+        <div className="flex flex-col">
+          <div className="text-xs font-semibold mb-2 text-gold/90">Structure</div>
+          <TroopDisplay
+            troops={history.structure_lost_troops}
+            className="origin-top-left"
+            negative
+            iconSize="sm"
+            direction="column"
+          />
+        </div>
+
+        {/* Destroyed Building */}
+        <div className="flex flex-col items-center">
+          <div className="text-xs font-semibold mb-2 text-gold/90">Destroyed Building</div>
+          <div className="flex flex-wrap gap-2 justify-center min-h-[60px] items-center">
+            <div className="text-center text-sm text-gold/80">
+              {history.destroyed_building_category.replace(/([A-Z])/g, " $1").trim()}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Timestamp */}
+      <div className="absolute bottom-2 right-4 text-xs text-gold/60 italic">
         {`${formatTime(Date.now() / 1000 - history.timestamp)} ago`}
       </div>
     </div>
@@ -60,7 +130,6 @@ export const PillageHistory = ({ structureId }: { structureId: ID }) => {
   } = useDojo();
 
   const [pillageHistory, setPillageHistory] = useState<PillageEvent[]>([]);
-
   const { getAddressNameFromEntity } = useEntitiesUtils();
 
   useEffect(() => {
@@ -79,7 +148,7 @@ export const PillageHistory = ({ structureId }: { structureId: ID }) => {
   }, [events.BattlePillageData, structureId]);
 
   return (
-    <div className="p-6 h-full pt-2">
+    <div className="p-1 h-full">
       <div className="overflow-auto h-full">
         <div className="overflow-scroll-y grid grid-cols-1 gap-4">
           {pillageHistory

@@ -5,11 +5,12 @@ import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { BattleSimulation } from "@/ui/modules/battle-simulation/BattleSimulation";
+import { BattleSimulation } from "@/ui/modules/simulation/BattleSimulation";
+import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { HintSection } from "../hints/HintModal";
-import { battleSimulation } from "../navigation/Config";
+import { battleSimulation, pillageSimulation } from "../navigation/Config";
 import { ArmyChip } from "./ArmyChip";
 
 export const EntitiesArmyTable = () => {
@@ -22,8 +23,12 @@ export const EntitiesArmyTable = () => {
         <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(battleSimulation)}>
           Simulate a battle
         </Button>
+        <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(pillageSimulation)}>
+          Simulate a pillage
+        </Button>
       </div>
       <BattleSimulation />
+      <PillageSimulation />
       {playerStructures().map((entity: any, index: number) => {
         return (
           <div key={entity.entity_id} className="p-2">

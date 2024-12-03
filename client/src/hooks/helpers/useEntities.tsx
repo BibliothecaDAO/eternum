@@ -145,7 +145,8 @@ export const useEntities = () => {
 
   const getPlayerRealms = (filterFn?: (realm: RealmWithPosition) => boolean) => {
     return useMemo(() => {
-      return filterFn ? playerRealms.filter(filterFn) : playerRealms;
+      const realms = filterFn ? playerRealms.filter(filterFn) : playerRealms;
+      return realms.sort((a, b) => a.name.localeCompare(b.name));
     }, [playerRealms, filterFn]);
   };
 
@@ -157,14 +158,15 @@ export const useEntities = () => {
 
   const getPlayerStructures = (filterFn?: (structure: PlayerStructure) => boolean) => {
     return useMemo(() => {
-      return filterFn ? playerStructures.filter(filterFn) : playerStructures;
-    }, [otherRealms, filterFn]);
+      const structures = filterFn ? playerStructures.filter(filterFn) : playerStructures;
+      return structures.sort((a, b) => a.name.localeCompare(b.name));
+    }, [playerStructures, filterFn]);
   };
 
   const getOtherStructures = (filterFn?: (structure: PlayerStructure) => boolean) => {
     return useMemo(() => {
       return filterFn ? otherStructures.filter(filterFn) : otherStructures;
-    }, [otherRealms, filterFn]);
+    }, [otherStructures, filterFn]);
   };
 
   return {

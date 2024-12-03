@@ -1,8 +1,8 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use eternum::alias::ID;
-use eternum::constants::ErrorMessages;
-use eternum::models::realm::Realm;
+use s0_eternum::alias::ID;
+use s0_eternum::constants::ErrorMessages;
+use s0_eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
 // contract address owning an entity
@@ -24,7 +24,7 @@ pub struct EntityOwner {
 }
 
 #[generate_trait]
-impl OwnerCustomImpl of OwnerCustomTrait {
+impl OwnerImpl of OwnerTrait {
     fn assert_caller_owner(self: Owner) {
         assert(self.address == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
     }
@@ -42,7 +42,7 @@ impl OwnerCustomImpl of OwnerCustomTrait {
 }
 
 #[generate_trait]
-impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
+impl EntityOwnerImpl of EntityOwnerTrait {
     fn assert_caller_owner(self: EntityOwner, world: WorldStorage) {
         let owner: Owner = world.read_model(self.entity_owner_id);
         owner.assert_caller_owner();
@@ -65,17 +65,28 @@ mod tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use eternum::alias::ID;
-    use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
-    use eternum::models::realm::Realm;
-    use eternum::utils::testing::world::spawn_eternum;
+    use s0_eternum::alias::ID;
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::utils::testing::world::spawn_eternum;
     use starknet::contract_address_const;
 
     #[test]
     fn owner_test_entity_owner_get_realm_id() {
         let mut world = spawn_eternum();
 
-        world.write_model_test(@Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0 });
+        world
+            .write_model_test(
+                @Realm {
+                    entity_id: 1,
+                    realm_id: 3,
+                    produced_resources: 0,
+                    order: 0,
+                    level: 0,
+                    has_wonder: false,
+                    settler_address: contract_address_const::<'Settler'>()
+                }
+            );
         world.write_model_test(@EntityOwner { entity_id: 2, entity_owner_id: 1 });
 
         let entity_owner: EntityOwner = world.read_model(2);

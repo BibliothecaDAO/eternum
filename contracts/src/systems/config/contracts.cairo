@@ -1,12 +1,12 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
-use eternum::models::buildings::BuildingCategory;
-use eternum::models::combat::{Troops};
-use eternum::models::config::{
+use s0_eternum::alias::ID;
+use s0_eternum::models::buildings::BuildingCategory;
+use s0_eternum::models::combat::{Troops};
+use s0_eternum::models::config::{
     TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonConfig
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonAddressesConfig
 };
-use eternum::models::position::Coord;
+use s0_eternum::models::position::Coord;
 
 #[starknet::interface]
 trait IWorldConfig<T> {
@@ -22,7 +22,8 @@ trait ISeasonConfig<T> {
         ref self: T,
         season_pass_address: starknet::ContractAddress,
         realms_address: starknet::ContractAddress,
-        lords_address: starknet::ContractAddress
+        lords_address: starknet::ContractAddress,
+        start_at: u64
     );
 }
 
@@ -184,51 +185,50 @@ trait IResourceBridgeConfig<T> {
 trait ISettlementConfig<T> {
     fn set_settlement_config(
         ref self: T,
-        radius: u32,
-        angle_scaled: u128,
         center: u32,
-        min_distance: u32,
-        max_distance: u32,
-        min_scaling_factor_scaled: u128,
-        min_angle_increase: u64,
-        max_angle_increase: u64,
+        base_distance: u32,
+        min_first_layer_distance: u32,
+        points_placed: u32,
+        current_layer: u32,
+        current_side: u32,
+        current_point_on_side: u32
     );
 }
 
 
 #[dojo::contract]
 mod config_systems {
-    use bushido_trophy::components::achievable::AchievableComponent;
+    use achievement::components::achievable::AchievableComponent;
 
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
 
-    use eternum::constants::{
+    use s0_eternum::constants::{
         ResourceTypes, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
         HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID,
         POPULATION_CONFIG_ID, DEFAULT_NS
     };
-    use eternum::models::bank::bank::{Bank};
-    use eternum::models::buildings::{BuildingCategory};
-    use eternum::models::combat::{Troops};
+    use s0_eternum::models::bank::bank::{Bank};
+    use s0_eternum::models::buildings::{BuildingCategory};
+    use s0_eternum::models::combat::{Troops};
 
-    use eternum::models::config::{
+    use s0_eternum::models::config::{
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestConfig, QuestRewardConfig,
         MapConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig
     };
 
-    use eternum::models::position::{Position, PositionCustomTrait, Coord};
-    use eternum::models::production::{ProductionInput, ProductionOutput};
-    use eternum::models::resources::{ResourceCost, DetachedResource};
-    use eternum::models::season::SeasonImpl;
-    use eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
+    use s0_eternum::models::position::{Position, PositionTrait, Coord};
+    use s0_eternum::models::production::{ProductionInput, ProductionOutput};
+    use s0_eternum::models::resources::{ResourceCost, DetachedResource};
+    use s0_eternum::models::season::{Season};
+    use s0_eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
 
     // Components
 
@@ -268,6 +268,8 @@ mod config_systems {
                     hidden: trophy.hidden(),
                     index: trophy.index(),
                     points: trophy.points(),
+                    start: 0,
+                    end: 0,
                     group: trophy.group(),
                     icon: trophy.icon(),
                     title: trophy.title(),
@@ -289,7 +291,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl WorldConfigCustomImpl of super::IWorldConfig<ContractState> {
+    impl WorldConfigImpl of super::IWorldConfig<ContractState> {
         fn set_world_config(
             ref self: ContractState,
             admin_address: starknet::ContractAddress,
@@ -304,25 +306,34 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl SeasonConfigCustomImpl of super::ISeasonConfig<ContractState> {
+    impl SeasonConfigImpl of super::ISeasonConfig<ContractState> {
         fn set_season_config(
             ref self: ContractState,
             season_pass_address: starknet::ContractAddress,
             realms_address: starknet::ContractAddress,
-            lords_address: starknet::ContractAddress
+            lords_address: starknet::ContractAddress,
+            start_at: u64
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             world
                 .write_model(
-                    @SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address }
+                    @SeasonAddressesConfig {
+                        config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address,
+                    }
                 );
+
+            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
+            if !season.is_over {
+                season.start_at = start_at;
+                world.write_model(@season);
+            }
         }
     }
 
     #[abi(embed_v0)]
-    impl QuestConfigCustomImpl of super::IQuestConfig<ContractState> {
+    impl QuestConfigImpl of super::IQuestConfig<ContractState> {
         fn set_quest_config(ref self: ContractState, production_material_multiplier: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -373,7 +384,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl MapConfigCustomImpl of super::IMapConfig<ContractState> {
+    impl MapConfigImpl of super::IMapConfig<ContractState> {
         fn set_map_config(ref self: ContractState, mut map_config: MapConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -385,7 +396,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl CapacityConfigCustomImpl of super::ICapacityConfig<ContractState> {
+    impl CapacityConfigImpl of super::ICapacityConfig<ContractState> {
         fn set_capacity_config(ref self: ContractState, capacity_config: CapacityConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -405,7 +416,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl WeightConfigCustomImpl of super::IWeightConfig<ContractState> {
+    impl WeightConfigImpl of super::IWeightConfig<ContractState> {
         fn set_weight_config(ref self: ContractState, entity_type: ID, weight_gram: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -422,7 +433,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BattleConfigCustomImpl of super::IBattleConfig<ContractState> {
+    impl BattleConfigImpl of super::IBattleConfig<ContractState> {
         fn set_battle_config(ref self: ContractState, mut battle_config: BattleConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -433,7 +444,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TickConfigCustomImpl of super::ITickConfig<ContractState> {
+    impl TickConfigImpl of super::ITickConfig<ContractState> {
         fn set_tick_config(ref self: ContractState, tick_id: u8, tick_interval_in_seconds: u64) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -443,7 +454,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl StaminaConfigCustomImpl of super::IStaminaConfig<ContractState> {
+    impl StaminaConfigImpl of super::IStaminaConfig<ContractState> {
         fn set_stamina_config(ref self: ContractState, unit_type: u8, max_stamina: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -453,7 +464,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TravelFoodCostConfigCustomImpl of super::ITravelFoodCostConfig<ContractState> {
+    impl TravelFoodCostConfigImpl of super::ITravelFoodCostConfig<ContractState> {
         fn set_travel_food_cost_config(ref self: ContractState, mut travel_food_cost_config: TravelFoodCostConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -464,7 +475,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl StaminaRefillConfigCustomImpl of super::IStaminaRefillConfig<ContractState> {
+    impl StaminaRefillConfigImpl of super::IStaminaRefillConfig<ContractState> {
         fn set_stamina_refill_config(ref self: ContractState, amount_per_tick: u16, start_boost_tick_count: u8) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -477,7 +488,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl LevelingConfigCustomImpl of super::ILevelingConfig<ContractState> {
+    impl LevelingConfigImpl of super::ILevelingConfig<ContractState> {
         fn set_leveling_config(
             ref self: ContractState,
             config_id: ID,
@@ -564,7 +575,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl ProductionConfigCustomImpl of super::IProductionConfig<ContractState> {
+    impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
         fn set_production_config(ref self: ContractState, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -622,7 +633,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl TransportConfigCustomImpl of super::ITransportConfig<ContractState> {
+    impl TransportConfigImpl of super::ITransportConfig<ContractState> {
         fn set_speed_config(ref self: ContractState, entity_type: ID, sec_per_km: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -636,7 +647,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl HyperstructureConfigCustomImpl of super::IHyperstructureConfig<ContractState> {
+    impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
             ref self: ContractState,
             resources_for_completion: Span<(u8, u128)>,
@@ -675,7 +686,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl BankConfigCustomImpl of super::IBankConfig<ContractState> {
+    impl BankConfigImpl of super::IBankConfig<ContractState> {
         fn set_bank_config(ref self: ContractState, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -685,7 +696,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TroopConfigCustomImpl of super::ITroopConfig<ContractState> {
+    impl TroopConfigImpl of super::ITroopConfig<ContractState> {
         fn set_troop_config(ref self: ContractState, mut troop_config: TroopConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -696,7 +707,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingCategoryPopulationConfigCustomImpl of super::IBuildingCategoryPopConfig<ContractState> {
+    impl BuildingCategoryPopulationConfigImpl of super::IBuildingCategoryPopConfig<ContractState> {
         fn set_building_category_pop_config(
             ref self: ContractState, building_category: BuildingCategory, population: u32, capacity: u32
         ) {
@@ -713,7 +724,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl PopulationConfigCustomImpl of super::IPopulationConfig<ContractState> {
+    impl PopulationConfigImpl of super::IPopulationConfig<ContractState> {
         fn set_population_config(ref self: ContractState, base_population: u32) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -723,7 +734,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingConfigCustomImpl of super::IBuildingConfig<ContractState> {
+    impl BuildingConfigImpl of super::IBuildingConfig<ContractState> {
         fn set_building_general_config(ref self: ContractState, base_cost_percent_increase: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -837,7 +848,7 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             // note: if we are whitelisting a NEW resource type, we WILL need to
-            // update several functions related to resources in `eternum::constants`
+            // update several functions related to resources in `s0_eternum::constants`
             // so the new resource type is recognized throughout the contract.
 
             assert!(resource_bridge_whitelist_config.resource_type > 0, "resource type should be non zero");
@@ -851,7 +862,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl RealmLevelConfigCustomImpl of super::IRealmLevelConfig<ContractState> {
+    impl RealmLevelConfigImpl of super::IRealmLevelConfig<ContractState> {
         fn set_realm_max_level_config(ref self: ContractState, new_max_level: u8) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -895,14 +906,13 @@ mod config_systems {
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
         fn set_settlement_config(
             ref self: ContractState,
-            radius: u32,
-            angle_scaled: u128,
             center: u32,
-            min_distance: u32,
-            max_distance: u32,
-            min_scaling_factor_scaled: u128,
-            min_angle_increase: u64,
-            max_angle_increase: u64
+            base_distance: u32,
+            min_first_layer_distance: u32,
+            points_placed: u32,
+            current_layer: u32,
+            current_side: u32,
+            current_point_on_side: u32
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -911,14 +921,13 @@ mod config_systems {
                 .write_model(
                     @SettlementConfig {
                         config_id: WORLD_CONFIG_ID,
-                        radius,
-                        angle_scaled,
                         center,
-                        min_distance,
-                        max_distance,
-                        min_scaling_factor_scaled,
-                        min_angle_increase,
-                        max_angle_increase,
+                        base_distance,
+                        min_first_layer_distance,
+                        points_placed,
+                        current_layer,
+                        current_side,
+                        current_point_on_side,
                     }
                 );
         }

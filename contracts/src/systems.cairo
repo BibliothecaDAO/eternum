@@ -38,6 +38,7 @@ pub mod buildings {
 }
 pub mod map {
     pub mod contracts;
+    pub mod map_generation;
     #[cfg(test)]
     mod tests;
 }
@@ -64,6 +65,11 @@ pub mod guild {
 }
 
 pub mod ownership {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
+pub mod season {
     pub mod contracts;
     #[cfg(test)]
     mod tests;

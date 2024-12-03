@@ -1,16 +1,16 @@
 use core::array::{SpanTrait, ArrayTrait, SpanIndex};
 use core::integer::BoundedU128;
 use core::ops::index::IndexView;
-use eternum::constants::{
+use s0_eternum::constants::{
     ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds, TravelTypes
 };
 
-use eternum::models::{
+use s0_eternum::models::{
     config::{TroopConfig, BattleConfig, CapacityConfig, CapacityConfigCategory, MapConfig, TravelFoodCostConfig},
     combat::Troops,
 };
 
-use eternum::systems::config::contracts::{
+use s0_eternum::systems::config::contracts::{
     ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
     IStaminaRefillConfigDispatcher, IStaminaRefillConfigDispatcherTrait, ICapacityConfigDispatcher,
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
@@ -23,7 +23,7 @@ use eternum::systems::config::contracts::{
     IRealmLevelConfigDispatcher, IRealmLevelConfigDispatcherTrait
 };
 
-use eternum::utils::testing::constants::{
+use s0_eternum::utils::testing::constants::{
     get_resource_weights, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
     MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
     SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS,
@@ -121,7 +121,12 @@ fn get_combat_config() -> TroopConfig {
 }
 
 fn get_battle_config() -> BattleConfig {
-    return BattleConfig { config_id: WORLD_CONFIG_ID, battle_grace_tick_count: 1, battle_delay_seconds: 1, };
+    return BattleConfig {
+        config_id: WORLD_CONFIG_ID,
+        regular_immunity_ticks: 1,
+        hyperstructure_immunity_ticks: 1,
+        battle_delay_seconds: 1,
+    };
 }
 
 fn set_combat_config(config_systems_address: ContractAddress) {
@@ -204,14 +209,13 @@ fn set_mercenaries_config(config_systems_address: ContractAddress) {
 fn set_settlement_config(config_systems_address: ContractAddress) {
     ISettlementConfigDispatcher { contract_address: config_systems_address }
         .set_settlement_config(
-            radius: 50,
-            angle_scaled: 0,
             center: 2147483646,
-            min_distance: 1,
-            max_distance: 5,
-            min_scaling_factor_scaled: 1844674407370955161,
-            min_angle_increase: 30,
-            max_angle_increase: 100,
+            base_distance: 10,
+            min_first_layer_distance: 30,
+            points_placed: 0,
+            current_layer: 1,
+            current_side: 1,
+            current_point_on_side: 0,
         );
 }
 

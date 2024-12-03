@@ -2,13 +2,13 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
 import { StructureType } from "@bibliothecadao/eternum";
-import { throttle } from "lodash";
-import * as THREE from "three";
-import WorldmapScene from "../scenes/Worldmap";
-import { ArmyManager } from "./ArmyManager";
-import { BattleManager } from "./BattleManager";
-import { Biome, BIOME_COLORS } from "./Biome";
-import { StructureManager } from "./StructureManager";
+import throttle from "lodash/throttle";
+import type * as THREE from "three";
+import type WorldmapScene from "../scenes/Worldmap";
+import { type ArmyManager } from "./ArmyManager";
+import { type BattleManager } from "./BattleManager";
+import { type Biome, BIOME_COLORS } from "./Biome";
+import { type StructureManager } from "./StructureManager";
 
 const LABELS = {
   ARMY: "/textures/army_label.png",
@@ -82,7 +82,7 @@ class Minimap {
     bottomSideWidth: number;
     height: number;
   };
-  private labelImages: Map<string, HTMLImageElement> = new Map();
+  private labelImages = new Map<string, HTMLImageElement>();
   private lastMousePosition: { x: number; y: number } | null = null;
   private mouseStartPosition: { x: number; y: number } | null = null;
 

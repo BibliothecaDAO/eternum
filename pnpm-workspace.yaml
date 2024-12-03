@@ -7,3 +7,5 @@ packages:
   - "balancing"
   - "landing"
   - "season_pass/scripts/deployment"
+  - "season_resources/scripts/deployment"
+  # - "eliza/packages/*"

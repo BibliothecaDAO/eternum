@@ -3,14 +3,15 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { LoopIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
-import { Earth, Home, Inbox, Ship } from "lucide-react";
+import { Castle, Gamepad2, Home } from "lucide-react";
+import { TypeH2 } from "../typography/type-h2";
+
+import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
 
 // Menu items.
 const items = [
@@ -19,30 +20,25 @@ const items = [
     url: "/",
     icon: Home,
   },
+  // {
+  //   title: "Trade",
+  //   url: "/trade",
+  //   icon: LoopIcon,
+  // },
+  // {
+  //   title: "Bridge",
+  //   url: "/bridge",
+  //   icon: Ship,
+  // },
   {
-    title: "Passes",
-    url: "/passes",
-    icon: Inbox,
-  },
-  {
-    title: "Trade",
-    url: "/trade",
-    icon: LoopIcon,
-  },
-  {
-    title: "Bridge",
-    url: "/bridge",
-    icon: Ship,
-  },
-  {
-    title: "Mint",
+    title: "Realms",
     url: "/mint",
-    icon: Ship,
+    icon: Castle,
   },
   {
-    title: "My Empire",
-    url: "/my-empire",
-    icon: Earth,
+    title: "Season Passes",
+    url: "/season-passes",
+    icon: Gamepad2,
   },
 ];
 
@@ -50,14 +46,17 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarContent>
+        <div className="flex flex-col items-center">
+          <EternumLogo className="w-24 h-24 fill-gold mx-auto pt-8" />
+          <TypeH2 className="p-3">Eternum</TypeH2>
+        </div>
         <SidebarGroup>
-          <SidebarGroupLabel>Eternum</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <Link to={item.url}>
+                    <Link className="[&.active]:font-bold [&.active]:bg-secondary font-heading text-xl" to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>

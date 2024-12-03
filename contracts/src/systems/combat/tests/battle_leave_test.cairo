@@ -4,26 +4,26 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::alias::ID;
-use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
-use eternum::models::combat::{Army, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle};
-use eternum::models::config::{
+use s0_eternum::alias::ID;
+use s0_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
+use s0_eternum::models::combat::{Army, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle};
+use s0_eternum::models::config::{
     TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SpeedConfig, SettlementConfig
 };
-use eternum::models::movable::{Movable};
-use eternum::models::owner::{Owner, EntityOwner};
-use eternum::models::position::{Coord, Position};
+use s0_eternum::models::movable::{Movable};
+use s0_eternum::models::owner::{Owner, EntityOwner};
+use s0_eternum::models::position::{Coord, Position};
 
-use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION};
-use eternum::models::stamina::Stamina;
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::{
+use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION};
+use s0_eternum::models::stamina::Stamina;
+use s0_eternum::systems::config::contracts::config_systems;
+use s0_eternum::systems::{
     realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
     combat::contracts::battle_systems::{battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait},
     combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
-use eternum::utils::testing::{
-    config::{get_combat_config, set_capacity_config}, world::spawn_eternum,
+use s0_eternum::utils::testing::{
+    config::{get_combat_config, set_capacity_config, set_settlement_config}, world::spawn_eternum,
     systems::{deploy_realm_systems, deploy_system, deploy_battle_systems, deploy_troop_systems},
     general::{mint, spawn_realm}
 };
@@ -90,20 +90,6 @@ fn set_configurations(ref world: WorldStorage) {
                 sec_per_km: 200
             }
         );
-    world
-        .write_model_test(
-            @SettlementConfig {
-                config_id: WORLD_CONFIG_ID,
-                radius: 50,
-                angle_scaled: 0,
-                center: 2147483646,
-                min_distance: 1,
-                max_distance: 5,
-                min_scaling_factor_scaled: 1844674407370955161,
-                min_angle_increase: 30,
-                max_angle_increase: 100,
-            }
-        );
 }
 
 fn setup() -> (WorldStorage, IBattleContractDispatcher, ID, ID, ID, ID, ID, ID) {
@@ -114,6 +100,7 @@ fn setup() -> (WorldStorage, IBattleContractDispatcher, ID, ID, ID, ID, ID, ID) 
 
     let config_systems_address = deploy_system(ref world, "config_systems");
     set_capacity_config(config_systems_address);
+    set_settlement_config(config_systems_address);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
 
@@ -258,7 +245,7 @@ fn combat_test_battle_leave_by_winner() {
     // ensure the player_1 took all the reward from the contest pot
     // the player_1's gold balance should now be triple since it took
     // (player_2 and player 3)'s gold balance after battle ended
-    let player_1_gold_resource: Resource = ResourceCustomImpl::get(ref world, (player_1_army_id, ResourceTypes::GOLD));
+    let player_1_gold_resource: Resource = ResourceImpl::get(ref world, (player_1_army_id, ResourceTypes::GOLD));
     assert_eq!(ARMY_GOLD_RESOURCE_AMOUNT * 3, player_1_gold_resource.balance);
 
     // ensure player_1's army troop count is correct
@@ -319,7 +306,7 @@ fn combat_test_battle_leave_by_loser() {
     battle_system_dispatcher.battle_leave(battle_id, player_2_army_id);
 
     // ensure the player_2 took no reward and lost balance
-    let player_2_gold_resource: Resource = ResourceCustomImpl::get(ref world, (player_2_army_id, ResourceTypes::GOLD));
+    let player_2_gold_resource: Resource = ResourceImpl::get(ref world, (player_2_army_id, ResourceTypes::GOLD));
     assert_eq!(0, player_2_gold_resource.balance);
 
     // ensure player_3's army troop count is correct

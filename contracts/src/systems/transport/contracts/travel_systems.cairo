@@ -1,10 +1,12 @@
 #[starknet::interface]
 trait ITravelSystems<T> {
     fn travel(
-        ref self: T, travelling_entity_id: eternum::alias::ID, destination_coord: eternum::models::position::Coord
+        ref self: T, travelling_entity_id: s0_eternum::alias::ID, destination_coord: s0_eternum::models::position::Coord
     );
     fn travel_hex(
-        ref self: T, travelling_entity_id: eternum::alias::ID, directions: Span<eternum::models::position::Direction>
+        ref self: T,
+        travelling_entity_id: s0_eternum::alias::ID,
+        directions: Span<s0_eternum::models::position::Direction>
     );
 }
 
@@ -13,27 +15,27 @@ mod travel_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
 
-    use eternum::constants::{WORLD_CONFIG_ID, TravelTypes, DEFAULT_NS};
-    use eternum::models::combat::Army;
-    use eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
-    use eternum::models::map::Tile;
-    use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::order::{Orders, OrdersCustomTrait};
-    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerCustomTrait};
-    use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
-    use eternum::models::quantity::{Quantity,};
-    use eternum::models::realm::Realm;
+    use s0_eternum::constants::{WORLD_CONFIG_ID, TravelTypes, DEFAULT_NS};
+    use s0_eternum::models::combat::Army;
+    use s0_eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
+    use s0_eternum::models::map::Tile;
+    use s0_eternum::models::movable::{Movable, ArrivalTime};
+    use s0_eternum::models::order::{Orders, OrdersTrait};
+    use s0_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
+    use s0_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
+    use s0_eternum::models::quantity::{Quantity,};
+    use s0_eternum::models::realm::Realm;
 
-    use eternum::models::season::SeasonImpl;
-    use eternum::models::stamina::StaminaCustomImpl;
-    use eternum::models::weight::Weight;
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::stamina::StaminaImpl;
+    use s0_eternum::models::weight::Weight;
 
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct Travel {
         #[key]
         destination_coord_x: u32,
@@ -111,7 +113,7 @@ mod travel_systems {
             let mut stamina_cost = stamina_cost.cost;
             stamina_cost = stamina_cost * num_moves;
 
-            StaminaCustomImpl::handle_stamina_costs(travelling_entity_id, stamina_cost, ref world);
+            StaminaImpl::handle_stamina_costs(travelling_entity_id, stamina_cost, ref world);
 
             let transport_owner_entity: EntityOwner = world.read_model(travelling_entity_id);
 

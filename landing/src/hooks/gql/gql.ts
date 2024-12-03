@@ -13,10 +13,9 @@ import * as types from "./graphql";
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 const documents = {
-  "\n  query totalPlayers {\n    eternumOwnerModels {\n      totalCount\n    }\n  }\n": types.TotalPlayersDocument,
-  "\n  query getRealms($accountAddress: String!) {\n    ercBalance(accountAddress: $accountAddress) {\n      balance\n      type\n      tokenMetadata {\n        tokenId\n        contractAddress\n      }\n    }\n  }\n":
-    types.GetRealmsDocument,
-  '\n  query getRealmMints {\n    ercTransfer(accountAddress: "0x0", limit: 8000) {\n      tokenMetadata {\n        tokenId\n        contractAddress\n      }\n    }\n  }\n':
+  "\n  query getAccountTokens($accountAddress: String!) {\n    tokenBalances(accountAddress: $accountAddress, limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n":
+    types.GetAccountTokensDocument,
+  '\n  query getRealmMints {\n    tokenTransfers(accountAddress: "0x037c6B561b367a85b68668e8663041b9E2F4199c346FBda97dc0c2167F7A6016", limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n':
     types.GetRealmMintsDocument,
 };
 
@@ -24,19 +23,13 @@ const documents = {
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query totalPlayers {\n    eternumOwnerModels {\n      totalCount\n    }\n  }\n",
-): typeof import("./graphql").TotalPlayersDocument;
+  source: "\n  query getAccountTokens($accountAddress: String!) {\n    tokenBalances(accountAddress: $accountAddress, limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n",
+): typeof import("./graphql").GetAccountTokensDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query getRealms($accountAddress: String!) {\n    ercBalance(accountAddress: $accountAddress) {\n      balance\n      type\n      tokenMetadata {\n        tokenId\n        contractAddress\n      }\n    }\n  }\n",
-): typeof import("./graphql").GetRealmsDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: '\n  query getRealmMints {\n    ercTransfer(accountAddress: "0x0", limit: 8000) {\n      tokenMetadata {\n        tokenId\n        contractAddress\n      }\n    }\n  }\n',
+  source: '\n  query getRealmMints {\n    tokenTransfers(accountAddress: "0x037c6B561b367a85b68668e8663041b9E2F4199c346FBda97dc0c2167F7A6016", limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n',
 ): typeof import("./graphql").GetRealmMintsDocument;
 
 export function graphql(source: string) {

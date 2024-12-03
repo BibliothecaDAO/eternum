@@ -4,7 +4,7 @@ use dojo::meta::introspect::{Struct, Member};
 
 // Dojo imports
 use dojo::meta::{Ty, Introspect};
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 // Starknet imports
 use starknet::ContractAddress;
@@ -49,7 +49,7 @@ pub struct Market {
 }
 
 #[generate_trait]
-impl MarketCustomImpl of MarketCustomTrait {
+impl MarketImpl of MarketTrait {
     fn get_input_price(
         fee_rate_num: u128, fee_rate_denom: u128, input_amount: u128, input_reserve: u128, output_reserve: u128
     ) -> u128 {
@@ -263,11 +263,11 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
     use super::{Fixed, FixedTrait};
     // Local imports
 
-    use super::{Market, MarketCustomTrait};
+    use super::{Market, MarketTrait};
 
     // Constants
 

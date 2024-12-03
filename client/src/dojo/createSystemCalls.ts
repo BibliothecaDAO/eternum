@@ -243,6 +243,14 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.end_game(props);
   };
 
+  const register_to_leaderboard = async (props: SystemProps.RegisterToLeaderboardProps) => {
+    await provider.register_to_leaderboard(props);
+  };
+
+  const claim_leaderboard_rewards = async (props: SystemProps.ClaimLeaderboardRewardsProps) => {
+    await provider.claim_leaderboard_rewards(props);
+  };
+
   const set_co_owners = async (props: SystemProps.SetCoOwnersProps) => {
     await provider.set_co_owners(props);
   };
@@ -257,10 +265,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const whitelist_player = async (props: SystemProps.WhitelistPlayerProps) => {
     await provider.whitelist_player(props);
-  };
-
-  const leave_guild = async (props: SystemProps.LeaveGuild) => {
-    await provider.leave_guild(props);
   };
 
   const transfer_guild_ownership = async (props: SystemProps.TransferGuildOwnership) => {
@@ -358,6 +362,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     set_access: withQueueing(withErrorHandling(set_access)),
     set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
     end_game: withQueueing(withErrorHandling(end_game)),
+    register_to_leaderboard: withQueueing(withErrorHandling(register_to_leaderboard)),
+    claim_leaderboard_rewards: withQueueing(withErrorHandling(claim_leaderboard_rewards)),
 
     claim_quest: withQueueing(withErrorHandling(claim_quest)),
     mint_resources: withQueueing(withErrorHandling(mint_resources)),
@@ -368,7 +374,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_guild: withQueueing(withErrorHandling(create_guild)),
     join_guild: withQueueing(withErrorHandling(join_guild)),
     whitelist_player: withQueueing(withErrorHandling(whitelist_player)),
-    leave_guild: withQueueing(withErrorHandling(leave_guild)),
     transfer_guild_ownership: withQueueing(withErrorHandling(transfer_guild_ownership)),
     remove_guild_member: withQueueing(withErrorHandling(remove_guild_member)),
     disband_guild: withQueueing(withErrorHandling(disband_guild)),

@@ -10,6 +10,16 @@ export const DEFAULT_TAB: Tab = {
   key: GLOBAL_CHANNEL,
   displayed: true,
   lastSeen: new Date(),
+  mandatory: true,
+};
+
+export const EVENT_STREAM_TAB: Tab = {
+  name: "Events",
+  address: "0x1",
+  key: "events",
+  displayed: true,
+  lastSeen: new Date(),
+  mandatory: true,
 };
 
 export interface Tab {
@@ -19,6 +29,7 @@ export interface Tab {
   numberOfMessages?: number;
   displayed: boolean;
   lastSeen: Date;
+  mandatory?: boolean;
 }
 
 export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
@@ -50,7 +61,7 @@ export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
           <span>{userName}</span>
 
           <div className="w-4 flex items-center justify-center">
-            {tab.name !== GLOBAL_CHANNEL_KEY && (
+            {(tab.mandatory === undefined || tab.mandatory === false) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();

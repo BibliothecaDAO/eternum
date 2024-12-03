@@ -6,27 +6,27 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::alias::ID;
-use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
-use eternum::models::bank::liquidity::{Liquidity};
-use eternum::models::bank::market::{Market, MarketCustomImpl};
+use s0_eternum::alias::ID;
+use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
+use s0_eternum::models::bank::liquidity::{Liquidity};
+use s0_eternum::models::bank::market::{Market, MarketImpl};
 
-use eternum::models::config::{CapacityConfig, CapacityConfigCategory};
+use s0_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
 
 
-use eternum::models::owner::{Owner};
-use eternum::models::position::{Coord};
-use eternum::models::resources::{ResourceCustomImpl, Resource};
-use eternum::systems::bank::contracts::bank::bank_systems;
-use eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
+use s0_eternum::models::owner::{Owner};
+use s0_eternum::models::position::{Coord};
+use s0_eternum::models::resources::{ResourceImpl, Resource};
+use s0_eternum::systems::bank::contracts::bank::bank_systems;
+use s0_eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
 
-use eternum::systems::bank::contracts::liquidity::liquidity_systems;
-use eternum::systems::bank::contracts::liquidity::{ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,};
-use eternum::systems::bank::contracts::swap::swap_systems;
-use eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
-use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
+use s0_eternum::systems::bank::contracts::liquidity::liquidity_systems;
+use s0_eternum::systems::bank::contracts::liquidity::{ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,};
+use s0_eternum::systems::bank::contracts::swap::swap_systems;
+use s0_eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
+use s0_eternum::systems::config::contracts::config_systems;
+use s0_eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
+use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
 
 use starknet::contract_address_const;
 
@@ -150,8 +150,8 @@ fn bank_test_liquidity_add() {
     liquidity_systems_dispatcher
         .add(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
     // player resources
-    let wood = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
-    let lords = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
+    let wood = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
 
     let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
     let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
@@ -190,10 +190,10 @@ fn bank_test_liquidity_remove() {
     let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
     let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
     // player resources
-    let donkey_wood = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
-    let donkey_lords = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
-    let player_wood = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
-    let player_lords = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
+    let donkey_wood = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
+    let donkey_lords = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
+    let player_wood = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
+    let player_lords = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
 
     // should have a donkey with resources coming your way
     assert(donkey_wood.balance == LIQUIDITY_AMOUNT, 'donkey wood.balance');
@@ -268,18 +268,18 @@ fn bank_test_liquidity_buy() {
 
     // // player resources
     // are on donkey
-    let donkey_1_wood = ResourceCustomImpl::get(ref world, (donkey_1_id, ResourceTypes::WOOD));
-    let donkey_1_lords = ResourceCustomImpl::get(ref world, (donkey_1_id, ResourceTypes::LORDS));
+    let donkey_1_wood = ResourceImpl::get(ref world, (donkey_1_id, ResourceTypes::WOOD));
+    let donkey_1_lords = ResourceImpl::get(ref world, (donkey_1_id, ResourceTypes::LORDS));
     assert(donkey_1_wood.balance == SWAP_AMOUNT, 'wood donkey 1');
     assert(donkey_1_lords.balance == 0, 'lords donkey 1');
 
-    let donkey_2_wood = ResourceCustomImpl::get(ref world, (donkey_2_id, ResourceTypes::WOOD));
-    let donkey_2_lords = ResourceCustomImpl::get(ref world, (donkey_2_id, ResourceTypes::LORDS));
+    let donkey_2_wood = ResourceImpl::get(ref world, (donkey_2_id, ResourceTypes::WOOD));
+    let donkey_2_lords = ResourceImpl::get(ref world, (donkey_2_id, ResourceTypes::LORDS));
     assert(donkey_2_wood.balance == LIQUIDITY_AMOUNT - SWAP_AMOUNT, 'wood donkey 2');
     assert(donkey_2_lords.balance == 21_112, 'lords donkey 2');
 
-    let player_wood = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
-    let player_lords = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
+    let player_wood = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
+    let player_lords = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
     assert(player_wood.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'player wood');
     // initial 100_000 - 10_000 (liquidity) - 11_112 (payment for swap) - 1_111 (bank fee)
     assert_eq!(player_lords.balance, 77777);
@@ -289,8 +289,8 @@ fn bank_test_liquidity_buy() {
     assert(liquidity.shares.mag == 0, 'liquidity.shares');
 
     // owner bank account
-    let bank_lords = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
-    let bank_wood = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
+    let bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
+    let bank_wood = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
     // bank has 10% of 11_112 = 1111;
     assert_eq!(bank_lords.balance, 1111);
     assert(bank_wood.balance == 0, 'bank wood');
@@ -337,13 +337,13 @@ fn bank_test_liquidity_sell() {
 
     // player resources
     // are on donkey
-    let donkey_1_wood = ResourceCustomImpl::get(ref world, (donkey_1_id, ResourceTypes::WOOD));
-    let donkey_1_lords = ResourceCustomImpl::get(ref world, (donkey_1_id, ResourceTypes::LORDS));
+    let donkey_1_wood = ResourceImpl::get(ref world, (donkey_1_id, ResourceTypes::WOOD));
+    let donkey_1_lords = ResourceImpl::get(ref world, (donkey_1_id, ResourceTypes::LORDS));
     assert(donkey_1_wood.balance == 0, 'wood donkey 1');
     assert_eq!(donkey_1_lords.balance, 279);
 
-    let donkey_2_wood = ResourceCustomImpl::get(ref world, (donkey_2_id, ResourceTypes::WOOD));
-    let donkey_2_lords = ResourceCustomImpl::get(ref world, (donkey_2_id, ResourceTypes::LORDS));
+    let donkey_2_wood = ResourceImpl::get(ref world, (donkey_2_id, ResourceTypes::WOOD));
+    let donkey_2_lords = ResourceImpl::get(ref world, (donkey_2_id, ResourceTypes::LORDS));
     assert(donkey_2_wood.balance == LIQUIDITY_AMOUNT + SWAP_AMOUNT, 'wood donkey 2');
 
     // the initial total belonging to player was 310
@@ -351,8 +351,8 @@ fn bank_test_liquidity_sell() {
     // player is left with 310 -31 = 279
     assert(donkey_2_lords.balance == LIQUIDITY_AMOUNT - (279 + 31), 'lords donkey 2');
 
-    let player_wood = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
-    let player_lords = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
+    let player_wood = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
+    let player_lords = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
     assert(player_wood.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT - SWAP_AMOUNT, 'player wood');
     // 10000 - 1000 (liquidity)
     assert(player_lords.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'player lords');
@@ -362,8 +362,8 @@ fn bank_test_liquidity_sell() {
     assert(liquidity.shares.mag == 0, 'liquidity.shares');
 
     // owner bank account
-    let bank_lords = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
-    let bank_wood = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
+    let bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
+    let bank_wood = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
     // bank has 31 lords fee from the swap
     assert(bank_lords.balance == 31, 'bank lords');
     assert(bank_wood.balance == 0, 'bank wood');

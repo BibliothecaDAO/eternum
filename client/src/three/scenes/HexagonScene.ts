@@ -1,26 +1,25 @@
-import gsap from "gsap";
-import * as THREE from "three";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { SceneManager } from "../SceneManager";
-import { HighlightHexManager } from "../components/HighlightHexManager";
-import { InputManager } from "../components/InputManager";
-import { InteractiveHexManager } from "../components/InteractiveHexManager";
-import { GUIManager } from "../helpers/GUIManager";
-import { LocationManager } from "../helpers/LocationManager";
-
-import { SetupResult } from "@/dojo/setup";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
-import { HexPosition, SceneName } from "@/types";
+import { type SetupResult } from "@/dojo/setup";
+import useUIStore, { type AppStore } from "@/hooks/store/useUIStore";
+import { type HexPosition, type SceneName } from "@/types";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import _, { throttle } from "lodash";
-import { BiomeType } from "../components/Biome";
+import gsap from "gsap";
+import throttle from "lodash/throttle";
+import * as THREE from "three";
+import { type MapControls } from "three/examples/jsm/controls/MapControls";
+import { env } from "../../../env";
+import { type SceneManager } from "../SceneManager";
+import { type BiomeType } from "../components/Biome";
+import { HighlightHexManager } from "../components/HighlightHexManager";
+import { InputManager } from "../components/InputManager";
 import InstancedBiome from "../components/InstancedBiome";
+import { InteractiveHexManager } from "../components/InteractiveHexManager";
+import { GUIManager } from "../helpers/GUIManager";
+import { LocationManager } from "../helpers/LocationManager";
 import { gltfLoader } from "../helpers/utils";
 import { SystemManager } from "../systems/SystemManager";
 import { HEX_SIZE, biomeModelPaths } from "./constants";
-
 export abstract class HexagonScene {
   protected scene!: THREE.Scene;
   protected camera!: THREE.PerspectiveCamera;
@@ -30,8 +29,8 @@ export abstract class HexagonScene {
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
   protected GUIFolder!: any;
-  protected biomeModels: Map<BiomeType, InstancedBiome> = new Map();
-  protected modelLoadPromises: Promise<void>[] = [];
+  protected biomeModels = new Map<BiomeType, InstancedBiome>();
+  protected modelLoadPromises: Array<Promise<void>> = [];
   protected state!: AppStore;
   protected fog!: THREE.Fog;
 
@@ -117,7 +116,7 @@ export abstract class HexagonScene {
 
   private setupLightHelper(): void {
     this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
-    if (import.meta.env.VITE_PUBLIC_DEV == "true") this.scene.add(this.lightHelper);
+    if (env.VITE_PUBLIC_DEV == true) this.scene.add(this.lightHelper);
   }
 
   private setupInputHandlers(): void {
@@ -417,7 +416,7 @@ export abstract class HexagonScene {
     });
   }
 
-  private updateLights = _.throttle(() => {
+  private updateLights = throttle(() => {
     if (this.mainDirectionalLight) {
       const { x, y, z } = this.controls.target;
       this.mainDirectionalLight.position.set(x - 15, y + 13, z + 8);

@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 #[starknet::interface]
 trait ISwapSystems<T> {
@@ -17,23 +17,23 @@ mod swap_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-    use eternum::models::bank::bank::{Bank};
-    use eternum::models::bank::market::{Market, MarketCustomTrait};
-    use eternum::models::config::{BankConfig};
-    use eternum::models::config::{TickImpl, TickTrait};
-    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
-    use eternum::models::season::SeasonImpl;
-    use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
-
     use option::OptionTrait;
+
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use s0_eternum::models::bank::bank::{Bank};
+    use s0_eternum::models::bank::market::{Market, MarketTrait};
+    use s0_eternum::models::config::{BankConfig};
+    use s0_eternum::models::config::{TickImpl, TickTrait};
+    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use traits::{Into, TryInto};
 
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct SwapEvent {
         #[key]
         bank_entity_id: ID,
@@ -69,12 +69,12 @@ mod swap_systems {
             let total_lords_cost = lords_cost_from_amm + bank_lords_fee_amount;
 
             // udpate player lords
-            let mut player_lords = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::LORDS));
+            let mut player_lords = ResourceImpl::get(ref world, (entity_id, ResourceTypes::LORDS));
             player_lords.burn(total_lords_cost);
             player_lords.save(ref world);
 
             // add bank fees to bank
-            let mut bank_lords = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
+            let mut bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
             bank_lords.add(bank_lords_fee_amount);
             bank_lords.save(ref world);
 
@@ -123,12 +123,12 @@ mod swap_systems {
             let total_lords_received = lords_received_from_amm - bank_lords_fee_amount;
 
             // burn the resource the player is exchanging for lords
-            let mut player_resource = ResourceCustomImpl::get(ref world, (entity_id, resource_type));
+            let mut player_resource = ResourceImpl::get(ref world, (entity_id, resource_type));
             player_resource.burn(amount);
             player_resource.save(ref world);
 
             // add bank fees to bank
-            let mut bank_lords = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
+            let mut bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
             bank_lords.add(bank_lords_fee_amount);
             bank_lords.save(ref world);
 

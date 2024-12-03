@@ -2,9 +2,9 @@ use alexandria_math::{BitShift, pow};
 use array::SpanTrait;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use eternum::alias::ID;
-use eternum::constants::WORLD_CONFIG_ID;
-use eternum::models::config::RealmMaxLevelConfig;
+use s0_eternum::alias::ID;
+use s0_eternum::constants::WORLD_CONFIG_ID;
+use s0_eternum::models::config::RealmMaxLevelConfig;
 use starknet::ContractAddress;
 use traits::Into;
 
@@ -17,12 +17,14 @@ pub struct Realm {
     realm_id: ID,
     produced_resources: u128,
     order: u8,
-    level: u8
+    level: u8,
+    has_wonder: bool,
+    settler_address: ContractAddress,
 }
 
 
 #[generate_trait]
-impl RealmCustomImpl of RealmCustomTrait {
+impl RealmImpl of RealmTrait {
     fn max_level(self: Realm, world: WorldStorage) -> u8 {
         let realm_max_level_config: RealmMaxLevelConfig = world.read_model(WORLD_CONFIG_ID);
         realm_max_level_config.max_level
@@ -327,10 +329,19 @@ mod test_realm_name_and_attrs_decode_impl {
 
 #[cfg(test)]
 mod test_realm_resources_impl {
+    use starknet::contract_address_const;
     use super::{RealmResourcesImpl, RealmResourcesTrait, Realm};
 
     fn mock_realm() -> Realm {
-        Realm { entity_id: 1, realm_id: 1, order: 0, level: 0, produced_resources: 0, }
+        Realm {
+            entity_id: 1,
+            realm_id: 1,
+            order: 0,
+            level: 0,
+            produced_resources: 0,
+            has_wonder: false,
+            settler_address: contract_address_const::<'Settler'>(),
+        }
     }
 
 

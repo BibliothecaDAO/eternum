@@ -1,6 +1,6 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 #[starknet::interface]
 trait ILiquiditySystems<T> {
@@ -20,18 +20,18 @@ mod liquidity_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     // Eternum imports
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::constants::ResourceTypes;
-    use eternum::models::bank::liquidity::{Liquidity};
-    use eternum::models::bank::market::{Market, MarketCustomTrait};
-    use eternum::models::owner::{Owner, OwnerCustomTrait};
-    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
-    use eternum::models::season::SeasonImpl;
-    use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::constants::ResourceTypes;
+    use s0_eternum::models::bank::liquidity::{Liquidity};
+    use s0_eternum::models::bank::market::{Market, MarketTrait};
+    use s0_eternum::models::owner::{Owner, OwnerTrait};
+    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct LiquidityEvent {
         #[key]
         bank_entity_id: ID,
@@ -61,10 +61,10 @@ mod liquidity_systems {
 
             let owner: Owner = world.read_model(entity_id);
             owner.assert_caller_owner();
-            let mut resource = ResourceCustomImpl::get(ref world, (entity_id, resource_type));
+            let mut resource = ResourceImpl::get(ref world, (entity_id, resource_type));
             assert(resource.balance >= resource_amount, 'not enough resources');
 
-            let mut player_lords = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::LORDS));
+            let mut player_lords = ResourceImpl::get(ref world, (entity_id, ResourceTypes::LORDS));
             assert(lords_amount <= player_lords.balance, 'not enough lords');
 
             let mut market: Market = world.read_model((bank_entity_id, resource_type));

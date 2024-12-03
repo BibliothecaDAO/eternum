@@ -1,15 +1,22 @@
 {
+  "entry": ["eternum-docs/**/*.mdx", "eternum-docs/**/*.tsx"],
   "ignore": [
+    "eliza/**",
+
     ".trunk/**",
     "**/*.js",
     "bot/**",
     "**/vitest**",
-    "eternum-docs/package.json",
+
     "eternum-docs/vocs.config.ts",
+
     "sdk/packages/eternum/global.d.ts",
     "config/bank/index.ts",
     "**/**__test__**/**",
     "**/**__tests__**/**",
+
+    "season_resources/scripts/deployment/config/index.ts",
+    "season_resources/scripts/deployment/config/provider/index.ts",
 
     "client/src/three/components/FogManager.ts",
     "client/src/hooks/useUISound.tsx",
@@ -22,6 +29,8 @@
     "client/src/ui/modules/chat/ChatTab.tsx",
     "client/src/hooks/helpers/useGetAllPlayers.tsx",
     "client/src/ui/modules/chat/InputField.tsx",
-    "client/src/ui/modules/chat/Chat.tsx"
+    "client/src/ui/modules/chat/Chat.tsx",
+    "sdk/packages/eternum/src/scripts/extract.ts",
+    "sdk/packages/eternum/src/scripts/extractBuildings.ts"
   ]
 }

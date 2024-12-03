@@ -6,10 +6,10 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
+import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
 import { LoadingScreen } from "../modules/LoadingScreen";
 import { LoadingOroborus } from "../modules/loading-oroborus";
-
 // Lazy load components
 
 const SelectedArmy = lazy(() =>
@@ -19,6 +19,11 @@ const SelectedArmy = lazy(() =>
 const ActionInfo = lazy(() =>
   import("../components/worldmap/armies/ActionInfo").then((module) => ({ default: module.ActionInfo })),
 );
+
+const ActionInstructions = lazy(() =>
+  import("../components/worldmap/armies/ActionInstructions").then((module) => ({ default: module.ActionInstructions })),
+);
+
 const ArmyInfoLabel = lazy(() =>
   import("../components/worldmap/armies/ArmyInfoLabel").then((module) => ({ default: module.ArmyInfoLabel })),
 );
@@ -70,7 +75,11 @@ const OrientationOverlay = lazy(() =>
   import("../components/overlays/OrientationOverlay").then((module) => ({ default: module.OrientationOverlay })),
 );
 
-export const World = () => {
+const MiniMapNavigation = lazy(() =>
+  import("../modules/navigation/MiniMapNavigation").then((module) => ({ default: module.MiniMapNavigation })),
+);
+
+export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
 
@@ -100,16 +109,17 @@ export const World = () => {
     >
       <div className="vignette" />
 
-      <Suspense fallback={<LoadingScreen />}>
+      <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
         {IS_MOBILE && <OrientationOverlay />}
         <LoadingOroborus loading={isLoadingScreenEnabled} />
         <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
         <BlankOverlayContainer open={showBlankOverlay}>
-          <Onboarding />
+          <Onboarding backgroundImage={backgroundImage} />
         </BlankOverlayContainer>
-        <ActionInfo />
+        <ActionInstructions />
         {!IS_MOBILE && (
           <>
+            <ActionInfo />
             <ArmyInfoLabel />
             <StructureInfoLabel />
             <BattleInfoLabel />
@@ -136,7 +146,7 @@ export const World = () => {
           {!IS_MOBILE && (
             <>
               <BottomRightContainer>
-                <EventStream />
+                <MiniMapNavigation />
               </BottomRightContainer>
               <RightMiddleContainer>
                 <RightNavigationModule />
@@ -151,7 +161,7 @@ export const World = () => {
 
         <Redirect to="/" />
         <Leva
-          hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}
+          hidden={!env.VITE_PUBLIC_DEV || env.VITE_PUBLIC_HIDE_THREEJS_MENU}
           collapsed
           titleBar={{ position: { x: 0, y: 50 } }}
         />
@@ -164,9 +174,9 @@ export const World = () => {
 };
 
 const VersionDisplay = () => (
-  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white">
+  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1">
     <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
-      {import.meta.env.VITE_PUBLIC_GAME_VERSION}
+      {env.VITE_PUBLIC_GAME_VERSION}
     </a>
   </div>
 );

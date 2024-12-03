@@ -3,28 +3,28 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
-use eternum::constants::{ResourceTypes, DONKEY_ENTITY_TYPE};
+use s0_eternum::constants::{ResourceTypes, DONKEY_ENTITY_TYPE};
 
-use eternum::models::{
-    movable::{Movable, ArrivalTime}, owner::Owner, position::Position, resources::{Resource, ResourceCustomImpl},
+use s0_eternum::models::{
+    movable::{Movable, ArrivalTime}, owner::Owner, position::Position, resources::{Resource, ResourceImpl},
     trade::{Trade, Status, TradeStatus}, weight::Weight, config::CapacityConfig, config::CapacityConfigCategory
 };
 
-use eternum::systems::config::contracts::{
+use s0_eternum::systems::config::contracts::{
     config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
     IWeightConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait
 };
 
-use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
+use s0_eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 
-use eternum::systems::trade::contracts::trade_systems::{
+use s0_eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 
 
-use eternum::utils::testing::{
+use s0_eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
     general::{spawn_realm, get_default_realm_pos},
     config::{set_capacity_config, set_settlement_config, set_weight_config}
@@ -86,17 +86,17 @@ fn trade_test_create_order() {
         );
 
     // check maker balances
-    let maker_stone_balance = ResourceCustomImpl::get(ref world, (maker_id, ResourceTypes::STONE)).balance;
+    let maker_stone_balance = ResourceImpl::get(ref world, (maker_id, ResourceTypes::STONE)).balance;
     assert(maker_stone_balance == 0, 'm stone balance should be 0');
 
-    let maker_gold_balance = ResourceCustomImpl::get(ref world, (maker_id, ResourceTypes::GOLD)).balance;
+    let maker_gold_balance = ResourceImpl::get(ref world, (maker_id, ResourceTypes::GOLD)).balance;
     assert(maker_gold_balance == 0, 'm gold balance should be 0');
 
     // check that taker balance is unmodified
-    let taker_stone_balance = ResourceCustomImpl::get(ref world, (taker_id, ResourceTypes::STONE)).balance;
+    let taker_stone_balance = ResourceImpl::get(ref world, (taker_id, ResourceTypes::STONE)).balance;
     assert(taker_stone_balance == 500, 't stone balance should be 500');
 
-    let taker_gold_balance = ResourceCustomImpl::get(ref world, (taker_id, ResourceTypes::GOLD)).balance;
+    let taker_gold_balance = ResourceImpl::get(ref world, (taker_id, ResourceTypes::GOLD)).balance;
     assert(taker_gold_balance == 500, 't gold balance should be 500');
 
     let trade: Trade = world.read_model(trade_id);

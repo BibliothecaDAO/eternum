@@ -6,8 +6,9 @@ import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
+import { Env, env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
-import { displayAddress } from "../../ui/utils/utils";
+import { displayAddress, getRandomBackgroundImage } from "../../ui/utils/utils";
 import { useAccountStore } from "./accountStore";
 
 interface DojoAccount {
@@ -35,11 +36,15 @@ export interface DojoResult {
 
 const DojoContext = createContext<DojoContextType | null>(null);
 
-const requiredEnvs = ["VITE_PUBLIC_MASTER_ADDRESS", "VITE_PUBLIC_MASTER_PRIVATE_KEY", "VITE_PUBLIC_ACCOUNT_CLASS_HASH"];
+const requiredEnvs: (keyof Env)[] = [
+  "VITE_PUBLIC_MASTER_ADDRESS",
+  "VITE_PUBLIC_MASTER_PRIVATE_KEY",
+  "VITE_PUBLIC_ACCOUNT_CLASS_HASH",
+];
 
-for (const env of requiredEnvs) {
-  if (!import.meta.env[env]) {
-    throw new Error(`Environment variable ${env} is not set!`);
+for (const _env of requiredEnvs) {
+  if (!env[_env]) {
+    throw new Error(`Environment variable ${_env} is not set!`);
   }
 }
 
@@ -49,8 +54,8 @@ type DojoProviderProps = {
 };
 
 const useMasterAccount = (rpcProvider: RpcProvider) => {
-  const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
-  const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
+  const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
+  const privateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
   return useMemo(() => new Account(rpcProvider, masterAddress, privateKey), [rpcProvider, masterAddress, privateKey]);
 };
 
@@ -58,7 +63,7 @@ const useRpcProvider = () => {
   return useMemo(
     () =>
       new RpcProvider({
-        nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
+        nodeUrl: env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
       }),
     [],
   );
@@ -75,7 +80,7 @@ const useControllerAccount = () => {
 
   useEffect(() => {
     if (connector) {
-      useAccountStore.getState().setConnector(connector as ControllerConnector);
+      useAccountStore.getState().setConnector(connector as unknown as ControllerConnector);
     }
   }, [connector, isConnected]);
 
@@ -94,9 +99,9 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
     <BurnerProvider
       initOptions={{
         masterAccount,
-        accountClassHash: import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH,
+        accountClassHash: env.VITE_PUBLIC_ACCOUNT_CLASS_HASH,
         rpcProvider,
-        feeTokenAddress: import.meta.env.VITE_NETWORK_FEE_TOKEN,
+        feeTokenAddress: env.VITE_PUBLIC_FEE_TOKEN_ADDRESS,
       }}
     >
       <DojoContextProvider value={value} masterAccount={masterAccount} controllerAccount={controllerAccount!}>
@@ -155,7 +160,7 @@ const DojoContextProvider = ({
   };
 
   // Determine which account to use based on environment
-  const isDev = import.meta.env.VITE_PUBLIC_DEV === "true";
+  const isDev = env.VITE_PUBLIC_DEV === true;
   const accountToUse = isDev ? burnerAccount : controllerAccount;
 
   useEffect(() => {
@@ -180,40 +185,40 @@ const DojoContextProvider = ({
   }, [isDev, controllerAccount, burnerAccount]);
 
   if (!accountsInitialized) {
-    return <LoadingScreen />;
+    return <LoadingScreen backgroundImage={getRandomBackgroundImage()} />;
   }
 
   // Handle Loading Screen
   if (isDev) {
     if (!burnerAccount) {
-      return <LoadingScreen />;
+      return <LoadingScreen backgroundImage={getRandomBackgroundImage()} />;
     }
   } else {
     if (isConnecting) {
-      return <LoadingScreen />;
+      return <LoadingScreen backgroundImage={getRandomBackgroundImage()} />;
     }
     if (!isConnected && !isConnecting && !controllerAccount) {
       return (
         <div className="relative h-screen w-screen pointer-events-auto">
-          <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="Cover" />
-          <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
-            <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient">
-              <div className="w-full text-center pt-6">
-                <div className="mx-auto flex mb-8">
-                  <img src="/images/eternum_with_snake.png" className="w-96 mx-auto" alt="Eternum Logo" />
+          <img className="absolute h-screen w-screen object-cover" src={getRandomBackgroundImage()} alt="Cover" />
+          <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
+            <div className="self-center bg-brown rounded-lg border p-4 md:p-8 text-gold w-[90%] md:min-w-[600px] md:max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient mx-4">
+              <div className="w-full text-center pt-2 md:pt-6">
+                <div className="mx-auto flex mb-2 md:mb-8">
+                  <img src="/images/eternum_with_snake.png" className="w-48 md:w-96 mx-auto" alt="Eternum Logo" />
                 </div>
               </div>
-              <div className="flex space-x-2 mt-8 justify-center">
+              <div className="flex space-x-2 mt-2 md:mt-8 justify-center">
                 {!isConnected && (
                   <button
-                    className="px-4 py-2 bg-[#ffc52a] border-2 border-[#ffc52a] text-black flex font-bold rounded text-lg fill-black uppercase leading-6 shadow-md hover:shadow-lg active:shadow-inner hover:scale-105 transition-all duration-300 hover:-translate-y-1"
+                    className="px-3 md:px-4 py-2 bg-[#ffc52a] border-2 border-[#ffc52a] text-black flex font-bold rounded text-base md:text-lg fill-black uppercase leading-6 shadow-md hover:shadow-lg active:shadow-inner hover:scale-105 transition-all duration-300 hover:-translate-y-1"
                     onClick={connectWallet}
                   >
-                    <CartridgeSmall className="w-6 mr-2 fill-current self-center" /> Login
+                    <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-current self-center" /> Login
                   </button>
                 )}
               </div>
-              <div className="text-center text-sm text-white/50 mt-4">
+              <div className="text-center text-xs md:text-sm text-white/50 mt-1 md:mt-4 px-2 md:px-0">
                 Eternum uses a next generation smart contract wallet -{" "}
                 <a href="https://cartridge.gg/" target="_blank" className="underline">
                   Cartridge Controller
@@ -236,7 +241,7 @@ const DojoContextProvider = ({
 
     if (!controllerAccount && isConnected) {
       // Connected but controllerAccount is not set yet
-      return <LoadingScreen />;
+      return <LoadingScreen backgroundImage="/images/cover.png" />;
     }
   }
 

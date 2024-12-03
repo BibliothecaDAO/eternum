@@ -1,10 +1,10 @@
 // External imports
 
-use bushido_trophy::types::task::{Task as BushidoTask, TaskTrait as BushidoTaskTrait};
+use achievement::types::task::{Task as BushidoTask, TaskTrait as BushidoTaskTrait};
 
 // Internal imports
 
-use eternum::utils::tasks;
+use s0_eternum::utils::tasks;
 
 // Types
 

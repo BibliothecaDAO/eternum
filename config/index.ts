@@ -48,7 +48,20 @@ const setupConfig: Config =
         },
         battle: {
           graceTickCount: 0,
+          graceTickCountHyp: 0,
           delaySeconds: 0,
+        },
+        // make it easier to build hyperstructures in dev mode
+        hyperstructures: {
+          ...EternumGlobalConfig.hyperstructures,
+          hyperstructureCreationCosts: EternumGlobalConfig.hyperstructures.hyperstructureCreationCosts.map((cost) => ({
+            resource: cost.resource,
+            amount: 1,
+          })),
+          hyperstructureTotalCosts: EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
+            resource: cost.resource,
+            amount: 0.1,
+          })),
         },
       }
     : EternumGlobalConfig;
@@ -58,6 +71,7 @@ setupConfig.season = {
   seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
   realmsAddress: process.env.VITE_REALMS_ADDRESS!,
   lordsAddress: process.env.VITE_LORDS_ADDRESS!,
+  startAfterSeconds: 60 * 5, // 5 minutes
 };
 
 export const config = new EternumConfig(setupConfig);

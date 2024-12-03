@@ -5,29 +5,29 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::alias::ID;
-use eternum::constants::LevelIndex;
-use eternum::constants::{REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
+use s0_eternum::alias::ID;
+use s0_eternum::constants::LevelIndex;
+use s0_eternum::constants::{REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 
-use eternum::constants::{ResourceTypes, TickIds};
-use eternum::models::combat::{Army, BattleSide, Troops};
-use eternum::models::config::{TickConfig, MapConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
-use eternum::models::map::Tile;
-use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::order::{Orders, OrdersCustomTrait};
-use eternum::models::owner::{Owner, EntityOwner};
-use eternum::models::position::CoordTrait;
-use eternum::models::position::{Coord, Position, Direction};
-use eternum::models::realm::Realm;
-use eternum::models::resources::{Resource, ResourceCost};
+use s0_eternum::constants::{ResourceTypes, TickIds};
+use s0_eternum::models::combat::{Army, BattleSide, Troops};
+use s0_eternum::models::config::{TickConfig, MapConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
+use s0_eternum::models::map::Tile;
+use s0_eternum::models::movable::{Movable, ArrivalTime};
+use s0_eternum::models::order::{Orders, OrdersTrait};
+use s0_eternum::models::owner::{Owner, EntityOwner};
+use s0_eternum::models::position::CoordTrait;
+use s0_eternum::models::position::{Coord, Position, Direction};
+use s0_eternum::models::realm::Realm;
+use s0_eternum::models::resources::{Resource, ResourceCost};
 
-use eternum::systems::config::contracts::{config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait};
+use s0_eternum::systems::config::contracts::{config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait};
 
-use eternum::systems::transport::contracts::travel_systems::{
+use s0_eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{
+use s0_eternum::utils::testing::{
     world::spawn_eternum, systems::deploy_system,
     constants::{MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT},
     config::{set_travel_and_explore_stamina_cost_config, set_travel_food_cost_config}

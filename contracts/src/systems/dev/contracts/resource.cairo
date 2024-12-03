@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 #[starknet::interface]
 trait IResourceSystems<T> {
@@ -13,13 +13,13 @@ mod dev_resource_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::constants::ResourceTypes;
-    use eternum::constants::{WORLD_CONFIG_ID};
-    use eternum::models::config::{WorldConfig};
-    use eternum::models::resources::{Resource, ResourceCustomTrait, ResourceCustomImpl};
-    use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::constants::ResourceTypes;
+    use s0_eternum::constants::{WORLD_CONFIG_ID};
+    use s0_eternum::models::config::{WorldConfig};
+    use s0_eternum::models::resources::{Resource, ResourceTrait, ResourceImpl};
+    use s0_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
 
 
     #[abi(embed_v0)]
@@ -37,7 +37,7 @@ mod dev_resource_systems {
                         let (resource_type, amount) = (*resource_type, *amount);
                         assert(amount > 0, 'amount must not be 0');
 
-                        let mut resource = ResourceCustomImpl::get(ref world, (entity_id, resource_type));
+                        let mut resource = ResourceImpl::get(ref world, (entity_id, resource_type));
                         resource.add(amount);
                         resource.save(ref world);
                     },

@@ -33,7 +33,6 @@ export class EternumConfig {
     await setQuestConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
-    await setResourceBridgeWhitlelistConfig(config);
     await setResourceBridgeFeesConfig(config);
     await setBuildingCategoryPopConfig(config);
     await setPopulationConfig(config);
@@ -327,12 +326,17 @@ export const setWeightConfig = async (config: Config) => {
 };
 
 export const setBattleConfig = async (config: Config) => {
-  const { graceTickCount: battle_grace_tick_count, delaySeconds: battle_delay_seconds } = config.config.battle;
+  const {
+    graceTickCount: regular_immunity_ticks,
+    graceTickCountHyp: hyperstructure_immunity_ticks,
+    delaySeconds: battle_delay_seconds,
+  } = config.config.battle;
 
   const tx = await config.provider.set_battle_config({
     signer: config.account,
     config_id: 0,
-    battle_grace_tick_count,
+    regular_immunity_ticks,
+    hyperstructure_immunity_ticks,
     battle_delay_seconds,
   });
 
@@ -457,18 +461,23 @@ export const setCapacityConfig = async (config: Config) => {
 };
 
 export const setSeasonConfig = async (config: Config) => {
+  let now = Math.floor(new Date().getTime() / 1000);
+  let startAt = now + config.config.season.startAfterSeconds;
+
   const tx = await config.provider.set_season_config({
     signer: config.account,
     season_pass_address: config.config.season.seasonPassAddress,
     realms_address: config.config.season.realmsAddress,
     lords_address: config.config.season.lordsAddress,
+    start_at: startAt,
   });
 
-  console.log(`Configuring season config ${tx.statusReceipt}`);
+  console.log(`Configuring season ${tx.statusReceipt}`);
+  console.log(`Season starts at ${new Date(startAt * 1000).toISOString()}`);
 };
 
-export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
-  // allow bridging in of lords into the game
+export const setResourceBridgeLordsWhitlelistConfig = async (config: Config) => {
+  // allow ingame bridging of lords
   const tx = await config.provider.set_resource_bridge_whitlelist_config({
     signer: config.account,
     token: config.config.season.lordsAddress,
@@ -476,6 +485,20 @@ export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
   });
 
   console.log(`Configuring whitelist for lords for in-game asset bridge ${tx.statusReceipt}`);
+};
+
+export const setResourceBridgeWhitlelistConfig = async (config: Config, resources: Map<number, string>) => {
+  // allow ingame bridging of resources (any)
+
+  for (const [resourceId, tokenAddress] of resources.entries()) {
+    const tx = await config.provider.set_resource_bridge_whitlelist_config({
+      signer: config.account,
+      token: tokenAddress,
+      resource_type: resourceId,
+    });
+
+    console.log(`Configuring whitelist for ${resourceId} for in-game asset bridge ${tx.statusReceipt}`);
+  }
 };
 
 export const setResourceBridgeFeesConfig = async (config: Config) => {
@@ -583,25 +606,23 @@ export const setMercenariesConfig = async (config: Config) => {
 
 export const setSettlementConfig = async (config: Config) => {
   const {
-    radius,
-    angle_scaled,
     center,
-    min_distance,
-    max_distance,
-    min_scaling_factor_scaled,
-    min_angle_increase,
-    max_angle_increase,
+    base_distance,
+    min_first_layer_distance,
+    points_placed,
+    current_layer,
+    current_side,
+    current_point_on_side,
   } = config.config.settlement;
   const tx = await config.provider.set_settlement_config({
     signer: config.account,
-    radius,
-    angle_scaled,
     center,
-    min_distance,
-    max_distance,
-    min_scaling_factor_scaled,
-    min_angle_increase,
-    max_angle_increase,
+    base_distance,
+    min_first_layer_distance,
+    points_placed,
+    current_layer,
+    current_side,
+    current_point_on_side,
   });
   console.log(`Configuring settlement ${tx.statusReceipt}...`);
 };

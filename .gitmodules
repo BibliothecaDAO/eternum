@@ -1,0 +1,3 @@
+[submodule "eliza"]
+	path = eliza
+	url = https://github.com/ponderingdemocritus/eliza

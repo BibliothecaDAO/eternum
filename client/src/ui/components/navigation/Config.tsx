@@ -9,7 +9,9 @@ type OSWindows =
   | "Assistant"
   | "Quests"
   | "Social"
-  | "BattleSimulation";
+  | "BattleSimulation"
+  | "PillageSimulation"
+  | "Rewards";
 
 export interface OSInterface {
   onClick: () => void;
@@ -22,10 +24,9 @@ export interface OSInterface {
 }
 
 export interface ExpandableOSInterface extends OSInterface {
-  expandedContent?: React.ReactNode;
-  expandedWidth?: string;
+  childrenExpanded?: React.ReactNode;
+  widthExpanded?: string;
   isExpanded?: boolean;
-  minHeight?: string;
 }
 
 export const worldStructures: OSWindows = "World Structures";
@@ -35,4 +36,6 @@ export const trade: OSWindows = "Trade";
 export const construction: OSWindows = "Construction";
 export const quests: OSWindows = "Quests";
 export const social: OSWindows = "Social";
+export const rewards: OSWindows = "Rewards";
 export const battleSimulation: OSWindows = "BattleSimulation";
+export const pillageSimulation: OSWindows = "PillageSimulation";

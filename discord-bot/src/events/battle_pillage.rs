@@ -7,14 +7,14 @@ use starknet_crypto::Felt;
 
 use crate::{
     constants::ETERNUM_URL,
+    eternum_enums::{BuildingCategory, ResourceIds, StructureCategory},
     types::{DiscordMessage, DiscordMessageType},
-    utils::{felt_to_string, Position, ResourceIds},
+    utils::{felt_to_string, Position},
 };
 
 use super::{ToDiscordMessage, UNKNOWN_USER};
 
-#[allow(dead_code)]
-#[derive(CairoSerde, Debug)]
+#[derive(CairoSerde, Clone)]
 pub struct BattlePillage {
     pub id: u32,
     pub event_id: u32,
@@ -24,6 +24,7 @@ pub struct BattlePillage {
     pub pillager_army_entity_id: u32,
     pub pillaged_structure_owner: Felt,
     pub pillaged_structure_entity_id: u32,
+    pub pillaged_structure_owner_name: Felt,
     pub winner: Felt,
     pub position: Position,
     pub structure_type: Felt,
@@ -41,23 +42,38 @@ impl ToDiscordMessage for BattlePillage {
             .pillaged_resources
             .iter()
             .map(|(resource_id, amount)| {
-                format!("{}: {}", ResourceIds::from(*resource_id), amount / 1000)
+                format!("{} {}", amount / 1000, ResourceIds::from(*resource_id),)
             })
             .collect::<Vec<String>>()
             .join(", ");
 
+        let resources = if resources.is_empty() {
+            "No resources were pillaged".to_string()
+        } else {
+            format!("Resources pillaged: {}", resources)
+        };
+
+        let destroyed_building_string =
+            match BuildingCategory::from(self.structure_type.to_bytes_le()[0]) {
+                BuildingCategory::NoValue => "No building was destroyed".to_string(),
+                BuildingCategory::Castle => "No building was destroyed".to_string(),
+                _ => format!(
+                    "A {} was destroyed in the process",
+                    BuildingCategory::from(self.structure_type.to_bytes_le()[0])
+                ),
+            };
+
         let embed = CreateEmbed::new()
             .title(format!(
-                "{} has pillaged a structure at ({}, {})",
+                "{} has pillaged {}'s {} at ({}, {})",
                 felt_to_string(&self.pillager_name).unwrap_or(UNKNOWN_USER.to_string()),
+                felt_to_string(&self.pillaged_structure_owner_name)
+                    .unwrap_or(UNKNOWN_USER.to_string()),
+                StructureCategory::from(self.structure_type.to_bytes_le()[0]),
                 normalized_position.0,
                 normalized_position.1
             ))
-            .description(format!(
-                "Pillaged resources: {:?}\nStructure type: {}",
-                resources,
-                felt_to_string(&self.structure_type).unwrap_or(UNKNOWN_USER.to_string())
-            ))
+            .description(format!("{}\n{}", resources, destroyed_building_string))
             .footer(footer)
             .color(poise::serenity_prelude::Color::RED)
             .timestamp(Timestamp::now());
