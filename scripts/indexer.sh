@@ -140,5 +140,5 @@ fi
 
 echo "-----  Started indexer ----- "
 rm -rf torii-db
-torii --world 0x0659152b85ef0cc4741d7264dae2fd1c220b41453fb5e68e6b01d291a09602f3 --http.cors_origins "*" --config torii.toml
+torii --world 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --http.cors_origins "*" --config torii.toml
 

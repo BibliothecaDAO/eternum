@@ -1,10 +1,10 @@
-import { LeaderboardPanel } from "@/components/modules/leaderboard-panel";
+import { PlayerLeaderboardPanel } from "@/components/modules/player-leaderboard-panel";
 import type { Meta, StoryObj } from "@storybook/react";
 import "../index.css";
 
 const meta = {
   title: "Modules/LeaderboardPanel",
-  component: LeaderboardPanel,
+  component: PlayerLeaderboardPanel,
   parameters: {
     layout: "centered",
     backgrounds: {
@@ -21,7 +21,7 @@ const meta = {
     ),
   ],
   tags: ["autodocs"],
-} satisfies Meta<typeof LeaderboardPanel>;
+} satisfies Meta<typeof PlayerLeaderboardPanel>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -38,6 +38,7 @@ export const Default: Story = {
         mines: 5,
         hyperstructures: 2,
         isAlive: true,
+        guildName: "Guild1",
       },
       {
         name: "Player 2",
@@ -48,6 +49,7 @@ export const Default: Story = {
         mines: 4,
         hyperstructures: 2,
         isAlive: true,
+        guildName: "Guild2",
       },
       {
         name: "Player 3",
@@ -58,6 +60,7 @@ export const Default: Story = {
         mines: 4,
         hyperstructures: 1,
         isAlive: false,
+        guildName: "Guild1",
       },
       {
         name: "Player 4",
@@ -68,6 +71,7 @@ export const Default: Story = {
         mines: 3,
         hyperstructures: 1,
         isAlive: true,
+        guildName: "Guild3",
       },
       {
         name: "Player 5",
@@ -78,6 +82,7 @@ export const Default: Story = {
         mines: 3,
         hyperstructures: 1,
         isAlive: false,
+        guildName: "Guild2",
       },
       {
         name: "Player 6",
@@ -88,6 +93,7 @@ export const Default: Story = {
         mines: 2,
         hyperstructures: 1,
         isAlive: true,
+        guildName: "Guild3",
       },
       {
         name: "Player 7",
@@ -98,6 +104,7 @@ export const Default: Story = {
         mines: 2,
         hyperstructures: 1,
         isAlive: true,
+        guildName: "Guild1",
       },
       {
         name: "Player 8",
@@ -108,6 +115,7 @@ export const Default: Story = {
         mines: 2,
         hyperstructures: 0,
         isAlive: true,
+        guildName: "Guild2",
       },
       {
         name: "Player 9",
@@ -118,6 +126,7 @@ export const Default: Story = {
         mines: 2,
         hyperstructures: 0,
         isAlive: true,
+        guildName: "Guild3",
       },
       {
         name: "Player 10",
@@ -128,6 +137,7 @@ export const Default: Story = {
         mines: 1,
         hyperstructures: 0,
         isAlive: true,
+        guildName: "Guild1",
       },
       {
         name: "Player 11",
@@ -138,6 +148,7 @@ export const Default: Story = {
         mines: 1,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild2",
       },
       {
         name: "Player 12",
@@ -148,6 +159,7 @@ export const Default: Story = {
         mines: 1,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild3",
       },
       {
         name: "Player 13",
@@ -158,6 +170,7 @@ export const Default: Story = {
         mines: 1,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild1",
       },
       {
         name: "Player 14",
@@ -168,6 +181,7 @@ export const Default: Story = {
         mines: 0,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild2",
       },
       {
         name: "Player 15",
@@ -178,6 +192,7 @@ export const Default: Story = {
         mines: 0,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild3",
       },
       {
         name: "Player 16",
@@ -188,6 +203,7 @@ export const Default: Story = {
         mines: 0,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild1",
       },
       {
         name: "Player 17",
@@ -198,6 +214,7 @@ export const Default: Story = {
         mines: 0,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild2",
       },
       {
         name: "Player 18",
@@ -208,6 +225,7 @@ export const Default: Story = {
         mines: 0,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild3",
       },
       {
         name: "Player 19",
@@ -218,6 +236,7 @@ export const Default: Story = {
         mines: 0,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild1",
       },
       {
         name: "Player 20",
@@ -228,6 +247,7 @@ export const Default: Story = {
         mines: 0,
         hyperstructures: 0,
         isAlive: false,
+        guildName: "Guild2",
       },
     ],
   },

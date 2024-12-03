@@ -27,8 +27,16 @@ export async function setup({ ...config }: DojoConfig) {
     "Realm",
     "Owner",
     "Hyperstructure",
-    // todo: these are needed only for the bridge: how to improve this?
+    // points
+    "Contribution",
+    "HyperstructureResourceConfig",
+    "HyperstructureConfig",
+    "TickConfig",
+    // leaderboard
+    "GuildMember",
+    "EntityName",
     "Structure",
+    // todo: these are needed only for the bridge: how to improve this?
     "Position",
     "EntityOwner",
     "ArrivalTime",
@@ -38,6 +46,7 @@ export async function setup({ ...config }: DojoConfig) {
 
   const filteredEvents = getFilteredEvents([
     "BurnDonkey",
+    // points
     "HyperstructureCoOwnersChange",
     "HyperstructureFinished",
     "GameEnded",
