@@ -12,6 +12,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Loader2 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
+import { addAddressPadding } from "starknet";
 
 export const Route = createLazyFileRoute("/season-passes")({
   component: SeasonPasses,
@@ -36,7 +37,8 @@ function SeasonPasses() {
       data?.tokenBalances?.edges?.filter(
         (token) =>
           token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
-          token.node.tokenMetadata.contractAddress === seasonPassAddress,
+          addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
+            addAddressPadding(seasonPassAddress ?? "0x0"),
       ),
     [data, seasonPassAddress],
   );

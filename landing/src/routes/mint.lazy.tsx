@@ -109,11 +109,11 @@ function Mint() {
             </div>
           </div>
           <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
-            {import.meta.env.VITE_PUBLIC_DEV === "true" && (
+            {import.meta.env.VITE_PUBLIC_DEV === "true" ? (
               <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
                 Mint Realms
               </Button>
-            )}
+            ): <div />}
             <div className="flex items-center gap-8">
               {data?.tokenBalances?.edges && (
                 <SelectNftActions
