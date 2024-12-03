@@ -1,6 +1,26 @@
 import { defineConfig } from "vocs";
 
 export default defineConfig({
+  description: "Eternum Documentation",
+  iconUrl: "/eternum_new_logo.svg",
+  logoUrl: "/eternum_new_logo.svg",
+  ogImageUrl:
+    "https://og-image.preview.cartridge.gg/api/cartridge?logo=%https://www.dojoengine.org/dojo-icon.svg&title=%title&description=%description",
+
+  theme: {
+    colorScheme: "dark",
+    variables: {
+      color: {
+        textAccent: "#f6c297",
+        background: "#14100d",
+        backgroundDark: "#14100d",
+        noteBackground: "#14100d",
+      },
+    },
+  },
+  font: {
+    google: "Open Sans",
+  },
   title: "Eternum",
   sidebar: [
     {
