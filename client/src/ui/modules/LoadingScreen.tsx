@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import "../../index.css";
 
-export const LoadingScreen = () => {
+export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) => {
   const statements = [
     "Syncing Eternum...",
     "Gathering Dragonhide...",
@@ -25,16 +25,10 @@ export const LoadingScreen = () => {
   ];
 
   const [currentStatement, setCurrentStatement] = useState(0);
-  const [backgroundImage, setBackgroundImage] = useState("01");
 
   useEffect(() => {
     // Get current timestamp in minutes
     const timestamp = Math.floor(Date.now() / (1000 * 60));
-    // Get a number between 1-7 based on current minute
-    const imageNumber = (timestamp % 7) + 1;
-    // Pad with leading zero if needed
-    const paddedNumber = imageNumber.toString().padStart(2, "0");
-    setBackgroundImage(paddedNumber);
 
     // Get statement index based on current minute
     const statementIndex = timestamp % statements.length;

@@ -369,7 +369,7 @@ const TickProgress = () => {
     setTooltip({
       position: "bottom",
       content: (
-        <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
+        <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
           <div>
             A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
           </div>

@@ -114,7 +114,7 @@ function generateMessageTypedData(
         { name: "chainId", type: "shortstring" },
         { name: "revision", type: "shortstring" },
       ],
-      "eternum-Message": [
+      "s0_eternum-Message": [
         { name: "identity", type: "ContractAddress" },
         { name: "channel", type: "shortstring" },
         { name: "content", type: "string" },
@@ -122,11 +122,11 @@ function generateMessageTypedData(
         { name: "salt", type: "felt" },
       ],
     },
-    primaryType: "eternum-Message",
+    primaryType: "s0_eternum-Message",
     domain: {
       name: "Eternum",
       version: "1",
-      chainId: "SN_SEPOLIA",
+      chainId: "0x4b4154414e41",
       revision: "1",
     },
     message: {

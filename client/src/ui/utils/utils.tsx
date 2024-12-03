@@ -478,3 +478,10 @@ function timeStringToSeconds(timeStr: string): number {
       return 0;
   }
 }
+
+export const getRandomBackgroundImage = () => {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const imageNumber = (timestamp % 7) + 1;
+  const paddedNumber = imageNumber.toString().padStart(2, "0");
+  return paddedNumber;
+};
