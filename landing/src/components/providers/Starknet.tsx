@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 
 import ControllerConnector from "@cartridge/connector/controller";
 import { ColorMode } from "@cartridge/controller";
-import { sepolia } from "@starknet-react/chains";
+import { mainnet, sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 import { env } from "../../../env";
 //import { cartridgeController } from "./cartridge-controller";
@@ -33,10 +33,11 @@ export function StarknetProvider({ children, onlyCartridge }: { children: React.
   const rpc = useCallback(() => {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
+  const chain = env.VITE_PUBLIC_CHAIN === "mainnet" ? mainnet : sepolia;
 
   return (
     <StarknetConfig
-      chains={[sepolia]}
+      chains={[chain]}
       provider={jsonRpcProvider({ rpc })}
       connectors={[cartridgeController, ...(onlyCartridge ? [] : [...connectors])]}
       explorer={voyager}

@@ -28,8 +28,14 @@ export const tokens: {
 } = {
   [Chain.MAINNET]: {
     [Token.LORDS]: {
-      address: "",
+      address: import.meta.env.VITE_LORDS_ADDRESS,
       decimals: 18,
+    },
+    [Token.SEASON_PASS]: {
+      address: import.meta.env.VITE_SEASON_PASS_ADDRESS,
+    },
+    [Token.REALMS]: {
+      address: import.meta.env.VITE_REALMS_ADDRESS,
     },
   },
   [Chain.SEPOLIA]: {

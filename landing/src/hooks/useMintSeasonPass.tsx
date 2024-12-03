@@ -1,18 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { lordsAddress, seasonPassAddress } from "@/config";
-import { useAccount } from "@starknet-react/core";
-import { toast } from "sonner";
+import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
+
+import { abi } from "@/abi/SeasonPass";
 import { useDojo } from "./context/DojoContext";
 
 export const useMintSeasonPass = () => {
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(["0"]);
 
-  // todo; use starknet-react
+  const { address } = useAccount();
+
+  const { contract } = useContract({
+    abi,
+    address: seasonPassAddress,
+  });
+
+  const { send, error, isPending, isSuccess } = useSendTransaction({});
   const {
     setup: {
-      systemCalls: { attach_lords, detach_lords, mint_season_passes },
+      systemCalls: { attach_lords, detach_lords },
     },
   } = useDojo();
 
@@ -22,25 +30,25 @@ export const useMintSeasonPass = () => {
 
   const _mint = useCallback(
     async (token_ids: string[], recipient?: string) => {
+      console.log(token_ids);
       const tokenIdsNumberArray: number[] = token_ids.map((tokenId) => parseInt(tokenId, 16));
       if (account && canMint) {
         setIsMinting(true);
         setMintingTokenId(token_ids);
-        await mint_season_passes({
+        /*await mint_season_passes({
           signer: account,
           recipient: recipient ?? account.address,
           token_ids: tokenIdsNumberArray,
           season_pass_address: seasonPassAddress,
-        })
-          .then(() => {
-            toast("Season Passes Minted");
-            // wait supply to change...
-          })
-          .catch((e) => {
-            console.error(`mint error:`, e);
-            setMintingTokenId(["0"]);
-            setIsMinting(false);
-          });
+        })*/
+       const calls = token_ids.map((tokenId) => contract.populate("mint", [recipient ?? account.address, tokenId]))
+        try {
+          send(calls);
+        } catch (e) {
+          console.error(`mint error:`, e);
+          setMintingTokenId(["0"]);
+          setIsMinting(false);
+        }
       }
     },
     [account, canMint],
@@ -78,7 +86,8 @@ export const useMintSeasonPass = () => {
 
   return {
     canMint,
-    isMinting,
+    isMinting: isPending ?? isMinting,
+    isMintSuccess:isSuccess,
     mint: canMint ? _mint : undefined,
     attachLords,
     detachLords,
