@@ -4,7 +4,7 @@ dotenvConfig({ path: "./.env.local" }); //Change for production?
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: "https://api.cartridge.gg/x/red-eternum-rc-sepolia-4/torii" + "/graphql",
+  schema: "https://api.cartridge.gg/x/realms-world-03/torii" + "/graphql",
   documents: "src/**/*.tsx",
   ignoreNoDocuments: true,
   generates: {
