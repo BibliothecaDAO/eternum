@@ -995,7 +995,9 @@ export type GetAccountTokensQuery = {
 
 export type GetRealmMintsQueryVariables = Exact<{ [key: string]: never }>;
 
-export type GetRealmMintsQuery = {
+export type GetErc721MintsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetErc721MintsQuery = {
   __typename?: "World__Query";
   tokenTransfers?: {
     __typename?: "Token__TransferConnection";
@@ -1056,12 +1058,9 @@ export const GetAccountTokensDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetAccountTokensQuery, GetAccountTokensQueryVariables>;
-export const GetRealmMintsDocument = new TypedDocumentString(`
-    query getRealmMints {
-  tokenTransfers(
-    accountAddress: "0x037c6B561b367a85b68668e8663041b9E2F4199c346FBda97dc0c2167F7A6016"
-    limit: 8000
-  ) {
+export const GetErc721MintsDocument = new TypedDocumentString(`
+    query getERC721Mints {
+  tokenTransfers(accountAddress: "0x0", limit: 8000) {
     edges {
       node {
         tokenMetadata {
@@ -1078,4 +1077,4 @@ export const GetRealmMintsDocument = new TypedDocumentString(`
     }
   }
 }
-    `) as unknown as TypedDocumentString<GetRealmMintsQuery, GetRealmMintsQueryVariables>;
+    `) as unknown as TypedDocumentString<GetErc721MintsQuery, GetErc721MintsQueryVariables>;

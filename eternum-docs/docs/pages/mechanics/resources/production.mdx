@@ -1,24 +1,40 @@
+import ResourceIcon from "../../../../components/ResourceIcon";
+
 ## Production
 
 ### Resource Requirements
 
-- Most resources require other resources as inputs for production
-- Food is the only resource that can be produced without input resources
-- Each resource has specific input requirements that must be met
-  > Example: Wood production requires Stone, Coal and Wheat as inputs
+Producing resources requires careful planning and management:
+
+- **Food Production**: Food is unique as it can be produced without any input resources.
+- **Input Dependencies**: Most resources need other resources as inputs.
+
+  > **Ex:** Wood production requires Stone, Coal, and Wheat.
+  >
+  > <div className="flex flex-row items-center gap-8">
+  >   <div className="flex flex-col items-center gap-1">
+  >     <ResourceIcon name="Stone" id="2" />
+  >     <ResourceIcon name="Coal" id="3" />
+  >     <ResourceIcon name="Wheat" id="254" />
+  >   </div>
+  >   <div className="text-4xl">➡</div>
+  >   <ResourceIcon name="Wood" id="1" />
+  > </div>
 
 ### Automated Production
 
-- Production buildings will automatically produce resources when:
-  - All required input resources are available
-  - The building is not paused
-  - Storage capacity is not full
+Your production buildings work tirelessly to keep your realm thriving:
+
+- **Automatic Operation**: Resources are produced automatically when all input requirements are met, the building is
+  active, and storage isn't full.
+- **Efficiency**: Ensure your buildings are always operational by managing inputs and storage effectively.
 
 ### Resource Management
 
-- Monitor your resource levels carefully
-- Production will continue consuming inputs even if some required resources are missing
-- When inputs are missing, no output will be produced but resources will still be consumed
+Effective resource management is crucial for maintaining production efficiency:
+
+- **Monitor Levels**: Keep a close eye on your resource levels to avoid shortages.
+- **Input Consumption**: Be aware that inputs are consumed even if production halts due to missing resources.
 
 > ⚠️ **Important**  
 > To optimize resource efficiency:

@@ -29,6 +29,10 @@ const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
 // resource precision
 const RESOURCE_PRECISION: u128 = 1_000;
 
+
+// WONDER QUEST REWARD BOOST
+const WONDER_QUEST_REWARD_BOOST: u128 = 3;
+
 // pillage config
 // TODO: Move to Onchain config
 const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;

@@ -15,8 +15,8 @@ import * as types from "./graphql";
 const documents = {
   "\n  query getAccountTokens($accountAddress: String!) {\n    tokenBalances(accountAddress: $accountAddress, limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n":
     types.GetAccountTokensDocument,
-  '\n  query getRealmMints {\n    tokenTransfers(accountAddress: "0x037c6B561b367a85b68668e8663041b9E2F4199c346FBda97dc0c2167F7A6016", limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n':
-    types.GetRealmMintsDocument,
+  '\n  query getERC721Mints {\n    tokenTransfers(accountAddress: "0x0", limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n':
+    types.GetErc721MintsDocument,
 };
 
 /**
@@ -29,8 +29,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: '\n  query getRealmMints {\n    tokenTransfers(accountAddress: "0x037c6B561b367a85b68668e8663041b9E2F4199c346FBda97dc0c2167F7A6016", limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n',
-): typeof import("./graphql").GetRealmMintsDocument;
+  source: '\n  query getERC721Mints {\n    tokenTransfers(accountAddress: "0x0", limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n',
+): typeof import("./graphql").GetErc721MintsDocument;
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

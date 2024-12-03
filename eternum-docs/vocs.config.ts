@@ -4,9 +4,6 @@ export default defineConfig({
   description: "Eternum Documentation",
   iconUrl: "/eternum_new_logo.svg",
   logoUrl: "/eternum_new_logo.svg",
-  ogImageUrl:
-    "https://og-image.preview.cartridge.gg/api/cartridge?logo=%https://www.dojoengine.org/dojo-icon.svg&title=%title&description=%description",
-
   theme: {
     colorScheme: "dark",
     variables: {
@@ -26,8 +23,7 @@ export default defineConfig({
     {
       text: "Overview",
       items: [
-        { text: "Welcome", link: "/overview/overview" },
-        { text: "Introduction", link: "/overview/introduction" },
+        { text: "Welcome", link: "/overview/introduction" },
         { text: "Entry", link: "/overview/entry" },
         { text: "Quick Links", link: "/overview/links" },
       ],
