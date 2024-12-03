@@ -169,18 +169,21 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 }
 
                 let production_input: ProductionInput = world.read_model((produced_resource_type, count));
-                let (input_resource_type, input_resource_amount) = (
+                let (input_resource_type, mut input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
 
-                /// lords will not be consumed during production of donkey
+                /// only 10% of lords cost will be consumed during production of donkey
                 /// if the realm has a wonder
                 if input_resource_type == ResourceTypes::LORDS {
                     if resource_production.resource_type == ResourceTypes::DONKEY {
                         let realm: Realm = world.read_model(self.outer_entity_id);
                         if realm.has_wonder {
-                            count += 1;
-                            continue;
+                            input_resource_amount =
+                                ((input_resource_amount.into() * PercentageValueImpl::_10())
+                                    / PercentageValueImpl::_100())
+                                .try_into()
+                                .unwrap();
                         }
                     }
                 }
@@ -244,18 +247,21 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 }
 
                 let production_input: ProductionInput = world.read_model((produced_resource_type, count));
-                let (input_resource_type, input_resource_amount) = (
+                let (input_resource_type, mut input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
 
-                /// lords will not be consumed during production of donkey
+                /// only 10% of lords cost will be consumed during production of donkey
                 /// if the realm has a wonder
                 if input_resource_type == ResourceTypes::LORDS {
                     if resource_production.resource_type == ResourceTypes::DONKEY {
                         let realm: Realm = world.read_model(self.outer_entity_id);
                         if realm.has_wonder {
-                            count += 1;
-                            continue;
+                            input_resource_amount =
+                                ((input_resource_amount.into() * PercentageValueImpl::_10())
+                                    / PercentageValueImpl::_100())
+                                .try_into()
+                                .unwrap();
                         }
                     }
                 }
