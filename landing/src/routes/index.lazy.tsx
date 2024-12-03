@@ -28,8 +28,7 @@ function Index() {
   const donkeysBurned = useDonkeysBurned();
   const playerCount = usePlayerCount();
   const { realmsCount, hyperstructuresCount, fragmentMinesCount } = useStructuresNumber();
-
-  const [_, lordsBalance] = useLordsBridgeBalance();
+  const lordsBalance = useLordsBridgeBalance();
 
   const dataCards: GridItemType[] = useMemo(
     () => [
