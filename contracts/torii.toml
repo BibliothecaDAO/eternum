@@ -1,4 +1,4 @@
-db_dir = "./torii-db"
+# db_dir = "./torii-db"
 
 [indexing]
 events_chunk_size = 1024 # Size of events page to fetch
