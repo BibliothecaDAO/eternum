@@ -180,8 +180,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                         let realm: Realm = world.read_model(self.outer_entity_id);
                         if realm.has_wonder {
                             input_resource_amount =
-                                ((input_resource_amount.into() * PercentageValueImpl::_10())
-                                    / PercentageValueImpl::_100())
+                                ((input_resource_amount * PercentageValueImpl::_10().into())
+                                    / PercentageValueImpl::_100().into())
                                 .try_into()
                                 .unwrap();
                         }
@@ -258,8 +258,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                         let realm: Realm = world.read_model(self.outer_entity_id);
                         if realm.has_wonder {
                             input_resource_amount =
-                                ((input_resource_amount.into() * PercentageValueImpl::_10())
-                                    / PercentageValueImpl::_100())
+                                ((input_resource_amount * PercentageValueImpl::_10().into())
+                                    / PercentageValueImpl::_100().into())
                                 .try_into()
                                 .unwrap();
                         }
