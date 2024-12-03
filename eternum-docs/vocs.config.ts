@@ -51,6 +51,7 @@ export default defineConfig({
           items: [
             { text: "Realm", link: "/mechanics/realm/realm" },
             { text: "Buildings", link: "/mechanics/realm/buildings" },
+            { text: "Wonders", link: "/mechanics/realm/wonders" },
           ],
         },
 
