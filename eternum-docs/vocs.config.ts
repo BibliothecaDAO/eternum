@@ -26,8 +26,7 @@ export default defineConfig({
     {
       text: "Overview",
       items: [
-        { text: "Welcome", link: "/overview/overview" },
-        { text: "Introduction", link: "/overview/introduction" },
+        { text: "Welcome", link: "/overview/introduction" },
         { text: "Entry", link: "/overview/entry" },
         { text: "Quick Links", link: "/overview/links" },
       ],
