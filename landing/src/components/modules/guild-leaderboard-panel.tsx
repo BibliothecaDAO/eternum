@@ -38,7 +38,7 @@ export const GuildLeaderboardPanel = ({
   const displayedGuilds = filteredGuilds.slice(startIndex, startIndex + elementsPerPage);
 
   return (
-    <CardContent>
+    <CardContent className="overflow-x-auto">
       <Input
         type="text"
         placeholder="Search guild..."
