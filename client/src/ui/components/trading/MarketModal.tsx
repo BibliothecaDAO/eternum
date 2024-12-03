@@ -119,7 +119,7 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="order-book-selector flex relative group items-center gap-2">
+          <div className="flex relative group items-center gap-2">
             <Scroll className="w-6 fill-current" />
             <div className="self-center">Order Book</div>
           </div>
@@ -138,7 +138,7 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="amm-selector flex relative group items-center gap-2">
+          <div className="amm-tab-selector flex relative group items-center gap-2">
             <Swap className="w-6 fill-current" />
             <div className="self-center">AMM</div>
           </div>
@@ -170,7 +170,7 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="transfer-selector flex relative group items-center gap-2">
+          <div className="transfer-tab-selector flex relative group items-center gap-2">
             <Coins className="w-6 fill-current" />
             <div className="self-center">Transfer</div>
           </div>
@@ -184,7 +184,7 @@ export const MarketModal = () => {
       {
         key: "resourceProd",
         label: (
-          <div className="realm-prod-selector flex relative group items-center gap-2">
+          <div className="realm-production-tab-selector flex relative group items-center gap-2">
             <Crown className="w-6 fill-current" />
             <div className="self-center">Realm Production</div>
           </div>

@@ -2,11 +2,17 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { StepOptions } from "shepherd.js";
 import { StepButton, waitForElement } from "./utils";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 
 export const settleSteps: StepOptions[] = [
   {
     title: "Welcome to Eternum",
     text: "Follow these tutorials to quickly learn all the game mechanics and get started on your journey!",
+    beforeShowPromise: function () {
+      useUIStore.getState().setRightNavigationView(RightView.None);
+      useUIStore.getState().setLeftNavigationView(LeftView.None);
+      return new Promise<void>((resolve) => resolve());
+    },
     buttons: [StepButton.next],
   },
   {
@@ -16,6 +22,7 @@ export const settleSteps: StepOptions[] = [
       element: ".discord-selector",
       on: "bottom",
     },
+    classes: "mt-5",
     buttons: [StepButton.prev, StepButton.next],
   },
   {
@@ -33,6 +40,7 @@ export const settleSteps: StepOptions[] = [
       selector: ".claim-selector",
       event: "click",
     },
+    classes: "ml-5",
     buttons: [StepButton.prev],
   },
   {
@@ -46,6 +54,7 @@ export const settleSteps: StepOptions[] = [
       selector: ".resource-table-selector",
       event: "click",
     },
+    classes: "-ml-5",
     buttons: [StepButton.prev],
   },
   {
@@ -55,6 +64,7 @@ export const settleSteps: StepOptions[] = [
       element: ".entity-resource-table-selector",
       on: "left",
     },
+    classes: "-ml-5",
     beforeShowPromise: function () {
       return waitForElement(".entity-resource-table-selector");
     },
@@ -76,6 +86,7 @@ export const settleSteps: StepOptions[] = [
       element: ".entity-resource-table-selector",
       on: "left",
     },
+    classes: "-ml-5",
     buttons: [StepButton.prev, StepButton.next],
   },
   {

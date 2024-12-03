@@ -115,7 +115,7 @@ export const ArmyChip = ({
                           <Plus
                             className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
                               updatedArmy.quantity.value === 0n ? "animate-pulse" : ""
-                            }`}
+                            } ${army.protectee ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
                             onClick={() => {
                               setTooltip(null);
                               setEditMode(!editMode);

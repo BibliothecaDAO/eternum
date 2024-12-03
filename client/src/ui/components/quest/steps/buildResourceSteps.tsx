@@ -1,11 +1,18 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { StepOptions } from "shepherd.js";
 import { StepButton, waitForElement } from "./utils";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 
 export const buildResourceSteps: StepOptions[] = [
   {
     title: "Build a Resource Facility",
     text: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently.",
+    beforeShowPromise: function () {
+      useUIStore.getState().setRightNavigationView(RightView.None);
+      useUIStore.getState().setLeftNavigationView(LeftView.None);
+      return new Promise<void>((resolve) => resolve());
+    },
     buttons: [StepButton.next],
   },
   {
@@ -15,6 +22,7 @@ export const buildResourceSteps: StepOptions[] = [
       element: ".construction-selector",
       on: "right",
     },
+    classes: "ml-5",
     advanceOn: {
       selector: ".construction-selector",
       event: "click",
@@ -28,6 +36,8 @@ export const buildResourceSteps: StepOptions[] = [
       element: ".resource-tab-selector",
       on: "right",
     },
+    classes: "ml-5",
+    modalOverlayOpeningPadding: 10,
     advanceOn: {
       selector: ".resource-tab-selector",
       event: "click",
@@ -36,7 +46,15 @@ export const buildResourceSteps: StepOptions[] = [
       useUIStore.getState().closeAllPopups();
       return waitForElement(".resource-tab-selector");
     },
-    buttons: [StepButton.prev],
+    buttons: [
+      {
+        text: "Prev",
+        action: function () {
+          useUIStore.getState().setLeftNavigationView(LeftView.None);
+          return this.back();
+        },
+      },
+    ],
   },
   {
     title: "Resource Production",
@@ -45,6 +63,7 @@ export const buildResourceSteps: StepOptions[] = [
       element: ".construction-panel-selector",
       on: "bottom",
     },
+    classes: "mt-5",
     canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".construction-panel-selector");
@@ -58,6 +77,7 @@ export const buildResourceSteps: StepOptions[] = [
       element: ".construction-panel-selector",
       on: "bottom",
     },
+    classes: "mt-5",
     canClickTarget: false,
     buttons: [StepButton.prev, StepButton.next],
   },
@@ -68,6 +88,7 @@ export const buildResourceSteps: StepOptions[] = [
       element: ".construction-panel-selector",
       on: "bottom",
     },
+    classes: "mt-5",
     canClickTarget: false,
     buttons: [StepButton.prev, StepButton.next],
   },
@@ -78,6 +99,7 @@ export const buildResourceSteps: StepOptions[] = [
       element: ".construction-panel-selector",
       on: "bottom",
     },
+    classes: "mt-5",
     canClickTarget: false,
     buttons: [StepButton.prev, StepButton.next],
   },
@@ -88,6 +110,7 @@ export const buildResourceSteps: StepOptions[] = [
       element: ".resource-cards-selector",
       on: "bottom",
     },
+    classes: "mt-5",
     advanceOn: {
       selector: ".resource-cards-selector",
       event: "click",

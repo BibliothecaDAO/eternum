@@ -1,11 +1,18 @@
 import useUIStore from "@/hooks/store/useUIStore";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { StepOptions } from "shepherd.js";
 import { StepButton, waitForElement } from "./utils";
+import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 
 export const buildFoodSteps: StepOptions[] = [
   {
     title: "Food",
     text: "Wheat and Fish are the lifeblood of your people and your economy.",
+    beforeShowPromise: function () {
+      useUIStore.getState().setRightNavigationView(RightView.None);
+      useUIStore.getState().setLeftNavigationView(LeftView.None);
+      return new Promise<void>((resolve) => resolve());
+    },
     buttons: [StepButton.next],
   },
   {
@@ -25,6 +32,7 @@ export const buildFoodSteps: StepOptions[] = [
       element: ".construction-selector",
       on: "right",
     },
+    classes: "ml-5",
     advanceOn: {
       selector: ".construction-selector",
       event: "click",
@@ -38,12 +46,22 @@ export const buildFoodSteps: StepOptions[] = [
       element: ".construction-panel-selector",
       on: "right",
     },
+    classes: "ml-5",
     canClickTarget: false,
     beforeShowPromise: function () {
       useUIStore.getState().closeAllPopups();
       return waitForElement(".construction-panel-selector");
     },
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [
+      {
+        text: "Prev",
+        action: function () {
+          useUIStore.getState().setLeftNavigationView(LeftView.None);
+          return this.back();
+        },
+      },
+      StepButton.next,
+    ],
   },
   {
     title: "Building Categories",
@@ -52,6 +70,7 @@ export const buildFoodSteps: StepOptions[] = [
       element: ".construction-tabs-selector",
       on: "right",
     },
+    classes: "ml-5",
     canClickTarget: false,
     buttons: [StepButton.prev, StepButton.next],
   },
@@ -60,8 +79,9 @@ export const buildFoodSteps: StepOptions[] = [
     text: "Farms produce wheat and provide a 10% bonus to adjacent buildings.",
     attachTo: {
       element: ".farm-card-selector",
-      on: "right",
+      on: "bottom",
     },
+    classes: "mt-5",
     canClickTarget: false,
     buttons: [StepButton.prev, StepButton.next],
   },
@@ -70,8 +90,9 @@ export const buildFoodSteps: StepOptions[] = [
     text: "Fishing Villages provide a steady supply of fish.",
     attachTo: {
       element: ".fish-card-selector",
-      on: "right",
+      on: "bottom",
     },
+    classes: "mt-5",
     canClickTarget: false,
     buttons: [StepButton.prev, StepButton.next],
   },
@@ -80,7 +101,11 @@ export const buildFoodSteps: StepOptions[] = [
     text: "Select either a Farm or Fishing Village. More economic buildings will unlock as you progress.",
     attachTo: {
       element: ".economy-selector",
-      on: "bottom-start",
+      on: "bottom",
+    },
+    classes: "mt-5",
+    beforeShowPromise: function () {
+      return waitForElement(".economy-selector");
     },
     advanceOn: {
       selector: ".economy-selector",
@@ -96,6 +121,15 @@ export const buildFoodSteps: StepOptions[] = [
       element: ".world-selector",
     },
     highlightClass: "allow-modal-click",
-    buttons: [StepButton.prev, StepButton.finish],
+    buttons: [
+      {
+        text: "Prev",
+        action: function () {
+          useUIStore.getState().setLeftNavigationView(LeftView.ConstructionView);
+          return this.back();
+        },
+      },
+      StepButton.finish,
+    ],
   },
 ];

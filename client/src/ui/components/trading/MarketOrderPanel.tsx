@@ -112,7 +112,7 @@ export const MarketOrderPanel = ({
   const isResourcesLocked = useIsResourcesLocked(entityId);
 
   return (
-    <div className="grid grid-cols-2 gap-4 p-4 h-full">
+    <div className="order-book-selector grid grid-cols-2 gap-4 p-4 h-full">
       <MarketOrders
         offers={selectedResourceAskOffers}
         resourceId={resourceId}
@@ -654,7 +654,7 @@ const OrderCreation = ({
       </div>
       <div className="mt-8 ml-auto text-right w-auto font-bold text-lg">
         <div>
-          <div className="flex justify-between gap-8">
+          <div className="donkeys-used-selector flex justify-between gap-8">
             <div>Donkeys Used</div>
             <div className="flex gap-2">
               {donkeysNeeded.toLocaleString()}{" "}

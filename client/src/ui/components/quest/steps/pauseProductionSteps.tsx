@@ -2,11 +2,18 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { StepOptions } from "shepherd.js";
 import { StepButton, waitForElement } from "./utils";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 
 export const pauseProductionSteps: StepOptions[] = [
   {
     title: "Production",
     text: "Your buildings automatically produce resources over time. Let's learn how to manage your production efficiently.",
+    beforeShowPromise: function () {
+      useUIStore.getState().setRightNavigationView(RightView.None);
+      useUIStore.getState().setLeftNavigationView(LeftView.None);
+      return new Promise<void>((resolve) => resolve());
+    },
     buttons: [StepButton.next],
   },
   {
@@ -16,6 +23,7 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".entity-details-selector",
       on: "right",
     },
+    classes: "ml-5",
     beforeShowPromise: function () {
       const selectedBuildingHex = useUIStore.getState().selectedBuildingHex;
       const setSelectedBuildingHex = useUIStore.getState().setSelectedBuildingHex;
@@ -35,6 +43,7 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".building-entity-details-selector",
       on: "right",
     },
+    classes: "ml-5",
     canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".building-entity-details-selector");
@@ -48,6 +57,7 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".building-entity-details-selector",
       on: "right",
     },
+    classes: "ml-5",
     canClickTarget: false,
     buttons: [StepButton.prev, StepButton.next],
   },
@@ -59,6 +69,7 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".buildings-tab-selector",
       on: "right",
     },
+    classes: "ml-5",
     advanceOn: {
       selector: ".buildings-tab-selector",
       event: "click",
@@ -73,6 +84,7 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".buildings-selector",
       on: "right",
     },
+    classes: "ml-5",
     canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".buildings-selector");
@@ -87,6 +99,7 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".pause-building-button-selector",
       on: "bottom",
     },
+    classes: "mt-5",
     advanceOn: {
       selector: ".pause-building-button-selector",
       event: "click",
@@ -101,6 +114,7 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".storehouse-selector",
       on: "right",
     },
+    classes: "ml-5",
     buttons: [StepButton.prev, StepButton.next],
   },
   {
@@ -110,7 +124,7 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".storehouse-selector",
       on: "right",
     },
-
+    classes: "ml-5",
     buttons: [StepButton.prev, StepButton.next],
   },
   {
@@ -120,6 +134,7 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".storehouse-selector",
       on: "right",
     },
+    classes: "ml-5",
     buttons: [StepButton.prev, StepButton.complete],
   },
 ];
