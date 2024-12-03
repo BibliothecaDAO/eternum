@@ -23,7 +23,7 @@ mod season_systems {
         constants::{HYPERSTRUCTURE_CONFIG_ID, WORLD_CONFIG_ID, DEFAULT_NS, ResourceTypes}, alias::ID,
         models::{
             config::{HyperstructureConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig},
-            season::{Leaderboard, LeaderboardEntryCustomImpl, LeaderboardEntry, LeaderboardRewardClaimed}
+            season::{Leaderboard, LeaderboardEntryImpl, LeaderboardEntry, LeaderboardRewardClaimed}
         },
         systems::{
             hyperstructure::contracts::hyperstructure_systems::InternalHyperstructureSystemsImpl,
@@ -37,6 +37,7 @@ mod season_systems {
 
     #[abi(embed_v0)]
     impl SeasonSystemsImpl of super::ISeasonSystems<ContractState> {
+        /// Note: This function can only be called once per address
         fn register_to_leaderboard(
             ref self: ContractState,
             hyperstructures_contributed_to: Span<ID>,
@@ -90,20 +91,20 @@ mod season_systems {
                     .balance_of(resource_bridge_fee_split_config.season_pool_fee_recipient);
                 leaderboard.total_price_pool = Option::Some(total_price_pool);
                 leaderboard.distribution_started = true;
+                world.write_model(@leaderboard);
             }
 
             assert!(
-                leaderboard.total_price_pool.unwrap() > 0, "If that happens, no one has registered to the leaderboard"
+                leaderboard.total_price_pool.unwrap() > 0,
+                "distribution finished or no one registered to the leaderboard"
             );
 
-            let entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(ref world, caller_address);
+            let entry: LeaderboardEntry = LeaderboardEntryImpl::get(ref world, caller_address);
 
             assert!(entry.points > 0, "No points to claim");
 
-            let percentage_scaled: u256 = ((entry.points.into() * SCALING_FACTOR) / leaderboard.total_points.into())
-                .into();
-
-            let player_reward: u256 = (leaderboard.total_price_pool.unwrap() * percentage_scaled) / SCALING_FACTOR;
+            let player_reward: u256 = (leaderboard.total_price_pool.unwrap() * entry.points.into())
+                / leaderboard.total_points.into();
             let resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig = world.read_model(WORLD_CONFIG_ID);
 
             assert!(

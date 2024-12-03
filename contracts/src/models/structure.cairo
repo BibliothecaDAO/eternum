@@ -16,7 +16,7 @@ pub struct Structure {
 
 
 #[generate_trait]
-impl StructureCustomImpl of StructureCustomTrait {
+impl StructureImpl of StructureTrait {
     fn assert_is_structure(self: Structure) {
         assert!(self.is_structure(), "entity {} is not a structure", self.entity_id)
     }
@@ -85,7 +85,7 @@ pub struct StructureCount {
 }
 
 #[generate_trait]
-impl StructureCountCustomImpl of StructureCountCustomTrait {
+impl StructureCountImpl of StructureCountTrait {
     fn assert_none(self: StructureCount) {
         assert!(self.count == 0, "structure exists at this location");
     }

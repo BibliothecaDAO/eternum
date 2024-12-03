@@ -24,7 +24,7 @@ pub struct Realm {
 
 
 #[generate_trait]
-impl RealmCustomImpl of RealmCustomTrait {
+impl RealmImpl of RealmTrait {
     fn max_level(self: Realm, world: WorldStorage) -> u8 {
         let realm_max_level_config: RealmMaxLevelConfig = world.read_model(WORLD_CONFIG_ID);
         realm_max_level_config.max_level

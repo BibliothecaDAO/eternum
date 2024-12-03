@@ -321,7 +321,6 @@ export const LeftNavigationModule = () => {
       {!IS_MOBILE && (
         <div className="flex">
           <Chat />
-          <MiniMapNavigation />
         </div>
       )}
     </div>

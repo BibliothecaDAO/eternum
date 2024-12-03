@@ -224,7 +224,7 @@ mod config_systems {
         RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig
     };
 
-    use s0_eternum::models::position::{Position, PositionCustomTrait, Coord};
+    use s0_eternum::models::position::{Position, PositionTrait, Coord};
     use s0_eternum::models::production::{ProductionInput, ProductionOutput};
     use s0_eternum::models::resources::{ResourceCost, DetachedResource};
     use s0_eternum::models::season::{Season};
@@ -291,7 +291,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl WorldConfigCustomImpl of super::IWorldConfig<ContractState> {
+    impl WorldConfigImpl of super::IWorldConfig<ContractState> {
         fn set_world_config(
             ref self: ContractState,
             admin_address: starknet::ContractAddress,
@@ -306,7 +306,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl SeasonConfigCustomImpl of super::ISeasonConfig<ContractState> {
+    impl SeasonConfigImpl of super::ISeasonConfig<ContractState> {
         fn set_season_config(
             ref self: ContractState,
             season_pass_address: starknet::ContractAddress,
@@ -333,7 +333,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl QuestConfigCustomImpl of super::IQuestConfig<ContractState> {
+    impl QuestConfigImpl of super::IQuestConfig<ContractState> {
         fn set_quest_config(ref self: ContractState, production_material_multiplier: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -384,7 +384,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl MapConfigCustomImpl of super::IMapConfig<ContractState> {
+    impl MapConfigImpl of super::IMapConfig<ContractState> {
         fn set_map_config(ref self: ContractState, mut map_config: MapConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -396,7 +396,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl CapacityConfigCustomImpl of super::ICapacityConfig<ContractState> {
+    impl CapacityConfigImpl of super::ICapacityConfig<ContractState> {
         fn set_capacity_config(ref self: ContractState, capacity_config: CapacityConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -416,7 +416,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl WeightConfigCustomImpl of super::IWeightConfig<ContractState> {
+    impl WeightConfigImpl of super::IWeightConfig<ContractState> {
         fn set_weight_config(ref self: ContractState, entity_type: ID, weight_gram: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -433,7 +433,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BattleConfigCustomImpl of super::IBattleConfig<ContractState> {
+    impl BattleConfigImpl of super::IBattleConfig<ContractState> {
         fn set_battle_config(ref self: ContractState, mut battle_config: BattleConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -444,7 +444,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TickConfigCustomImpl of super::ITickConfig<ContractState> {
+    impl TickConfigImpl of super::ITickConfig<ContractState> {
         fn set_tick_config(ref self: ContractState, tick_id: u8, tick_interval_in_seconds: u64) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -454,7 +454,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl StaminaConfigCustomImpl of super::IStaminaConfig<ContractState> {
+    impl StaminaConfigImpl of super::IStaminaConfig<ContractState> {
         fn set_stamina_config(ref self: ContractState, unit_type: u8, max_stamina: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -464,7 +464,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TravelFoodCostConfigCustomImpl of super::ITravelFoodCostConfig<ContractState> {
+    impl TravelFoodCostConfigImpl of super::ITravelFoodCostConfig<ContractState> {
         fn set_travel_food_cost_config(ref self: ContractState, mut travel_food_cost_config: TravelFoodCostConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -475,7 +475,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl StaminaRefillConfigCustomImpl of super::IStaminaRefillConfig<ContractState> {
+    impl StaminaRefillConfigImpl of super::IStaminaRefillConfig<ContractState> {
         fn set_stamina_refill_config(ref self: ContractState, amount_per_tick: u16, start_boost_tick_count: u8) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -488,7 +488,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl LevelingConfigCustomImpl of super::ILevelingConfig<ContractState> {
+    impl LevelingConfigImpl of super::ILevelingConfig<ContractState> {
         fn set_leveling_config(
             ref self: ContractState,
             config_id: ID,
@@ -575,7 +575,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl ProductionConfigCustomImpl of super::IProductionConfig<ContractState> {
+    impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
         fn set_production_config(ref self: ContractState, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -633,7 +633,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl TransportConfigCustomImpl of super::ITransportConfig<ContractState> {
+    impl TransportConfigImpl of super::ITransportConfig<ContractState> {
         fn set_speed_config(ref self: ContractState, entity_type: ID, sec_per_km: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -647,7 +647,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl HyperstructureConfigCustomImpl of super::IHyperstructureConfig<ContractState> {
+    impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
             ref self: ContractState,
             resources_for_completion: Span<(u8, u128)>,
@@ -686,7 +686,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl BankConfigCustomImpl of super::IBankConfig<ContractState> {
+    impl BankConfigImpl of super::IBankConfig<ContractState> {
         fn set_bank_config(ref self: ContractState, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -696,7 +696,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TroopConfigCustomImpl of super::ITroopConfig<ContractState> {
+    impl TroopConfigImpl of super::ITroopConfig<ContractState> {
         fn set_troop_config(ref self: ContractState, mut troop_config: TroopConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -707,7 +707,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingCategoryPopulationConfigCustomImpl of super::IBuildingCategoryPopConfig<ContractState> {
+    impl BuildingCategoryPopulationConfigImpl of super::IBuildingCategoryPopConfig<ContractState> {
         fn set_building_category_pop_config(
             ref self: ContractState, building_category: BuildingCategory, population: u32, capacity: u32
         ) {
@@ -724,7 +724,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl PopulationConfigCustomImpl of super::IPopulationConfig<ContractState> {
+    impl PopulationConfigImpl of super::IPopulationConfig<ContractState> {
         fn set_population_config(ref self: ContractState, base_population: u32) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -734,7 +734,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingConfigCustomImpl of super::IBuildingConfig<ContractState> {
+    impl BuildingConfigImpl of super::IBuildingConfig<ContractState> {
         fn set_building_general_config(ref self: ContractState, base_cost_percent_increase: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -862,7 +862,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl RealmLevelConfigCustomImpl of super::IRealmLevelConfig<ContractState> {
+    impl RealmLevelConfigImpl of super::IRealmLevelConfig<ContractState> {
         fn set_realm_max_level_config(ref self: ContractState, new_max_level: u8) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);

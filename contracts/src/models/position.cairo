@@ -235,7 +235,7 @@ impl PositionIntoCube of Into<Position, Cube> {
 
 
 #[generate_trait]
-impl PositionCustomImpl of PositionCustomTrait {
+impl PositionImpl of PositionTrait {
     // world is divided into 10 timezones
     fn get_zone(self: Position) -> u32 {
         // use highest and lowest x to divide map into 10 timezones
@@ -256,7 +256,7 @@ impl PositionCustomImpl of PositionCustomTrait {
 mod tests {
     use debug::PrintTrait;
     use s0_eternum::alias::ID;
-    use super::{Position, PositionCustomTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
+    use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;
 

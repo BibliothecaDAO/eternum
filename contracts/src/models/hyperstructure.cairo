@@ -9,8 +9,8 @@ use s0_eternum::{
     },
     models::{
         owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
-        resources::{Resource, ResourceCustomImpl, ResourceCost},
-        structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory}, guild::{GuildMember}
+        resources::{Resource, ResourceImpl, ResourceCost},
+        structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember}
     },
     systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
 };
@@ -71,7 +71,7 @@ pub struct Epoch {
 }
 
 #[generate_trait]
-pub impl EpochCustomImpl of EpochCustomTrait {
+pub impl EpochImpl of EpochTrait {
     fn get(ref world: WorldStorage, hyperstructure_entity_id: ID, index: u16) -> Epoch {
         let epoch: Epoch = world.read_model((hyperstructure_entity_id, index));
         epoch
@@ -79,7 +79,7 @@ pub impl EpochCustomImpl of EpochCustomTrait {
 }
 
 #[generate_trait]
-pub impl HyperstructureCustomImpl of HyperstructureCustomTrait {
+pub impl HyperstructureImpl of HyperstructureTrait {
     fn assert_access(self: Hyperstructure, ref world: WorldStorage) {
         let contributor_address = starknet::get_caller_address();
         let hyperstructure_owner: Owner = world.read_model(self.entity_id);

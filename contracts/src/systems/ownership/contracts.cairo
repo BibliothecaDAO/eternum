@@ -16,7 +16,7 @@ mod ownership_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use s0_eternum::alias::ID;
     use s0_eternum::constants::DEFAULT_NS;
-    use s0_eternum::models::owner::{Owner, OwnerCustomImpl, OwnerCustomTrait};
+    use s0_eternum::models::owner::{Owner, OwnerImpl, OwnerTrait};
     use s0_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
 

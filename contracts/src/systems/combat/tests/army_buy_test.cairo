@@ -12,9 +12,7 @@ use s0_eternum::models::movable::{Movable};
 use s0_eternum::models::owner::{Owner, EntityOwner};
 use s0_eternum::models::position::{Coord, Position};
 
-use s0_eternum::models::resources::{
-    Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION
-};
+use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION};
 use s0_eternum::models::stamina::Stamina;
 use s0_eternum::systems::config::contracts::config_systems;
 use s0_eternum::systems::{
@@ -95,9 +93,9 @@ fn combat_test_army_buy() {
     assert_eq!(army.troops.paladin_count, STARTING_PALADIN_COUNT.try_into().unwrap());
     assert_eq!(army.troops.crossbowman_count, STARTING_CROSSBOWMAN_COUNT.try_into().unwrap());
 
-    let knight_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::KNIGHT));
-    let paladin_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::PALADIN));
-    let crossbowman_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::CROSSBOWMAN));
+    let knight_resource: Resource = ResourceImpl::get(ref world, (realm_id, ResourceTypes::KNIGHT));
+    let paladin_resource: Resource = ResourceImpl::get(ref world, (realm_id, ResourceTypes::PALADIN));
+    let crossbowman_resource: Resource = ResourceImpl::get(ref world, (realm_id, ResourceTypes::CROSSBOWMAN));
     assert_eq!(knight_resource.balance, 0);
     assert_eq!(paladin_resource.balance, 0);
     assert_eq!(crossbowman_resource.balance, 0);

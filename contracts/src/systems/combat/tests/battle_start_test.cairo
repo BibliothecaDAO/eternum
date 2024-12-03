@@ -7,7 +7,7 @@ use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use s0_eternum::alias::ID;
 use s0_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use s0_eternum::models::combat::{
-    Army, Health, HealthCustomTrait, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle
+    Army, Health, HealthTrait, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle
 };
 use s0_eternum::models::config::{
     TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SpeedConfig, SettlementConfig
@@ -17,8 +17,8 @@ use s0_eternum::models::owner::{Owner, EntityOwner};
 use s0_eternum::models::position::{Coord, Position};
 
 use s0_eternum::models::resources::{
-    Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, ResourceTransferLock,
-    ResourceTransferLockCustomTrait, RESOURCE_PRECISION
+    Resource, ResourceImpl, ResourceTrait, ResourceTypes, ResourceTransferLock, ResourceTransferLockTrait,
+    RESOURCE_PRECISION
 };
 use s0_eternum::models::stamina::Stamina;
 use s0_eternum::systems::config::contracts::config_systems;
@@ -239,13 +239,13 @@ fn combat_test_battle_start() {
     assert_eq!(player_2_army.battle_side, BattleSide::Defence);
 
     // ensure player 1 gold resource still exists but it is locked
-    let player_1_gold_resource: Resource = ResourceCustomImpl::get(ref world, (player_1_army_id, ResourceTypes::GOLD));
+    let player_1_gold_resource: Resource = ResourceImpl::get(ref world, (player_1_army_id, ResourceTypes::GOLD));
     assert_eq!(ARMY_GOLD_RESOURCE_AMOUNT, player_1_gold_resource.balance);
     let player_1_resource_lock: ResourceTransferLock = world.read_model(player_1_army_id);
     player_1_resource_lock.assert_locked();
 
     // ensure player 2 gold resource still exists but it is locked
-    let player_2_gold_resource: Resource = ResourceCustomImpl::get(ref world, (player_2_army_id, ResourceTypes::GOLD));
+    let player_2_gold_resource: Resource = ResourceImpl::get(ref world, (player_2_army_id, ResourceTypes::GOLD));
     assert_eq!(ARMY_GOLD_RESOURCE_AMOUNT, player_2_gold_resource.balance);
     let player_2_resource_lock: ResourceTransferLock = world.read_model(player_2_army_id);
     player_2_resource_lock.assert_locked();

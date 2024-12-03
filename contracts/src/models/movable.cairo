@@ -20,7 +20,7 @@ pub struct Movable {
 }
 
 #[generate_trait]
-impl MovableCustomImpl of MovableCustomTrait {
+impl MovableImpl of MovableTrait {
     fn sec_per_km(ref world: WorldStorage, entity_type: ID) -> u16 {
         let speed_config: SpeedConfig = world.read_model((WORLD_CONFIG_ID, entity_type));
         speed_config.sec_per_km
@@ -47,7 +47,7 @@ pub struct ArrivalTime {
 }
 
 #[generate_trait]
-impl ArrivalTimeCustomImpl of ArrivalTimeCustomTrait {
+impl ArrivalTimeImpl of ArrivalTimeTrait {
     fn assert_not_travelling(self: ArrivalTime) {
         assert(self.arrives_at <= starknet::get_block_timestamp(), 'entity is in transit')
     }

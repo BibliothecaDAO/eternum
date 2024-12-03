@@ -8,7 +8,7 @@ use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use s0_eternum::alias::ID;
 
 use s0_eternum::constants::{MAX_REALMS_PER_ADDRESS};
-use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
+use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
 use s0_eternum::models::{map::Tile, position::{Position, Coord, CoordTrait}, combat::Troops};
 use s0_eternum::systems::{
     hyperstructure::contracts::{IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait},
@@ -99,7 +99,7 @@ fn mint(ref world: WorldStorage, entity: ID, mut resources: Span<(u8, u128)>) {
             Option::Some((
                 _type, amount
             )) => {
-                let mut resource = ResourceCustomImpl::get(ref world, (entity, *_type));
+                let mut resource = ResourceImpl::get(ref world, (entity, *_type));
                 resource.add(*amount);
                 resource.save(ref world);
             },

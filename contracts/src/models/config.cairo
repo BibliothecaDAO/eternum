@@ -10,9 +10,9 @@ use s0_eternum::constants::{
     split_resources_and_probs, ResourceTypes
 };
 use s0_eternum::models::buildings::BuildingCategory;
-use s0_eternum::models::capacity::{CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait};
+use s0_eternum::models::capacity::{CapacityCategory, CapacityCategoryImpl, CapacityCategoryTrait};
 use s0_eternum::models::combat::Troops;
-use s0_eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
+use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s0_eternum::models::position::{Coord};
 use s0_eternum::models::quantity::Quantity;
 
@@ -101,13 +101,13 @@ pub struct CapacityConfig {
 
 
 #[generate_trait]
-impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
+impl CapacityConfigImpl of CapacityConfigTrait {
     fn get(ref world: WorldStorage, category: CapacityConfigCategory) -> CapacityConfig {
         world.read_model(category)
     }
 
     fn get_from_entity(ref world: WorldStorage, entity_id: ID) -> CapacityConfig {
-        let capacity_category = CapacityCategoryCustomImpl::assert_exists_and_get(ref world, entity_id);
+        let capacity_category = CapacityCategoryImpl::assert_exists_and_get(ref world, entity_id);
         return world.read_model(capacity_category.category);
     }
 
@@ -454,7 +454,7 @@ pub struct WeightConfig {
 }
 
 #[generate_trait]
-impl WeightConfigCustomImpl of WeightConfigCustomTrait {
+impl WeightConfigImpl of WeightConfigTrait {
     fn get_weight_grams(ref world: WorldStorage, resource_type: u8, amount: u128) -> u128 {
         let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, resource_type));
         (resource_weight_config.weight_gram * amount) / RESOURCE_PRECISION
@@ -536,7 +536,7 @@ pub struct BuildingConfig {
 }
 
 #[generate_trait]
-impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
+impl BuildingConfigImpl of BuildingConfigTrait {
     fn get(ref world: WorldStorage, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
         return world
             .read_model(
@@ -589,7 +589,7 @@ pub struct TroopConfig {
 
 
 #[generate_trait]
-impl TroopConfigCustomImpl of TroopConfigCustomTrait {
+impl TroopConfigImpl of TroopConfigTrait {
     fn get(world: WorldStorage) -> TroopConfig {
         return world.read_model(WORLD_CONFIG_ID);
     }
@@ -607,7 +607,7 @@ pub struct BattleConfig {
 }
 
 #[generate_trait]
-impl BattleConfigCustomImpl of BattleConfigCustomTrait {
+impl BattleConfigImpl of BattleConfigTrait {
     fn get(world: WorldStorage) -> BattleConfig {
         world.read_model(WORLD_CONFIG_ID)
     }
@@ -634,14 +634,14 @@ pub struct PopulationConfig {
 }
 
 #[generate_trait]
-impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCustomTrait {
+impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
     fn get(ref world: WorldStorage, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
         world.read_model((BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id))
     }
 }
 
 #[generate_trait]
-impl HyperstructureResourceConfigCustomImpl of HyperstructureResourceConfigCustomTrait {
+impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
     fn get(world: WorldStorage, resource_id: u8) -> HyperstructureResourceConfig {
         world.read_model((HYPERSTRUCTURE_CONFIG_ID, resource_id))
     }

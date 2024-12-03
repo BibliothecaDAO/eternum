@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create a Slot -> if deploying to slot
-slot deployments create -t epic eternum-rc1-1 katana --version v1.0.1 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
+slot deployments create -t epic eternum-rc1-1 katana --version v1.0.3 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
 
 # get accounts 
 # -> update prod env_variables.sh
@@ -61,14 +61,14 @@ echo "Build contracts..."
 sozo build --profile prod
 
 echo "Deleting previous indexer and network..."
-# slot deployments delete eternum-rc-sepolia-4 torii
+# slot deployments delete realms-world-1 torii
 # slot deployments delete eternum-40 katana
 
 echo "Migrating world..."
 sozo migrate --profile prod 
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic realms-world-1 torii --version v1.0.3 --world 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --rpc https://api.cartridge.gg/x/starknet/mainnet --indexing.pending true --config ./torii.toml
+slot deployments create -t epic realms-world-03 torii --version preview--c148789 --world 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --rpc https://api.cartridge.gg/x/starknet/mainnet --indexing.pending true --config ./torii.toml
 
 echo "Setting up config..."
 

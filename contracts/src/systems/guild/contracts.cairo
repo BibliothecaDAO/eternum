@@ -21,12 +21,10 @@ mod guild_systems {
     use s0_eternum::alias::ID;
     use s0_eternum::constants::DEFAULT_NS;
     use s0_eternum::models::event::{CreateGuild, JoinGuild};
-    use s0_eternum::models::guild::{
-        Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait
-    };
+    use s0_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
     use s0_eternum::models::name::AddressName;
     use s0_eternum::models::name::EntityName;
-    use s0_eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
+    use s0_eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
     use s0_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
