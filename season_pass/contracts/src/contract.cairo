@@ -20,6 +20,7 @@ trait ISeasonPass<TState> {
 
 #[starknet::contract]
 mod EternumSeasonPass {
+    use esp::utils::make_json_and_base64_encode_metadata;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -49,6 +50,10 @@ mod EternumSeasonPass {
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
+
+    fn IMAGE_URL() -> ByteArray {
+        "QmXbhQRZMxod2USTMgargWt3sxPGBo4sQNiQEMkLq36qfC"
+    }
 
     #[storage]
     struct Storage {
@@ -118,7 +123,13 @@ mod EternumSeasonPass {
         ///
         /// - `token_id` exists.
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
-            IERC721MetadataDispatcher { contract_address: self.realms.read().contract_address }.token_uri(token_id)
+            self.erc721._require_owned(token_id);
+            let (name_and_attrs, _url_a, _url_b) = IRealmMetadataEncodedDispatcher {
+                contract_address: self.realms.read().contract_address
+            }
+                .get_encoded_metadata(token_id.try_into().unwrap());
+
+            make_json_and_base64_encode_metadata(name_and_attrs, IMAGE_URL())
         }
     }
 
