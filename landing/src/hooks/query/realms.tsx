@@ -22,7 +22,7 @@ export const GET_ACCOUNT_TOKENS = graphql(`
 `);
 
 export const GET_ERC_MINTS = graphql(`
-  query getRealmMints {
+  query getERC721Mints {
     tokenTransfers(accountAddress: "0x0", limit: 8000) {
       edges {
         node {
