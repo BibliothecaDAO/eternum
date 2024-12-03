@@ -6,10 +6,11 @@ import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { settings } from "@/ui/components/navigation/Config";
+import { QuestId } from "@/ui/components/quest/questDetails";
+import { questSteps, useTutorial } from "@/ui/components/quest/QuestList";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { isRealmSelected } from "@/ui/utils/utils";
-import { ArrowUp } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { quests as questsWindow, social } from "../../components/navigation/Config";
 
@@ -30,6 +31,12 @@ export const SecondaryMenuItems = () => {
 
   const completedQuests = quests?.filter((quest: any) => quest.status === QuestStatus.Claimed);
 
+  const currentQuest = quests?.find(
+    (quest: any) => quest.status === QuestStatus.InProgress || quest.status === QuestStatus.InProgress,
+  );
+
+  const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestId.Settle));
+
   const realmSelected = useMemo(() => {
     return isRealmSelected(structureEntityId, structures) ? true : false;
   }, [structureEntityId, structures]);
@@ -46,31 +53,55 @@ export const SecondaryMenuItems = () => {
     return [
       {
         button: (
-          <div className="relative">
-            <CircleButton
-              className="quest-selector"
-              tooltipLocation="bottom"
-              image={BuildingThumbs.squire}
-              label={questsWindow}
-              active={isPopupOpen(questsWindow)}
-              size="lg"
-              onClick={() => togglePopup(questsWindow)}
-              notification={realmSelected ? unclaimedQuestsCount : undefined}
-              notificationLocation={"bottomleft"}
-              disabled={!realmSelected}
-            />
+          <div className="flex items-center gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12">
+            <button
+              className="text-gold hover:text-gold/80 text-sm font-semibold"
+              onClick={() => {
+                /* Claim logic */
+              }}
+            >
+              Claim
+            </button>
 
-            {completedQuests.length < 8 && !isMapView && realmSelected && !isPopupOpen(questsWindow) && (
-              <div className="absolute bg-brown/90 text-gold border border-gold/30 mt-3 rounded-md shadow-lg left-1/2 transform -translate-x-1/2 w-48 p-3 flex flex-col items-center animate-pulse">
-                <ArrowUp className="text-gold w-5 h-5 mb-2" />
-                <div className="text-sm font-semibold mb-2 text-center leading-tight">
-                  Complete quests to master the game mechanics
-                </div>
-              </div>
-            )}
+            <div className="h-6 w-px bg-gold/30 mx-2" />
+
+            <button onClick={() => togglePopup(questsWindow)} className="text-gold text-sm">
+              {/* <span className="font-semibold">Current Quest</span> */}
+              <span className="font-semibold">{currentQuest?.name}</span>
+              <span className="text-xs ml-2">({unclaimedQuestsCount} remaining)</span>
+            </button>
+
+            <div className="h-6 w-px bg-gold/30 mx-2" />
+
+            <button
+              className="animate-pulse text-gold hover:text-gold/80 text-sm font-semibold"
+              onClick={() => {
+                handleStart();
+              }}
+            >
+              Tutorial
+            </button>
           </div>
         ),
       },
+      // {
+      //   button: (
+      //     <div className="relative">
+      //       <CircleButton
+      //         className="quest-selector"
+      //         tooltipLocation="bottom"
+      //         image={BuildingThumbs.squire}
+      //         label={questsWindow}
+      //         active={isPopupOpen(questsWindow)}
+      //         size="lg"
+      //         onClick={() => togglePopup(questsWindow)}
+      //         notification={realmSelected ? unclaimedQuestsCount : undefined}
+      //         notificationLocation={"bottomleft"}
+      //         disabled={!realmSelected}
+      //       />
+      //     </div>
+      //   ),
+      // },
       {
         button: (
           <CircleButton

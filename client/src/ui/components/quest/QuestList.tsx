@@ -6,7 +6,7 @@ import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ID } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useShepherd } from "react-shepherd";
 import { StepOptions } from "shepherd.js";
 import { QuestId } from "./questDetails";
@@ -266,27 +266,37 @@ const SkipTutorial = ({
   );
 };
 
-const TutorialButton = ({ isPulsing, steps }: { isPulsing: boolean; steps: StepOptions[] | undefined }) => {
+export const useTutorial = (steps: StepOptions[] | undefined) => {
   const shepherd = useShepherd();
-  const tour = new shepherd.Tour({
-    useModalOverlay: true,
-    exitOnEsc: true,
-    keyboardNavigation: false,
-    defaultStepOptions: {
-      modalOverlayOpeningPadding: 5,
-      arrow: true,
-      cancelIcon: { enabled: true },
-    },
-    steps,
-  });
+  const tour = useMemo(
+    () =>
+      new shepherd.Tour({
+        useModalOverlay: true,
+        exitOnEsc: true,
+        keyboardNavigation: false,
+        defaultStepOptions: {
+          modalOverlayOpeningPadding: 5,
+          arrow: true,
+          cancelIcon: { enabled: true },
+        },
+        steps,
+      }),
+    [shepherd, steps],
+  );
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     if (!tour) return;
     tour.start();
-  };
+  }, [tour]);
+
+  return { handleStart };
+};
+
+const TutorialButton = ({ isPulsing, steps }: { isPulsing: boolean; steps: StepOptions[] | undefined }) => {
+  const { handleStart } = useTutorial(steps);
 
   return (
-    <Button isPulsing={isPulsing} variant="primary" onClick={() => handleStart()}>
+    <Button isPulsing={isPulsing} variant="primary" onClick={handleStart}>
       Tutorial
     </Button>
   );

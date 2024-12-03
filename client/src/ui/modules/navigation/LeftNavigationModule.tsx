@@ -1,5 +1,5 @@
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -76,8 +76,6 @@ export const LeftNavigationModule = () => {
 
   const notificationLength = usePlayerArrivalsNotificationLength();
 
-  const { questClaimStatus } = useQuestClaimStatus();
-
   const isBuildQuest = useMemo(() => {
     return (
       selectedQuest?.id === QuestId.BuildFood ||
@@ -145,7 +143,6 @@ export const LeftNavigationModule = () => {
                 view !== LeftView.ConstructionView &&
                 selectedQuest?.id === QuestId.CreateAttackArmy &&
                 isPopupOpen(questsPopup),
-              hidden: !questClaimStatus[QuestId.CreateTrade] && isRealm,
             })}
             image={BuildingThumbs.military}
             tooltipLocation="top"
@@ -163,7 +160,6 @@ export const LeftNavigationModule = () => {
             disabled={!structureIsMine || !isRealm}
             className={clsx("construction-selector", {
               "animate-pulse": view !== LeftView.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
-              hidden: !questClaimStatus[QuestId.Settle] && isRealm,
             })}
             image={BuildingThumbs.construction}
             tooltipLocation="top"
@@ -179,7 +175,6 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx({ hidden: !questClaimStatus[QuestId.CreateTrade] && isRealm })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label="Resource Arrivals"
@@ -197,7 +192,6 @@ export const LeftNavigationModule = () => {
           <CircleButton
             disabled={!structureIsMine}
             className={clsx({
-              hidden: !questClaimStatus[QuestId.CreateAttackArmy] && isRealm,
               "animate-pulse":
                 view !== LeftView.ConstructionView &&
                 selectedQuest?.id === QuestId.Contribution &&
@@ -224,7 +218,6 @@ export const LeftNavigationModule = () => {
                 selectedQuest?.id === QuestId.CreateTrade &&
                 selectedQuest.status !== QuestStatus.Completed &&
                 isPopupOpen(questsPopup),
-              hidden: !questClaimStatus[QuestId.BuildResource] && isRealm,
             })}
             image={BuildingThumbs.scale}
             tooltipLocation="top"
@@ -263,17 +256,7 @@ export const LeftNavigationModule = () => {
     );
 
     return isMapView ? filteredNavigation : filteredNavigation;
-  }, [
-    view,
-    openedPopups,
-    selectedQuest,
-    questClaimStatus,
-    structureEntityId,
-    isMapView,
-    structureIsMine,
-    isRealm,
-    notificationLength,
-  ]);
+  }, [view, openedPopups, selectedQuest, structureEntityId, isMapView, structureIsMine, isRealm, notificationLength]);
 
   const slideLeft = {
     hidden: { x: "-100%" },

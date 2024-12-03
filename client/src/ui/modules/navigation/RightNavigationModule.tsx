@@ -1,4 +1,3 @@
-import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
@@ -20,8 +19,6 @@ export const RightNavigationModule = () => {
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
 
-  const { questClaimStatus } = useQuestClaimStatus();
-
   const navigation = useMemo(
     () => [
       {
@@ -39,7 +36,7 @@ export const RightNavigationModule = () => {
         ),
       },
     ],
-    [view, questClaimStatus, structureEntityId],
+    [view, structureEntityId],
   );
 
   const isOffscreen = view === RightView.None;
