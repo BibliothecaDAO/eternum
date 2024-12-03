@@ -90,6 +90,7 @@ mod season_systems {
                     .balance_of(resource_bridge_fee_split_config.season_pool_fee_recipient);
                 leaderboard.total_price_pool = Option::Some(total_price_pool);
                 leaderboard.distribution_started = true;
+                world.write_model(@leaderboard);
             }
 
             assert!(
