@@ -4,10 +4,11 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { useTutorial } from "@/hooks/use-tutorial";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { settings } from "@/ui/components/navigation/Config";
 import { QuestId } from "@/ui/components/quest/questDetails";
-import { questSteps, useTutorial } from "@/ui/components/quest/QuestList";
+import { questSteps } from "@/ui/components/quest/QuestList";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { isRealmSelected } from "@/ui/utils/utils";
@@ -24,6 +25,7 @@ export const SecondaryMenuItems = () => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { quests } = useQuests();
+
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
 
   const { playerStructures } = useEntities();
@@ -32,7 +34,7 @@ export const SecondaryMenuItems = () => {
   const completedQuests = quests?.filter((quest: any) => quest.status === QuestStatus.Claimed);
 
   const currentQuest = quests?.find(
-    (quest: any) => quest.status === QuestStatus.InProgress || quest.status === QuestStatus.InProgress,
+    (quest: any) => quest.status === QuestStatus.InProgress || quest.status === QuestStatus.Completed,
   );
 
   const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestId.Settle));
@@ -55,7 +57,7 @@ export const SecondaryMenuItems = () => {
         button: (
           <div className="flex items-center gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12">
             <button
-              className="text-gold hover:text-gold/80 text-sm font-semibold"
+              className="claim-selector text-gold hover:text-gold/80 text-sm font-semibold"
               onClick={() => {
                 /* Claim logic */
               }}
@@ -68,13 +70,13 @@ export const SecondaryMenuItems = () => {
             <button onClick={() => togglePopup(questsWindow)} className="text-gold text-sm">
               {/* <span className="font-semibold">Current Quest</span> */}
               <span className="font-semibold">{currentQuest?.name}</span>
-              <span className="text-xs ml-2">({unclaimedQuestsCount} remaining)</span>
+              {/* <span className="text-xs ml-2">({unclaimedQuestsCount} remaining)</span> */}
             </button>
 
             <div className="h-6 w-px bg-gold/30 mx-2" />
 
             <button
-              className="animate-pulse text-gold hover:text-gold/80 text-sm font-semibold"
+              className="tutorial-selector animate-pulse text-gold hover:text-gold/80 text-sm font-semibold"
               onClick={() => {
                 handleStart();
               }}

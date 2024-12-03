@@ -1,8 +1,8 @@
 import useUIStore from "@/hooks/store/useUIStore";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { StepOptions } from "shepherd.js";
 import { StepButton, waitForElement } from "./utils";
-import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 
 export const settleSteps: StepOptions[] = [
   {
@@ -25,24 +25,24 @@ export const settleSteps: StepOptions[] = [
     classes: "mt-5",
     buttons: [StepButton.prev, StepButton.next],
   },
-  {
-    title: "Claim your rewards",
-    text: "A gift of food from the gods.",
-    showOn: function () {
-      const element = document.querySelector(".claim-selector");
-      return Boolean(element);
-    },
-    attachTo: {
-      element: ".claim-selector",
-      on: "right",
-    },
-    advanceOn: {
-      selector: ".claim-selector",
-      event: "click",
-    },
-    classes: "ml-5",
-    buttons: [StepButton.prev],
-  },
+  // {
+  //   title: "Claim your rewards",
+  //   text: "A gift of food from the gods.",
+  //   showOn: function () {
+  //     const element = document.querySelector(".claim-selector");
+  //     return Boolean(element);
+  //   },
+  //   attachTo: {
+  //     element: ".claim-selector",
+  //     on: "right",
+  //   },
+  //   advanceOn: {
+  //     selector: ".claim-selector",
+  //     event: "click",
+  //   },
+  //   classes: "ml-5",
+  //   buttons: [StepButton.prev],
+  // },
   {
     title: "Balance",
     text: "Let's view your resources. Open the 'Balance' tab.",
@@ -55,7 +55,7 @@ export const settleSteps: StepOptions[] = [
       event: "click",
     },
     classes: "-ml-5",
-    buttons: [StepButton.prev],
+    buttons: [StepButton.prev, StepButton.next],
   },
   {
     title: "View Resources",
@@ -87,6 +87,26 @@ export const settleSteps: StepOptions[] = [
       on: "left",
     },
     classes: "-ml-5",
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Quest Tutorial",
+    text: "Complete quests to claim your starting resources. For each quest, click on the tutorial button to show how to do it.",
+    attachTo: {
+      element: ".tutorial-selector",
+      on: "bottom",
+    },
+    classes: "mt-5",
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Claim the Food",
+    text: "Wheat and Fish are important part of this world. To start your adventure, first claim some food and continue to the next quest.",
+    attachTo: {
+      element: ".claim-selector",
+      on: "bottom",
+    },
+    classes: "mt-5",
     buttons: [StepButton.prev, StepButton.next],
   },
   {

@@ -2,12 +2,12 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ID } from "@bibliothecadao/eternum";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useShepherd } from "react-shepherd";
+import { useEffect, useMemo, useState } from "react";
 import { StepOptions } from "shepherd.js";
 import { QuestId } from "./questDetails";
 import { buildFoodSteps } from "./steps/buildFoodSteps";
@@ -264,32 +264,6 @@ const SkipTutorial = ({
       </Button>
     </div>
   );
-};
-
-export const useTutorial = (steps: StepOptions[] | undefined) => {
-  const shepherd = useShepherd();
-  const tour = useMemo(
-    () =>
-      new shepherd.Tour({
-        useModalOverlay: true,
-        exitOnEsc: true,
-        keyboardNavigation: false,
-        defaultStepOptions: {
-          modalOverlayOpeningPadding: 5,
-          arrow: true,
-          cancelIcon: { enabled: true },
-        },
-        steps,
-      }),
-    [shepherd, steps],
-  );
-
-  const handleStart = useCallback(() => {
-    if (!tour) return;
-    tour.start();
-  }, [tour]);
-
-  return { handleStart };
 };
 
 const TutorialButton = ({ isPulsing, steps }: { isPulsing: boolean; steps: StepOptions[] | undefined }) => {

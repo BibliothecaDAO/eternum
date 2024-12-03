@@ -55,7 +55,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
   [
     QuestId.Settle,
     {
-      name: "Settle",
+      name: "Claim Food",
       view: "",
       description: (
         <div className="space-y-2">
