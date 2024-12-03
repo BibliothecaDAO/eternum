@@ -41,7 +41,7 @@ export const useMintSeasonPass = () => {
           token_ids: tokenIdsNumberArray,
           season_pass_address: seasonPassAddress,
         })*/
-       const calls = token_ids.map((tokenId) => contract.populate("mint", [recipient ?? account.address, tokenId]))
+        const calls = token_ids.map((tokenId) => contract.populate("mint", [recipient ?? account.address, tokenId]));
         try {
           send(calls);
         } catch (e) {
@@ -87,7 +87,7 @@ export const useMintSeasonPass = () => {
   return {
     canMint,
     isMinting: isPending ?? isMinting,
-    isMintSuccess:isSuccess,
+    isMintSuccess: isSuccess,
     mint: canMint ? _mint : undefined,
     attachLords,
     detachLords,
