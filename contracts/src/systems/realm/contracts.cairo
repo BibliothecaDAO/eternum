@@ -32,7 +32,7 @@ mod realm_systems {
 
     use s0_eternum::alias::ID;
     use s0_eternum::constants::REALM_ENTITY_TYPE;
-    use s0_eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, DEFAULT_NS};
+    use s0_eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, DEFAULT_NS, WONDER_QUEST_REWARD_BOOST};
     use s0_eternum::models::capacity::{CapacityCategory};
     use s0_eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
     use s0_eternum::models::config::{QuestRewardConfig, QuestConfig, SeasonAddressesConfig, ProductionConfig};
@@ -243,6 +243,10 @@ mod realm_systems {
 
                         jndex += 1;
                     }
+                }
+
+                if realm.has_wonder {
+                    reward_resource_amount *= WONDER_QUEST_REWARD_BOOST.into();
                 }
 
                 let mut realm_resource = ResourceImpl::get(ref world, (entity_id.into(), reward_resource_type));
