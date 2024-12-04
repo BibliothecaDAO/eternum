@@ -12,6 +12,7 @@ import {
   ContractAddress,
   ID,
   ResourcesIds,
+  TravelTypes,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
@@ -269,6 +270,7 @@ export class ArmyMovementManager {
       // all resources you can find have the same weight as wood
       configManager.getExploreReward() * configManager.getResourceWeight(ResourcesIds.Wood),
     );
+    this._optimisticFoodCosts(overrideId, TravelTypes.Explore);
 
     return overrideId;
   };
@@ -294,11 +296,13 @@ export class ArmyMovementManager {
         signer: useAccountStore.getState().account!,
       })
       .catch((e) => {
-        this.setup.components.Position.removeOverride(overrideId);
-        this.setup.components.Tile.removeOverride(overrideId);
+        // remove all visual overrides only when the action fails
+        this._removeVisualOverride(overrideId);
+        this._removeNonVisualOverrides(overrideId);
       })
       .then(() => {
-        this.setup.components.Stamina.removeOverride(overrideId);
+        // remove all non visual overrides
+        this._removeNonVisualOverrides(overrideId);
       });
   };
 
@@ -306,6 +310,7 @@ export class ArmyMovementManager {
     const overrideId = uuid();
 
     this._optimisticStaminaUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, currentArmiesTick);
+    this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
 
     this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,
@@ -316,6 +321,32 @@ export class ArmyMovementManager {
       },
     });
     return overrideId;
+  };
+
+  // only remove visual overrides (linked to models on world map) when the action fails
+  private readonly _removeVisualOverride = (overrideId: string) => {
+    this.setup.components.Tile.removeOverride(overrideId);
+    this.setup.components.Position.removeOverride(overrideId);
+  };
+
+  // you can remove all non visual overrides when the action fails or succeeds
+  private readonly _removeNonVisualOverrides = (overrideId: string) => {
+    this.setup.components.Stamina.removeOverride(overrideId);
+    this.setup.components.Resource.removeOverride(overrideId);
+    this.setup.components.Weight.removeOverride(overrideId);
+  };
+
+  private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
+    const entityArmy = getComponentValue(this.setup.components.Army, this.entity);
+    let costs = { wheatPayAmount: 0, fishPayAmount: 0 };
+    if (travelType === TravelTypes.Explore) {
+      costs = computeExploreFoodCosts(entityArmy?.troops);
+    } else {
+      costs = computeTravelFoodCosts(entityArmy?.troops);
+    }
+
+    this.wheatManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.wheatPayAmount)));
+    this.fishManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.fishPayAmount)));
   };
 
   private readonly _travelToHex = async (path: HexPosition[], currentArmiesTick: number) => {
@@ -343,10 +374,11 @@ export class ArmyMovementManager {
         directions,
       })
       .catch(() => {
-        this.setup.components.Position.removeOverride(overrideId);
+        this._removeVisualOverride(overrideId);
+        this._removeNonVisualOverrides(overrideId);
       })
       .then(() => {
-        this.setup.components.Stamina.removeOverride(overrideId);
+        this._removeNonVisualOverrides(overrideId);
       });
   };
 
