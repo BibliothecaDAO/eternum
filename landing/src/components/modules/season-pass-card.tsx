@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { GetRealmsQuery } from "@/hooks/gql/graphql";
 import { RealmMetadata } from "@/types";
 import { Button } from "../ui/button";
@@ -60,6 +60,11 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
             ))}
         </div>
       </CardContent>
+      {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
+        <CardFooter className="!p-2 border-t items-center rounded-b-xl bg-card flex uppercase flex-wrap w-full h-full justify-center text-center">
+          {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+        </CardFooter>
+      )}
     </Card>
   );
 };

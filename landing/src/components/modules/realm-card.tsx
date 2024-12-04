@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { seasonPassAddress } from "@/config";
 import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { RealmMetadata } from "@/types";
@@ -84,8 +84,14 @@ export const RealmCard = ({ realm, isSelected, /*seasonPassMinted,*/ toggleNftSe
               <ResourceIcon resource={attribute.value as string} size="lg" key={`${attribute.trait_type}-${index}`} />
             ))}
         </div>
+
         {/* {Number(tokenId)} */}
       </CardContent>
+      {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
+        <CardFooter className="!p-2 border-t items-center rounded-b-xl bg-card flex uppercase flex-wrap w-full h-full justify-center text-center">
+            {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+        </CardFooter>
+      )}
     </Card>
   );
 };
