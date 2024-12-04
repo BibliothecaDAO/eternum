@@ -14,5 +14,6 @@ export function createClientComponents({ contractComponents }: SetupNetworkResul
     Resource: overridableComponent(contractComponents.Resource),
     Weight: overridableComponent(contractComponents.Weight),
     Army: overridableComponent(contractComponents.Army),
+    BuildingQuantityv2: overridableComponent(contractComponents.BuildingQuantityv2),
   };
 }

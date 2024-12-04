@@ -209,11 +209,29 @@ export class TileManager {
         population:
           (getComponentValue(this.setup.components.Population, realmEntityId)?.population || 0) +
           configManager.getBuildingPopConfig(buildingType).population,
+        capacity:
+          (getComponentValue(this.setup.components.Population, realmEntityId)?.capacity || 0) +
+          configManager.getBuildingPopConfig(buildingType).capacity,
       },
     });
 
-    const resourceChange = configManager.buildingCosts[buildingType];
+    if (buildingType === BuildingType.Storehouse) {
+      const storehouseQuantity =
+        getComponentValue(
+          this.setup.components.BuildingQuantityv2,
+          getEntityIdFromKeys([BigInt(entityId), BigInt(buildingType)]),
+        )?.value || 0;
 
+      const quantityOverrideId = uuid();
+      this.setup.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
+        entity: realmEntityId,
+        value: {
+          value: storehouseQuantity + 1,
+        },
+      });
+    }
+
+    const resourceChange = configManager.buildingCosts[buildingType];
     resourceChange.forEach((resource) => {
       this._overrideResource(realmEntityId, resource.resource, -BigInt(resource.amount));
     });
