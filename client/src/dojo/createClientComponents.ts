@@ -12,5 +12,6 @@ export function createClientComponents({ contractComponents }: SetupNetworkResul
     Tile: overridableComponent(contractComponents.Tile),
     Population: overridableComponent(contractComponents.Population),
     Resource: overridableComponent(contractComponents.Resource),
+    Weight: overridableComponent(contractComponents.Weight),
   };
 }

@@ -220,6 +220,18 @@ export class ArmyMovementManager {
     });
   };
 
+  private readonly _optimisticCapacityUpdate = (overrideId: string, capacity: number) => {
+    const currentWeight = getComponentValue(this.setup.components.Weight, this.entity);
+
+    this.setup.components.Weight.addOverride(overrideId, {
+      entity: this.entity,
+      value: {
+        entity_id: this.entityId,
+        value: (currentWeight?.value || 0n) + BigInt(capacity),
+      },
+    });
+  };
+
   private readonly _optimisticTileUpdate = (overrideId: string, col: number, row: number) => {
     const entity = getEntityIdFromKeys([BigInt(col), BigInt(row)]);
 
@@ -252,6 +264,11 @@ export class ArmyMovementManager {
     this._optimisticStaminaUpdate(overrideId, configManager.getExploreStaminaCost(), currentArmiesTick);
     this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticPositionUpdate(overrideId, col, row);
+    this._optimisticCapacityUpdate(
+      overrideId,
+      // all resources you can find have the same weight as wood
+      configManager.getExploreReward() * configManager.getResourceWeight(ResourcesIds.Wood),
+    );
 
     return overrideId;
   };
