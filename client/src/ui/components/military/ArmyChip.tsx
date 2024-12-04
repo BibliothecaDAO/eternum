@@ -13,6 +13,7 @@ import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
 import { Position } from "@bibliothecadao/eternum";
+import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { InventoryResources } from "../resources/InventoryResources";
@@ -94,8 +95,11 @@ export const ArmyChip = ({
     >
       {editMode ? (
         <>
-          <Button className="my-2" size="xs" onClick={() => setEditMode(!editMode)}>
-            Close Manager
+          <Button className="my-2" size="xs" variant="red" onClick={() => setEditMode(!editMode)}>
+            <div className="flex flex-row">
+              <LucideArrowRight className="w-4 h-4 rotate-180 mr-1" />
+              <span> Exit</span>
+            </div>
           </Button>
           <ArmyManagementCard army={updatedArmy!} owner_entity={updatedArmy!.entityOwner.entity_owner_id} />
         </>

@@ -43,7 +43,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { army_buy_troops },
       components: { Position },
     },
   } = useDojo();
@@ -51,6 +50,8 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const dojo = useDojo();
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
+
+  const armyManager = new ArmyManager(dojo, army?.entity_id || 0);
 
   const isDefendingArmy = Boolean(army?.protectee);
 
@@ -123,7 +124,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const handleDeleteArmy = async () => {
     setIsLoading(true);
-    const armyManager = new ArmyManager(dojo);
 
     try {
       await armyManager.deleteArmy(army?.entity_id || 0);
@@ -136,22 +136,19 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const handleBuyArmy = async () => {
     setIsLoading(true);
-    army_buy_troops({
-      signer: account,
-      army_id: army?.entity_id || 0n,
-      payer_id: owner_entity,
-      troops: {
-        knight_count: multiplyByPrecision(troopCounts[ResourcesIds.Knight]),
-        paladin_count: multiplyByPrecision(troopCounts[ResourcesIds.Paladin]),
-        crossbowman_count: multiplyByPrecision(troopCounts[ResourcesIds.Crossbowman]),
-      },
-    }).finally(() => setIsLoading(false));
+    armyManager.addTroops({
+      [ResourcesIds.Knight]: multiplyByPrecision(troopCounts[ResourcesIds.Knight]),
+      [ResourcesIds.Crossbowman]: multiplyByPrecision(troopCounts[ResourcesIds.Crossbowman]),
+      [ResourcesIds.Paladin]: multiplyByPrecision(troopCounts[ResourcesIds.Paladin]),
+    });
 
     setTroopCounts({
       [ResourcesIds.Knight]: 0,
       [ResourcesIds.Crossbowman]: 0,
       [ResourcesIds.Paladin]: 0,
     });
+
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -181,30 +178,15 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const troops = [
     {
-      name: ResourcesIds.Knight,
-      cost: 10,
-      attack: 10,
-      defense: 10,
-      strong: "Paladin",
-      weak: "Crossbowman",
-      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
-    },
-    {
       name: ResourcesIds.Crossbowman,
-      cost: 10,
-      attack: 10,
-      defense: 10,
-      strong: "Knight",
-      weak: "Paladin",
       current: currencyFormat(Number(army?.troops.crossbowman_count || 0), 0),
     },
     {
+      name: ResourcesIds.Knight,
+      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
+    },
+    {
       name: ResourcesIds.Paladin,
-      cost: 10,
-      attack: 10,
-      defense: 10,
-      strong: "Crossbowman",
-      weak: "Knight",
       current: currencyFormat(Number(army?.troops.paladin_count || 0), 0),
     },
   ];
