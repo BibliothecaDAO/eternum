@@ -82,10 +82,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   };
   const entityOwnerPosition = { x: Number(rawEntityOwnerPosition.x), y: Number(rawEntityOwnerPosition.y) };
 
-  const checkSamePosition = useMemo(() => {
-    return armyPosition.x === entityOwnerPosition.x && armyPosition.y === entityOwnerPosition.y;
-  }, [entityOwnerPosition, armyPosition]);
-
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
 
@@ -169,7 +165,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       canCreate = false;
     }
 
-    if (!checkSamePosition) {
+    if (!army?.isHome) {
       canCreate = false;
     }
 
@@ -195,8 +191,8 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     army && (
       <>
         <div className="flex justify-between   p-2 text-xs">
-          <div className="self-center mr-auto px-3">
-            {checkSamePosition ? "At Base " : armyPosition ? `On Map` : "Unknown"}
+          <div className="self-center mr-auto px-3 font-bold">
+            {army.isHome ? <span className="text-green">At Base</span> : armyPosition ? `On Map` : "Unknown"}
           </div>
           <div className="flex ml-auto italic self-center  px-3">
             {isPassiveTravel && nextBlockTimestamp ? (
@@ -217,7 +213,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             <>
               <TravelToLocation
                 isTraveling={isPassiveTravel}
-                checkSamePosition={checkSamePosition}
+                checkSamePosition={army.isHome}
                 entityOwnerPosition={{ x: entityOwnerPosition.x, y: entityOwnerPosition.y }}
                 army={army}
                 position={armyPosition}
@@ -331,7 +327,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             isLoading={isLoading}
             onClick={handleBuyArmy}
           >
-            {checkSamePosition ? "Reinforce army" : "Must be at Base to Reinforce"}
+            {army.isHome ? "Reinforce army" : "Must be at Base to Reinforce"}
           </Button>
         </div>
       </>

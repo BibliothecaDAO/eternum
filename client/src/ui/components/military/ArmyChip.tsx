@@ -78,6 +78,8 @@ export const ArmyChip = ({
 
   const battleManager = useMemo(() => new BattleManager(army.battle_id, dojo), [army.battle_id]);
 
+  const isHome = army.isHome;
+
   const updatedArmy = useMemo(() => {
     const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
@@ -183,9 +185,14 @@ export const ArmyChip = ({
                   )}
                 </div>
                 {!army.protectee && armyHasTroops([updatedArmy]) && (
-                  <div className="flex flex-col font-bold items-end text-xs mr-2">
-                    <StaminaResource entityId={updatedArmy!.entity_id} />
-                    <ArmyCapacity army={updatedArmy} />
+                  <div className="flex flex-row justify-between font-bold text-xs mr-2">
+                    <div className="h-full flex items-end">
+                      {isHome && <div className="text-xs px-2 text-green">At Base</div>}
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <StaminaResource entityId={updatedArmy!.entity_id} />
+                      <ArmyCapacity army={updatedArmy} />
+                    </div>
                   </div>
                 )}
               </div>
