@@ -2,8 +2,9 @@ import type { Config } from "@bibliothecadao/eternum";
 import devManifest from "../contracts/manifest_dev.json";
 import productionManifest from "../contracts/manifest_prod.json";
 
-import { EternumConfig, EternumGlobalConfig, EternumProvider } from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, EternumConfig, EternumGlobalConfig, EternumProvider } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
+import { MAX_QUEST_RESOURCES } from "./speed";
 
 if (
   !process.env.VITE_PUBLIC_MASTER_ADDRESS ||
@@ -13,8 +14,13 @@ if (
   throw new Error("VITE_PUBLIC_MASTER_ADDRESS is required");
 }
 
-const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_DEV, VITE_PUBLIC_NODE_URL } =
-  process.env;
+const {
+  VITE_PUBLIC_MASTER_ADDRESS,
+  VITE_PUBLIC_MASTER_PRIVATE_KEY,
+  VITE_PUBLIC_DEV,
+  VITE_PUBLIC_NODE_URL,
+  VITE_PUBLIC_CHAIN,
+} = process.env;
 
 const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 
@@ -38,13 +44,18 @@ console.log("Account set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
 const setupConfig: Config =
-  VITE_PUBLIC_DEV === "true"
+  VITE_PUBLIC_DEV === "true" || VITE_PUBLIC_CHAIN === "sepolia"
     ? {
         ...EternumGlobalConfig,
+        questResources: MAX_QUEST_RESOURCES as typeof EternumGlobalConfig.questResources,
         stamina: {
           ...EternumGlobalConfig.stamina,
           travelCost: 0,
           exploreCost: 0,
+        },
+        carryCapacityGram: {
+          ...EternumGlobalConfig.carryCapacityGram,
+          [CapacityConfigCategory.Storehouse]: 300_000_000_000,
         },
         battle: {
           graceTickCount: 0,
