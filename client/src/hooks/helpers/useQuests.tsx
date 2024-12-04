@@ -1,12 +1,10 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
-import { SetupResult } from "@/dojo/setup";
 import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
 import { BuildingType, ContractAddress, ID, QuestType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useMemo } from "react";
-import { Account, AccountInterface } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
@@ -36,9 +34,7 @@ export enum QuestStatus {
 }
 
 export const useQuests = () => {
-  const { setup, account } = useDojo();
-
-  const questDependencies = useQuestDependencies(setup, account.account);
+  const questDependencies = useQuestDependencies();
 
   const createQuest = (questId: QuestId) => {
     const dependency = questDependencies[questId];
@@ -72,7 +68,12 @@ export const useQuests = () => {
   return { quests };
 };
 
-const useQuestDependencies = (setup: SetupResult, account: Account | AccountInterface) => {
+const useQuestDependencies = () => {
+  const {
+    setup,
+    account: { account },
+  } = useDojo();
+
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const entityUpdate = useEntityQuery([
@@ -88,7 +89,10 @@ const useQuestDependencies = (setup: SetupResult, account: Account | AccountInte
   const structures = playerStructures();
   const { getEntityInfo } = useEntitiesUtils();
 
-  const structurePosition = getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 };
+  const structurePosition = useMemo(
+    () => getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 },
+    [structureEntityId, getEntityInfo],
+  );
 
   const tileManager = new TileManager(setup, {
     col: structurePosition.x,
@@ -166,7 +170,6 @@ const useQuestDependencies = (setup: SetupResult, account: Account | AccountInte
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
-
       [QuestId.PauseProduction]: {
         value: questClaimStatus[QuestId.PauseProduction] ? null : hasAnyPausedBuilding,
         status: questClaimStatus[QuestId.PauseProduction]
@@ -175,7 +178,6 @@ const useQuestDependencies = (setup: SetupResult, account: Account | AccountInte
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
-
       [QuestId.CreateTrade]: {
         value: questClaimStatus[QuestId.CreateTrade] ? null : orders.length,
         status: questClaimStatus[QuestId.CreateTrade]
@@ -184,7 +186,6 @@ const useQuestDependencies = (setup: SetupResult, account: Account | AccountInte
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
-
       [QuestId.CreateDefenseArmy]: {
         value: questClaimStatus[QuestId.CreateDefenseArmy] ? null : hasDefensiveArmy,
         status: questClaimStatus[QuestId.CreateDefenseArmy]

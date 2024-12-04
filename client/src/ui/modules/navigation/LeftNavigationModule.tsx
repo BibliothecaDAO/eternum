@@ -24,9 +24,7 @@ import {
   worldStructures,
 } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
-// import { Chat } from "../chat/Chat";
 import { Chat } from "../chat/Chat";
-import { MiniMapNavigation } from "./MiniMapNavigation";
 
 const EntityDetails = lazy(() =>
   import("../entity-details/EntityDetails").then((module) => ({ default: module.EntityDetails })),

@@ -48,11 +48,7 @@ export const SecondaryMenuItems = () => {
   }, [structureEntityId, structures]);
 
   const handleTrophyClick = useCallback(() => {
-    if (!connector?.controller) {
-      console.error("Connector not initialized");
-      return;
-    }
-    connector.controller.openProfile("trophies");
+    connector?.controller?.openProfile("trophies");
   }, [connector]);
 
   const secondaryNavigation = useMemo(() => {
@@ -71,7 +67,6 @@ export const SecondaryMenuItems = () => {
               notificationLocation={"bottomleft"}
               disabled={!realmSelected}
             />
-
             {completedQuests.length < 8 && !isMapView && realmSelected && (
               <div className="absolute bg-brown/90 text-gold border border-gold/30 mt-3 rounded-md shadow-lg left-1/2 transform -translate-x-1/2 w-48 p-3 flex flex-col items-center animate-pulse">
                 <ArrowUp className="text-gold w-5 h-5 mb-2" />
@@ -119,13 +114,7 @@ export const SecondaryMenuItems = () => {
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
-        <CircleButton
-          image={BuildingThumbs.trophy}
-          label={"Trophies"}
-          // active={isPopupOpen(quests)}
-          size="lg"
-          onClick={handleTrophyClick}
-        />
+        <CircleButton image={BuildingThumbs.trophy} label={"Trophies"} size="lg" onClick={handleTrophyClick} />
         <CircleButton
           image={BuildingThumbs.question}
           label={"Hints"}

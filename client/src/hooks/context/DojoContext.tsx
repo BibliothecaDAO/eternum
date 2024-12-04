@@ -12,7 +12,7 @@ import { ReactNode, createContext, useContext, useEffect, useMemo, useState } fr
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
-import { displayAddress, getRandomBackgroundImage } from "../../ui/utils/utils";
+import { displayAddress } from "../../ui/utils/utils";
 import { useQuery } from "../helpers/useQuery";
 import useUIStore from "../store/useUIStore";
 import { useAccountStore } from "./accountStore";
@@ -93,7 +93,7 @@ const useControllerAccount = () => {
   return account;
 };
 
-export const DojoProvider = ({ children, value }: DojoProviderProps) => {
+export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderProps & { backgroundImage: string }) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
@@ -110,7 +110,12 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
         feeTokenAddress: env.VITE_PUBLIC_FEE_TOKEN_ADDRESS,
       }}
     >
-      <DojoContextProvider value={value} masterAccount={masterAccount} controllerAccount={controllerAccount!}>
+      <DojoContextProvider
+        value={value}
+        masterAccount={masterAccount}
+        controllerAccount={controllerAccount!}
+        backgroundImage={backgroundImage}
+      >
         {children}
       </DojoContextProvider>
     </BurnerProvider>
@@ -134,11 +139,15 @@ const DojoContextProvider = ({
   value,
   masterAccount,
   controllerAccount,
-}: DojoProviderProps & { masterAccount: Account; controllerAccount: AccountInterface | null }) => {
+  backgroundImage,
+}: DojoProviderProps & {
+  masterAccount: Account;
+  controllerAccount: AccountInterface | null;
+  backgroundImage: string;
+}) => {
   const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const { handleUrlChange } = useQuery();
 
   const currentValue = useContext(DojoContext);
@@ -161,8 +170,6 @@ const DojoContextProvider = ({
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
 
-  const backgroundImage = useMemo(() => getRandomBackgroundImage(), []);
-
   const connectWallet = async () => {
     try {
       console.log("Attempting to connect wallet...");
@@ -174,17 +181,19 @@ const DojoContextProvider = ({
   };
 
   const onSpectatorModeClick = () => {
-    setTimeout(() => {
-      setSpectatorMode(true);
-      handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
-      window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-      showBlankOverlay(false);
-    }, 500);
+    setSpectatorMode(true);
+    handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
+    window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+    showBlankOverlay(false);
   };
 
   // Determine which account to use based on environment
   const isDev = env.VITE_PUBLIC_DEV === true;
-  const accountToUse = !isSpectatorMode && !isDev ? controllerAccount : burnerAccount;
+  const accountToUse = isDev
+    ? burnerAccount
+    : isSpectatorMode
+      ? new Account(value.network.provider.provider, "0x0", "0x0")
+      : controllerAccount;
 
   useEffect(() => {
     if (isDev) {

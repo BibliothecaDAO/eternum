@@ -18,12 +18,9 @@ import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 
 export function getResourcesUtils() {
-  const {
-    setup: {
-      components: { ResourceCost, Realm, OwnedResourcesTracker },
-    },
-  } = useDojo();
+  const { setup } = useDojo();
 
+  const { OwnedResourcesTracker, ResourceCost, Realm } = setup.components;
   const getResourcesFromBalance = (entityId: ID): Resource[] => {
     const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
@@ -32,7 +29,7 @@ export function getResourcesUtils() {
     const resourceIds = resources.map((r) => r.id);
     return resourceIds
       .map((id) => {
-        const resourceManager = new ResourceManager(useDojo().setup, entityId, id);
+        const resourceManager = new ResourceManager(setup, entityId, id);
         const balance = resourceManager.balance(currentDefaultTick);
         return { resourceId: id, amount: balance };
       })
