@@ -29,7 +29,7 @@ import { LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
 import { env } from "../../../../env";
-const ACCOUNT_CHANGE_EVENT = "addressChanged";
+export const ACCOUNT_CHANGE_EVENT = "addressChanged";
 
 const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -40,7 +40,7 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-brown rounded-lg border p-6 md:p-12 text-gold w-full md:min-w-[400px] md:max-w-[800px] min-w-[600px] overflow-hidden relative z-50 shadow-2xl border-gradient">
+      <div className="backdrop-blur-3xl bg-black/20 self-center rounded-lg border p-6 md:p-12 text-gold w-full md:min-w-[400px] md:max-w-[800px] min-w-[600px] overflow-hidden relative z-50 shadow-2xl border-gradient">
         {children}
       </div>
     </motion.div>
@@ -48,14 +48,14 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const StepOne = ({ onNext }: { onNext: () => void }) => {
-  const setSpactatorMode = useUIStore((state) => state.setSpectatorMode);
+  const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const { handleUrlChange } = useQuery();
 
   const onSpectatorModeClick = () => {
     setIsLoadingScreenEnabled(true);
-    setSpactatorMode(true);
+    setSpectatorMode(true);
     setTimeout(() => {
       showBlankOverlay(false);
       handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
@@ -77,10 +77,10 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
           className="w-48 border border-gold/30 hover:border-gold/50 transition-colors h-12"
           onClick={onSpectatorModeClick}
         >
-          Enter as Spectator
+          Spectate
         </Button>
         <Button size="md" className="w-48 !text-gold h-12" variant="secondary" onClick={onNext}>
-          Choose your Leader
+          Play
         </Button>
       </div>
     </StepContainer>

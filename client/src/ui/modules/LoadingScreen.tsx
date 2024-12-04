@@ -47,16 +47,17 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
   return (
     <div className="relative h-screen w-screen bg-brown">
       <img className="absolute h-screen w-screen object-cover" src={`/images/covers/${backgroundImage}.png`} alt="" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown/90 rounded-xl p-10 border border-gradient bg-hex-bg min-w-96 overflow-hidden">
+      <div className="absolute bg-black/20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center rounded-xl p-10 border border-gradient min-w-96 backdrop-blur-3xl overflow-hidden">
         <div className="p-4 text-center">
           New Season is Coming soon... <br /> Agents and Lords working together world building.
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center hover:scale-105 transition-all duration-300 hover:-translate-y-1">
           <CircleButton
             tooltipLocation="bottom"
             image={BuildingThumbs.discord}
             label={"Discord"}
             size="lg"
+            className="bg-black/0 border-none"
             onClick={() => window.open("https://discord.gg/realmsworld")}
           />
         </div>

@@ -39,7 +39,6 @@ export const useSettleRealm = () => {
       playSign();
       return id;
     } catch (error) {
-      setErrorMessage("Realm already settled. Please try a different Realm.");
       console.error("Error during minting:", error);
     } finally {
       setIsLoading(false);

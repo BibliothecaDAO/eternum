@@ -5,6 +5,7 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { HintModal } from "@/ui/components/hints/HintModal";
 import { rewards, settings } from "@/ui/components/navigation/Config";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
@@ -14,7 +15,6 @@ import { Has } from "@dojoengine/recs";
 import { ArrowUp } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { quests as questsWindow, social } from "../../components/navigation/Config";
-import { Rewards } from "../rewards/Rewards";
 
 export const SecondaryMenuItems = () => {
   const {
@@ -128,9 +128,9 @@ export const SecondaryMenuItems = () => {
         />
         <CircleButton
           image={BuildingThumbs.question}
-          label={"Rewards"}
+          label={"Hints"}
           size="lg"
-          onClick={() => toggleModal(<Rewards />)}
+          onClick={() => toggleModal(<HintModal />)}
         />
         <CircleButton
           tooltipLocation="bottom"
