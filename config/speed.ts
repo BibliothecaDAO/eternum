@@ -5,7 +5,7 @@ export const MAX_QUEST_RESOURCES = Object.fromEntries(
     questType,
     resources.map((resource) => ({
       resource: resource.resource,
-      amount: resource.amount * 100000,
+      amount: resource.amount * 10000000,
     })),
   ]),
 );
