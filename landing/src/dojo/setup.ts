@@ -50,6 +50,8 @@ export async function setup({ ...config }: DojoConfig) {
     "HyperstructureCoOwnersChange",
     "HyperstructureFinished",
     "GameEnded",
+    // count
+    "FragmentMineDiscovered",
   ]) as any;
 
   // fetch all existing entities from torii with optional component filtering

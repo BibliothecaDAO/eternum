@@ -36,7 +36,7 @@ export const PlayerLeaderboardPanel = ({
   const displayedPlayers = filteredPlayers.slice(startIndex, startIndex + playersPerPage);
 
   return (
-    <CardContent>
+    <CardContent className="overflow-x-auto">
       <Input
         type="text"
         placeholder="Search player..."

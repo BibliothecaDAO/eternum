@@ -58,9 +58,15 @@ name = "esp"
 version = "1.0.0"
 dependencies = [
  "alexandria_math",
+ "graffiti",
  "openzeppelin",
  "snforge_std",
 ]
+
+[[package]]
+name = "graffiti"
+version = "0.1.0"
+source = "git+https://github.com/ponderingdemocritus/graffiti?rev=bc569531791dbc71c6cd8d9bc154c34eedad31fe#bc569531791dbc71c6cd8d9bc154c34eedad31fe"
 
 [[package]]
 name = "openzeppelin"
