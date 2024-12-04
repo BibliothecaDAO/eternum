@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import "../../index.css";
-import { BuildingThumbs } from "../config";
-import CircleButton from "../elements/CircleButton";
 
 export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) => {
   const statements = [
@@ -48,10 +46,8 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
     <div className="relative h-screen w-screen bg-brown">
       <img className="absolute h-screen w-screen object-cover" src={`/images/covers/${backgroundImage}.png`} alt="" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown/90 rounded-xl p-10 border border-gradient bg-hex-bg min-w-96 overflow-hidden">
-        <div className="p-4 text-center">
-          New Season is Coming soon... <br /> Agents and Lords working together world building.
-        </div>
-        <div className="flex justify-center">
+        <div className="p-4 text-center">{statements[currentStatement]}</div>
+        {/* <div className="flex justify-center">
           <CircleButton
             tooltipLocation="bottom"
             image={BuildingThumbs.discord}
@@ -59,7 +55,7 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
             size="lg"
             onClick={() => window.open("https://discord.gg/realmsworld")}
           />
-        </div>
+        </div> */}
       </div>
     </div>
   );
