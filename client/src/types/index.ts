@@ -42,6 +42,7 @@ export interface MovingArmyData {
   endPos: THREE.Vector3;
   progress: number;
   matrixIndex: number;
+  currentPathIndex: number;
 }
 
 export interface MovingLabelData {

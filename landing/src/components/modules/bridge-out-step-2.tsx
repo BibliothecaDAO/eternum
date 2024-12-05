@@ -1,4 +1,3 @@
-import { useDojo } from "@/hooks/context/DojoContext";
 import { execute } from "@/hooks/gql/execute";
 import { useRealm } from "@/hooks/helpers/useRealms";
 import { donkeyArrivals } from "@/hooks/helpers/useResources";
@@ -12,6 +11,7 @@ import {
   RESOURCE_PRECISION,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
+import { useAccount } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -26,9 +26,8 @@ function formatFee(fee: number) {
 }
 
 export const BridgeOutStep2 = () => {
-  const {
-    account: { account },
-  } = useDojo();
+  const { account } = useAccount();
+
   const { getRealmEntityIdFromRealmId } = useRealm();
   const { getOwnerArrivalsAtBank, getDonkeyInfo } = donkeyArrivals();
   const [donkeyEntityId, setDonkeyEntityId] = useState(0n);
@@ -137,7 +136,7 @@ export const BridgeOutStep2 = () => {
       <div className="flex justify-between">
         <div>From Wallet</div>
 
-        <div>{displayAddress(account?.address)}</div>
+        <div>{displayAddress(account?.address || "")}</div>
       </div>
       <Select
         onValueChange={(value) => {

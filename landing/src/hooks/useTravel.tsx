@@ -6,12 +6,14 @@ import { useDojo } from "./context/DojoContext";
 
 export function useTravel() {
   const {
-    setup: { components },
+    setup: {
+      components: { Position },
+    },
   } = useDojo();
 
   const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) => {
-    const fromPosition = getComponentValue(components.Position, getEntityIdFromKeys([BigInt(fromId)]));
-    const toPosition = getComponentValue(components.Position, getEntityIdFromKeys([BigInt(toId)]));
+    const fromPosition = getComponentValue(Position, getEntityIdFromKeys([BigInt(fromId)]));
+    const toPosition = getComponentValue(Position, getEntityIdFromKeys([BigInt(toId)]));
     if (!fromPosition || !toPosition) return;
     const distanceFromPosition =
       calculateDistance(

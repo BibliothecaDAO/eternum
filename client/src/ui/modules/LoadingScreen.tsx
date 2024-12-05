@@ -1,8 +1,7 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import "../../index.css";
 
-export const LoadingScreen = () => {
+export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) => {
   const statements = [
     "Syncing Eternum...",
     "Gathering Dragonhide...",
@@ -25,16 +24,10 @@ export const LoadingScreen = () => {
   ];
 
   const [currentStatement, setCurrentStatement] = useState(0);
-  const [backgroundImage, setBackgroundImage] = useState("01");
 
   useEffect(() => {
     // Get current timestamp in minutes
     const timestamp = Math.floor(Date.now() / (1000 * 60));
-    // Get a number between 1-7 based on current minute
-    const imageNumber = (timestamp % 7) + 1;
-    // Pad with leading zero if needed
-    const paddedNumber = imageNumber.toString().padStart(2, "0");
-    setBackgroundImage(paddedNumber);
 
     // Get statement index based on current minute
     const statementIndex = timestamp % statements.length;
@@ -53,18 +46,16 @@ export const LoadingScreen = () => {
     <div className="relative h-screen w-screen bg-brown">
       <img className="absolute h-screen w-screen object-cover" src={`/images/covers/${backgroundImage}.png`} alt="" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown/90 rounded-xl p-10 border border-gradient bg-hex-bg min-w-96 overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStatement}
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="animatedBackground"
-          >
-            {statements[currentStatement]}
-          </motion.div>
-        </AnimatePresence>
+        <div className="p-4 text-center">{statements[currentStatement]}</div>
+        {/* <div className="flex justify-center">
+          <CircleButton
+            tooltipLocation="bottom"
+            image={BuildingThumbs.discord}
+            label={"Discord"}
+            size="lg"
+            onClick={() => window.open("https://discord.gg/realmsworld")}
+          />
+        </div> */}
       </div>
     </div>
   );

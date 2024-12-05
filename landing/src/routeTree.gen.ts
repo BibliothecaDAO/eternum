@@ -18,7 +18,7 @@ import { Route as MyEmpireImport } from "./routes/my-empire";
 // Create Virtual Routes
 
 const TradeLazyImport = createFileRoute("/trade")();
-const PassesLazyImport = createFileRoute("/passes")();
+const SeasonPassesLazyImport = createFileRoute("/season-passes")();
 const MintLazyImport = createFileRoute("/mint")();
 const BridgeLazyImport = createFileRoute("/bridge")();
 const IndexLazyImport = createFileRoute("/")();
@@ -31,11 +31,11 @@ const TradeLazyRoute = TradeLazyImport.update({
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import("./routes/trade.lazy").then((d) => d.Route));
 
-const PassesLazyRoute = PassesLazyImport.update({
-  id: "/passes",
-  path: "/passes",
+const SeasonPassesLazyRoute = SeasonPassesLazyImport.update({
+  id: "/season-passes",
+  path: "/season-passes",
   getParentRoute: () => rootRoute,
-} as any).lazy(() => import("./routes/passes.lazy").then((d) => d.Route));
+} as any).lazy(() => import("./routes/season-passes.lazy").then((d) => d.Route));
 
 const MintLazyRoute = MintLazyImport.update({
   id: "/mint",
@@ -93,11 +93,11 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof MintLazyImport;
       parentRoute: typeof rootRoute;
     };
-    "/passes": {
-      id: "/passes";
-      path: "/passes";
-      fullPath: "/passes";
-      preLoaderRoute: typeof PassesLazyImport;
+    "/season-passes": {
+      id: "/season-passes";
+      path: "/season-passes";
+      fullPath: "/season-passes";
+      preLoaderRoute: typeof SeasonPassesLazyImport;
       parentRoute: typeof rootRoute;
     };
     "/trade": {
@@ -117,7 +117,7 @@ export interface FileRoutesByFullPath {
   "/my-empire": typeof MyEmpireRoute;
   "/bridge": typeof BridgeLazyRoute;
   "/mint": typeof MintLazyRoute;
-  "/passes": typeof PassesLazyRoute;
+  "/season-passes": typeof SeasonPassesLazyRoute;
   "/trade": typeof TradeLazyRoute;
 }
 
@@ -126,7 +126,7 @@ export interface FileRoutesByTo {
   "/my-empire": typeof MyEmpireRoute;
   "/bridge": typeof BridgeLazyRoute;
   "/mint": typeof MintLazyRoute;
-  "/passes": typeof PassesLazyRoute;
+  "/season-passes": typeof SeasonPassesLazyRoute;
   "/trade": typeof TradeLazyRoute;
 }
 
@@ -136,16 +136,16 @@ export interface FileRoutesById {
   "/my-empire": typeof MyEmpireRoute;
   "/bridge": typeof BridgeLazyRoute;
   "/mint": typeof MintLazyRoute;
-  "/passes": typeof PassesLazyRoute;
+  "/season-passes": typeof SeasonPassesLazyRoute;
   "/trade": typeof TradeLazyRoute;
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/my-empire" | "/bridge" | "/mint" | "/passes" | "/trade";
+  fullPaths: "/" | "/my-empire" | "/bridge" | "/mint" | "/season-passes" | "/trade";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/my-empire" | "/bridge" | "/mint" | "/passes" | "/trade";
-  id: "__root__" | "/" | "/my-empire" | "/bridge" | "/mint" | "/passes" | "/trade";
+  to: "/" | "/my-empire" | "/bridge" | "/mint" | "/season-passes" | "/trade";
+  id: "__root__" | "/" | "/my-empire" | "/bridge" | "/mint" | "/season-passes" | "/trade";
   fileRoutesById: FileRoutesById;
 }
 
@@ -154,7 +154,7 @@ export interface RootRouteChildren {
   MyEmpireRoute: typeof MyEmpireRoute;
   BridgeLazyRoute: typeof BridgeLazyRoute;
   MintLazyRoute: typeof MintLazyRoute;
-  PassesLazyRoute: typeof PassesLazyRoute;
+  SeasonPassesLazyRoute: typeof SeasonPassesLazyRoute;
   TradeLazyRoute: typeof TradeLazyRoute;
 }
 
@@ -163,7 +163,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyEmpireRoute: MyEmpireRoute,
   BridgeLazyRoute: BridgeLazyRoute,
   MintLazyRoute: MintLazyRoute,
-  PassesLazyRoute: PassesLazyRoute,
+  SeasonPassesLazyRoute: SeasonPassesLazyRoute,
   TradeLazyRoute: TradeLazyRoute,
 };
 
@@ -181,7 +181,7 @@ export const routeTree = rootRoute._addFileChildren(rootRouteChildren)._addFileT
         "/my-empire",
         "/bridge",
         "/mint",
-        "/passes",
+        "/season-passes",
         "/trade"
       ]
     },
@@ -197,8 +197,8 @@ export const routeTree = rootRoute._addFileChildren(rootRouteChildren)._addFileT
     "/mint": {
       "filePath": "mint.lazy.tsx"
     },
-    "/passes": {
-      "filePath": "passes.lazy.tsx"
+    "/season-passes": {
+      "filePath": "season-passes.lazy.tsx"
     },
     "/trade": {
       "filePath": "trade.lazy.tsx"

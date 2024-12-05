@@ -40,7 +40,7 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-brown rounded-lg border p-4 md:p-8 text-gold w-full md:min-w-[600px] md:max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-gradient">
+      <div className="self-center bg-brown rounded-lg border p-6 md:p-12 text-gold w-full md:min-w-[400px] md:max-w-[800px] min-w-[600px] overflow-hidden relative z-50 shadow-2xl border-gradient">
         {children}
       </div>
     </motion.div>
@@ -65,28 +65,22 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
 
   return (
     <StepContainer>
-      <div className="w-full text-center pt-2 md:pt-6">
-        <div className="mx-auto flex mb-2 md:mb-8">
+      <div className="w-full text-center">
+        <div className="mx-auto flex mb-4 md:mb-10">
           <EternumWordsLogo className="fill-current w-64 stroke-current mx-auto" />
         </div>
       </div>
-      <div className="flex flex-col space-y-4 mt-2 md:mt-8 items-center">
-        <Button size="md" className="mx-auto w-48" variant="primary" onClick={onNext}>
-          Choose your Leader
-          <ArrowRight className="w-2 ml-2 fill-current" />
-        </Button>
-
-        <div className="flex justify-center">
-          <div className="text-sm text-gold/60">or</div>
-        </div>
+      <div className="flex flex-row justify-center space-x-8 mt-1 md:mt-1 items-center">
         <Button
           size="md"
-          variant="secondary"
-          className="mx-auto mt-4 w-48 border border-gold/30 hover:border-gold/50 transition-colors"
+          variant="outline"
+          className="w-48 border border-gold/30 hover:border-gold/50 transition-colors h-12"
           onClick={onSpectatorModeClick}
         >
           Enter as Spectator
-          <ArrowRight className="w-2 ml-2 fill-current" />
+        </Button>
+        <Button size="md" className="w-48 !text-gold h-12" variant="secondary" onClick={onNext}>
+          Choose your Leader
         </Button>
       </div>
     </StepContainer>

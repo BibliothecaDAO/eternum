@@ -1,3 +1,27 @@
+export interface Player {
+  name: string;
+  points: number;
+  percentage: number;
+  lords: number;
+  realms: number;
+  mines: number;
+  hyperstructures: number;
+  isAlive: boolean;
+  guildName: string;
+}
+
+export interface Guild {
+  name: string;
+  points: number;
+  percentage: number;
+  lords: number;
+  realms: number;
+  mines: number;
+  hyperstructures: number;
+  isAlive: boolean;
+  playerCount: number;
+}
+
 export interface SeasonPass {
   realm: string;
 }
@@ -355,3 +379,27 @@ export interface LiveAuctions {
   end_timestamp: number;
   metadata?: TokenMetadata;
 }
+
+export type RealmMetadata = {
+  name: string;
+  description: string;
+  image: string;
+  attributes: {
+    trait_type: string;
+    value: string | number;
+  }[];
+};
+
+export type SeasonPassMint = {
+  node: {
+    __typename?: "Token__Balance";
+    tokenMetadata: {
+      __typename: "ERC721__Token";
+      tokenId: string;
+      metadataDescription: string;
+      imagePath: string;
+      contractAddress: string;
+      metadata: string;
+    };
+  };
+} | null;

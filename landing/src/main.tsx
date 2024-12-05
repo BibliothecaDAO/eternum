@@ -10,10 +10,11 @@ import "./index.css";
 //import { ArkProvider } from '@ark-project/react';
 
 import { NuqsAdapter } from "nuqs/adapters/react";
-import { StarknetProvider } from "./components/providers/Starknet";
+import { StarknetProvider } from "./components/providers/starknet-provider";
 import { ThemeProvider } from "./components/providers/theme-provider";
 import { TypeH1 } from "./components/typography/type-h1";
 import { DojoProvider } from "./hooks/context/DojoContext";
+import { DojoEventListener } from "./hooks/subscriptions.tsx/dojo-event-listener";
 import { routeTree } from "./routeTree.gen";
 // Create a new router instance
 const router = createRouter({ routeTree });
@@ -52,7 +53,9 @@ if (!rootElement.innerHTML) {
             <StarknetProvider>
               <DojoProvider value={setupResult}>
                 {/*<ArkProvider config={config}>*/}
-                <RouterProvider router={router} />
+                <DojoEventListener>
+                  <RouterProvider router={router} />
+                </DojoEventListener>
                 {/*</ArkProvider>*/}
               </DojoProvider>
             </StarknetProvider>

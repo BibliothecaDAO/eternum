@@ -1,18 +1,18 @@
-use arcade_trophy::store::{Store, StoreTrait};
+use achievement::store::{Store, StoreTrait};
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s0_eternum::alias::ID;
-use s0_eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
+use s0_eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 
 
-use s0_eternum::models::movable::{Movable, MovableCustomTrait};
+use s0_eternum::models::movable::{Movable, MovableTrait};
 use s0_eternum::models::quantity::{Quantity};
 use s0_eternum::models::{
     combat::{
-        Army, ArmyCustomTrait, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, BattleCustomImpl,
-        BattleCustomTrait, Protector, Protectee, ProtecteeCustomTrait, BattleHealthCustomTrait, BattleEscrowImpl,
+        Army, ArmyTrait, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, BattleImpl, BattleTrait, Protector,
+        Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
     },
 };
 use s0_eternum::models::{combat::{Troops, Battle, BattleSide}};
@@ -300,7 +300,7 @@ trait IBattleUtilsContract<T> {
 
 #[dojo::contract]
 mod battle_systems {
-    use arcade_trophy::store::{Store, StoreTrait};
+    use achievement::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
@@ -310,41 +310,37 @@ mod battle_systems {
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
     use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
-    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
+    use s0_eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
-        BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl,
-        CapacityConfigCategory
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
+        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
     };
-    use s0_eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
     use s0_eternum::models::event::{
         EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
-    use s0_eternum::models::movable::{Movable, MovableCustomTrait};
+    use s0_eternum::models::movable::{Movable, MovableTrait};
     use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{
-        EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait
-    };
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use s0_eternum::models::position::CoordTrait;
-    use s0_eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
+    use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
-    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
+    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
 
     use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::{Stamina, StaminaCustomTrait};
-    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::stamina::{Stamina, StaminaTrait};
+    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s0_eternum::models::weight::Weight;
 
     use s0_eternum::models::{
         combat::{
-            Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
-            BattleCustomImpl, BattleCustomTrait, BattleSide, Protector, Protectee, ProtecteeCustomTrait,
-            BattleHealthCustomTrait, BattleEscrowImpl, AttackingArmyQuantityTrackerCustomTrait,
-            AttackingArmyQuantityTrackerCustomImpl,
+            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
+            BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
+            AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
         },
     };
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
@@ -370,7 +366,7 @@ mod battle_systems {
             attacking_army_entity_owner.assert_caller_owner(world);
 
             let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
-            let battle_config = BattleConfigCustomImpl::get(world);
+            let battle_config = BattleConfigImpl::get(world);
 
             let mut defending_army: Army = world.read_model(defending_army_id);
             let defending_army_entity_owner: EntityOwner = world.read_model(defending_army_id);
@@ -392,7 +388,7 @@ mod battle_systems {
                 // so we want to update the defending army's battle status
                 // to see if the battle has ended. if it has ended, then the
                 // army will be removed from the battle
-                let mut defending_army_battle = BattleCustomImpl::get(world, defending_army.battle_id);
+                let mut defending_army_battle = BattleImpl::get(world, defending_army.battle_id);
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
                 let (r_defending_army_battle, r_defending_army) = battle_utils_systems
@@ -405,7 +401,7 @@ mod battle_systems {
             // ensure defending army is not in battle
             defending_army.assert_not_in_battle();
 
-            let troop_config = TroopConfigCustomImpl::get(world);
+            let troop_config = TroopConfigImpl::get(world);
             let attacking_army_health: Health = world.read_model(attacking_army_id);
             let defending_army_health: Health = world.read_model(defending_army_id);
             // ensure health invariant checks pass
@@ -544,7 +540,7 @@ mod battle_systems {
             );
 
             let now = starknet::get_block_timestamp();
-            let mut battle = BattleCustomImpl::get(world, battle_id);
+            let mut battle = BattleImpl::get(world, battle_id);
             assert!(now < battle.start_at, "Battle already started");
 
             // update battle
@@ -564,7 +560,7 @@ mod battle_systems {
             caller_entity_owner.assert_caller_owner(world);
 
             // ensure battle has not ended
-            let mut battle = BattleCustomImpl::get(world, battle_id);
+            let mut battle = BattleImpl::get(world, battle_id);
             assert!(!battle.has_ended(), "Battle has ended");
 
             // ensure caller army is not in battle
@@ -576,7 +572,7 @@ mod battle_systems {
             caller_army_health.assert_alive("Your army");
 
             // caller army health sanity check
-            let troop_config = TroopConfigCustomImpl::get(world);
+            let troop_config = TroopConfigImpl::get(world);
             assert!(
                 caller_army_health.current == caller_army.troops.full_health(troop_config),
                 "caller health sanity check fail"
@@ -604,7 +600,7 @@ mod battle_systems {
             battle.deposit_balance(ref world, caller_army, caller_army_protectee);
 
             // add troops to battle army troops
-            let troop_config = TroopConfigCustomImpl::get(world);
+            let troop_config = TroopConfigImpl::get(world);
             battle.join(battle_side, caller_army.troops, caller_army_health.current);
             battle.reset_delta(troop_config);
             world.write_model(@battle);
@@ -647,7 +643,7 @@ mod battle_systems {
             let caller_army_side = caller_army.battle_side;
 
             // get battle
-            let mut battle = BattleCustomImpl::get(world, battle_id);
+            let mut battle = BattleImpl::get(world, battle_id);
 
             // check if army left early
             let army_left_early = !battle.has_ended();
@@ -663,7 +659,7 @@ mod battle_systems {
             let leaver = starknet::get_caller_address();
             let mut army: Army = world.read_model(army_id);
             if army_left_early {
-                let troop_config = TroopConfigCustomImpl::get(world);
+                let troop_config = TroopConfigImpl::get(world);
                 let troops_deducted = Troops {
                     knight_count: (army.troops.knight_count * troop_config.battle_leave_slash_num.into())
                         / troop_config.battle_leave_slash_denom.into(),
@@ -722,7 +718,7 @@ mod battle_systems {
             structure.assert_is_structure();
 
             let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
-            let battle_config = BattleConfigCustomImpl::get(world);
+            let battle_config = BattleConfigImpl::get(world);
             structure.assert_no_initial_attack_immunity(battle_config, armies_tick_config);
 
             // ensure claimer army is not in battle
@@ -741,7 +737,7 @@ mod battle_systems {
             if structure_army_id.is_non_zero() {
                 let mut structure_army: Army = world.read_model(structure_army_id);
                 if structure_army.is_in_battle() {
-                    let mut battle = BattleCustomImpl::get(world, structure_army.battle_id);
+                    let mut battle = BattleImpl::get(world, structure_army.battle_id);
 
                     let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                     let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
@@ -821,41 +817,37 @@ mod battle_pillage_systems {
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
     use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
-    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
+    use s0_eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
-        BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl,
-        CapacityConfigCategory
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
+        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
     };
-    use s0_eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
     use s0_eternum::models::event::{
         EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
-    use s0_eternum::models::movable::{Movable, MovableCustomTrait};
+    use s0_eternum::models::movable::{Movable, MovableTrait};
     use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{
-        EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait
-    };
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use s0_eternum::models::position::CoordTrait;
-    use s0_eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
+    use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
-    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
+    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
 
     use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::{Stamina, StaminaCustomTrait};
-    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::stamina::{Stamina, StaminaTrait};
+    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s0_eternum::models::weight::Weight;
 
     use s0_eternum::models::{
         combat::{
-            Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
-            BattleCustomImpl, BattleCustomTrait, BattleSide, Protector, Protectee, ProtecteeCustomTrait,
-            BattleHealthCustomTrait, BattleEscrowImpl, AttackingArmyQuantityTrackerCustomTrait,
-            AttackingArmyQuantityTrackerCustomImpl,
+            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
+            BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
+            AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
         },
     };
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
@@ -880,7 +872,7 @@ mod battle_pillage_systems {
             let structure: Structure = world.read_model(structure_id);
             structure.assert_is_structure();
             let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
-            let battle_config = BattleConfigCustomImpl::get(world);
+            let battle_config = BattleConfigImpl::get(world);
             structure.assert_no_initial_attack_immunity(battle_config, armies_tick_config);
 
             // ensure attacking army is not in a battle
@@ -897,7 +889,7 @@ mod battle_pillage_systems {
             army_stamina.refill_if_next_tick(ref world);
             assert!(army_stamina.amount.is_non_zero(), "army needs stamina to pillage");
 
-            let troop_config = TroopConfigCustomImpl::get(world);
+            let troop_config = TroopConfigImpl::get(world);
 
             // get structure army and health
 
@@ -913,7 +905,7 @@ mod battle_pillage_systems {
                     let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                     let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
 
-                    let mut battle = BattleCustomImpl::get(world, structure_army.battle_id);
+                    let mut battle = BattleImpl::get(world, structure_army.battle_id);
 
                     let (r_battle, r_structure_army) = battle_utils_systems
                         .leave_battle_if_ended(battle, structure_army);
@@ -964,7 +956,7 @@ mod battle_pillage_systems {
                 loop {
                     match chosen_resource_types.pop_front() {
                         Option::Some(chosen_resource_type) => {
-                            let pillaged_resource_from_structure: Resource = ResourceCustomImpl::get(
+                            let pillaged_resource_from_structure: Resource = ResourceImpl::get(
                                 ref world, (structure_id, *chosen_resource_type)
                             );
 
@@ -984,10 +976,7 @@ mod battle_pillage_systems {
                                 let max_carriable = if army_total_capacity > army_weight.value {
                                     (army_total_capacity - (army_weight.value))
                                         / max(
-                                            (WeightConfigCustomImpl::get_weight_grams(
-                                                ref world, *chosen_resource_type, 1
-                                            )),
-                                            1
+                                            (WeightConfigImpl::get_weight_grams(ref world, *chosen_resource_type, 1)), 1
                                         )
                                 } else {
                                     0
@@ -1107,7 +1096,7 @@ mod battle_pillage_systems {
                     true
                 );
 
-                let mut final_coord = BuildingCustomImpl::center();
+                let mut final_coord = BuildingImpl::center();
                 loop {
                     match chosen_directions.pop_front() {
                         Option::Some(direction) => { final_coord = final_coord.neighbor(*direction); },
@@ -1115,13 +1104,13 @@ mod battle_pillage_systems {
                     }
                 };
 
-                if final_coord != BuildingCustomImpl::center() {
+                if final_coord != BuildingImpl::center() {
                     // check if there is a building at the destination coordinate
                     let mut pillaged_building: Building = world
                         .read_model((structure_position.x, structure_position.y, final_coord.x, final_coord.y));
                     if pillaged_building.entity_id.is_non_zero() {
                         // destroy building if it exists
-                        let building_category = BuildingCustomImpl::destroy(ref world, structure_id, final_coord);
+                        let building_category = BuildingImpl::destroy(ref world, structure_id, final_coord);
                         destroyed_building_category = building_category;
                     }
                 }
@@ -1229,7 +1218,7 @@ mod battle_pillage_systems {
 
 #[dojo::contract]
 mod battle_utils_systems {
-    use arcade_trophy::store::{Store, StoreTrait};
+    use achievement::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
@@ -1238,41 +1227,37 @@ mod battle_utils_systems {
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
     use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
-    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
+    use s0_eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
-        BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl,
-        CapacityConfigCategory
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
+        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
     };
-    use s0_eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
     use s0_eternum::models::event::{
         EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
-    use s0_eternum::models::movable::{Movable, MovableCustomTrait};
+    use s0_eternum::models::movable::{Movable, MovableTrait};
     use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{
-        EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait
-    };
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use s0_eternum::models::position::CoordTrait;
-    use s0_eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
+    use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
-    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
+    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
 
     use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::{Stamina, StaminaCustomTrait};
-    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::stamina::{Stamina, StaminaTrait};
+    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s0_eternum::models::weight::Weight;
 
     use s0_eternum::models::{
         combat::{
-            Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
-            BattleCustomImpl, BattleCustomTrait, BattleSide, Protector, Protectee, ProtecteeCustomTrait,
-            BattleHealthCustomTrait, BattleEscrowImpl, AttackingArmyQuantityTrackerCustomTrait,
-            AttackingArmyQuantityTrackerCustomImpl,
+            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
+            BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
+            AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
         },
     };
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
@@ -1359,7 +1344,7 @@ mod battle_utils_systems {
             battle.withdraw_balance_and_reward(ref world, army_left, army_protectee);
 
             // reduce battle army values
-            let troop_config = TroopConfigCustomImpl::get(world);
+            let troop_config = TroopConfigImpl::get(world);
             battle.reduce_battle_army_troops_and_health_by(army_left, troop_config);
             battle.reduce_battle_army_lifetime_by(original_army);
 

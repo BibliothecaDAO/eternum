@@ -1,9 +1,9 @@
-import { graphql } from "../gql";
 
-export const GET_USERS = graphql(`
+/* Not currently in World Contract*/
+/*export const GET_USERS = graphql(`
   query totalPlayers {
     eternumOwnerModels {
       totalCount
     }
   }
-`);
+`);*/

@@ -17,7 +17,7 @@ pub struct Stamina {
 }
 
 #[generate_trait]
-impl StaminaCustomImpl of StaminaCustomTrait {
+impl StaminaImpl of StaminaTrait {
     fn handle_stamina_costs(army_entity_id: ID, stamina_cost: u16, ref world: WorldStorage) {
         let mut stamina: Stamina = world.read_model((army_entity_id));
         stamina.refill_if_next_tick(ref world);

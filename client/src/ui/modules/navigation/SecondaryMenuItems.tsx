@@ -1,21 +1,32 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useTutorial } from "@/hooks/use-tutorial";
-import { HintModal } from "@/ui/components/hints/HintModal";
-import { settings } from "@/ui/components/navigation/Config";
+import { rewards, settings } from "@/ui/components/navigation/Config";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { questSteps } from "@/ui/components/quest/QuestList";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { isRealmSelected } from "@/ui/utils/utils";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
 import { quests as questsWindow, social } from "../../components/navigation/Config";
+import { Rewards } from "../rewards/Rewards";
 
 export const SecondaryMenuItems = () => {
+  const {
+    setup: {
+      components: {
+        events: { GameEnded },
+      },
+    },
+  } = useDojo();
+
   const { toggleModal } = useModalStore();
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -38,6 +49,7 @@ export const SecondaryMenuItems = () => {
   );
 
   const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestId.Settle));
+  const gameEnded = useEntityQuery([Has(GameEnded)]);
 
   const realmSelected = useMemo(() => {
     return isRealmSelected(structureEntityId, structures) ? true : false;
@@ -52,7 +64,7 @@ export const SecondaryMenuItems = () => {
   }, [connector]);
 
   const secondaryNavigation = useMemo(() => {
-    return [
+    const buttons = [
       {
         button: (
           <div className="flex items-center gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12">
@@ -118,7 +130,22 @@ export const SecondaryMenuItems = () => {
         ),
       },
     ];
-  }, [unclaimedQuestsCount, quests, structureEntityId]);
+    if (gameEnded.length !== 0) {
+      buttons.push({
+        button: (
+          <CircleButton
+            tooltipLocation="bottom"
+            image={BuildingThumbs.rewards}
+            label={rewards}
+            active={isPopupOpen(rewards)}
+            size="lg"
+            onClick={() => togglePopup(rewards)}
+          />
+        ),
+      });
+    }
+    return buttons;
+  }, [unclaimedQuestsCount, quests, structureEntityId, gameEnded]);
 
   return (
     <div className="flex gap-1 md:gap-3">
@@ -137,9 +164,9 @@ export const SecondaryMenuItems = () => {
         <CircleButton
           className="hints-selector"
           image={BuildingThumbs.question}
-          label={"Hints"}
+          label={"Rewards"}
           size="lg"
-          onClick={() => toggleModal(<HintModal />)}
+          onClick={() => toggleModal(<Rewards />)}
         />
         <CircleButton
           className="discord-selector"

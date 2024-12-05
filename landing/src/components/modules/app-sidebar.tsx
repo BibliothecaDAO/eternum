@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Home, Ship } from "lucide-react";
+import { Castle, Gamepad2, Home } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
@@ -21,11 +21,6 @@ const items = [
     icon: Home,
   },
   // {
-  //   title: "Passes",
-  //   url: "/passes",
-  //   icon: Inbox,
-  // },
-  // {
   //   title: "Trade",
   //   url: "/trade",
   //   icon: LoopIcon,
@@ -36,15 +31,15 @@ const items = [
   //   icon: Ship,
   // },
   {
-    title: "Season Passes",
+    title: "Realms",
     url: "/mint",
-    icon: Ship,
+    icon: Castle,
   },
-  // {
-  //   title: "My Empire",
-  //   url: "/my-empire",
-  //   icon: Earth,
-  // },
+  {
+    title: "Season Passes",
+    url: "/season-passes",
+    icon: Gamepad2,
+  },
 ];
 
 export function AppSidebar() {

@@ -2,22 +2,21 @@ import { RealmMintDialog } from "@/components/modules/realm-mint-dialog";
 import { RealmsGrid } from "@/components/modules/realms-grid";
 import SeasonPassMintDialog from "@/components/modules/season-pass-mint-dialog";
 import { SelectNftActions } from "@/components/modules/select-nft-actions";
-import TransferRealmDialog, { SeasonPassMint } from "@/components/modules/transfer-realm-dialog";
 import { TypeH3 } from "@/components/typography/type-h3";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { realmsAddress } from "@/config";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { execute } from "@/hooks/gql/execute";
-import { GET_ERC_MINTS, GET_REALMS } from "@/hooks/query/realms";
+import { GET_ACCOUNT_TOKENS } from "@/hooks/query/realms";
 import useNftSelection from "@/hooks/useNftSelection";
 import { displayAddress } from "@/lib/utils";
-import { useConnect } from "@starknet-react/core";
+import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
+import { addAddressPadding } from "starknet";
 
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
@@ -25,29 +24,26 @@ export const Route = createLazyFileRoute("/mint")({
 
 function Mint() {
   const { connectors } = useConnect();
-  const {
-    account: { account },
-  } = useDojo();
+  const { address } = useAccount();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
-  const [isTransferRealmOpen, setIsTransferRealmOpen] = useState(false);
 
   const [controllerAddress] = useState<string>();
 
   const { data, isLoading: isRealmsLoading } = useSuspenseQuery({
-    queryKey: ["erc721Balance", account?.address],
-    queryFn: () => (account?.address ? execute(GET_REALMS, { accountAddress: account.address }) : null),
+    queryKey: ["erc721Balance", address],
+    queryFn: () => (address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: address }) : null),
     refetchInterval: 10_000,
   });
 
-  const { data: seasonPassMints, isLoading: isSeasonPassMintsLoading } = useSuspenseQuery({
+  /*  const { data: seasonPassMints, isLoading: isSeasonPassMintsLoading } = useSuspenseQuery({
     queryKey: ["ERCMints"],
     queryFn: () => execute(GET_ERC_MINTS),
     refetchInterval: 10_000,
-  });
+  });*/
 
-  const seasonPassTokenIds = useMemo(
+  /*const seasonPassTokenIds = useMemo(
     () =>
       seasonPassMints?.tokenTransfers?.edges
         ?.filter((token) => {
@@ -62,45 +58,23 @@ function Mint() {
         })
         .filter((id): id is string => id !== undefined),
     [seasonPassMints],
-  );
+  );*/
 
   const realmsErcBalance = useMemo(
     () =>
       data?.tokenBalances?.edges?.filter(
         (token) =>
           token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
-          token.node.tokenMetadata.contractAddress === realmsAddress,
+          addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
+            addAddressPadding(realmsAddress ?? "0x0"),
       ),
     [data, realmsAddress],
   );
-  const seasonPassNfts = useMemo(
-    () =>
-      seasonPassMints?.tokenTransfers?.edges
-        ?.filter((token) => {
-          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
-          if (token.node.tokenMetadata.contractAddress !== import.meta.env.VITE_SEASON_PASS_ADDRESS) return false;
-
-          // Check if this token exists in realmsErcBalance
-          return realmsErcBalance?.some(
-            (realmToken) =>
-              realmToken?.node?.tokenMetadata.__typename === "ERC721__Token" &&
-              realmToken.node.tokenMetadata.tokenId === token.node.tokenMetadata.tokenId,
-          );
-        })
-        .map((token) => {
-          if (token?.node?.tokenMetadata.__typename === "ERC721__Token") {
-            return token.node;
-          }
-          return undefined;
-        })
-        .filter((id) => id !== undefined),
-    [seasonPassMints, realmsErcBalance],
-  );
 
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
-    useNftSelection({ userAddress: account?.address as `0x${string}` });
+    useNftSelection({ userAddress: address as `0x${string}` });
 
-  const loading = isRealmsLoading || isSeasonPassMintsLoading;
+  const loading = isRealmsLoading; /*|| isSeasonPassMintsLoading*/
 
   return (
     <div className="flex flex-col h-full">
@@ -128,19 +102,18 @@ function Mint() {
                   isNftSelected={isNftSelected}
                   toggleNftSelection={toggleNftSelection}
                   realms={realmsErcBalance}
-                  seasonPassTokenIds={seasonPassTokenIds}
+                  //seasonPassTokenIds={seasonPassTokenIds}
                 />
               </Suspense>
             </div>
           </div>
           <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
-            <Button onClick={() => setIsTransferRealmOpen(true)} variant="cta">
-              Transfer Season Passes
-            </Button>
-            {import.meta.env.VITE_PUBLIC_CHAIN === "local" && (
+            {import.meta.env.VITE_PUBLIC_DEV === "true" ? (
               <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
                 Mint Realms
               </Button>
+            ) : (
+              <div />
             )}
             <div className="flex items-center gap-8">
               {data?.tokenBalances?.edges && (
@@ -150,8 +123,7 @@ function Mint() {
                   deselectAllNfts={deselectAllNfts}
                   contractAddress={realmsErcBalance?.[0]?.node?.tokenMetadata.contractAddress ?? ""}
                   batchTokenIds={realmsErcBalance
-                    ?.filter((token) => !seasonPassTokenIds?.includes(token?.node?.tokenMetadata.tokenId ?? ""))
-                    .map((token) => token?.node?.tokenMetadata?.tokenId ?? "")
+                    ?.map((token) => token?.node?.tokenMetadata?.tokenId ?? "")
                     .filter((tokenId): tokenId is string => tokenId !== "")}
                 />
               )}
@@ -161,23 +133,22 @@ function Mint() {
                 Mint Season Passes
               </Button>
             </div>
-            <SeasonPassMintDialog
-              isOpen={isOpen}
-              setIsOpen={setIsOpen}
-              deselectAllNfts={deselectAllNfts}
-              isSuccess={status === "success"}
-              realm_ids={selectedTokenIds}
-            />
-            <RealmMintDialog
-              totalOwnedRealms={realmsErcBalance?.length}
-              isOpen={isRealmMintOpen}
-              setIsOpen={setIsRealmMintIsOpen}
-            />
-            <TransferRealmDialog
-              isOpen={isTransferRealmOpen}
-              setIsOpen={setIsTransferRealmOpen}
-              seasonPassMints={seasonPassNfts as SeasonPassMint[]}
-            />
+            {isOpen && (
+              <SeasonPassMintDialog
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+                deselectAllNfts={deselectAllNfts}
+                isSuccess={status === "success"}
+                realm_ids={selectedTokenIds}
+              />
+            )}
+            {isRealmMintOpen && (
+              <RealmMintDialog
+                totalOwnedRealms={realmsErcBalance?.length}
+                isOpen={isRealmMintOpen}
+                setIsOpen={setIsRealmMintIsOpen}
+              />
+            )}
           </div>
         </>
       </>

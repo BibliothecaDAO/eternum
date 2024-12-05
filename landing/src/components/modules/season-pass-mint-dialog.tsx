@@ -24,7 +24,7 @@ export default function SeasonPassMintDialog({
   isSuccess,
   realm_ids,
 }: SeasonPassMintDialogProps) {
-  const { mint, isMinting } = useMintSeasonPass();
+  const { mint, isMinting, isMintSuccess } = useMintSeasonPass();
 
   const { address, connector } = useAccount();
 
@@ -40,6 +40,13 @@ export default function SeasonPassMintDialog({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isMintSuccess) {
+      setIsOpen(false);
+      deselectAllNfts();
+    }
+  }, [isMintSuccess, setIsOpen, deselectAllNfts]);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent
@@ -52,26 +59,25 @@ export default function SeasonPassMintDialog({
         <div className="flex flex-col text-primary text-center items-center">
           <div className="flex flex-col gap-4">
             <TypeH2 className="border-b-0 text-center">
-              {isSuccess ? `Minted ${realm_ids.length} Passes` : `Mint ${realm_ids.length} Passes`}
+              {isMintSuccess ? `Minted ${realm_ids.length} Passes` : `Mint ${realm_ids.length} Passes`}
             </TypeH2>
-            {isSuccess && (
+            {isMintSuccess && (
               <div className="mb-4 text-center text-sm">
                 Your season passes have now been minted - see them at <Link href="/passes">Passes</Link>
               </div>
             )}
           </div>
-          {isSuccess ? (
+          {isMintSuccess ? (
             <Button onClick={() => setIsOpen(false)} className="mx-auto w-full lg:w-fit">
               Continue to explore Realms
             </Button>
           ) : (
             <div className="flex flex-col items-center gap-4 rounded-md p-5 lg:flex-row lg:gap-5 lg:p-4 w-fill">
               <div className="text-center">
-                <div className="w-full grid grid-cols-3 p-4">
+                <div className="w-full grid grid-cols-4 gap-0.5 p-4">
                   {realm_ids.map((realm, index) => (
                     <div className="text-sm p-2 border rounded-md" key={realm}>
                       #{Number(realm)}
-                      {index < realm_ids.length - 1 && ", "}
                     </div>
                   ))}
                 </div>
@@ -97,8 +103,6 @@ export default function SeasonPassMintDialog({
                       className="mx-auto mt-8"
                       onClick={() => {
                         mint(realm_ids, address);
-                        deselectAllNfts();
-                        setIsOpen(false);
                       }}
                       disabled={!address}
                       variant="cta"

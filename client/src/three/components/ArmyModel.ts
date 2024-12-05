@@ -151,6 +151,8 @@ export class ArmyModel {
       this.dummyObject.updateMatrix();
       modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
       modelData.mesh.instanceMatrix.needsUpdate = true;
+      modelData.mesh.userData.entityIdMap = modelData.mesh.userData.entityIdMap || new Map();
+      modelData.mesh.userData.entityIdMap.set(index, entityId);
     });
   }
 

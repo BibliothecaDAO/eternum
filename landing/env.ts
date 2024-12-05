@@ -25,14 +25,8 @@ const envSchema = z.object({
 
   // Configuration flags
   VITE_PUBLIC_DEV: z.string().transform((v) => v === "true"),
-  VITE_PUBLIC_SHOW_FPS: z.string().transform((v) => v === "true"),
-  VITE_PUBLIC_GRAPHICS_DEV: z.string().transform((v) => v === "true"),
   // Version and chain info
-  VITE_PUBLIC_GAME_VERSION: z.string(),
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "testnet", "local"]), // Add other chains as needed
-
-  VITE_PUBLIC_CONSTRUCTION_FLAG: z.string().transform((v) => v === "true"),
-  VITE_PUBLIC_HIDE_THREEJS_MENU: z.string().transform((v) => v === "true"),
 
   // Ark Marketplace API
   VITE_PUBLIC_ARK_MARKETPLACE_API: z.string().url(),
@@ -42,6 +36,7 @@ const envSchema = z.object({
 });
 
 let env: z.infer<typeof envSchema>;
+console.log(import.meta.env);
 try {
   env = envSchema.parse(import.meta.env);
 } catch (error) {

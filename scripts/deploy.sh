@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create a Slot -> if deploying to slot
-slot deployments create -t epic eternum-rc1-1 katana --version v1.0.1 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
+slot deployments create -t epic eternum-rc1-1 katana --version v1.0.3 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
 
 # get accounts 
 # -> update prod env_variables.sh
@@ -27,7 +27,7 @@ printf "\n\n"
 echo "----- Building Eternum Season Pass Contract ----- "
 
 cd season_pass/contracts && scarb --release build
-cd ../scripts/deployment && npm run deploy::prod 
+cd ../scripts/deployment && npm run deploy::sepolia
 
 # update the .env.production file with the season pass and test realms contracts addresses
 VITE_SEASON_PASS_ADDRESS=$(cat ./addresses/prod/season_pass.json | jq -r '.address')
@@ -61,19 +61,19 @@ echo "Build contracts..."
 sozo build --profile prod
 
 echo "Deleting previous indexer and network..."
-# slot deployments delete eternum-40 torii
+# slot deployments delete realms-world-1 torii
 # slot deployments delete eternum-40 katana
 
 echo "Migrating world..."
 sozo migrate --profile prod 
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-rc-sepolia-4 torii --version v1.0.1 --world 0x0659152b85ef0cc4741d7264dae2fd1c220b41453fb5e68e6b01d291a09602f3 --rpc https://api.cartridge.gg/x/starknet/sepolia --start-block 0  --index-pending true --config-file ./torii.toml
+slot deployments create -t epic sepolia-rc-1 torii --version v1.0.4 --world 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --rpc https://api.cartridge.gg/x/starknet/sepolia --indexing.pending true --config ./torii-sepolia.toml
 
 echo "Setting up config..."
 
 # NOTE: THE SEASON PASS MUST BE SETUP BEFORE THE CONFIG IS SETUP
-bun --env-file=../client/.env.production ../config/index.ts
+bun --env-file=../client/.env.preview ../config/index.ts
 
 # ------------------------------------------------------------------------------------------------
 # Build and deploy season resources (ERC20) contracts

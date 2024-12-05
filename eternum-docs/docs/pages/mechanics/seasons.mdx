@@ -6,8 +6,10 @@ architecture to enable dynamic gameplay experiences.
 ## Overview
 
 Seasons in Eternum are distinct gameplay periods that operate under specific rules and logic while maintaining certain
-persistent elements (such as resources) across different seasons. This system allows for regular refreshes of the game
-meta and introduces new mechanics without completely resetting player progress.
+persistent elements (such as resources) across different seasons.
+
+This system allows for regular refreshes of the game meta and introduces new mechanics without completely resetting
+player progress.
 
 ## Season Structure
 
@@ -59,20 +61,27 @@ between players to dominate the map, there are many paths to success:
 
 ### Season Rewards
 
-Drawing inspiration from the World Series of Poker, Eternum implements a tiered payout system for the top 50 players
-based on their final ranking. The prize pool is distributed as follows:
+#### Individual Leaderboard
 
-#### Payout Structure
+The individual rewards system is based on Victory Points (VP). Any player who earns VP during the season is eligible for
+rewards. The payout is directly proportional to the percentage of total VP earned:
 
-- 1st Place: 20% of prize pool
-- 2nd Place: 12% of prize pool
-- 3rd Place: 8% of prize pool
-- 4th-10th Place: 15% (distributed proportionally)
-- 11th-20th Place: 15% (distributed proportionally)
-- 21st-50th Place: 30% (distributed proportionally)
+- If you earned 5% of all VP during the season, you receive 5% of the individual prize pool
+- All VP-earning players receive rewards, regardless of ranking
+- Rewards are calculated using: `(Your VP / Total VP) * Prize Pool`
 
-This structure ensures that:
+#### Guild Leaderboard (Season 0)
 
-- Top 50 players receive rewards
-- Payouts are proportional to player ranking
-- Higher ranks receive exponentially larger payouts
+For Season 0, an additional prize pool is dedicated for the guild leaderboard. The top 10 guilds share the guild prize
+pool according to the following structure:
+
+- 1st Place: 30%
+- 2nd Place: 20%
+- 3rd Place: 13%
+- 4th Place: 9%
+- 5th Place: 7%
+- 6th Place: 5%
+- 7th Place: 4%
+- 8th Place: 3%
+- 9th Place: 2%
+- 10th Place: 1%

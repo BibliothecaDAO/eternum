@@ -7,7 +7,7 @@ trait IMapSystems<T> {
 
 #[dojo::contract]
 mod map_systems {
-    use arcade_trophy::store::{Store, StoreTrait};
+    use achievement::store::{Store, StoreTrait};
     use core::num::traits::Bounded;
     use core::option::OptionTrait;
     use core::traits::Into;
@@ -18,29 +18,29 @@ mod map_systems {
 
     use s0_eternum::alias::ID;
     use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
-    use s0_eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
+    use s0_eternum::models::buildings::{BuildingCategory, Building, BuildingImpl};
     use s0_eternum::models::capacity::{CapacityCategory};
     use s0_eternum::models::combat::{
-        Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
+        Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use s0_eternum::models::config::{
-        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, MercenariesConfig, TroopConfigCustomImpl,
+        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, MercenariesConfig, TroopConfigImpl,
         TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig, TravelFoodCostConfigImpl
     };
     use s0_eternum::models::map::Tile;
-    use s0_eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
-    use s0_eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
+    use s0_eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
+    use s0_eternum::models::owner::{Owner, EntityOwner, OwnerTrait, EntityOwnerTrait};
     use s0_eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use s0_eternum::models::production::ProductionDeadline;
     use s0_eternum::models::quantity::Quantity;
     use s0_eternum::models::realm::{Realm};
     use s0_eternum::models::resources::{
-        Resource, ResourceCost, ResourceCustomTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
+        Resource, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };
 
     use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::StaminaCustomImpl;
-    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
+    use s0_eternum::models::stamina::StaminaImpl;
+    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
     use s0_eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
     use s0_eternum::systems::map::map_generation::{
         IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait
@@ -109,7 +109,7 @@ mod map_systems {
             arrival_time.assert_not_travelling();
 
             let stamina_cost: TravelStaminaCostConfig = world.read_model((WORLD_CONFIG_ID, TravelTypes::EXPLORE));
-            StaminaCustomImpl::handle_stamina_costs(unit_id, stamina_cost.cost, ref world);
+            StaminaImpl::handle_stamina_costs(unit_id, stamina_cost.cost, ref world);
 
             let army: Army = world.read_model(unit_id);
 

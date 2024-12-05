@@ -29,7 +29,7 @@ pub struct GuildWhitelist {
 }
 
 #[generate_trait]
-impl GuildMemberCustomImpl of GuildMemberCustomTrait {
+impl GuildMemberImpl of GuildMemberTrait {
     fn assert_has_guild(self: GuildMember) {
         assert(self.guild_entity_id != 0, 'Not member of a guild');
     }
@@ -40,7 +40,7 @@ impl GuildMemberCustomImpl of GuildMemberCustomTrait {
 }
 
 #[generate_trait]
-impl GuildWhitelistCustomImpl of GuildWhitelistCustomTrait {
+impl GuildWhitelistImpl of GuildWhitelistTrait {
     fn assert_is_whitelisted(self: GuildWhitelist) {
         assert(self.is_whitelisted == true, 'Player is not whitelisted');
     }

@@ -5,7 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "deploy": "bun --env-file=.env ./deploy && bun --env-file=.env ./config/index.ts"
+    "deploy": "source .env && bun --env-file=.env ./deploy && bun --env-file=.env ./config/index.ts"
   },
   "author": "",
   "license": "ISC",

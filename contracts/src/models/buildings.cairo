@@ -6,18 +6,18 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s0_eternum::alias::ID;
 use s0_eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID, WORLD_CONFIG_ID};
 use s0_eternum::models::config::{
-    TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigCustomImpl,
-    BuildingCategoryPopConfigCustomTrait, PopulationConfig, BuildingGeneralConfig
+    TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigImpl,
+    BuildingCategoryPopConfigTrait, PopulationConfig, BuildingGeneralConfig
 };
-use s0_eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
-use s0_eternum::models::population::{Population, PopulationCustomTrait};
-use s0_eternum::models::position::{Coord, Position, Direction, PositionCustomTrait, CoordTrait};
+use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
+use s0_eternum::models::population::{Population, PopulationTrait};
+use s0_eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
 use s0_eternum::models::production::{
-    Production, ProductionInput, ProductionRateTrait, ProductionInputCustomImpl, ProductionInputCustomTrait
+    Production, ProductionInput, ProductionRateTrait, ProductionInputImpl, ProductionInputTrait
 };
 use s0_eternum::models::realm::Realm;
-use s0_eternum::models::resources::ResourceCustomTrait;
-use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
+use s0_eternum::models::resources::ResourceTrait;
+use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 use s0_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //todo we need to define border of innner hexes
@@ -93,7 +93,7 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
 
 
 #[generate_trait]
-impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
+impl BuildingProductionImpl of BuildingProductionTrait {
     fn is_resource_producer(self: Building) -> bool {
         self.produced_resource().is_non_zero()
     }
@@ -145,7 +145,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
         if self.is_resource_producer() {
             let tick = TickImpl::get_default_tick_config(ref world);
             let produced_resource_type = self.produced_resource();
-            let mut produced_resource: Resource = ResourceCustomImpl::get(
+            let mut produced_resource: Resource = ResourceImpl::get(
                 ref world, (self.outer_entity_id, produced_resource_type)
             );
 
@@ -169,23 +169,26 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
                 }
 
                 let production_input: ProductionInput = world.read_model((produced_resource_type, count));
-                let (input_resource_type, input_resource_amount) = (
+                let (input_resource_type, mut input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
 
-                /// lords will not be consumed during production of donkey
+                /// only 10% of lords cost will be consumed during production of donkey
                 /// if the realm has a wonder
                 if input_resource_type == ResourceTypes::LORDS {
                     if resource_production.resource_type == ResourceTypes::DONKEY {
                         let realm: Realm = world.read_model(self.outer_entity_id);
                         if realm.has_wonder {
-                            count += 1;
-                            continue;
+                            input_resource_amount =
+                                ((input_resource_amount * PercentageValueImpl::_10().into())
+                                    / PercentageValueImpl::_100().into())
+                                .try_into()
+                                .unwrap();
                         }
                     }
                 }
 
-                let mut input_resource: Resource = ResourceCustomImpl::get(
+                let mut input_resource: Resource = ResourceImpl::get(
                     ref world, (self.outer_entity_id, input_resource_type)
                 );
                 let mut input_production: Production = world.read_model((self.outer_entity_id, input_resource_type));
@@ -199,9 +202,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
             };
 
             // reset the time that materials used for production will finish
-            let first_input_finish_tick = ProductionInputCustomImpl::first_input_finish_tick(
-                @resource_production, ref world
-            );
+            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(@resource_production, ref world);
             resource_production.set__input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
             produced_resource.save(ref world);
 
@@ -221,7 +222,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
         if self.is_resource_producer() {
             let tick = TickImpl::get_default_tick_config(ref world);
             let produced_resource_type = self.produced_resource();
-            let mut produced_resource: Resource = ResourceCustomImpl::get(
+            let mut produced_resource: Resource = ResourceImpl::get(
                 ref world, (self.outer_entity_id, produced_resource_type)
             );
 
@@ -246,23 +247,26 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
                 }
 
                 let production_input: ProductionInput = world.read_model((produced_resource_type, count));
-                let (input_resource_type, input_resource_amount) = (
+                let (input_resource_type, mut input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
 
-                /// lords will not be consumed during production of donkey
+                /// only 10% of lords cost will be consumed during production of donkey
                 /// if the realm has a wonder
                 if input_resource_type == ResourceTypes::LORDS {
                     if resource_production.resource_type == ResourceTypes::DONKEY {
                         let realm: Realm = world.read_model(self.outer_entity_id);
                         if realm.has_wonder {
-                            count += 1;
-                            continue;
+                            input_resource_amount =
+                                ((input_resource_amount * PercentageValueImpl::_10().into())
+                                    / PercentageValueImpl::_100().into())
+                                .try_into()
+                                .unwrap();
                         }
                     }
                 }
 
-                let mut input_resource: Resource = ResourceCustomImpl::get(
+                let mut input_resource: Resource = ResourceImpl::get(
                     ref world, (self.outer_entity_id, input_resource_type)
                 );
                 let mut input_production: Production = world.read_model((self.outer_entity_id, input_resource_type));
@@ -275,9 +279,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
             };
 
             // reset the time that materials used for production will finish
-            let first_input_finish_tick = ProductionInputCustomImpl::first_input_finish_tick(
-                @resource_production, ref world
-            );
+            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(@resource_production, ref world);
             resource_production.set__input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
             produced_resource.save(ref world);
             world.write_model(@resource_production);
@@ -414,7 +416,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
 }
 
 #[generate_trait]
-impl BuildingCustomImpl of BuildingCustomTrait {
+impl BuildingImpl of BuildingTrait {
     fn center() -> Coord {
         Coord { x: 10, y: 10 }
     }
@@ -467,9 +469,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         world.write_model(@building_quantity);
 
         let mut population: Population = world.read_model(outer_entity_id);
-        let building_category_population_config = BuildingCategoryPopConfigCustomTrait::get(
-            ref world, building.category
-        );
+        let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
         let population_config: PopulationConfig = world.read_model(POPULATION_CONFIG_ID);
 
         // increase population
@@ -569,9 +569,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
 
         // decrease population
         let mut population: Population = world.read_model(outer_entity_id);
-        let building_category_population_config = BuildingCategoryPopConfigCustomTrait::get(
-            ref world, building.category
-        );
+        let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
 
         // [check] If Workers hut
         // You cannot delete a workers hut unless you have capacity
@@ -598,7 +596,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
 
     fn make_payment(self: Building, building_quantity: BuildingQuantityv2, ref world: WorldStorage) {
         let building_general_config: BuildingGeneralConfig = world.read_model(WORLD_CONFIG_ID);
-        let building_config: BuildingConfig = BuildingConfigCustomImpl::get(
+        let building_config: BuildingConfig = BuildingConfigImpl::get(
             ref world, self.category, self.produced_resource_type
         );
         let mut index = 0;
@@ -615,7 +613,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
             //  N = Which number building this is (1st, 2nd, 3rd, etc.)
             //
             let resource_cost: ResourceCost = world.read_model((building_config.resource_cost_id, index));
-            let mut resource: Resource = ResourceCustomImpl::get(
+            let mut resource: Resource = ResourceImpl::get(
                 ref world, (self.outer_entity_id, resource_cost.resource_type)
             );
             let percentage_additional_cost = PercentageImpl::get(

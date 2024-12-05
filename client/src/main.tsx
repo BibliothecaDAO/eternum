@@ -13,7 +13,7 @@ import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
 import GameRenderer from "./three/GameRenderer";
 import { LoadingScreen } from "./ui/modules/LoadingScreen";
-
+import { getRandomBackgroundImage } from "./ui/utils/utils";
 declare global {
   interface Window {
     Buffer: typeof Buffer;
@@ -27,12 +27,14 @@ async function init() {
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
 
+  const backgroundImage = getRandomBackgroundImage();
+
   if (env.VITE_PUBLIC_CONSTRUCTION_FLAG == true) {
-    root.render(<LoadingScreen />);
+    root.render(<LoadingScreen backgroundImage={backgroundImage} />);
     return;
   }
 
-  root.render(<LoadingScreen />);
+  root.render(<LoadingScreen backgroundImage={backgroundImage} />);
 
   const setupResult = await setup(dojoConfig);
 
@@ -49,7 +51,7 @@ async function init() {
       <ShepherdJourneyProvider>
         <StarknetProvider>
           <DojoProvider value={setupResult}>
-            <App />
+            <App backgroundImage={backgroundImage} />
           </DojoProvider>
         </StarknetProvider>
       </ShepherdJourneyProvider>

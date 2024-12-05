@@ -12,7 +12,7 @@ pub struct CapacityCategory {
 
 
 #[generate_trait]
-impl CapacityCategoryCustomImpl of CapacityCategoryCustomTrait {
+impl CapacityCategoryImpl of CapacityCategoryTrait {
     fn assert_exists_and_get(ref world: WorldStorage, entity_id: ID) -> CapacityCategory {
         let capacity_category: CapacityCategory = world.read_model(entity_id);
         assert!(

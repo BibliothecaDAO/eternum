@@ -1,12 +1,5 @@
 import { Account } from "starknet";
-import {
-  ADMIN_BANK_ENTITY_ID,
-  ARMY_ENTITY_TYPE,
-  DONKEY_ENTITY_TYPE,
-  QUEST_RESOURCES,
-  QuestType,
-  ResourcesIds,
-} from "../constants";
+import { ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, QuestType, ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
 import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
@@ -124,7 +117,7 @@ export const setQuestRewardConfig = async (config: Config) => {
   const calldataArray = [];
 
   let QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(
-    QUEST_RESOURCES,
+    config.config.questResources,
     config.config.resources.resourceMultiplier * config.config.resources.resourcePrecision,
   );
 

@@ -270,10 +270,14 @@ const useQuestDependencies = (setup: SetupResult, account: Account | AccountInte
 export const useQuestClaimStatus = () => {
   const {
     setup: {
-      components: { Quest },
+      components: { Quest, Realm },
     },
+    account: { account },
   } = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const realmSettler = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]))?.settler_address;
+  const isNotSettler = realmSettler !== ContractAddress(account.address);
 
   const prizeUpdate = useEntityQuery([HasValue(Quest, { entity_id: structureEntityId || 0 })]);
 
@@ -288,7 +292,7 @@ export const useQuestClaimStatus = () => {
     return Array.from(questDetails.keys()).reduce(
       (acc, questName) => ({
         ...acc,
-        [questName]: checkPrizesClaimed(questDetails.get(questName)?.prizes || []),
+        [questName]: isNotSettler || checkPrizesClaimed(questDetails.get(questName)?.prizes || []),
       }),
       {} as Record<QuestId, boolean>,
     );

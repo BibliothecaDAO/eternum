@@ -15,9 +15,9 @@ export interface ResourceWhitelistConfig {
   resource_type: num.BigNumberish;
 }
 
-export const NAMESPACE = "s0_eternum";
+const NAMESPACE = "s0_eternum";
 
-export const getContractByName = (manifest: any, name: string) => {
+const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.tag === name);
   if (!contract) {
     throw new Error(`Contract ${name} not found in manifest`);

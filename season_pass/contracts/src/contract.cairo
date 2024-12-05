@@ -20,6 +20,7 @@ trait ISeasonPass<TState> {
 
 #[starknet::contract]
 mod EternumSeasonPass {
+    use esp::utils::make_json_and_base64_encode_metadata;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -49,6 +50,10 @@ mod EternumSeasonPass {
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
+
+    fn IMAGE_URL() -> ByteArray {
+        "QmXbhQRZMxod2USTMgargWt3sxPGBo4sQNiQEMkLq36qfC"
+    }
 
     #[storage]
     struct Storage {
@@ -85,7 +90,7 @@ mod EternumSeasonPass {
         realms_contract_address: ContractAddress,
         lords_contract_address: ContractAddress
     ) {
-        self.erc721.initializer("Eternum Season 0 Pass", "ES0P", "");
+        self.erc721.initializer("Eternum Season 0 Pass", "ESP0", "");
         self.ownable.initializer(owner);
         self.realms.write(IERC721Dispatcher { contract_address: realms_contract_address });
         self.lords.write(IERC20Dispatcher { contract_address: lords_contract_address });
@@ -118,7 +123,13 @@ mod EternumSeasonPass {
         ///
         /// - `token_id` exists.
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
-            IERC721MetadataDispatcher { contract_address: self.realms.read().contract_address }.token_uri(token_id)
+            self.erc721._require_owned(token_id);
+            let (name_and_attrs, _url_a, _url_b) = IRealmMetadataEncodedDispatcher {
+                contract_address: self.realms.read().contract_address
+            }
+                .get_encoded_metadata(token_id.try_into().unwrap());
+
+            make_json_and_base64_encode_metadata(name_and_attrs, IMAGE_URL())
         }
     }
 
@@ -158,7 +169,7 @@ mod EternumSeasonPass {
             let caller = starknet::get_caller_address();
             let this = starknet::get_contract_address();
 
-            self.lords.read().transfer_from(caller, this, amount);
+            assert!(self.lords.read().transfer_from(caller, this, amount), "ESP: Failed to transfer lords");
 
             // update lords balance
             let lords_balance = self.lords_balance.entry(token_id).read();
@@ -175,7 +186,7 @@ mod EternumSeasonPass {
             assert!(lords_balance >= amount, "ESP: Insufficient lords balance");
 
             // transfer lords to caller
-            self.lords.read().transfer(caller, amount);
+            assert!(self.lords.read().transfer(caller, amount), "ESP: Failed to transfer lords");
 
             // update lords balance
             self.lords_balance.entry(token_id).write(lords_balance - amount);

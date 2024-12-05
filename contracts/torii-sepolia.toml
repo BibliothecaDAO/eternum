@@ -1,0 +1,14 @@
+db_dir = "./torii-db"
+
+[indexing]
+events_chunk_size = 1024 # Size of events page to fetch
+blocks_chunk_size = 10240 # Blocks to process before DB commit
+index_pending = true # Enable indexing pending blocks
+polling_interval = 500 # Polling interval in milliseconds
+max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
+index_transactions = true
+contracts = [
+    "erc721:0xafc50128e19996b15e95b97d2fdd89f2fadaf1f8385afc361c43f9aeb7caff",
+    "erc721:0x36f75b31145be5578c59e73c2d47d454f9b8e13bd2b67fc750d8eaa8ac18beb",
+    "erc20:0x342ad5cc14002c005a5cedcfce2bd3af98d5e7fb79e9bf949b3a91cf145d72e",
+]

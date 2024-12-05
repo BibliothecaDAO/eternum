@@ -194,12 +194,12 @@ mod resource_bridge_systems {
     use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
     use s0_eternum::models::bank::bank::Bank;
     use s0_eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
-    use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeCustomImpl};
-    use s0_eternum::models::owner::{EntityOwner, Owner, EntityOwnerCustomTrait};
+    use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeImpl};
+    use s0_eternum::models::owner::{EntityOwner, Owner, EntityOwnerTrait};
     use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, RESOURCE_PRECISION};
+    use s0_eternum::models::resources::{Resource, ResourceImpl, RESOURCE_PRECISION};
     use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use s0_eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl, min};
     use starknet::ContractAddress;
@@ -412,7 +412,7 @@ mod resource_bridge_systems {
             let resource_type = resource_bridge_token_whitelist.resource_type;
 
             // burn resource balance from sender
-            let mut resource: Resource = ResourceCustomImpl::get(ref world, (from_entity_id, resource_type));
+            let mut resource: Resource = ResourceImpl::get(ref world, (from_entity_id, resource_type));
             let resource_amount = resource.balance;
             resource.burn(resource_amount);
             resource.save(ref world);
@@ -502,7 +502,7 @@ mod resource_bridge_systems {
                         .unwrap();
                     assert!(bank_fee_amount.is_non_zero(), "Bridge: amount too small to pay bank fees");
                     // add fees to bank
-                    let mut bank_resource = ResourceCustomImpl::get(ref world, (bank_id, resource_type));
+                    let mut bank_resource = ResourceImpl::get(ref world, (bank_id, resource_type));
                     bank_resource.add(bank_fee_amount);
                     bank_resource.save(ref world);
                     return bank_fee_amount;

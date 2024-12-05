@@ -13,7 +13,7 @@ use s0_eternum::models::bank::market::{Market};
 
 use s0_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
 use s0_eternum::models::position::{Coord};
-use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
+use s0_eternum::models::resources::{Resource, ResourceImpl};
 use s0_eternum::systems::bank::contracts::bank::bank_systems;
 use s0_eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
 
@@ -119,20 +119,20 @@ fn bank_test_swap_buy_without_fees() {
     let donkey_id = swap_systems_dispatcher.buy(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // donkey resources
-    let donkey_wood = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
-    let donkey_lords = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
+    let donkey_wood = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
+    let donkey_lords = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
     assert_eq!(donkey_wood.balance, SWAP_AMOUNT);
     assert_eq!(donkey_lords.balance, 0);
 
     // bank resources
-    let bank_wood = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
-    let bank_lords = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
+    let bank_wood = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
+    let bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
     assert(bank_wood.balance == 0, 'bank_wood.balance');
     assert(bank_lords.balance == 0, 'bank_lords.balance');
 
     // player resources
-    let wood = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
-    let lords = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
+    let wood = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
     assert(wood.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'wood.balance');
     // 90_000 - 1112 (lords cost)
     assert_eq!(lords.balance, 88_888);
@@ -166,21 +166,21 @@ fn bank_test_swap_buy_with_fees() {
     let donkey_id = swap_systems_dispatcher.buy(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // donkey resources
-    let donkey_wood = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
-    let donkey_lords = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
+    let donkey_wood = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
+    let donkey_lords = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
     assert(donkey_wood.balance == SWAP_AMOUNT, 'donkey_wood.balance');
     assert(donkey_lords.balance == 0, 'donkey_lords.balance');
 
     // bank resources
-    let bank_wood = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
-    let bank_lords = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
+    let bank_wood = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
+    let bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
     assert(bank_wood.balance == 0, 'bank_wood.balance');
     // 11 fees
     assert_eq!(bank_lords.balance, 123);
 
     // player resources
-    let wood = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
-    let lords = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
+    let wood = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
     assert(wood.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'wood.balance');
     // initial 90_000 - 1235 (lords cost) - 123 (bank fees)
     assert_eq!(lords.balance, 88_642);
@@ -216,20 +216,20 @@ fn bank_test_swap_sell_without_fees() {
     let donkey_id = swap_systems_dispatcher.sell(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // donkey resources
-    let donkey_wood = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
-    let donkey_lords = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
+    let donkey_wood = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
+    let donkey_lords = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
     assert(donkey_wood.balance == 0, 'donkey_wood.balance');
     assert_eq!(donkey_lords.balance, 909);
 
     // bank resources
-    let bank_wood = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
-    let bank_lords = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
+    let bank_wood = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
+    let bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
     assert(bank_wood.balance == 0, 'bank_wood.balance');
     assert(bank_lords.balance == 0, 'bank_lords.balance');
 
     // player resources
-    let wood = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
-    let lords = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
+    let wood = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
     assert(wood.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT - SWAP_AMOUNT, 'wood.balance');
     assert(lords.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'lords.balance');
 
@@ -263,20 +263,20 @@ fn bank_test_swap_sell_with_fees() {
     let donkey_id = swap_systems_dispatcher.sell(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // donkey resources
-    let donkey_wood = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
-    let donkey_lords = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
+    let donkey_wood = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
+    let donkey_lords = ResourceImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
     assert(donkey_wood.balance == 0, 'donkey_wood.balance');
     assert_eq!(donkey_lords.balance, 743);
 
     // bank resources
-    let bank_wood = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
-    let bank_lords = ResourceCustomImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
+    let bank_wood = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::WOOD));
+    let bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
     assert_eq!(bank_wood.balance, 0);
     assert_eq!(bank_lords.balance, 82);
 
     // player resources
-    let wood = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
-    let lords = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
+    let wood = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
     assert(wood.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT - SWAP_AMOUNT, 'wood.balance');
     assert(lords.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'lords.balance');
 

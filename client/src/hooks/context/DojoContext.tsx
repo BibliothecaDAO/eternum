@@ -8,7 +8,7 @@ import { ReactNode, createContext, useContext, useEffect, useMemo, useState } fr
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
-import { displayAddress } from "../../ui/utils/utils";
+import { displayAddress, getRandomBackgroundImage } from "../../ui/utils/utils";
 import { useAccountStore } from "./accountStore";
 
 interface DojoAccount {
@@ -184,23 +184,25 @@ const DojoContextProvider = ({
     }
   }, [isDev, controllerAccount, burnerAccount]);
 
+  const bg = `/images/covers/${getRandomBackgroundImage()}.png`;
+
   if (!accountsInitialized) {
-    return <LoadingScreen />;
+    return <LoadingScreen backgroundImage={bg} />;
   }
 
   // Handle Loading Screen
   if (isDev) {
     if (!burnerAccount) {
-      return <LoadingScreen />;
+      return <LoadingScreen backgroundImage={bg} />;
     }
   } else {
     if (isConnecting) {
-      return <LoadingScreen />;
+      return <LoadingScreen backgroundImage={bg} />;
     }
     if (!isConnected && !isConnecting && !controllerAccount) {
       return (
         <div className="relative h-screen w-screen pointer-events-auto">
-          <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="Cover" />
+          <img className="absolute h-screen w-screen object-cover" src={bg} alt="Cover" />
           <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
             <div className="self-center bg-brown rounded-lg border p-4 md:p-8 text-gold w-[90%] md:min-w-[600px] md:max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient mx-4">
               <div className="w-full text-center pt-2 md:pt-6">
@@ -241,7 +243,7 @@ const DojoContextProvider = ({
 
     if (!controllerAccount && isConnected) {
       // Connected but controllerAccount is not set yet
-      return <LoadingScreen />;
+      return <LoadingScreen backgroundImage="/images/cover.png" />;
     }
   }
 

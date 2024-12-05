@@ -76,7 +76,11 @@ const OrientationOverlay = lazy(() =>
   import("../components/overlays/OrientationOverlay").then((module) => ({ default: module.OrientationOverlay })),
 );
 
-export const World = () => {
+const MiniMapNavigation = lazy(() =>
+  import("../modules/navigation/MiniMapNavigation").then((module) => ({ default: module.MiniMapNavigation })),
+);
+
+export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
 
@@ -107,12 +111,12 @@ export const World = () => {
     >
       <div className="vignette" />
 
-      <Suspense fallback={<LoadingScreen />}>
+      <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
         {IS_MOBILE && <OrientationOverlay />}
         <LoadingOroborus loading={isLoadingScreenEnabled} />
         <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
         <BlankOverlayContainer open={showBlankOverlay}>
-          <Onboarding />
+          <Onboarding backgroundImage={backgroundImage} />
         </BlankOverlayContainer>
         <ActionInstructions />
         {!IS_MOBILE && (
@@ -144,7 +148,7 @@ export const World = () => {
           {!IS_MOBILE && (
             <>
               <BottomRightContainer>
-                <EventStream />
+                <MiniMapNavigation />
               </BottomRightContainer>
               <RightMiddleContainer>
                 <RightNavigationModule />
@@ -172,7 +176,7 @@ export const World = () => {
 };
 
 const VersionDisplay = () => (
-  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white">
+  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1">
     <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
       {env.VITE_PUBLIC_GAME_VERSION}
     </a>

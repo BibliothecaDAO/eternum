@@ -21,10 +21,8 @@ export const TopNavigationView = ({
   connectors,
   onConnect,
   onDisconnect,
-  accountAddress,
+  //accountAddress,
 }: TopNavigationViewProps) => {
-  console.log(accountAddress);
-
   const { address, connector, isConnected } = useAccount();
 
   return (
@@ -37,8 +35,10 @@ export const TopNavigationView = ({
           <div className="text-sm p-2 rounded border">{formatEther(uint256.uint256ToBN(lordsBalance))} Lords</div>
         ) : null}
 
-        {import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet" ? (
-          <Button onClick={onMintTestLords}>Mint Test Lords</Button>
+        {import.meta.env.VITE_PUBLIC_DEV === "true" ? (
+          <Button disabled={!address} onClick={onMintTestLords}>
+            Mint Test Lords
+          </Button>
         ) : null}
       </div>
       <div className="flex gap-2 justify-between">
