@@ -43,7 +43,7 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
   [BuildingType.WatchTower]: "/models/buildings-opt/market.glb",
   [BuildingType.WorkersHut]: "/models/buildings-opt/workers_hut.glb",
   [ResourceMiningTypes.Forge]: "/models/buildings-opt/forge.glb",
-  [ResourceMiningTypes.Mine]: "/models/buildings-opt/mine_2.glb",
+  [ResourceMiningTypes.Mine]: "/models/buildings-opt/mine.glb",
   [ResourceMiningTypes.LumberMill]: "/models/buildings-opt/lumber_mill.glb",
   [ResourceMiningTypes.Dragonhide]: "/models/buildings-opt/dragonhide.glb",
   [RealmLevelNames.Settlement]: "/models/buildings-opt/castle0.glb",
@@ -96,7 +96,7 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
     "models/buildings-opt/hyperstructure.glb",
   ],
   [StructureType.Bank]: ["/models/buildings-opt/bank.glb"],
-  [StructureType.FragmentMine]: ["models/buildings-opt/mine_2.glb"],
+  [StructureType.FragmentMine]: ["models/buildings-opt/mine.glb"],
   // placeholder for now
   [StructureType.Settlement]: ["models/buildings-opt/castle2.glb"],
 };

@@ -59,7 +59,7 @@ export const Chat = () => {
     } else {
       setDisplayMessages(true);
     }
-  }, [currentTab]);
+  }, [currentTab.name]);
 
   const allMessageEntities = useEntityQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
 
@@ -236,7 +236,7 @@ const Messages = ({
         addTab({
           name,
           address,
-          displayed: true,
+          displayed: false,
           lastSeen: new Date(),
           key: getMessageKey(identity, BigInt(account.address)),
         });

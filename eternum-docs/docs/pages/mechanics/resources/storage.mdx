@@ -1,3 +1,6 @@
+import { ResourcesIds, EternumGlobalConfig, CapacityConfigCategory } from "@bibliothecadao/eternum";
+import { divideByPrecision, formatNumberWithSpaces } from "../../../../src/utils/formatting.tsx";
+
 ## Storage System
 
 Storage limits how many resources your realm can hold. Managing your storage capacity effectively is key to developing
@@ -7,16 +10,22 @@ your realm.
 
 Resources in Eternum have different weights that affect storage:
 
-- Basic resources (Wood, Stone, Coal): 1kg per unit
-- Military units: 5kg per unit
-- Food (Wheat, Fish): 0.1kg per unit
-- Lords: 0.001kg per unit
+- Basic resources (Wood, Stone, Coal,...):
+  {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Wood])}kg per unit
+- Military units: {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Knight])}kg per
+  unit
+- Food (Wheat, Fish): {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Wheat])}kg per
+  unit
+- Lords: {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Lords])}kg per unit
+- Donkey: {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Donkey])}kg
 
 ### Storehouses <img src="/buildings/storehouse.png" alt="Storehouse" width="300" className="float-right"/>
 
 Expand your storage capacity to support your growing realm:
 
-- **Capacity**: Each storehouse adds 300,000kg of storage per per resource
+- **Capacity**: Each storehouse adds
+  {formatNumberWithSpaces(divideByPrecision(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))}kg
+  of storage per resource
 - **Expansion**: Build additional storehouses to increase total storage.
 
 - **When storage is full**:

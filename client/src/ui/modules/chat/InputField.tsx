@@ -26,22 +26,23 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key !== "Enter" || inputRef.current.length === 0) return;
 
-      const contentParser = new ContentParser();
-      if (contentParser.isWhisper(inputRef.current)) {
-        const whisperDestination = contentParser.getWhisperDest(inputRef.current);
-        const player = players.find((player) => player.addressName === whisperDestination);
-        if (player) {
-          const newTab = {
-            name: player.addressName!,
-            address: toHexString(player.address),
-            displayed: true,
-          };
-          // TODO: Implement addNewTab functionality
-          // addNewTab(newTab);
-        }
-      } else {
-        publish(inputRef.current);
-      }
+      // const contentParser = new ContentParser();
+      // if (contentParser.isWhisper(inputRef.current)) {
+      //   const whisperDestination = contentParser.getWhisperDest(inputRef.current);
+      //   const player = players.find((player) => player.addressName === whisperDestination);
+      //   if (player) {
+      //     const newTab = {
+      //       name: player.addressName!,
+      //       address: toHexString(player.address),
+      //       displayed: true,
+      //     };
+      //     // TODO: Implement addNewTab functionality
+      //     // addNewTab(newTab);
+      //   }
+      // } else {
+      //   publish(inputRef.current);
+      // }
+      publish(inputRef.current);
       inputRef.current = "";
     },
     [players],
