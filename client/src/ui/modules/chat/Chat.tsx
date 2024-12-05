@@ -2,7 +2,7 @@ import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
@@ -61,16 +61,16 @@ export const Chat = () => {
     }
   }, [currentTab]);
 
-  useEffect(() => {
-    const selfMessageEntities = runQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
+  const allMessageEntities = useEntityQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
 
-    const latestSalt = Array.from(selfMessageEntities).reduce((maxSalt, entity) => {
+  useEffect(() => {
+    const latestSalt = Array.from(allMessageEntities).reduce((maxSalt, entity) => {
       const currentSalt = getComponentValue(Message, entity)?.salt ?? 0n;
       return currentSalt > maxSalt ? currentSalt : maxSalt;
     }, 0n);
 
     setSalt(latestSalt + 1n);
-  }, [account.address]);
+  }, [account.address, allMessageEntities]);
 
   const changeTabs = useCallback(
     (tab: string | undefined, address: string, fromSelector: boolean = false) => {
