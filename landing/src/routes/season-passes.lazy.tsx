@@ -11,7 +11,7 @@ import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Loader2 } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 
 export const Route = createLazyFileRoute("/season-passes")({
@@ -30,43 +30,18 @@ function SeasonPasses() {
     queryKey: ["erc721Balance", address],
     queryFn: () => (address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: address }) : null),
     refetchInterval: 10_000,
-    refetchOnMount: true,
   });
 
-  const [seasonPassNfts, setSeasonPassNfts] = useState<SeasonPassMint[]>([]);
-  const [isPassesRpcLoading, setIsPassesLoading] = useState(false);
-
-  useEffect(() => {
-    const filterNfts = async () => {
-      if (!data?.tokenBalances?.edges) {
-        setSeasonPassNfts([]);
-        return;
-      }
-
-      const filteredTokens = [];
-
-      setIsPassesLoading(true);
-      try {
-        for (const token of data.tokenBalances.edges) {
-          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") continue;
-
-          const isCorrectContract =
-            addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-            addAddressPadding(seasonPassAddress ?? "0x0");
-
-          if (!isCorrectContract) continue;
-
-          filteredTokens.push(token);
-        }
-
-        setSeasonPassNfts(filteredTokens as SeasonPassMint[]);
-      } finally {
-        setIsPassesLoading(false);
-      }
-    };
-
-    filterNfts();
-  }, [data, seasonPassAddress, address]);
+  const seasonPassNfts = useMemo(
+    () =>
+      data?.tokenBalances?.edges?.filter(
+        (token) =>
+          token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
+          addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
+            addAddressPadding(seasonPassAddress ?? "0x0"),
+      ),
+    [data, seasonPassAddress],
+  );
 
   const loading = isPassesLoading;
 
@@ -81,7 +56,7 @@ function SeasonPasses() {
         {controllerAddress && (
           <div className="text-xl py-4 flex items-center">
             Minting to:{" "}
-            <Badge className="text-lg ml-4 py-1.5">
+            <Badge variant="secondary" className="text-lg ml-4 py-1.5">
               <img className="w-6 pr-2" src={connectors[2].icon as string} alt="Connector Icon" />
               {displayAddress(controllerAddress)}
             </Badge>
@@ -89,33 +64,25 @@ function SeasonPasses() {
         )}
 
         <>
-          {isPassesRpcLoading ? (
-            <div className="flex-grow flex items-center justify-center absolute inset-0">
-              <Loader2 className="w-10 h-10 animate-spin" />
+          <div className="flex-grow overflow-y-auto p-4">
+            <div className="flex flex-col gap-2">
+              <Suspense fallback={<Skeleton>Loading</Skeleton>}>
+                <SeasonPassesGrid seasonPasses={seasonPassNfts} />
+              </Suspense>
             </div>
-          ) : (
-            <>
-              <div className="flex-grow overflow-y-auto p-4">
-                <div className="flex flex-col gap-2">
-                  <Suspense fallback={<Skeleton>Loading</Skeleton>}>
-                    <SeasonPassesGrid seasonPasses={seasonPassNfts} />
-                  </Suspense>
-                </div>
-              </div>
-              <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
-                <Button onClick={() => setIsTransferOpen(true)} variant="cta">
-                  Transfer Season Passes
-                </Button>
-                {seasonPassNfts && (
-                  <TransferSeasonPassDialog
-                    isOpen={isTransferOpen}
-                    setIsOpen={setIsTransferOpen}
-                    seasonPassMints={seasonPassNfts as SeasonPassMint[]}
-                  />
-                )}
-              </div>
-            </>
-          )}
+          </div>
+          <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
+            <Button onClick={() => setIsTransferOpen(true)} variant="cta">
+              Transfer Season Passes
+            </Button>
+            {seasonPassNfts && (
+              <TransferSeasonPassDialog
+                isOpen={isTransferOpen}
+                setIsOpen={setIsTransferOpen}
+                seasonPassMints={seasonPassNfts as SeasonPassMint[]}
+              />
+            )}
+          </div>
         </>
       </>
     </div>
