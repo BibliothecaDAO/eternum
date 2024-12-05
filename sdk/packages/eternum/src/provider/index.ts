@@ -753,39 +753,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Move an entity to a specific coordinate
-   *
-   * @param props - Properties for traveling
-   * @param props.travelling_entity_id - ID of the entity that is traveling
-   * @param props.destination_coord_x - X coordinate of the destination
-   * @param props.destination_coord_y - Y coordinate of the destination
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Move entity 123 to coordinates (10, 20)
-   * {
-   *   travelling_entity_id: 123,
-   *   destination_coord_x: 10,
-   *   destination_coord_y: 20,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async travel(props: SystemProps.TravelProps) {
-    const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
-
-    const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
-      entrypoint: "travel",
-      calldata: [travelling_entity_id, destination_coord_x, destination_coord_y],
-    });
-
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  /**
    * Move an entity in a hex direction
    *
    * @param props - Properties for hex traveling

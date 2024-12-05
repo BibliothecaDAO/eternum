@@ -50,10 +50,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.transfer_resources(props);
   };
 
-  const travel = async (props: SystemProps.TravelProps) => {
-    await provider.travel(props);
-  };
-
   const travel_hex = async (props: SystemProps.TravelHexProps) => {
     await provider.travel_hex(props);
   };
@@ -258,7 +254,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     upgrade_realm,
     create_multiple_realms,
     transfer_resources,
-    travel,
     travel_hex,
     destroy_building,
     pause_production,
