@@ -16,8 +16,8 @@ const cartridgeController = new ControllerConnector({
   rpc: "https://api.cartridge.gg/x/starknet/" + env.VITE_PUBLIC_CHAIN,
   theme,
   colorMode,
-  namespace,
-  slot,
+  // namespace,
+  // slot,
 });
 
 export function StarknetProvider({ children, onlyCartridge }: { children: React.ReactNode; onlyCartridge?: boolean }) {

@@ -60,6 +60,8 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
   const handleTransfer = () => {
     if (!transferTo || selectedRealms.length === 0) return;
 
+    setIsOpen(false);
+
     send();
   };
 

@@ -1,4 +1,5 @@
 import { displayAddress } from "@/lib/utils";
+import ControllerConnector from "@cartridge/connector/controller";
 import { useAccount } from "@starknet-react/core";
 import { Uint256, uint256 } from "starknet";
 import { formatEther } from "viem";

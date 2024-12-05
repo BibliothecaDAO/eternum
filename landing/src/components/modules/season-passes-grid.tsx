@@ -21,7 +21,7 @@ export const SeasonPassesGrid = ({ toggleNftSelection, isNftSelected, seasonPass
   if (!seasonPasses?.length) return <div>No Season Pass Found</div>;
 
   const gridItems: RealmGridItem[] = seasonPasses.map((pass) => ({
-    colSpan: { sm: 6, md: 4, lg: 3 },
+    colSpan: { sm: 5, md: 3, lg: 3 },
     data: pass!,
   }));
 
