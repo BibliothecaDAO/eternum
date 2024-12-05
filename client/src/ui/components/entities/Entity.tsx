@@ -2,13 +2,14 @@ import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
+import { useOwnedEntitiesOnPosition, useResourcesUtils } from "@/hooks/helpers/useResources";
 import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision, formatTime } from "@/ui/utils/utils";
+import { divideByPrecision, formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { EntityState, EntityType, ID, determineEntityState } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import React, { useMemo } from "react";
 import { DepositResources } from "../resources/DepositResources";
@@ -37,13 +38,18 @@ export const Entity = ({ entityId, setEntitiesReadyForDeposit, ...props }: Entit
   const dojo = useDojo();
 
   const { getEntityInfo, getEntityName } = useEntitiesUtils();
-  const { getResourcesFromBalance } = getResourcesUtils();
+  const { getResourcesFromBalance } = useResourcesUtils();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
   const { getArmy } = getArmyByEntityId();
 
+  const weight = useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(entityId)]));
+
   const entity = getEntityInfo(entityId);
-  const entityResources = getResourcesFromBalance(entityId);
+  const entityResources = useMemo(() => {
+    return getResourcesFromBalance(entityId);
+  }, [weight]);
+
   const hasResources = entityResources.length > 0;
   const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
   const depositEntityId = getOwnedEntityOnPosition(entityId);
@@ -90,7 +96,7 @@ export const Entity = ({ entityId, setEntitiesReadyForDeposit, ...props }: Entit
   const renderResources = () => {
     if (entityState === EntityState.Idle || entityState === EntityState.WaitingForDeparture) return null;
 
-    return entity.resources?.map(
+    return entityResources?.map(
       (resource: any) =>
         resource && (
           <ResourceCost

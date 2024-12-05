@@ -85,7 +85,7 @@ export const SelectedArmy = () => {
           <ArmyWarning army={ownArmy!} />
           <ArmyChip className="w-[27rem] bg-black/90" army={ownArmy} showButtons={false} />
           <InventoryResources
-            entityIds={[ownArmy!.entity_id]}
+            entityId={ownArmy!.entity_id}
             className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
             resourcesIconSize="xs"
           />

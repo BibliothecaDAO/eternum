@@ -1,18 +1,18 @@
-import { getResourceBalance, getResourcesUtils } from "@/hooks/helpers/useResources";
+import { useResourceBalance, useResourcesUtils } from "@/hooks/helpers/useResources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
 export const InventoryResources = ({
-  entityIds,
+  entityId,
   max = Infinity,
   className = "flex flex-wrap gap-1",
   dynamic = [],
   resourcesIconSize = "sm",
   textSize,
 }: {
-  entityIds: ID[];
+  entityId: ID;
   max?: number;
   className?: string;
   dynamic?: ResourcesIds[];
@@ -20,13 +20,13 @@ export const InventoryResources = ({
   textSize?: "xxs" | "xs" | "sm" | "md" | "lg";
 }) => {
   const [showAll, setShowAll] = useState(false);
-  const { getResourcesFromBalance } = getResourcesUtils();
-  const { getBalance } = getResourceBalance();
+  const { useResourcesFromBalance } = useResourcesUtils();
+  const { getBalance } = useResourceBalance();
 
-  const inventoriesResources = entityIds.map(getResourcesFromBalance).flatMap((item) => item);
+  const inventoriesResources = useResourcesFromBalance(entityId);
 
   const dynamicResources = dynamic.map(
-    (resourceId): Resource => ({ resourceId, amount: getBalance(entityIds[0], resourceId).balance }),
+    (resourceId): Resource => ({ resourceId, amount: getBalance(entityId, resourceId).balance }),
   );
 
   const allResources = [...inventoriesResources, ...dynamicResources];

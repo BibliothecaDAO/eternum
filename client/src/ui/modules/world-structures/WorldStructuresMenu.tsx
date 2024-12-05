@@ -12,7 +12,7 @@ import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
 import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -152,7 +152,7 @@ const HyperStructureExtraContent = ({
 };
 
 const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
   const dynamicResources = getBalance(entityId, ResourcesIds.AncientFragment);
 
   const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);
