@@ -23,7 +23,7 @@ import { BIOME_COLORS, Biome, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
-import { gltfLoader } from "../helpers/utils";
+import { createPausedLabel, gltfLoader } from "../helpers/utils";
 import { playBuildingSound } from "../sound/utils";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
@@ -515,9 +515,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   addPausedLabelToBuilding(building: { col: number; row: number; matrix: any }) {
-    const pausedDiv = document.createElement("div");
-    pausedDiv.classList.add("rounded-md", "bg-brown/50", "text-gold", "p-1", "-translate-x-1/2", "text-xs");
-    pausedDiv.textContent = `⚠️ Production paused`;
+    const pausedDiv = createPausedLabel();
     const pausedLabel = new CSS2DObject(pausedDiv);
     pausedLabel.position.setFromMatrixPosition(building.matrix);
     pausedLabel.position.y += 1;
