@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { EntityList } from "@/ui/components/list/EntityList";
-import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 
@@ -194,7 +194,7 @@ const BaseStructureExtraContent = ({
       </div>
       <div className="flex items-center gap-2">
         <span className="text-gold/80">Defense:</span>
-        <span className="font-medium">{currencyIntlFormat(Number(defensiveArmy.totalTroops), 0)}</span>
+        <span className="font-medium">{currencyFormat(Number(defensiveArmy.totalTroops), 0)}</span>
       </div>
       <div className="flex items-center gap-2 col-span-2">
         <span className="text-gold/80">Battle:</span>
