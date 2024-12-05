@@ -15,7 +15,7 @@ import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 
 export const Route = createLazyFileRoute("/mint")({
@@ -35,7 +35,6 @@ function Mint() {
     queryKey: ["erc721Balance", address],
     queryFn: () => (address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: address }) : null),
     refetchInterval: 10_000,
-    refetchOnMount: true,
   });
 
   /*  const { data: seasonPassMints, isLoading: isSeasonPassMintsLoading } = useSuspenseQuery({
@@ -61,57 +60,19 @@ function Mint() {
     [seasonPassMints],
   );*/
 
-  const checkOwner = async (contractAddress: string, tokenId: string) => {
-    const owner = await account?.callContract({
-      contractAddress,
-      entrypoint: "owner_of",
-      calldata: [tokenId, "0"],
-    });
-    return owner;
-  };
+  const realmsErcBalance = useMemo(
+    () =>
+      data?.tokenBalances?.edges?.filter((token) => {
+        if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
+        return (
+          addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
+          addAddressPadding(realmsAddress ?? "0x0")
+        );
+      }),
+    [data, realmsAddress],
+  );
 
-  const [realmsErcBalance, setRealmsErcBalance] = useState<any[]>([]);
-  const [isRealmsRpcLoading, setIsRealmsLoading] = useState(false);
-
-  useEffect(() => {
-    const filterNfts = async () => {
-      if (!data?.tokenBalances?.edges) {
-        setRealmsErcBalance([]);
-        return;
-      }
-
-      const filteredTokens = [];
-
-      setIsRealmsLoading(true);
-      try {
-        for (const token of data.tokenBalances.edges) {
-          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") continue;
-
-          const isCorrectContract =
-            addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-            addAddressPadding(realmsAddress ?? "0x0");
-
-          if (!isCorrectContract) continue;
-
-          const owner = await checkOwner(realmsAddress, token.node.tokenMetadata.tokenId ?? "0x0");
-
-          if (!owner) continue;
-
-          const isOwner = addAddressPadding(owner[0]) === addAddressPadding(address ?? "0x0");
-
-          if (!isOwner) continue;
-
-          filteredTokens.push(token);
-        }
-
-        setRealmsErcBalance(filteredTokens as any[]);
-      } finally {
-        setIsRealmsLoading(false);
-      }
-    };
-
-    filterNfts();
-  }, [data, realmsAddress, address]);
+  console.log(realmsErcBalance);
 
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
     useNftSelection({ userAddress: address as `0x${string}` });
@@ -148,69 +109,61 @@ function Mint() {
         )}
 
         <>
-          {isRealmsRpcLoading || isRealmsLoading ? (
-            <div className="flex-grow flex items-center justify-center absolute inset-0">
-              <Loader2 className="w-10 h-10 animate-spin" />
+          <div className="flex-grow overflow-y-auto p-4">
+            <div className="flex flex-col gap-2">
+              <Suspense fallback={<Skeleton>Loading</Skeleton>}>
+                <RealmsGrid
+                  isNftSelected={isNftSelected}
+                  toggleNftSelection={toggleNftSelection}
+                  realms={realmsErcBalance}
+                  onSeasonPassStatusChange={handleSeasonPassStatusChange}
+                />
+              </Suspense>
             </div>
-          ) : (
-            <>
-              <div className="flex-grow overflow-y-auto p-4">
-                <div className="flex flex-col gap-2">
-                  <Suspense fallback={<Skeleton>Loading</Skeleton>}>
-                    <RealmsGrid
-                      isNftSelected={isNftSelected}
-                      toggleNftSelection={toggleNftSelection}
-                      realms={realmsErcBalance}
-                      onSeasonPassStatusChange={handleSeasonPassStatusChange}
-                    />
-                  </Suspense>
-                </div>
-              </div>
-              <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
-                {import.meta.env.VITE_PUBLIC_DEV === "true" ? (
-                  <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
-                    Mint Realms
-                  </Button>
-                ) : (
-                  <div />
-                )}
-                <div className="flex items-center gap-8">
-                  {data?.tokenBalances?.edges && (
-                    <SelectNftActions
-                      totalSelectedNfts={totalSelectedNfts}
-                      selectBatchNfts={selectBatchNftsFiltered}
-                      deselectAllNfts={deselectAllNfts}
-                      contractAddress={realmsErcBalance?.[0]?.node?.tokenMetadata.contractAddress ?? ""}
-                      batchTokenIds={realmsErcBalance
-                        ?.map((token) => token?.node?.tokenMetadata?.tokenId ?? "")
-                        .filter((tokenId): tokenId is string => tokenId !== "")}
-                    />
-                  )}
-                  <TypeH3>{totalSelectedNfts} Selected</TypeH3>
+          </div>
+          <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
+            {import.meta.env.VITE_PUBLIC_DEV === "true" ? (
+              <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
+                Mint Realms
+              </Button>
+            ) : (
+              <div />
+            )}
+            <div className="flex items-center gap-8">
+              {data?.tokenBalances?.edges && (
+                <SelectNftActions
+                  totalSelectedNfts={totalSelectedNfts}
+                  selectBatchNfts={selectBatchNftsFiltered}
+                  deselectAllNfts={deselectAllNfts}
+                  contractAddress={realmsErcBalance?.[0]?.node?.tokenMetadata.contractAddress ?? ""}
+                  batchTokenIds={realmsErcBalance
+                    ?.map((token) => token?.node?.tokenMetadata?.tokenId ?? "")
+                    .filter((tokenId): tokenId is string => tokenId !== "")}
+                />
+              )}
+              <TypeH3>{totalSelectedNfts} Selected</TypeH3>
 
-                  <Button disabled={totalSelectedNfts < 1} onClick={() => setIsOpen(true)} variant="cta">
-                    Mint Season Passes
-                  </Button>
-                </div>
-                {isOpen && (
-                  <SeasonPassMintDialog
-                    isOpen={isOpen}
-                    setIsOpen={setIsOpen}
-                    deselectAllNfts={deselectAllNfts}
-                    isSuccess={status === "success"}
-                    realm_ids={selectedTokenIds}
-                  />
-                )}
-                {isRealmMintOpen && (
-                  <RealmMintDialog
-                    totalOwnedRealms={realmsErcBalance?.length}
-                    isOpen={isRealmMintOpen}
-                    setIsOpen={setIsRealmMintIsOpen}
-                  />
-                )}
-              </div>
-            </>
-          )}
+              <Button disabled={totalSelectedNfts < 1} onClick={() => setIsOpen(true)} variant="cta">
+                Mint Season Passes
+              </Button>
+            </div>
+            {isOpen && (
+              <SeasonPassMintDialog
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+                deselectAllNfts={deselectAllNfts}
+                isSuccess={status === "success"}
+                realm_ids={selectedTokenIds}
+              />
+            )}
+            {isRealmMintOpen && (
+              <RealmMintDialog
+                totalOwnedRealms={realmsErcBalance?.length}
+                isOpen={isRealmMintOpen}
+                setIsOpen={setIsRealmMintIsOpen}
+              />
+            )}
+          </div>
         </>
       </>
     </div>
