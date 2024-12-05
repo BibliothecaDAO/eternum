@@ -74,17 +74,23 @@ export const Entity = ({ entityId, setEntitiesReadyForDeposit, ...props }: Entit
   const renderEntityStatus = () => {
     switch (entityState) {
       case EntityState.WaitingForDeparture:
-        return <div className="flex ml-auto italic">Waiting...</div>;
+        return (
+          <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
+            Waiting...
+          </div>
+        );
       case EntityState.Idle:
       case EntityState.WaitingToOffload:
         return depositEntityId !== undefined && hasResources ? (
-          <div className="flex ml-auto italic">Waiting to offload to {getEntityName(depositEntityId)}</div>
+          <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
+            Waiting to offload to {getEntityName(depositEntityId)}
+          </div>
         ) : (
-          <div className="flex ml-auto italic">Idle</div>
+          <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">Idle</div>
         );
       case EntityState.Traveling:
         return entity.arrivalTime && nextBlockTimestamp ? (
-          <div className="flex ml-auto -mt-2 italic self-center">
+          <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
             {formatTime(Number(entity.arrivalTime) - nextBlockTimestamp)}
           </div>
         ) : null;
@@ -120,27 +126,30 @@ export const Entity = ({ entityId, setEntitiesReadyForDeposit, ...props }: Entit
       className={clsx("flex flex-col p-2 text-gold border border-gold/10", props.className, bgColour)}
       onClick={props.onClick}
     >
-      <div className="flex items-center text-xs flex-wrap">
-        <div className="w-full flex justify-between">
-          <div className="flex items-center gap-1 self-center">{renderEntityStatus()}</div>
+      <div className="flex justify-between">
+        {" "}
+        <div className="flex gap-2">
+          <div className="flex gap-8 items-center">
+            {entityIcon[entity.entityType]}
+            <span className="truncate">{name}</span>
+          </div>
+          {renderEntityStatus()}
+        </div>
+        <div className="flex justify-between items-center self-center">
+          {entityState !== EntityState.Traveling && (
+            <DepositResources
+              entityId={entityId}
+              battleInProgress={battleInProgress}
+              armyInBattle={Boolean(army?.battle_id)}
+              setEntitiesReadyForDeposit={setEntitiesReadyForDeposit}
+            />
+          )}
         </div>
       </div>
-      {entity.entityType === EntityType.TROOP && <ArmyCapacity army={army} className="my-2 ml-5" />}
-      <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
-      <div className="flex justify-between items-center gap-8">
-        {entityState !== EntityState.Traveling && (
-          <DepositResources
-            entityId={entityId}
-            battleInProgress={battleInProgress}
-            armyInBattle={Boolean(army?.battle_id)}
-            setEntitiesReadyForDeposit={setEntitiesReadyForDeposit}
-          />
-        )}
-        <div className="flex gap-3 text-xs items-center whitespace-nowrap">
-          {entityIcon[entity.entityType]}
-          <span className="truncate">{name}</span>
-        </div>
-      </div>
+
+      {entity.entityType === EntityType.TROOP && <ArmyCapacity army={army} className="mt-4" />}
+
+      {renderResources() && <div className="flex items-center gap-2 flex-wrap mt-4">{renderResources()}</div>}
     </div>
   );
 };

@@ -283,15 +283,19 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
-  protected onHexagonClick(hexCoords: HexPosition | null): void {
+  protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
     if (hexCoords === null) return;
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
     if (buildingType) {
       // if building mode
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
-        this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
         this.clearBuildingMode();
+        try {
+          await this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
+        } catch (error) {
+          this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
+        }
         this.updateHexceptionGrid(this.hexceptionRadius);
       }
     } else {
