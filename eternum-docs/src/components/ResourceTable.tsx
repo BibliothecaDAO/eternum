@@ -51,7 +51,7 @@ export default function ResourceTable() {
                 <td className="py-2 border-b">
                   <div className="flex flex-col gap-4 justify-between">
                     {resource.cost.map((cost) => (
-                      <div className="grid grid-cols-2">
+                      <div key={cost.resource} className="grid grid-cols-2">
                         <ResourceIcon size={50} id={cost.resource} name={cost.name || ""} />
                         <div className="flex flex-col">
                           <span>{cost.amount}</span>
