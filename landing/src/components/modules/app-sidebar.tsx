@@ -66,8 +66,8 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    {item.url.startsWith('https') ? (
-                      <a 
+                    {item.url.startsWith("https") ? (
+                      <a
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
