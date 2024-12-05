@@ -32,7 +32,7 @@ export const DataCard = ({ title, value, description, icon, backgroundImage }: D
           </CardTitle>
         </CardHeader>
         <CardContent className="mt-auto">
-          <TypeH1 className="">{value}</TypeH1>
+          <TypeH1 className="font-number">{value}</TypeH1>
           {description && (
             <CardDescription>
               <TypeP>{description}</TypeP>

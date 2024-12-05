@@ -66,6 +66,7 @@ export default {
       fontFamily: {
         sans: ["Space Grotesk", ...defaultTheme.fontFamily.sans],
         heading: ["Bokor", ...defaultTheme.fontFamily.sans],
+        number: ["Anonymous Pro", ...defaultTheme.fontFamily.mono],
       },
       borderRadius: {
         lg: "var(--radius)",
