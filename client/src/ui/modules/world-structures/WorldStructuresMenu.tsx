@@ -134,18 +134,26 @@ const HyperStructureExtraContent = ({
   const progress = useHyperstructureProgress(hyperstructureEntityId);
 
   return (
-    <div className="flex space-x-5 items-center text-xs">
-      <ViewOnMapIcon className={"my-auto hover:scale-125 hover:grow"} position={{ x, y }} />
-      <div>
-        Progress: {`${progress.percentage}%`}
-        <br />
-        Shares:{" "}
-        {currencyIntlFormat(
-          (LeaderboardManager.instance().getAddressShares(ContractAddress(account.address), hyperstructureEntityId) ||
-            0) * 100,
-          0,
-        )}
-        %
+    <div className="flex items-center gap-4 p-2 bg-gold/10 rounded-lg hover:bg-gold/20 transition-colors">
+      <ViewOnMapIcon className="hover:scale-125 transition-transform cursor-pointer" position={{ x, y }} />
+      <div className="flex flex-col text-sm font-medium">
+        <div className="flex items-center gap-2">
+          <span className="text-gold/80">Progress:</span>
+          <span className="text-gold">{`${progress.percentage}%`}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-gold/80">Shares:</span>
+          <span className="text-gold">
+            {currencyIntlFormat(
+              (LeaderboardManager.instance().getAddressShares(
+                ContractAddress(account.address),
+                hyperstructureEntityId,
+              ) || 0) * 100,
+              0,
+            )}
+            %
+          </span>
+        </div>
       </div>
     </div>
   );

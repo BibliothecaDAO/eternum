@@ -10,6 +10,7 @@ export const DEFAULT_TAB: Tab = {
   key: GLOBAL_CHANNEL,
   displayed: true,
   lastSeen: new Date(),
+  lastMessage: undefined,
   mandatory: true,
 };
 
@@ -19,6 +20,7 @@ export const EVENT_STREAM_TAB: Tab = {
   key: "events",
   displayed: true,
   lastSeen: new Date(),
+  lastMessage: undefined,
   mandatory: true,
 };
 
@@ -29,6 +31,7 @@ export interface Tab {
   numberOfMessages?: number;
   displayed: boolean;
   lastSeen: Date;
+  lastMessage?: Date;
   mandatory?: boolean;
 }
 
@@ -41,6 +44,12 @@ export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
     return tab.name;
   }, [tab]);
 
+  const hasUnreadMessages = useMemo(() => {
+    return tab.lastMessage && tab.lastSeen && tab.lastMessage > tab.lastSeen;
+  }, [tab.lastMessage, tab.lastSeen]);
+
+  console.log(tab.lastMessage, tab.lastSeen);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -52,13 +61,13 @@ export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
         transition={{ duration: 0.3 }}
       >
         <div
-          className={`text-sm px-2 py-1 text-center self-center rounded bg-hex-bg border border-gold/30 ${
-            selected ? "bg-brown/70 text-green" : "bg-brown/40"
-          } flex flex-row gap-2 justify-between items-center relative h-8`}
+          className={`text-sm px-1 py-0.5 text-center self-center rounded bg-hex-bg border border-gold/30 ${
+            selected ? "bg-brown" : "bg-brown/60 text-gold/70"
+          } flex flex-row gap-1 justify-between items-center relative`}
           style={{ zIndex: 2 }}
           onClick={() => setCurrentTab({ ...tab, displayed: true })}
         >
-          <span>{userName}</span>
+          <span className={hasUnreadMessages ? "text-red font-bold" : ""}>{userName}</span>
 
           <div className="w-4 flex items-center justify-center">
             {(tab.mandatory === undefined || tab.mandatory === false) && (
