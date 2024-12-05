@@ -24,7 +24,7 @@ export type ArrivalInfo = {
   isHome: boolean;
 };
 
-export const usePlayerArrivals = () => {
+const usePlayerArrivals = () => {
   const {
     account: { account },
     setup: {
