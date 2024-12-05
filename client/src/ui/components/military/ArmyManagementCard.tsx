@@ -12,7 +12,6 @@ import {
   currencyFormat,
   divideByPrecision,
   formatNumber,
-  formatSecondsInHoursMinutes,
   getEntityIdFromKeys,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
@@ -24,12 +23,9 @@ import { ArmyManager } from "@/dojo/modelManager/ArmyManager";
 import { configManager } from "@/dojo/setup";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
 import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { LucideArrowRight } from "lucide-react";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -57,21 +53,12 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { getBalance } = useResourceBalance();
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-  const [travelWindow, setSetTravelWindow] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
 
   // TODO: Clean this up
   const armyPosition = { x: Number(army?.position.x || 0), y: Number(army?.position.y || 0) };
-
-  const isPassiveTravel = useMemo(
-    () =>
-      army?.arrivalTime && army?.arrivalTime.arrives_at && nextBlockTimestamp
-        ? army?.arrivalTime.arrives_at > nextBlockTimestamp
-        : false,
-    [nextBlockTimestamp],
-  );
 
   const rawEntityOwnerPosition = useComponentValue(
     Position,
@@ -191,37 +178,12 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     army && (
       <>
         <div className="flex justify-between   p-2 text-xs">
-          <div className="self-center mr-auto px-3 font-bold">
+          <div className="self-center flex flex-row mr-auto px-3 font-bold items-center gap-x-1">
             {army.isHome ? <span className="text-green">At Base</span> : armyPosition ? `On Map` : "Unknown"}
+            <ViewOnMapIcon position={armyPosition} />
           </div>
-          <div className="flex ml-auto italic self-center  px-3">
-            {isPassiveTravel && nextBlockTimestamp ? (
-              <>
-                Traveling for{" "}
-                {isPassiveTravel
-                  ? formatSecondsInHoursMinutes(Number(army?.arrivalTime!.arrives_at || 0) - nextBlockTimestamp)
-                  : "Arrives Next Tick"}
-              </>
-            ) : (
-              "Idle"
-            )}
-          </div>
-          <ViewOnMapIcon position={armyPosition} />
         </div>
         <div className="flex flex-col relative  p-2">
-          {travelWindow && (
-            <>
-              <TravelToLocation
-                isTraveling={isPassiveTravel}
-                checkSamePosition={army.isHome}
-                entityOwnerPosition={{ x: entityOwnerPosition.x, y: entityOwnerPosition.y }}
-                army={army}
-                position={armyPosition}
-                onClose={() => setSetTravelWindow(false)}
-              />
-            </>
-          )}
-
           <div className="flex justify-between p-2">
             {editName ? (
               <div className="flex space-x-2">
@@ -375,151 +337,5 @@ export const ViewOnMapIcon = ({
         setTooltip(null);
       }}
     />
-  );
-};
-
-interface TravelToLocationProps {
-  isTraveling: boolean;
-  checkSamePosition: boolean;
-  entityOwnerPosition: Position;
-  army: ArmyInfo;
-  position: Position;
-  onClose: () => void;
-}
-
-const TravelToLocation = ({
-  isTraveling,
-  checkSamePosition,
-  entityOwnerPosition,
-  army,
-  position,
-  onClose,
-}: TravelToLocationProps) => {
-  const [travelToBase, setTravelToBase] = useState(false);
-
-  const { realms } = useStructuresFromPosition({ position });
-
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { travel },
-    },
-  } = useDojo();
-
-  const handleSetTravelLocation = (realmId: string) => {
-    const realm = realms.find((realm) => realm?.entity_id.toString() === realmId);
-    if (realm) {
-      return { x: realm.position.x, y: realm.position.y };
-    }
-    return { x: 0, y: 0 };
-  };
-
-  return (
-    <div className="absolute h-full w-full bg-brown/90 top-0 z-10 ">
-      <div className="flex justify-between mb-3">
-        <div className="flex">
-          <div className="my-2 uppercase mb-1 font-bold">Status:</div>
-          <div className="flex ml-2 italic self-center">
-            {isTraveling ? (
-              <>
-                Traveling for{" "}
-                {army.arrivalTime!.arrives_at
-                  ? formatSecondsInHoursMinutes(Number(army.arrivalTime!.arrives_at))
-                  : "Arrives Next Tick"}
-              </>
-            ) : (
-              "Idle"
-            )}
-          </div>
-        </div>
-        <div className="flex">
-          <div>
-            {!isTraveling && !checkSamePosition && (
-              <div className="flex space-x-2">
-                {travelToBase ? (
-                  <>
-                    <Button
-                      onClick={() => {
-                        travel({
-                          signer: account,
-                          travelling_entity_id: army.entity_id,
-                          destination_coord_x: entityOwnerPosition.x,
-                          destination_coord_y: entityOwnerPosition.y,
-                        });
-
-                        onClose();
-                      }}
-                      variant="outline"
-                    >
-                      Confirm
-                    </Button>
-                    <Button onClick={() => setTravelToBase(false)} variant="outline">
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={() => setTravelToBase(true)} variant="primary">
-                    Travel to Back to Base
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <Button size="xs" variant="danger" onClick={onClose}>
-            management <LucideArrowRight className="w-3" />
-          </Button>
-        </div>
-      </div>
-      <div className="border p-2 ">
-        {!army.protectee && army.health.lifetime > 0 && (
-          <div>
-            <div className="flex justify-between">
-              {!isTraveling && (
-                <div className="self-center w-full h-48 overflow-y-scroll">
-                  {realms.map((realm) => {
-                    return (
-                      <div className="flex  my-1 hover:bg-crimson/20" key={realm?.entity_id}>
-                        <div className="uppercase self-center">{realm?.name}</div>
-
-                        <div className="flex space-x-2 justify-start px-3 ml-auto self-center">
-                          {realm?.resources.map((resource, index) => (
-                            <ResourceIcon
-                              key={index}
-                              size="sm"
-                              resource={resources.find((r) => r.id === resource)?.trait || ""}
-                            />
-                          ))}
-                        </div>
-
-                        <div className="ml-4">
-                          <Button
-                            onClick={() => {
-                              travel({
-                                signer: account,
-                                travelling_entity_id: army.entity_id,
-                                destination_coord_x: handleSetTravelLocation(realm?.entity_id.toString() || "").x,
-                                destination_coord_y: handleSetTravelLocation(realm?.entity_id.toString() || "").y,
-                              });
-
-                              onClose();
-                            }}
-                            variant="primary"
-                          >
-                            Travel - {realm?.timeToTravel}hrs
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
   );
 };

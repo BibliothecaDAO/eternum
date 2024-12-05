@@ -34,7 +34,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
         <CardTitle className=" items-center gap-2">
           <div className="uppercase text-xs mb-2 flex justify-between text-gold/70">
             Season 0 Pass
-
             {/* {realmSettled ? (
               <div className="text-green">Realm Settled!</div>
             ) : (
@@ -42,7 +41,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
                 Start
               </Button>
             )} */}
-
           </div>
           <div className="flex justify-between gap-2">
             <div className=" text-2xl">{name}</div>

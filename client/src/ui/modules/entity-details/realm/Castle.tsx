@@ -56,10 +56,10 @@ export const Castle = () => {
   return (
     structure && (
       <div className="w-full text-sm">
-        <div className="my-3">
-          <div className="flex justify-between py-2 gap-4">
+        <div className="p-3">
+          <div className="flex justify-between items-start gap-4">
             <div>
-              <div className="flex gap-4">
+              <div className="flex items-center gap-4">
                 <div className="text-2xl">{RealmLevels[realm.level]}</div>
                 {getNextRealmLevel && isOwner && (
                   <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
@@ -68,13 +68,13 @@ export const Castle = () => {
                 )}
               </div>
               {getNextRealmLevel && isOwner && (
-                <div>
-                  <p className="text-sm my-2">
+                <div className="mt-4">
+                  <p className="text-sm mb-4">
                     Next Level: {RealmLevels[realm.level + 1]},{" "}
                     {LEVEL_DESCRIPTIONS[(realm.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
                   </p>
-                  <div className="my-2 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
-                  <div className="flex gap-2">
+                  <div className="mb-2 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
+                  <div className="flex gap-4">
                     {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a) => (
                       <ResourceCost
                         key={a.resource}
@@ -90,7 +90,7 @@ export const Castle = () => {
               )}
             </div>
           </div>
-          <div className="my-2">
+          <div className="mt-6">
             {structure && structure.category === StructureType[StructureType.Realm] && (
               <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
             )}

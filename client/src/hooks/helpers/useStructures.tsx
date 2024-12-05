@@ -1,11 +1,8 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { configManager } from "@/dojo/setup";
-import { unpackResources } from "@/ui/utils/packedData";
-import { getRealm } from "@/ui/utils/realms";
-import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
-import { ContractAddress, DONKEY_ENTITY_TYPE, ID, Position } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
+import { currentTickCount } from "@/ui/utils/utils";
+import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
 import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
@@ -211,51 +208,6 @@ export const useStructures = () => {
 
   return { getStructureByEntityId };
 };
-
-// TODO: Make Generic
-export function useStructuresFromPosition({ position }: { position: Position }) {
-  const {
-    setup: {
-      components: { Realm, Owner, Position },
-    },
-  } = useDojo();
-
-  const allRealms = useEntityQuery([Has(Realm)]);
-
-  const realms = useMemo(
-    () =>
-      allRealms.map((entityId) => {
-        const realm = getComponentValue(Realm, entityId);
-        const realmPosition = getComponentValue(Position, entityId);
-        if (realm && realmPosition) {
-          const realmData = getRealm(realm.realm_id);
-          if (!realmData) return undefined;
-          const name = realmData.name;
-          const owner = getComponentValue(Owner, entityId);
-          const resources = unpackResources(BigInt(realm.produced_resources));
-
-          const distanceFromPosition = calculateDistance(position, realmPosition) ?? 0;
-
-          const timeToTravel = Math.floor(
-            ((distanceFromPosition / configManager.getSpeedConfig(DONKEY_ENTITY_TYPE)) * 3600) / 60 / 60,
-          );
-
-          return {
-            ...realm,
-            name,
-            position: realmPosition,
-            owner: owner?.address,
-            resources,
-            distanceFromPosition,
-            timeToTravel,
-          };
-        }
-      }),
-    [allRealms],
-  );
-
-  return { realms };
-}
 
 export const useIsStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
   const tickCount = currentTickCount(currentTimestamp);
