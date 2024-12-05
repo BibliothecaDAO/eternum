@@ -54,6 +54,18 @@ export class ResourceManager {
     return finishTick > currentTick ? finishTick - currentTick : 0;
   }
 
+  public optimisticResourceUpdate = (overrideId: string, change: bigint) => {
+    const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(this.resourceId)]);
+    const currentBalance = getComponentValue(this.setup.components.Resource, entity)?.balance || 0n;
+    this.setup.components.Resource.addOverride(overrideId, {
+      entity,
+      value: {
+        resource_type: this.resourceId,
+        balance: currentBalance + change,
+      },
+    });
+  };
+
   public timeUntilValueReached(currentTick: number, value: number): number {
     const production = this._getProduction(this.resourceId);
     const resource = this._getResource(this.resourceId);

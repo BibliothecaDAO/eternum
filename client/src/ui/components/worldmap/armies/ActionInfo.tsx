@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
@@ -16,7 +16,7 @@ import { useMemo } from "react";
 export const ActionInfo = () => {
   const hoveredHex = useUIStore((state) => state.armyActions.hoveredHex);
   const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const {
     setup: {

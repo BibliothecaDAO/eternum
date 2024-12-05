@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
@@ -16,7 +16,7 @@ export const Castle = () => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   const [isLoading, setIsLoading] = useState(false);
 

@@ -19,7 +19,7 @@ function MyEmpire() {
     () => [
       {
         title: "players",
-        value:/* data?.eternumOwnerModels?.totalCount ?? */0,
+        value: /* data?.eternumOwnerModels?.totalCount ?? */ 0,
         icon: <UsersIcon />,
       },
       {
@@ -28,7 +28,9 @@ function MyEmpire() {
         icon: <Coins />,
       },
     ],
-    [/*data*/],
+    [
+      /*data*/
+    ],
   );
   return (
     <>

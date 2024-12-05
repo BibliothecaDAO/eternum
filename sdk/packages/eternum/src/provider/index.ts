@@ -840,11 +840,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, directions, building_category, produce_resource_type, signer } = props;
     ["62", "1", "0", "4", "1"];
-    console.log("Create Building Call Data:", {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "create",
-      calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
-    });
+
     return this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "create",

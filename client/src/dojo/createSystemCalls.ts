@@ -1,5 +1,5 @@
 import type * as SystemProps from "@bibliothecadao/eternum";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { type SetupNetworkResult } from "./setupNetwork";
 
 class PromiseQueue {
@@ -39,26 +39,15 @@ class PromiseQueue {
   }
 }
 
-type SystemCallFunctions = ReturnType<typeof createSystemCalls>;
-type SystemCallFunction = (...args: any[]) => any;
-type WrappedSystemCalls = Record<string, SystemCallFunction>;
-
-const withErrorHandling =
-  (fn: any) =>
-  async (...args: any[]) => {
-    try {
-      return await fn(...args);
-    } catch (error: any) {
-      toast(error.message);
-    }
-  };
-
 export function createSystemCalls({ provider }: SetupNetworkResult) {
   const promiseQueue = new PromiseQueue();
 
   const withQueueing = <T extends (...args: any[]) => Promise<any>>(fn: T) => {
     return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
-      return await promiseQueue.enqueue(async () => await fn(...args));
+      return await promiseQueue.enqueue(async () => {
+        const result = await fn(...args);
+        return result;
+      });
     };
   };
 
