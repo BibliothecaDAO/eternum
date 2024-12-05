@@ -203,6 +203,8 @@ const Messages = ({
 
   const allMessageEntities = useEntityQuery([Has(Message)]);
 
+  const addTab = useChatStore((state) => state.addTab);
+
   const messages = useMemo(() => {
     const messageMap = new Map<ContractAddress, ChatMetadata>();
 
@@ -228,6 +230,17 @@ const Messages = ({
       const timestamp = new Date(Number(message.timestamp));
       const identity = message.identity;
       const channel = message.channel;
+
+      if (!fromSelf && toSelf) {
+        // This is a new message to the current user
+        addTab({
+          name,
+          address,
+          displayed: true,
+          lastSeen: new Date(),
+          key: getMessageKey(identity, BigInt(account.address)),
+        });
+      }
 
       const key = isGlobalMessage
         ? GLOBAL_CHANNEL
