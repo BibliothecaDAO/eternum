@@ -53,7 +53,7 @@ export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
       >
         <div
           className={`text-sm px-2 py-1 text-center self-center rounded bg-hex-bg border border-gold/30 ${
-            selected ? "bg-brown/70" : "bg-brown/10"
+            selected ? "bg-brown/70 text-green" : "bg-brown/40"
           } flex flex-row gap-2 justify-between items-center relative h-8`}
           style={{ zIndex: 2 }}
           onClick={() => setCurrentTab({ ...tab, displayed: true })}

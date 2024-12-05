@@ -32,7 +32,9 @@ export const TopNavigationView = ({
         <ModeToggle />
 
         {lordsBalance ? (
-          <div className="text-sm p-2 rounded border">{formatEther(uint256.uint256ToBN(lordsBalance))} Lords</div>
+          <div className="text-sm p-2 rounded border">
+            {Number(formatEther(uint256.uint256ToBN(lordsBalance))).toFixed(2)} Lords
+          </div>
         ) : null}
 
         {import.meta.env.VITE_PUBLIC_DEV === "true" ? (
@@ -51,7 +53,18 @@ export const TopNavigationView = ({
             ))}
           </>
         ) : (
-          <Button variant="outline" className="gap-2" size={"default"} onClick={onDisconnect}>
+          <Button
+            variant="outline"
+            className="gap-2"
+            size={"default"}
+            onClick={() => {
+              if (connector?.id === "controller") {
+                (connector as unknown as ControllerConnector).controller.openProfile("inventory");
+              } else {
+                onDisconnect();
+              }
+            }}
+          >
             <img className="w-5" src={typeof connector?.icon === "string" ? connector?.icon : connector?.icon.dark} />{" "}
             {address ? displayAddress(address) : ""}
           </Button>

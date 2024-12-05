@@ -3,7 +3,7 @@ import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
 
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
@@ -43,7 +43,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { army_buy_troops },
       components: { Position },
     },
   } = useDojo();
@@ -52,10 +51,12 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 
+  const armyManager = new ArmyManager(dojo, army?.entity_id || 0);
+
   const isDefendingArmy = Boolean(army?.protectee);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const [travelWindow, setSetTravelWindow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,10 +81,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     y: 0n,
   };
   const entityOwnerPosition = { x: Number(rawEntityOwnerPosition.x), y: Number(rawEntityOwnerPosition.y) };
-
-  const checkSamePosition = useMemo(() => {
-    return armyPosition.x === entityOwnerPosition.x && armyPosition.y === entityOwnerPosition.y;
-  }, [entityOwnerPosition, armyPosition]);
 
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
@@ -123,7 +120,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const handleDeleteArmy = async () => {
     setIsLoading(true);
-    const armyManager = new ArmyManager(dojo);
 
     try {
       await armyManager.deleteArmy(army?.entity_id || 0);
@@ -136,22 +132,19 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const handleBuyArmy = async () => {
     setIsLoading(true);
-    army_buy_troops({
-      signer: account,
-      army_id: army?.entity_id || 0n,
-      payer_id: owner_entity,
-      troops: {
-        knight_count: multiplyByPrecision(troopCounts[ResourcesIds.Knight]),
-        paladin_count: multiplyByPrecision(troopCounts[ResourcesIds.Paladin]),
-        crossbowman_count: multiplyByPrecision(troopCounts[ResourcesIds.Crossbowman]),
-      },
-    }).finally(() => setIsLoading(false));
+    armyManager.addTroops({
+      [ResourcesIds.Knight]: multiplyByPrecision(troopCounts[ResourcesIds.Knight]),
+      [ResourcesIds.Crossbowman]: multiplyByPrecision(troopCounts[ResourcesIds.Crossbowman]),
+      [ResourcesIds.Paladin]: multiplyByPrecision(troopCounts[ResourcesIds.Paladin]),
+    });
 
     setTroopCounts({
       [ResourcesIds.Knight]: 0,
       [ResourcesIds.Crossbowman]: 0,
       [ResourcesIds.Paladin]: 0,
     });
+
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -172,7 +165,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       canCreate = false;
     }
 
-    if (!checkSamePosition) {
+    if (!army?.isHome) {
       canCreate = false;
     }
 
@@ -181,30 +174,15 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const troops = [
     {
-      name: ResourcesIds.Knight,
-      cost: 10,
-      attack: 10,
-      defense: 10,
-      strong: "Paladin",
-      weak: "Crossbowman",
-      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
-    },
-    {
       name: ResourcesIds.Crossbowman,
-      cost: 10,
-      attack: 10,
-      defense: 10,
-      strong: "Knight",
-      weak: "Paladin",
       current: currencyFormat(Number(army?.troops.crossbowman_count || 0), 0),
     },
     {
+      name: ResourcesIds.Knight,
+      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
+    },
+    {
       name: ResourcesIds.Paladin,
-      cost: 10,
-      attack: 10,
-      defense: 10,
-      strong: "Crossbowman",
-      weak: "Knight",
       current: currencyFormat(Number(army?.troops.paladin_count || 0), 0),
     },
   ];
@@ -213,8 +191,8 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     army && (
       <>
         <div className="flex justify-between   p-2 text-xs">
-          <div className="self-center mr-auto px-3">
-            {checkSamePosition ? "At Base " : armyPosition ? `On Map` : "Unknown"}
+          <div className="self-center mr-auto px-3 font-bold">
+            {army.isHome ? <span className="text-green">At Base</span> : armyPosition ? `On Map` : "Unknown"}
           </div>
           <div className="flex ml-auto italic self-center  px-3">
             {isPassiveTravel && nextBlockTimestamp ? (
@@ -235,7 +213,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             <>
               <TravelToLocation
                 isTraveling={isPassiveTravel}
-                checkSamePosition={checkSamePosition}
+                checkSamePosition={army.isHome}
                 entityOwnerPosition={{ x: entityOwnerPosition.x, y: entityOwnerPosition.y }}
                 army={army}
                 position={armyPosition}
@@ -349,7 +327,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             isLoading={isLoading}
             onClick={handleBuyArmy}
           >
-            {checkSamePosition ? "Reinforce army" : "Must be at Base to Reinforce"}
+            {army.isHome ? "Reinforce army" : "Must be at Base to Reinforce"}
           </Button>
         </div>
       </>

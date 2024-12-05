@@ -29,6 +29,7 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   name: string;
   isMine: boolean;
   isMercenary: boolean;
+  isHome: boolean;
   offset: Position;
   health: ComponentValue<ClientComponents["Health"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
@@ -114,10 +115,12 @@ const formatArmies = (
       const stamina = getComponentValue(Stamina, armyEntityId);
       const name = getComponentValue(Name, armyEntityId);
       const realm = entityOwner && getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
-      const homePosition = realm && getComponentValue(Position, getEntityIdFromKeys([BigInt(realm.realm_id)]));
+      const homePosition = realm && getComponentValue(Position, getEntityIdFromKeys([BigInt(realm.entity_id)]));
 
       const isMine = (owner?.address || 0n) === ContractAddress(playerAddress);
       const isMercenary = owner === undefined;
+
+      const isHome = homePosition && position.x === homePosition.x && position.y === homePosition.y;
 
       return {
         ...army,
@@ -136,6 +139,7 @@ const formatArmies = (
         homePosition,
         isMine,
         isMercenary,
+        isHome,
         name: name
           ? shortString.decodeShortString(name.name.toString())
           : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army.entity_id}`,

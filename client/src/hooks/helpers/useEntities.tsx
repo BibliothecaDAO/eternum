@@ -14,7 +14,7 @@ import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
-import { getResourcesUtils } from "./useResources";
+import { useResourcesUtils } from "./useResources";
 
 export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
@@ -198,7 +198,7 @@ export const useEntitiesUtils = () => {
     },
   } = useDojo();
 
-  const { getResourcesFromBalance } = getResourcesUtils();
+  const { getResourcesFromBalance } = useResourcesUtils();
 
   const getEntityInfo = (entityId: ID) => {
     const entityIdBigInt = BigInt(entityId);

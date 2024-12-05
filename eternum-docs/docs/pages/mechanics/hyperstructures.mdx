@@ -1,11 +1,10 @@
----
-title: Hyperstructures & Points
-description: Hyperstructure mechanics and leaderboard system in Eternum
----
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { formatNumberWithSpaces } from "../../../src/utils/formatting";
 
 # Hyperstructures
 
 Hyperstructures are massive social engineering projects
+
 <img src="/buildings/hyperstructure.png" alt="Hyperstructure" width="200" className="relative z-[100000] float-right" />
 
 ## Construction Process
@@ -28,22 +27,24 @@ Construction of a Hyperstructure demands careful resource management and coordin
 
 ## Victory Points System
 
-Hyperstructures offer two distinct ways to earn victory points.
+Hyperstructures offer two distinct ways to earn victory points:
 
-### Construction Points
+### Contributing to its contruction
 
 When a Hyperstructure is completed, contributors receive one-time point rewards based on:
 
 - The quantity of resources they contributed
 - The rarity value of their contributed resources
 
-Points are calculated and distributed automatically upon construction completion.
+Finishing the construction of a hyperstructure awards
+{formatNumberWithSpaces(EternumGlobalConfig.hyperstructures.hyperstructurePointsOnCompletion)} points, divided between
+all contributors Points are calculated and distributed automatically upon construction completion.
 
-### Generation Points
+### Holding shares of the Hyperstructure
 
 Once operational, Hyperstructures become ongoing sources of points:
 
-- Points are generated each Eternum cycle
+- {EternumGlobalConfig.hyperstructures.hyperstructurePointsPerCycle} points are generated each Eternum cycle
 - Distribution follows a share-based system
 - The structure owner controls share allocation
 - Share modifications have a 48-hour cooldown period

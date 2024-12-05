@@ -1,5 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -26,7 +26,7 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   const buildingTypes = Object.keys(StructureType)
     .filter((key) => isNaN(Number(key)))
@@ -100,7 +100,7 @@ const StructureInfo = ({
       ? `+${configManager.getHyperstructureConfig().pointsPerCycle} points`
       : "";
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">

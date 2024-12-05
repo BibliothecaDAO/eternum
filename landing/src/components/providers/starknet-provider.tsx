@@ -13,7 +13,7 @@ const colorMode: ColorMode = "dark";
 
 const cartridgeController = new ControllerConnector({
   policies: [],
-  rpc: "https://api.cartridge.gg/x/starknet/sepolia",
+  rpc: "https://api.cartridge.gg/x/starknet/" + env.VITE_PUBLIC_CHAIN,
   theme,
   colorMode,
   namespace,

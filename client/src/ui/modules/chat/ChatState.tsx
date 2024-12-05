@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { DEFAULT_TAB, EVENT_STREAM_TAB } from "./ChatTab";
-import { CHAT_STORAGE_KEY } from "./constants";
+import { CHAT_STORAGE_KEY, GLOBAL_CHANNEL_KEY } from "./constants";
 import { Tab } from "./types";
 
 interface ChatState {
@@ -28,7 +28,7 @@ export const useChatStore = create<ChatState>()(
         }));
       },
       setTabs: (tabs: Tab[]) => set({ tabs }),
-      addTab: (newTab: Tab) =>
+      addTab: (newTab: Tab, switchToTab: boolean = false) =>
         set((state) => {
           const existingTabIndex = state.tabs.findIndex((tab) => tab.address === newTab.address);
           if (existingTabIndex !== -1) {
@@ -38,12 +38,17 @@ export const useChatStore = create<ChatState>()(
               ...updatedTabs[existingTabIndex],
               ...newTab,
             };
-            return { tabs: updatedTabs, currentTab: { ...newTab, lastSeen: new Date() } };
+            return {
+              tabs: updatedTabs,
+              // Only switch tabs if explicitly requested
+              currentTab: switchToTab ? { ...newTab, lastSeen: new Date() } : state.currentTab,
+            };
           } else {
             // Add new tab
             return {
               tabs: [...state.tabs, { ...newTab, lastSeen: new Date() }],
-              currentTab: { ...newTab, lastSeen: new Date() },
+              // Only switch tabs if explicitly requested
+              currentTab: switchToTab ? { ...newTab, lastSeen: new Date() } : state.currentTab,
             };
           }
         }),
@@ -53,10 +58,18 @@ export const useChatStore = create<ChatState>()(
           currentTab: DEFAULT_TAB,
         })),
       deleteTab: (address: string) =>
-        set((state) => ({
-          tabs: state.tabs.filter((tab) => tab.address !== address),
-          currentTab: state.currentTab.address === address ? DEFAULT_TAB : state.currentTab,
-        })),
+        set((state) => {
+          // Don't delete mandatory tabs
+          const filteredTabs = state.tabs.filter((tab) => {
+            if (tab.name === GLOBAL_CHANNEL_KEY) return true;
+            return tab.address !== address;
+          });
+
+          return {
+            tabs: filteredTabs,
+            currentTab: state.currentTab.address === address ? DEFAULT_TAB : state.currentTab,
+          };
+        }),
       changeTabByAddress: (address: string) =>
         set((state) => {
           const tab = state.tabs.find((tab) => tab.address === address);

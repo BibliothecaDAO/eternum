@@ -1,8 +1,9 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { seasonPassAddress } from "@/config";
 import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { RealmMetadata } from "@/types";
 import { useReadContract } from "@starknet-react/core";
+import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Checkbox } from "../ui/checkbox";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
@@ -12,14 +13,14 @@ export interface RealmCardProps {
   };
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   isSelected?: boolean;
-  //seasonPassMinted?: boolean;
   metadata?: RealmMetadata;
+  onSeasonPassStatusChange?: (tokenId: string, hasMinted: boolean) => void;
 }
 
-export const RealmCard = ({ realm, isSelected, /*seasonPassMinted,*/ toggleNftSelection }: RealmCardProps) => {
+export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassStatusChange }: RealmCardProps) => {
   const { tokenId, contractAddress, metadata } = realm.node?.tokenMetadata ?? {};
   const [isError, setIsError] = useState(true);
-  const { data, error, isSuccess, refetch } = useReadContract({
+  const { data, error, isSuccess, refetch, isFetching } = useReadContract({
     abi: [
       {
         type: "function",
@@ -47,6 +48,12 @@ export const RealmCard = ({ realm, isSelected, /*seasonPassMinted,*/ toggleNftSe
     }
   }, [isSuccess, refetch]);
 
+  useEffect(() => {
+    if (isSuccess && onSeasonPassStatusChange && tokenId) {
+      onSeasonPassStatusChange(tokenId.toString(), !!data);
+    }
+  }, [isSuccess, data, tokenId, onSeasonPassStatusChange]);
+
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
   const { attributes, name, image } = parsedMetadata ?? {};
 
@@ -61,6 +68,7 @@ export const RealmCard = ({ realm, isSelected, /*seasonPassMinted,*/ toggleNftSe
           <div className="uppercase text-sm mb-2 flex justify-between">
             Realm
             <div className="flex items-center gap-2 text-sm">
+              {isFetching && <Loader className="animate-spin" />}
               {error ? (
                 <div className="flex items-center gap-2">
                   Mint: <Checkbox checked={isSelected} disabled={isSuccess} />
@@ -84,8 +92,14 @@ export const RealmCard = ({ realm, isSelected, /*seasonPassMinted,*/ toggleNftSe
               <ResourceIcon resource={attribute.value as string} size="lg" key={`${attribute.trait_type}-${index}`} />
             ))}
         </div>
+
         {/* {Number(tokenId)} */}
       </CardContent>
+      {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
+        <CardFooter className="!p-2 border-t items-center rounded-b-xl bg-card flex uppercase flex-wrap w-full h-full justify-center text-center">
+            {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+        </CardFooter>
+      )}
     </Card>
   );
 };

@@ -21,6 +21,8 @@ export default defineConfig({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 4000000,
+        clientsClaim: true,
+        skipWaiting: false,
       },
       manifest: {
         name: "Eternum",

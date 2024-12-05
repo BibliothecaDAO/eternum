@@ -13,6 +13,7 @@ import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
+import { env } from "../../../../env";
 
 const REGISTRATION_DELAY = 60 * 60 * 24 * 7; // 1 week
 
@@ -62,7 +63,7 @@ export const Rewards = () => {
   const claimRewards = useCallback(async () => {
     await claim_leaderboard_rewards({
       signer: account,
-      token: process.env.VITE_LORDS_ADDRESS!,
+      token: env.VITE_LORDS_ADDRESS!,
     });
   }, [account]);
 
@@ -92,7 +93,7 @@ export const Rewards = () => {
     const getPrizePool = async () => {
       const season_pool_fee_recipient = configManager?.getResourceBridgeFeeSplitConfig().season_pool_fee_recipient;
       const prizePool = await provider.provider.callContract({
-        contractAddress: process.env.VITE_LORDS_ADDRESS!,
+        contractAddress: env.VITE_LORDS_ADDRESS!,
         entrypoint: "balance_of",
         calldata: ["0x" + season_pool_fee_recipient.toString()],
       });
