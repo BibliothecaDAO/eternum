@@ -8,8 +8,9 @@ import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
 import * as SystemProps from "../types/provider";
-
+import { TransactionType } from "./types";
 export const NAMESPACE = "s0_eternum";
+export { TransactionType };
 
 /**
  * Gets a contract address from the manifest by name
@@ -184,7 +185,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     const tx = await this.execute(signer, transactionDetails, NAMESPACE);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
 
-    this.emit("transactionComplete", { details: transactionResult });
+    // Get the transaction type based on the entrypoint name
+    let txType: TransactionType;
+    const isMultipleTransactions = Array.isArray(transactionDetails);
+
+    if (isMultipleTransactions) {
+      // For multiple calls, use the first call's entrypoint
+      console.log({ entrypoint: transactionDetails[0].entrypoint });
+      txType = TransactionType[transactionDetails[0].entrypoint.toUpperCase() as keyof typeof TransactionType];
+    } else {
+      txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
+    }
+
+    this.emit("transactionComplete", {
+      details: transactionResult,
+      type: txType,
+      ...(isMultipleTransactions && { transactionCount: transactionDetails.length }),
+    });
 
     return transactionResult;
   }
