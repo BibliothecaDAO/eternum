@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Contracts for Cairo ^0.17.0
+// Compatible with OpenZeppelin Contracts for Cairo 0.16.0
 
 // Eternum Season Pass
 use starknet::ContractAddress;
