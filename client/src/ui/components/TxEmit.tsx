@@ -11,7 +11,7 @@ export function TransactionNotification() {
   useEffect(() => {
     const handleTransactionComplete = (receipt: any) => {
       console.log("Transaction completed:", receipt);
-      toast("Transaction completed");
+      toast("Completed Action", { description: receipt.transactionHash });
     };
 
     const handleTransactionFailed = (error: string) => {

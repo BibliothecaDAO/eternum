@@ -66,8 +66,93 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
   };
 }
 const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
+class PromiseQueue {
+  private readonly queue: Array<{
+    providerCall: () => Promise<any>;
+    resolve: (value: any) => void;
+    reject: (reason?: any) => void;
+  }> = [];
+  private processing = false;
+  private batchTimeout: NodeJS.Timeout | null = null;
+  private readonly BATCH_DELAY = 3000; // ms to wait for batching
+  private readonly MAX_BATCH_SIZE = 4; // Maximum number of calls to batch together
+
+  constructor(private provider: EternumProvider) {}
+
+  async enqueue<T>(providerCall: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push({ providerCall, resolve, reject });
+
+      // Only set timeout if we're not already processing
+      if (!this.processing) {
+        if (this.batchTimeout) {
+          clearTimeout(this.batchTimeout);
+        }
+
+        this.batchTimeout = setTimeout(() => {
+          this.processQueue();
+        }, this.BATCH_DELAY);
+      }
+    });
+  }
+
+  private async processQueue() {
+    if (this.processing) return;
+    this.processing = true;
+
+    try {
+      while (this.queue.length > 0) {
+        // Get up to MAX_BATCH_SIZE calls for batching
+        const batch = this.queue.splice(0, Math.min(this.queue.length, this.MAX_BATCH_SIZE));
+        console.log("Processing batch of size:", batch.length); // Debug log
+
+        if (batch.length === 1) {
+          const { providerCall, resolve, reject } = batch[0];
+          try {
+            const result = await providerCall();
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        } else {
+          try {
+            // Extract the actual calls from the providerCalls
+            const allCalls = await Promise.all(
+              batch.map(async ({ providerCall }) => {
+                // Access the internal call object
+                const fn = providerCall as any;
+                const calls = fn._transactionDetails;
+                // Handle both single calls and arrays of calls
+                return Array.isArray(calls) ? calls : [calls];
+              }),
+            );
+
+            // Flatten all calls into a single array
+            const flattenedCalls = allCalls.flat();
+            console.log("Batched calls:", flattenedCalls); // Debug log
+
+            // Get signer from first call
+            const signer = (batch[0].providerCall as any)._signer;
+
+            // Execute the batched transaction
+            const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
+
+            // Resolve all promises with the result
+            batch.forEach((item) => item.resolve(result));
+          } catch (error) {
+            console.error("Batch processing error:", error); // Debug log
+            batch.forEach((item) => item.reject(error));
+          }
+        }
+      }
+    } finally {
+      this.processing = false;
+    }
+  }
+}
 
 export class EternumProvider extends EnhancedDojoProvider {
+  promiseQueue: PromiseQueue;
   /**
    * Create a new EternumProvider instance
    *
@@ -82,6 +167,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       const worldAddress = this.manifest.world.address;
       return worldAddress;
     };
+    this.promiseQueue = new PromiseQueue(this);
   }
 
   /**
@@ -91,14 +177,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param transactionDetails - Transaction call data
    * @returns Transaction receipt
    */
-  private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+  async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
     const tx = await this.execute(signer, transactionDetails, NAMESPACE);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
 
-    this.emit("transactionComplete", transactionResult);
+    this.emit("transactionComplete", { details: transactionResult });
 
     return transactionResult;
   }
@@ -782,6 +868,18 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  private createProviderCall(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+    const call = async () => {
+      return await this.executeAndCheckTransaction(signer, transactionDetails);
+    };
+    // Explicitly store the details
+    Object.defineProperties(call, {
+      _signer: { value: signer },
+      _transactionDetails: { value: transactionDetails },
+    });
+    return call;
+  }
+
   /**
    * Explore in a direction from a unit's position
    *
@@ -804,11 +902,19 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    // return await this.executeAndCheckTransaction(signer, {
+    //   contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
+    //   entrypoint: "explore",
+    //   calldata: [unit_id, direction],
+    // });
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
       entrypoint: "explore",
       calldata: [unit_id, direction],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**

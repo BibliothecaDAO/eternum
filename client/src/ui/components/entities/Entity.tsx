@@ -135,7 +135,7 @@ export const Entity = ({ entityId, setEntitiesReadyForDeposit, ...props }: Entit
           </div>
           {renderEntityStatus()}
         </div>
-        <div className="flex justify-between items-center mt-4">
+        <div className="flex justify-between items-center self-center">
           {entityState !== EntityState.Traveling && (
             <DepositResources
               entityId={entityId}
