@@ -7,7 +7,7 @@ import { env } from "../../../env";
 //import { cartridgeController } from "./cartridge-controller";
 
 const theme: string = "eternum";
-const slot: string = "eternum-rc1-1";
+const slot: string = "realms-world-04";
 const namespace: string = "eternum";
 const colorMode: ColorMode = "dark";
 
@@ -17,7 +17,7 @@ const cartridgeController = new ControllerConnector({
   theme,
   colorMode,
   // namespace,
-  // slot,
+  slot,
 });
 
 export function StarknetProvider({ children, onlyCartridge }: { children: React.ReactNode; onlyCartridge?: boolean }) {
