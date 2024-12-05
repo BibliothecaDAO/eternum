@@ -19,11 +19,16 @@ interface SeasonPassRowProps {
   onSeasonPassStatusChange?: (tokenId: string, hasMinted: boolean) => void;
 }
 
-export const RealmsGrid = ({ realms, toggleNftSelection, isNftSelected, onSeasonPassStatusChange }: SeasonPassRowProps) => {
+export const RealmsGrid = ({
+  realms,
+  toggleNftSelection,
+  isNftSelected,
+  onSeasonPassStatusChange,
+}: SeasonPassRowProps) => {
   if (!realms?.length) return <div>No Realms found</div>;
 
   const gridItems: RealmGridItem[] = realms.map((realm) => ({
-    colSpan: { sm: 6, md: 4, lg: 3 },
+    colSpan: { sm: 5, md: 3, lg: 3 },
     data: realm!,
   }));
 

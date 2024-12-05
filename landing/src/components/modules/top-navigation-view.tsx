@@ -1,4 +1,6 @@
 import { displayAddress } from "@/lib/utils";
+import ControllerConnector from "@cartridge/connector/controller";
+import { ExitIcon } from "@radix-ui/react-icons";
 import { useAccount } from "@starknet-react/core";
 import { Uint256, uint256 } from "starknet";
 import { formatEther } from "viem";
@@ -69,6 +71,18 @@ export const TopNavigationView = ({
             {address ? displayAddress(address) : ""}
           </Button>
         )}
+        {isConnected ? (
+          <Button
+            variant="outline"
+            className="gap-2"
+            size={"default"}
+            onClick={() => {
+              onDisconnect();
+            }}
+          >
+            <ExitIcon />
+          </Button>
+        ) : null}
       </div>
     </div>
   );
