@@ -58,22 +58,22 @@ export const EntityList = ({
           <ul>
             {list.map((entity, index) => (
               <li
-                className={clsx(
-                  "py-2 px-2 bg-gold/20 grid grid-cols-3 items-center hover:bg-crimson/40 my-1 rounded border border-gold/10",
-                  {
-                    "animate-pulse": questing,
-                  },
-                )}
+                className={clsx("py-2 px-2 bg-gold/20 hover:bg-crimson/40 my-1 rounded border border-gold/10", {
+                  "animate-pulse": questing,
+                })}
                 key={index}
                 onClick={() => setSelectedEntity(entity)}
               >
-                <div className="col-span-1 flex flex-row space-x-1 items-center">
-                  {entity?.position && <ViewOnMapIcon className={"my-auto"} position={entity.position} />}
-                  <span>{entity.name}</span>
-                </div>
-                <div className="grid grid-flow-col col-span-2 ustify-between gap-2 items-center">
-                  {entityContent && entityContent(entity.id)} {/* Dynamic entity icon */}
-                  <ArrowRight className="w-2 fill-current" />
+                <div className="flex flex-col space-y-2">
+                  <div className="flex flex-row justify-between items-center">
+                    <div className="flex flex-row space-x-1 items-center">
+                      {entity?.position && <ViewOnMapIcon className={"my-auto"} position={entity.position} />}
+                      <span>{entity.name}</span>
+                    </div>
+                    <ArrowRight className="w-2 fill-current" />
+                  </div>
+
+                  <div>{entityContent && entityContent(entity.id)}</div>
                 </div>
               </li>
             ))}
