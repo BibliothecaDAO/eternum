@@ -1,7 +1,7 @@
 import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
 
 import { ProgressWithPercentage } from "@/hooks/helpers/useHyperstructures";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
@@ -28,7 +28,7 @@ export const HyperstructureResourceChip = ({
   const [inputValue, setInputValue] = useState<number>(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { getBalance, getResourceProductionInfo } = getResourceBalance();
+  const { getBalance, getResourceProductionInfo } = useResourceBalance();
   const balance = divideByPrecision(getBalance(structureEntityId, resourceId).balance);
   const production = getResourceProductionInfo(structureEntityId, resourceId);
 

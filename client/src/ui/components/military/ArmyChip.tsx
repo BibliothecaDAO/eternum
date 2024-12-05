@@ -200,7 +200,7 @@ export const ArmyChip = ({
                 <TroopDisplay troops={updatedArmy!.troops} />
                 {showInventory && (
                   <InventoryResources
-                    entityIds={[updatedArmy!.entity_id]}
+                    entityId={updatedArmy!.entity_id}
                     className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
                     resourcesIconSize="xs"
                   />

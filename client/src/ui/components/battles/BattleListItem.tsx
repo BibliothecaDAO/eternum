@@ -123,12 +123,19 @@ export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }:
               </div>
             </div>
             {showInventory && (
-              <InventoryResources
-                entityIds={[battle.attackers_resources_escrow_id, battle.defenders_resources_escrow_id]}
-                className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
-                resourcesIconSize="xs"
-              />
-            )}{" "}
+              <div>
+                <InventoryResources
+                  entityId={battle.attackers_resources_escrow_id}
+                  className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
+                  resourcesIconSize="xs"
+                />
+                <InventoryResources
+                  entityId={battle.defenders_resources_escrow_id}
+                  className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
+                  resourcesIconSize="xs"
+                />
+              </div>
+            )}
           </div>
           {buttons}
         </div>

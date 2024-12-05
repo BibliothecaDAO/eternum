@@ -15,7 +15,13 @@ export const LockedResources = ({
         textSize="xxs"
         resourcesIconSize="sm"
         className="grid grid-cols-3 gap-1 overflow-y-auto no-scrollbar"
-        entityIds={[attackersResourcesEscrowEntityId, defendersResourcesEscrowEntityId]}
+        entityId={attackersResourcesEscrowEntityId}
+      />
+      <InventoryResources
+        textSize="xxs"
+        resourcesIconSize="sm"
+        className="grid grid-cols-3 gap-1 overflow-y-auto no-scrollbar"
+        entityId={defendersResourcesEscrowEntityId}
       />
     </div>
   );

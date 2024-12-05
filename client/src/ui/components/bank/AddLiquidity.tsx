@@ -1,7 +1,7 @@
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -27,7 +27,7 @@ const AddLiquidity = ({
     setup,
   } = useDojo();
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   const { playerStructures } = useEntities();
 

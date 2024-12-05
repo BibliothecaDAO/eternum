@@ -3,7 +3,7 @@ import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
 
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
@@ -56,7 +56,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const isDefendingArmy = Boolean(army?.protectee);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const [travelWindow, setSetTravelWindow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
