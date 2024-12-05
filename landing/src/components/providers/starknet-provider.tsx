@@ -7,16 +7,16 @@ import { env } from "../../../env";
 //import { cartridgeController } from "./cartridge-controller";
 
 const theme: string = "eternum";
-const slot: string = "eternum-rc1-1";
+const slot: string = "realms-world-04";
 const namespace: string = "eternum";
 const colorMode: ColorMode = "dark";
 
 const cartridgeController = new ControllerConnector({
   policies: [],
-  rpc: "https://api.cartridge.gg/x/starknet/sepolia",
+  rpc: "https://api.cartridge.gg/x/starknet/" + env.VITE_PUBLIC_CHAIN,
   theme,
   colorMode,
-  namespace,
+  // namespace,
   slot,
 });
 
