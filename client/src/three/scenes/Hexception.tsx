@@ -23,7 +23,7 @@ import { BIOME_COLORS, Biome, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
-import { createPausedLabel, gltfLoader } from "../helpers/utils";
+import { gltfLoader } from "../helpers/utils";
 import { playBuildingSound } from "../sound/utils";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
@@ -447,7 +447,8 @@ export default class HexceptionScene extends HexagonScene {
             instance.applyMatrix4(building.matrix);
             if (buildingType === ResourceMiningTypes.Forge) {
               instance.traverse((child) => {
-                if (child.name === "Grassland003_8" && child instanceof THREE.Mesh) {
+                console.log(child);
+                if (child.name === "Grassland003_1" && child instanceof THREE.Mesh) {
                   if (!this.minesMaterials.has(building.resource)) {
                     const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
                     this.minesMaterials.set(building.resource, material);
@@ -514,7 +515,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   addPausedLabelToBuilding(building: { col: number; row: number; matrix: any }) {
-    const pausedDiv = createPausedLabel();
+    const pausedDiv = document.createElement("div");
+    pausedDiv.classList.add("rounded-md", "bg-brown/50", "text-gold", "p-1", "-translate-x-1/2", "text-xs");
+    pausedDiv.textContent = `⚠️ Production paused`;
     const pausedLabel = new CSS2DObject(pausedDiv);
     pausedLabel.position.setFromMatrixPosition(building.matrix);
     pausedLabel.position.y += 1;
