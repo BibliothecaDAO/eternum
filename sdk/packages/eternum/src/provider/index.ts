@@ -776,11 +776,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async travel(props: SystemProps.TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
       entrypoint: "travel",
       calldata: [travelling_entity_id, destination_coord_x, destination_coord_y],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -805,11 +807,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async travel_hex(props: SystemProps.TravelHexProps) {
     const { travelling_entity_id, directions, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
       entrypoint: "travel_hex",
       calldata: [travelling_entity_id, directions],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
