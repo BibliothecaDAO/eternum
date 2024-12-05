@@ -29,11 +29,12 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
       onClick={handleCardClick}
       className={`cursor-pointer transition-all duration-200 hover:border-gold ${isSelected ? "border-gold" : ""}`}
     >
-      <img src={image} alt={name} className="w-full object-cover h-24 p-2 rounded-2xl" />
+      <img src={image} alt={name} className="w-full object-cover h-auto p-2 rounded-2xl" />
       <CardHeader>
         <CardTitle className=" items-center gap-2">
           <div className="uppercase text-xs mb-2 flex justify-between text-gold/70">
             Season 0 Pass
+
             {/* {realmSettled ? (
               <div className="text-green">Realm Settled!</div>
             ) : (
@@ -41,6 +42,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
                 Start
               </Button>
             )} */}
+
           </div>
           <div className="flex justify-between gap-2">
             <div className=" text-2xl">{name}</div>

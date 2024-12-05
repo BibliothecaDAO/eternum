@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Castle, Gamepad2, Home } from "lucide-react";
+import { Castle, Gamepad2, Home, Scale } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
@@ -40,6 +40,16 @@ const items = [
     url: "/season-passes",
     icon: Gamepad2,
   },
+  {
+    title: "Marketplace",
+    url: "https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
+    icon: Scale,
+  },
+  {
+    title: "Documentation",
+    url: "https://eternum-docs.realms.world/",
+    icon: Gamepad2,
+  },
 ];
 
 export function AppSidebar() {
@@ -56,10 +66,22 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <Link className="[&.active]:font-bold [&.active]:bg-secondary font-heading text-xl" to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
+                    {item.url.startsWith('https') ? (
+                      <a 
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-secondary font-heading text-xl"
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </a>
+                    ) : (
+                      <Link className="[&.active]:font-bold [&.active]:bg-secondary font-heading text-xl" to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

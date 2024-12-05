@@ -34,7 +34,7 @@ export const TopNavigationView = ({
         <ModeToggle />
 
         {lordsBalance ? (
-          <div className="text-sm p-2 rounded border">
+          <div className="text-sm p-2 rounded border font-number">
             {Number(formatEther(uint256.uint256ToBN(lordsBalance))).toFixed(2)} Lords
           </div>
         ) : null}
