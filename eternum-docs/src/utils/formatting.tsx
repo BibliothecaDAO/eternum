@@ -25,4 +25,3 @@ export function multiplyByPrecision(value: number): number {
 export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
 }
-

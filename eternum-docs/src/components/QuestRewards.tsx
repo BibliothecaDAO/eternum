@@ -3,8 +3,8 @@ import { formatNumberWithSpaces } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
 
 function addSpacesBeforeCapitals(str: string): string {
-    return str.replace(/([A-Z])/g, ' $1').trim();
-  }
+  return str.replace(/([A-Z])/g, " $1").trim();
+}
 
 export default function QuestRewards() {
   return (
