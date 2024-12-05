@@ -1,9 +1,9 @@
+import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum_words_logo.svg";
-import { configManager } from "@/dojo/setup";
 import { useAccountStore } from "@/hooks/context/accountStore";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useMintedRealms } from "@/hooks/helpers/use-minted-realms";
@@ -14,21 +14,21 @@ import { useAddressStore } from "@/hooks/store/useAddressStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
+import SettleRealmComponentDev from "@/ui/components/cityview/realm/SettleRealmComponentDev";
 import { MAX_REALMS } from "@/ui/constants";
 import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import TwitterShareButton from "@/ui/elements/TwitterShareButton";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getRealmNameById } from "@/ui/utils/realms";
-import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
-import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
+import { displayAddress, toValidAscii } from "@/ui/utils/utils";
+import { ContractAddress, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
-import { LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
 import { env } from "../../../../env";
+
 export const ACCOUNT_CHANGE_EVENT = "addressChanged";
 
 const StepContainer = ({ children }: { children: React.ReactNode }) => {
@@ -307,7 +307,60 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     </StepContainer>
   );
 };
-export const StepTwo = ({ onNext }: { onNext: () => void }) => {
+
+export const StepThree = ({ onNext }: { onNext: () => void }) => {
+  const { playerRealms } = useEntities();
+
+  const [settledRealmId, setSettledRealmId] = useState<number | undefined>(undefined);
+
+  const realmName = settledRealmId ? getRealmNameById(settledRealmId) : undefined;
+  const socialsText = formatSocialText(twitterTemplates.settle, {
+    realmName: realmName || "",
+    url: window.location.origin,
+  });
+
+  const mintedRealms = useMintedRealms();
+
+  const numberRealms = Math.max(mintedRealms, playerRealms().length);
+
+  return (
+    <StepContainer>
+      <div className="w-full text-center mb-4 md:mb-6">
+        <div className="mx-auto flex md:mb-2 mb-2">
+          <EternumWordsLogo className="fill-current w-64 stroke-current mx-auto" />
+        </div>
+        <div className="flex justify-center w-full">
+          <Button
+            size="xs"
+            className={`text-xs self-center mx-auto border-none ${numberRealms === 0 ? "animate-pulse" : ""}`}
+            variant="primary"
+            onClick={onNext}
+          >
+            Season passes <ArrowRight className="w-2 fill-current ml-3" />
+          </Button>
+        </div>
+      </div>
+      <h4 className=" text-center">{`${numberRealms} ${
+        numberRealms === 1 ? "Realm" : "Realms"
+      } under your commandment`}</h4>
+      <div className="grid w-full justify-center items-center">
+        {settledRealmId && (
+          <TwitterShareButton
+            buttonSize="md"
+            variant="default"
+            className="mt-4 col-start-3 justify-self-start hover:text-gold"
+            text={socialsText}
+          />
+        )}
+        <div className="flex w-full justify-center mt-4">
+          <NavigateToRealm text={"begin"} disabled={numberRealms === 0} />
+        </div>
+      </div>
+    </StepContainer>
+  );
+};
+
+export const StepFour = ({ onPrevious }: { onPrevious: () => void }) => {
   const [settledRealmId, setSettledRealmId] = useState<number | undefined>(undefined);
 
   const realmName = settledRealmId ? getRealmNameById(settledRealmId) : undefined;
@@ -318,12 +371,13 @@ export const StepTwo = ({ onNext }: { onNext: () => void }) => {
 
   return (
     <StepContainer>
-      <SettleRealmComponent setSettledRealmId={setSettledRealmId} />
-      <div className="grid grid-cols-3 w-full justify-center items-center">
-        <Button size="md" className="mt-4 col-start-2 justify-self-center" variant="primary" onClick={onNext}>
-          Continue <ArrowRight className="w-2 fill-current ml-3" />
-        </Button>
-        {true && (
+      {env.VITE_PUBLIC_DEV ? (
+        <SettleRealmComponentDev setSettledRealmId={setSettledRealmId} />
+      ) : (
+        <SettleRealmComponent setSettledRealmId={setSettledRealmId} />
+      )}
+      <div className="mt-4 grid grid-cols-3 w-full justify-center items-center">
+        {settledRealmId && (
           <TwitterShareButton
             buttonSize="md"
             variant="default"
@@ -332,99 +386,14 @@ export const StepTwo = ({ onNext }: { onNext: () => void }) => {
           />
         )}
       </div>
+      <Button size="xs" className="relative bottom-0 left-0 border-none" variant="primary" onClick={onPrevious}>
+        Back <ArrowLeft className="w-2 fill-current ml-3" />
+      </Button>
     </StepContainer>
   );
 };
 
-export const StepThree = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
-  const {
-    account: { account },
-  } = useDojo();
-
-  const { getAddressName } = useRealm();
-  const name = getAddressName(ContractAddress(account.address));
-
-  return (
-    <StepContainer>
-      <ContainerWithSquire>
-        <h2 className="mb-1 md:mb-4">Welcome {name}...</h2>
-        <p className="mb-1 md:mb-4 text-xl">
-          Before you begin {name}, here are some important things you need to understand about this world.
-        </p>
-
-        <div className="mt-auto">
-          <Button size="md" className="mt-auto" variant="primary" onClick={onNext}>
-            Continue <LucideArrowRight className="w-4 fill-current ml-3" />
-          </Button>
-        </div>
-      </ContainerWithSquire>
-    </StepContainer>
-  );
-};
-
-export const StepFour = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
-  return (
-    <StepContainer>
-      <ContainerWithSquire>
-        <h2 className="mb-1 md:mb-4">Resources rule the world...</h2>
-
-        <p className="mb-1 md:mb-4 text-xl">
-          Resources, Troops, Donkeys all exist and are tradable until you use them. Use them wisely.
-        </p>
-
-        <div className="mt-auto">
-          <Button size="md" className="mt-auto" variant="primary" onClick={onNext}>
-            Continue <LucideArrowRight className="w-4 fill-current ml-3" />
-          </Button>
-        </div>
-      </ContainerWithSquire>
-    </StepContainer>
-  );
-};
-
-const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <div className="gap-4 md:gap-10 grid grid-cols-12">
-      <div className="rounded-full border self-center col-span-4">
-        <img src="/images/squire.png" className="rounded-full border" alt="" />
-      </div>
-      <div className="col-span-8 flex flex-col">{children}</div>
-    </div>
-  );
-};
-
-export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
-  return (
-    <StepContainer>
-      <ContainerWithSquire>
-        <h2 className="mb-1 md:mb-4">Days are {formatTime(configManager.getTick(TickIds.Armies))} long</h2>
-        <p className="mb-1 md:mb-4 text-xl">
-          Each {formatTime(configManager.getTick(TickIds.Armies))} period Troops will regain energy and be able to
-          travel again. Don't get caught out in the open.
-        </p>
-        <div className="mt-auto">
-          <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
-            Continue <LucideArrowRight className="w-4 fill-current ml-3" />
-          </Button>
-        </div>
-      </ContainerWithSquire>
-    </StepContainer>
-  );
-};
-
-export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
-  return (
-    <StepContainer>
-      <ResourceIcon resource="Ancient Fragment" size="xl" withTooltip={false} />
-      <p className="text-2xl text-center mb-2 md:mb-8">Follow the quests and you will survive the day.</p>
-      <div className="flex w-full justify-center">
-        <NavigateToRealm text={"begin"} />
-      </div>
-    </StepContainer>
-  );
-};
-
-const NavigateToRealm = ({ text }: { text: string }) => {
+const NavigateToRealm = ({ text, disabled }: { text: string; disabled: boolean }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const { handleUrlChange } = useQuery();
@@ -442,7 +411,7 @@ const NavigateToRealm = ({ text }: { text: string }) => {
     <Button
       size="md"
       variant="primary"
-      disabled={!url}
+      disabled={!url || disabled}
       onClick={async () => {
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {

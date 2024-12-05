@@ -115,8 +115,16 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.create_realm(props);
   };
 
+  const create_realm_dev = async (props: SystemProps.CreateRealmDevProps) => {
+    await provider.create_realm_dev(props);
+  };
+
   const upgrade_realm = async (props: SystemProps.UpgradeRealmProps) => {
     await provider.upgrade_realm(props);
+  };
+
+  const create_multiple_realms_dev = async (props: SystemProps.CreateMultipleRealmsDevProps) => {
+    await provider.create_multiple_realms_dev(props);
   };
 
   const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
@@ -343,9 +351,11 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     accept_order: withQueueing(withErrorHandling(accept_order)),
     cancel_order: withQueueing(withErrorHandling(cancel_order)),
     accept_partial_order: withQueueing(withErrorHandling(accept_partial_order)),
+    create_realm_dev: withQueueing(withErrorHandling(create_realm_dev)),
     create_realm: withQueueing(withErrorHandling(create_realm)),
     upgrade_realm: withQueueing(withErrorHandling(upgrade_realm)),
     create_multiple_realms: withQueueing(withErrorHandling(create_multiple_realms)),
+    create_multiple_realms_dev: withQueueing(withErrorHandling(create_multiple_realms_dev)),
     transfer_resources: withQueueing(withErrorHandling(transfer_resources)),
     travel: withQueueing(withErrorHandling(travel)),
     travel_hex: withQueueing(withErrorHandling(travel_hex)),

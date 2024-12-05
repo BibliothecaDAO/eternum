@@ -179,7 +179,6 @@ export class ArmyManager {
       // Determine model type based on order or other criteria
       const { x, y } = army.hexCoords.getContract();
       const biome = this.biome.getBiome(x, y);
-      console.log(biome, army.entityId);
       if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
         this.armyModel.assignModelToEntity(army.entityId, "boat");
       } else {

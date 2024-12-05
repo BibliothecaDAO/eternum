@@ -5,8 +5,10 @@ import { Position } from "@/types/Position";
 import Button from "@/ui/elements/Button";
 import { LoadingScreen } from "@/ui/modules/LoadingScreen";
 import { ACCOUNT_CHANGE_EVENT } from "@/ui/modules/onboarding/Steps";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import ControllerConnector from "@cartridge/connector/controller";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
+import { HasValue, runQuery } from "@dojoengine/recs";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
@@ -14,6 +16,7 @@ import { Env, env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
 import { displayAddress } from "../../ui/utils/utils";
 import { useQuery } from "../helpers/useQuery";
+import { useAddressStore } from "../store/useAddressStore";
 import useUIStore from "../store/useUIStore";
 import { useAccountStore } from "./accountStore";
 
@@ -148,6 +151,8 @@ const DojoContextProvider = ({
   const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const setAddressName = useAddressStore((state) => state.setAddressName);
+
   const { handleUrlChange } = useQuery();
 
   const currentValue = useContext(DojoContext);
@@ -166,7 +171,7 @@ const DojoContextProvider = ({
   });
 
   const { connect, connectors } = useConnect();
-  const { isConnected, isConnecting } = useAccount();
+  const { isConnected, isConnecting, connector } = useAccount();
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
 
@@ -196,6 +201,17 @@ const DojoContextProvider = ({
       : controllerAccount;
 
   useEffect(() => {
+    const setUserName = async () => {
+      const username = await (connector as ControllerConnector)?.username();
+      if (!username) return;
+
+      value.systemCalls.set_address_name({
+        signer: controllerAccount!,
+        name: username,
+      });
+      setAddressName(username);
+    };
+
     if (isDev) {
       if (burnerAccount) {
         console.log("Setting account from burner hook:", burnerAccount);
@@ -208,6 +224,15 @@ const DojoContextProvider = ({
       if (controllerAccount) {
         console.log("Setting account from controllerAccount:", controllerAccount);
         useAccountStore.getState().setAccount(controllerAccount);
+
+        const addressName = runQuery([
+          HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
+        ]);
+
+        if (addressName.size === 0) {
+          setUserName();
+        }
+
         setAccountsInitialized(true);
       } else {
         console.log("ControllerAccount is null in production or not connected.");
