@@ -214,7 +214,7 @@ export class TileManager {
           configManager.getBuildingPopConfig(buildingType).capacity,
       },
     });
-
+    const quantityOverrideId = uuid();
     if (buildingType === BuildingType.Storehouse) {
       const storehouseQuantity =
         getComponentValue(
@@ -222,7 +222,6 @@ export class TileManager {
           getEntityIdFromKeys([BigInt(entityId), BigInt(buildingType)]),
         )?.value || 0;
 
-      const quantityOverrideId = uuid();
       this.setup.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
         entity: realmEntityId,
         value: {
@@ -236,7 +235,7 @@ export class TileManager {
       this._overrideResource(realmEntityId, resource.resource, -BigInt(resource.amount));
     });
 
-    return overrideId;
+    return { overrideId, populationOverrideId, quantityOverrideId };
   };
 
   private _overrideResource = (entity: Entity, resourceType: number, change: bigint) => {
@@ -351,7 +350,13 @@ export class TileManager {
     const directions = getDirectionsArray(startingPosition, endPosition);
 
     // add optimistic rendering
-    const overrideId = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+    const { overrideId, populationOverrideId, quantityOverrideId } = this._optimisticBuilding(
+      entityId,
+      col,
+      row,
+      buildingType,
+      resourceType,
+    );
     const { isSoundOn, effectsLevel } = useUIStore.getState();
 
     playBuildingSound(buildingType, isSoundOn, effectsLevel);
@@ -368,7 +373,9 @@ export class TileManager {
             : new CairoOption<Number>(CairoOptionVariant.None, 0),
       });
     } catch (error) {
-      this._optimisticBuilding(entityId, col, row, BuildingType.None, resourceType);
+      this.setup.components.Building.removeOverride(overrideId);
+      this.setup.components.Population.removeOverride(populationOverrideId);
+      this.setup.components.BuildingQuantityv2.removeOverride(quantityOverrideId);
 
       console.error(error);
       throw error;

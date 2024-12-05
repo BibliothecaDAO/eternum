@@ -290,7 +290,12 @@ export default class HexceptionScene extends HexagonScene {
     if (buildingType) {
       // if building mode
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
-        this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
+        try {
+          this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
+        } catch (error) {
+          console.error(error);
+          return;
+        }
         this.clearBuildingMode();
         this.updateHexceptionGrid(this.hexceptionRadius);
       }
