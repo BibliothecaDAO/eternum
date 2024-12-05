@@ -24,7 +24,7 @@ export const Route = createLazyFileRoute("/mint")({
 
 function Mint() {
   const { connectors } = useConnect();
-  const { address, account } = useAccount();
+  const { address } = useAccount();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
@@ -37,38 +37,6 @@ function Mint() {
     refetchInterval: 10_000,
     refetchOnMount: true,
   });
-
-  /*  const { data: seasonPassMints, isLoading: isSeasonPassMintsLoading } = useSuspenseQuery({
-    queryKey: ["ERCMints"],
-    queryFn: () => execute(GET_ERC_MINTS),
-    refetchInterval: 10_000,
-  });*/
-
-  /*const seasonPassTokenIds = useMemo(
-    () =>
-      seasonPassMints?.tokenTransfers?.edges
-        ?.filter((token) => {
-          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
-          return token.node.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS;
-        })
-        .map((token) => {
-          if (token?.node?.tokenMetadata.__typename === "ERC721__Token") {
-            return token.node.tokenMetadata.tokenId;
-          }
-          return undefined;
-        })
-        .filter((id): id is string => id !== undefined),
-    [seasonPassMints],
-  );*/
-
-  const checkOwner = async (contractAddress: string, tokenId: string) => {
-    const owner = await account?.callContract({
-      contractAddress,
-      entrypoint: "owner_of",
-      calldata: [tokenId, "0"],
-    });
-    return owner;
-  };
 
   const [realmsErcBalance, setRealmsErcBalance] = useState<any[]>([]);
   const [isRealmsRpcLoading, setIsRealmsLoading] = useState(false);
@@ -92,14 +60,6 @@ function Mint() {
             addAddressPadding(realmsAddress ?? "0x0");
 
           if (!isCorrectContract) continue;
-
-          const owner = await checkOwner(realmsAddress, token.node.tokenMetadata.tokenId ?? "0x0");
-
-          if (!owner) continue;
-
-          const isOwner = addAddressPadding(owner[0]) === addAddressPadding(address ?? "0x0");
-
-          if (!isOwner) continue;
 
           filteredTokens.push(token);
         }

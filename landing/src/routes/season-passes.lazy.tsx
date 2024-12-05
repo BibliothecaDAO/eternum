@@ -33,15 +33,6 @@ function SeasonPasses() {
     refetchOnMount: true,
   });
 
-  const checkOwner = async (contractAddress: string, tokenId: string) => {
-    const owner = await account?.callContract({
-      contractAddress,
-      entrypoint: "owner_of",
-      calldata: [tokenId, "0"],
-    });
-    return owner;
-  };
-
   const [seasonPassNfts, setSeasonPassNfts] = useState<SeasonPassMint[]>([]);
   const [isPassesRpcLoading, setIsPassesLoading] = useState(false);
 
@@ -64,14 +55,6 @@ function SeasonPasses() {
             addAddressPadding(seasonPassAddress ?? "0x0");
 
           if (!isCorrectContract) continue;
-
-          const owner = await checkOwner(seasonPassAddress, token.node.tokenMetadata.tokenId ?? "0x0");
-
-          if (!owner) continue;
-
-          const isOwner = addAddressPadding(owner[0]) === addAddressPadding(address ?? "0x0");
-
-          if (!isOwner) continue;
 
           filteredTokens.push(token);
         }
