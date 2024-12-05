@@ -40,8 +40,6 @@ import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
-// TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
-
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
 
@@ -174,17 +172,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 if (!buildingCosts) return;
 
                 const hasBalance = checkBalance(buildingCosts);
-
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild =
-                  BuildingType.WorkersHut == building
+                  building === BuildingType.WorkersHut
                     ? hasBalance
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
-                const isFarm = building === BuildingType["Farm"];
-                const isFishingVillage = building === BuildingType["FishingVillage"];
-                const isWorkersHut = building === BuildingType["WorkersHut"];
-                const isMarket = building === BuildingType["Market"];
+                const isFarm = building === BuildingType.Farm;
+                const isFishingVillage = building === BuildingType.FishingVillage;
+                const isWorkersHut = building === BuildingType.WorkersHut;
+                const isMarket = building === BuildingType.Market;
 
                 return (
                   <BuildingCard
@@ -287,7 +284,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
       },
     ],
-    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
+    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound, realm.population],
   );
 
   return (

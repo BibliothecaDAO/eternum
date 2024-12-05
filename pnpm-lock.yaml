@@ -185,6 +185,9 @@ importers:
       lucide-react:
         specifier: ^0.365.0
         version: 0.365.0(react@18.3.1)
+      next-themes:
+        specifier: ^0.4.3
+        version: 0.4.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       postprocessing:
         specifier: ^6.36.2
         version: 6.36.3(three@0.166.1)
@@ -203,6 +206,9 @@ importers:
       rxjs:
         specifier: ^7.8.1
         version: 7.8.1
+      sonner:
+        specifier: ^1.7.0
+        version: 1.7.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       starknet:
         specifier: 6.11.0
         version: 6.11.0(encoding@0.1.13)
