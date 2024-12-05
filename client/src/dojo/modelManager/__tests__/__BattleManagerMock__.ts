@@ -82,7 +82,6 @@ export const generateMockArmyInfo = (
 ): ArmyInfo => {
   return {
     entity_id: ARMY_ENTITY_ID,
-    isHome: true,
     battle_id: battleEntityId ?? BATTLE_ENTITY_ID,
     battle_side: BattleSide[battleSide ?? BattleSide.Attack] ?? BattleSide[BattleSide.Attack],
     troops: {
