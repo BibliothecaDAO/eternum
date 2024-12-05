@@ -74,14 +74,13 @@ export default function SeasonPassMintDialog({
           ) : (
             <div className="flex flex-col items-center gap-4 rounded-md p-5 lg:flex-row lg:gap-5 lg:p-4 w-fill">
               <div className="text-center">
-                <div className="w-full grid grid-cols-4 gap-0.5 p-4">
+                <div className="w-full grid grid-cols-4 gap-0.5 p-4 max-h-[40vH] overflow-y-auto">
                   {realm_ids.map((realm, index) => (
                     <div className="text-sm p-2 border rounded-md" key={realm}>
                       #{Number(realm)}
                     </div>
                   ))}
                 </div>
-                {mint && (
                   <>
                     {!address ? (
                       <div className="text-yellow-500 mb-2 flex items-center justify-center gap-2">
@@ -102,7 +101,7 @@ export default function SeasonPassMintDialog({
                     <Button
                       className="mx-auto mt-8"
                       onClick={() => {
-                        mint(realm_ids, address);
+                        mint && mint(realm_ids, address);
                       }}
                       disabled={!address}
                       variant="cta"
@@ -111,7 +110,6 @@ export default function SeasonPassMintDialog({
                       Mint Season Pass
                     </Button>
                   </>
-                )}
               </div>
             </div>
           )}

@@ -16,9 +16,10 @@ interface SeasonPassRowProps {
   seasonPassTokenIds?: string[];
   toggleNftSelection: (tokenId: string, collectionAddress: string) => void;
   isNftSelected?: (tokenId: string, contractAddress: string) => boolean;
+  onSeasonPassStatusChange?: (tokenId: string, hasMinted: boolean) => void;
 }
 
-export const RealmsGrid = ({ realms, toggleNftSelection, isNftSelected, seasonPassTokenIds }: SeasonPassRowProps) => {
+export const RealmsGrid = ({ realms, toggleNftSelection, isNftSelected, onSeasonPassStatusChange }: SeasonPassRowProps) => {
   if (!realms?.length) return <div>No Realms found</div>;
 
   const gridItems: RealmGridItem[] = realms.map((realm) => ({
@@ -42,7 +43,7 @@ export const RealmsGrid = ({ realms, toggleNftSelection, isNftSelected, seasonPa
             key={`${realm.node.tokenMetadata.tokenId}`}
             isSelected={isSelected}
             realm={realm}
-            seasonPassMinted={seasonPassTokenIds?.includes(realm.node.tokenMetadata.tokenId)}
+            onSeasonPassStatusChange={onSeasonPassStatusChange}
           />
         );
       }}

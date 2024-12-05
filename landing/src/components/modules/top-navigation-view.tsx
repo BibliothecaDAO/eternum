@@ -32,7 +32,7 @@ export const TopNavigationView = ({
         <ModeToggle />
 
         {lordsBalance ? (
-          <div className="text-sm p-2 rounded border">{formatEther(uint256.uint256ToBN(lordsBalance))} Lords</div>
+          <div className="text-sm p-2 rounded border">{Number(formatEther(uint256.uint256ToBN(lordsBalance))).toFixed(2)} Lords</div>
         ) : null}
 
         {import.meta.env.VITE_PUBLIC_DEV === "true" ? (

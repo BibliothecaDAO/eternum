@@ -76,6 +76,17 @@ function Mint() {
 
   const loading = isRealmsLoading; /*|| isSeasonPassMintsLoading*/
 
+  const [seasonPassStatus, setSeasonPassStatus] = useState<Record<string, boolean>>({});
+
+  const handleSeasonPassStatusChange = (tokenId: string, hasMinted: boolean) => {
+    setSeasonPassStatus(prev => ({...prev, [tokenId]: hasMinted}));
+  };
+
+  const selectBatchNftsFiltered = (contractAddress: string, tokenIds: string[]) => {
+    const filteredTokenIds = tokenIds.filter(id => !seasonPassStatus[id]);
+    selectBatchNfts(contractAddress ?? "", filteredTokenIds);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {loading && (
@@ -102,7 +113,7 @@ function Mint() {
                   isNftSelected={isNftSelected}
                   toggleNftSelection={toggleNftSelection}
                   realms={realmsErcBalance}
-                  //seasonPassTokenIds={seasonPassTokenIds}
+                  onSeasonPassStatusChange={handleSeasonPassStatusChange}
                 />
               </Suspense>
             </div>
@@ -119,7 +130,7 @@ function Mint() {
               {data?.tokenBalances?.edges && (
                 <SelectNftActions
                   totalSelectedNfts={totalSelectedNfts}
-                  selectBatchNfts={selectBatchNfts}
+                  selectBatchNfts={selectBatchNftsFiltered}
                   deselectAllNfts={deselectAllNfts}
                   contractAddress={realmsErcBalance?.[0]?.node?.tokenMetadata.contractAddress ?? ""}
                   batchTokenIds={realmsErcBalance
