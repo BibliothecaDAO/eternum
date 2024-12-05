@@ -1,5 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, formatNumber, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
@@ -25,7 +25,7 @@ export const TravelInfo = ({
     divideByPrecision(resourceWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey),
   );
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   useEffect(() => {
     const totalWeight = getTotalResourceWeight(resources);

@@ -93,6 +93,7 @@ export const generateMockArmyInfo = (
     name: "test army",
     isMine: isMine ?? false,
     isMercenary: false,
+    isHome: false,
     offset: { x: 0, y: 0 },
     position: { entity_id: ARMY_ENTITY_ID, x: 0, y: 0 },
     owner: { entity_id: ARMY_ENTITY_ID, address: 0n },

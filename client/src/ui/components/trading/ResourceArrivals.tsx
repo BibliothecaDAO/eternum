@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { usePlayerArrivals } from "@/hooks/helpers/useResources";
+import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -15,10 +15,9 @@ export type EntityReadyForDeposit = {
   resources: bigint[];
 };
 
-export const AllResourceArrivals = ({ className }: { className?: string }) => {
+export const AllResourceArrivals = ({ arrivals, className }: { arrivals: ArrivalInfo[]; className?: string }) => {
   const { account, setup } = useDojo();
 
-  const arrivals = usePlayerArrivals();
   const [entitiesReadyForDeposit, setEntitiesReadyForDeposit] = useState<EntityReadyForDeposit[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);

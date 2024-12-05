@@ -21,6 +21,7 @@ export const ResourceChip = ({
   tick: number;
 }) => {
   const resourceManager = useResourceManager(entityId, resourceId);
+
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [showPerHour, setShowPerHour] = useState(true);

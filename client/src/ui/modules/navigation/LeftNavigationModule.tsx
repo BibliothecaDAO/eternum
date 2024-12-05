@@ -6,8 +6,8 @@ import useUIStore from "@/hooks/store/useUIStore";
 
 import { QuestId } from "@/ui/components/quest/questDetails";
 
+import { usePlayerArrivalsNotificationLength } from "@/hooks/helpers/use-resource-arrivals";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { usePlayerArrivalsNotificationLength } from "@/hooks/helpers/useResources";
 import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
@@ -26,7 +26,6 @@ import {
 import CircleButton from "../../elements/CircleButton";
 // import { Chat } from "../chat/Chat";
 import { Chat } from "../chat/Chat";
-import { MiniMapNavigation } from "./MiniMapNavigation";
 
 const EntityDetails = lazy(() =>
   import("../entity-details/EntityDetails").then((module) => ({ default: module.EntityDetails })),
@@ -74,7 +73,7 @@ export const LeftNavigationModule = () => {
   const { toggleModal } = useModalStore();
   const { isMapView } = useQuery();
 
-  const notificationLength = usePlayerArrivalsNotificationLength();
+  const { notificationLength, arrivals } = usePlayerArrivalsNotificationLength();
 
   const { questClaimStatus } = useQuestClaimStatus();
 
@@ -300,7 +299,7 @@ export const LeftNavigationModule = () => {
                 <StructureConstructionMenu entityId={structureEntityId} />
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
-              {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
+              {view === LeftView.ResourceArrivals && <AllResourceArrivals arrivals={arrivals} />}
               {view === LeftView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
             </Suspense>
           </BaseContainer>
