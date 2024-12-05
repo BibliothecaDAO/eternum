@@ -7,7 +7,7 @@ export const signingPolicy = [
         { name: "chainId", type: "shortstring" },
         { name: "revision", type: "shortstring" },
       ],
-      "eternum-Message": [
+      "s0_eternum-Message": [
         { name: "identity", type: "ContractAddress" },
         { name: "channel", type: "shortstring" },
         { name: "content", type: "string" },
@@ -15,7 +15,7 @@ export const signingPolicy = [
         { name: "salt", type: "felt" },
       ],
     },
-    primaryType: "eternum-Message",
+    primaryType: "s0_eternum-Message",
     domain: {
       name: "Eternum",
       version: "1",

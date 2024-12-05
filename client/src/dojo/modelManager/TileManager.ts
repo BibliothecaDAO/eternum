@@ -209,11 +209,29 @@ export class TileManager {
         population:
           (getComponentValue(this.setup.components.Population, realmEntityId)?.population || 0) +
           configManager.getBuildingPopConfig(buildingType).population,
+        capacity:
+          (getComponentValue(this.setup.components.Population, realmEntityId)?.capacity || 0) +
+          configManager.getBuildingPopConfig(buildingType).capacity,
       },
     });
 
-    const resourceChange = configManager.buildingCosts[buildingType];
+    if (buildingType === BuildingType.Storehouse) {
+      const storehouseQuantity =
+        getComponentValue(
+          this.setup.components.BuildingQuantityv2,
+          getEntityIdFromKeys([BigInt(entityId), BigInt(buildingType)]),
+        )?.value || 0;
 
+      const quantityOverrideId = uuid();
+      this.setup.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
+        entity: realmEntityId,
+        value: {
+          value: storehouseQuantity + 1,
+        },
+      });
+    }
+
+    const resourceChange = configManager.buildingCosts[buildingType];
     resourceChange.forEach((resource) => {
       this._overrideResource(realmEntityId, resource.resource, -BigInt(resource.amount));
     });
@@ -234,12 +252,15 @@ export class TileManager {
   };
 
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
-    const currentBuilding = getComponentValue(this.setup.components.Building, getEntityIdFromKeys([BigInt(entityId)]));
-
     const overrideId = uuid();
     const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
     const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
     const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
+
+    const currentBuilding = getComponentValue(this.setup.components.Building, entity);
+
+    console.log(currentBuilding);
+
     this.setup.components.Building.addOverride(overrideId, {
       entity,
       value: {
@@ -259,12 +280,17 @@ export class TileManager {
 
     const realmEntityId = getEntityIdFromKeys([BigInt(entityId)]);
 
+    const type = BuildingType[currentBuilding?.category as keyof typeof BuildingType];
+
     this.setup.components.Population.addOverride(populationOverrideId, {
       entity: realmEntityId,
       value: {
         population:
           (getComponentValue(this.setup.components.Population, realmEntityId)?.population || 0) -
-          configManager.getBuildingPopConfig(currentBuilding?.category as unknown as BuildingType).population,
+          configManager.getBuildingPopConfig(type).population,
+        capacity:
+          (getComponentValue(this.setup.components.Population, realmEntityId)?.capacity || 0) -
+          configManager.getBuildingPopConfig(type).capacity,
       },
     });
 
