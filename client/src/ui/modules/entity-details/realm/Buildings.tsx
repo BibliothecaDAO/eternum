@@ -4,6 +4,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { Building, useBuildings } from "@/hooks/helpers/use-buildings";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
+import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { toHexString } from "@/ui/utils/utils";
@@ -16,9 +17,9 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const [showEconomy, setShowEconomy] = useState(true);
-  const [showResource, setShowResource] = useState(true);
-  const [showMilitary, setShowMilitary] = useState(true);
+  const [showEconomy, setShowEconomy] = useState(false);
+  const [showResource, setShowResource] = useState(false);
+  const [showMilitary, setShowMilitary] = useState(false);
   const [isLoading, setIsLoading] = useState({ isLoading: false, innerCol: 0, innerRow: 0 });
 
   const realm = useGetRealm(structureEntityId).realm;
@@ -58,8 +59,6 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
   return (
     <div className="w-full text-sm p-3">
-      <BuildingsHeader />
-
       {/* Economy Section */}
       <div className="mb-4">
         <div
@@ -143,7 +142,7 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
 const BuildingsHeader = () => {
   return (
-    <div className="grid grid-cols-3 gap-2 mb-4 text-xs text-gold tracking-wider border-b">
+    <div className="grid grid-cols-3 gap-2 mb-4 text-xs text-gold tracking-wider uppercase">
       <div className=""></div>
       <div className="text-center">Produces /s</div>
       <div className="text-center">Consumes /s</div>
@@ -158,30 +157,18 @@ interface BuildingRowProps {
   handlePauseResumeProduction: (paused: boolean, innerCol: number, innerRow: number) => void;
 }
 const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction }: BuildingRowProps) => {
+  console.log(building.category);
   return (
-    <div className="grid grid-cols-3 gap-2 p-2 mb-4 text-md items-center rounded-lg transition-colors border">
-      <p className="font-medium capitalize">{building.name}</p>
+    <div className="flex flex-col p-2 mb-4 text-md rounded transition-colors border border-gold/10">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center space-x-3">
+          <img
+            className="w-24 bg-brown/40 rounded-xl p-1"
+            src={BUILDING_IMAGES_PATH[BuildingType[building.category as any] as keyof typeof BUILDING_IMAGES_PATH]}
+          />
+          <h4 className="text-lg font-medium">{building.name}</h4>
+        </div>
 
-      <div className="flex flex-row justify-center items-center space-x-1">
-        {!building.paused && (
-          <>
-            <p className="text-green font-medium">
-              +{(building.produced.amount * (1 + building.bonusPercent / 10000)).toFixed(1)}
-            </p>
-            <ResourceIcon resource={ResourcesIds[building.produced.resource]} size={"sm"} />
-            {building.bonusPercent !== 0 && <p className="text-green text-sm">(+{building.bonusPercent / 100}%)</p>}
-          </>
-        )}
-      </div>
-
-      <div className="flex flex-col items-center space-y-1">
-        {!building.paused &&
-          building.consumed.map((resource, index) => (
-            <div key={index} className="flex flex-row justify-center items-center space-x-1">
-              <p className="text-light-red font-medium">-{resource.amount}</p>
-              <ResourceIcon resource={ResourcesIds[resource.resource]} size={"sm"} />
-            </div>
-          ))}
         {isOwner && (
           <Button
             onClick={() => handlePauseResumeProduction(building.paused, building.innerCol, building.innerRow)}
@@ -192,12 +179,32 @@ const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction
             }
             variant="outline"
             withoutSound
-            className="mt-3"
           >
             {building.paused ? "Resume Production" : "Pause Production"}
           </Button>
         )}
       </div>
+
+      {!building.paused && (
+        <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2">
+            <p className="text-green font-medium">
+              +{(building.produced.amount * (1 + building.bonusPercent / 10000)).toFixed(1)}
+            </p>
+            <ResourceIcon resource={ResourcesIds[building.produced.resource]} size={"sm"} />
+            {building.bonusPercent !== 0 && <p className="text-green text-sm">(+{building.bonusPercent / 100}%)</p>}
+          </div>
+
+          <div className="flex items-center space-x-4">
+            {building.consumed.map((resource, index) => (
+              <div key={index} className="flex items-center space-x-1">
+                <p className="text-light-red font-medium">-{resource.amount}</p>
+                <ResourceIcon resource={ResourcesIds[resource.resource]} size={"sm"} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
