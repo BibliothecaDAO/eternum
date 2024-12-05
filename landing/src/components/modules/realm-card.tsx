@@ -79,7 +79,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
             </div>
           </div>
           <div className="flex justify-between gap-2">
-            <div className=" text-3xl">{name}</div>
+            <div className=" text-2xl">{name}</div>
           </div>
         </CardTitle>
         <CardDescription>{/*description*/}</CardDescription>
@@ -89,7 +89,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
           {attributes
             ?.filter((attribute) => attribute.trait_type === "Resource")
             .map((attribute, index) => (
-              <ResourceIcon resource={attribute.value as string} size="lg" key={`${attribute.trait_type}-${index}`} />
+              <ResourceIcon resource={attribute.value as string} size="md" key={`${attribute.trait_type}-${index}`} />
             ))}
         </div>
 
@@ -97,7 +97,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
       </CardContent>
       {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
         <CardFooter className="!p-2 border-t items-center rounded-b-xl bg-card flex uppercase flex-wrap w-full h-full justify-center text-center">
-            {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+          {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
         </CardFooter>
       )}
     </Card>
