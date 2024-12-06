@@ -83,8 +83,10 @@ export default class WorldmapScene extends HexagonScene {
       (structure) => {
         if (structure) {
           this.structurePreview?.setPreviewStructure(structure as any);
+          this.highlightHexManager.highlightHexes(this.getBuildableHexesForCurrentChunk());
         } else {
           this.structurePreview?.clearPreviewStructure();
+          this.highlightHexManager.highlightHexes([]);
         }
       },
     );
@@ -210,6 +212,7 @@ export default class WorldmapScene extends HexagonScene {
       }
       this.state.updateHoveredHex(hexCoords);
     }
+
     this.structurePreview?.setStructurePosition(getWorldPositionForHex(hexCoords));
 
     if (!this._canBuildStructure(hexCoords)) {
@@ -241,15 +244,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private _canBuildStructure(hexCoords: HexPosition) {
-    const contractPos = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-
     const isStructure = this.structureManager.structureHexCoords.get(hexCoords.col)?.has(hexCoords.row) || false;
     const isExplored = this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) || false;
 
-    const biomeType = this.biome.getBiome(contractPos.x, contractPos.y);
-    const isOcean = biomeType === BiomeType.Ocean || biomeType === BiomeType.DeepOcean;
-
-    return !isStructure && isExplored && !isOcean;
+    return !isStructure && isExplored;
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {}
@@ -613,6 +611,37 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
+  private getExploredHexesForCurrentChunk() {
+    const chunkKey = this.currentChunk.split(",");
+    const startRow = parseInt(chunkKey[0]);
+    const startCol = parseInt(chunkKey[1]);
+    const exploredHexes: HexPosition[] = [];
+    for (
+      let row = startRow - this.renderChunkSize.height / 2;
+      row <= startRow + this.renderChunkSize.height / 2;
+      row++
+    ) {
+      for (
+        let col = startCol - this.renderChunkSize.width / 2;
+        col <= startCol + this.renderChunkSize.width / 2;
+        col++
+      ) {
+        if (this.exploredTiles.get(col)?.has(row)) {
+          exploredHexes.push({ col, row });
+        }
+      }
+    }
+    return exploredHexes;
+  }
+
+  private getBuildableHexesForCurrentChunk() {
+    const exploredHexes = this.getExploredHexesForCurrentChunk();
+    const buildableHexes = exploredHexes.filter(
+      (hex) => !this.structureManager.structureHexCoords.get(hex.col)?.has(hex.row),
+    );
+    return buildableHexes;
+  }
+
   private cacheMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     for (const [biome, model] of this.biomeModels) {
@@ -666,6 +695,11 @@ export default class WorldmapScene extends HexagonScene {
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
+    }
+    if (this.structurePreview?.getPreviewStructure()) {
+      this.highlightHexManager.highlightHexes(this.getBuildableHexesForCurrentChunk());
+    } else {
+      this.highlightHexManager.highlightHexes([]);
     }
   }
 
