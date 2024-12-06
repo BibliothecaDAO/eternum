@@ -135,7 +135,6 @@ export class StructureManager {
     const _structures = this.structures.getStructures();
     for (const [structureType, structures] of _structures) {
       const visibleStructures = this.getVisibleStructures(structures);
-      console.log(visibleStructures);
       const models = this.structureModels.get(structureType);
 
       if (models && models.length > 0) {
@@ -185,7 +184,6 @@ export class StructureManager {
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
     const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
-    console.log("CHUNK", chunkCol, chunkRow);
     return (
       hexCoords.col >= chunkCol - this.renderChunkSize.width / 2 &&
       hexCoords.col < chunkCol + this.renderChunkSize.width / 2 &&
@@ -247,7 +245,6 @@ class Structures {
       structures.forEach((structure) => {
         if (structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row) {
           structures.delete(structure.entityId);
-          console.log("REMOVED", structure.entityId);
         }
       });
     });
