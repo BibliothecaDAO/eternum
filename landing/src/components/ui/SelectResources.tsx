@@ -28,8 +28,6 @@ export const SelectResources = ({
   );
 
   const addResourceGive = () => {
-    console.log([...selectedResourceIds]);
-    console.log([unselectedResources[0].id]);
     setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
     setSelectedResourceAmounts({
       ...selectedResourceAmounts,
@@ -121,9 +119,6 @@ export const SelectSingleResource = ({
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
     [selectedResourceIds],
   );
-  console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu");
-  console.log(typeof entity_id);
-  console.log({ unselectedResources, resources, selectedResourceIds });
 
   useEffect(() => {
     if (selectedResourceIds.length === 0) {
@@ -132,8 +127,6 @@ export const SelectSingleResource = ({
   }, [selectedResourceIds]);
 
   const addResourceGive = () => {
-    console.log([...selectedResourceIds]);
-    console.log([unselectedResources[0].id]);
     setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
     setSelectedResourceAmounts({
       ...selectedResourceAmounts,
@@ -228,8 +221,6 @@ export const ShowSingleResource = ({
   }, [selectedResourceIds]);
 
   const addResourceGive = () => {
-    console.log([...selectedResourceIds]);
-    console.log([unselectedResources[0].id]);
     setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
     setSelectedResourceAmounts({
       ...selectedResourceAmounts,

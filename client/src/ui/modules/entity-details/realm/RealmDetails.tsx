@@ -32,12 +32,12 @@ export const RealmDetails = () => {
     () => [
       {
         key: "Castle",
-        label: <div>Castle</div>,
+        label: <div className="castle-tab-selector">Castle</div>,
         component: <Castle />,
       },
       {
         key: "Buildings",
-        label: <div>Buildings</div>,
+        label: <div className="buildings-tab-selector">Buildings</div>,
         component: <Buildings structure={structure} />,
       },
     ],

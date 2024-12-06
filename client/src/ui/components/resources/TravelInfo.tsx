@@ -78,7 +78,7 @@ export const TravelInfo = ({
   );
 };
 
-export const ResourceWeight = ({ className }: { className?: string }) => {
+const ResourceWeight = ({ className }: { className?: string }) => {
   return (
     <div className={`text-xs text-gray-200 p-2 max-w-xs ${className}`}>
       <p className="font-semibold">Resource Weights</p>

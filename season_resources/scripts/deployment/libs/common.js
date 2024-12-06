@@ -170,6 +170,13 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
   }
 };
 
+export const getResourceAddressesFromFile = async () => {
+  const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
+  const fileName = path.join(folderPath, `resource_addresses.json`);
+  const data = await readFileAsync(fileName, "utf8");
+  return JSON.parse(data);
+};
+
 export const saveResourceAddressesToLanding = async (resourceAddresses, environment) => {
   try {
     const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;

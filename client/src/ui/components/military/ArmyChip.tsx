@@ -91,8 +91,8 @@ export const ArmyChip = ({
 
   return (
     <div
-      className={`items-center text-xs px-2 hover:bg-gold/20 ${
-        army.isMine ? "bg-blueish/20" : "bg-red/20"
+      className={`items-center text-xs px-2 hover:bg-gold/20 ${army.isMine ? "bg-blueish/20" : "bg-red/20"} ${
+        army.protectee ? "defensive-army-selector" : "attacking-army-selector"
       } rounded-md border-gold/20 ${className}`}
     >
       {editMode ? (
@@ -121,7 +121,7 @@ export const ArmyChip = ({
                           <Plus
                             className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
                               updatedArmy.quantity.value === 0n ? "animate-pulse" : ""
-                            }`}
+                            } ${army.protectee ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
                             onClick={() => {
                               setTooltip(null);
                               setEditMode(!editMode);
@@ -144,7 +144,9 @@ export const ArmyChip = ({
                               />
                               {isOnMap && <NavigateToPositionIcon position={updatedArmy!.position} />}
                               <Swap
-                                className="w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300"
+                                className={`w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
+                                  army.protectee ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
+                                }`}
                                 onClick={() => {
                                   setTooltip(null);
                                   setShowTroopSwap(!showTroopSwap);
