@@ -25,7 +25,6 @@ export class StructureManager {
   modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
   structureHexCoords: Map<number, Set<number>> = new Map();
-  totalStructures: number = 0;
   private currentChunk: string = "";
   private renderChunkSize: RenderChunkSize;
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
@@ -38,6 +37,10 @@ export class StructureManager {
     useAccountStore.subscribe(() => {
       this.structures.recheckOwnership();
     });
+  }
+
+  getTotalStructures() {
+    return Array.from(this.structures.getStructures().values()).reduce((acc, structures) => acc + structures.size, 0);
   }
 
   public async loadModels() {
@@ -99,7 +102,6 @@ export class StructureManager {
     }
     if (!this.structureHexCoords.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
       this.structureHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
-      this.totalStructures++;
     }
 
     const key = structureType;
@@ -248,6 +250,16 @@ class Structures {
         }
       });
     });
+  }
+
+  removeStructure(entityId: ID): boolean {
+    let removed = false;
+    this.structures.forEach((structures) => {
+      if (structures.delete(entityId)) {
+        removed = true;
+      }
+    });
+    return removed;
   }
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {

@@ -340,29 +340,29 @@ export class TileManager {
     return overrideId;
   };
 
-  private _optimisticStructure = (entityId: ID, coords: Position, structureType: StructureType) => {
+  private _optimisticStructure = (coords: Position, structureType: StructureType) => {
     const overrideId = uuid();
-    const overrideId2 = uuid();
-    const entity = getEntityIdFromKeys([BigInt(coords.x), BigInt(coords.y)]);
+    const entity: Entity = getEntityIdFromKeys([BigInt(99999999n)]);
 
     this.setup.components.Structure.addOverride(overrideId, {
       entity,
       value: {
         category: StructureType[structureType],
-        entity_id: entityId,
+        entity_id: 99999999,
         created_at: 0n,
       },
     });
 
-    this.setup.components.Position.addOverride(overrideId2, {
+    this.setup.components.Position.addOverride(overrideId, {
       entity,
       value: {
+        entity_id: 99999999,
         x: coords.x,
         y: coords.y,
       },
     });
 
-    return { overrideId, overrideId2 };
+    return { overrideId };
   };
 
   placeBuilding = async (buildingType: BuildingType, hexCoords: HexPosition, resourceType?: number) => {
@@ -457,9 +457,7 @@ export class TileManager {
   };
 
   placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
-    // Add optimistic rendering
-    const { overrideId, overrideId2 } = this._optimisticStructure(entityId, coords, structureType);
-
+    this._optimisticStructure(coords, structureType);
     try {
       if (structureType == StructureType.Hyperstructure) {
         return await this.setup.systemCalls.create_hyperstructure({
@@ -469,8 +467,6 @@ export class TileManager {
         });
       }
     } catch (error) {
-      this.setup.components.Structure.removeOverride(overrideId);
-      this.setup.components.Position.removeOverride(overrideId2);
       console.error(error);
       throw error;
     }

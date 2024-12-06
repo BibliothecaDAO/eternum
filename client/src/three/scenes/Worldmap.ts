@@ -39,7 +39,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private totalStructures: number = 0;
 
-  private currentChunk: string = "null";
+  private currentChunk: string = "0,0";
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
@@ -114,19 +114,14 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
     this.systemManager.Structure.onUpdate((value) => {
+      if (this.structureManager.structures.removeStructure(99999999)) {
+        this.structureManager.structureHexCoords.get(value.hexCoords.col)?.delete(value.hexCoords.row);
+        this.structureManager.updateChunk(this.currentChunk);
+      }
       this.structureManager.onUpdate(value);
-      if (this.totalStructures !== this.structureManager.totalStructures) {
-        const { col, row } = value.hexCoords;
-        const { chunkX, chunkZ } = this.worldToChunkCoordinates(
-          getWorldPositionForHex({ col: col - FELT_CENTER, row: row - FELT_CENTER }).x,
-          getWorldPositionForHex({ col: col - FELT_CENTER, row: row - FELT_CENTER }).z,
-        );
-        const startRow = chunkZ * this.chunkSize;
-        const startCol = chunkX * this.chunkSize;
-
-        this.totalStructures = this.structureManager.totalStructures;
-
-        this.removeCachedMatricesAroundColRow(startCol, startRow);
+      if (this.totalStructures !== this.structureManager.getTotalStructures()) {
+        this.totalStructures = this.structureManager.getTotalStructures();
+        this.clearCache();
         this.updateVisibleChunks(true);
       }
     });
@@ -269,9 +264,15 @@ export default class WorldmapScene extends HexagonScene {
     if (!buildingType) return;
 
     const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+
+    this.clearCache();
+    this.totalStructures = this.structureManager.getTotalStructures() + 1;
+
     this.tileManager.placeStructure(this.structureEntityId, buildingType.type, contractHexPosition).catch(() => {
       this.structureManager.structures.removeStructureFromPosition(hexCoords);
-      this.structureManager.updateChunk(this.currentChunk);
+      this.structureManager.structureHexCoords.get(hexCoords.col)?.delete(hexCoords.row);
+      this.clearCache();
+      this.updateVisibleChunks(true);
     });
     this.clearEntitySelection();
   }
@@ -444,11 +445,13 @@ export default class WorldmapScene extends HexagonScene {
 
       this.interactiveHexManager.renderHexes();
     }
-
-    this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
+    if (this.currentChunk !== "0,0") {
+      this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
+    }
   }
 
   removeCachedMatricesAroundColRow(col: number, row: number) {
+    console.log("removing cache", col, row);
     for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
       for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
         if (i === 0 && j === 0) {
@@ -457,6 +460,10 @@ export default class WorldmapScene extends HexagonScene {
         this.removeCachedMatricesForChunk(row + i, col + j);
       }
     }
+  }
+
+  clearCache() {
+    this.cachedMatrices.clear();
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, rows: number, cols: number) {
@@ -552,6 +559,7 @@ export default class WorldmapScene extends HexagonScene {
         dummy.position.copy(pos);
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+
         const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
         if (isStructure || isBattle) {
@@ -629,7 +637,7 @@ export default class WorldmapScene extends HexagonScene {
         col <= startCol + this.renderChunkSize.width / 2;
         col++
       ) {
-        if (this.exploredTiles.get(col)?.has(row) || true) {
+        if (this.exploredTiles.get(col)?.has(row)) {
           exploredHexes.push({ col, row });
         }
       }
