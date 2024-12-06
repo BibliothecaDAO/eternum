@@ -1,7 +1,4 @@
----
-title: Combat
-description: Military and combat mechanics in Eternum
----
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 ## Combat System
 
@@ -15,7 +12,9 @@ The combat system features a strategic triangle of unit advantages:
 - **Crossbowmen** dominate Knights
 - **Knights** overpower Paladins
 
-_Each unit deals bonus damage to their advantage target and receives reduced damage from them._
+> Units deal +10% damage to their advantage target
+>
+> Units receive -10% damage from their disadvantage unit
 
 ### Battle Duration
 
@@ -27,18 +26,52 @@ uneven matchups may resolve more quickly as the stronger force overwhelms their 
 Combat in Eternum is dynamic and fluid. Additional armies can reinforce either side during battle, and fighting
 continues until victory is achieved or retreat is called.
 
-Retreating forces pay a steep price: deserting armies lose 25% of their troops during withdrawal.
+Retreating forces pay a steep price: deserting armies lose {EternumGlobalConfig.battle.TROOP_BATTLE_LEAVE_SLASH_NUM}% of
+their troops during withdrawal.
 
 ### Siege Mechanics
 
 🏰 **Siege System**
 
-> When attacking a realm, combat begins with a siege phase.
+> When attacking a realm, combat begins with an {EternumGlobalConfig.battle.delaySeconds / 3600} hour siege phase.
 >
-> Defenders can use this time to:
+> During this time, defenders can:
 >
 > - Transfer resources in or out of the realm
 > - Prepare defenses
 > - Launch an early counterattack to break the siege
+>
+> After the siege timer expires:
+>
+> - Combat automatically begins
+> - The realm enters active attack status
+> - All resource transfers are blocked
 
-> Once combat begins, the realm enters active attack status and all resource transfers are blocked.
+### Raid & Pillage
+
+Raiding allows you to pillage resources and potentially damage enemy structures through quick, decisive strikes.
+
+#### Resource Pillaging
+
+- Raids are executed instantly
+- Both attacking and defending armies suffer troop losses (maximum 10%)
+- Successfully stealing resources depends on luck
+- Your stamina is completely depleted after raiding
+- Higher stamina when raiding increases maximum potential resource theft
+
+#### Building Destruction
+
+There's a chance to destroy one random building in the raided realm:
+
+- Lower probability in inner hexes
+- Higher probability in outer hexes
+- Can target:
+  - Military buildings (reducing army capacity)
+  - Production buildings (disrupting economy)
+  - Storage buildings (limiting resource capacity)
+
+> ⚠️ **Warning**:
+>
+> Maintain adequate realm defense!
+>
+> If all defending troops are eliminated during a raid, the attacking force can claim your realm.

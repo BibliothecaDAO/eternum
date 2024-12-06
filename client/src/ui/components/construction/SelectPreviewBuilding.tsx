@@ -4,7 +4,7 @@ import { configManager } from "@/dojo/setup";
 import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
 import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
@@ -39,8 +39,6 @@ import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
-// TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
-
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
 
@@ -50,7 +48,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const { realm } = useGetRealm(entityId);
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
   const { questClaimStatus } = useQuestClaimStatus();
 
@@ -164,10 +162,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 if (!buildingCosts) return;
 
                 const hasBalance = checkBalance(buildingCosts);
-
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild =
-                  BuildingType.WorkersHut == building
+                  building === BuildingType.WorkersHut
                     ? hasBalance
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
@@ -280,7 +277,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
       },
     ],
-    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
+    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound, realm.population],
   );
 
   return (
@@ -409,7 +406,7 @@ export const ResourceInfo = ({
 
   const amountProducedPerTick = divideByPrecision(configManager.getResourceOutputs(resourceId));
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   const consumedBy = useMemo(() => {
     return getConsumedBy(resourceId);
@@ -536,7 +533,7 @@ export const BuildingInfo = ({
   const perTick =
     resourceProduced !== undefined ? divideByPrecision(configManager.getResourceOutputs(resourceProduced)) || 0 : 0;
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   const usedIn = useMemo(() => {
     return getConsumedBy(resourceProduced);

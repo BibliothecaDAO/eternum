@@ -74,44 +74,42 @@ export default function SeasonPassMintDialog({
           ) : (
             <div className="flex flex-col items-center gap-4 rounded-md p-5 lg:flex-row lg:gap-5 lg:p-4 w-fill">
               <div className="text-center">
-                <div className="w-full grid grid-cols-4 gap-0.5 p-4">
+                <div className="w-full grid grid-cols-4 gap-0.5 p-4 max-h-[40vH] overflow-y-auto">
                   {realm_ids.map((realm, index) => (
                     <div className="text-sm p-2 border rounded-md" key={realm}>
                       #{Number(realm)}
                     </div>
                   ))}
                 </div>
-                {mint && (
-                  <>
-                    {!address ? (
-                      <div className="text-yellow-500 mb-2 flex items-center justify-center gap-2">
-                        <AlertCircle className="h-4 w-4" />
-                        Connect wallet to mint
-                      </div>
-                    ) : (
-                      <div className="text-sm mb-2 flex items-center justify-center gap-2 mt-8">
-                        Passes will be minted to:
-                        <Badge variant="secondary" className="flex items-center gap-2 py-1">
-                          {connector?.icon && typeof connector.icon === "string" ? (
-                            <img className="h-4 w-4" src={connector.icon} alt="Wallet Icon" />
-                          ) : null}
-                          <span className="truncate">{displayAddress(address)}</span>
-                        </Badge>
-                      </div>
-                    )}
-                    <Button
-                      className="mx-auto mt-8"
-                      onClick={() => {
-                        mint(realm_ids, address);
-                      }}
-                      disabled={!address}
-                      variant="cta"
-                    >
-                      {isMinting && <Loader className="animate-spin pr-2" />}
-                      Mint Season Pass
-                    </Button>
-                  </>
-                )}
+                <>
+                  {!address ? (
+                    <div className="text-yellow-500 mb-2 flex items-center justify-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      Connect wallet to mint
+                    </div>
+                  ) : (
+                    <div className="text-sm mb-2 flex items-center justify-center gap-2 mt-8">
+                      Passes will be minted to:
+                      <Badge variant="secondary" className="flex items-center gap-2 py-1">
+                        {connector?.icon && typeof connector.icon === "string" ? (
+                          <img className="h-4 w-4" src={connector.icon} alt="Wallet Icon" />
+                        ) : null}
+                        <span className="truncate">{displayAddress(address)}</span>
+                      </Badge>
+                    </div>
+                  )}
+                  <Button
+                    className="mx-auto mt-8"
+                    onClick={() => {
+                      mint && mint(realm_ids, address);
+                    }}
+                    disabled={!address}
+                    variant="cta"
+                  >
+                    {isMinting && <Loader className="animate-spin pr-2" />}
+                    Mint Season Pass
+                  </Button>
+                </>
               </div>
             </div>
           )}

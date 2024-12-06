@@ -26,10 +26,11 @@ export default defineConfig({
     {
       text: "Overview",
       items: [
-        { text: "Welcome", link: "/overview/overview" },
+        // { text: "Welcome", link: "/overview/welcome" },
         { text: "Introduction", link: "/overview/introduction" },
         { text: "Entry", link: "/overview/entry" },
         { text: "Quick Links", link: "/overview/links" },
+        { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
       ],
     },
     {
@@ -68,9 +69,16 @@ export default defineConfig({
         { text: "World Map", link: "/mechanics/world-map" },
         { text: "Hyperstructures & Points", link: "/mechanics/hyperstructures" },
         { text: "Tribes", link: "/mechanics/tribes" },
-        { text: "Seasons", link: "/mechanics/seasons" },
       ],
     },
+    {
+      text: "Seasons",
+      items: [
+        { text: "Overview", link: "/seasons/overview" },
+        { text: "Rewards", link: "/seasons/rewards" },
+      ],
+    },
+
     {
       text: "Development",
       link: "/development",

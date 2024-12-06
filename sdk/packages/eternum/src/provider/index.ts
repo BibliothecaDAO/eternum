@@ -8,8 +8,9 @@ import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
 import * as SystemProps from "../types/provider";
-
+import { TransactionType } from "./types";
 export const NAMESPACE = "s0_eternum";
+export { TransactionType };
 
 /**
  * Gets a contract address from the manifest by name
@@ -66,8 +67,93 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
   };
 }
 const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
+class PromiseQueue {
+  private readonly queue: Array<{
+    providerCall: () => Promise<any>;
+    resolve: (value: any) => void;
+    reject: (reason?: any) => void;
+  }> = [];
+  private processing = false;
+  private batchTimeout: NodeJS.Timeout | null = null;
+  private readonly BATCH_DELAY = 3000; // ms to wait for batching
+  private readonly MAX_BATCH_SIZE = 4; // Maximum number of calls to batch together
+
+  constructor(private provider: EternumProvider) {}
+
+  async enqueue<T>(providerCall: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push({ providerCall, resolve, reject });
+
+      // Only set timeout if we're not already processing
+      if (!this.processing) {
+        if (this.batchTimeout) {
+          clearTimeout(this.batchTimeout);
+        }
+
+        this.batchTimeout = setTimeout(() => {
+          this.processQueue();
+        }, this.BATCH_DELAY);
+      }
+    });
+  }
+
+  private async processQueue() {
+    if (this.processing) return;
+    this.processing = true;
+
+    try {
+      while (this.queue.length > 0) {
+        // Get up to MAX_BATCH_SIZE calls for batching
+        const batch = this.queue.splice(0, Math.min(this.queue.length, this.MAX_BATCH_SIZE));
+        console.log("Processing batch of size:", batch.length); // Debug log
+
+        if (batch.length === 1) {
+          const { providerCall, resolve, reject } = batch[0];
+          try {
+            const result = await providerCall();
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        } else {
+          try {
+            // Extract the actual calls from the providerCalls
+            const allCalls = await Promise.all(
+              batch.map(async ({ providerCall }) => {
+                // Access the internal call object
+                const fn = providerCall as any;
+                const calls = fn._transactionDetails;
+                // Handle both single calls and arrays of calls
+                return Array.isArray(calls) ? calls : [calls];
+              }),
+            );
+
+            // Flatten all calls into a single array
+            const flattenedCalls = allCalls.flat();
+            console.log("Batched calls:", flattenedCalls); // Debug log
+
+            // Get signer from first call
+            const signer = (batch[0].providerCall as any)._signer;
+
+            // Execute the batched transaction
+            const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
+
+            // Resolve all promises with the result
+            batch.forEach((item) => item.resolve(result));
+          } catch (error) {
+            console.error("Batch processing error:", error); // Debug log
+            batch.forEach((item) => item.reject(error));
+          }
+        }
+      }
+    } finally {
+      this.processing = false;
+    }
+  }
+}
 
 export class EternumProvider extends EnhancedDojoProvider {
+  promiseQueue: PromiseQueue;
   /**
    * Create a new EternumProvider instance
    *
@@ -82,6 +168,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       const worldAddress = this.manifest.world.address;
       return worldAddress;
     };
+    this.promiseQueue = new PromiseQueue(this);
   }
 
   /**
@@ -91,14 +178,30 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param transactionDetails - Transaction call data
    * @returns Transaction receipt
    */
-  private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+  async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
     const tx = await this.execute(signer, transactionDetails, NAMESPACE);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
 
-    this.emit("transactionComplete", transactionResult);
+    // Get the transaction type based on the entrypoint name
+    let txType: TransactionType;
+    const isMultipleTransactions = Array.isArray(transactionDetails);
+
+    if (isMultipleTransactions) {
+      // For multiple calls, use the first call's entrypoint
+      console.log({ entrypoint: transactionDetails[0].entrypoint });
+      txType = TransactionType[transactionDetails[0].entrypoint.toUpperCase() as keyof typeof TransactionType];
+    } else {
+      txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
+    }
+
+    this.emit("transactionComplete", {
+      details: transactionResult,
+      type: txType,
+      ...(isMultipleTransactions && { transactionCount: transactionDetails.length }),
+    });
 
     return transactionResult;
   }
@@ -667,37 +770,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Move an entity to a specific coordinate
-   *
-   * @param props - Properties for traveling
-   * @param props.travelling_entity_id - ID of the entity that is traveling
-   * @param props.destination_coord_x - X coordinate of the destination
-   * @param props.destination_coord_y - Y coordinate of the destination
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Move entity 123 to coordinates (10, 20)
-   * {
-   *   travelling_entity_id: 123,
-   *   destination_coord_x: 10,
-   *   destination_coord_y: 20,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async travel(props: SystemProps.TravelProps) {
-    const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
-      entrypoint: "travel",
-      calldata: [travelling_entity_id, destination_coord_x, destination_coord_y],
-    });
-  }
-
-  /**
    * Move an entity in a hex direction
    *
    * @param props - Properties for hex traveling
@@ -719,11 +791,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async travel_hex(props: SystemProps.TravelHexProps) {
     const { travelling_entity_id, directions, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
       entrypoint: "travel_hex",
       calldata: [travelling_entity_id, directions],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -782,6 +856,18 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  private createProviderCall(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+    const call = async () => {
+      return await this.executeAndCheckTransaction(signer, transactionDetails);
+    };
+    // Explicitly store the details
+    Object.defineProperties(call, {
+      _signer: { value: signer },
+      _transactionDetails: { value: transactionDetails },
+    });
+    return call;
+  }
+
   /**
    * Explore in a direction from a unit's position
    *
@@ -804,11 +890,19 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    // return await this.executeAndCheckTransaction(signer, {
+    //   contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
+    //   entrypoint: "explore",
+    //   calldata: [unit_id, direction],
+    // });
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
       entrypoint: "explore",
       calldata: [unit_id, direction],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -840,11 +934,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, directions, building_category, produce_resource_type, signer } = props;
     ["62", "1", "0", "4", "1"];
-    console.log("Create Building Call Data:", {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "create",
-      calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
-    });
+
     return this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "create",

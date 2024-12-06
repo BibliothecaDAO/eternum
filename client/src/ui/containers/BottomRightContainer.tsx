@@ -5,5 +5,5 @@ interface BottomRightContainerProps {
 }
 
 export const BottomRightContainer = ({ children }: BottomRightContainerProps) => {
-  return <div className="absolute flex flex-col bottom-0 right-0 root-container z-20 w-full md:w-auto">{children}</div>;
+  return <div className="absolute flex flex-col bottom-0 right-0 root-container z-30 w-full md:w-auto">{children}</div>;
 };

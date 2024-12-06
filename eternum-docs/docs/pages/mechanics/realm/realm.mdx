@@ -1,7 +1,7 @@
----
-title: Realms
-description: Your base of operations in Eternum
----
+import { CapacityConfigCategory, EternumGlobalConfig, RealmLevels } from "@bibliothecadao/eternum";
+import QuestRewards from "../../../../src/components/QuestRewards";
+import RealmUpgradeCosts from "../../../../src/components/RealmUpgradeCosts";
+import { divideByPrecision, formatNumberWithSpaces } from "../../../../src/utils/formatting";
 
 # Realms
 
@@ -16,19 +16,53 @@ with unique metadata of resources and traits.
 
 ## Realm Levels
 
+# Realm Levels
+
 - **Settlement**: A small settlement with 6 buildable hexes.
+
+<br />
+
 - **City**: A glorious city with 18 buildable hexes.
-- **Kingdom**": A kingdom with 36 buildable hexes.
-- **Empire**": A vast empire with 60 buildable hexes.
+
+  <RealmUpgradeCosts level={RealmLevels.City} />
+
+<br />
+
+- **Kingdom**: A kingdom with 36 buildable hexes.
+
+  <RealmUpgradeCosts level={RealmLevels.Kingdom} />
+
+<br />
+
+- **Empire**: A vast empire with 60 buildable hexes.
+  <RealmUpgradeCosts level={RealmLevels.Empire} />
 
 ## Starting Values
 
-> 🏰 **Base Castle Stats**
->
-> - **Population**: 5 workers
+🏰 **Base Castle Stats**
+
+> - **Population**: {EternumGlobalConfig.populationCapacity.basePopulation}
 > - **Military Capacity**:
 >   - 3 attacking armies
 >   - 1 defending army
-> - **Resource Storage**: 300,000 kg
+> - **Resource Storage**:
+>   {formatNumberWithSpaces(divideByPrecision(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))}
+>   kg
 >
 > _These are the default values for a newly settled realm before any buildings are constructed._
+
+**Starting resources**
+
+> Quests have been prepared to help you learn the ropes as a newly appointed Lord of your Realm Going through these will
+> help you learn the game and reward you with starting resources.
+
+<QuestRewards />
+
+## Settlement Immunity
+
+When first settling a realm, you receive:
+
+- {Math.floor((EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 3600) \*
+  EternumGlobalConfig.battle.graceTickCount)}-hour immunity from attacks and from attacking others
+- Protection from resource raids
+- Time to establish basic defenses

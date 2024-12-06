@@ -15,12 +15,13 @@ export default defineConfig({
     wasm(),
     topLevelAwait(),
     VitePWA({
-      registerType: "autoUpdate",
       devOptions: {
         enabled: process.env.VITE_PUBLIC_DEV === "true",
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 4000000,
+        clientsClaim: true,
+        skipWaiting: false,
       },
       manifest: {
         name: "Eternum",

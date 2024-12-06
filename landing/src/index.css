@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Sedan:ital@0;1&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Bokor&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Sedan:ital@0;1&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Bokor&display=swap&family=Anonymous+Pro:wght@400;700");
 
 @tailwind base;
 @tailwind components;
@@ -89,4 +89,21 @@
   h6 {
     @apply font-heading;
   }
+}
+
+*::-webkit-scrollbar-track {
+  background-color: #1b1b1b;
+
+  /* border: 1px solid var(--gray-gold, #776756); */
+  margin-bottom: 2px;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  background-color: #1b1b1b;
+}
+
+*::-webkit-scrollbar-thumb {
+  /* border: 2px solid var(--gray-gold, #776756); */
+  @apply bg-gold;
 }

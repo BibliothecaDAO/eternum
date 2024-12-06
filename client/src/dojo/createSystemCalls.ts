@@ -1,96 +1,7 @@
 import type * as SystemProps from "@bibliothecadao/eternum";
-import { toast } from "react-toastify";
 import { type SetupNetworkResult } from "./setupNetwork";
 
-class PromiseQueue {
-  private readonly queue: Array<() => Promise<any>> = [];
-  private processing = false;
-
-  async enqueue<T>(task: () => Promise<T>): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-      this.queue.push(async () => {
-        try {
-          const result = await task();
-          resolve(result);
-        } catch (error) {
-          reject(error);
-        }
-      });
-      this.processQueue();
-    });
-  }
-
-  private async processQueue() {
-    if (this.processing) return;
-    this.processing = true;
-
-    while (this.queue.length > 0) {
-      const task = this.queue.shift();
-      if (task) {
-        try {
-          await task();
-        } catch (error) {
-          console.error("Error processing task:", error);
-        }
-      }
-    }
-
-    this.processing = false;
-  }
-}
-
-type SystemCallFunctions = ReturnType<typeof createSystemCalls>;
-type SystemCallFunction = (...args: any[]) => any;
-type WrappedSystemCalls = Record<string, SystemCallFunction>;
-
-const withErrorHandling =
-  (fn: any) =>
-  async (...args: any[]) => {
-    try {
-      return await fn(...args);
-    } catch (error: any) {
-      toast(error.message);
-    }
-  };
-
 export function createSystemCalls({ provider }: SetupNetworkResult) {
-  const promiseQueue = new PromiseQueue();
-
-  const withQueueing = <T extends (...args: any[]) => Promise<any>>(fn: T) => {
-    return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
-      return await promiseQueue.enqueue(async () => await fn(...args));
-    };
-  };
-
-  const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(fn: T) => {
-    return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
-      try {
-        return await fn(...args);
-      } catch (error: any) {
-        let errorMessage = error.message;
-
-        if (error.message.includes("Failure reason:")) {
-          const match = error.message.match(/Failure reason: \\"(.*?)"/);
-          if (match?.[1]) {
-            errorMessage = match[1].slice(0, -1);
-          } else {
-            const matchOther = error.message.match(/Failure reason: "(.*?)"/);
-            if (matchOther?.[1]) {
-              errorMessage = matchOther[1].slice(0, -1);
-            } else {
-              const matchHex = error.message.match(/Failure reason: (0x[0-9a-f]+) \('(.*)'\)/);
-              if (matchHex?.[2]) {
-                errorMessage = matchHex[2];
-              }
-            }
-          }
-        }
-        toast(errorMessage);
-        throw error;
-      }
-    };
-  };
-
   const uuid = async () => {
     return await provider.uuid();
   };
@@ -137,10 +48,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const transfer_resources = async (props: SystemProps.TransferResourcesProps) => {
     await provider.transfer_resources(props);
-  };
-
-  const travel = async (props: SystemProps.TravelProps) => {
-    await provider.travel(props);
   };
 
   const travel_hex = async (props: SystemProps.TravelHexProps) => {
@@ -325,74 +232,68 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const systemCalls = {
-    send_resources: withQueueing(withErrorHandling(send_resources)),
-    send_resources_multiple: withQueueing(withErrorHandling(send_resources_multiple)),
-    pickup_resources: withQueueing(withErrorHandling(pickup_resources)),
-    remove_liquidity: withQueueing(withErrorHandling(remove_liquidity)),
-    add_liquidity: withQueueing(withErrorHandling(add_liquidity)),
-    sell_resources: withQueueing(withErrorHandling(sell_resources)),
-    buy_resources: withQueueing(withErrorHandling(buy_resources)),
-    change_bank_owner_fee: withQueueing(withErrorHandling(change_bank_owner_fee)),
-    open_account: withQueueing(withErrorHandling(open_account)),
-    create_bank: withQueueing(withErrorHandling(create_bank)),
-    explore: withQueueing(withErrorHandling(explore)),
-    set_address_name: withQueueing(withErrorHandling(set_address_name)),
-    set_entity_name: withQueueing(withErrorHandling(set_entity_name)),
-    isLive: withQueueing(withErrorHandling(isLive)),
-    create_order: withQueueing(withErrorHandling(create_order)),
-    accept_order: withQueueing(withErrorHandling(accept_order)),
-    cancel_order: withQueueing(withErrorHandling(cancel_order)),
-    accept_partial_order: withQueueing(withErrorHandling(accept_partial_order)),
-    create_realm: withQueueing(withErrorHandling(create_realm)),
-    upgrade_realm: withQueueing(withErrorHandling(upgrade_realm)),
-    create_multiple_realms: withQueueing(withErrorHandling(create_multiple_realms)),
-    transfer_resources: withQueueing(withErrorHandling(transfer_resources)),
-    travel: withQueueing(withErrorHandling(travel)),
-    travel_hex: withQueueing(withErrorHandling(travel_hex)),
-    destroy_building: withQueueing(withErrorHandling(destroy_building)),
-    pause_production: withQueueing(withErrorHandling(pause_production)),
-    resume_production: withQueueing(withErrorHandling(resume_production)),
-    create_building: withQueueing(withErrorHandling(create_building)),
-    create_army: withQueueing(withErrorHandling(create_army)),
-    delete_army: withQueueing(withErrorHandling(delete_army)),
-    uuid: withQueueing(withErrorHandling(uuid)),
+    send_resources,
+    send_resources_multiple,
+    pickup_resources,
+    remove_liquidity,
+    add_liquidity,
+    sell_resources,
+    buy_resources,
+    change_bank_owner_fee,
+    open_account,
+    create_bank,
+    explore,
+    set_address_name,
+    set_entity_name,
+    isLive,
+    create_order,
+    accept_order,
+    cancel_order,
+    accept_partial_order,
+    create_realm,
+    upgrade_realm,
+    create_multiple_realms,
+    transfer_resources,
+    travel_hex,
+    destroy_building,
+    pause_production,
+    resume_production,
+    create_building,
+    create_army,
+    delete_army,
+    uuid,
 
-    create_hyperstructure: withQueueing(withErrorHandling(create_hyperstructure)),
-    contribute_to_construction: withQueueing(withErrorHandling(contribute_to_construction)),
-    set_access: withQueueing(withErrorHandling(set_access)),
-    set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
-    end_game: withQueueing(withErrorHandling(end_game)),
-    register_to_leaderboard: withQueueing(withErrorHandling(register_to_leaderboard)),
-    claim_leaderboard_rewards: withQueueing(withErrorHandling(claim_leaderboard_rewards)),
+    create_hyperstructure,
+    contribute_to_construction,
+    set_access,
+    set_co_owners,
+    end_game,
+    register_to_leaderboard,
+    claim_leaderboard_rewards,
 
-    claim_quest: withQueueing(withErrorHandling(claim_quest)),
-    mint_resources: withQueueing(withErrorHandling(mint_resources)),
+    claim_quest,
+    mint_resources,
 
-    army_buy_troops: withQueueing(withErrorHandling(army_buy_troops)),
-    army_merge_troops: withQueueing(withErrorHandling(army_merge_troops)),
+    army_buy_troops,
+    army_merge_troops,
 
-    create_guild: withQueueing(withErrorHandling(create_guild)),
-    join_guild: withQueueing(withErrorHandling(join_guild)),
-    whitelist_player: withQueueing(withErrorHandling(whitelist_player)),
-    transfer_guild_ownership: withQueueing(withErrorHandling(transfer_guild_ownership)),
-    remove_guild_member: withQueueing(withErrorHandling(remove_guild_member)),
-    disband_guild: withQueueing(withErrorHandling(disband_guild)),
-    remove_player_from_whitelist: withQueueing(withErrorHandling(remove_player_from_whitelist)),
+    create_guild,
+    join_guild,
+    whitelist_player,
+    transfer_guild_ownership,
+    remove_guild_member,
+    disband_guild,
+    remove_player_from_whitelist,
 
-    battle_start: withQueueing(withErrorHandling(battle_start)),
-    battle_force_start: withQueueing(withErrorHandling(battle_force_start)),
-    battle_leave: withQueueing(withErrorHandling(battle_leave)),
-    battle_join: withQueueing(withErrorHandling(battle_join)),
-    battle_claim: withQueueing(withErrorHandling(battle_claim)),
-    battle_pillage: withQueueing(withErrorHandling(battle_pillage)),
-    battle_leave_and_claim: withQueueing(withErrorHandling(battle_leave_and_claim)),
-    battle_leave_and_pillage: withQueueing(withErrorHandling(battle_leave_and_pillage)),
+    battle_start,
+    battle_force_start,
+    battle_leave,
+    battle_join,
+    battle_claim,
+    battle_pillage,
+    battle_leave_and_claim,
+    battle_leave_and_pillage,
   };
-
-  // TODO: Fix Type
-  const wrappedSystemCalls = Object.fromEntries(
-    Object.entries(systemCalls).map(([key, fn]) => [key, withErrorHandling(fn)]),
-  );
 
   return systemCalls;
 }

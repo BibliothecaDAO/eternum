@@ -61,6 +61,10 @@ export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
 }
 
+export function divideByPrecisionFormatted(value: number): string {
+  return divideByPrecision(value).toLocaleString("en-US");
+}
+
 export function roundDownToPrecision(value: bigint, precision: number) {
   return BigInt(Number(value) - (Number(value) % Number(precision)));
 }
@@ -263,13 +267,6 @@ export const getTotalResourceWeight = (resources: Array<Resource | undefined>) =
       total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
     0,
   );
-};
-
-export const formatSecondsInHoursMinutes = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  return `${hours}h:${minutes}m`;
 };
 
 export const isResourceProductionBuilding = (buildingId: BuildingType) => {

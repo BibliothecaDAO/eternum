@@ -1,10 +1,9 @@
+import { usePlayerArrivalsNotificationLength } from "@/hooks/helpers/use-resource-arrivals";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
-
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { usePlayerArrivalsNotificationLength } from "@/hooks/helpers/useResources";
 import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
@@ -63,7 +62,7 @@ export const LeftNavigationModule = () => {
   const { toggleModal } = useModalStore();
   const { isMapView } = useQuery();
 
-  const notificationLength = usePlayerArrivalsNotificationLength();
+  const { notificationLength, arrivals } = usePlayerArrivalsNotificationLength();
 
   const { getEntityInfo } = useEntitiesUtils();
 
@@ -245,7 +244,7 @@ export const LeftNavigationModule = () => {
                 <StructureConstructionMenu entityId={structureEntityId} />
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
-              {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
+              {view === LeftView.ResourceArrivals && <AllResourceArrivals arrivals={arrivals} />}
               {view === LeftView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
             </Suspense>
           </BaseContainer>

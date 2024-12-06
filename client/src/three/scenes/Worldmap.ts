@@ -181,7 +181,7 @@ export default class WorldmapScene extends HexagonScene {
   public moveCameraToURLLocation() {
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
-    if (col && row) {
+    if (col !== undefined && row !== undefined) {
       this.moveCameraToColRow(col, row, 0);
     }
   }

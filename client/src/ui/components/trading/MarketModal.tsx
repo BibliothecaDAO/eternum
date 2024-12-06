@@ -334,9 +334,11 @@ export const MarketModal = () => {
               ))}
             </Tabs.List>
 
-            <Tabs.Panels className="overflow-hidden">
+            <Tabs.Panels className="overflow-hidden h-full">
               {tabs.map((tab, index) => (
-                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+                <Tabs.Panel className="h-full" key={index}>
+                  {tab.component}
+                </Tabs.Panel>
               ))}
             </Tabs.Panels>
           </Tabs>

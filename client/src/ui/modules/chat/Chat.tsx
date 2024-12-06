@@ -2,7 +2,7 @@ import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
@@ -59,18 +59,18 @@ export const Chat = () => {
     } else {
       setDisplayMessages(true);
     }
-  }, [currentTab]);
+  }, [currentTab.name]);
+
+  const allMessageEntities = useEntityQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
 
   useEffect(() => {
-    const selfMessageEntities = runQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
-
-    const latestSalt = Array.from(selfMessageEntities).reduce((maxSalt, entity) => {
+    const latestSalt = Array.from(allMessageEntities).reduce((maxSalt, entity) => {
       const currentSalt = getComponentValue(Message, entity)?.salt ?? 0n;
       return currentSalt > maxSalt ? currentSalt : maxSalt;
     }, 0n);
 
     setSalt(latestSalt + 1n);
-  }, [account.address]);
+  }, [account.address, allMessageEntities]);
 
   const changeTabs = useCallback(
     (tab: string | undefined, address: string, fromSelector: boolean = false) => {
@@ -121,23 +121,23 @@ export const Chat = () => {
 
   return (
     <div className={`rounded max-w-[28vw] pointer-events-auto flex flex-col z-1`}>
-      <div className="flex flex-row justify-between">
-        <div className="flex flex-wrap gap-1 overflow-y-auto max-w-[calc(100%-2rem)] no-scrollbar items-end uppercase font-bold">
+      <div className="flex flex-row justify-between relative">
+        <div className="flex flex-wrap gap-0.5 overflow-y-auto max-w-[calc(100%-2rem)] no-scrollbar uppercase font-bold">
           {renderTabs}
         </div>
         <div
-          className="flex flex-row items-start h-8 ml-2"
+          className="flex flex-row items-end h-full ml-2 absolute right-2 bottom-0"
           onClick={() => {
             setHideChat(!hideChat);
           }}
         >
-          <div className="bg-hex-bg bg-brown/5 h-6 w-6 rounded-t">
+          <div className="bg-hex-bg bg-brown/70 h-6 w-6 rounded-t">
             <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
           </div>
         </div>
       </div>
       <div
-        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-brown/90 border-gold/40 bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${
+        className={`flex flex-col w-[28vw] max-w-[28vw] bg-brown/90  bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${
           hideChat ? "p-0" : "p-1"
         }`}
       >
@@ -203,6 +203,8 @@ const Messages = ({
 
   const allMessageEntities = useEntityQuery([Has(Message)]);
 
+  const addTab = useChatStore((state) => state.addTab);
+
   const messages = useMemo(() => {
     const messageMap = new Map<ContractAddress, ChatMetadata>();
 
@@ -229,6 +231,25 @@ const Messages = ({
       const identity = message.identity;
       const channel = message.channel;
 
+      if (!fromSelf && toSelf) {
+        const messageKey = ContractAddress(getMessageKey(identity, BigInt(account.address)));
+        const existingMetadata = messageMap.get(messageKey);
+
+        // Fix: Get the latest timestamp by comparing with all messages
+        const latestTimestamp = existingMetadata?.messages.reduce((latest, msg) => {
+          return msg.timestamp > latest ? msg.timestamp : latest;
+        }, timestamp);
+
+        addTab({
+          name,
+          address,
+          displayed: true,
+          lastSeen: new Date(), // Keep this as new Date() to mark when we last viewed
+          key: getMessageKey(identity, BigInt(account.address)),
+          lastMessage: new Date(Math.max(latestTimestamp?.getTime() || 0, timestamp.getTime())), // Use the most recent timestamp
+        });
+      }
+
       const key = isGlobalMessage
         ? GLOBAL_CHANNEL
         : isGuildMessage
@@ -238,7 +259,7 @@ const Messages = ({
       if (!messageMap.has(ContractAddress(key))) {
         messageMap.set(ContractAddress(key), {
           messages: [],
-          lastMessageReceived: new Date(0),
+          lastMessageReceived: new Date(),
           channel: BigInt(message.channel),
           fromName: name,
           address,
@@ -260,6 +281,9 @@ const Messages = ({
       if (timestamp > chatMetadata.lastMessageReceived) {
         chatMetadata.lastMessageReceived = timestamp;
       }
+
+      // Sort messages by timestamp
+      chatMetadata.messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     });
 
     return messageMap;
@@ -277,8 +301,8 @@ const Messages = ({
 
   return (
     <div
-      className={`border border-gold/40 text-xs overflow-y-auto transition-all duration-300 rounded-xl flex-grow ${
-        hideChat ? "h-0 hidden" : "block h-[20vh] p-2"
+      className={` text-xs overflow-y-auto transition-all duration-300 rounded-xl flex-grow ${
+        hideChat ? "h-0 hidden" : "block h-[20vh]"
       }`}
     >
       {messagesToDisplay?.messages.map((message, index) => (
@@ -294,8 +318,18 @@ const Messages = ({
           className={`flex gap-2 mb-1`}
           key={index}
         >
-          <div className="opacity-90 hover:opacity-100">
-            <span className=" mr-1 inline" onClick={() => changeTabs(message.name, message.address)}>
+          <div
+            className={`opacity-90 hover:opacity-100 w-full ${message.fromSelf ? "bg-gold/5" : ""}  rounded-sm`}
+            onClick={() => changeTabs(message.name, message.address)}
+          >
+            <span className={`mr-1 inline p-0.5 rounded-sm font-extrabold capitalize text-gold/70`}>
+              <span className=" text-xs mr-2">
+                {new Date(message.timestamp).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+              </span>
               {message.fromSelf ? "you" : message.name}:
             </span>
             <span

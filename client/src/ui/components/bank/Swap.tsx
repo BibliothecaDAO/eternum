@@ -2,7 +2,7 @@ import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
@@ -29,7 +29,7 @@ export const ResourceSwap = ({
     setup,
   } = useDojo();
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
   const { computeTravelTime } = useTravel();
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 

@@ -26,22 +26,23 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key !== "Enter" || inputRef.current.length === 0) return;
 
-      const contentParser = new ContentParser();
-      if (contentParser.isWhisper(inputRef.current)) {
-        const whisperDestination = contentParser.getWhisperDest(inputRef.current);
-        const player = players.find((player) => player.addressName === whisperDestination);
-        if (player) {
-          const newTab = {
-            name: player.addressName!,
-            address: toHexString(player.address),
-            displayed: true,
-          };
-          // TODO: Implement addNewTab functionality
-          // addNewTab(newTab);
-        }
-      } else {
-        publish(inputRef.current);
-      }
+      // const contentParser = new ContentParser();
+      // if (contentParser.isWhisper(inputRef.current)) {
+      //   const whisperDestination = contentParser.getWhisperDest(inputRef.current);
+      //   const player = players.find((player) => player.addressName === whisperDestination);
+      //   if (player) {
+      //     const newTab = {
+      //       name: player.addressName!,
+      //       address: toHexString(player.address),
+      //       displayed: true,
+      //     };
+      //     // TODO: Implement addNewTab functionality
+      //     // addNewTab(newTab);
+      //   }
+      // } else {
+      //   publish(inputRef.current);
+      // }
+      publish(inputRef.current);
       inputRef.current = "";
     },
     [players],
@@ -64,7 +65,10 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
       const messageInValidAscii = toValidAscii(message);
       const data = generateMessageTypedData(account.address, channel, messageInValidAscii, toHexString(salt));
 
+      console.log("data", data);
       const signature: Signature = await account.signMessage(data);
+
+      console.log("data", signature);
 
       await toriiClient.publishMessage(JSON.stringify(data), signature as string[], false);
     },
@@ -126,7 +130,7 @@ function generateMessageTypedData(
     domain: {
       name: "Eternum",
       version: "1",
-      chainId: "0x4b4154414e41",
+      chainId: "SN_SEPOLIA",
       revision: "1",
     },
     message: {

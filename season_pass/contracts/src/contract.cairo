@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Contracts for Cairo ^0.17.0
+// Compatible with OpenZeppelin Contracts for Cairo 0.16.0
 
 // Eternum Season Pass
 use starknet::ContractAddress;
@@ -46,6 +46,8 @@ mod EternumSeasonPass {
     impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;

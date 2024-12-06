@@ -1,5 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -21,7 +21,7 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   const buildingTypes = Object.keys(StructureType)
     .filter((key) => isNaN(Number(key)))
@@ -94,7 +94,7 @@ const StructureInfo = ({
       ? `+${configManager.getHyperstructureConfig().pointsPerCycle} points`
       : "";
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">

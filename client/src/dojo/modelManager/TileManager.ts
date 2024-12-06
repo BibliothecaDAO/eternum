@@ -16,10 +16,10 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/eternum";
-import { getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
+import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { AccountInterface, CairoOption, CairoOptionVariant } from "starknet";
-import { SetupResult } from "../setup";
+import { configManager, SetupResult } from "../setup";
 
 export class TileManager {
   private col: number;
@@ -198,7 +198,56 @@ export class TileManager {
         paused: false,
       },
     });
-    return overrideId;
+
+    const populationOverrideId = uuid();
+
+    const realmEntityId = getEntityIdFromKeys([BigInt(entityId)]);
+
+    this.setup.components.Population.addOverride(populationOverrideId, {
+      entity: realmEntityId,
+      value: {
+        population:
+          (getComponentValue(this.setup.components.Population, realmEntityId)?.population || 0) +
+          configManager.getBuildingPopConfig(buildingType).population,
+        capacity:
+          (getComponentValue(this.setup.components.Population, realmEntityId)?.capacity || 0) +
+          configManager.getBuildingPopConfig(buildingType).capacity,
+      },
+    });
+    const quantityOverrideId = uuid();
+    if (buildingType === BuildingType.Storehouse) {
+      const storehouseQuantity =
+        getComponentValue(
+          this.setup.components.BuildingQuantityv2,
+          getEntityIdFromKeys([BigInt(entityId), BigInt(buildingType)]),
+        )?.value || 0;
+
+      this.setup.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
+        entity: realmEntityId,
+        value: {
+          value: storehouseQuantity + 1,
+        },
+      });
+    }
+
+    const resourceChange = configManager.buildingCosts[buildingType];
+    resourceChange.forEach((resource) => {
+      this._overrideResource(realmEntityId, resource.resource, -BigInt(resource.amount));
+    });
+
+    return { overrideId, populationOverrideId, quantityOverrideId };
+  };
+
+  private _overrideResource = (entity: Entity, resourceType: number, change: bigint) => {
+    const currentBalance = getComponentValue(this.setup.components.Resource, entity)?.balance || 0n;
+    const resourceOverrideId = uuid();
+    this.setup.components.Resource.addOverride(resourceOverrideId, {
+      entity,
+      value: {
+        resource_type: resourceType,
+        balance: currentBalance + change,
+      },
+    });
   };
 
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
@@ -206,6 +255,11 @@ export class TileManager {
     const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
     const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
     const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
+
+    const currentBuilding = getComponentValue(this.setup.components.Building, entity);
+
+    console.log(currentBuilding);
+
     this.setup.components.Building.addOverride(overrideId, {
       entity,
       value: {
@@ -220,6 +274,25 @@ export class TileManager {
         outer_entity_id: 0,
       },
     });
+
+    const populationOverrideId = uuid();
+
+    const realmEntityId = getEntityIdFromKeys([BigInt(entityId)]);
+
+    const type = BuildingType[currentBuilding?.category as keyof typeof BuildingType];
+
+    this.setup.components.Population.addOverride(populationOverrideId, {
+      entity: realmEntityId,
+      value: {
+        population:
+          (getComponentValue(this.setup.components.Population, realmEntityId)?.population || 0) -
+          configManager.getBuildingPopConfig(type).population,
+        capacity:
+          (getComponentValue(this.setup.components.Population, realmEntityId)?.capacity || 0) -
+          configManager.getBuildingPopConfig(type).capacity,
+      },
+    });
+
     return overrideId;
   };
 
@@ -277,21 +350,36 @@ export class TileManager {
     const directions = getDirectionsArray(startingPosition, endPosition);
 
     // add optimistic rendering
-    const _ = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+    const { overrideId, populationOverrideId, quantityOverrideId } = this._optimisticBuilding(
+      entityId,
+      col,
+      row,
+      buildingType,
+      resourceType,
+    );
     const { isSoundOn, effectsLevel } = useUIStore.getState();
 
     playBuildingSound(buildingType, isSoundOn, effectsLevel);
 
-    await this.setup.systemCalls.create_building({
-      signer: useAccountStore.getState().account!,
-      entity_id: entityId,
-      directions: directions,
-      building_category: buildingType,
-      produce_resource_type:
-        buildingType == BuildingType.Resource && resourceType
-          ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
-          : new CairoOption<Number>(CairoOptionVariant.None, 0),
-    });
+    try {
+      await this.setup.systemCalls.create_building({
+        signer: useAccountStore.getState().account!,
+        entity_id: entityId,
+        directions: directions,
+        building_category: buildingType,
+        produce_resource_type:
+          buildingType == BuildingType.Resource && resourceType
+            ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
+            : new CairoOption<Number>(CairoOptionVariant.None, 0),
+      });
+    } catch (error) {
+      this.setup.components.Building.removeOverride(overrideId);
+      this.setup.components.Population.removeOverride(populationOverrideId);
+      this.setup.components.BuildingQuantityv2.removeOverride(quantityOverrideId);
+
+      console.error(error);
+      throw error;
+    }
   };
 
   destroyBuilding = async (col: number, row: number) => {

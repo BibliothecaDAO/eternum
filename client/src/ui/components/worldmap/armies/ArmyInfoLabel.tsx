@@ -108,7 +108,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             </div>
           </div>
           <div className="flex flex-row justify-between">
-            <InventoryResources max={6} entityIds={[entity_id]} resourcesIconSize="xs" textSize="xxs" />
+            <InventoryResources max={6} entityId={entity_id} resourcesIconSize="xs" textSize="xxs" />
           </div>
         </div>
         <ImmunityTimer isImmune={isImmune} timer={timer} />
