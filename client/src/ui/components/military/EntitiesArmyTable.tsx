@@ -7,7 +7,7 @@ import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { BattleSimulation } from "@/ui/modules/simulation/BattleSimulation";
 import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
-import { divideByPrecision,divideByPrecisionFormatted } from "@/ui/utils/utils";
+import { divideByPrecision, divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { HintSection } from "../hints/HintModal";
 import { battleSimulation, pillageSimulation } from "../navigation/Config";
