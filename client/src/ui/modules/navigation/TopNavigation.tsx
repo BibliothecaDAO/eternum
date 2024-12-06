@@ -1,4 +1,5 @@
-import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
+import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
+
 import { Rewards } from "../rewards/Rewards";
 import { SettingsWindow } from "../settings/Settings";
 import { Social } from "../social/Social";
