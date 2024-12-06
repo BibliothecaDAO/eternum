@@ -9,7 +9,7 @@ export const GET_ETERNUM_OWNER_REALM_IDS = graphql(`
           entity_id
           entity {
             models {
-            __typename
+              __typename
               ... on s0_eternum_Realm {
                 realm_id
               }

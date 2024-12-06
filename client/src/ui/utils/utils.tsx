@@ -61,6 +61,10 @@ export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
 }
 
+export function divideByPrecisionFormatted(value: number): string {
+  return divideByPrecision(value).toLocaleString("en-US");
+}
+
 export function roundDownToPrecision(value: bigint, precision: number) {
   return BigInt(Number(value) - (Number(value) % Number(precision)));
 }
