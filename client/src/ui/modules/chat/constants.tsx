@@ -1,6 +1,6 @@
 import { shortString } from "starknet";
 
-const PASTEL_PINK = "#FFB3BA";
+const PASTEL_PINK = "#F6C297";
 const PASTEL_BLUE = "#BAE1FF";
 const PASTEL_GREEN = "#B5EAD7";
 export const CHAT_COLORS = {

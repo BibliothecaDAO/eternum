@@ -340,7 +340,7 @@ mod battle_systems {
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
             BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
-            AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
+            AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl, BattleStructureImpl
         },
     };
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
@@ -464,8 +464,7 @@ mod battle_systems {
             battle.start_at = now;
             // add battle start time delay when a structure is being attacked.
             // if the structure is the attacker, the battle starts immediately.
-            // hyperstructures do not however benefit from this delay
-            if defending_army_owner_structure.category != StructureCategory::Hyperstructure {
+            if BattleStructureImpl::should_seige(defending_army_owner_structure.category) {
                 if defending_army_protectee.is_other() {
                     battle.start_at = now + battle_config.battle_delay_seconds;
                 }
@@ -535,8 +534,8 @@ mod battle_systems {
             // these conditions below should not be possible unless there is a bug in `battle_start`
             assert!(defending_army_protectee.is_other(), "only structures can force start");
             assert!(
-                defending_army_owner_structure.category != StructureCategory::Hyperstructure,
-                "hyperstructures cannot force start because there is no delay"
+                BattleStructureImpl::should_seige(defending_army_owner_structure.category),
+                "this structure cannot force start battle because there is no delay"
             );
 
             let now = starknet::get_block_timestamp();

@@ -22,4 +22,5 @@ export interface Tab {
   address: string;
   displayed: boolean;
   lastSeen: Date;
+  lastMessage?: Date;
 }
