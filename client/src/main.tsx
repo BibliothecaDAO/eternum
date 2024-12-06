@@ -1,7 +1,12 @@
+/// <reference types="vite-plugin-pwa/client" />
+
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { ShepherdJourneyProvider } from "react-shepherd";
+import "shepherd.js/dist/css/shepherd.css";
+import { registerSW } from "virtual:pwa-register";
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
 import App from "./App";
@@ -10,8 +15,10 @@ import { DojoProvider } from "./hooks/context/DojoContext";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
 import GameRenderer from "./three/GameRenderer";
+import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
 import { LoadingScreen } from "./ui/modules/LoadingScreen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
+
 declare global {
   interface Window {
     Buffer: typeof Buffer;
@@ -24,6 +31,27 @@ async function init() {
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
+
+  const updateContainer = document.createElement("div");
+  updateContainer.id = "pwa-update-container";
+  document.body.appendChild(updateContainer);
+  const updateRoot = ReactDOM.createRoot(updateContainer);
+
+  const updateSW = registerSW({
+    onNeedRefresh() {
+      updateRoot.render(
+        <PWAUpdatePopup
+          onUpdate={() => {
+            updateSW(true);
+          }}
+        />,
+      );
+    },
+    onOfflineReady() {
+      console.log("App ready to work offline");
+    },
+    immediate: true,
+  });
 
   const backgroundImage = getRandomBackgroundImage();
 
@@ -46,11 +74,13 @@ async function init() {
   inject();
   root.render(
     <React.StrictMode>
-      <StarknetProvider>
-        <DojoProvider value={setupResult}>
-          <App backgroundImage={backgroundImage} />
-        </DojoProvider>
-      </StarknetProvider>
+      <ShepherdJourneyProvider>
+        <StarknetProvider>
+          <DojoProvider value={setupResult}>
+            <App backgroundImage={backgroundImage} />
+          </DojoProvider>
+        </StarknetProvider>
+      </ShepherdJourneyProvider>
     </React.StrictMode>,
   );
 }

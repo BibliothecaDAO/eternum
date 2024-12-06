@@ -199,6 +199,66 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
   };
 };
 
+export const useArmiesByEntityOwnerWithPositionAndQuantity = ({
+  entity_owner_entity_id,
+}: {
+  entity_owner_entity_id: ID;
+}) => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        CapacityConfig,
+        Weight,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+      },
+    },
+    account: { account },
+  } = useDojo();
+
+  const armies = useEntityQuery([
+    Has(Army),
+    Has(Position),
+    Has(Quantity),
+    HasValue(EntityOwner, { entity_owner_id: entity_owner_entity_id }),
+  ]);
+
+  const entityArmies = useMemo(() => {
+    return formatArmies(
+      armies,
+      account.address,
+      Army,
+      Protectee,
+      EntityName,
+      Health,
+      Quantity,
+      Movable,
+      CapacityConfig,
+      Weight,
+      ArrivalTime,
+      Position,
+      EntityOwner,
+      Owner,
+      Realm,
+      Stamina,
+    );
+  }, [armies]);
+
+  return {
+    entityArmies,
+  };
+};
+
 export const getArmiesByBattleId = () => {
   const {
     setup: {

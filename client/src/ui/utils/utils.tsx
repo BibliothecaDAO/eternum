@@ -61,6 +61,10 @@ export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
 }
 
+export function divideByPrecisionFormatted(value: number): string {
+  return divideByPrecision(value).toLocaleString("en-US");
+}
+
 export function roundDownToPrecision(value: bigint, precision: number) {
   return BigInt(Number(value) - (Number(value) % Number(precision)));
 }
@@ -250,7 +254,7 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     });
 };
 
-export const isRealmSelected = (structureEntityId: ID, structures: any) => {
+const isRealmSelected = (structureEntityId: ID, structures: any) => {
   const selectedStructure = structures?.find((structure: any) => structure?.entity_id === structureEntityId);
   return selectedStructure?.category === "Realm";
 };

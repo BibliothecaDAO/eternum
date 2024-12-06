@@ -1,7 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { execute } from "@/hooks/gql/execute";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
-import { GET_ERC_MINTS } from "@/hooks/query/realms";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress } from "@/lib/utils";
@@ -14,10 +13,8 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
-import { env } from "../../../env";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { SelectSingleResource } from "../ui/SelectResources";
@@ -30,11 +27,11 @@ function formatFee(fee: number) {
 export const BridgeOutStep1 = () => {
   const { account } = useAccount();
 
-  const { getRealmEntityIdFromRealmId } = useRealm();
+  const { getRealmNameById } = useRealm();
   const { computeTravelTime } = useTravel();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [realmId, setRealmId] = useState<string>("");
+  const [realmEntityId, setRealmEntityId] = useState<string>("");
   const { bridgeStartWithdrawFromRealm } = useBridgeAsset();
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
@@ -44,12 +41,6 @@ export const BridgeOutStep1 = () => {
     [selectedResourceAmounts, selectedResourceId],
   );
 
-  const realmEntityId = useMemo(() => {
-    if (!realmId) {
-      return 0;
-    }
-    return getRealmEntityIdFromRealmId(Number(realmId));
-  }, [realmId]);
   const bridgeConfig = EternumGlobalConfig.bridge;
 
   const calculateBridgeFee = (percent: number) => {
@@ -88,32 +79,14 @@ export const BridgeOutStep1 = () => {
     [velordsFeeOnWithdrawal, seasonPoolFeeOnWithdrawal, clientFeeOnWithdrawal, bankFeeOnWithdrawal],
   );
 
-  const { data: seasonPassMints } = useSuspenseQuery({
-    queryKey: ["ERCMints"],
-    queryFn: () => execute(GET_ERC_MINTS),
-    refetchInterval: 10_000,
-  });
-
-  const seasonPassTokens = useMemo(
-    () =>
-      seasonPassMints?.tokenTransfers?.edges
-        ?.filter((token) => {
-          const metadata = token?.node?.tokenMetadata;
-          return metadata?.__typename === "ERC721__Token" && metadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS;
-        })
-        .map((token) => {
-          const metadata = token?.node?.tokenMetadata;
-          if (metadata?.__typename === "ERC721__Token") {
-            return {
-              id: Number(metadata.tokenId),
-              name_: JSON.parse(metadata.metadata).name,
-            };
-          }
-          return undefined;
-        })
-        .filter((id): id is { id: number; name_: string } => id !== undefined),
-    [seasonPassMints],
-  );
+  const { playerRealms } = useEntities();
+  const playerRealmsIdAndName = useMemo(() => {
+    return playerRealms.map((realm) => ({
+      realmId: realm!.realm_id,
+      entityId: realm!.entity_id,
+      name: getRealmNameById(realm!.realm_id),
+    }));
+  }, [playerRealms]);
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
@@ -126,7 +99,7 @@ export const BridgeOutStep1 = () => {
     } else {
       return 0;
     }
-  }, [selectedResourceId, realmId, selectedResourceAmount]);
+  }, [selectedResourceId, realmEntityId, selectedResourceAmount]);
 
   const travelTimeInHoursAndMinutes = (travelTime: number) => {
     const hours = Math.floor(travelTime / 60);
@@ -183,16 +156,18 @@ export const BridgeOutStep1 = () => {
 
         <div>{displayAddress(account?.address || "")}</div>
       </div>
-      <Select onValueChange={(value) => setRealmId(value)}>
+      <Select onValueChange={(value) => setRealmEntityId(value)}>
         <SelectTrigger className="w-full border-gold/15">
           <SelectValue placeholder="Select Realm" />
         </SelectTrigger>
         <SelectContent>
-          {seasonPassTokens?.map((token) => (
-            <SelectItem key={token.id} value={token.id.toString()}>
-              {token.name_} {token.id} {!getRealmEntityIdFromRealmId(token.id) && <span>(NOT IN GAME)</span>}
-            </SelectItem>
-          ))}
+          {playerRealmsIdAndName.map((realm) => {
+            return (
+              <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
+                {realm.name}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
 
@@ -243,7 +218,7 @@ export const BridgeOutStep1 = () => {
         </div>
       </div>
       <Button
-        disabled={(!selectedResourceAmount && !selectedResourceId && !realmId) || isLoading}
+        disabled={(!selectedResourceAmount && !selectedResourceId && !realmEntityId) || isLoading}
         onClick={() => onSendToBank()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}

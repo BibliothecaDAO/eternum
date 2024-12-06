@@ -20,7 +20,7 @@ use s0_eternum::models::resources::ResourceTransferLockTrait;
 use s0_eternum::models::resources::{
     Resource, ResourceImpl, ResourceCost, ResourceTransferLock, OwnedResourcesTracker, OwnedResourcesTrackerImpl
 };
-use s0_eternum::models::structure::{Structure, StructureImpl};
+use s0_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
 use s0_eternum::models::weight::Weight;
 use s0_eternum::models::weight::WeightTrait;
 use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
@@ -863,6 +863,14 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         to_army_resource_lock.start_at = starknet::get_block_timestamp();
         to_army_resource_lock.release_at = starknet::get_block_timestamp();
         world.write_model(@to_army_resource_lock);
+    }
+}
+
+#[generate_trait]
+impl BattleStructureImpl of BattleStructureTrait {
+    fn should_seige(structure_category: StructureCategory) -> bool {
+        !(structure_category == StructureCategory::Hyperstructure
+            || structure_category == StructureCategory::FragmentMine)
     }
 }
 

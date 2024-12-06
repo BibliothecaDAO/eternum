@@ -1,6 +1,7 @@
-import { RealmLevels, CapacityConfigCategory, EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, EternumGlobalConfig, RealmLevels } from "@bibliothecadao/eternum";
+import QuestRewards from "../../../../src/components/QuestRewards";
 import RealmUpgradeCosts from "../../../../src/components/RealmUpgradeCosts";
-import { formatNumberWithSpaces, divideByPrecision } from "../../../../src/utils/formatting";
+import { divideByPrecision, formatNumberWithSpaces } from "../../../../src/utils/formatting";
 
 # Realms
 
@@ -54,8 +55,8 @@ with unique metadata of resources and traits.
 
 When first settling a realm, you receive:
 
-- {`${(EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 3600) * EternumGlobalConfig.battle.graceTickCount}`}-hour
-  immunity from attacks and from attacking others
+- {Math.floor((EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 3600) \*
+  EternumGlobalConfig.battle.graceTickCount)}-hour immunity from attacks and from attacking others
 - Protection from resource raids
 - Time to establish basic defenses
 

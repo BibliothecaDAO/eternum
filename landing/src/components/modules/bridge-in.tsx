@@ -1,7 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { execute } from "@/hooks/gql/execute";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
-import { GET_ERC_MINTS } from "@/hooks/query/realms";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress } from "@/lib/utils";
@@ -13,10 +12,8 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
-import { env } from "../../../env";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -29,20 +26,14 @@ function formatFee(fee: number) {
 export const BridgeIn = () => {
   const { account } = useAccount();
 
-  const { getRealmEntityIdFromRealmId } = useRealm();
   const { computeTravelTime } = useTravel();
+  const { getRealmNameById } = useRealm();
 
   const [selectedResourceContract, setselectedResourceContract] = useState("");
   const [selectedResourceAmount, setselectedResourceAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [realmId, setRealmId] = useState<string>("");
+  const [realmEntityId, setRealmEntityId] = useState<string>("");
 
-  const realmEntityId = useMemo(() => {
-    if (!realmId) {
-      return 0;
-    }
-    return getRealmEntityIdFromRealmId(Number(realmId));
-  }, [realmId]);
   const bridgeConfig = EternumGlobalConfig.bridge;
 
   const calculateBridgeFee = (percent: number) => {
@@ -81,30 +72,14 @@ export const BridgeIn = () => {
     [velordsFeeOnDeposit, seasonPoolFeeOnDeposit, clientFeeOnDeposit, bankFeeOnDeposit],
   );
 
-  const { data: seasonPassMints } = useSuspenseQuery({
-    queryKey: ["ERCMints"],
-    queryFn: () => execute(GET_ERC_MINTS),
-    refetchInterval: 10_000,
-  });
-
-  const seasonPassTokens = useMemo(
-    () =>
-      seasonPassMints?.tokenTransfers?.edges
-        ?.filter(
-          (token) =>
-            token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
-            token.node.tokenMetadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS,
-        )
-        .map((token) => {
-          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return undefined;
-          return {
-            id: Number(token.node.tokenMetadata.tokenId),
-            name_: JSON.parse(token.node.tokenMetadata.metadata).name,
-          };
-        })
-        .filter((token): token is { id: number; name_: string } => token !== undefined),
-    [seasonPassMints],
-  );
+  const { playerRealms } = useEntities();
+  const playerRealmsIdAndName = useMemo(() => {
+    return playerRealms.map((realm) => ({
+      realmId: realm!.realm_id,
+      entityId: realm!.entity_id,
+      name: getRealmNameById(realm!.realm_id),
+    }));
+  }, [playerRealms]);
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
@@ -117,7 +92,7 @@ export const BridgeIn = () => {
     } else {
       return 0;
     }
-  }, [selectedResourceContract, realmId, selectedResourceAmount]);
+  }, [selectedResourceContract, realmEntityId, selectedResourceAmount]);
 
   const travelTimeInHoursAndMinutes = (travelTime: number) => {
     const hours = Math.floor(travelTime / 60);
@@ -152,7 +127,8 @@ export const BridgeIn = () => {
   const onBridgeIntoRealm = async () => {
     if (realmEntityId) {
       const resourceAddresses = await getSeasonAddresses();
-      let tokenAddress =
+      console.log({ resourceAddresses });
+      const tokenAddress =
         resourceAddresses[selectedResourceContract.toLocaleUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
@@ -177,16 +153,18 @@ export const BridgeIn = () => {
 
         <div>{displayAddress(account?.address || "")}</div>
       </div>
-      <Select onValueChange={(value) => setRealmId(value)}>
+      <Select onValueChange={(value) => setRealmEntityId(value)}>
         <SelectTrigger className="w-full border-gold/15">
           <SelectValue placeholder="Select Realm To Transfer" />
         </SelectTrigger>
         <SelectContent>
-          {seasonPassTokens?.map((token) => (
-            <SelectItem key={token.id} value={token.id.toString()}>
-              {token.name_} {token.id} {!getRealmEntityIdFromRealmId(token.id) && <span>(NOT IN GAME)</span>}
-            </SelectItem>
-          ))}
+          {playerRealmsIdAndName.map((realm) => {
+            return (
+              <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
+                {realm.name}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
 
@@ -231,7 +209,7 @@ export const BridgeIn = () => {
         </div>
       </div>
       <Button
-        disabled={(!selectedResourceAmount && !selectedResourceContract && !realmId) || isLoading}
+        disabled={(!selectedResourceAmount && !selectedResourceContract && !realmEntityId) || isLoading}
         onClick={() => onBridgeIntoRealm()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
