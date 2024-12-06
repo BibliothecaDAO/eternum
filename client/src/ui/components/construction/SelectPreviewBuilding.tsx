@@ -9,7 +9,6 @@ import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
-import { QuestId } from "@/ui/components/quest/questDetails";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -91,17 +90,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         key: "resources",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div
-              className={clsx({
-                "animate-pulse  border-b border-gold": selectedTab !== 0 && selectedQuest?.id === QuestId.BuildResource,
-              })}
-            >
-              Resources
-            </div>
+            <div className="resource-tab-selector">Resources</div>
           </div>
         ),
         component: (
-          <div className="grid grid-cols-2 gap-2 p-2">
+          <div className="resource-cards-selector grid grid-cols-2 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
@@ -120,9 +113,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               return (
                 <BuildingCard
-                  className={clsx({
-                    hidden: !questClaimStatus[QuestId.BuildFood],
-                  })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
                   resourceId={resourceId}
@@ -152,12 +142,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       {
         key: "economic",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div className="economy-tab-selector flex relative group flex-col items-center">
             <div>Economic</div>
           </div>
         ),
         component: (
-          <div className="grid grid-cols-2 gap-2 p-2">
+          <div className="economy-selector grid grid-cols-2 gap-2 p-2">
             {buildingTypes
               .filter(
                 (a) =>
@@ -182,15 +172,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const isFishingVillage = building === BuildingType.FishingVillage;
                 const isWorkersHut = building === BuildingType.WorkersHut;
                 const isMarket = building === BuildingType.Market;
+                const isStorehouse = building === BuildingType.Storehouse;
 
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isFarm && !isFishingVillage && !questClaimStatus[QuestId.BuildResource],
-                      "animate-pulse":
-                        ((isFarm || isFishingVillage) && selectedQuest?.id === QuestId.BuildFood) ||
-                        (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
-                        (isMarket && selectedQuest?.id === QuestId.Market),
+                      "farm-card-selector": isFarm,
+                      "fish-card-selector": isFishingVillage,
+                      "workers-hut-card-selector": isWorkersHut,
+                      "market-card-selector": isMarket,
+                      "storehouse-card-selector": isStorehouse,
                     })}
                     key={index}
                     buildingId={building}
@@ -225,7 +216,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       {
         key: "military",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div className="military-tab-selector flex relative group flex-col items-center">
             <div>Military</div>
           </div>
         ),
@@ -255,7 +246,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !questClaimStatus[QuestId.BuildResource],
+                      "barracks-card-selector": isBarracks,
+                      "archery-card-selector": isArcheryRange,
+                      "stable-card-selector": isStable,
                     })}
                     key={index}
                     buildingId={building}
@@ -295,9 +288,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         onChange={(index: any) => {
           setSelectedTab(index);
         }}
-        className="h-full"
+        className="construction-panel-selector h-full"
       >
-        <Tabs.List>
+        <Tabs.List className="construction-tabs-selector">
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}

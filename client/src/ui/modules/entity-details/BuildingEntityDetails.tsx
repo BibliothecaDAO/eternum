@@ -127,7 +127,7 @@ export const BuildingEntityDetails = () => {
   }, [buildingState.buildingType, buildingState.ownerEntityId]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="building-entity-details-selector flex flex-col h-full">
       {isCastleSelected ? (
         <RealmDetails />
       ) : (
