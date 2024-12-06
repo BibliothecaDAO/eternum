@@ -1,5 +1,4 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useRealm } from "@/hooks/helpers/useRealms";
 import { donkeyArrivals } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { displayAddress } from "@/lib/utils";
@@ -25,7 +24,6 @@ function formatFee(fee: number) {
 export const BridgeOutStep2 = () => {
   const { account } = useAccount();
 
-  const { getRealmEntityIdFromRealmId } = useRealm();
   const { getOwnerArrivalsAtBank, getDonkeyInfo } = donkeyArrivals();
   const [donkeyEntityId, setDonkeyEntityId] = useState(0n);
   const [isLoading, setIsLoading] = useState(false);
