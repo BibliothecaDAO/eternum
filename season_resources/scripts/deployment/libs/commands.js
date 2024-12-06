@@ -77,14 +77,12 @@ export const deployAllSeasonResourceContract = async () => {
   const ADDRESSES = {};
   const payload = [];
 
-  const resourceNamePrefix = "Eternum S0 ";
-  const resourceSymbolPrefix = "ES0_";
   for (const resource of Object.values(RESOURCE_NAMES)) {
-    const resourceName = `${resourceNamePrefix}${resource.name}`;
+    const resourceName = resource.name;
     if (resourceName.length > 31) {
       throw new Error("Resource name must be less than or equal to 32 characters");
     }
-    const resourceSymbol = `${resourceSymbolPrefix}${resource.symbol}`;
+    const resourceSymbol = resource.symbol;
     if (resourceSymbol.length > 31) {
       throw new Error("Resource symbol must be less than or equal to 32 characters");
     }
@@ -120,8 +118,7 @@ export const deployAllSeasonResourceContract = async () => {
   for (const event of tx.value.events) {
     // ContractDeployed key
     if (event.keys[0] === "0x26b160f10156dea0639bec90696772c640b9706a47f5b8c52ea1abe5858b34d") {
-      const resourceNameWithPrefix = shortString.decodeShortString(event.data[event.data.length - 6]);
-      const resourceName = resourceNameWithPrefix.replace(resourceNamePrefix, "");
+      const resourceName = shortString.decodeShortString(event.data[event.data.length - 6]);
       const resourceAddress = event.data[0];
       const resourceId = Object.values(RESOURCE_NAMES).find((resource) => resource.name === resourceName)?.id;
       ADDRESSES[resourceName.toUpperCase().replace(/\s+/g, "")] = [resourceId, resourceAddress];
