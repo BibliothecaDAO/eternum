@@ -340,6 +340,31 @@ export class TileManager {
     return overrideId;
   };
 
+  private _optimisticStructure = (entityId: ID, coords: Position, structureType: StructureType) => {
+    const overrideId = uuid();
+    const overrideId2 = uuid();
+    const entity = getEntityIdFromKeys([BigInt(coords.x), BigInt(coords.y)]);
+
+    this.setup.components.Structure.addOverride(overrideId, {
+      entity,
+      value: {
+        category: StructureType[structureType],
+        entity_id: entityId,
+        created_at: 0n,
+      },
+    });
+
+    this.setup.components.Position.addOverride(overrideId2, {
+      entity,
+      value: {
+        x: coords.x,
+        y: coords.y,
+      },
+    });
+
+    return { overrideId, overrideId2 };
+  };
+
   placeBuilding = async (buildingType: BuildingType, hexCoords: HexPosition, resourceType?: number) => {
     const entityId = this._getOwnerEntityId();
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
@@ -432,12 +457,22 @@ export class TileManager {
   };
 
   placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
-    if (structureType == StructureType.Hyperstructure) {
-      await this.setup.systemCalls.create_hyperstructure({
-        signer: useAccountStore.getState().account!,
-        creator_entity_id: entityId,
-        coords,
-      });
+    // Add optimistic rendering
+    const { overrideId, overrideId2 } = this._optimisticStructure(entityId, coords, structureType);
+
+    try {
+      if (structureType == StructureType.Hyperstructure) {
+        return await this.setup.systemCalls.create_hyperstructure({
+          signer: useAccountStore.getState().account!,
+          creator_entity_id: 22,
+          coords,
+        });
+      }
+    } catch (error) {
+      this.setup.components.Structure.removeOverride(overrideId);
+      this.setup.components.Position.removeOverride(overrideId2);
+      console.error(error);
+      throw error;
     }
   };
 }

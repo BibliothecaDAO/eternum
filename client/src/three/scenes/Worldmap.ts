@@ -127,7 +127,7 @@ export default class WorldmapScene extends HexagonScene {
         this.totalStructures = this.structureManager.totalStructures;
 
         this.removeCachedMatricesAroundColRow(startCol, startRow);
-        this.updateVisibleChunks();
+        this.updateVisibleChunks(true);
       }
     });
 
@@ -269,7 +269,10 @@ export default class WorldmapScene extends HexagonScene {
     if (!buildingType) return;
 
     const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    this.tileManager.placeStructure(this.structureEntityId, buildingType.type, contractHexPosition);
+    this.tileManager.placeStructure(this.structureEntityId, buildingType.type, contractHexPosition).catch(() => {
+      this.structureManager.structures.removeStructureFromPosition(hexCoords);
+      this.structureManager.updateChunk(this.currentChunk);
+    });
     this.clearEntitySelection();
   }
 
@@ -626,7 +629,7 @@ export default class WorldmapScene extends HexagonScene {
         col <= startCol + this.renderChunkSize.width / 2;
         col++
       ) {
-        if (this.exploredTiles.get(col)?.has(row)) {
+        if (this.exploredTiles.get(col)?.has(row) || true) {
           exploredHexes.push({ col, row });
         }
       }
@@ -677,10 +680,10 @@ export default class WorldmapScene extends HexagonScene {
     return { chunkX, chunkZ };
   }
 
-  updateVisibleChunks() {
+  updateVisibleChunks(force: boolean = false) {
     const cameraPosition = new THREE.Vector3();
     cameraPosition.copy(this.controls.target);
-
+    const { selectedEntityId } = this.state.armyActions;
     // Adjust the camera position to load chunks earlier in both directions
     const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
     const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;
@@ -689,17 +692,19 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = chunkX * this.chunkSize;
     const startRow = chunkZ * this.chunkSize;
     const chunkKey = `${startRow},${startCol}`;
-    if (this.currentChunk !== chunkKey) {
+    if (this.currentChunk !== chunkKey || force) {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
     }
-    if (this.structurePreview?.getPreviewStructure()) {
-      this.highlightHexManager.highlightHexes(this.getBuildableHexesForCurrentChunk());
-    } else {
-      this.highlightHexManager.highlightHexes([]);
+    if (!selectedEntityId) {
+      if (this.structurePreview?.getPreviewStructure()) {
+        this.highlightHexManager.highlightHexes(this.getBuildableHexesForCurrentChunk());
+      } else {
+        this.highlightHexManager.highlightHexes([]);
+      }
     }
   }
 

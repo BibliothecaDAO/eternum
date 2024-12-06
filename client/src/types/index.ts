@@ -1,4 +1,4 @@
-import { ID } from "@bibliothecadao/eternum";
+import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { Position } from "./Position";
 export type HexPosition = { col: number; row: number };
@@ -26,6 +26,7 @@ export interface StructureInfo {
   level: number;
   isMine: boolean;
   owner: { address: bigint };
+  structureType: StructureType;
 }
 
 export interface ArmyData {

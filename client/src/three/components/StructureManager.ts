@@ -113,10 +113,8 @@ export class StructureManager {
   }
 
   updateChunk(chunkKey: string) {
-    if (this.currentChunk !== chunkKey) {
-      this.currentChunk = chunkKey;
-      this.updateVisibleStructures();
-    }
+    this.currentChunk = chunkKey;
+    this.updateVisibleStructures();
   }
 
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
@@ -137,6 +135,7 @@ export class StructureManager {
     const _structures = this.structures.getStructures();
     for (const [structureType, structures] of _structures) {
       const visibleStructures = this.getVisibleStructures(structures);
+      console.log(visibleStructures);
       const models = this.structureModels.get(structureType);
 
       if (models && models.length > 0) {
@@ -186,7 +185,7 @@ export class StructureManager {
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
     const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
-
+    console.log("CHUNK", chunkCol, chunkRow);
     return (
       hexCoords.col >= chunkCol - this.renderChunkSize.width / 2 &&
       hexCoords.col < chunkCol + this.renderChunkSize.width / 2 &&
@@ -232,9 +231,26 @@ class Structures {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
     }
-    this.structures
-      .get(structureType)!
-      .set(entityId, { entityId, hexCoords, stage, level, isMine: isAddressEqualToAccount(owner.address), owner });
+    this.structures.get(structureType)!.set(entityId, {
+      entityId,
+      hexCoords,
+      stage,
+      level,
+      isMine: isAddressEqualToAccount(owner.address),
+      owner,
+      structureType,
+    });
+  }
+
+  removeStructureFromPosition(hexCoords: { col: number; row: number }) {
+    this.structures.forEach((structures) => {
+      structures.forEach((structure) => {
+        if (structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row) {
+          structures.delete(structure.entityId);
+          console.log("REMOVED", structure.entityId);
+        }
+      });
+    });
   }
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {
