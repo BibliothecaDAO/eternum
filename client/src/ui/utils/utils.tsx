@@ -58,7 +58,11 @@ export function multiplyByPrecision(value: number): number {
 }
 
 export function divideByPrecision(value: number): number {
-  return (value / EternumGlobalConfig.resources.resourcePrecision).toLocaleString("en-US");
+  return value / EternumGlobalConfig.resources.resourcePrecision;
+}
+
+export function divideByPrecisionFormatted(value: number): string {
+  return divideByPrecision(value).toLocaleString("en-US");
 }
 
 export function roundDownToPrecision(value: bigint, precision: number) {
