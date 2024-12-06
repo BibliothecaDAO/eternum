@@ -1,17 +1,16 @@
-import { QuestId } from "@/ui/components/quest/questDetails";
-import { questSteps } from "@/ui/components/quest/QuestList";
+import { QuestType } from "@bibliothecadao/eternum";
 import { useEffect } from "react";
 import { QuestStatus, useQuests } from "./helpers/useQuests";
 import useUIStore from "./store/useUIStore";
-import { useTutorial } from "./use-tutorial";
+import { questSteps, useTutorial } from "./use-tutorial";
 
 export const useStartingTutorial = () => {
-  const { handleStart } = useTutorial(questSteps.get(QuestId.Settle));
+  const { handleStart } = useTutorial(questSteps.get(QuestType.Settle), false);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
   const { quests } = useQuests();
 
-  const settleQuest = quests.find((quest) => quest.id === QuestId.Settle);
+  const settleQuest = quests.find((quest) => quest.id === QuestType.Settle);
 
   useEffect(() => {
     console.log({ settleQuest, showBlankOverlay });

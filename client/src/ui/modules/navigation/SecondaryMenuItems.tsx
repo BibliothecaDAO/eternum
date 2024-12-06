@@ -1,59 +1,50 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { useTutorial } from "@/hooks/use-tutorial";
+import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import { rewards, settings } from "@/ui/components/navigation/Config";
-import { QuestId } from "@/ui/components/quest/questDetails";
-import { questSteps } from "@/ui/components/quest/QuestList";
 import { BuildingThumbs } from "@/ui/config";
+import Button from "@/ui/elements/Button";
 import CircleButton from "@/ui/elements/CircleButton";
-import { isRealmSelected } from "@/ui/utils/utils";
+import { QuestType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
-import { useCallback, useMemo } from "react";
-import { quests as questsWindow, social } from "../../components/navigation/Config";
+import clsx from "clsx";
+import { useCallback, useMemo, useState } from "react";
+import { social } from "../../components/navigation/Config";
 import { Rewards } from "../rewards/Rewards";
 
 export const SecondaryMenuItems = () => {
   const {
     setup: {
+      systemCalls: { claim_quest },
       components: {
         events: { GameEnded },
       },
+      account: { account },
     },
   } = useDojo();
 
   const { toggleModal } = useModalStore();
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const { connector } = useAccountStore();
-
-  const { isMapView } = useQuery();
-
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { quests } = useQuests();
 
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
-
-  const { playerStructures } = useEntities();
-  const structures = playerStructures();
-
-  const completedQuests = quests?.filter((quest: any) => quest.status === QuestStatus.Claimed);
+  const gameEnded = useEntityQuery([Has(GameEnded)]);
 
   const currentQuest = quests?.find(
     (quest: any) => quest.status === QuestStatus.InProgress || quest.status === QuestStatus.Completed,
   );
+  const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestType.Settle), true);
 
-  const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestId.Settle));
-  const gameEnded = useEntityQuery([Has(GameEnded)]);
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const realmSelected = useMemo(() => {
-    return isRealmSelected(structureEntityId, structures) ? true : false;
-  }, [structureEntityId, structures]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [skipQuest, setSkipQuest] = useState(false);
 
   const handleTrophyClick = useCallback(() => {
     if (!connector?.controller) {
@@ -63,59 +54,85 @@ export const SecondaryMenuItems = () => {
     connector.controller.openProfile("trophies");
   }, [connector]);
 
+  const handleAllClaims = async () => {
+    setSkipQuest(false);
+    setIsLoading(true);
+    try {
+      await claim_quest({
+        signer: account,
+        quest_ids: currentQuest?.prizes.map((prize) => BigInt(prize.id)) || [],
+        receiver_id: structureEntityId || 0,
+      });
+    } catch (error) {
+      console.error(`Failed to claim resources for quest ${currentQuest?.name}:`, error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const secondaryNavigation = useMemo(() => {
     const buttons = [
       {
-        button: (
+        button: unclaimedQuestsCount > 0 && (
           <div className="flex items-center gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12">
-            <button
-              className="claim-selector text-gold hover:text-gold/80 text-sm font-semibold"
-              onClick={() => {
-                /* Claim logic */
-              }}
+            <Button
+              isLoading={isLoading}
+              className={clsx(
+                "claim-selector text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize",
+                {
+                  "animate-pulse duration-700 border-b-4 border-gold/50 hover:border-gold/70 transition-all":
+                    currentQuest?.status === QuestStatus.Completed,
+                },
+              )}
+              onClick={handleAllClaims}
+              disabled={currentQuest?.status !== QuestStatus.Completed}
             >
               Claim
-            </button>
+            </Button>
 
             <div className="h-6 w-px bg-gold/30 mx-2" />
 
-            <button onClick={() => togglePopup(questsWindow)} className="text-gold text-sm">
+            <Button
+              onClick={() => handleStart()}
+              className={clsx("tutorial-selector text-gold text-sm bg-transparent capitalize", {
+                "animate-pulse duration-700 border-b-4 border-gold/50 hover:border-gold/70 transition-all":
+                  currentQuest?.status !== QuestStatus.Completed,
+              })}
+            >
               {/* <span className="font-semibold">Current Quest</span> */}
               <span className="font-semibold">{currentQuest?.name}</span>
               {/* <span className="text-xs ml-2">({unclaimedQuestsCount} remaining)</span> */}
-            </button>
+            </Button>
 
             <div className="h-6 w-px bg-gold/30 mx-2" />
 
-            <button
-              className="tutorial-selector animate-pulse text-gold hover:text-gold/80 text-sm font-semibold"
-              onClick={() => {
-                handleStart();
-              }}
-            >
-              Tutorial
-            </button>
+            {skipQuest ? (
+              <div>
+                <Button
+                  className="text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize"
+                  onClick={handleAllClaims}
+                  variant="red"
+                >
+                  Confirm
+                </Button>
+                <Button
+                  className="text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize"
+                  onClick={() => setSkipQuest(false)}
+                >
+                  Back
+                </Button>
+              </div>
+            ) : (
+              <Button
+                className="text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize"
+                onClick={() => setSkipQuest(true)}
+              >
+                Skip Quest
+              </Button>
+            )}
           </div>
         ),
       },
-      // {
-      //   button: (
-      //     <div className="relative">
-      //       <CircleButton
-      //         className="quest-selector"
-      //         tooltipLocation="bottom"
-      //         image={BuildingThumbs.squire}
-      //         label={questsWindow}
-      //         active={isPopupOpen(questsWindow)}
-      //         size="lg"
-      //         onClick={() => togglePopup(questsWindow)}
-      //         notification={realmSelected ? unclaimedQuestsCount : undefined}
-      //         notificationLocation={"bottomleft"}
-      //         disabled={!realmSelected}
-      //       />
-      //     </div>
-      //   ),
-      // },
       {
         button: (
           <CircleButton
@@ -145,7 +162,7 @@ export const SecondaryMenuItems = () => {
       });
     }
     return buttons;
-  }, [unclaimedQuestsCount, quests, structureEntityId, gameEnded]);
+  }, [unclaimedQuestsCount, quests, currentQuest, structureEntityId, gameEnded]);
 
   return (
     <div className="flex gap-1 md:gap-3">
@@ -157,7 +174,6 @@ export const SecondaryMenuItems = () => {
           className="trophies-selector"
           image={BuildingThumbs.trophy}
           label={"Trophies"}
-          // active={isPopupOpen(quests)}
           size="lg"
           onClick={handleTrophyClick}
         />

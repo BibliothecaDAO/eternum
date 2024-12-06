@@ -3,14 +3,11 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { type PlayerStructure } from "@/hooks/helpers/useEntities";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { BuildingType, StructureType } from "@bibliothecadao/eternum";
-import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 import { ArmyChip } from "./ArmyChip";
@@ -33,8 +30,6 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
     entity_owner_entity_id: structure?.entity_id || 0,
   });
-
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const {
     account: { account },
@@ -89,7 +84,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     });
   };
   return (
-    <div className="p-2">
+    <div className="military-panel-selector p-2">
       <Headline>
         <div className="flex gap-2">
           <div className="self-center">{structure.name} </div>
@@ -135,9 +130,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
               handleCreateArmy(false);
             }}
             disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
-            className={clsx("attack-army-selector", {
-              "animate-pulse": selectedQuest?.id === QuestId.CreateAttackArmy,
-            })}
+            className="attack-army-selector"
           >
             Create attacking Army
           </Button>

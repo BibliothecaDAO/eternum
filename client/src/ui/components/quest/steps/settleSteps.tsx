@@ -7,7 +7,7 @@ import { StepButton, waitForElement } from "./utils";
 export const settleSteps: StepOptions[] = [
   {
     title: "Welcome to Eternum",
-    text: "Follow these tutorials to quickly learn all the game mechanics and get started on your journey!",
+    text: "Follow these tutorials to get started on your journey.",
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
@@ -16,36 +16,33 @@ export const settleSteps: StepOptions[] = [
     buttons: [StepButton.next],
   },
   {
-    title: "Join our Discord",
-    text: "Join our Discord community for game tips, friendly chat, and more!",
+    title: "Quests & Rewards",
+    text: "Complete quests to claim valuable resources.",
     attachTo: {
-      element: ".discord-selector",
+      element: ".tutorial-selector",
       on: "bottom",
     },
+    canClickTarget: false,
     classes: "mt-5",
     buttons: [StepButton.prev, StepButton.next],
   },
-  // {
-  //   title: "Claim your rewards",
-  //   text: "A gift of food from the gods.",
-  //   showOn: function () {
-  //     const element = document.querySelector(".claim-selector");
-  //     return Boolean(element);
-  //   },
-  //   attachTo: {
-  //     element: ".claim-selector",
-  //     on: "right",
-  //   },
-  //   advanceOn: {
-  //     selector: ".claim-selector",
-  //     event: "click",
-  //   },
-  //   classes: "ml-5",
-  //   buttons: [StepButton.prev],
-  // },
+  {
+    title: "Claim your reward",
+    text: "Click here to receive free Wheat and Fish.",
+    attachTo: {
+      element: ".claim-selector",
+      on: "bottom",
+    },
+    advanceOn: {
+      selector: ".claim-selector",
+      event: "click",
+    },
+    classes: "mt-5 requires-interaction",
+    buttons: [StepButton.prev],
+  },
   {
     title: "Balance",
-    text: "Let's view your resources. Open the 'Balance' tab.",
+    text: "Click here to view your resources.",
     attachTo: {
       element: ".resource-table-selector",
       on: "left",
@@ -54,12 +51,12 @@ export const settleSteps: StepOptions[] = [
       selector: ".resource-table-selector",
       event: "click",
     },
-    classes: "-ml-5",
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "-ml-5 requires-interaction",
+    buttons: [StepButton.prev],
   },
   {
-    title: "View Resources",
-    text: "This panel shows all available resources in your current realm.",
+    title: "Resources",
+    text: "Fish and Wheat are lifeblood of your people economy.",
     attachTo: {
       element: ".entity-resource-table-selector",
       on: "left",
@@ -80,38 +77,46 @@ export const settleSteps: StepOptions[] = [
     ],
   },
   {
-    title: "Production & Consumption",
-    text: "You'll see real-time production and consumption rates for each resource as you progress.",
-    attachTo: {
-      element: ".entity-resource-table-selector",
-      on: "left",
-    },
-    classes: "-ml-5",
-    buttons: [StepButton.prev, StepButton.next],
-  },
-  {
-    title: "Quest Tutorial",
-    text: "Complete quests to claim your starting resources. For each quest, click on the tutorial button to show how to do it.",
+    title: "Continue Your Journey",
     attachTo: {
       element: ".tutorial-selector",
       on: "bottom",
     },
     classes: "mt-5",
+    canClickTarget: false,
+    text: "Complete more quests and discover everything Eternum has to offer!",
     buttons: [StepButton.prev, StepButton.next],
   },
   {
-    title: "Claim the Food",
-    text: "Wheat and Fish are important part of this world. To start your adventure, first claim some food and continue to the next quest.",
+    title: "Social",
+    text: "Forge alliances, create or join a Tribe.",
     attachTo: {
-      element: ".claim-selector",
+      element: ".social-selector",
+      on: "bottom",
+    },
+    classes: "mt-5",
+    canClickTarget: false,
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Join our Discord",
+    text: "Join the community for game tips, friendly chat, and more!",
+    attachTo: {
+      element: ".discord-selector",
       on: "bottom",
     },
     classes: "mt-5",
     buttons: [StepButton.prev, StepButton.next],
   },
   {
-    title: "Continue Your Journey",
-    text: "Complete more quests to unlock new features and discover everything Eternum has to offer!",
+    title: "Settings",
+    text: "Customize your game experience.",
+    attachTo: {
+      element: ".settings-selector",
+      on: "bottom",
+    },
+    classes: "mt-5",
+    canClickTarget: false,
     buttons: [StepButton.prev, StepButton.finish],
   },
 ];

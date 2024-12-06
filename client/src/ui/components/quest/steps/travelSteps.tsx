@@ -1,54 +1,13 @@
-import useUIStore from "@/hooks/store/useUIStore";
 import { StepOptions } from "shepherd.js";
-import { StepButton, waitForElement } from "./utils";
+import { StepButton } from "./utils";
 
 export const travelSteps: StepOptions[] = [
   {
-    title: "World Navigation",
-    text:
-      // (
-      //   <div className="space-y-4">
-      //     <p>
-      "          Move your army across the world map using two methods: travel and explore.",
-    //     </p>
-    //     <ExplorationTable />
-    //   </div>
-    // ),
-    buttons: [StepButton.next],
-  },
-  {
-    title: "Navigation Controls",
-    text: "Use these controls to navigate the world map",
-    attachTo: {
-      element: ".world-navigation-selector",
-      on: "auto",
-    },
-    beforeShowPromise: function () {
-      return waitForElement(".world-navigation-selector");
-    },
-    buttons: [StepButton.prev, StepButton.next],
-  },
-  {
-    title: "Eternum Cycle",
-    text: "Keep track of the current Eternum cycle and its effects on the world",
-    attachTo: {
-      element: ".cycle-selector",
-      on: "auto",
-    },
-    beforeShowPromise: function () {
-      return waitForElement(".cycle-selector");
-    },
-    buttons: [StepButton.prev, StepButton.next],
-  },
-  {
-    title: "View Toggle",
-    text: "Switch between world view and realm view using this button",
+    title: "World View",
+    text: "Click here.",
     attachTo: {
       element: ".map-button-selector",
       on: "auto",
-    },
-    beforeShowPromise: function () {
-      return waitForElement(".map-button-selector");
     },
     advanceOn: {
       selector: ".map-button-selector",
@@ -57,26 +16,51 @@ export const travelSteps: StepOptions[] = [
     buttons: [StepButton.prev],
   },
   {
+    title: "Stamina",
+    text: "Traveling and Exploring use up the army's stamina, and consumes food.",
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Eternum Cycle",
+    text: "Every cycle, all armies' stamina regenerates for a small amount.",
+    attachTo: {
+      element: ".cycle-selector",
+      on: "auto",
+    },
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Explore",
+    text: "Exploring undiscovered hexes rewards resources to your army, and possibly uncover hidden Fragment Mines.",
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Travel",
+    text: "Traveling grants no reward, but its stamina and food costs are reduced.",
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Map Controls",
+    text: "To move the camera, use left-click and drag, or use WASD keys.",
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
     title: "Army Controls",
-    text:
-      // (
-      //   <p>
-      "Left click on your army or the tile under it to select it. Press Esc",
-    //     <strong>
-    //       <span className="border border-gold px-1">Esc</span>
-    //     </strong>{" "}
-    //     to cancel any action.
-    //   </p>
-    // ),
+    text: "Select your army with left-click.",
     attachTo: {
       element: ".world-selector",
       on: "auto",
     },
-    beforeShowPromise: function () {
-      const closeAllPopups = useUIStore.getState().closeAllPopups;
-      closeAllPopups();
-      return waitForElement(".world-selector");
-    },
-    buttons: [StepButton.prev, StepButton.finish],
+    classes: "!left-3/4 !top-1/4",
+    buttons: [
+      // StepButton.finish,
+      StepButton.prev,
+      {
+        text: "Finish (Reloads the page)",
+        action: function () {
+          window.location.reload(); // Temp fix
+        },
+      },
+    ],
   },
 ];

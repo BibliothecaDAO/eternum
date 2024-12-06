@@ -1,22 +1,12 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { StepOptions } from "shepherd.js";
-import { StepButton, waitForElement } from "./utils";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
+import { StepOptions } from "shepherd.js";
+import { StepButton, waitForElement } from "./utils";
 
 export const buildResourceSteps: StepOptions[] = [
   {
-    title: "Build a Resource Facility",
-    text: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently.",
-    beforeShowPromise: function () {
-      useUIStore.getState().setRightNavigationView(RightView.None);
-      useUIStore.getState().setLeftNavigationView(LeftView.None);
-      return new Promise<void>((resolve) => resolve());
-    },
-    buttons: [StepButton.next],
-  },
-  {
-    title: "Construction tab",
+    title: "Construction",
     text: "Open the construction menu",
     attachTo: {
       element: ".construction-selector",
@@ -26,6 +16,11 @@ export const buildResourceSteps: StepOptions[] = [
     advanceOn: {
       selector: ".construction-selector",
       event: "click",
+    },
+    beforeShowPromise: function () {
+      useUIStore.getState().setRightNavigationView(RightView.None);
+      useUIStore.getState().setLeftNavigationView(LeftView.None);
+      return new Promise<void>((resolve) => resolve());
     },
     buttons: [StepButton.prev],
   },
@@ -57,8 +52,8 @@ export const buildResourceSteps: StepOptions[] = [
     ],
   },
   {
-    title: "Resource Production",
-    text: "Your Realm comes with access to specific resources.",
+    title: "Resources",
+    text: "Each realm has access to a set of resources it can produce.",
     attachTo: {
       element: ".construction-panel-selector",
       on: "bottom",
@@ -71,8 +66,8 @@ export const buildResourceSteps: StepOptions[] = [
     buttons: [StepButton.prev, StepButton.next],
   },
   {
-    title: "Resource Consumption",
-    text: "Producing resources requires consuming others. For example, producing wood consumes coal, stone, and wheat.",
+    title: "Consumption",
+    text: "Producing resources requires consuming others in the process.",
     attachTo: {
       element: ".construction-panel-selector",
       on: "bottom",
@@ -82,19 +77,8 @@ export const buildResourceSteps: StepOptions[] = [
     buttons: [StepButton.prev, StepButton.next],
   },
   {
-    title: "Resource Acquisition",
-    text: "Need resources you can't produce? You can trade with other Realms or acquire them through military conquest.",
-    attachTo: {
-      element: ".construction-panel-selector",
-      on: "bottom",
-    },
-    classes: "mt-5",
-    canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
-  },
-  {
-    title: "Strategic Choices",
-    text: "Decide which resources to focus on to align with your long-term strategy.",
+    title: "Consumption",
+    text: "For example, a Wood producing facility will consume Coal, Stone, and Wheat.",
     attachTo: {
       element: ".construction-panel-selector",
       on: "bottom",
@@ -124,12 +108,49 @@ export const buildResourceSteps: StepOptions[] = [
   },
   {
     title: "Place Building",
-    text: "Left-click any hex to place your building. Remember: mouse wheel to zoom, right-click or ESC to cancel.",
+    text: "Left-click to confirm, mouse wheel to zoom, right-click or ESC to cancel.",
     classes: "!left-3/4 !top-1/4",
     attachTo: {
       element: ".world-selector",
     },
     highlightClass: "allow-modal-click",
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Balance",
+    text: "Click here to view your resources.",
+    attachTo: {
+      element: ".resource-table-selector",
+      on: "left",
+    },
+    advanceOn: {
+      selector: ".resource-table-selector",
+      event: "click",
+    },
+    classes: "-ml-5 requires-interaction",
+    buttons: [StepButton.prev],
+  },
+  {
+    title: "Consumption",
+    text: "Try to keep an eye on your consumption rates.",
+    attachTo: {
+      element: ".entity-resource-table-selector",
+      on: "left",
+    },
+    beforeShowPromise: function () {
+      return waitForElement(".entity-resource-table-selector");
+    },
+    classes: "-ml-5",
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Warning",
+    text: "Missing resources won't stop other materials from being consumed!",
+    attachTo: {
+      element: ".entity-resource-table-selector",
+      on: "left",
+    },
+    classes: "-ml-5",
     buttons: [StepButton.prev, StepButton.finish],
   },
 ];

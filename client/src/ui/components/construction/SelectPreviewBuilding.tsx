@@ -9,7 +9,6 @@ import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
-import { QuestId } from "@/ui/components/quest/questDetails";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -116,9 +115,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               return (
                 <BuildingCard
-                  className={clsx({
-                    hidden: !questClaimStatus[QuestId.BuildFood],
-                  })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
                   resourceId={resourceId}
@@ -175,24 +171,20 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     ? hasBalance
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
-                const isFarm = building === BuildingType["Farm"];
-                const isFishingVillage = building === BuildingType["FishingVillage"];
-                const isWorkersHut = building === BuildingType["WorkersHut"];
-                const isMarket = building === BuildingType["Market"];
+                const isFarm = building === BuildingType.Farm;
+                const isFishingVillage = building === BuildingType.FishingVillage;
+                const isWorkersHut = building === BuildingType.WorkersHut;
+                const isMarket = building === BuildingType.Market;
+                const isStorehouse = building === BuildingType.Storehouse;
 
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isFarm && !isFishingVillage && !questClaimStatus[QuestId.BuildResource],
-                      "animate-pulse":
-                        ((isFarm || isFishingVillage) && selectedQuest?.id === QuestId.BuildFood) ||
-                        (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
-                        (isMarket && selectedQuest?.id === QuestId.Market),
                       "farm-card-selector": isFarm,
                       "fish-card-selector": isFishingVillage,
-                      "workershut-card-selector": isWorkersHut,
+                      "workers-hut-card-selector": isWorkersHut,
                       "market-card-selector": isMarket,
-                      "storehouse-card-selector": isMarket,
+                      "storehouse-card-selector": isStorehouse,
                     })}
                     key={index}
                     buildingId={building}
@@ -257,7 +249,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !questClaimStatus[QuestId.BuildResource],
+                      "barracks-card-selector": isBarracks,
+                      "archery-card-selector": isArcheryRange,
+                      "stable-card-selector": isStable,
                     })}
                     key={index}
                     buildingId={building}

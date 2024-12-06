@@ -1,10 +1,7 @@
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
-
-import { QuestId } from "@/ui/components/quest/questDetails";
 
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { usePlayerArrivalsNotificationLength } from "@/hooks/helpers/useResources";
@@ -13,20 +10,12 @@ import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
-import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useEffect, useMemo } from "react";
-import {
-  construction,
-  military,
-  quests as questsPopup,
-  trade,
-  worldStructures,
-} from "../../components/navigation/Config";
+import { construction, military, trade, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 // import { Chat } from "../chat/Chat";
 import { Chat } from "../chat/Chat";
-import { MiniMapNavigation } from "./MiniMapNavigation";
 
 const EntityDetails = lazy(() =>
   import("../entity-details/EntityDetails").then((module) => ({ default: module.EntityDetails })),
@@ -75,16 +64,6 @@ export const LeftNavigationModule = () => {
   const { isMapView } = useQuery();
 
   const notificationLength = usePlayerArrivalsNotificationLength();
-
-  const isBuildQuest = useMemo(() => {
-    return (
-      selectedQuest?.id === QuestId.BuildFood ||
-      selectedQuest?.id === QuestId.BuildResource ||
-      selectedQuest?.id === QuestId.BuildWorkersHut ||
-      selectedQuest?.id === QuestId.Market ||
-      (selectedQuest?.id === QuestId.Hyperstructure && isMapView)
-    );
-  }, [selectedQuest, isMapView]);
 
   const { getEntityInfo } = useEntitiesUtils();
 
@@ -138,12 +117,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx("military-selector", {
-              "animate-pulse":
-                view !== LeftView.ConstructionView &&
-                selectedQuest?.id === QuestId.CreateAttackArmy &&
-                isPopupOpen(questsPopup),
-            })}
+            className="military-selector"
             image={BuildingThumbs.military}
             tooltipLocation="top"
             label={military}
@@ -158,9 +132,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine || !isRealm}
-            className={clsx("construction-selector", {
-              "animate-pulse": view !== LeftView.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
-            })}
+            className="construction-selector"
             image={BuildingThumbs.construction}
             tooltipLocation="top"
             label={construction}
@@ -191,12 +163,6 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx({
-              "animate-pulse":
-                view !== LeftView.ConstructionView &&
-                selectedQuest?.id === QuestId.Contribution &&
-                isPopupOpen(questsPopup),
-            })}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"
             label={worldStructures}
@@ -213,12 +179,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx("trade-selector", {
-              "animate-pulse":
-                selectedQuest?.id === QuestId.CreateTrade &&
-                selectedQuest.status !== QuestStatus.Completed &&
-                isPopupOpen(questsPopup),
-            })}
+            className="trade-selector"
             image={BuildingThumbs.scale}
             tooltipLocation="top"
             label={trade}

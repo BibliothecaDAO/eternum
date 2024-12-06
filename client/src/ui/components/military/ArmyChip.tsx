@@ -138,7 +138,9 @@ export const ArmyChip = ({
                               />
                               {isOnMap && <NavigateToPositionIcon position={updatedArmy!.position} />}
                               <Swap
-                                className="w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300"
+                                className={`w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
+                                  army.protectee ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
+                                }`}
                                 onClick={() => {
                                   setTooltip(null);
                                   setShowTroopSwap(!showTroopSwap);

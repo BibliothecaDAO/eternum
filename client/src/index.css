@@ -190,55 +190,112 @@ canvas {
   pointer-events: none;
 }
 
+/* Tutorial popup styling */
 .shepherd-element {
-  @apply bg-brown;
+  @apply bg-light-pink;
 }
 
 .shepherd-has-title .shepherd-content .shepherd-header {
-  @apply bg-enemy;
+  @apply bg-gray-gold;
 }
 
 .shepherd-title {
-  @apply text-gold text-2xl;
+  @apply text-brown text-2xl;
 }
 
 .shepherd-text {
-  @apply text-gold;
+  @apply text-light-brown;
 }
 
 .shepherd-button {
-  @apply cursor-fancy bg-enemy text-gold;
+  @apply cursor-fancy bg-gray-gold text-brown;
 }
 
 .shepherd-button:not(:disabled):hover {
-  @apply bg-enemy/50 text-gold;
+  @apply bg-gray-gold/50 text-brown;
 }
 
-.shepherd-cancel-icon:hover {
-  @apply text-gold;
+.shepherd-has-title .shepherd-content .shepherd-cancel-icon {
+  @apply text-brown cursor-fancy;
 }
 
+.shepherd-has-title .shepherd-content .shepherd-cancel-icon:hover {
+  @apply text-brown/50;
+}
+
+/* Interactive step styling */
+.shepherd-element.requires-interaction {
+  @apply bg-light-pink;
+}
+
+.requires-interaction .shepherd-content .shepherd-header {
+  @apply bg-gray-gold;
+}
+
+.requires-interaction .shepherd-title {
+  @apply text-brown text-2xl;
+}
+
+.requires-interaction .shepherd-text {
+  @apply text-light-brown;
+}
+
+.requires-interaction .shepherd-button {
+  @apply cursor-fancy bg-gray-gold text-brown;
+}
+
+.requires-interaction .shepherd-button:not(:disabled):hover {
+  @apply bg-gray-gold/50 text-brown;
+}
+
+.requires-interaction .shepherd-cancel-icon {
+  @apply text-brown cursor-fancy;
+}
+
+.requires-interaction .shepherd-cancel-icon:hover {
+  @apply text-brown/50;
+}
+
+/* Arrow styling */
 .shepherd-arrow {
   @apply bg-transparent !important;
 }
 
 .shepherd-arrow:before {
-  @apply bg-brown !important;
+  @apply bg-light-pink !important;
 }
 
 .shepherd-has-title .shepherd-content .shepherd-header .shepherd-arrow:before {
-  @apply bg-enemy !important;
+  @apply bg-gray-gold !important;
 }
 
 .shepherd-element[data-popper-placement^="top"] .shepherd-arrow:before {
-  @apply bg-brown !important;
+  @apply bg-light-pink !important;
 }
 
 .shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow:before {
-  @apply bg-enemy !important;
+  @apply bg-gray-gold !important;
 }
 
 .shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
 .shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
-  @apply bg-brown !important;
+  @apply bg-light-pink !important;
+}
+
+/* Interactive arrow styles */
+.requires-interaction.shepherd-element .shepherd-arrow:before {
+  @apply bg-light-pink !important;
+}
+
+.requires-interaction.shepherd-element[data-popper-placement^="top"] .shepherd-arrow:before {
+  @apply bg-light-pink !important;
+}
+
+.requires-interaction.shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow:before {
+  @apply bg-gray-gold !important;
+}
+
+.requires-interaction.shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
+.requires-interaction.shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
+  @apply bg-light-pink !important;
 }

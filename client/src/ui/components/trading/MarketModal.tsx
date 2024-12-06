@@ -121,7 +121,7 @@ export const MarketModal = () => {
         label: (
           <div className="flex relative group items-center gap-2">
             <Scroll className="w-6 fill-current" />
-            <div className="self-center">Order Book</div>
+            <div className="orderbook-tab-selector self-center">Order Book</div>
           </div>
         ),
         component: (
@@ -262,7 +262,7 @@ export const MarketModal = () => {
                 className="hover:bg-gold/20 transition-colors duration-200"
               />
             </div>
-            <div className="bg-brown p-3 rounded-xl text-sm shadow-lg border border-gold/30 h-full flex flex-col">
+            <div className="trade-bank-selector bg-brown p-3 rounded-xl text-sm shadow-lg border border-gold/30 h-full flex flex-col">
               <h3 className="text-xl font-bold mb-4">Bank Information</h3>
               <div className="space-y-1 flex-grow">
                 <div className="flex justify-between items-center">
@@ -291,7 +291,7 @@ export const MarketModal = () => {
               </div>
             </div>
 
-            <div className="bg-brown border border-gold/30 p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
+            <div className="bank-combat-selector bg-brown border border-gold/30 p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
               <div>
                 <h3 className="text-xl font-bold">AMM Status</h3>
                 {!isBattleOngoing && !isSiegeOngoing && (

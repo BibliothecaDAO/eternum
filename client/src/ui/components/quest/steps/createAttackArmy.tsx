@@ -30,8 +30,31 @@ export const createAttackArmySteps: StepOptions[] = [
     buttons: [StepButton.prev],
   },
   {
+    title: "Troop Resources",
+    text: "Troops can be traded and transferred like any other resource, but once assigned to an army, they cannot be reverted back.",
+    attachTo: {
+      element: ".military-panel-selector",
+      on: "right",
+    },
+    classes: "ml-5",
+    canClickTarget: false,
+    beforeShowPromise: function () {
+      return waitForElement(".military-panel-selector");
+    },
+    buttons: [
+      {
+        text: "Prev",
+        action: function () {
+          useUIStore.getState().setLeftNavigationView(LeftView.None);
+          return this.back();
+        },
+      },
+      StepButton.next,
+    ],
+  },
+  {
     title: "Create Attack Army",
-    text: "Click here to create a new attacking army to conquer the map. Troops can be exchanged between armies on the same hex.",
+    text: "Click here.",
     attachTo: {
       element: ".attack-army-selector",
       on: "top",
@@ -44,6 +67,10 @@ export const createAttackArmySteps: StepOptions[] = [
       selector: ".attack-army-selector",
       event: "click",
     },
+    showOn: () => {
+      const showStep = document.querySelector(".attacking-army-selector");
+      return !Boolean(showStep);
+    },
     buttons: [
       {
         text: "Prev",
@@ -55,27 +82,27 @@ export const createAttackArmySteps: StepOptions[] = [
     ],
   },
   {
-    title: "Troop Types",
-    text: "You can view your armies here.   ",
+    title: "Transfer",
+    text: "Armies can exchange troops while they are on the same hex.",
     attachTo: {
-      element: ".attacking-army-selector",
+      element: ".defensive-army-swap-selector",
       on: "bottom",
     },
     classes: "mt-5",
     canClickTarget: false,
-    beforeShowPromise: function () {
-      return waitForElement(".attacking-army-selector");
-    },
-    buttons: [StepButton.next],
+    buttons: [StepButton.prev, StepButton.next],
   },
   {
-    title: "Assign Troops",
-    text: "Assign troops to your attacking army. Troops can be traded and transferred like any other resource, but once assigned, they cannot be reverted back.",
+    title: "Edit",
+    text: "Click the edit icon.",
     attachTo: {
       element: ".attacking-army-edit-selector",
-      on: "bottom",
+      on: "top",
     },
-    classes: "mt-5",
+    classes: "-mt-5",
+    beforeShowPromise: function () {
+      return waitForElement(".attacking-army-edit-selector");
+    },
     advanceOn: {
       selector: ".attacking-army-edit-selector",
       event: "click",
@@ -83,16 +110,16 @@ export const createAttackArmySteps: StepOptions[] = [
     buttons: [StepButton.prev],
   },
   {
-    title: "Troop Types",
-    text: "There are three troop types: Paladins, Crossbowmen, and Knights. Paladins have more max energy, and Crossbowmen use less food while traveling.",
+    title: "Assign Troops",
+    text: "Assign troops to your attacking army.",
     attachTo: {
       element: ".attacking-army-selector",
-      on: "right",
+      on: "top",
     },
-    classes: "ml-5",
-    // beforeShowPromise: function () {
-    //   return waitForElement(".attacking-army-selector");
-    // },
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "-mt-5",
+    beforeShowPromise: function () {
+      return waitForElement(".attacking-army-selector");
+    },
+    buttons: [StepButton.prev, StepButton.finish],
   },
 ];

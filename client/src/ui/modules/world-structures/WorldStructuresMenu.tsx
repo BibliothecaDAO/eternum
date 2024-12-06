@@ -13,17 +13,13 @@ import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/u
 
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
-import { QuestId } from "@/ui/components/quest/questDetails";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ContractAddress, findResourceById, ID, ResourcesIds } from "@bibliothecadao/eternum";
 
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   const [selectedTab, setSelectedTab] = useState(0);
-
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { hyperstructures } = useHyperstructures();
   const { fragmentMines } = useFragmentMines();
@@ -60,7 +56,6 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
         ),
         component: (
           <EntityList
-            questing={selectedQuest?.id === QuestId.Contribution}
             title="Hyperstructures"
             panel={({ entity }) => <HyperstructurePanel entity={entity} />}
             entityContent={hyperstructureExtraContent}

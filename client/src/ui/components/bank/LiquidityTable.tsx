@@ -42,7 +42,7 @@ export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps)
   const playerStructureIds = playerStructures().map((structure) => structure.entity_id);
 
   return (
-    <div className="p-4 h-full bg-gold/10 overflow-x-auto relative">
+    <div className="amm-liquidity-selector p-4 h-full bg-gold/10 overflow-x-auto relative">
       <input
         type="text"
         placeholder="Search resources..."

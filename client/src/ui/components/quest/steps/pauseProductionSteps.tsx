@@ -1,14 +1,14 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
-import { StepOptions } from "shepherd.js";
-import { StepButton, waitForElement } from "./utils";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
+import { StepOptions } from "shepherd.js";
+import { StepButton, waitForElement } from "./utils";
 
 export const pauseProductionSteps: StepOptions[] = [
   {
     title: "Production",
-    text: "Your buildings automatically produce resources over time. Let's learn how to manage your production efficiently.",
+    text: "Buildings automatically start producing once built.",
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
@@ -17,8 +17,18 @@ export const pauseProductionSteps: StepOptions[] = [
     buttons: [StepButton.next],
   },
   {
-    title: "Building Details",
-    text: "First, let's check your building information. Click the Details tab to continue.",
+    title: "Pause",
+    text: "To manage your resources, pausing a production building can be essential.",
+    beforeShowPromise: function () {
+      useUIStore.getState().setRightNavigationView(RightView.None);
+      useUIStore.getState().setLeftNavigationView(LeftView.None);
+      return new Promise<void>((resolve) => resolve());
+    },
+    buttons: [StepButton.next],
+  },
+  {
+    title: "Details",
+    text: "Click here.",
     attachTo: {
       element: ".entity-details-selector",
       on: "right",
@@ -37,31 +47,28 @@ export const pauseProductionSteps: StepOptions[] = [
     buttons: [StepButton.prev],
   },
   {
-    title: "Building Information",
-    text: "This panel shows you everything you need to know about your selected building, including its production rates and resource requirements.",
+    title: "Realm Overview",
+    text: "Your realm's details are displayed here.",
     attachTo: {
       element: ".building-entity-details-selector",
       on: "right",
     },
     classes: "ml-5",
-    canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".building-entity-details-selector");
     },
-    buttons: [StepButton.prev, StepButton.next],
-  },
-  {
-    title: "Your Realm Overview",
-    text: "Your realm's details are displayed here, including its current level, available upgrades, and production capacity.",
-    attachTo: {
-      element: ".building-entity-details-selector",
-      on: "right",
-    },
-    classes: "ml-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [
+      {
+        text: "Prev",
+        action: function () {
+          useUIStore.getState().setLeftNavigationView(LeftView.None);
+          return this.back();
+        },
+      },
+      StepButton.next,
+    ],
   },
-
   {
     title: "Buildings Management",
     text: "Open the buildings tab",
@@ -76,10 +83,9 @@ export const pauseProductionSteps: StepOptions[] = [
     },
     buttons: [StepButton.prev],
   },
-
   {
     title: "Production Control",
-    text: "Here you can see all your active production buildings. Each one can be managed individually.",
+    text: "Monitor all production buildings. Each one can be managed individually.",
     attachTo: {
       element: ".buildings-selector",
       on: "right",
@@ -91,7 +97,6 @@ export const pauseProductionSteps: StepOptions[] = [
     },
     buttons: [StepButton.prev, StepButton.next],
   },
-
   {
     title: "Pause Production",
     text: "Click the pause button to stop its production and resource consumption.",
@@ -106,20 +111,9 @@ export const pauseProductionSteps: StepOptions[] = [
     },
     buttons: [StepButton.prev],
   },
-
   {
-    title: "Storage Limits",
-    text: "Your storehouse can hold a limited amount of each resource, measured by weight (Kg). Plan your storage capacity carefully!",
-    attachTo: {
-      element: ".storehouse-selector",
-      on: "right",
-    },
-    classes: "ml-5",
-    buttons: [StepButton.prev, StepButton.next],
-  },
-  {
-    title: "Storage Management",
-    text: "When your storage is full, any additional resources produced will be lost. Keep an eye on your storage levels!",
+    title: "Storage Waste",
+    text: "When a resource reaches its storage limit, any additional production of it will be lost.",
     attachTo: {
       element: ".storehouse-selector",
       on: "right",
@@ -129,7 +123,7 @@ export const pauseProductionSteps: StepOptions[] = [
   },
   {
     title: "Resource Efficiency",
-    text: "Pro tip: Production requires all three input resources. If one runs out, the other two will still be consumed without producing anything. Pause production to prevent wasting resources!",
+    text: "If any input resource runs out, others will still be consumed without producing. Pause to prevent waste!",
     attachTo: {
       element: ".storehouse-selector",
       on: "right",
