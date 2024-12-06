@@ -243,11 +243,14 @@ const OrderRow = ({
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
   const lordsManager = new ResourceManager(dojo.setup, entityId, ResourcesIds.Lords);
-  const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [updateBalance]);
+  const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [entityId, updateBalance]);
 
   const resourceManager = useResourceManager(entityId, offer.makerGets[0].resourceId);
 
-  const resourceBalance = useMemo(() => Number(resourceManager.getResource()?.balance || 0n), [updateBalance]);
+  const resourceBalance = useMemo(
+    () => Number(resourceManager.getResource()?.balance || 0n),
+    [entityId, updateBalance],
+  );
 
   const { getRealmAddressName } = useRealm();
 
@@ -402,7 +405,6 @@ const OrderRow = ({
               setConfirmOrderModal(true);
             }}
             size="xs"
-            disabled={!isBuy ? lordsBalance < getTotalLords : resourceBalance < calculatedResourceAmount}
             className={`self-center flex flex-grow ${isMakerResourcesLocked ? "pointer-events-none" : ""}`}
           >
             {!isBuy ? "Buy" : "Sell"}
