@@ -523,8 +523,8 @@ export const RESOURCE_INPUTS: ResourceInputs = {
     { resource: ResourcesIds.Fish, amount: 0.004 },
   ],
   [ResourcesIds.Donkey]: [
-    { resource: ResourcesIds.Wheat, amount: 0.025 },
-    { resource: ResourcesIds.Lords, amount: 0.00005 },
+    { resource: ResourcesIds.Wheat, amount: 0.025 }, // 25 per/s
+    { resource: ResourcesIds.Lords, amount: 0.000005 }, // TODO: Check this
   ],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 0.05 },
