@@ -66,7 +66,7 @@ export const EntityList = ({
                 key={index}
                 onClick={() => setSelectedEntity(entity)}
               >
-                {entity.name}
+                <h4>{entity.name}</h4>
                 {entityContent && entityContent(entity.id)} {/* Dynamic entity icon */}
                 <ArrowRight className="w-2 fill-current" />
               </li>

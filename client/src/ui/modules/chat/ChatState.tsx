@@ -34,21 +34,33 @@ export const useChatStore = create<ChatState>()(
           if (existingTabIndex !== -1) {
             // Update existing tab
             const updatedTabs = [...state.tabs];
+            const existingTab = updatedTabs[existingTabIndex];
+
             updatedTabs[existingTabIndex] = {
-              ...updatedTabs[existingTabIndex],
+              ...existingTab,
               ...newTab,
+              // Preserve the existing lastSeen unless we're switching to this tab
+              lastSeen: switchToTab ? new Date() : existingTab.lastSeen,
+              // Use the most recent lastMessage timestamp
+              lastMessage:
+                newTab.lastMessage && existingTab.lastMessage
+                  ? new Date(
+                      Math.max(new Date(newTab.lastMessage).getTime(), new Date(existingTab.lastMessage).getTime()),
+                    )
+                  : newTab.lastMessage || existingTab.lastMessage,
             };
+
             return {
               tabs: updatedTabs,
               // Only switch tabs if explicitly requested
-              currentTab: switchToTab ? { ...newTab, lastSeen: new Date() } : state.currentTab,
+              currentTab: switchToTab ? updatedTabs[existingTabIndex] : state.currentTab,
             };
           } else {
             // Add new tab
             return {
-              tabs: [...state.tabs, { ...newTab, lastSeen: new Date() }],
+              tabs: [...state.tabs, { ...newTab, lastSeen: switchToTab ? new Date() : newTab.lastSeen }],
               // Only switch tabs if explicitly requested
-              currentTab: switchToTab ? { ...newTab, lastSeen: new Date() } : state.currentTab,
+              currentTab: switchToTab ? newTab : state.currentTab,
             };
           }
         }),
