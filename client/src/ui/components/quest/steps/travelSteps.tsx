@@ -1,8 +1,8 @@
-import { StepOptions } from "shepherd.js";
-import { StepButton } from "./utils";
 import useUIStore from "@/hooks/store/useUIStore";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
+import { StepOptions } from "shepherd.js";
+import { StepButton } from "./utils";
 
 export const travelSteps: StepOptions[] = [
   {
@@ -61,15 +61,6 @@ export const travelSteps: StepOptions[] = [
     },
     classes: "!left-3/4 !top-1/4 ",
     highlightClass: "allow-modal-click",
-    buttons: [
-      // StepButton.finish,
-      StepButton.prev,
-      {
-        text: "Finish (Reloads the page)",
-        action: function () {
-          window.location.reload(); // Temp fix
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.finish],
   },
 ];

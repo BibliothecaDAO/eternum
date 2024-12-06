@@ -8,7 +8,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
-import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
+import { ArmyInfo, useArmiesByEntityOwnerWithPositionAndQuantity } from "./useArmies";
 import { useEntitiesUtils } from "./useEntities";
 import { useGetMyOffers } from "./useTrade";
 
@@ -72,7 +72,9 @@ const useQuestDependencies = (setup: SetupResult) => {
     HasValue(setup.components.EntityOwner, { entity_owner_id: structureEntityId || 0 }),
   ]);
   const buildingQuantities = useBuildingQuantities(structureEntityId);
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId || 0 });
+  const { entityArmies } = useArmiesByEntityOwnerWithPositionAndQuantity({
+    entity_owner_entity_id: structureEntityId || 0,
+  });
   const orders = useGetMyOffers();
   const { getEntityInfo } = useEntitiesUtils();
 
