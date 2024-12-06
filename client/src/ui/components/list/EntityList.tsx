@@ -68,12 +68,14 @@ export const EntityList = ({
                   <div className="flex flex-row justify-between items-center">
                     <div className="flex flex-row space-x-1 items-center">
                       {entity?.position && <ViewOnMapIcon className={"my-auto"} position={entity.position} />}
-                      <h4>{entity.name}</h4>
+                      <h5>{entity.name}</h5>
                     </div>
                     <ArrowRight className="w-2 fill-current" />
                   </div>
 
-                  <div>{entityContent && entityContent(entity.id)}</div>
+                  <div className="border border-gold/20 bg-gold/10 rounded p-2">
+                    {entityContent && entityContent(entity.id)}
+                  </div>
                 </div>
               </li>
             ))}
