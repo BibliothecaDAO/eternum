@@ -1,4 +1,4 @@
-import{d as r,j as n}from"./index-CQt94Hr5.js";const l={title:"Units",description:"Military and combat mechanics in Eternum"};function i(s){const e={a:"a",div:"div",h2:"h2",h3:"h3",li:"li",p:"p",strong:"strong",ul:"ul",...r(),...s.components};return n.jsxs(n.Fragment,{children:[n.jsxs(e.h3,{id:"units",children:["Units",n.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#units",children:n.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+import{d as r,j as n}from"./index-Ca64bMZ6.js";const l={title:"Units",description:"Military and combat mechanics in Eternum"};function i(s){const e={a:"a",div:"div",h2:"h2",h3:"h3",li:"li",p:"p",strong:"strong",ul:"ul",...r(),...s.components};return n.jsxs(n.Fragment,{children:[n.jsxs(e.h3,{id:"units",children:["Units",n.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#units",children:n.jsx(e.div,{"data-autolink-icon":!0})})]}),`
 `,n.jsx(e.strong,{children:"Unit Types"}),`
 `,n.jsxs(e.ul,{children:[`
 `,n.jsxs(e.li,{children:[n.jsx(e.strong,{children:"Paladins"})," ",n.jsx("img",{src:"/resources/252.png",alt:"Market",width:"100",className:"float-right"}),`

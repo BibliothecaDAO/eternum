@@ -402,6 +402,7 @@ const OrderRow = ({
               setConfirmOrderModal(true);
             }}
             size="xs"
+            disabled={!isBuy ? lordsBalance < getTotalLords : resourceBalance < calculatedResourceAmount}
             className={`self-center flex flex-grow ${isMakerResourcesLocked ? "pointer-events-none" : ""}`}
           >
             {!isBuy ? "Buy" : "Sell"}
