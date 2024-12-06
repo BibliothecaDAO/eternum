@@ -8,7 +8,6 @@ import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildInfo, Player, ResourcesIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { ListHeaderProps } from "../guilds/GuildList";
 
 export interface PlayerCustom extends Player {
   structures: string[];
@@ -59,7 +58,13 @@ export const PlayerList = ({
   );
 };
 
-const PlayerListHeader = ({ activeSort, setActiveSort }: ListHeaderProps) => {
+const PlayerListHeader = ({
+  activeSort,
+  setActiveSort,
+}: {
+  activeSort: SortInterface;
+  setActiveSort: (sort: SortInterface) => void;
+}) => {
   const sortingParams = useMemo(() => {
     return [
       { label: "Rank", sortKey: "rank", className: "col-span-1 text-center px-1" },
