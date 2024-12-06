@@ -45,10 +45,8 @@ export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
   }, [tab]);
 
   const hasUnreadMessages = useMemo(() => {
-    return tab.lastMessage && tab.lastSeen && tab.lastMessage > tab.lastSeen;
+    return tab.lastMessage && tab.lastSeen && new Date(tab.lastMessage).getTime() > new Date(tab.lastSeen).getTime();
   }, [tab.lastMessage, tab.lastSeen]);
-
-  console.log(tab.lastMessage, tab.lastSeen);
 
   return (
     <AnimatePresence>
@@ -67,7 +65,7 @@ export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
           style={{ zIndex: 2 }}
           onClick={() => setCurrentTab({ ...tab, displayed: true })}
         >
-          <span className={hasUnreadMessages ? "text-red font-bold" : ""}>{userName}</span>
+          <span className={hasUnreadMessages ? "animate-pulse text-red" : ""}>{userName}</span>
 
           <div className="w-4 flex items-center justify-center">
             {(tab.mandatory === undefined || tab.mandatory === false) && (

@@ -234,6 +234,8 @@ const Messages = ({
       if (!fromSelf && toSelf) {
         const messageKey = ContractAddress(getMessageKey(identity, BigInt(account.address)));
         const existingMetadata = messageMap.get(messageKey);
+
+        // Fix: Get the latest timestamp by comparing with all messages
         const latestTimestamp = existingMetadata?.messages.reduce((latest, msg) => {
           return msg.timestamp > latest ? msg.timestamp : latest;
         }, timestamp);
@@ -242,9 +244,9 @@ const Messages = ({
           name,
           address,
           displayed: true,
-          lastSeen: new Date(),
+          lastSeen: new Date(), // Keep this as new Date() to mark when we last viewed
           key: getMessageKey(identity, BigInt(account.address)),
-          lastMessage: latestTimestamp || timestamp,
+          lastMessage: new Date(Math.max(latestTimestamp?.getTime() || 0, timestamp.getTime())), // Use the most recent timestamp
         });
       }
 
@@ -257,7 +259,7 @@ const Messages = ({
       if (!messageMap.has(ContractAddress(key))) {
         messageMap.set(ContractAddress(key), {
           messages: [],
-          lastMessageReceived: new Date(0),
+          lastMessageReceived: new Date(),
           channel: BigInt(message.channel),
           fromName: name,
           address,
