@@ -340,6 +340,31 @@ export class TileManager {
     return overrideId;
   };
 
+  private _optimisticStructure = (coords: Position, structureType: StructureType) => {
+    const overrideId = uuid();
+    const entity: Entity = getEntityIdFromKeys([BigInt(99999999n)]);
+
+    this.setup.components.Structure.addOverride(overrideId, {
+      entity,
+      value: {
+        category: StructureType[structureType],
+        entity_id: 99999999,
+        created_at: 0n,
+      },
+    });
+
+    this.setup.components.Position.addOverride(overrideId, {
+      entity,
+      value: {
+        entity_id: 99999999,
+        x: coords.x,
+        y: coords.y,
+      },
+    });
+
+    return { overrideId };
+  };
+
   placeBuilding = async (buildingType: BuildingType, hexCoords: HexPosition, resourceType?: number) => {
     const entityId = this._getOwnerEntityId();
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
@@ -432,12 +457,18 @@ export class TileManager {
   };
 
   placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
-    if (structureType == StructureType.Hyperstructure) {
-      await this.setup.systemCalls.create_hyperstructure({
-        signer: useAccountStore.getState().account!,
-        creator_entity_id: entityId,
-        coords,
-      });
+    this._optimisticStructure(coords, structureType);
+    try {
+      if (structureType == StructureType.Hyperstructure) {
+        return await this.setup.systemCalls.create_hyperstructure({
+          signer: useAccountStore.getState().account!,
+          creator_entity_id: entityId,
+          coords,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
   };
 }
