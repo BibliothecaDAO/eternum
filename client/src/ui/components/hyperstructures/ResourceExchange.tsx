@@ -182,7 +182,7 @@ const ResourceRow = ({ resourceId, amount, givenAmount, onChangeAmount, transfer
         />
       ) : (
         <div className={`text-lg font-bold col-span-3 text-center ${givenAmount !== 0 ? "text-green" : ""}`}>
-          {`+${givenAmount}`}
+          {`+${givenAmount.toLocaleString()}`}
         </div>
       )}
     </div>

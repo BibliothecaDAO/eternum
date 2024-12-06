@@ -13,7 +13,7 @@ import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/Tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
-import { currencyFormat, formatNumber } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -307,7 +307,7 @@ const TroopExchange = ({
       {transferDirection === "from" && (
         <>
           <div className="text-xs text-yellow-500 mb-2">
-            ⚠️ Maximum troops per attacking army is {formatNumber(maxTroopCountPerArmy, 0)}
+            ⚠️ Maximum troops per attacking army is {formatStringNumber(formatNumber(maxTroopCountPerArmy, 0))}
           </div>
           <div className="text-xs mb-2">Total troops in attacking army: {Number(totalTroopsReceiver)}</div>
         </>
@@ -364,7 +364,7 @@ const TroopExchange = ({
                     className={`text-lg font-bold col-span-3 text-center ${
                       troopsGiven[Number(resourceId)] !== 0n ? `text-green` : ""
                     }`}
-                  >{`+${troopsGiven[Number(resourceId)]}`}</div>
+                  >{`+${troopsGiven[Number(resourceId)].toLocaleString()}`}</div>
                 )}
               </div>
             );

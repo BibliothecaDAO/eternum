@@ -203,12 +203,12 @@ export const ResourceSwap = ({
         <div className="amm-swap-fee-selector">
           <div className=" flex items-center justify-center space-x-2">
             <div className="flex justify-center items-center text-danger">
-              -{negativeAmount}
+              -{negativeAmount.toLocaleString()}
               <ResourceIcon resource={negativeResource} size="md" />
             </div>
             <span>→</span>
             <div className="flex items-center text-green">
-              +{positiveAmount}
+              +{positiveAmount.toLocaleString()}
               <ResourceIcon resource={positiveResource} size="md" />
             </div>
           </div>
