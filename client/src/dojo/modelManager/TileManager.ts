@@ -464,7 +464,7 @@ export class TileManager {
       if (structureType == StructureType.Hyperstructure) {
         return await this.setup.systemCalls.create_hyperstructure({
           signer: useAccountStore.getState().account!,
-          creator_entity_id: 22,
+          creator_entity_id: entityId,
           coords,
         });
       }
