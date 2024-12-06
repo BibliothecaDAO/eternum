@@ -2,7 +2,6 @@ import { usePlayerArrivalsNotificationLength } from "@/hooks/helpers/use-resourc
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useModalStore } from "@/hooks/store/useModalStore";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
@@ -56,8 +55,6 @@ export const LeftNavigationModule = () => {
   const openedPopups = useUIStore((state) => state.openedPopups);
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { toggleModal } = useModalStore();
   const { isMapView } = useQuery();
@@ -216,7 +213,7 @@ export const LeftNavigationModule = () => {
     );
 
     return isMapView ? filteredNavigation : filteredNavigation;
-  }, [view, openedPopups, selectedQuest, structureEntityId, isMapView, structureIsMine, isRealm, notificationLength]);
+  }, [view, openedPopups, structureEntityId, isMapView, structureIsMine, isRealm, notificationLength]);
 
   const slideLeft = {
     hidden: { x: "-100%" },

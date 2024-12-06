@@ -296,6 +296,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   protected onHexagonRightClick(hexCoords: HexPosition | null): void {
+    const overlay = document.querySelector(".shepherd-modal-overlay-container");
+    const overlayClick = document.querySelector(".allow-modal-click");
+    if (overlay && !overlayClick) {
+      return;
+    }
+
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0 && hexCoords) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));

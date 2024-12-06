@@ -98,6 +98,20 @@ export const pauseProductionSteps: StepOptions[] = [
     buttons: [StepButton.prev, StepButton.next],
   },
   {
+    title: "Economy Buildigns",
+    text: "Open the Economy section.",
+    attachTo: {
+      element: ".economy-building-selector",
+      on: "bottom",
+    },
+    classes: "mt-5",
+    advanceOn: {
+      selector: ".economy-building-selector",
+      event: "click",
+    },
+    buttons: [StepButton.prev],
+  },
+  {
     title: "Pause Production",
     text: "Click the pause button to stop its production and resource consumption.",
     attachTo: {
@@ -108,6 +122,9 @@ export const pauseProductionSteps: StepOptions[] = [
     advanceOn: {
       selector: ".pause-building-button-selector",
       event: "click",
+    },
+    beforeShowPromise: function () {
+      return waitForElement(".pause-building-button-selector");
     },
     buttons: [StepButton.prev],
   },

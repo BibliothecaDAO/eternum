@@ -68,8 +68,8 @@ export const createAttackArmySteps: StepOptions[] = [
       event: "click",
     },
     showOn: () => {
-      const showStep = document.querySelector(".attacking-army-selector");
-      return !Boolean(showStep);
+      const elementExists = document.querySelector(".attacking-army-selector");
+      return !elementExists;
     },
     buttons: [
       {

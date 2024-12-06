@@ -1,13 +1,21 @@
 import { StepOptions } from "shepherd.js";
 import { StepButton } from "./utils";
+import useUIStore from "@/hooks/store/useUIStore";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 
 export const travelSteps: StepOptions[] = [
   {
     title: "World View",
-    text: "Click here.",
+    text: "Click here to toggle between the world map and your Realm.",
     attachTo: {
       element: ".map-button-selector",
       on: "auto",
+    },
+    beforeShowPromise: function () {
+      useUIStore.getState().setRightNavigationView(RightView.None);
+      useUIStore.getState().setLeftNavigationView(LeftView.None);
+      return new Promise<void>((resolve) => resolve());
     },
     advanceOn: {
       selector: ".map-button-selector",
@@ -46,12 +54,13 @@ export const travelSteps: StepOptions[] = [
   },
   {
     title: "Army Controls",
-    text: "Select your army with left-click.",
+    text: "Select your army with left-click, move with right-click.",
     attachTo: {
       element: ".world-selector",
       on: "auto",
     },
-    classes: "!left-3/4 !top-1/4",
+    classes: "!left-3/4 !top-1/4 ",
+    highlightClass: "allow-modal-click",
     buttons: [
       // StepButton.finish,
       StepButton.prev,

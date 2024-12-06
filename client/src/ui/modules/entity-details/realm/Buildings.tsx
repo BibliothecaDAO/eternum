@@ -62,7 +62,7 @@ export const Buildings = ({ structure }: { structure: any }) => {
       {/* Economy Section */}
       <div className="mb-4">
         <div
-          className={clsx("flex items-center cursor-pointer mb-2", {
+          className={clsx("economy-building-selector flex items-center cursor-pointer mb-2", {
             "pointer-events-none opacity-50": !economyBuildings.length,
           })}
           onClick={() => setShowEconomy(!showEconomy)}

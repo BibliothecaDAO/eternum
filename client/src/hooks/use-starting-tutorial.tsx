@@ -13,10 +13,8 @@ export const useStartingTutorial = () => {
   const settleQuest = quests.find((quest) => quest.id === QuestType.Settle);
 
   useEffect(() => {
-    console.log({ settleQuest, showBlankOverlay });
-
     if (settleQuest?.status !== QuestStatus.Claimed && !showBlankOverlay) {
       handleStart();
     }
-  }, [settleQuest?.status, showBlankOverlay]);
+  }, [settleQuest?.status, showBlankOverlay, handleStart]);
 };
