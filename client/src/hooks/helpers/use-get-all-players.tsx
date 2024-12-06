@@ -1,11 +1,13 @@
-import { PRIZE_POOL_PLAYERS } from "@/constants";
-import { LeaderboardManager } from "@/dojo/modelManager/leaderboard/LeaderboardManager";
-import { calculateLordsShare, calculatePlayerSharePercentage } from "@/utils/leaderboard";
-import { Player, StructureType } from "@bibliothecadao/eternum";
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { Player } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
-import { useDojo } from "./context/DojoContext";
-import { useEntitiesUtils } from "./use-entities-utils";
+import { useDojo } from "../context/DojoContext";
+import { useEntitiesUtils } from "./useEntities";
+
+import { PRIZE_POOL_PLAYERS } from "@/ui/constants";
+import { calculateLordsShare, calculatePlayerSharePercentage } from "@/ui/utils/leaderboard";
+import { StructureType } from "@bibliothecadao/eternum";
 
 export const useGetAllPlayers = () => {
   const {

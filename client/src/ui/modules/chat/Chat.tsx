@@ -1,6 +1,6 @@
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
+import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -45,10 +45,10 @@ export const Chat = () => {
 
   const addTab = useChatStore((state) => state.addTab);
 
-  const getPlayers = useGetOtherPlayers();
+  const getPlayers = useGetAllPlayers();
 
   const players = useMemo(() => {
-    return getPlayers();
+    return getPlayers().filter((player) => player.address !== BigInt(account.address));
   }, []);
 
   useEffect(() => {
@@ -378,7 +378,7 @@ const ChatSelect = ({
     } else if (channel === guildKey) {
       changeTabs(undefined, guildKey, true);
     } else {
-      const player = players.find((p) => p.addressName === channel);
+      const player = players.find((p) => p.name === channel);
       if (player) {
         changeTabs(undefined, toHexString(player.address), true);
       }
@@ -386,8 +386,7 @@ const ChatSelect = ({
   };
 
   const filteredPlayers = players.filter(
-    (player) =>
-      player.addressName.toLowerCase().startsWith(searchInput.toLowerCase()) || player.addressName === selectedChannel,
+    (player) => player.name.toLowerCase().startsWith(searchInput.toLowerCase()) || player.name === selectedChannel,
   );
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -403,9 +402,9 @@ const ChatSelect = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       if (filteredPlayers.length > 0) {
-        const selectedPlayer = filteredPlayers.find((player) => player.addressName !== selectedChannel);
+        const selectedPlayer = filteredPlayers.find((player) => player.name !== selectedChannel);
         if (selectedPlayer) {
-          handleTabChange(selectedPlayer.addressName);
+          handleTabChange(selectedPlayer.name);
           setOpen(false);
         }
       }
@@ -446,8 +445,8 @@ const ChatSelect = ({
           </SelectItem>
         )}
         {filteredPlayers.map((player) => (
-          <SelectItem key={player.address} value={player.addressName} style={{ color: CHAT_COLORS.PRIVATE }}>
-            {player.addressName}
+          <SelectItem key={player.address} value={player.name} style={{ color: CHAT_COLORS.PRIVATE }}>
+            {player.name}
           </SelectItem>
         ))}
       </SelectContent>

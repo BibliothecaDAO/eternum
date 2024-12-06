@@ -1,4 +1,4 @@
-import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
+import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Questing } from "../questing/Questing";
 import { Rewards } from "../rewards/Rewards";

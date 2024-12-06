@@ -81,7 +81,7 @@ export const Social = ({ players }: { players: Player[] }) => {
 
   return (
     <ExpandableOSWindow
-      width="400px"
+      width="800px"
       widthExpanded="400px"
       onClick={() => togglePopup(social)}
       show={isOpen}
