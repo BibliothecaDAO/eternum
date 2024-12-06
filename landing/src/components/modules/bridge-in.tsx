@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { execute } from "@/hooks/gql/execute";
 import { useRealm } from "@/hooks/helpers/useRealms";
-import { GET_ERC_MINTS } from "@/hooks/query/realms";
+import { GET_ETERNUM_OWNER_REALM_IDS } from "@/hooks/query/entities";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress } from "@/lib/utils";
@@ -16,7 +16,6 @@ import { useAccount } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
-import { env } from "../../../env";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -27,7 +26,7 @@ function formatFee(fee: number) {
 }
 
 export const BridgeIn = () => {
-  const { account } = useAccount();
+  const { account, address } = useAccount();
 
   const { getRealmEntityIdFromRealmId } = useRealm();
   const { computeTravelTime } = useTravel();
@@ -82,12 +81,12 @@ export const BridgeIn = () => {
   );
 
   const { data: seasonPassMints } = useSuspenseQuery({
-    queryKey: ["ERCMints"],
-    queryFn: () => execute(GET_ERC_MINTS),
+    queryKey: ["OWNER_REALM_IDS" + address],
+    queryFn: () => execute(GET_ETERNUM_OWNER_REALM_IDS, { accountAddress: address || "" }),
     refetchInterval: 10_000,
   });
 
-  const seasonPassTokens = useMemo(
+  /*const seasonPassTokens = useMemo(
     () =>
       seasonPassMints?.tokenTransfers?.edges
         ?.filter(
@@ -104,7 +103,7 @@ export const BridgeIn = () => {
         })
         .filter((token): token is { id: number; name_: string } => token !== undefined),
     [seasonPassMints],
-  );
+  );*/
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
@@ -152,7 +151,7 @@ export const BridgeIn = () => {
   const onBridgeIntoRealm = async () => {
     if (realmEntityId) {
       const resourceAddresses = await getSeasonAddresses();
-      let tokenAddress =
+      const tokenAddress =
         resourceAddresses[selectedResourceContract.toLocaleUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
@@ -182,11 +181,13 @@ export const BridgeIn = () => {
           <SelectValue placeholder="Select Realm To Transfer" />
         </SelectTrigger>
         <SelectContent>
-          {seasonPassTokens?.map((token) => (
-            <SelectItem key={token.id} value={token.id.toString()}>
-              {token.name_} {token.id} {!getRealmEntityIdFromRealmId(token.id) && <span>(NOT IN GAME)</span>}
+          {seasonPassMints?.s0EternumOwnerModels?.edges?.map((token) => {
+            const realmId = token?.node?.entity?.models?.find((model) => model?.__typename === "s0_eternum_Realm")?.realm_id;
+            return (
+            <SelectItem key={realmId} value={realmId}>
+              {token.name_} {realmId} {!getRealmEntityIdFromRealmId(realmId) && <span>(NOT IN GAME)</span>}
             </SelectItem>
-          ))}
+          )})}
         </SelectContent>
       </Select>
 
