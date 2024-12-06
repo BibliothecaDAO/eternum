@@ -168,6 +168,7 @@ export interface CreateMultipleRealmsProps extends SystemSigner {
   owner: num.BigNumberish;
   realm_ids: num.BigNumberish[];
   frontend: num.BigNumberish;
+  season_pass_address: string;
 }
 
 export interface CreateMultipleRealmsDevProps extends SystemSigner {

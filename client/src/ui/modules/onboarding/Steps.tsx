@@ -1,57 +1,33 @@
-import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
-import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
-import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
-import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
-import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum_words_logo.svg";
-import { useAccountStore } from "@/hooks/context/accountStore";
+import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
+import { ReactComponent as CheckboxMinus } from "@/assets/icons/checkbox-minus.svg";
+import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
+import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
+import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
+
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useMintedRealms } from "@/hooks/helpers/use-minted-realms";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import { useAddressStore } from "@/hooks/store/useAddressStore";
+import { usePlayerRealms } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
-import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
-import SettleRealmComponentDev from "@/ui/components/cityview/realm/SettleRealmComponentDev";
-import { MAX_REALMS } from "@/ui/constants";
+import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/SettleRealmComponent";
 import Button from "@/ui/elements/Button";
-import ListSelect from "@/ui/elements/ListSelect";
-import TextInput from "@/ui/elements/TextInput";
-import TwitterShareButton from "@/ui/elements/TwitterShareButton";
-import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { getRealmNameById } from "@/ui/utils/realms";
-import { displayAddress, toValidAscii } from "@/ui/utils/utils";
-import { ContractAddress, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
-import { motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { shortString } from "starknet";
+import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
 
 export const ACCOUNT_CHANGE_EVENT = "addressChanged";
 
-const StepContainer = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <motion.div
-      className="flex justify-center z-50 px-4 md:px-0"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1, y: 20 }}
-      exit={{ opacity: 0 }}
-      transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
-    >
-      <div className="backdrop-blur-3xl bg-black/20 self-center rounded-lg border p-6 md:p-12 text-gold w-full md:min-w-[400px] md:max-w-[800px] min-w-[600px] overflow-hidden relative z-50 shadow-2xl border-gradient">
-        {children}
-      </div>
-    </motion.div>
-  );
-};
+import { OnboardingButton } from "@/ui/layouts/OnboardingButton";
+import { motion } from "framer-motion";
 
-export const StepOne = ({ onNext }: { onNext: () => void }) => {
+export const StepOne = () => {
   const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+
   const { handleUrlChange } = useQuery();
+
+  const realms = usePlayerRealms();
 
   const onSpectatorModeClick = () => {
     setIsLoadingScreenEnabled(true);
@@ -64,332 +40,151 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
   };
 
   return (
-    <StepContainer>
-      <div className="w-full text-center">
-        <div className="mx-auto flex mb-4 md:mb-10">
-          <EternumWordsLogo className="fill-current w-64 stroke-current mx-auto" />
-        </div>
-      </div>
-      <div className="flex flex-row justify-center space-x-8 mt-1 md:mt-1 items-center">
-        <Button
-          size="md"
-          variant="outline"
-          className="w-48 border border-gold/30 hover:border-gold/50 transition-colors h-12"
-          onClick={onSpectatorModeClick}
-        >
-          Spectate
-        </Button>
-        <Button size="md" className="w-48 !text-gold h-12" variant="secondary" onClick={onNext}>
-          Play
-        </Button>
-      </div>
-    </StepContainer>
+    <div className="flex flex-row justify-center space-x-8 mt-1 md:mt-1 items-center">
+      <OnboardingButton onClick={onSpectatorModeClick}>
+        <Eye className="w-4 fill-current mr-2" /> <div>Spectate</div>
+      </OnboardingButton>
+      <OnboardingButton
+        disabled={realms.length <= 0}
+        className={`!bg-gold border-none ${
+          realms.length <= 0 ? "opacity-40 hover:none disabled:pointer-events-none" : ""
+        }`}
+        onClick={onSpectatorModeClick}
+      >
+        <Sword className="w-6 fill-current mr-2" /> <div className="text-black">Play</div>
+      </OnboardingButton>
+    </div>
   );
 };
 
-export const Naming = ({ onNext }: { onNext: () => void }) => {
+export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
   const {
-    account: { create, isDeploying, list, select, clear },
+    account: { account },
     setup: {
-      systemCalls: { set_address_name },
+      systemCalls: { create_multiple_realms },
     },
   } = useDojo();
 
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [selectedRealms, setSelectedRealms] = useState<number[]>([]);
 
-  const [importMessage, setImportMessage] = useState<string | null>(null);
-  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
 
-  const { loading, setLoading, addressName, setAddressName } = useAddressStore();
-
-  const { getAddressName } = useRealm();
-
-  const accountAddress = useAccountStore.getState().account?.address;
-  const name = getAddressName(ContractAddress(accountAddress!));
-
-  const { playerRealms } = useEntities();
-
-  const input = useRef<string>("");
-  const [canSetName, setCanSetName] = useState(false);
-
-  // @dev: refactor this
-  useEffect(() => {
-    setAddressName(name);
-  }, [name]);
-
-  useEffect(() => {
-    if (copyMessage || importMessage) {
-      setTooltip({
-        position: "top",
-        content: (
-          <>
-            <p className="whitespace-nowrap">{copyMessage || importMessage}</p>
-          </>
-        ),
-      });
-    }
-  }, [copyMessage, importMessage]);
-
-  const numberOfMintedRealms = useMintedRealms();
-
-  const numberOfPlayerCurrentRealms = playerRealms().length;
-
-  const onSetName = async () => {
+  const settleRealms = async (realmIds: number[]) => {
     setLoading(true);
-    if (input.current) {
-      const inputNameValidAscii = toValidAscii(input.current);
-      const inputNameBigInt = shortString.encodeShortString(inputNameValidAscii);
-
-      await set_address_name({ name: inputNameBigInt, signer: useAccountStore.getState().account as any });
-      setAddressName(input.current);
+    try {
+      const res = await create_multiple_realms({
+        realm_ids: realmIds,
+        owner: account.address,
+        frontend: env.VITE_CLIENT_FEE_RECIPIENT,
+        signer: account,
+        season_pass_address: env.VITE_SEASON_PASS_ADDRESS,
+      });
+    } catch (error) {
+      console.error("Error settling realms:", error);
       setLoading(false);
     }
   };
 
-  const onCopy = () => {
-    const burners = localStorage.getItem("burners");
-    if (burners) {
-      const burner = JSON.parse(burners)[useAccountStore.getState().account?.address!];
-      navigator.clipboard.writeText(
-        JSON.stringify({
-          address: useAccountStore.getState().account?.address!,
-          privateKey: burner.privateKey,
-          publicKey: burner.publicKey,
-          active: burner.active,
-          deployTx: burner.deployTx,
-        }),
-      );
-      setCopyMessage("Account exported!");
-    } else {
-      setCopyMessage("No account to export");
-    }
-  };
+  const realms = usePlayerRealms();
 
-  const onImportAccount = () => {
-    navigator.clipboard.readText().then((text) => {
-      try {
-        const burner = JSON.parse(text);
-        const currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners") || "") : {};
-
-        if (currentBurners.hasOwnProperty(burner.address)) {
-          throw new Error("Account already imported");
-        }
-
-        // Add the new burner account
-        currentBurners[burner.address] = {
-          privateKey: burner.privateKey,
-          publicKey: burner.publicKey,
-          active: burner.active,
-          deployTx: burner.deployTx,
-        };
-
-        // Save the updated burners object back to localStorage
-        localStorage.setItem("burners", JSON.stringify(currentBurners));
-        setImportMessage("Account imported successfully!");
-      } catch (e) {
-        console.error(e);
-        setImportMessage("Invalid account");
+  useEffect(() => {
+    getUnusedSeasonPasses(account.address, realms).then((unsettledSeasonPassRealms) => {
+      if (unsettledSeasonPassRealms.length !== seasonPassRealms.length) {
+        setSeasonPassRealms(unsettledSeasonPassRealms);
+        setLoading(false);
       }
     });
-  };
+  }, [loading, realms]);
+
+  const width = "max-w-[600px] w-[40vw]";
+  const height = "max-h-[500px] h-[46vh]";
+  const size = `${width} ${height}`;
 
   return (
-    <StepContainer>
-      <div className="flex flex-col items-center p-3 relative z-50">
-        <h3 className="mb-1 md:mb-4">Select Account</h3>
-        <div className="w-full max-w-md">
-          <div className="mb-1 md:mb-4">
-            {loading ? (
-              <div className="p-2">Loading...</div>
-            ) : addressName ? (
-              <div className="p-2 text-2xl">{addressName}</div>
-            ) : (
-              <div className="flex flex-col md:flex-row w-full gap-2">
-                <TextInput
-                  className="flex-grow"
-                  placeholder="Your Name... (Max 31 characters)"
-                  maxLength={MAX_NAME_LENGTH}
-                  onChange={(value) => {
-                    input.current = value;
-                    setCanSetName(input.current.length > 0);
-                  }}
-                />
-                <Button
-                  isLoading={loading || !useAccountStore.getState().account}
-                  onClick={onSetName}
-                  variant="primary"
-                  disabled={loading || !canSetName}
+    <motion.div
+      className="flex justify-center z-50 px-4 md:px-0 flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, y: 20 }}
+      exit={{ opacity: 0 }}
+      transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
+    >
+      <div
+        className={`backdrop-blur-lg bg-black/20 self-center border-[0.5px] border-gradient rounded-lg text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${size} 
+		shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] p-8`}
+      >
+        <div className="flex flex-col gap-6 h-full max-h-full">
+          <Header onPrevious={onPrevious} />
+
+          <div className="h-62 max-h-62 overflow-y-auto no-scrollbar">
+            <div className="flex flex-row justify-between mb-4 ml-1">
+              {selectedRealms.length === 0 ? (
+                <div
+                  className="flex flex-row items-center gap-2"
+                  onClick={() => setSelectedRealms(seasonPassRealms.map((realm) => realm.realmId))}
                 >
-                  Set Name
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {env.VITE_PUBLIC_DEV === true && (
-            <div className="flex flex-col md:flex-row items-center mb-1 md:mb-4 gap-2">
-              <ListSelect
-                className="flex-grow"
-                title="Active Account: "
-                options={list().map((account) => {
-                  const addressName = getAddressName(ContractAddress(account.address));
-                  return {
-                    id: account.address,
-                    label: (
-                      <div className="w-full truncate">{`${addressName || "unknown"} (${displayAddress(
-                        account.address,
-                      )})`}</div>
-                    ),
-                  };
-                })}
-                value={useAccountStore.getState().account?.address}
-                onChange={select}
-              />
-              <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
-                {isDeploying ? "" : "Create New"}
-              </Button>
+                  <CheckboxUnchecked className="w-4 h-4 fill-current text-gold" />
+                  <div className="text-sm">{seasonPassRealms.length} Available</div>
+                </div>
+              ) : (
+                <div className="flex flex-row items-center gap-2" onClick={() => setSelectedRealms([])}>
+                  <CheckboxMinus className="w-4 h-4 fill-current text-gold" />
+                  <div className="text-sm">
+                    {selectedRealms.length} / {seasonPassRealms.length} Selected
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="flex items-center space-x-4 mt-2">
-          <Cross
-            className="cursor-pointer text-gold fill-gold stroke-gold hover:opacity-80"
-            onMouseLeave={() => {
-              setTooltip(null);
-              setCopyMessage(null);
-            }}
-            onMouseEnter={() => {
-              setTooltip({
-                position: "top",
-                content: <p className="whitespace-nowrap">Delete Accounts</p>,
-              });
-            }}
-            onClick={() => {
-              if (window.confirm("Are you sure want to delete all wallets?")) {
-                clear();
-              }
-            }}
-          />
-          <Copy
-            onClick={onCopy}
-            onMouseLeave={() => {
-              setTooltip(null);
-              setCopyMessage(null);
-            }}
-            className="cursor-pointer text-gold hover:opacity-80"
-          />
-          <Import
-            onClick={onImportAccount}
-            onMouseEnter={() => {
-              setTooltip({
-                position: "top",
-                content: <p className="whitespace-nowrap">Import Account</p>,
-              });
-            }}
-            onMouseLeave={() => {
-              setTooltip(null);
-              setImportMessage(null);
-            }}
-            className="cursor-pointer text-gold hover:opacity-80"
-          />
-        </div>
-      </div>
-
-      <div className="flex space-x-2 mt-2 mb:mt-8 justify-center">
-        {numberOfMintedRealms >= MAX_REALMS && numberOfPlayerCurrentRealms === 0 ? (
-          <div>You have been eliminated. Please try again next Season.</div>
-        ) : (
-          <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
-            Continue <ArrowRight className="w-2 fill-current ml-3" />
-          </Button>
-        )}
-      </div>
-    </StepContainer>
-  );
-};
-
-export const StepThree = ({ onNext }: { onNext: () => void }) => {
-  const { playerRealms } = useEntities();
-
-  const [settledRealmId, setSettledRealmId] = useState<number | undefined>(undefined);
-
-  const realmName = settledRealmId ? getRealmNameById(settledRealmId) : undefined;
-  const socialsText = formatSocialText(twitterTemplates.settle, {
-    realmName: realmName || "",
-    url: window.location.origin,
-  });
-
-  const mintedRealms = useMintedRealms();
-
-  const numberRealms = Math.max(mintedRealms, playerRealms().length);
-
-  return (
-    <StepContainer>
-      <div className="w-full text-center mb-4 md:mb-6">
-        <div className="mx-auto flex md:mb-2 mb-2">
-          <EternumWordsLogo className="fill-current w-64 stroke-current mx-auto" />
-        </div>
-        <div className="flex justify-center w-full">
+            <div className="grid grid-cols-2 gap-3">
+              {seasonPassRealms.map((realm) => (
+                <SeasonPassRealm
+                  key={realm.realmId}
+                  seasonPassRealm={realm}
+                  selected={selectedRealms.includes(realm.realmId)}
+                  setSelected={(selected) =>
+                    setSelectedRealms(
+                      selected
+                        ? [...selectedRealms, realm.realmId]
+                        : selectedRealms.filter((id) => id !== realm.realmId),
+                    )
+                  }
+                />
+              ))}
+            </div>
+          </div>
           <Button
-            size="xs"
-            className={`text-xs self-center mx-auto border-none ${numberRealms === 0 ? "animate-pulse" : ""}`}
-            variant="primary"
-            onClick={onNext}
+            disabled={selectedRealms.length === 0}
+            onClick={() => settleRealms(selectedRealms)}
+            className={`w-full h-12 !text-black !normal-case rounded-md ${
+              selectedRealms.length <= 0
+                ? "opacity-50 !bg-gold/50 hover:scale-100 hover:translate-y-0 cursor-not-allowed"
+                : "!bg-gold hover:!bg-gold/80"
+            }`}
           >
-            Season passes <ArrowRight className="w-2 fill-current ml-3" />
+            <div className="text-lg !font-normal">{`Settle ${
+              selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""
+            }`}</div>
           </Button>
         </div>
       </div>
-      <h4 className=" text-center">{`${numberRealms} ${
-        numberRealms === 1 ? "Realm" : "Realms"
-      } under your commandment`}</h4>
-      <div className="grid w-full justify-center items-center">
-        {settledRealmId && (
-          <TwitterShareButton
-            buttonSize="md"
-            variant="default"
-            className="mt-4 col-start-3 justify-self-start hover:text-gold"
-            text={socialsText}
-          />
-        )}
-        <div className="flex w-full justify-center mt-4">
-          <NavigateToRealm text={"begin"} disabled={numberRealms === 0} />
-        </div>
-      </div>
-    </StepContainer>
+    </motion.div>
   );
 };
 
-export const StepFour = ({ onPrevious }: { onPrevious: () => void }) => {
-  const [settledRealmId, setSettledRealmId] = useState<number | undefined>(undefined);
-
-  const realmName = settledRealmId ? getRealmNameById(settledRealmId) : undefined;
-  const socialsText = formatSocialText(twitterTemplates.settle, {
-    realmName: realmName || "",
-    url: window.location.origin,
-  });
-
+const Header = ({ onPrevious }: { onPrevious: () => void }) => {
   return (
-    <StepContainer>
-      {env.VITE_PUBLIC_DEV ? (
-        <SettleRealmComponentDev setSettledRealmId={setSettledRealmId} />
-      ) : (
-        <SettleRealmComponent setSettledRealmId={setSettledRealmId} />
-      )}
-      <div className="mt-4 grid grid-cols-3 w-full justify-center items-center">
-        {settledRealmId && (
-          <TwitterShareButton
-            buttonSize="md"
-            variant="default"
-            className="mt-4 col-start-3 justify-self-start hover:text-gold"
-            text={socialsText}
-          />
-        )}
-      </div>
-      <Button size="xs" className="relative bottom-0 left-0 border-none" variant="primary" onClick={onPrevious}>
-        Back <ArrowLeft className="w-2 fill-current ml-3" />
+    <div className="grid grid-cols-3 justify-between items-center">
+      <Button
+        className="!h-12 !w-24 !bg-gold/10 !border-none hover:scale-105 hover:-translate-y-1 !px-3 !shadow-none hover:text-gold"
+        variant="primary"
+        onClick={onPrevious}
+      >
+        <BackArrow className="w-6 h-6 mr-2 fill-current" />
+        <div className="w-14 text-base font-normal normal-case inline">Back</div>
       </Button>
-    </StepContainer>
+      <div className="text-2xl font-normal normal-case mx-auto self-center">Season Pass</div>
+      <div className="w-14"></div>
+    </div>
   );
 };
 

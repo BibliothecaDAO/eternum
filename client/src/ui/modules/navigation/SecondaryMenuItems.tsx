@@ -15,9 +15,11 @@ import { Has } from "@dojoengine/recs";
 import { ArrowUp } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { quests as questsWindow, social } from "../../components/navigation/Config";
+import { Controller } from "../controller/Controller";
 
 export const SecondaryMenuItems = () => {
   const {
+    account: { account },
     setup: {
       components: {
         events: { GameEnded },
@@ -61,7 +63,8 @@ export const SecondaryMenuItems = () => {
               image={BuildingThumbs.squire}
               label={questsWindow}
               active={isPopupOpen(questsWindow)}
-              size="lg"
+              size="sm"
+              className="border-none"
               onClick={() => togglePopup(questsWindow)}
               notification={realmSelected ? unclaimedQuestsCount : undefined}
               notificationLocation={"bottomleft"}
@@ -85,7 +88,8 @@ export const SecondaryMenuItems = () => {
             image={BuildingThumbs.guild}
             label={social}
             active={isPopupOpen(social)}
-            size="lg"
+            size="sm"
+            className="border-none"
             onClick={() => togglePopup(social)}
           />
         ),
@@ -99,7 +103,8 @@ export const SecondaryMenuItems = () => {
             image={BuildingThumbs.rewards}
             label={rewards}
             active={isPopupOpen(rewards)}
-            size="lg"
+            size="sm"
+            className="border-none"
             onClick={() => togglePopup(rewards)}
           />
         ),
@@ -109,23 +114,31 @@ export const SecondaryMenuItems = () => {
   }, [unclaimedQuestsCount, quests, structureEntityId, gameEnded]);
 
   return (
-    <div className="flex gap-1 md:gap-3">
-      <div className="self-center px-1 md:px-3 flex space-x-1 md:space-x-2 my-1">
+    <div className="flex gap-1 md:gap-4">
+      <div className="self-center px-1 md:px-3 flex space-x-4 md:space-x-4 my-4">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
-        <CircleButton image={BuildingThumbs.trophy} label={"Trophies"} size="lg" onClick={handleTrophyClick} />
+        <CircleButton
+          className="border-none"
+          image={BuildingThumbs.trophy}
+          label={"Trophies"}
+          size="sm"
+          onClick={handleTrophyClick}
+        />
         <CircleButton
           image={BuildingThumbs.question}
           label={"Hints"}
-          size="lg"
+          size="sm"
+          className="border-none"
           onClick={() => toggleModal(<HintModal />)}
         />
         <CircleButton
           tooltipLocation="bottom"
           image={BuildingThumbs.discord}
           label={"Discord"}
-          size="lg"
+          size="sm"
+          className="border-none"
           onClick={() => window.open("https://discord.gg/realmsworld")}
         />
         <CircleButton
@@ -133,9 +146,11 @@ export const SecondaryMenuItems = () => {
           active={isPopupOpen(settings)}
           image={BuildingThumbs.settings}
           label={"Support"}
-          size="lg"
+          size="sm"
+          className="border-none"
           onClick={() => togglePopup(settings)}
         />
+        <Controller />
       </div>
     </div>
   );

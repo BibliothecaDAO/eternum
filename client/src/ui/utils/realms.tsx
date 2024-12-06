@@ -52,6 +52,8 @@ export function getRealm(realmId: ID): RealmInterface | undefined {
   const orderName = orderAttribute ? orderAttribute.value.split(" ").pop() || "" : "";
   const order = orders.find(({ orderName: name }) => name === orderName)?.orderId || 0;
 
+  const imageUrl = realm.image;
+
   return {
     realmId,
     name: getRealmNameById(realmId),
@@ -63,6 +65,7 @@ export function getRealm(realmId: ID): RealmInterface | undefined {
     regions,
     wonder,
     order,
+    imageUrl,
   };
 }
 

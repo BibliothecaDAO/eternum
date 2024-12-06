@@ -1,11 +1,15 @@
+import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-checked.svg";
+import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
+
 import { useDojo } from "@/hooks/context/DojoContext";
+import { RealmInfo, usePlayerRealms } from "@/hooks/helpers/useRealm";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm } from "@/ui/utils/realms";
 import { RealmInterface, ResourcesIds } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
 
@@ -17,83 +21,37 @@ const SettleRealmComponent = ({ setSettledRealmId }: { setSettledRealmId: (id: n
     },
   } = useDojo();
 
+  const [loading, setLoading] = useState<boolean>(false);
   const [selectedRealms, setSelectedRealms] = useState<number[]>([]);
 
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
 
   const settleRealms = async (realmIds: number[]) => {
-    await create_multiple_realms({
-      realm_ids: realmIds,
-      owner: account.address,
-      frontend: "0x0",
-      signer: account,
-    });
+    setLoading(true);
+    try {
+      const res = await create_multiple_realms({
+        realm_ids: realmIds,
+        owner: account.address,
+        frontend: env.VITE_CLIENT_FEE_RECIPIENT,
+        signer: account,
+        season_pass_address: env.VITE_SEASON_PASS_ADDRESS,
+      });
+    } catch (error) {
+      console.error("Error settling realms:", error);
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    const getSeasonPasses = async () => {
-      const balances = await querySeasonPasses(account.address);
-      const seasonPassNfts = balances?.tokenBalances?.edges
-        ?.filter(
-          (token: { node: { tokenMetadata: { __typename: string; contractAddress?: string } } }) =>
-            token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
-            addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-              addAddressPadding(env.VITE_SEASON_PASS_ADDRESS ?? "0x0"),
-        )
-        .map((token: { node: { tokenMetadata: { tokenId: string } } }) => {
-          const realmsResourcesPacked = getRealm(Number(token.node.tokenMetadata.tokenId));
-          if (!realmsResourcesPacked) return undefined;
-          return {
-            ...realmsResourcesPacked,
-            resourceTypesUnpacked: unpackResources(realmsResourcesPacked.resourceTypesPacked),
-          };
-        })
-        .filter((realm: SeasonPassRealm): realm is SeasonPassRealm => Boolean(realm))
-        .sort(
-          (a: SeasonPassRealm, b: SeasonPassRealm) =>
-            Number(b.resourceTypesUnpacked.length) - Number(a.resourceTypesUnpacked.length),
-        );
-      setSeasonPassRealms(seasonPassNfts);
-    };
-    getSeasonPasses();
-  }, []);
+  const realms = usePlayerRealms();
 
-  const seasonPassElements = useMemo(() => {
-    let realms = [];
-    for (let i = 0; i < seasonPassRealms.length; i += 2) {
-      realms.push(
-        <div className={`grid grid-rows-2 gap-4 mr-4`}>
-          <SeasonPassRealm
-            seasonPassRealm={seasonPassRealms[i]}
-            selected={selectedRealms.includes(seasonPassRealms[i].realmId)}
-            setSelected={(selected) =>
-              setSelectedRealms(
-                selected
-                  ? [...selectedRealms, seasonPassRealms[i].realmId]
-                  : selectedRealms.filter((id) => id !== seasonPassRealms[i].realmId),
-              )
-            }
-            className={`row-start-1`}
-          />
-          {seasonPassRealms[i + 1] && (
-            <SeasonPassRealm
-              seasonPassRealm={seasonPassRealms[i + 1]}
-              selected={selectedRealms.includes(seasonPassRealms[i + 1].realmId)}
-              setSelected={(selected) =>
-                setSelectedRealms(
-                  selected
-                    ? [...selectedRealms, seasonPassRealms[i + 1].realmId]
-                    : selectedRealms.filter((id) => id !== seasonPassRealms[i + 1].realmId),
-                )
-              }
-              className={`row-start-2`}
-            />
-          )}
-        </div>,
-      );
-    }
-    return realms;
-  }, [seasonPassRealms, selectedRealms, setSelectedRealms]);
+  useEffect(() => {
+    getUnusedSeasonPasses(account.address, realms).then((unsettledSeasonPassRealms) => {
+      if (unsettledSeasonPassRealms.length !== seasonPassRealms.length) {
+        setSeasonPassRealms(unsettledSeasonPassRealms);
+        setLoading(false);
+      }
+    });
+  }, [loading, realms]);
 
   return (
     <div className="flex flex-col h-min">
@@ -111,10 +69,24 @@ const SettleRealmComponent = ({ setSettledRealmId }: { setSettledRealmId: (id: n
             {selectedRealms.length > 0 ? "unselect all" : "select all"}
           </Button>
         </div>
-        <div className="flex flex-row overflow-y-auto no-scrollbar">{seasonPassElements}</div>
+        <div className="flex flex-col gap-2 overflow-x-auto no-scrollbar min-h-[25vh] max-h-[35vh]">
+          {seasonPassRealms.map((realm) => (
+            <SeasonPassRealm
+              key={realm.realmId}
+              seasonPassRealm={realm}
+              selected={selectedRealms.includes(realm.realmId)}
+              setSelected={(selected) =>
+                setSelectedRealms(
+                  selected ? [...selectedRealms, realm.realmId] : selectedRealms.filter((id) => id !== realm.realmId),
+                )
+              }
+              className={`col-start-1`}
+            />
+          ))}
+        </div>
         <div className="flex flex-row justify-center">
-          <Button className="text-xxs" variant="primary" size="xs" onClick={() => settleRealms(selectedRealms)}>
-            settle
+          <Button variant="primary" size="md" disabled={loading} onClick={() => settleRealms(selectedRealms)}>
+            {loading ? <img src="/images/eternum-logo_animated.png" className="invert w-6 h-4" /> : "settle"}
           </Button>
         </div>
       </div>
@@ -175,11 +147,11 @@ const querySeasonPasses = async (accountAddress: string) => {
   }
 };
 
-type SeasonPassRealm = RealmInterface & {
+export type SeasonPassRealm = RealmInterface & {
   resourceTypesUnpacked: number[];
 };
 
-const SeasonPassRealm = ({
+export const SeasonPassRealm = ({
   seasonPassRealm,
   selected,
   setSelected,
@@ -192,28 +164,107 @@ const SeasonPassRealm = ({
 }) => {
   const resourcesProduced = seasonPassRealm.resourceTypesUnpacked;
 
-  console.log(seasonPassRealm.realmId, selected);
   return (
     <div
       key={seasonPassRealm.realmId}
-      className={`flex flex-col justify-between gap-2 border-4 p-2 rounded-md ${
-        selected ? "border-gold bg-gold/30" : "border-gold/10"
-      } min-h-[10vh] max-h-[10vh] min-w-[15.8vw] max-w-[15.8vw] ${className}`}
+      className={`flex flex-col gap-2 p-2 rounded-md bg-gold/10 transition-colors duration-200 border border-2 ${
+        selected ? "border-gold bg-gold/30" : "border-transparent"
+      } ${className} hover:border-gold`}
       onClick={() => setSelected(!selected)}
     >
-      <div className="flex flex-col">{seasonPassRealm.name}</div>
-      <div className="flex flex-col text-xs font-bold truncate">
-        <div className={`flex flex-row items-center border-1 rounded-md p-2 border-gold/10`}>
-          <div className={`text-gold text-xs`}>
-            <div className={`font-semibold mb-2 text-xxs`}>Produces</div>
-            <div className="flex flex-row flex-wrap mb-4">
-              {resourcesProduced.map((resourceId) => (
-                <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" key={resourceId} withTooltip={false} />
-              ))}
-            </div>
-          </div>
+      <div className="flex flex-row items-center gap-2">
+        <div className="flex items-center">
+          {selected ? (
+            <CheckboxChecked className="w-5 h-5 fill-current text-gold" />
+          ) : (
+            <CheckboxUnchecked className="w-5 h-5 fill-current text-gold" />
+          )}
         </div>
+        <div className="align-bottom">{seasonPassRealm.name}</div>
+      </div>
+      <div className="grid grid-cols-7 gap-[1px] z-10 align-bottom items-end -ml-[0.2vw]">
+        {resourcesProduced.map((resourceId) => (
+          <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" key={resourceId} withTooltip={false} />
+        ))}
       </div>
     </div>
   );
+};
+
+export const getUnusedSeasonPasses = async (accountAddress: string, realms: RealmInfo[]) => {
+  const balances = await querySeasonPasses(accountAddress);
+  //   let balances: any = {
+  //     tokenBalances: {
+  //       edges: [
+  //         {
+  //           node: {
+  //             tokenMetadata: {
+  //               tokenId: "1",
+  //               __typename: "ERC721__Token",
+  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
+  //             },
+  //           },
+  //         },
+  //         {
+  //           node: {
+  //             tokenMetadata: {
+  //               tokenId: "2",
+  //               __typename: "ERC721__Token",
+  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
+  //             },
+  //           },
+  //         },
+  //         {
+  //           node: {
+  //             tokenMetadata: {
+  //               tokenId: "3",
+  //               __typename: "ERC721__Token",
+  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
+  //             },
+  //           },
+  //         },
+  //         {
+  //           node: {
+  //             tokenMetadata: {
+  //               tokenId: "4",
+  //               __typename: "ERC721__Token",
+  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
+  //             },
+  //           },
+  //         },
+  //         {
+  //           node: {
+  //             tokenMetadata: {
+  //               tokenId: "5",
+  //               __typename: "ERC721__Token",
+  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
+  //             },
+  //           },
+  //         },
+  //       ],
+  //     },
+  //   };
+  return balances?.tokenBalances?.edges
+    ?.filter(
+      (token: { node: { tokenMetadata: { __typename: string; contractAddress?: string } } }) =>
+        token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
+        addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
+          addAddressPadding(env.VITE_SEASON_PASS_ADDRESS ?? "0x0"),
+    )
+    .map((token: { node: { tokenMetadata: { tokenId: string } } }) => {
+      const realmsResourcesPacked = getRealm(Number(token.node.tokenMetadata.tokenId));
+      if (!realmsResourcesPacked) return undefined;
+      return {
+        ...realmsResourcesPacked,
+        resourceTypesUnpacked: unpackResources(realmsResourcesPacked.resourceTypesPacked),
+      };
+    })
+    .filter(
+      (realm: SeasonPassRealm): realm is SeasonPassRealm =>
+        realm !== undefined && realms.every((r) => r.realmId !== Number(realm.realmId)),
+    )
+    .sort(
+      (a: SeasonPassRealm, b: SeasonPassRealm) =>
+        Number(b.resourceTypesUnpacked.length) - Number(a.resourceTypesUnpacked.length),
+    );
 };
