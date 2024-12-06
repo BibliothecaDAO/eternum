@@ -4,6 +4,7 @@ import { QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
+import { HintModal } from "@/ui/components/hints/HintModal";
 import { rewards, settings } from "@/ui/components/navigation/Config";
 import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/elements/Button";
@@ -14,7 +15,6 @@ import { Has } from "@dojoengine/recs";
 import clsx from "clsx";
 import { useCallback, useMemo, useState } from "react";
 import { social } from "../../components/navigation/Config";
-import { Rewards } from "../rewards/Rewards";
 
 export const SecondaryMenuItems = () => {
   const {
@@ -180,9 +180,9 @@ export const SecondaryMenuItems = () => {
         <CircleButton
           className="hints-selector"
           image={BuildingThumbs.question}
-          label={"Rewards"}
+          label={"Lordpedia"}
           size="lg"
-          onClick={() => toggleModal(<Rewards />)}
+          onClick={() => toggleModal(<HintModal />)}
         />
         <CircleButton
           className="discord-selector"
