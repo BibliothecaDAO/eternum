@@ -11,7 +11,7 @@ import { getUnusedSeasonPasses, SeasonPassRealm } from "../components/cityview/r
 import { Controller } from "../modules/controller/Controller";
 import { SettleRealm, StepOne } from "../modules/onboarding/Steps";
 
-export const OnboardingOverlay = () => {
+export const OnboardingOverlay = ({ controller }: { controller?: boolean }) => {
   return (
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
       <Button
@@ -32,10 +32,12 @@ export const OnboardingOverlay = () => {
           Mint Season Pass
         </a>
       </Button>
-      <Controller
-        className="!text-black !h-10 w-24 normal-case font-normal  !bg-[#FCB843]  "
-        iconClassName="!fill-black"
-      />
+      {controller && (
+        <Controller
+          className="!text-black !h-10 w-24 normal-case font-normal  !bg-[#FCB843]  "
+          iconClassName="!fill-black"
+        />
+      )}
     </div>
   );
 };
@@ -43,9 +45,13 @@ export const OnboardingOverlay = () => {
 export const StepContainer = ({
   children,
   bottomChildren,
+  tos = true,
+  transition = true,
 }: {
   children: React.ReactNode;
   bottomChildren?: React.ReactNode;
+  tos?: boolean;
+  transition?: boolean;
 }) => {
   const width = "max-w-[456px] w-[33vw]";
   const height = "max-h-[316px] h-[33vh]";
@@ -53,10 +59,10 @@ export const StepContainer = ({
   return (
     <motion.div
       className="flex justify-center z-50 px-4 md:px-0 flex-col"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1, y: 20 }}
-      exit={{ opacity: 0 }}
-      transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
+      initial={transition ? { opacity: 0 } : undefined}
+      animate={transition ? { opacity: 1, y: 20 } : undefined}
+      exit={transition ? { opacity: 0 } : undefined}
+      transition={transition ? { type: "ease-in-out", stiffness: 3, duration: 0.2 } : undefined}
     >
       <div className="">
         <div
@@ -72,17 +78,19 @@ export const StepContainer = ({
         </div>
       </div>
 
-      <div className="mt-4">
-        <div className={`relative ${width}`}>
-          <div className="w-full flex justify-center">
-            <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
-            <p className="text-xs text-center align-bottom my-auto">
-              By continuing you are agreeing to Eternum's <div className="inline underline">Terms of Service</div>
-            </p>
+      {tos && (
+        <div className="mt-4">
+          <div className={`relative ${width}`}>
+            <div className="w-full flex justify-center">
+              <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
+              <p className="text-xs text-center align-bottom my-auto">
+                By continuing you are agreeing to Eternum's <span className="inline underline">Terms of Service</span>
+              </p>
+            </div>
+            {bottomChildren && bottomChildren}
           </div>
-          {bottomChildren && bottomChildren}
         </div>
-      </div>
+      )}
     </motion.div>
   );
 };
@@ -90,9 +98,11 @@ export const StepContainer = ({
 export const OnboardingContainer = ({
   children,
   backgroundImage,
+  controller = true,
 }: {
   children: React.ReactNode;
   backgroundImage: string;
+  controller?: boolean;
 }) => {
   return (
     <div className="relative min-h-screen w-full pointer-events-auto ">
@@ -102,7 +112,7 @@ export const OnboardingContainer = ({
         alt="Cover"
       />
       <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
-        <OnboardingOverlay />
+        {<OnboardingOverlay controller={controller} />}
         {children}
       </div>
     </div>

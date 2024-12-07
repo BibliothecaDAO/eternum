@@ -1,31 +1,31 @@
 import { useEffect, useState } from "react";
 import "../../index.css";
-import { BuildingThumbs } from "../config";
-import CircleButton from "../elements/CircleButton";
+import { OnboardingContainer, StepContainer } from "../layouts/Onboarding";
 
 export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) => {
   const statements = [
-    "Syncing Eternum...",
-    "Gathering Dragonhide...",
-    "Stepping the world...",
-    "Painting the Sky...",
-    "Crafting Stories...",
-    "Harvesting Wood...",
-    "Cooking Donkeys...",
-    "Preparing Surprises...",
-    "Forging Adamantine...",
-    "Summoning Paladins...",
-    "Enchanting Hartwood...",
-    "Mining Deep Crystal...",
-    "Cultivating Wheat Fields...",
-    "Smelting Cold Iron...",
-    "Training Crossbowmen...",
-    "Extracting Ethereal Silica...",
-    "Polishing Twilight Quartz...",
-    "Awakening Ancient Spirits...",
+    "Syncing Eternum",
+    "Gathering Dragonhide",
+    "Stepping the world",
+    "Painting the Sky",
+    "Crafting Stories",
+    "Harvesting Wood",
+    "Cooking Donkeys",
+    "Preparing Surprises",
+    "Forging Adamantine",
+    "Summoning Paladins",
+    "Enchanting Hartwood",
+    "Mining Deep Crystal",
+    "Cultivating Wheat Fields",
+    "Smelting Cold Iron",
+    "Training Crossbowmen",
+    "Extracting Ethereal Silica",
+    "Polishing Twilight Quartz",
+    "Awakening Ancient Spirits",
   ];
 
   const [currentStatement, setCurrentStatement] = useState(0);
+  const [dots, setDots] = useState(0);
 
   useEffect(() => {
     // Get current timestamp in minutes
@@ -35,33 +35,33 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
     const statementIndex = timestamp % statements.length;
     setCurrentStatement(statementIndex);
 
-    // Update statement every minute
-    const interval = setInterval(() => {
+    // Dot animation interval
+    const dotInterval = setInterval(() => {
+      setDots((prevDots) => (prevDots + 1) % 4);
+    }, 1000);
+
+    // Statement update interval
+    const statementInterval = setInterval(() => {
       const newTimestamp = Math.floor(Date.now() / (1000 * 60));
       setCurrentStatement(newTimestamp % statements.length);
     }, 60000); // Check every minute
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(dotInterval);
+      clearInterval(statementInterval);
+    };
   }, []);
 
+  const renderStatementWithDots = () => {
+    const dotString = dots > 0 ? ".".repeat(dots) : "";
+    return `${statements[currentStatement]}${dotString}`;
+  };
+
   return (
-    <div className="relative h-screen w-screen bg-brown">
-      <img className="absolute h-screen w-screen object-cover" src={`/images/covers/${backgroundImage}.png`} alt="" />
-      <div className="absolute bg-black/20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center rounded-xl p-10 border border-gradient min-w-96 backdrop-blur-3xl overflow-hidden">
-        <div className="p-4 text-center">
-          New Season is Coming soon... <br /> Agents and Lords working together world building.
-        </div>
-        <div className="flex justify-center hover:scale-105 transition-all duration-300 hover:-translate-y-1">
-          <CircleButton
-            tooltipLocation="bottom"
-            image={BuildingThumbs.discord}
-            label={"Discord"}
-            size="lg"
-            className="bg-black/0 border-none"
-            onClick={() => window.open("https://discord.gg/realmsworld")}
-          />
-        </div>
-      </div>
-    </div>
+    <OnboardingContainer backgroundImage={backgroundImage} controller={false}>
+      <StepContainer tos={false} transition={false}>
+        <div className="p-4 text-center">{renderStatementWithDots()}</div>
+      </StepContainer>
+    </OnboardingContainer>
   );
 };

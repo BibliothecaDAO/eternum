@@ -187,7 +187,6 @@ const DojoContextProvider = ({
       console.error("Failed to connect wallet:", error);
     }
   };
-  console.log("Retries:", retries);
 
   const onSpectatorModeClick = () => {
     setSpectatorMode(true);

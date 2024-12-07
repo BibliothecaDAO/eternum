@@ -39,6 +39,20 @@ export const StepOne = () => {
     }, 250);
   };
 
+  const playUrl = useMemo(() => {
+    if (realms.length <= 0) {
+      return;
+    }
+    return new Position(realms[0]?.position).toHexLocationUrl();
+  }, [realms]);
+
+  const onPlayModeClick = () => {
+    setIsLoadingScreenEnabled(true);
+    showBlankOverlay(false);
+    handleUrlChange(playUrl!);
+    window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+  };
+
   return (
     <div className="flex flex-row justify-center space-x-8 mt-1 md:mt-1 items-center">
       <OnboardingButton onClick={onSpectatorModeClick}>
@@ -49,7 +63,7 @@ export const StepOne = () => {
         className={`!bg-gold border-none ${
           realms.length <= 0 ? "opacity-40 hover:none disabled:pointer-events-none" : ""
         }`}
-        onClick={onSpectatorModeClick}
+        onClick={onPlayModeClick}
       >
         <Sword className="w-6 fill-current mr-2" /> <div className="text-black">Play</div>
       </OnboardingButton>
