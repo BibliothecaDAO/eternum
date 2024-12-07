@@ -28,6 +28,7 @@ pub struct Hyperstructure {
     last_updated_by: ContractAddress,
     last_updated_timestamp: u64,
     access: Access,
+    randomness: felt252,
 }
 
 #[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked)]

@@ -81,8 +81,9 @@ pub struct HyperstructureResourceConfig {
     #[key]
     config_id: ID,
     #[key]
-    resource_type: u8,
-    amount_for_completion: u128,
+    resource_tier: u8,
+    min_amount: u128,
+    max_amount: u128,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -692,8 +693,16 @@ impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
 
 #[generate_trait]
 impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
-    fn get(world: WorldStorage, resource_id: u8) -> HyperstructureResourceConfig {
-        world.read_model((HYPERSTRUCTURE_CONFIG_ID, resource_id))
+    fn get_required_amount(world: WorldStorage, resource_tier: u8, randomness: u256) -> u128 {
+        let hyperstructure_resource_config: HyperstructureResourceConfig = world
+            .read_model((HYPERSTRUCTURE_CONFIG_ID, resource_tier));
+        if hyperstructure_resource_config.min_amount == hyperstructure_resource_config.max_amount {
+            return hyperstructure_resource_config.min_amount;
+        }
+        let min_amount_for_completion: u256 = hyperstructure_resource_config.min_amount.into();
+        let max_amount: u256 = hyperstructure_resource_config.max_amount.into();
+        let additional_amount = randomness % (max_amount - min_amount_for_completion);
+        return (min_amount_for_completion + additional_amount).try_into().unwrap();
     }
 }
 
