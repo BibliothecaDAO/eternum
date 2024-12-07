@@ -208,11 +208,11 @@ const DojoContextProvider = ({
       const username = await (connector as ControllerConnector)?.username();
       if (!username) return;
 
-      //   value.systemCalls.set_address_name({
-      //     signer: controllerAccount!,
-      //     name: username,
-      //   });
-      //   setAddressName(username);
+      value.systemCalls.set_address_name({
+        signer: controllerAccount!,
+        name: username,
+      });
+      setAddressName(username);
     };
 
     if (isDev) {

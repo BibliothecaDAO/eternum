@@ -225,7 +225,7 @@ export const SecondaryMenuItems = () => {
 
   return (
     <div className="flex gap-1 md:gap-4">
-      <div className="top-right-navigation-selector self-center px-1 md:px-3 flex space-x-4 md:space-x-4 my-4">
+      <div className="top-right-navigation-selector self-center px-1 md:px-3 flex space-x-4 md:space-x-4 mt-2">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}

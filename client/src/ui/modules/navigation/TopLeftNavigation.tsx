@@ -39,7 +39,7 @@ const structureIcons: Record<string, JSX.Element> = {
 const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: number }) => {
   const capacity = kgToGram(storehouseCapacity);
   return (
-    <div className="text-xs text-gray-200 p-2 max-w-xs">
+    <div className="text-xs text-gray-200 p-1 max-w-xs">
       <p className="font-semibold">Max Storage Capacity ({storehouseCapacity.toLocaleString()} kg)</p>
       <div className="grid grid-cols-2 gap-x-4 my-1">
         <ul className="list-none">
@@ -79,7 +79,7 @@ const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: 
 const WorkersHutTooltipContent = () => {
   const capacity = configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity;
   return (
-    <div className="text-xs text-gray-200 p-2 max-w-xs">
+    <div className="text-xs text-gray-200 p-1 max-w-xs">
       <p className="font-semibold">Population Capacity</p>
       <ul className="list-disc list-inside my-1">
         <li>{configManager.getBasePopulationCapacity()} Base Capacity</li>
@@ -190,7 +190,7 @@ export const TopLeftNavigation = () => {
         initial="hidden"
         animate="visible"
       >
-        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold justify-center border text-center rounded-b-xl bg-brown border-gold/10 relative">
+        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold justify-center border text-center rounded-b-lg bg-brown border-gold/30 relative">
           <div className="structure-name-selector self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -241,7 +241,7 @@ export const TopLeftNavigation = () => {
             )}
           </div>
         </div>
-        <div className="storage-selector bg-brown/90 rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
+        <div className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -282,7 +282,7 @@ export const TopLeftNavigation = () => {
             </div>
           </div>
         </div>
-        <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-xl text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-2 md:px-4 relative">
+        <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30">
           <div className="cycle-selector flex justify-center md:justify-start">
             <TickProgress />
           </div>
