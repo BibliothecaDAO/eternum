@@ -34,22 +34,46 @@ export const QuestsMenu = () => {
     (quest: any) => quest.status === QuestStatus.InProgress || quest.status === QuestStatus.Completed,
   );
 
-  const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestType.Settle), true);
+  const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestType.Settle));
 
   const [isLoading, setIsLoading] = useState(false);
   const [skipQuest, setSkipQuest] = useState(false);
 
-  const handleAllClaims = async () => {
+  const handleClaimQuest = async () => {
     setSkipQuest(false);
     setIsLoading(true);
     try {
       await claim_quest({
         signer: account,
         quest_ids: currentQuest?.prizes.map((prize) => BigInt(prize.id)) || [],
-        receiver_id: structureEntityId || 0,
+        receiver_id: structureEntityId,
       });
+
+      if (currentQuest?.id === QuestType.CreateTrade) {
+        localStorage.setItem("tutorial", "completed");
+      }
     } catch (error) {
       console.error(`Failed to claim resources for quest ${currentQuest?.name}:`, error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClaimAllQuests = async () => {
+    const unclaimedQuests = quests?.filter((quest: any) => quest.status !== QuestStatus.Claimed);
+
+    setSkipQuest(false);
+    setIsLoading(true);
+    try {
+      await claim_quest({
+        signer: account,
+        quest_ids: unclaimedQuests.flatMap((quest) => quest.prizes.map((prize) => BigInt(prize.id))),
+        receiver_id: structureEntityId,
+      });
+
+      localStorage.setItem("tutorial", "completed");
+    } catch (error) {
+      console.error(`Failed to claim resources for quests:`, error);
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +92,7 @@ export const QuestsMenu = () => {
                 currentQuest?.status === QuestStatus.Completed,
             },
           )}
-          onClick={handleAllClaims}
+          onClick={handleClaimQuest}
           disabled={currentQuest?.status !== QuestStatus.Completed}
         >
           Claim
@@ -87,17 +111,14 @@ export const QuestsMenu = () => {
               currentQuest?.status !== QuestStatus.Completed,
           })}
         >
-          {/* <span className="font-semibold">Current Quest</span> */}
           <span className="font-semibold">{currentQuest?.name}</span>
           <div
             className={clsx(
               "absolute animate-bounce rounded-full border border-green/30 bg-green/90 text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold -top-1 -right-1",
-              // notificationPositions[notificationLocation],
             )}
           >
             {unclaimedQuestsCount}
           </div>
-          {/* <span className="text-xs ml-2">({unclaimedQuestsCount} remaining)</span> */}
         </Button>
 
         <div className="h-full flex items-center">
@@ -108,7 +129,14 @@ export const QuestsMenu = () => {
           <div className="flex flex-row gap-4">
             <Button
               className="text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize"
-              onClick={handleAllClaims}
+              onClick={handleClaimAllQuests}
+              variant="red"
+            >
+              Skip All Quests
+            </Button>
+            <Button
+              className="text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize"
+              onClick={handleClaimQuest}
               variant="red"
             >
               Confirm

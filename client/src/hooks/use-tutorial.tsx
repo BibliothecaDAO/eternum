@@ -22,19 +22,19 @@ export const questSteps = new Map<QuestType, StepOptions[]>([
   [QuestType.CreateTrade, createTradeSteps],
 ]);
 
-export const useTutorial = (steps: StepOptions[] | undefined, canExit: boolean) => {
+export const useTutorial = (steps: StepOptions[] | undefined) => {
   const shepherd = useShepherd();
   const tour = useMemo(
     () =>
       new shepherd.Tour({
         useModalOverlay: true,
 
-        exitOnEsc: canExit,
+        exitOnEsc: true,
 
         keyboardNavigation: false,
         defaultStepOptions: {
           arrow: true,
-          cancelIcon: { enabled: canExit },
+          cancelIcon: { enabled: true },
         },
         steps,
       }),
