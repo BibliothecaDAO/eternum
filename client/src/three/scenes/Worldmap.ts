@@ -39,7 +39,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private totalStructures: number = 0;
 
-  private currentChunk: string = "null";
+  private currentChunk: string = "0,0";
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
@@ -83,8 +83,10 @@ export default class WorldmapScene extends HexagonScene {
       (structure) => {
         if (structure) {
           this.structurePreview?.setPreviewStructure(structure as any);
+          this.highlightHexManager.highlightHexes(this.getBuildableHexesForCurrentChunk());
         } else {
           this.structurePreview?.clearPreviewStructure();
+          this.highlightHexManager.highlightHexes([]);
         }
       },
     );
@@ -112,20 +114,15 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
     this.systemManager.Structure.onUpdate((value) => {
+      if (this.structureManager.structures.removeStructure(99999999)) {
+        this.structureManager.structureHexCoords.get(value.hexCoords.col)?.delete(value.hexCoords.row);
+        this.structureManager.updateChunk(this.currentChunk);
+      }
       this.structureManager.onUpdate(value);
-      if (this.totalStructures !== this.structureManager.totalStructures) {
-        const { col, row } = value.hexCoords;
-        const { chunkX, chunkZ } = this.worldToChunkCoordinates(
-          getWorldPositionForHex({ col: col - FELT_CENTER, row: row - FELT_CENTER }).x,
-          getWorldPositionForHex({ col: col - FELT_CENTER, row: row - FELT_CENTER }).z,
-        );
-        const startRow = chunkZ * this.chunkSize;
-        const startCol = chunkX * this.chunkSize;
-
-        this.totalStructures = this.structureManager.totalStructures;
-
-        this.removeCachedMatricesAroundColRow(startCol, startRow);
-        this.updateVisibleChunks();
+      if (this.totalStructures !== this.structureManager.getTotalStructures()) {
+        this.totalStructures = this.structureManager.getTotalStructures();
+        this.clearCache();
+        this.updateVisibleChunks(true);
       }
     });
 
@@ -181,7 +178,7 @@ export default class WorldmapScene extends HexagonScene {
   public moveCameraToURLLocation() {
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
-    if (col && row) {
+    if (col !== undefined && row !== undefined) {
       this.moveCameraToColRow(col, row, 0);
     }
   }
@@ -210,6 +207,7 @@ export default class WorldmapScene extends HexagonScene {
       }
       this.state.updateHoveredHex(hexCoords);
     }
+
     this.structurePreview?.setStructurePosition(getWorldPositionForHex(hexCoords));
 
     if (!this._canBuildStructure(hexCoords)) {
@@ -241,20 +239,20 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private _canBuildStructure(hexCoords: HexPosition) {
-    const contractPos = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-
     const isStructure = this.structureManager.structureHexCoords.get(hexCoords.col)?.has(hexCoords.row) || false;
     const isExplored = this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) || false;
 
-    const biomeType = this.biome.getBiome(contractPos.x, contractPos.y);
-    const isOcean = biomeType === BiomeType.Ocean || biomeType === BiomeType.DeepOcean;
-
-    return !isStructure && isExplored && !isOcean;
+    return !isStructure && isExplored;
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {}
 
   protected onHexagonClick(hexCoords: HexPosition | null) {
+    const overlay = document.querySelector(".shepherd-modal-overlay-container");
+    const overlayClick = document.querySelector(".allow-modal-click");
+    if (overlay && !overlayClick) {
+      return;
+    }
     if (!hexCoords) return;
 
     const buildingType = this.structurePreview?.getPreviewStructure();
@@ -271,7 +269,16 @@ export default class WorldmapScene extends HexagonScene {
     if (!buildingType) return;
 
     const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    this.tileManager.placeStructure(this.structureEntityId, buildingType.type, contractHexPosition);
+
+    this.clearCache();
+    this.totalStructures = this.structureManager.getTotalStructures() + 1;
+
+    this.tileManager.placeStructure(this.structureEntityId, buildingType.type, contractHexPosition).catch(() => {
+      this.structureManager.structures.removeStructureFromPosition(hexCoords);
+      this.structureManager.structureHexCoords.get(hexCoords.col)?.delete(hexCoords.row);
+      this.clearCache();
+      this.updateVisibleChunks(true);
+    });
     this.clearEntitySelection();
   }
 
@@ -291,6 +298,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   protected onHexagonRightClick(hexCoords: HexPosition | null): void {
+    const overlay = document.querySelector(".shepherd-modal-overlay-container");
+    const overlayClick = document.querySelector(".allow-modal-click");
+    if (overlay && !overlayClick) {
+      return;
+    }
+
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0 && hexCoords) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
@@ -443,11 +456,13 @@ export default class WorldmapScene extends HexagonScene {
 
       this.interactiveHexManager.renderHexes();
     }
-
-    this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
+    if (this.currentChunk !== "0,0") {
+      this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
+    }
   }
 
   removeCachedMatricesAroundColRow(col: number, row: number) {
+    console.log("removing cache", col, row);
     for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
       for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
         if (i === 0 && j === 0) {
@@ -456,6 +471,10 @@ export default class WorldmapScene extends HexagonScene {
         this.removeCachedMatricesForChunk(row + i, col + j);
       }
     }
+  }
+
+  clearCache() {
+    this.cachedMatrices.clear();
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, rows: number, cols: number) {
@@ -551,6 +570,7 @@ export default class WorldmapScene extends HexagonScene {
         dummy.position.copy(pos);
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+
         const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
         if (isStructure || isBattle) {
@@ -613,6 +633,37 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
+  private getExploredHexesForCurrentChunk() {
+    const chunkKey = this.currentChunk.split(",");
+    const startRow = parseInt(chunkKey[0]);
+    const startCol = parseInt(chunkKey[1]);
+    const exploredHexes: HexPosition[] = [];
+    for (
+      let row = startRow - this.renderChunkSize.height / 2;
+      row <= startRow + this.renderChunkSize.height / 2;
+      row++
+    ) {
+      for (
+        let col = startCol - this.renderChunkSize.width / 2;
+        col <= startCol + this.renderChunkSize.width / 2;
+        col++
+      ) {
+        if (this.exploredTiles.get(col)?.has(row)) {
+          exploredHexes.push({ col, row });
+        }
+      }
+    }
+    return exploredHexes;
+  }
+
+  private getBuildableHexesForCurrentChunk() {
+    const exploredHexes = this.getExploredHexesForCurrentChunk();
+    const buildableHexes = exploredHexes.filter(
+      (hex) => !this.structureManager.structureHexCoords.get(hex.col)?.has(hex.row),
+    );
+    return buildableHexes;
+  }
+
   private cacheMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     for (const [biome, model] of this.biomeModels) {
@@ -648,10 +699,10 @@ export default class WorldmapScene extends HexagonScene {
     return { chunkX, chunkZ };
   }
 
-  updateVisibleChunks() {
+  updateVisibleChunks(force: boolean = false) {
     const cameraPosition = new THREE.Vector3();
     cameraPosition.copy(this.controls.target);
-
+    const { selectedEntityId } = this.state.armyActions;
     // Adjust the camera position to load chunks earlier in both directions
     const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
     const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;
@@ -660,12 +711,19 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = chunkX * this.chunkSize;
     const startRow = chunkZ * this.chunkSize;
     const chunkKey = `${startRow},${startCol}`;
-    if (this.currentChunk !== chunkKey) {
+    if (this.currentChunk !== chunkKey || force) {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
+    }
+    if (!selectedEntityId) {
+      if (this.structurePreview?.getPreviewStructure()) {
+        this.highlightHexManager.highlightHexes(this.getBuildableHexesForCurrentChunk());
+      } else {
+        this.highlightHexManager.highlightHexes([]);
+      }
     }
   }
 

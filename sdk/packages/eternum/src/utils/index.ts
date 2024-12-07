@@ -15,6 +15,7 @@ import {
 
 import { ResourceInputs, ResourceOutputs } from "../types";
 export * from "./battleSimulation";
+export * from "./leaderboard";
 
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
   let multipliedCosts: ResourceOutputs = {};

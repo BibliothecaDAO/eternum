@@ -1,4 +1,5 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -10,6 +11,7 @@ import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LeftView } from "../navigation/LeftNavigationModule";
 import { RealmDetails } from "./realm/RealmDetails";
@@ -106,8 +108,26 @@ export const BuildingEntityDetails = () => {
     }
     setLeftNavigationView(LeftView.None);
   }, [selectedBuildingHex, buildingState]);
+
+  const canDestroyBuilding = useMemo(() => {
+    if (buildingState.buildingType !== BuildingType.WorkersHut) return true;
+
+    const realmId = getComponentValue(
+      dojo.setup.components.EntityOwner,
+      getEntityIdFromKeys([BigInt(structureEntityId)]),
+    );
+
+    const populationImpact = configManager.getBuildingPopConfig(buildingState.buildingType).capacity;
+
+    const population = getComponentValue(
+      dojo.setup.components.Population,
+      getEntityIdFromKeys([BigInt(realmId?.entity_owner_id || 0)]),
+    );
+    return (population?.capacity || 0) - (population?.population || 0) >= populationImpact;
+  }, [buildingState.buildingType, buildingState.ownerEntityId]);
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="building-entity-details-selector flex flex-col h-full">
       {isCastleSelected ? (
         <RealmDetails />
       ) : (
@@ -141,7 +161,13 @@ export const BuildingEntityDetails = () => {
               >
                 {isPaused ? "Resume" : "Pause"}
               </Button>
-              <Button className="mb-4" onClick={handleDestroyBuilding} variant="danger" withoutSound>
+              <Button
+                disabled={!canDestroyBuilding}
+                className="mb-4"
+                onClick={handleDestroyBuilding}
+                variant="danger"
+                withoutSound
+              >
                 Destroy
               </Button>
             </div>

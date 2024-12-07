@@ -63,7 +63,7 @@ export const Rewards = () => {
   const claimRewards = useCallback(async () => {
     await claim_leaderboard_rewards({
       signer: account,
-      token: process.env.VITE_LORDS_ADDRESS!,
+      token: env.VITE_LORDS_ADDRESS!,
     });
   }, [account]);
 

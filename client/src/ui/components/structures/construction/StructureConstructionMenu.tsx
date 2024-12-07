@@ -1,13 +1,10 @@
 import { configManager } from "@/dojo/setup";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
-import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
-import clsx from "clsx";
 import React from "react";
 import { StructureCard } from "./StructureCard";
 
@@ -24,9 +21,7 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
-
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   const buildingTypes = Object.keys(StructureType)
     .filter((key) => isNaN(Number(key)))
@@ -56,7 +51,6 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
 
         return (
           <StructureCard
-            className={clsx({ "animate-pulse": isHyperstructure && selectedQuest?.id === QuestId.Hyperstructure })}
             key={index}
             structureId={building}
             onClick={() => {
@@ -100,7 +94,7 @@ const StructureInfo = ({
       ? `+${configManager.getHyperstructureConfig().pointsPerCycle} points`
       : "";
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">

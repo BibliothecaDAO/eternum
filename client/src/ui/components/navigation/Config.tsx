@@ -34,7 +34,6 @@ export const settings: OSWindows = "Settings";
 export const military: OSWindows = "Military";
 export const trade: OSWindows = "Trade";
 export const construction: OSWindows = "Construction";
-export const quests: OSWindows = "Quests";
 export const social: OSWindows = "Social";
 export const rewards: OSWindows = "Rewards";
 export const battleSimulation: OSWindows = "BattleSimulation";

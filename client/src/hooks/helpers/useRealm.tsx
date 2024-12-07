@@ -8,7 +8,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { type ComponentValue, type Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useMemo } from "react";
 import { shortString } from "starknet";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
@@ -16,6 +15,7 @@ import { getRealmNameById } from "../../ui/utils/realms";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
+import { useMemo } from "react";
 
 export interface RealmInfo {
   realmId: ID;
@@ -210,7 +210,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
 
   const query = useEntityQuery([HasValue(Realm, { entity_id: realmEntityId })]);
 
-  const realm = useMemo((): any => {
+  const realm = (): any => {
     if (realmEntityId !== undefined) {
       const entityId = getEntityIdFromKeys([BigInt(realmEntityId)]);
       const realm = getComponentValue(Realm, entityId);
@@ -240,10 +240,10 @@ export function useGetRealm(realmEntityId: ID | undefined) {
         };
       }
     }
-  }, [realmEntityId, query]);
+  };
 
   return {
-    realm,
+    realm: realm(),
   };
 }
 

@@ -4,9 +4,7 @@ export default defineConfig({
   description: "Eternum Documentation",
   iconUrl: "/eternum_new_logo.svg",
   logoUrl: "/eternum_new_logo.svg",
-  ogImageUrl:
-    "https://og-image.preview.cartridge.gg/api/eternum?logo=%https://www.dojoengine.org/dojo-icon.svg&title=%title&description=%description",
-
+  ogImageUrl: "/og-image.png",
   theme: {
     colorScheme: "dark",
     variables: {
@@ -26,25 +24,17 @@ export default defineConfig({
     {
       text: "Overview",
       items: [
-        { text: "Welcome", link: "/overview/overview" },
+        // { text: "Welcome", link: "/overview/welcome" },
         { text: "Introduction", link: "/overview/introduction" },
-        { text: "Entry", link: "/overview/entry" },
+        { text: "Game Entry", link: "/overview/entry" },
         { text: "Quick Links", link: "/overview/links" },
+        { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
       ],
     },
     {
       text: "Game Mechanics",
       items: [
-        {
-          text: "Resources",
-          collapsed: true,
-          items: [
-            { text: "Resources", link: "/mechanics/resources/resources" },
-            { text: "Production", link: "/mechanics/resources/production" },
-            { text: "Storage", link: "/mechanics/resources/storage" },
-          ],
-        },
-
+        { text: "Key Concepts", link: "/mechanics/key-concepts" },
         {
           text: "Realm management",
           collapsed: true,
@@ -52,6 +42,15 @@ export default defineConfig({
             { text: "Realm", link: "/mechanics/realm/realm" },
             { text: "Buildings", link: "/mechanics/realm/buildings" },
             { text: "Wonders", link: "/mechanics/realm/wonders" },
+          ],
+        },
+        {
+          text: "Resources",
+          collapsed: true,
+          items: [
+            { text: "Resources", link: "/mechanics/resources/resources" },
+            { text: "Production", link: "/mechanics/resources/production" },
+            { text: "Storage", link: "/mechanics/resources/storage" },
           ],
         },
 
@@ -68,9 +67,16 @@ export default defineConfig({
         { text: "World Map", link: "/mechanics/world-map" },
         { text: "Hyperstructures & Points", link: "/mechanics/hyperstructures" },
         { text: "Tribes", link: "/mechanics/tribes" },
-        { text: "Seasons", link: "/mechanics/seasons" },
       ],
     },
+    {
+      text: "Seasons",
+      items: [
+        { text: "Overview", link: "/seasons/overview" },
+        { text: "Rewards", link: "/seasons/rewards" },
+      ],
+    },
+
     {
       text: "Development",
       link: "/development",

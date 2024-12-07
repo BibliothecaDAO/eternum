@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { getResourcesUtils } from "@/hooks/helpers/useResources";
+import { useResourcesUtils } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -31,7 +31,7 @@ export const ResourceExchange = ({
     },
   } = useDojo();
 
-  const { getResourcesFromBalance } = getResourcesUtils();
+  const { getResourcesFromBalance } = useResourcesUtils();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [transferDirection, setTransferDirection] = useState<"to" | "from">("to");
@@ -182,7 +182,7 @@ const ResourceRow = ({ resourceId, amount, givenAmount, onChangeAmount, transfer
         />
       ) : (
         <div className={`text-lg font-bold col-span-3 text-center ${givenAmount !== 0 ? "text-green" : ""}`}>
-          {`+${givenAmount}`}
+          {`+${givenAmount.toLocaleString()}`}
         </div>
       )}
     </div>

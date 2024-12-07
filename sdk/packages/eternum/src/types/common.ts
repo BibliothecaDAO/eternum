@@ -393,11 +393,17 @@ export interface Config {
 }
 
 export interface Player {
-  address: ContractAddress;
-  addressName: string;
-  rank?: number;
-  points?: number;
-  isAlive?: boolean;
+  rank: number;
+  address: bigint;
+  name: string;
+  points: number;
+  percentage: number;
+  lords: number;
+  realms: number;
+  mines: number;
+  hyperstructures: number;
+  isAlive: boolean;
+  guildName: string;
 }
 
 export type GuildInfo = {

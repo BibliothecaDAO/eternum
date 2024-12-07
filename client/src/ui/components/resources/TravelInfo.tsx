@@ -1,8 +1,8 @@
 import { configManager } from "@/dojo/setup";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { divideByPrecision, formatNumber, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import { CapacityConfigCategory, ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
@@ -25,7 +25,7 @@ export const TravelInfo = ({
     divideByPrecision(resourceWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey),
   );
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   useEffect(() => {
     const totalWeight = getTotalResourceWeight(resources);
@@ -56,8 +56,8 @@ export const TravelInfo = ({
           )}
           <tr className="hover:bg-gold/5 transition-colors">
             <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Total Transfer Weight</td>
-            <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{`${formatNumber(
-              divideByPrecision(resourceWeight) / GRAMS_PER_KG,
+            <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{`${currencyFormat(
+              resourceWeight / GRAMS_PER_KG,
               0,
             )} kg`}</td>
           </tr>
@@ -68,7 +68,7 @@ export const TravelInfo = ({
                 neededDonkeys > donkeyBalance ? "text-red" : "text-green"
               }`}
             >
-              {neededDonkeys} 🔥🫏 [{donkeyBalance}]
+              {neededDonkeys.toLocaleString()} 🔥🫏 [{donkeyBalance.toLocaleString()}]
             </td>
           </tr>
         </tbody>
@@ -78,7 +78,7 @@ export const TravelInfo = ({
   );
 };
 
-export const ResourceWeight = ({ className }: { className?: string }) => {
+const ResourceWeight = ({ className }: { className?: string }) => {
   return (
     <div className={`text-xs text-gray-200 p-2 max-w-xs ${className}`}>
       <p className="font-semibold">Resource Weights</p>

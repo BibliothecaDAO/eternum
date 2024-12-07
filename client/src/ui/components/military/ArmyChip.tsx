@@ -13,6 +13,7 @@ import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
 import { Position } from "@bibliothecadao/eternum";
+import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { InventoryResources } from "../resources/InventoryResources";
@@ -77,6 +78,8 @@ export const ArmyChip = ({
 
   const battleManager = useMemo(() => new BattleManager(army.battle_id, dojo), [army.battle_id]);
 
+  const isHome = army.isHome;
+
   const updatedArmy = useMemo(() => {
     const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
@@ -88,14 +91,17 @@ export const ArmyChip = ({
 
   return (
     <div
-      className={`items-center text-xs px-2 hover:bg-gold/20 ${
-        army.isMine ? "bg-blueish/20" : "bg-red/20"
+      className={`items-center text-xs px-2 hover:bg-gold/20 ${army.isMine ? "bg-blueish/20" : "bg-red/20"} ${
+        army.protectee ? "defensive-army-selector" : "attacking-army-selector"
       } rounded-md border-gold/20 ${className}`}
     >
       {editMode ? (
         <>
-          <Button className="my-2" size="xs" onClick={() => setEditMode(!editMode)}>
-            Close Manager
+          <Button className="my-2" size="xs" variant="red" onClick={() => setEditMode(!editMode)}>
+            <div className="flex flex-row">
+              <LucideArrowRight className="w-4 h-4 rotate-180 mr-1" />
+              <span> Exit</span>
+            </div>
           </Button>
           <ArmyManagementCard army={updatedArmy!} owner_entity={updatedArmy!.entityOwner.entity_owner_id} />
         </>
@@ -115,7 +121,7 @@ export const ArmyChip = ({
                           <Plus
                             className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
                               updatedArmy.quantity.value === 0n ? "animate-pulse" : ""
-                            }`}
+                            } ${army.protectee ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
                             onClick={() => {
                               setTooltip(null);
                               setEditMode(!editMode);
@@ -138,7 +144,9 @@ export const ArmyChip = ({
                               />
                               {isOnMap && <NavigateToPositionIcon position={updatedArmy!.position} />}
                               <Swap
-                                className="w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300"
+                                className={`w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
+                                  army.protectee ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
+                                }`}
                                 onClick={() => {
                                   setTooltip(null);
                                   setShowTroopSwap(!showTroopSwap);
@@ -179,9 +187,14 @@ export const ArmyChip = ({
                   )}
                 </div>
                 {!army.protectee && armyHasTroops([updatedArmy]) && (
-                  <div className="flex flex-col font-bold items-end text-xs mr-2">
-                    <StaminaResource entityId={updatedArmy!.entity_id} />
-                    <ArmyCapacity army={updatedArmy} />
+                  <div className="flex flex-row justify-between font-bold text-xs mr-2">
+                    <div className="h-full flex items-end">
+                      {isHome && <div className="text-xs px-2 text-green">At Base</div>}
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <StaminaResource entityId={updatedArmy!.entity_id} />
+                      <ArmyCapacity army={updatedArmy} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -189,7 +202,7 @@ export const ArmyChip = ({
                 <TroopDisplay troops={updatedArmy!.troops} />
                 {showInventory && (
                   <InventoryResources
-                    entityIds={[updatedArmy!.entity_id]}
+                    entityId={updatedArmy!.entity_id}
                     className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
                     resourcesIconSize="xs"
                   />

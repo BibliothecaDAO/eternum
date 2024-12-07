@@ -21,7 +21,7 @@ import { RangeInput } from "@/ui/elements/RangeInput";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 export const SettingsWindow = () => {
   const {

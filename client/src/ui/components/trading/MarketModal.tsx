@@ -121,7 +121,7 @@ export const MarketModal = () => {
         label: (
           <div className="flex relative group items-center gap-2">
             <Scroll className="w-6 fill-current" />
-            <div className="self-center">Order Book</div>
+            <div className="orderbook-tab-selector self-center">Order Book</div>
           </div>
         ),
         component: (
@@ -138,7 +138,7 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group items-center gap-2">
+          <div className="amm-tab-selector flex relative group items-center gap-2">
             <Swap className="w-6 fill-current" />
             <div className="self-center">AMM</div>
           </div>
@@ -170,7 +170,7 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group items-center gap-2">
+          <div className="transfer-tab-selector flex relative group items-center gap-2">
             <Coins className="w-6 fill-current" />
             <div className="self-center">Transfer</div>
           </div>
@@ -184,7 +184,7 @@ export const MarketModal = () => {
       {
         key: "resourceProd",
         label: (
-          <div className="flex relative group items-center gap-2">
+          <div className="realm-production-tab-selector flex relative group items-center gap-2">
             <Crown className="w-6 fill-current" />
             <div className="self-center">Realm Production</div>
           </div>
@@ -201,9 +201,9 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-dark border-gold/30  h-full row-span-12 rounded-2xl ">
+      <div className="market-modal-selector container border mx-auto  grid grid-cols-12 bg-dark border-gold/30  h-full row-span-12 rounded-2xl ">
         <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
-          <div className="self-center text-xl justify-between flex gap-2 items-center bg-brown p-4 rounded-xl w-full mb-4">
+          <div className="market-realm-selector self-center text-xl justify-between flex gap-2 items-center bg-brown p-4 rounded-xl w-full mb-4">
             <div className="">
               <Select
                 value={structureEntityId.toString()}
@@ -262,7 +262,7 @@ export const MarketModal = () => {
                 className="hover:bg-gold/20 transition-colors duration-200"
               />
             </div>
-            <div className="bg-brown p-3 rounded-xl text-sm shadow-lg border border-gold/30 h-full flex flex-col">
+            <div className="trade-bank-selector bg-brown p-3 rounded-xl text-sm shadow-lg border border-gold/30 h-full flex flex-col">
               <h3 className="text-xl font-bold mb-4">Bank Information</h3>
               <div className="space-y-1 flex-grow">
                 <div className="flex justify-between items-center">
@@ -291,7 +291,7 @@ export const MarketModal = () => {
               </div>
             </div>
 
-            <div className="bg-brown border border-gold/30 p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
+            <div className="bank-combat-selector bg-brown border border-gold/30 p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
               <div>
                 <h3 className="text-xl font-bold">AMM Status</h3>
                 {!isBattleOngoing && !isSiegeOngoing && (
@@ -334,9 +334,11 @@ export const MarketModal = () => {
               ))}
             </Tabs.List>
 
-            <Tabs.Panels className="overflow-hidden">
+            <Tabs.Panels className="overflow-hidden h-full">
               {tabs.map((tab, index) => (
-                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+                <Tabs.Panel className="h-full" key={index}>
+                  {tab.component}
+                </Tabs.Panel>
               ))}
             </Tabs.Panels>
           </Tabs>

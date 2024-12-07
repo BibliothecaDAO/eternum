@@ -25,6 +25,10 @@ export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
 };
 
+export const formatStringNumber = (str: string): string => {
+  return Number(str).toLocaleString();
+};
+
 export const formatNumber = (num: number, decimals: number): string => {
   // Convert to string with max decimals
   let str = num.toFixed(decimals);
@@ -38,7 +42,8 @@ export const formatNumber = (num: number, decimals: number): string => {
 };
 
 export const currencyFormat = (num: number, decimals: number): string => {
-  return formatNumber(divideByPrecision(num), decimals);
+  const formattedDecimals = formatNumber(divideByPrecision(num), decimals);
+  return Number(formattedDecimals).toLocaleString();
 };
 
 export function currencyIntlFormat(num: number, decimals: number = 2): string {
@@ -59,6 +64,10 @@ export function multiplyByPrecision(value: number): number {
 
 export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
+}
+
+export function divideByPrecisionFormatted(value: number): string {
+  return divideByPrecision(value).toLocaleString("en-US");
 }
 
 export function roundDownToPrecision(value: bigint, precision: number) {
@@ -250,7 +259,7 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     });
 };
 
-export const isRealmSelected = (structureEntityId: ID, structures: any) => {
+const isRealmSelected = (structureEntityId: ID, structures: any) => {
   const selectedStructure = structures?.find((structure: any) => structure?.entity_id === structureEntityId);
   return selectedStructure?.category === "Realm";
 };
@@ -263,13 +272,6 @@ export const getTotalResourceWeight = (resources: Array<Resource | undefined>) =
       total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
     0,
   );
-};
-
-export const formatSecondsInHoursMinutes = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  return `${hours}h:${minutes}m`;
 };
 
 export const isResourceProductionBuilding = (buildingId: BuildingType) => {

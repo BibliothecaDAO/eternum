@@ -64,9 +64,11 @@ impl StaminaImpl of StaminaTrait {
             maxes.append(crossbowman_config.max_stamina);
         }
 
-        assert(maxes.len() > 0, 'No troops in army');
-
-        maxes.min().unwrap()
+        if maxes.len() > 0 {
+            maxes.min().unwrap()
+        } else {
+            0
+        }
     }
 
     fn refill(ref self: Stamina, ref world: WorldStorage) {

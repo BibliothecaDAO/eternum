@@ -1,11 +1,13 @@
+import { ResourceInventoryManager } from "@/dojo/modelManager/ResourceInventoryManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
+import { useOwnedEntitiesOnPosition, useResourcesUtils } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { EntityState, ID, determineEntityState } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { EntityReadyForDeposit } from "../trading/ResourceArrivals";
 
 type DepositResourcesProps = {
@@ -21,10 +23,10 @@ export const DepositResources = ({
   armyInBattle,
   setEntitiesReadyForDeposit,
 }: DepositResourcesProps) => {
-  const { account, setup } = useDojo();
+  const { setup } = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getResourcesFromBalance } = getResourcesUtils();
+  const { getResourcesFromBalance } = useResourcesUtils();
 
   const inventoryResources = getResourcesFromBalance(entityId);
 
@@ -32,6 +34,7 @@ export const DepositResources = ({
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
 
   const arrivalTime = getComponentValue(setup.components.ArrivalTime, getEntityIdFromKeys([BigInt(entityId)]));
+  const weight = useComponentValue(setup.components.Weight, getEntityIdFromKeys([BigInt(entityId)]))?.value || 0n;
 
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
@@ -41,6 +44,10 @@ export const DepositResources = ({
     arrivalTime?.arrives_at,
     inventoryResources.length > 0,
   );
+
+  const depositManager = useMemo(() => {
+    return new ResourceInventoryManager(setup, entityId);
+  }, [setup, entityId]);
 
   useEffect(() => {
     if (depositEntityId && entityId && inventoryResources.length > 0) {
@@ -55,7 +62,7 @@ export const DepositResources = ({
             carrierId: arrivalTime?.entity_id || 0,
             senderEntityId: entityId,
             recipientEntityId: depositEntityId,
-            resources: inventoryResources.flatMap((resource) => [BigInt(resource.resourceId), BigInt(resource.amount)]),
+            resources: inventoryResources,
           },
         ];
       });
@@ -63,35 +70,35 @@ export const DepositResources = ({
   }, []);
 
   const onOffload = async (receiverEntityId: ID) => {
-    setIsLoading(true);
     if (entityId && inventoryResources.length > 0) {
-      await setup.systemCalls
-        .send_resources({
-          sender_entity_id: entityId,
-          recipient_entity_id: receiverEntityId,
-          resources: inventoryResources.flatMap((resource) => [resource.resourceId, resource.amount]),
-          signer: account.account,
-        })
-        .finally(() => setIsLoading(false));
+      setIsLoading(true);
+      await depositManager.onOffloadAll(receiverEntityId, inventoryResources).then(() => {
+        setIsLoading(false);
+      });
     }
   };
 
   return (
-    depositEntityId !== undefined &&
-    inventoryResources.length > 0 && (
+    depositEntityId !== undefined && (
       <div className="w-full">
         <Button
           size="xs"
           className="w-full"
           isLoading={isLoading}
-          disabled={entityState === EntityState.Traveling || battleInProgress || armyInBattle}
+          disabled={
+            entityState === EntityState.Traveling || battleInProgress || armyInBattle || inventoryResources.length === 0
+          }
           onClick={() => onOffload(depositEntityId)}
           variant="primary"
           withoutSound
         >
           {battleInProgress || armyInBattle
             ? `${armyInBattle ? "Army in battle" : "Battle in progress"}`
-            : `Deposit Resources`}
+            : inventoryResources.length === 0 && weight > 0n
+              ? "Resources syncing..."
+              : inventoryResources.length === 0 && weight === 0n
+                ? "No resources to deposit"
+                : "Deposit Resources"}
         </Button>
       </div>
     )

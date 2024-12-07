@@ -1,26 +1,27 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { rewards, settings } from "@/ui/components/navigation/Config";
 import { BuildingThumbs } from "@/ui/config";
+import Button from "@/ui/elements/Button";
 import CircleButton from "@/ui/elements/CircleButton";
-import { isRealmSelected } from "@/ui/utils/utils";
+import { QuestType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
-import { ArrowUp } from "lucide-react";
-import { useCallback, useMemo } from "react";
-import { quests as questsWindow, social } from "../../components/navigation/Config";
+import clsx from "clsx";
+import { useCallback, useMemo, useState } from "react";
+import { social } from "../../components/navigation/Config";
 import { Controller } from "../controller/Controller";
 
 export const SecondaryMenuItems = () => {
   const {
     account: { account },
     setup: {
+      systemCalls: { claim_quest },
       components: {
         events: { GameEnded },
       },
@@ -28,55 +29,103 @@ export const SecondaryMenuItems = () => {
   } = useDojo();
 
   const { toggleModal } = useModalStore();
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const { connector } = useAccountStore();
-
-  const { isMapView } = useQuery();
-
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { quests } = useQuests();
+
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
-
-  const { playerStructures } = useEntities();
-  const structures = playerStructures();
-
-  const completedQuests = quests?.filter((quest: any) => quest.status === QuestStatus.Claimed);
-
   const gameEnded = useEntityQuery([Has(GameEnded)]);
 
-  const realmSelected = useMemo(() => {
-    return isRealmSelected(structureEntityId, structures) ? true : false;
-  }, [structureEntityId, structures]);
+  const currentQuest = quests?.find(
+    (quest: any) => quest.status === QuestStatus.InProgress || quest.status === QuestStatus.Completed,
+  );
+  const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestType.Settle), true);
+
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [skipQuest, setSkipQuest] = useState(false);
 
   const handleTrophyClick = useCallback(() => {
     connector?.controller?.openProfile("trophies");
   }, [connector]);
 
+  const handleAllClaims = async () => {
+    setSkipQuest(false);
+    setIsLoading(true);
+    try {
+      await claim_quest({
+        signer: account,
+        quest_ids: currentQuest?.prizes.map((prize) => BigInt(prize.id)) || [],
+        receiver_id: structureEntityId || 0,
+      });
+    } catch (error) {
+      console.error(`Failed to claim resources for quest ${currentQuest?.name}:`, error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const secondaryNavigation = useMemo(() => {
     const buttons = [
       {
-        button: (
-          <div className="relative">
-            <CircleButton
-              tooltipLocation="bottom"
-              image={BuildingThumbs.squire}
-              label={questsWindow}
-              active={isPopupOpen(questsWindow)}
-              size="sm"
-              className="border-none"
-              onClick={() => togglePopup(questsWindow)}
-              notification={realmSelected ? unclaimedQuestsCount : undefined}
-              notificationLocation={"bottomleft"}
-              disabled={!realmSelected}
-            />
-            {completedQuests.length < 8 && !isMapView && realmSelected && (
-              <div className="absolute bg-brown/90 text-gold border border-gold/30 mt-3 rounded-md shadow-lg left-1/2 transform -translate-x-1/2 w-48 p-3 flex flex-col items-center animate-pulse">
-                <ArrowUp className="text-gold w-5 h-5 mb-2" />
-                <div className="text-sm font-semibold mb-2 text-center leading-tight">
-                  Complete quests to master the game mechanics
-                </div>
+        button: unclaimedQuestsCount > 0 && (
+          <div className="flex items-center gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12">
+            <Button
+              isLoading={isLoading}
+              className={clsx(
+                "claim-selector text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize",
+                {
+                  "animate-pulse duration-700 border-b-4 border-gold/50 hover:border-gold/70 transition-all":
+                    currentQuest?.status === QuestStatus.Completed,
+                },
+              )}
+              onClick={handleAllClaims}
+              disabled={currentQuest?.status !== QuestStatus.Completed}
+            >
+              Claim
+            </Button>
+
+            <div className="h-6 w-px bg-gold/30 mx-2" />
+
+            <Button
+              onClick={() => handleStart()}
+              className={clsx("tutorial-selector text-gold text-sm bg-transparent capitalize", {
+                "animate-pulse duration-700 border-b-4 border-gold/50 hover:border-gold/70 transition-all":
+                  currentQuest?.status !== QuestStatus.Completed,
+              })}
+            >
+              {/* <span className="font-semibold">Current Quest</span> */}
+              <span className="font-semibold">{currentQuest?.name}</span>
+              {/* <span className="text-xs ml-2">({unclaimedQuestsCount} remaining)</span> */}
+            </Button>
+
+            <div className="h-6 w-px bg-gold/30 mx-2" />
+
+            {skipQuest ? (
+              <div>
+                <Button
+                  className="text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize"
+                  onClick={handleAllClaims}
+                  variant="red"
+                >
+                  Confirm
+                </Button>
+                <Button
+                  className="text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize"
+                  onClick={() => setSkipQuest(false)}
+                >
+                  Back
+                </Button>
               </div>
+            ) : (
+              <Button
+                className="text-gold hover:text-gold/80 text-sm font-semibold bg-transparent capitalize"
+                onClick={() => setSkipQuest(true)}
+              >
+                Skip Quest
+              </Button>
             )}
           </div>
         ),
@@ -84,12 +133,12 @@ export const SecondaryMenuItems = () => {
       {
         button: (
           <CircleButton
+            className="social-selector border-none"
             tooltipLocation="bottom"
             image={BuildingThumbs.guild}
             label={social}
             active={isPopupOpen(social)}
             size="sm"
-            className="border-none"
             onClick={() => togglePopup(social)}
           />
         ),
@@ -111,43 +160,43 @@ export const SecondaryMenuItems = () => {
       });
     }
     return buttons;
-  }, [unclaimedQuestsCount, quests, structureEntityId, gameEnded]);
+  }, [unclaimedQuestsCount, quests, currentQuest, structureEntityId, gameEnded]);
 
   return (
     <div className="flex gap-1 md:gap-4">
-      <div className="self-center px-1 md:px-3 flex space-x-4 md:space-x-4 my-4">
+      <div className="top-right-navigation-selector self-center px-1 md:px-3 flex space-x-4 md:space-x-4 my-4">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
         <CircleButton
-          className="border-none"
+          className="trophies-selector border-none"
           image={BuildingThumbs.trophy}
           label={"Trophies"}
           size="sm"
           onClick={handleTrophyClick}
         />
         <CircleButton
+          className="hints-selector border-none"
           image={BuildingThumbs.question}
-          label={"Hints"}
+          label={"Lordpedia"}
           size="sm"
-          className="border-none"
           onClick={() => toggleModal(<HintModal />)}
         />
         <CircleButton
+          className="discord-selector border-none"
           tooltipLocation="bottom"
           image={BuildingThumbs.discord}
           label={"Discord"}
           size="sm"
-          className="border-none"
           onClick={() => window.open("https://discord.gg/realmsworld")}
         />
         <CircleButton
+          className="settings-selector border-none"
           tooltipLocation="bottom"
           active={isPopupOpen(settings)}
           image={BuildingThumbs.settings}
           label={"Support"}
           size="sm"
-          className="border-none"
           onClick={() => togglePopup(settings)}
         />
         <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />

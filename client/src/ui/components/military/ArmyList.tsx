@@ -3,14 +3,11 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { type PlayerStructure } from "@/hooks/helpers/useEntities";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { BuildingType, StructureType } from "@bibliothecadao/eternum";
-import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 import { ArmyChip } from "./ArmyChip";
@@ -33,8 +30,6 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
     entity_owner_entity_id: structure?.entity_id || 0,
   });
-
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const {
     account: { account },
@@ -89,23 +84,26 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     });
   };
   return (
-    <div className="p-2">
+    <div className="military-panel-selector p-2">
       <Headline>
         <div className="flex gap-2">
-          <div className="self-center">{structure.name} </div>
+          <div className="self-center">{structure.name}</div>
           <HintModalButton section={HintSection.Buildings} />
         </div>
       </Headline>
-      <div className="px-3 py-2 bg-blueish/20  font-bold">
+
+      {/* <div className="px-3 py-2 bg-redish/20 font-bold">
         Build military buildings to increase your current max number of attacking armies. Realms can support up to{" "}
         {troopConfig.maxArmiesPerStructure - 1} attacking armies.
-      </div>
+      </div> */}
+
       <div className="flex justify-between">
         <div
           className={`mt-2 font-bold ${numberAttackingArmies < maxAmountOfAttackingArmies ? "text-green" : "text-red"}`}
         >
           {numberAttackingArmies} / {maxAmountOfAttackingArmies} attacking armies
         </div>
+
         <div
           className={`mt-2 font-bold ${
             numberDefensiveArmies < MAX_AMOUNT_OF_DEFENSIVE_ARMIES ? "text-green" : "text-red"
@@ -114,7 +112,8 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
           {numberDefensiveArmies} / {MAX_AMOUNT_OF_DEFENSIVE_ARMIES} defending army
         </div>
       </div>
-      <div className="w-full flex justify-between my-4">
+
+      <div className="flex justify-between my-4">
         <div
           onMouseEnter={() => {
             if (!isRealm) {
@@ -124,36 +123,30 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
               });
             }
           }}
-          onMouseLeave={() => {
-            setTooltip(null);
-          }}
+          onMouseLeave={() => setTooltip(null)}
         >
           <Button
             isLoading={loading === Loading.CreateAttacking}
             variant="primary"
-            onClick={() => {
-              handleCreateArmy(false);
-            }}
+            onClick={() => handleCreateArmy(false)}
             disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
-            className={clsx({
-              "animate-pulse": selectedQuest?.id === QuestId.CreateAttackArmy,
-            })}
+            className="attack-army-selector"
           >
             Create attacking Army
           </Button>
         </div>
 
         <Button
+          className="defense-army-selector"
           isLoading={loading === Loading.CreateDefensive}
           variant="primary"
-          onClick={() => {
-            handleCreateArmy(true);
-          }}
+          onClick={() => handleCreateArmy(true)}
           disabled={loading !== Loading.None || !canCreateProtector}
         >
           Create Defense Army
         </Button>
       </div>
+
       {structureArmies.map((army) => (
         <ArmyChip key={army.entity_id} className="my-2" army={army} showButtons />
       ))}

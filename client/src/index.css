@@ -1,19 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Sedan:ital@0;1&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Bokor&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 html,
 body {
   overflow: hidden;
   font-family: "Space Grotesk", sans-serif;
   touch-action: none;
   text-shadow: 2px 2px 4px rgba(255, 255, 0, 0.1);
-
   @apply cursor-fancy text-gold;
 }
-
 h1,
 h2,
 h3,
@@ -22,7 +18,6 @@ h5,
 h6 {
   font-family: "Bokor", system-ui;
 }
-
 .h1,
 .h2,
 .h3,
@@ -31,7 +26,6 @@ h6 {
 .h6 {
   font-family: "Bokor", system-ui;
 }
-
 @keyframes dotAnimation {
   0%,
   100% {
@@ -47,29 +41,23 @@ h6 {
     opacity: 1;
   } /* Third dot appears */
 }
-
 .dot {
   display: inline-block;
   opacity: 0;
   animation: dotAnimation 5s infinite;
 }
-
 .dot:nth-child(2) {
   animation-delay: 1.66s; /* Adjusted for the new total duration */
 }
-
 .dot:nth-child(3) {
   animation-delay: 3.33s; /* Adjusted for the new total duration */
 }
-
 .container-bg-gradient {
   background: linear-gradient(180deg, #1b1b1b 0%, rgba(24, 24, 24, 0.95) 100%);
 }
-
 .container-bg-gradient-secondary {
   background: linear-gradient(180deg, #b0b8ae 3.09%, rgba(72, 53, 47, 0.6) 100%);
 }
-
 @layer base {
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button,
@@ -79,48 +67,38 @@ h6 {
     -moz-appearance: textfield !important;
   }
 }
-
 * {
   user-select: none;
 }
-
 *::-webkit-scrollbar-track {
   background-color: #1b1b1b;
-
   /* border: 1px solid var(--gray-gold, #776756); */
   margin-bottom: 2px;
 }
-
 *::-webkit-scrollbar {
   width: 8px;
   background-color: #1b1b1b;
 }
-
 *::-webkit-scrollbar-thumb {
   /* border: 2px solid var(--gray-gold, #776756); */
   @apply bg-gold;
 }
-
 .root-container {
   pointer-events: none;
 }
-
 .root-container > * {
   pointer-events: auto;
 }
-
 .track-name-container {
   width: 100%;
   overflow: hidden;
 }
-
 .track-name {
   white-space: nowrap;
   display: inline-block;
   padding-left: 100%;
   animation: scroll linear infinite;
 }
-
 @keyframes scroll {
   0% {
     transform: translateX(0);
@@ -129,39 +107,30 @@ h6 {
     transform: translateX(-100%);
   }
 }
-
 h1 {
   @apply text-4xl sm:text-5xl md:text-6xl font-bold;
 }
-
 h2 {
   @apply text-2xl sm:text-3xl md:text-4xl font-semibold;
 }
-
 h3 {
   @apply text-xl sm:text-2xl md:text-3xl font-medium;
 }
-
 h4 {
   @apply text-lg sm:text-xl md:text-2xl font-normal;
 }
-
 h5 {
   @apply text-base sm:text-lg md:text-xl;
 }
-
 h6 {
   @apply text-sm sm:text-base md:text-lg uppercase;
 }
-
 .fade-in {
   animation: fadeIn 1s;
 }
-
 .fade-out {
   animation: fadeOut 1s;
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -170,7 +139,6 @@ h6 {
     opacity: 1;
   }
 }
-
 @keyframes fadeOut {
   from {
     opacity: 1;
@@ -179,7 +147,6 @@ h6 {
     opacity: 0;
   }
 }
-
 @keyframes gradientAnimation {
   0% {
     background-position: 0% 50%;
@@ -191,7 +158,6 @@ h6 {
     background-position: 0% 50%;
   }
 }
-
 @keyframes slideBackground {
   from {
     background-position: 0 0;
@@ -200,22 +166,18 @@ h6 {
     background-position: 100% 0;
   }
 }
-
 .animatedBackground {
   background-size: 100% 100%;
   animation: slideBackground 30s linear infinite;
 }
-
 #root {
   position: relative;
   z-index: 3;
 }
-
 canvas {
   position: relative;
   z-index: 1;
 }
-
 .vignette {
   position: fixed;
   top: 0;
@@ -226,4 +188,114 @@ canvas {
   opacity: 0.3;
   z-index: 20;
   pointer-events: none;
+}
+
+/* Tutorial popup styling */
+.shepherd-element {
+  @apply bg-light-pink;
+}
+
+.shepherd-has-title .shepherd-content .shepherd-header {
+  @apply bg-gray-gold;
+}
+
+.shepherd-title {
+  @apply text-brown text-2xl;
+}
+
+.shepherd-text {
+  @apply text-light-brown;
+}
+
+.shepherd-button {
+  @apply cursor-fancy bg-gray-gold text-brown;
+}
+
+.shepherd-button:not(:disabled):hover {
+  @apply bg-gray-gold/50 text-brown;
+}
+
+.shepherd-has-title .shepherd-content .shepherd-cancel-icon {
+  @apply text-brown cursor-fancy;
+}
+
+.shepherd-has-title .shepherd-content .shepherd-cancel-icon:hover {
+  @apply text-brown/50;
+}
+
+/* Interactive step styling */
+.shepherd-element.requires-interaction {
+  @apply bg-light-pink;
+}
+
+.requires-interaction .shepherd-content .shepherd-header {
+  @apply bg-gray-gold;
+}
+
+.requires-interaction .shepherd-title {
+  @apply text-brown text-2xl;
+}
+
+.requires-interaction .shepherd-text {
+  @apply text-light-brown;
+}
+
+.requires-interaction .shepherd-button {
+  @apply cursor-fancy bg-gray-gold text-brown;
+}
+
+.requires-interaction .shepherd-button:not(:disabled):hover {
+  @apply bg-gray-gold/50 text-brown;
+}
+
+.requires-interaction .shepherd-cancel-icon {
+  @apply text-brown cursor-fancy;
+}
+
+.requires-interaction .shepherd-cancel-icon:hover {
+  @apply text-brown/50;
+}
+
+/* Arrow styling */
+.shepherd-arrow {
+  @apply bg-transparent !important;
+}
+
+.shepherd-arrow:before {
+  @apply bg-light-pink !important;
+}
+
+.shepherd-has-title .shepherd-content .shepherd-header .shepherd-arrow:before {
+  @apply bg-gray-gold !important;
+}
+
+.shepherd-element[data-popper-placement^="top"] .shepherd-arrow:before {
+  @apply bg-light-pink !important;
+}
+
+.shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow:before {
+  @apply bg-gray-gold !important;
+}
+
+.shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
+.shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
+  @apply bg-light-pink !important;
+}
+
+/* Interactive arrow styles */
+.requires-interaction.shepherd-element .shepherd-arrow:before {
+  @apply bg-light-pink !important;
+}
+
+.requires-interaction.shepherd-element[data-popper-placement^="top"] .shepherd-arrow:before {
+  @apply bg-light-pink !important;
+}
+
+.requires-interaction.shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow:before {
+  @apply bg-gray-gold !important;
+}
+
+.requires-interaction.shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
+.requires-interaction.shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
+  @apply bg-light-pink !important;
 }

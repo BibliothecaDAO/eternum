@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { DEFAULT_TAB, EVENT_STREAM_TAB } from "./ChatTab";
-import { CHAT_STORAGE_KEY } from "./constants";
+import { CHAT_STORAGE_KEY, GLOBAL_CHANNEL_KEY } from "./constants";
 import { Tab } from "./types";
 
 interface ChatState {
@@ -28,22 +28,39 @@ export const useChatStore = create<ChatState>()(
         }));
       },
       setTabs: (tabs: Tab[]) => set({ tabs }),
-      addTab: (newTab: Tab) =>
+      addTab: (newTab: Tab, switchToTab: boolean = false) =>
         set((state) => {
           const existingTabIndex = state.tabs.findIndex((tab) => tab.address === newTab.address);
           if (existingTabIndex !== -1) {
             // Update existing tab
             const updatedTabs = [...state.tabs];
+            const existingTab = updatedTabs[existingTabIndex];
+
             updatedTabs[existingTabIndex] = {
-              ...updatedTabs[existingTabIndex],
+              ...existingTab,
               ...newTab,
+              // Preserve the existing lastSeen unless we're switching to this tab
+              lastSeen: switchToTab ? new Date() : existingTab.lastSeen,
+              // Use the most recent lastMessage timestamp
+              lastMessage:
+                newTab.lastMessage && existingTab.lastMessage
+                  ? new Date(
+                      Math.max(new Date(newTab.lastMessage).getTime(), new Date(existingTab.lastMessage).getTime()),
+                    )
+                  : newTab.lastMessage || existingTab.lastMessage,
             };
-            return { tabs: updatedTabs, currentTab: { ...newTab, lastSeen: new Date() } };
+
+            return {
+              tabs: updatedTabs,
+              // Only switch tabs if explicitly requested
+              currentTab: switchToTab ? updatedTabs[existingTabIndex] : state.currentTab,
+            };
           } else {
             // Add new tab
             return {
-              tabs: [...state.tabs, { ...newTab, lastSeen: new Date() }],
-              currentTab: { ...newTab, lastSeen: new Date() },
+              tabs: [...state.tabs, { ...newTab, lastSeen: switchToTab ? new Date() : newTab.lastSeen }],
+              // Only switch tabs if explicitly requested
+              currentTab: switchToTab ? newTab : state.currentTab,
             };
           }
         }),
@@ -53,10 +70,18 @@ export const useChatStore = create<ChatState>()(
           currentTab: DEFAULT_TAB,
         })),
       deleteTab: (address: string) =>
-        set((state) => ({
-          tabs: state.tabs.filter((tab) => tab.address !== address),
-          currentTab: state.currentTab.address === address ? DEFAULT_TAB : state.currentTab,
-        })),
+        set((state) => {
+          // Don't delete mandatory tabs
+          const filteredTabs = state.tabs.filter((tab) => {
+            if (tab.name === GLOBAL_CHANNEL_KEY) return true;
+            return tab.address !== address;
+          });
+
+          return {
+            tabs: filteredTabs,
+            currentTab: state.currentTab.address === address ? DEFAULT_TAB : state.currentTab,
+          };
+        }),
       changeTabByAddress: (address: string) =>
         set((state) => {
           const tab = state.tabs.find((tab) => tab.address === address);

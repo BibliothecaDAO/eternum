@@ -1,7 +1,5 @@
----
-title: Buildings
-description: Building mechanics and costs in Eternum
----
+import { EternumGlobalConfig, BuildingType } from "@bibliothecadao/eternum";
+import BuildingCosts from "../../../../src/components/BuildingCosts";
 
 # Buildings
 
@@ -12,7 +10,9 @@ subsequent buildings of the same type exponentially.
 
 ### Basic Infrastructure
 
-**Worker's Hut** <img src="/buildings/workers_hut.png" alt="Worker's Hut" width="300" className="float-right"/>
+**Worker Hut** <img src="/buildings/workers_hut.png" alt="Worker Hut" width="300" className="float-right"/>
+
+<BuildingCosts buildingType={BuildingType.WorkersHut} />
 
 - Basic population housing
 - Provides population capacity
@@ -20,6 +20,8 @@ subsequent buildings of the same type exponentially.
 <br />
 
 **Storehouse** <img src="/buildings/storehouse.png" alt="Storehouse" width="300" className="float-right"/>
+
+<BuildingCosts buildingType={BuildingType.Storehouse} />
 
 - Increases resource storage capacity
 - Essential for resource management
@@ -33,6 +35,8 @@ subsequent buildings of the same type exponentially.
 
 **Farm** <img src="/buildings/farm.png" alt="Farm" width="300" className="float-right"/>
 
+<BuildingCosts buildingType={BuildingType.Farm} />
+
 - Produces Wheat
 - No input resources required
 - Provides 10% production bonus to adjacent buildings
@@ -45,6 +49,8 @@ subsequent buildings of the same type exponentially.
 
 <img src="/buildings/fishing_village.png" alt="Fishing Village" width="300" className="float-right" />
 
+<BuildingCosts buildingType={BuildingType.FishingVillage} />
+
 - Produces Fish
 - No input resources required
 
@@ -52,6 +58,8 @@ subsequent buildings of the same type exponentially.
 <br />
 
 **Market** <img src="/buildings/market.png" alt="Market" width="300" className="float-right" />
+
+<BuildingCosts buildingType={BuildingType.Market} />
 
 - Produces Donkeys
 - Essential to keep a constant trading flow
@@ -68,6 +76,8 @@ subsequent buildings of the same type exponentially.
   <img src="/buildings/mine.png" alt="Mine" width="200" />
 </div>
 
+<BuildingCosts buildingType={BuildingType.Resource} />
+
 - Produces specified resource
 - Consumes some of your other realms' resources
 
@@ -76,21 +86,28 @@ subsequent buildings of the same type exponentially.
 
 ### Military Buildings
 
-**Military Production Buildings:**
-
 <div className="flex items-center">
   <img src="/buildings/barracks.png" alt="Barracks" width="300" className="float-left" />
-  <p> **Barracks:** Produces Knights </p>
+  <div>
+    <p> **Barracks:** Produces Knights </p>
+    <BuildingCosts buildingType={BuildingType.Barracks} />
+  </div>
 </div>
 
 <div className="flex items-center">
   <img src="/buildings/stable.png" alt="Stables" width="300" className="float-left" />
-  <p> **Stables:** Produces Paladins </p>
+  <div>
+    <p> **Stables:** Produces Paladins </p>
+    <BuildingCosts buildingType={BuildingType.Stable} />
+  </div>
 </div>
 
 <div className="flex items-center">
   <img src="/buildings/archery.png" alt="Archery Range" width="300" className="float-left" />
-  <p> **Archery Range:** Crossbowmen </p>
+  <div>
+    <p> **Archery Range:** Produces Crossbowmen </p>
+    <BuildingCosts buildingType={BuildingType.ArcheryRange} />
+  </div>
 </div>
 
 > Each military building increases max army count by 1 (up to +3)
@@ -101,26 +118,21 @@ subsequent buildings of the same type exponentially.
 
 - Buildings can be paused/resumed
 - Pausing stops:
-- Resource consumption
-- Resource production
+  - Resource consumption
+  - Resource production
 - Use pausing to:
   - Prevent resource waste
   - Manage storage capacity
 
-### Building Costs
-
-💰 **Cost Scaling**
-
-- Each building has a base resource cost
-- Subsequent buildings of same type cost more
-- Cost increase is exponential
-- Example progression:
-  - First Worker's Hut: 100 wood
-  - Second Worker's Hut: 200 wood
-  - Third Worker's Hut: 400 wood
-  - ...
-
 ### Construction Management
+
+> 💡 **Cost Scaling**
+>
+> Each subsequent building costs double:
+>
+> - First building: Base cost
+> - Second building: 2x base cost
+> - Third building: 4x base cost
 
 🏗️ **Building Tips**
 

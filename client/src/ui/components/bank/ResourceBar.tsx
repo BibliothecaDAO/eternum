@@ -1,4 +1,4 @@
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -33,7 +33,7 @@ export const ResourceBar = ({
   onBlur?: () => void; // New prop
   max?: number;
 }) => {
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
 
   const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
   const [searchInput, setSearchInput] = useState("");
@@ -88,7 +88,7 @@ export const ResourceBar = ({
   };
 
   return (
-    <div className="w-full bg-gold/10 rounded-xl p-3 flex justify-between h-28 flex-wrap">
+    <div className="resource-bar-selector w-full bg-gold/10 rounded-xl p-3 flex justify-between h-28 flex-wrap">
       <div className="self-center">
         <NumberInput
           className="text-2xl border-transparent"

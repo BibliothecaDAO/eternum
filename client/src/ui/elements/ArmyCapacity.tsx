@@ -4,7 +4,7 @@ import { configManager } from "@/dojo/setup";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useMemo } from "react";
-import { formatNumber } from "../utils/utils";
+import { formatNumber, formatStringNumber } from "../utils/utils";
 
 enum CapacityColor {
   LIGHT = "bg-green",
@@ -50,7 +50,8 @@ export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapac
             content: (
               <>
                 <div>
-                  Capacity: {formatNumber(Number(army.weight), 0)} / {formatNumber(Number(armyTotalCapacity), 0)} kg
+                  Capacity: {formatStringNumber(formatNumber(Number(army.weight), 0))} /{" "}
+                  {formatStringNumber(formatNumber(Number(armyTotalCapacity), 0))} kg
                 </div>
                 {capacityColor !== CapacityColor.LIGHT && <div className="text-red">Offload to continue exploring</div>}
               </>

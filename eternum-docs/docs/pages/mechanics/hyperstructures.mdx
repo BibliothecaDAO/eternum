@@ -1,18 +1,17 @@
----
-title: Hyperstructures & Points
-description: Hyperstructure mechanics and leaderboard system in Eternum
----
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { formatNumberWithSpaces } from "../../../src/utils/formatting";
 
 # Hyperstructures
 
-Hyperstructures are massive social engineering projects
+Hyperstructures are massive social engineering projects that can be constructucted in the Eternum world.
 
 <img src="/buildings/hyperstructure.png" alt="Hyperstructure" width="200" className="relative z-[100000] float-right" />
 
 ## Construction Process
 
 Initiating a Hyperstructure requires Ancient Fragments, precious artifacts that can only be obtained from Fragment
-mines. Once you have the necessary Fragments, you can begin construction at any discovered location on the map.
+mines. Once you have the necessary Fragments, you can begin construction at any discovered location on the map. Once
+constructed, an immunity period will begin where noone can attack the structure.
 
 ### Contribution Modes
 
@@ -29,24 +28,26 @@ Construction of a Hyperstructure demands careful resource management and coordin
 
 ## Victory Points System
 
-Hyperstructures offer two distinct ways to earn victory points.
+Hyperstructures offer two distinct ways to earn victory points:
 
-### Construction Points
+### Contributing to its contruction
 
 When a Hyperstructure is completed, contributors receive one-time point rewards based on:
 
 - The quantity of resources they contributed
 - The rarity value of their contributed resources
 
-Points are calculated and distributed automatically upon construction completion.
+Finishing the construction of a hyperstructure awards
+{formatNumberWithSpaces(EternumGlobalConfig.hyperstructures.hyperstructurePointsOnCompletion)} points, divided between
+all contributors Points are calculated and distributed automatically upon construction completion.
 
-### Generation Points
+### Holding shares of the Hyperstructure
 
 Once operational, Hyperstructures become ongoing sources of points:
 
-- Points are generated each Eternum cycle
+- {EternumGlobalConfig.hyperstructures.hyperstructurePointsPerCycle} points are generated each Eternum cycle
 - Distribution follows a share-based system
-- The structure owner controls share allocation
+- The structure owner can control and set share allocations
 - Share modifications have a 48-hour cooldown period
 
 ## 💡 Strategic Considerations

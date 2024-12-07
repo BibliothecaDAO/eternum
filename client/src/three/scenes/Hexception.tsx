@@ -283,15 +283,25 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
-  protected onHexagonClick(hexCoords: HexPosition | null): void {
+  protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
+    const overlay = document.querySelector(".shepherd-modal-overlay-container");
+    const overlayClick = document.querySelector(".allow-modal-click");
+    if (overlay && !overlayClick) {
+      return;
+    }
     if (hexCoords === null) return;
+
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
     if (buildingType) {
       // if building mode
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
-        this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
         this.clearBuildingMode();
+        try {
+          await this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
+        } catch (error) {
+          this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
+        }
         this.updateHexceptionGrid(this.hexceptionRadius);
       }
     } else {
@@ -447,7 +457,7 @@ export default class HexceptionScene extends HexagonScene {
             instance.applyMatrix4(building.matrix);
             if (buildingType === ResourceMiningTypes.Forge) {
               instance.traverse((child) => {
-                if (child.name === "Grassland003_8" && child instanceof THREE.Mesh) {
+                if (child.name === "Grassland003_1" && child instanceof THREE.Mesh) {
                   if (!this.minesMaterials.has(building.resource)) {
                     const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
                     this.minesMaterials.set(building.resource, material);

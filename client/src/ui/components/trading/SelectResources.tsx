@@ -1,4 +1,4 @@
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
@@ -21,7 +21,7 @@ export const SelectResources = ({
   setSelectedResourceAmounts: any;
   entity_id: ID;
 }) => {
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
 
   const unselectedResources = useMemo(

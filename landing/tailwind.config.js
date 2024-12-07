@@ -66,6 +66,7 @@ export default {
       fontFamily: {
         sans: ["Space Grotesk", ...defaultTheme.fontFamily.sans],
         heading: ["Bokor", ...defaultTheme.fontFamily.sans],
+        number: ["Anonymous Pro", ...defaultTheme.fontFamily.mono],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -103,6 +104,7 @@ export default {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        transparent: "transparent",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

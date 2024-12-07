@@ -15,7 +15,7 @@ import { ReactNode, createContext, useContext, useEffect, useMemo, useState } fr
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
-import { displayAddress } from "../../ui/utils/utils";
+import { displayAddress, getRandomBackgroundImage } from "../../ui/utils/utils";
 import { useQuery } from "../helpers/useQuery";
 import { useAddressStore } from "../store/useAddressStore";
 import useUIStore from "../store/useUIStore";
@@ -256,18 +256,20 @@ const DojoContextProvider = ({
     }
   }, [isDev, controllerAccount, burnerAccount, retries]);
 
+  const bg = `/images/covers/${getRandomBackgroundImage()}.png`;
+
   if (!accountsInitialized) {
-    return <LoadingScreen backgroundImage={backgroundImage} />;
+    return <LoadingScreen backgroundImage={bg} />;
   }
 
   // Handle Loading Screen
   if (isDev) {
     if (!burnerAccount) {
-      return <LoadingScreen backgroundImage={backgroundImage} />;
+      return <LoadingScreen backgroundImage={bg} />;
     }
   } else {
     if (isConnecting) {
-      return <LoadingScreen backgroundImage={backgroundImage} />;
+      return <LoadingScreen backgroundImage={bg} />;
     }
     if (!isConnected && !isConnecting && !controllerAccount && !isSpectatorMode) {
       return (

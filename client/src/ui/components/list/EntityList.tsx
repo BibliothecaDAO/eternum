@@ -3,6 +3,7 @@ import Button from "@/ui/elements/Button";
 import { ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useEffect, useState } from "react";
+import { ViewOnMapIcon } from "../military/ArmyManagementCard";
 
 interface EntityListProps {
   title: string;
@@ -57,18 +58,25 @@ export const EntityList = ({
           <ul>
             {list.map((entity, index) => (
               <li
-                className={clsx(
-                  "py-2 px-2 bg-gold/20  flex justify-between hover:bg-crimson/40 my-1 rounded border border-gold/10",
-                  {
-                    "animate-pulse": questing,
-                  },
-                )}
+                className={clsx("py-2 px-2 bg-gold/20 hover:bg-crimson/40 my-1 rounded border border-gold/10", {
+                  "animate-pulse": questing,
+                })}
                 key={index}
                 onClick={() => setSelectedEntity(entity)}
               >
-                {entity.name}
-                {entityContent && entityContent(entity.id)} {/* Dynamic entity icon */}
-                <ArrowRight className="w-2 fill-current" />
+                <div className="flex flex-col space-y-2">
+                  <div className="flex flex-row justify-between items-center">
+                    <div className="flex flex-row space-x-1 items-center">
+                      {entity?.position && <ViewOnMapIcon className={"my-auto"} position={entity.position} />}
+                      <h5>{entity.name}</h5>
+                    </div>
+                    <ArrowRight className="w-2 fill-current" />
+                  </div>
+
+                  <div className="border border-gold/20 bg-gold/10 rounded p-2">
+                    {entityContent && entityContent(entity.id)}
+                  </div>
+                </div>
               </li>
             ))}
           </ul>

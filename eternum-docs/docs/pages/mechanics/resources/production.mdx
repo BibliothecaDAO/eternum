@@ -1,25 +1,18 @@
-import ResourceIcon from "../../../../components/ResourceIcon";
+import ResourceIcon from "../../../../src/components/ResourceIcon";
+import ResourceTable from "../../../../src/components/ResourceTable";
 
 ## Production
+
+Each resource incurs a production cost. To sustain production, you must balance these costs. If resources are
+insufficient, production will halt until they are replenished but will deplete the available input resources until it
+paused.
 
 ### Resource Requirements
 
 Producing resources requires careful planning and management:
 
 - **Food Production**: Food is unique as it can be produced without any input resources.
-- **Input Dependencies**: Most resources need other resources as inputs.
-
-  > **Ex:** Wood production requires Stone, Coal, and Wheat.
-  >
-  > <div className="flex flex-row items-center gap-8">
-  >   <div className="flex flex-col items-center gap-1">
-  >     <ResourceIcon name="Stone" id="2" />
-  >     <ResourceIcon name="Coal" id="3" />
-  >     <ResourceIcon name="Wheat" id="254" />
-  >   </div>
-  >   <div className="text-4xl">➡</div>
-  >   <ResourceIcon name="Wood" id="1" />
-  > </div>
+- **Input Dependencies**: Most resources consume other resources as inputs in order to produce.
 
 ### Automated Production
 
@@ -40,6 +33,10 @@ Effective resource management is crucial for maintaining production efficiency:
 > To optimize resource efficiency:
 >
 > - Keep track of input resource levels
-> - Pause production buildings when input resources are running low
+> - Pause production on buildings when input resources are running low
 > - Resume production once you have sufficient input resources
 > - Consider setting up alerts or reminders to check resource levels
+
+### Resource Production Table
+
+<ResourceTable />

@@ -60,6 +60,8 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
   const handleTransfer = () => {
     if (!transferTo || selectedRealms.length === 0) return;
 
+    setIsOpen(false);
+
     send();
   };
 
@@ -105,7 +107,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="flex flex-col h-[80vh]">
         <TypeH2 className="text-gold justify-between flex">
-          Transfer Season Pas{" "}
+          Transfer Season Pass{" "}
           <Button variant="secondary" onClick={toggleAllRealms} className="text-gold" size={"sm"}>
             {selectedRealms.length === seasonPassMints.length ? "Deselect All" : "Select All"}
           </Button>
