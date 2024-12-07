@@ -4,7 +4,10 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s0_eternum::alias::ID;
 use s0_eternum::constants::get_resource_tier;
 use s0_eternum::{
-    models::{position::Coord, config::HyperstructureResourceConfigTrait, hyperstructure::Access},
+    models::{
+        position::Coord, config::HyperstructureResourceConfigTrait, config::HyperstructureResourceConfig,
+        hyperstructure::Access
+    },
     constants::{get_contributable_resources_with_rarity, RESOURCE_PRECISION}
 };
 use starknet::ContractAddress;
@@ -45,7 +48,10 @@ mod hyperstructure_systems {
             get_contributable_resources_with_rarity, RESOURCE_PRECISION, get_resource_tier
         },
         models::{
-            config::{HyperstructureResourceConfigTrait, HyperstructureConfig, VRFConfigImpl, CapacityConfigCategory},
+            config::{
+                HyperstructureResourceConfigTrait, HyperstructureConfig, HyperstructureResourceConfig, VRFConfigImpl,
+                CapacityConfigCategory
+            },
             capacity::{CapacityCategory},
             hyperstructure::{Progress, Contribution, Hyperstructure, HyperstructureImpl, Epoch, Access},
             owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait}, season::{Leaderboard},
@@ -120,9 +126,10 @@ mod hyperstructure_systems {
             let structure_count: StructureCount = world.read_model(coord);
             structure_count.assert_none();
 
-            let required_shards_amount = HyperstructureResourceConfigTrait::get_required_amount(
-                world, get_resource_tier(ResourceTypes::EARTHEN_SHARD), 0
-            );
+            let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
+            let shard_resource_tier: u32 = get_resource_tier(ResourceTypes::EARTHEN_SHARD).into();
+            let shards_resource_config = hyperstructure_resource_configs.at(shard_resource_tier - 1);
+            let required_shards_amount = shards_resource_config.get_required_amount(0);
 
             let mut creator_resources = ResourceImpl::get(ref world, (creator_entity_id, ResourceTypes::EARTHEN_SHARD));
 
@@ -206,7 +213,6 @@ mod hyperstructure_systems {
             hyperstructure.assert_access(ref world);
 
             let timestamp = starknet::get_block_timestamp();
-
             world
                 .emit_event(
                     @HyperstructureContribution {
@@ -220,6 +226,7 @@ mod hyperstructure_systems {
 
             let mut i = 0;
             let mut resource_was_completed = false;
+            let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
             while (i < contributions.len()) {
                 let contribution = *contributions.at(i);
 
@@ -229,14 +236,15 @@ mod hyperstructure_systems {
                         hyperstructure_entity_id,
                         contribution,
                         contributor_entity_id,
-                        hyperstructure.randomness
+                        hyperstructure.randomness,
+                        hyperstructure_resource_configs
                     );
                 i += 1;
             };
 
             if (resource_was_completed
                 && InternalHyperstructureSystemsImpl::check_if_construction_done(
-                    world, hyperstructure_entity_id, hyperstructure.randomness
+                    world, hyperstructure_entity_id, hyperstructure.randomness, hyperstructure_resource_configs
                 )) {
                 let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
                 hyperstructure.completed = true;
@@ -349,16 +357,17 @@ mod hyperstructure_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             let mut total_points: u128 = 0;
-            let hyperstructure_config: HyperstructureConfig = world.read_model(HYPERSTRUCTURE_CONFIG_ID);
-
+            let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
             total_points +=
                 InternalHyperstructureSystemsImpl::compute_total_contribution_points(
-                    ref world, hyperstructures_contributed_to
+                    ref world, hyperstructures_contributed_to, hyperstructure_resource_configs
                 );
 
             total_points +=
                 InternalHyperstructureSystemsImpl::compute_total_share_points(world, hyperstructure_shareholder_epochs);
 
+            // ensure the total points are enough to end the game
+            let hyperstructure_config: HyperstructureConfig = world.read_model(HYPERSTRUCTURE_CONFIG_ID);
             assert!(total_points >= hyperstructure_config.points_for_win, "Not enough points to end the game");
 
             SeasonImpl::end_season(ref world);
@@ -385,12 +394,17 @@ mod hyperstructure_systems {
             hyperstructure_entity_id: ID,
             contribution: (u8, u128),
             contributor_entity_id: ID,
-            randomness: felt252
+            hyperstructure_randomness: felt252,
+            hyperstructure_resource_configs: Span<HyperstructureResourceConfig>
         ) -> bool {
             let (resource_type, contribution_amount) = contribution;
 
+            let resource_tier: u32 = get_resource_tier(resource_type).into();
+            let hyperstructure_resource_config = hyperstructure_resource_configs.at(resource_tier - 1);
+            let required_contribution_amount = hyperstructure_resource_config
+                .get_required_amount(hyperstructure_randomness.into());
             let (max_contributable_amount, will_complete_resource) = Self::get_max_contribution_size(
-                world, hyperstructure_entity_id, resource_type, contribution_amount, randomness
+                world, hyperstructure_entity_id, resource_type, contribution_amount, required_contribution_amount,
             );
 
             if (max_contributable_amount == 0) {
@@ -419,13 +433,9 @@ mod hyperstructure_systems {
             hyperstructure_entity_id: ID,
             resource_type: u8,
             resource_amount: u128,
-            randomness: felt252
+            required_contribution_amount: u128
         ) -> (u128, bool) {
             let resource_progress: Progress = world.read_model((hyperstructure_entity_id, resource_type));
-
-            let required_contribution_amount = HyperstructureResourceConfigTrait::get_required_amount(
-                world, get_resource_tier(resource_type), randomness.into()
-            );
 
             let amount_left_for_completion = required_contribution_amount - resource_progress.amount;
 
@@ -455,16 +465,25 @@ mod hyperstructure_systems {
         }
 
         fn check_if_construction_done(
-            world: WorldStorage, hyperstructure_entity_id: ID, hyperstructure_randomness: felt252
+            world: WorldStorage,
+            hyperstructure_entity_id: ID,
+            hyperstructure_randomness: felt252,
+            hyperstructure_resource_configs: Span<HyperstructureResourceConfig>
         ) -> bool {
             let mut done = true;
             let all_resources = get_hyperstructure_construction_resources();
 
             let mut i = 0;
             while (i < all_resources.len()) {
+                let resource_tier: u32 = get_resource_tier(*all_resources.at(i)).into();
+                let hyperstructure_resource_config = hyperstructure_resource_configs.at(resource_tier - 1);
                 done =
                     Self::check_if_resource_completed(
-                        world, hyperstructure_entity_id, *all_resources.at(i), hyperstructure_randomness
+                        world,
+                        hyperstructure_entity_id,
+                        *all_resources.at(i),
+                        hyperstructure_randomness,
+                        hyperstructure_resource_config
                     );
                 if (done == false) {
                     break;
@@ -476,14 +495,15 @@ mod hyperstructure_systems {
         }
 
         fn check_if_resource_completed(
-            world: WorldStorage, hyperstructure_entity_id: ID, resource_type: u8, hyperstructure_randomness: felt252
+            world: WorldStorage,
+            hyperstructure_entity_id: ID,
+            resource_type: u8,
+            hyperstructure_randomness: felt252,
+            hyperstructure_resource_config: @HyperstructureResourceConfig
         ) -> bool {
             let resource_progress: Progress = world.read_model((hyperstructure_entity_id, resource_type));
-
-            let required_contribution_amount = HyperstructureResourceConfigTrait::get_required_amount(
-                world, get_resource_tier(resource_type), hyperstructure_randomness.into()
-            );
-
+            let required_contribution_amount = hyperstructure_resource_config
+                .get_required_amount(hyperstructure_randomness.into());
             resource_progress.amount == required_contribution_amount
         }
 
@@ -534,7 +554,9 @@ mod hyperstructure_systems {
 
 
         fn compute_total_contribution_points(
-            ref world: WorldStorage, hyperstructures_contributed_to: Span<ID>
+            ref world: WorldStorage,
+            hyperstructures_contributed_to: Span<ID>,
+            hyperstructure_resource_configs: Span<HyperstructureResourceConfig>
         ) -> u128 {
             let resources_with_rarity = get_contributable_resources_with_rarity();
 
@@ -555,7 +577,9 @@ mod hyperstructure_systems {
                 if (!hyperstructure.completed) {
                     continue;
                 }
-                let total_contributable_amount = calculate_total_contributable_amount(world, hyperstructure.randomness);
+                let total_contributable_amount = calculate_total_contributable_amount(
+                    world, hyperstructure.randomness, hyperstructure_resource_configs
+                );
                 total_points +=
                     Self::compute_contributions_for_hyperstructure(
                         world,
@@ -618,7 +642,11 @@ mod hyperstructure_systems {
     }
 }
 
-fn calculate_total_contributable_amount(world: WorldStorage, hyperstructure_randomness: felt252) -> u128 {
+fn calculate_total_contributable_amount(
+    world: WorldStorage,
+    hyperstructure_randomness: felt252,
+    hyperstructure_resource_configs: Span<HyperstructureResourceConfig>
+) -> u128 {
     let resources_with_rarity = get_contributable_resources_with_rarity();
     let mut total: u128 = 0;
 
@@ -629,9 +657,10 @@ fn calculate_total_contributable_amount(world: WorldStorage, hyperstructure_rand
         }
 
         let (resource_type, rarity) = *resources_with_rarity.at(i);
-        let required_contribution_amount = HyperstructureResourceConfigTrait::get_required_amount(
-            world, get_resource_tier(resource_type), hyperstructure_randomness.into()
-        );
+        let resource_tier: u32 = get_resource_tier(resource_type).into();
+        let hyperstructure_resource_config = hyperstructure_resource_configs.at(resource_tier - 1);
+        let required_contribution_amount = hyperstructure_resource_config
+            .get_required_amount(hyperstructure_randomness.into());
 
         total += (required_contribution_amount * rarity) / RESOURCE_PRECISION;
 

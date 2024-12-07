@@ -7,7 +7,7 @@ use dojo::world::WorldStorage;
 use s0_eternum::alias::ID;
 use s0_eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
-    split_resources_and_probs, ResourceTypes
+    split_resources_and_probs, ResourceTypes, ResourceTiers
 };
 use s0_eternum::models::buildings::BuildingCategory;
 use s0_eternum::models::capacity::{CapacityCategory, CapacityCategoryImpl, CapacityCategoryTrait};
@@ -693,16 +693,27 @@ impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
 
 #[generate_trait]
 impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
-    fn get_required_amount(world: WorldStorage, resource_tier: u8, randomness: u256) -> u128 {
-        let hyperstructure_resource_config: HyperstructureResourceConfig = world
-            .read_model((HYPERSTRUCTURE_CONFIG_ID, resource_tier));
-        if hyperstructure_resource_config.min_amount == hyperstructure_resource_config.max_amount {
-            return hyperstructure_resource_config.min_amount;
+    fn get_all(world: WorldStorage) -> Span<HyperstructureResourceConfig> {
+        let mut all_tier_configs: Array<HyperstructureResourceConfig> = array![];
+        let mut tier = ResourceTiers::LORDS; // lords is the first tier == 1
+        while (tier <= ResourceTiers::MYTHIC) { // mythic is the last tier == 9
+            let hyperstructure_resource_config: HyperstructureResourceConfig = world
+                .read_model((HYPERSTRUCTURE_CONFIG_ID, tier));
+            all_tier_configs.append(hyperstructure_resource_config);
+            tier += 1;
+        };
+        return all_tier_configs.span();
+    }
+
+
+    fn get_required_amount(self: @HyperstructureResourceConfig, randomness: u256) -> u128 {
+        if *self.min_amount == *self.max_amount {
+            return *self.min_amount;
         }
-        let min_amount_for_completion: u256 = hyperstructure_resource_config.min_amount.into();
-        let max_amount: u256 = hyperstructure_resource_config.max_amount.into();
-        let additional_amount = randomness % (max_amount - min_amount_for_completion);
-        return (min_amount_for_completion + additional_amount).try_into().unwrap();
+        let min_amount: u256 = (*self.min_amount).into();
+        let max_amount: u256 = (*self.max_amount).into();
+        let additional_amount = randomness % (max_amount - min_amount);
+        return (min_amount + additional_amount).try_into().unwrap();
     }
 }
 
