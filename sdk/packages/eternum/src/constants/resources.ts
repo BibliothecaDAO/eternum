@@ -359,6 +359,18 @@ export const WEIGHTS_GRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Fish]: 100,
 };
 
+export enum ResourceTier {
+  Lords = 1,
+  Military,
+  Transport,
+  Food,
+  Common,
+  Uncommon,
+  Rare,
+  Unique,
+  Mythic,
+}
+
 export const RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
   military: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],

@@ -1,7 +1,6 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 import { ResourceInputs } from "../types";
-import { HYPERSTRUCTURE_CREATION_COSTS } from "./hyperstructure";
 
 // Knip ignore tag
 /** @public */
@@ -180,7 +179,7 @@ export function determineEntityState(
 }
 
 export const STRUCTURE_COSTS: ResourceInputs = {
-  [StructureType.Hyperstructure]: HYPERSTRUCTURE_CREATION_COSTS,
+  [StructureType.Hyperstructure]: [], //todo hyperstructure costs
   [StructureType.Bank]: [{ resource: ResourcesIds.Gold, amount: 100_000 }],
   [StructureType.Settlement]: [
     { resource: ResourcesIds.Wheat, amount: 100_000 },
