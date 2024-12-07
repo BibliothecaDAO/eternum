@@ -95,6 +95,8 @@ const setupConfig: Config =
       }
     : EternumGlobalConfig;
 
+setupConfig.vrf.vrfProviderAddress = VITE_VRF_PROVIDER_ADDRESS!;
+
 // probably should be refactored
 setupConfig.season = {
   seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
