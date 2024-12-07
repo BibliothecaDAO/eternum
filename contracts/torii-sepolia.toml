@@ -8,8 +8,8 @@ polling_interval = 500 # Polling interval in milliseconds
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 index_transactions = true
 contracts = [
-    "erc721:0x0afc50128e19996b15e95b97d2fdd89f2fadaf1f8385afc361c43f9aeb7caff",
-    "erc721:0x036f75b31145be5578c59e73c2d47d454f9b8e13bd2b67fc750d8eaa8ac18beb",
+    "erc721:0x0d85f4967c3ca861678583583751f57e8eee100ac1ccad8bfad6466b8c81365",
+    "erc721:0x07acedab5add2da40bbd3412f9080ed1e362bbb77be7f55c962ad217306b3b8b",
     "erc20:0x46cbbaa8271f6dc6fb74064edc223f5ae9cbd619d94d6732a791c3945accaad",
     "erc20:0x2156c3baadc3c390b834b5ec785fc48763bd0b5bb194f4736d24530bfe3728b",
     "erc20:0xd0b1f2b1406bf8d855e4bee7230738b200c9ebdd0b016844be0206c16e84b9",
@@ -40,6 +40,5 @@ contracts = [
     "erc20:0x37fbc341afff6ff5339b79992e36308bf255e5de157ebbccffa6ecaa810697b",
     "erc20:0x22ecec3979ae9ebe8301f12c2aa6841d5c9e58802a730c34de051ed2b3f3a51",
     "erc20:0x242370b62b044143136a0b89395de420a9e44fadd26508c29c3a589b3d54517",
-    "erc20:0x342ad5cc14002c005a5cedcfce2bd3af98d5e7fb79e9bf949b3a91cf145d72e",
-
+    "erc20:0x03a7a5481f236a5c306ba2e0be630e0a5cdcfb700ab3ee79e8541fbe79c13249",
 ]
