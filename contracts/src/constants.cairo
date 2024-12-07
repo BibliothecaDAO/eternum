@@ -282,6 +282,34 @@ fn get_resources_without_earthenshards() -> Span<u8> {
         .span();
 }
 
+fn get_hyperstructure_construction_resources() -> Span<u8> {
+    return array![
+        ResourceTypes::WOOD,
+        ResourceTypes::STONE,
+        ResourceTypes::COAL,
+        ResourceTypes::COPPER,
+        ResourceTypes::OBSIDIAN,
+        ResourceTypes::SILVER,
+        ResourceTypes::IRONWOOD,
+        ResourceTypes::COLD_IRON,
+        ResourceTypes::GOLD,
+        ResourceTypes::HARTWOOD,
+        ResourceTypes::DIAMONDS,
+        ResourceTypes::SAPPHIRE,
+        ResourceTypes::RUBY,
+        ResourceTypes::DEEP_CRYSTAL,
+        ResourceTypes::IGNIUM,
+        ResourceTypes::ETHEREAL_SILICA,
+        ResourceTypes::TRUE_ICE,
+        ResourceTypes::TWILIGHT_QUARTZ,
+        ResourceTypes::ALCHEMICAL_SILVER,
+        ResourceTypes::ADAMANTINE,
+        ResourceTypes::MITHRAL,
+        ResourceTypes::DRAGONHIDE
+    ]
+        .span();
+}
+
 fn get_contributable_resources_with_rarity() -> Span<(u8, u128)> {
     return array![
         (ResourceTypes::WOOD, 100),

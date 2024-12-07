@@ -3,10 +3,7 @@ use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s0_eternum::{
     alias::ID,
-    constants::{
-        HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
-        get_contributable_resources_with_rarity, RESOURCE_PRECISION
-    },
+    constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_contributable_resources_with_rarity, RESOURCE_PRECISION},
     models::{
         owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
         resources::{Resource, ResourceImpl, ResourceCost},
