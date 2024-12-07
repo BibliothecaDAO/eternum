@@ -130,15 +130,17 @@ export class SystemManager {
         });
       },
       onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Position, callback, (update: any) => {
+        this.setupSystem(this.setup.components.Structure, callback, (update: any) => {
           const structure = getComponentValue(this.setup.components.Structure, update.entity);
           if (!structure) return;
 
+          const position = getComponentValue(this.setup.components.Position, update.entity);
+          if (!position) return;
+
           const owner = getComponentValue(this.setup.components.Owner, update.entity);
-
           const categoryKey = structure.category as keyof typeof StructureType;
-
           const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+
           let level = 0;
           if (StructureType[categoryKey] === StructureType.Realm) {
             const realm = getComponentValue(this.setup.components.Realm, update.entity);
@@ -147,7 +149,7 @@ export class SystemManager {
 
           return {
             entityId: structure.entity_id,
-            hexCoords: this.getHexCoords(update.value),
+            hexCoords: { col: position.x, row: position.y },
             structureType: StructureType[categoryKey],
             stage,
             level,
