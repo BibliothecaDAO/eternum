@@ -371,6 +371,9 @@ export interface Config {
     max_bank_fee_dpt_percent: number;
     max_bank_fee_wtdr_percent: number;
   };
+  vrf: {
+    vrfProviderAddress: string;
+  };
   buildings: {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;

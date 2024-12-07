@@ -21,8 +21,8 @@ use s0_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
 use s0_eternum::models::weight::Weight;
 use s0_eternum::utils::map::constants::fixed_constants as fc;
 use s0_eternum::utils::math::{max, min};
+use s0_eternum::utils::random::VRFImpl;
 use s0_eternum::utils::random;
-
 use starknet::ContractAddress;
 
 //
@@ -284,7 +284,13 @@ impl SettlementConfigImpl of SettlementConfigTrait {
 impl MapConfigImpl of MapConfigTrait {
     fn random_reward(ref world: WorldStorage) -> Span<(u8, u128)> {
         let (resource_types, resources_probs) = split_resources_and_probs();
-        let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true).at(0);
+
+        let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+        let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
+        let reward_resource_id: u8 = *random::choices(
+            resource_types, resources_probs, array![].span(), 1, true, vrf_seed
+        )
+            .at(0);
 
         let explore_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
@@ -527,6 +533,23 @@ pub struct ProductionConfig {
     input_count: u128,
     // num different resources that this resource can produce
     output_count: u128
+}
+
+// vrf
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct VRFConfig {
+    #[key]
+    config_id: ID,
+    vrf_provider_address: ContractAddress,
+}
+
+#[generate_trait]
+impl VRFConfigImpl of VRFConfigTrait {
+    fn get_provider_address(ref world: WorldStorage) -> ContractAddress {
+        let vrf_config: VRFConfig = world.read_model(WORLD_CONFIG_ID);
+        return vrf_config.vrf_provider_address;
+    }
 }
 
 

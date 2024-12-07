@@ -543,6 +543,10 @@ export interface SetSeasonConfigProps extends SystemSigner {
   start_at: num.BigNumberish;
 }
 
+export interface SetVRFConfigProps extends SystemSigner {
+  vrf_provider_address: num.BigNumberish;
+}
+
 export interface SetSeasonBridgeConfigProps extends SystemSigner {
   close_after_end_seconds: num.BigNumberish;
 }

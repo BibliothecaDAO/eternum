@@ -33,6 +33,9 @@ const envSchema = z.object({
   VITE_PUBLIC_CONSTRUCTION_FLAG: z.string().transform((v) => v === "true"),
   VITE_PUBLIC_HIDE_THREEJS_MENU: z.string().transform((v) => v === "true"),
 
+  // VRF
+  VITE_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x"),
+
   // Ark Marketplace API
   VITE_PUBLIC_ARK_MARKETPLACE_API: z.string().url(),
   VITE_PUBLIC_IMAGE_CDN_URL: z.string().url(),
