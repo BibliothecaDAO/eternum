@@ -2809,7 +2809,7 @@
     },
     {
       "address": "0x1770a7eb77ece2104c5cedbf4bd9a5223c1ddaa6854dc60d3d6625f2e4171d6",
-      "class_hash": "0x3d2d6b27c0debf2d6dd7cc0bff1ec91d683207e8e8a5ad6e169b0a03180621c",
+      "class_hash": "0xa4abb6d0930dbb2b987cb2e0906705d2346fccf693047566705c25a7253b6e",
       "abi": [
         {
           "type": "impl",
@@ -2935,6 +2935,29 @@
                 {
                   "name": "close_after_end_seconds",
                   "type": "core::integer::u64"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "VRFConfigImpl",
+          "interface_name": "s0_eternum::systems::config::contracts::IVRFConfig"
+        },
+        {
+          "type": "interface",
+          "name": "s0_eternum::systems::config::contracts::IVRFConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_vrf_config",
+              "inputs": [
+                {
+                  "name": "vrf_provider_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
                 }
               ],
               "outputs": [],
@@ -4173,6 +4196,7 @@
         "set_world_config",
         "set_season_config",
         "set_season_bridge_config",
+        "set_vrf_config",
         "set_quest_config",
         "set_quest_reward_config",
         "set_map_config",

@@ -22,10 +22,10 @@ export class EternumConfig {
 
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await setProductionConfig(config);
-    await setQuestConfig(config);
-    await setQuestRewardConfig(config);
-    await setSeasonConfig(config);
+    // await setProductionConfig(config);
+    // await setQuestConfig(config);
+    // await setQuestRewardConfig(config);
+    // await setSeasonConfig(config);
     await setVRFConfig(config);
     await setResourceBridgeFeesConfig(config);
     await setBuildingCategoryPopConfig(config);
