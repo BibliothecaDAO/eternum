@@ -60,11 +60,11 @@ fn setup() -> (WorldStorage, ID, IHyperstructureSystemsDispatcher) {
 
     let hyperstructure_construction_resources = get_hyperstructure_construction_resources();
     let mut i = 0;
-    let mut resources_for_completion = array![(ResourceTypes::EARTHEN_SHARD, TEST_AMOUNT)];
+    let mut resources_for_completion = array![(ResourceTypes::EARTHEN_SHARD, TEST_AMOUNT, TEST_AMOUNT)];
     while (i < hyperstructure_construction_resources.len()) {
         let resource_type = *hyperstructure_construction_resources.at(i);
 
-        resources_for_completion.append((resource_type, TEST_AMOUNT));
+        resources_for_completion.append((resource_type, TEST_AMOUNT, TEST_AMOUNT));
 
         world.write_model_test(@Resource { entity_id: realm_entity_id, resource_type, balance: TEST_AMOUNT * 10, });
 
