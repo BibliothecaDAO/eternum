@@ -2,12 +2,12 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s0_eternum::alias::ID;
+use s0_eternum::constants::get_resource_tier;
 use s0_eternum::{
     models::{position::Coord, config::HyperstructureResourceConfigTrait, hyperstructure::Access},
     constants::{get_contributable_resources_with_rarity, RESOURCE_PRECISION}
 };
 use starknet::ContractAddress;
-use s0_eternum::constants::get_resource_tier;
 
 const LEADERBOARD_REGISTRATION_PERIOD: u64 = 604800; // one week
 
@@ -41,7 +41,7 @@ mod hyperstructure_systems {
     use s0_eternum::{
         alias::ID,
         constants::{
-            WORLD_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
+            WORLD_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_hyperstructure_construction_resources,
             get_contributable_resources_with_rarity, RESOURCE_PRECISION, get_resource_tier
         },
         models::{
@@ -458,7 +458,7 @@ mod hyperstructure_systems {
             world: WorldStorage, hyperstructure_entity_id: ID, hyperstructure_randomness: felt252
         ) -> bool {
             let mut done = true;
-            let all_resources = get_resources_without_earthenshards();
+            let all_resources = get_hyperstructure_construction_resources();
 
             let mut i = 0;
             while (i < all_resources.len()) {
