@@ -7,7 +7,7 @@ import { StepButton } from "./utils";
 export const travelSteps: StepOptions[] = [
   {
     title: "World View",
-    text: "Click here to toggle between the world map and your Realm.",
+    text: "Toggle between the world map and your Realm.",
     attachTo: {
       element: ".map-button-selector",
       on: "auto",
@@ -15,18 +15,19 @@ export const travelSteps: StepOptions[] = [
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
+      useUIStore.getState().closeAllPopups();
       return new Promise<void>((resolve) => resolve());
     },
     advanceOn: {
       selector: ".map-button-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    buttons: [],
   },
   {
     title: "Stamina",
     text: "Traveling and Exploring use up the army's stamina, and consumes food.",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Eternum Cycle",
@@ -35,22 +36,22 @@ export const travelSteps: StepOptions[] = [
       element: ".cycle-selector",
       on: "auto",
     },
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Explore",
     text: "Exploring undiscovered hexes rewards resources to your army, and possibly uncover hidden Fragment Mines.",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Travel",
     text: "Traveling grants no reward, but its stamina and food costs are reduced.",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Map Controls",
     text: "To move the camera, use left-click and drag, or use WASD keys.",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Army Controls",
@@ -61,6 +62,6 @@ export const travelSteps: StepOptions[] = [
     },
     classes: "!left-3/4 !top-1/4 ",
     highlightClass: "allow-modal-click",
-    buttons: [StepButton.prev, StepButton.finish],
+    buttons: [StepButton.finish],
   },
 ];

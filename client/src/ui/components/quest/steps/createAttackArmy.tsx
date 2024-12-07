@@ -11,23 +11,24 @@ export const createAttackArmySteps: StepOptions[] = [
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
+      useUIStore.getState().closeAllPopups();
       return new Promise<void>((resolve) => resolve());
     },
     buttons: [StepButton.next],
   },
   {
     title: "Military Menu",
-    text: "Open the military menu to manage your armies",
+    text: "Open the Military menu.",
     attachTo: {
       element: ".military-selector",
       on: "right",
     },
-    classes: "ml-5",
     advanceOn: {
       selector: ".military-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    classes: "ml-5",
+    buttons: [],
   },
   {
     title: "Troop Resources",
@@ -36,30 +37,20 @@ export const createAttackArmySteps: StepOptions[] = [
       element: ".military-panel-selector",
       on: "right",
     },
-    classes: "ml-5",
-    canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".military-panel-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().setLeftNavigationView(LeftView.None);
-          return this.back();
-        },
-      },
-      StepButton.next,
-    ],
+    canClickTarget: false,
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
   {
-    title: "Create Attack Army",
-    text: "Click here.",
+    title: "Attack Army",
+    text: "Create an Attack army.",
     attachTo: {
       element: ".attack-army-selector",
       on: "top",
     },
-    classes: "-mt-5",
     beforeShowPromise: function () {
       return waitForElement(".attack-army-selector");
     },
@@ -71,15 +62,8 @@ export const createAttackArmySteps: StepOptions[] = [
       const elementExists = document.querySelector(".attacking-army-selector");
       return !elementExists;
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().setLeftNavigationView(LeftView.None);
-          return this.back();
-        },
-      },
-    ],
+    classes: "-mt-5",
+    buttons: [],
   },
   {
     title: "Transfer",
@@ -88,9 +72,9 @@ export const createAttackArmySteps: StepOptions[] = [
       element: ".defensive-army-swap-selector",
       on: "bottom",
     },
-    classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "mt-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Edit",
@@ -99,7 +83,6 @@ export const createAttackArmySteps: StepOptions[] = [
       element: ".attacking-army-edit-selector",
       on: "top",
     },
-    classes: "-mt-5",
     beforeShowPromise: function () {
       return waitForElement(".attacking-army-edit-selector");
     },
@@ -107,7 +90,8 @@ export const createAttackArmySteps: StepOptions[] = [
       selector: ".attacking-army-edit-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    classes: "-mt-5",
+    buttons: [],
   },
   {
     title: "Assign Troops",
@@ -116,10 +100,10 @@ export const createAttackArmySteps: StepOptions[] = [
       element: ".attacking-army-selector",
       on: "top",
     },
-    classes: "-mt-5",
     beforeShowPromise: function () {
       return waitForElement(".attacking-army-selector");
     },
-    buttons: [StepButton.prev, StepButton.finish],
+    classes: "-mt-5",
+    buttons: [StepButton.finish],
   },
 ];

@@ -33,7 +33,6 @@ export const useTutorial = (steps: StepOptions[] | undefined, canExit: boolean) 
 
         keyboardNavigation: false,
         defaultStepOptions: {
-          modalOverlayOpeningPadding: 5,
           arrow: true,
           cancelIcon: { enabled: canExit },
         },
