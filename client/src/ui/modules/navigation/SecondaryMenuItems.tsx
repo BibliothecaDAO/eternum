@@ -71,7 +71,7 @@ export const SecondaryMenuItems = () => {
     const buttons = [
       {
         button: unclaimedQuestsCount > 0 && (
-          <div className="flex items-center gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12">
+          <div className="flex items-center gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-8 md:h-8">
             <Button
               isLoading={isLoading}
               className={clsx(
