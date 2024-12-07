@@ -42,8 +42,8 @@ const MINIMAP_CONFIG = {
     },
   },
   SIZES: {
-    STRUCTURE: 2,
-    ARMY: 2,
+    STRUCTURE: 10,
+    ARMY: 10,
     CAMERA: {
       TOP_SIDE_WIDTH_FACTOR: 105,
       BOTTOM_SIDE_WIDTH_FACTOR: 170,
