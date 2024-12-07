@@ -118,27 +118,33 @@ mod map_generation_systems {
 
             let army_entity_id = InternalTroopImpl::create_defensive_army(ref world, structure_entity_id);
 
-            let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
-            let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
+            let caller_address = starknet::get_caller_address();
+            let mut seed: u256 = 0;
+            let (dev_bank_systems_address, _) = world.dns(@"dev_bank_systems").unwrap();
+            if caller_address != dev_bank_systems_address {
+                let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+                seed = VRFImpl::seed(caller_address, vrf_provider);
+            } else {
+                // hack to bypass vrf for the dev bank
+                // because it will be created from the cli
+                // and vrf can't be called from the cli
+                seed = 'I AM SEED FOR THE DEV BANK'.into() - starknet::get_block_timestamp().into();
+            }
 
             let random_knights_amount: u64 = random::random(
-                vrf_seed,
-                1,
-                mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
+                seed, 1, mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
             )
                 .try_into()
                 .unwrap()
                 + mercenaries_config.knights_lower_bound;
             let random_paladins_amount: u64 = random::random(
-                vrf_seed,
-                2,
-                mercenaries_config.paladins_upper_bound.into() - mercenaries_config.paladins_lower_bound.into()
+                seed, 2, mercenaries_config.paladins_upper_bound.into() - mercenaries_config.paladins_lower_bound.into()
             )
                 .try_into()
                 .unwrap()
                 + mercenaries_config.paladins_lower_bound;
             let random_crossbowmen_amount: u64 = random::random(
-                vrf_seed,
+                seed,
                 3,
                 mercenaries_config.crossbowmen_upper_bound.into() - mercenaries_config.crossbowmen_lower_bound.into()
             )

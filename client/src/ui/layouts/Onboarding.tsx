@@ -148,9 +148,17 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
 const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const {
     account: { account },
+    setup: {
+      systemCalls: { create_multiple_realms_dev },
+    },
   } = useDojo();
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
   const realms = usePlayerRealms();
+
+  const createRandomRealm = () => {
+    const newRealmId = Math.max(...realms.map((realm) => realm.realmId), 0) + 1;
+    create_multiple_realms_dev({ signer: account, realm_ids: [newRealmId] });
+  };
 
   useEffect(() => {
     const fetchSeasonPasses = async () => {
@@ -164,10 +172,12 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
 
   return (
     <Button
-      onClick={handleClick}
+      onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
       className="mt-8 w-full h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1"
     >
-      {seasonPassRealms.length === 0 ? (
+      {env.VITE_PUBLIC_DEV ? (
+        "Create Random Realm"
+      ) : seasonPassRealms.length === 0 ? (
         <div className="flex items-center">
           <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-black text-black" />
           <a
