@@ -20,7 +20,10 @@ const {
   VITE_PUBLIC_DEV,
   VITE_PUBLIC_NODE_URL,
   VITE_PUBLIC_CHAIN,
+  VITE_VRF_PROVIDER_ADDRESS,
 } = process.env;
+
+console.log("VRF_PROVIDER_ADDRESS", VITE_VRF_PROVIDER_ADDRESS);
 
 const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 
@@ -38,7 +41,7 @@ if (!VITE_PUBLIC_DEV) {
 }
 
 console.log("Provider set up");
-const provider = new EternumProvider(manifest, nodeUrl);
+const provider = new EternumProvider(manifest, nodeUrl, VITE_VRF_PROVIDER_ADDRESS);
 
 console.log("Account set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);

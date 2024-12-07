@@ -22,10 +22,10 @@ export class EternumConfig {
 
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    // await setProductionConfig(config);
-    // await setQuestConfig(config);
-    // await setQuestRewardConfig(config);
-    // await setSeasonConfig(config);
+    await setProductionConfig(config);
+    await setQuestConfig(config);
+    await setQuestRewardConfig(config);
+    await setSeasonConfig(config);
     await setVRFConfig(config);
     await setResourceBridgeFeesConfig(config);
     await setBuildingCategoryPopConfig(config);
@@ -637,7 +637,7 @@ export const setSettlementConfig = async (config: Config) => {
 };
 
 export const createAdminBank = async (config: Config) => {
-  const tx = await config.provider.create_admin_bank({
+  await config.provider.create_admin_bank({
     signer: config.account,
     name: config.config.banks.name,
     coord: { x: FELT_CENTER, y: FELT_CENTER },
@@ -646,7 +646,7 @@ export const createAdminBank = async (config: Config) => {
     owner_bridge_fee_dpt_percent: config.config.banks.ownerBridgeFeeOnDepositPercent,
     owner_bridge_fee_wtdr_percent: config.config.banks.ownerBridgeFeeOnWithdrawalPercent,
   });
-  console.log(`Creating admin bank ${tx.statusReceipt}...`);
+  console.log(`Creating admin bank ...`);
 };
 
 export const mintResources = async (config: Config) => {
