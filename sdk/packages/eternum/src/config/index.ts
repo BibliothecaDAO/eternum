@@ -26,6 +26,7 @@ export class EternumConfig {
     await setQuestConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
+    await setVRFConfig(config);
     await setResourceBridgeFeesConfig(config);
     await setBuildingCategoryPopConfig(config);
     await setPopulationConfig(config);
@@ -467,6 +468,15 @@ export const setSeasonConfig = async (config: Config) => {
 
   console.log(`Configuring season ${tx.statusReceipt}`);
   console.log(`Season starts at ${new Date(startAt * 1000).toISOString()}`);
+};
+
+export const setVRFConfig = async (config: Config) => {
+  const tx = await config.provider.set_vrf_config({
+    signer: config.account,
+    vrf_provider_address: config.config.vrf.vrfProviderAddress,
+  });
+
+  console.log(`Configuring VRF ${tx.statusReceipt}`);
 };
 
 export const setResourceBridgeLordsWhitlelistConfig = async (config: Config) => {

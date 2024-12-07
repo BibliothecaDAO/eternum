@@ -1736,6 +1736,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_vrf_config(props: SystemProps.SetVRFConfigProps) {
+    const { vrf_provider_address, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_vrf_config",
+      calldata: [vrf_provider_address],
+    });
+  }
+
   public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
     const { token, resource_type, signer } = props;
 

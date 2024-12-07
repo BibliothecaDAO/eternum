@@ -1,10 +1,38 @@
+use cartridge_vrf::IVrfProviderDispatcher;
+use cartridge_vrf::IVrfProviderDispatcherTrait;
+use cartridge_vrf::Source;
 use core::poseidon::poseidon_hash_span;
+use starknet::ContractAddress;
+use starknet::TxInfo;
+
+#[generate_trait]
+impl VRFImpl of VRFTrait {
+    fn seed(player_id: ContractAddress, vrf_provider_address: ContractAddress) -> u256 {
+
+        let tx_info: TxInfo = starknet::get_tx_info().unbox();
+
+        if vrf_provider_address.is_zero() {
+            // workaround for testnet
+            assert!(
+                tx_info.chain_id.is_zero() || tx_info.chain_id == 'KATANA'
+                , "VRF provider address must be set");
+                
+            return tx_info.transaction_hash.into();
+        } else {
+            let vrf_provider = IVrfProviderDispatcher { contract_address: vrf_provider_address };
+            let random_value: felt252 = vrf_provider.consume_random(Source::Nonce(player_id));
+            return random_value.into();
+        }   
+    }
+}
 
 /// Generate a random value within a specified upper_bound.
 ///
 /// Args:
+///     seed: u256
+///         random seed
 ///     salt: u128
-///         salt used when generating the seed
+///         to update the seed
 ///     upper_bound: u128
 ///         The upper_bound of possible values
 ///         i.e output will be from 0 to upper_bound - 1.
@@ -13,16 +41,13 @@ use core::poseidon::poseidon_hash_span;
 ///     u128
 ///         A random value within the specified upper_bound.
 ///
-fn random(salt: u128, upper_bound: u128) -> u128 {
-    let seed = make_seed_from_transaction_hash(salt);
-    seed.low % upper_bound
+///
+fn random(seed: u256, salt: u128, upper_bound: u128) -> u128 {
+    let value: u256 = poseidon_hash_span(array![seed.low.into(), seed.high.into(), salt.into()].span()).into();
+    let upper_bound: u256 = upper_bound.into();
+    return (value % upper_bound).try_into().unwrap();
 }
 
-
-fn make_seed_from_transaction_hash(salt: u128) -> u256 {
-    return poseidon_hash_span(array![starknet::get_tx_info().unbox().transaction_hash.into(), salt.into()].span())
-        .into();
-}
 
 /// Return a k sized list of population elements chosen with replacement.
 ///
@@ -50,7 +75,7 @@ fn make_seed_from_transaction_hash(salt: u128) -> u256 {
 /// See Also: https://docs.python.org/3/library/random.html#random.choices
 ///
 fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
-    population: Span<T>, weights: Span<u128>, mut cum_weights: Span<u128>, k: u128, r: bool
+    population: Span<T>, weights: Span<u128>, mut cum_weights: Span<u128>, k: u128, r: bool, vrf_seed: u256
 ) -> Span<T> {
     let mut n = population.len();
     let mut salt: u128 = starknet::get_block_timestamp().into();
@@ -63,7 +88,7 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
                 if index == k {
                     break;
                 }
-                result.append(*population.at(random(salt + index.into(), n.into()).try_into().unwrap()));
+                result.append(*population.at(random(vrf_seed, index.into(), n.into()).try_into().unwrap()));
                 index += 1;
             };
             return result.span();
@@ -101,7 +126,7 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
         // just to make it different
         salt += 18;
 
-        let chosen_index = bisect_right(cum_weights.clone(), random(salt, total), 0, Option::Some(hi));
+        let chosen_index = bisect_right(cum_weights.clone(), random(vrf_seed, salt, total), 0, Option::Some(hi));
 
         if r == false {
             if chosen_index_map.get(chosen_index.into()) == 0 {
