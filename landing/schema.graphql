@@ -8400,6 +8400,7 @@ type s0_eternum_Season {
   eventMessage: World__EventMessage
   is_over: bool
   start_at: u64
+  ended_at: u64
 }
 
 type s0_eternum_SeasonAddressesConfig {
@@ -8501,6 +8502,7 @@ enum s0_eternum_SeasonOrderField {
   CONFIG_ID
   IS_OVER
   START_AT
+  ENDED_AT
 }
 
 input s0_eternum_SeasonWhereInput {
@@ -8527,6 +8529,17 @@ input s0_eternum_SeasonWhereInput {
   start_atNEQ: u64
   start_atNOTIN: [u64]
   start_atNOTLIKE: u64
+  ended_at: u64
+  ended_atEQ: u64
+  ended_atGT: u64
+  ended_atGTE: u64
+  ended_atIN: [u64]
+  ended_atLIKE: u64
+  ended_atLT: u64
+  ended_atLTE: u64
+  ended_atNEQ: u64
+  ended_atNOTIN: [u64]
+  ended_atNOTLIKE: u64
 }
 
 type s0_eternum_SettleRealmData {

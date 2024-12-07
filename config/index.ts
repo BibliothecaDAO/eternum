@@ -62,6 +62,20 @@ const setupConfig: Config =
           graceTickCountHyp: 0,
           delaySeconds: 0,
         },
+
+        // bridge close after 2 hours in dev mode
+        season: {
+          ...EternumGlobalConfig.season,
+          bridgeCloseAfterEndSeconds: 60 * 60 * 2, // 2 hours
+        },
+
+        // bridge fees to multi in dev mode
+        bridge: {
+          ...EternumGlobalConfig.bridge,
+          velords_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
+          season_pool_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
+        },
+
         // make it easier to build hyperstructures in dev mode
         hyperstructures: {
           ...EternumGlobalConfig.hyperstructures,
@@ -69,6 +83,7 @@ const setupConfig: Config =
             resource: cost.resource,
             amount: 1,
           })),
+          hyperstructurePointsForWin: 500_000,
           hyperstructureTotalCosts: EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
             resource: cost.resource,
             amount: 0.1,
@@ -83,6 +98,7 @@ setupConfig.season = {
   realmsAddress: process.env.VITE_REALMS_ADDRESS!,
   lordsAddress: process.env.VITE_LORDS_ADDRESS!,
   startAfterSeconds: 60 * 5, // 5 minutes
+  bridgeCloseAfterEndSeconds: 60 * 60 * 2, // 2 hours
 };
 
 export const config = new EternumConfig(setupConfig);

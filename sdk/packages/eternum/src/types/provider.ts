@@ -547,6 +547,10 @@ export interface SetVRFConfigProps extends SystemSigner {
   vrf_provider_address: num.BigNumberish;
 }
 
+export interface SetSeasonBridgeConfigProps extends SystemSigner {
+  close_after_end_seconds: num.BigNumberish;
+}
+
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
   token: num.BigNumberish;
   resource_type: num.BigNumberish;

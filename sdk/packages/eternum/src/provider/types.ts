@@ -31,6 +31,7 @@ export enum TransactionType {
   SET_SETTLEMENT_CONFIG = "set_settlement_config",
   SET_SEASON_CONFIG = "set_season_config",
   SET_VRF_CONFIG = "set_vrf_config",
+  SET_SEASON_BRIDGE_CONFIG = "set_season_bridge_config",
   SET_RESOURCE_BRIDGE_WHITELIST_CONFIG = "set_resource_bridge_whitelist_config",
   SET_CAPACITY_CONFIG = "set_capacity_config",
   SET_SPEED_CONFIG = "set_speed_config",
