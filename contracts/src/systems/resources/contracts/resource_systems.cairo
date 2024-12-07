@@ -287,8 +287,10 @@ mod resource_systems {
             let mut resources_clone = resources.clone();
 
             // ensure resource spending is not locked
-            let owner_resource_lock: ResourceTransferLock = world.read_model(owner_id);
-            owner_resource_lock.assert_not_locked();
+            if enforce_owner_payment {
+                let owner_resource_lock: ResourceTransferLock = world.read_model(owner_id);
+                owner_resource_lock.assert_not_locked();
+            }
 
             // ensure resource receipt is not locked
             let recipient_resource_lock: ResourceTransferLock = world.read_model(actual_recipient_id);
