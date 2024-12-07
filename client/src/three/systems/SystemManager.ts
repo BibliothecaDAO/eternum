@@ -109,6 +109,26 @@ export class SystemManager {
 
   public get Structure() {
     return {
+      onContribution: (callback: (value: { entityId: ID; structureType: StructureType; stage: number }) => void) => {
+        this.setupSystem(this.setup.components.Progress, callback, (update: any) => {
+          const structure = getComponentValue(
+            this.setup.components.Structure,
+            getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_entity_id)]),
+          );
+
+          if (!structure) return;
+
+          const categoryKey = structure.category as keyof typeof StructureType;
+
+          const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+
+          return {
+            entityId: structure.entity_id,
+            structureType: StructureType[categoryKey],
+            stage,
+          };
+        });
+      },
       onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
         this.setupSystem(this.setup.components.Position, callback, (update: any) => {
           const structure = getComponentValue(this.setup.components.Structure, update.entity);

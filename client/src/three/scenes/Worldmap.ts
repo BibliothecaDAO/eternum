@@ -114,8 +114,11 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
     this.systemManager.Structure.onUpdate((value) => {
-      if (this.structureManager.structures.removeStructure(99999999)) {
-        this.structureManager.structureHexCoords.get(value.hexCoords.col)?.delete(value.hexCoords.row);
+      const optimisticStructure = this.structureManager.structures.removeStructure(99999999);
+      if (optimisticStructure) {
+        this.structureManager.structureHexCoords
+          .get(optimisticStructure.hexCoords.col)
+          ?.delete(optimisticStructure.hexCoords.row);
         this.structureManager.updateChunk(this.currentChunk);
       }
       this.structureManager.onUpdate(value);
@@ -124,6 +127,11 @@ export default class WorldmapScene extends HexagonScene {
         this.clearCache();
         this.updateVisibleChunks(true);
       }
+    });
+
+    this.systemManager.Structure.onContribution((value) => {
+      this.structureManager.structures.updateStructureStage(value.entityId, value.structureType, value.stage);
+      this.structureManager.updateChunk(this.currentChunk);
     });
 
     this.inputManager.addListener(

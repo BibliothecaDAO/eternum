@@ -242,6 +242,13 @@ class Structures {
     });
   }
 
+  updateStructureStage(entityId: ID, structureType: StructureType, stage: number) {
+    const structure = this.structures.get(structureType)!.get(entityId);
+    if (structure) {
+      structure.stage = stage;
+    }
+  }
+
   removeStructureFromPosition(hexCoords: { col: number; row: number }) {
     this.structures.forEach((structures) => {
       structures.forEach((structure) => {
@@ -252,14 +259,18 @@ class Structures {
     });
   }
 
-  removeStructure(entityId: ID): boolean {
-    let removed = false;
+  removeStructure(entityId: ID): StructureInfo | null {
+    let removedStructure: StructureInfo | null = null;
+
     this.structures.forEach((structures) => {
-      if (structures.delete(entityId)) {
-        removed = true;
+      const structure = structures.get(entityId);
+      if (structure) {
+        structures.delete(entityId);
+        removedStructure = structure;
       }
     });
-    return removed;
+
+    return removedStructure;
   }
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {
