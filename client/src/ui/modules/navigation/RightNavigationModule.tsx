@@ -43,7 +43,7 @@ export const RightNavigationModule = () => {
 
   return (
     <div
-      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-24 ${
+      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-36 ${
         isOffscreen ? "translate-x-[83%]" : ""
       }`}
     >
