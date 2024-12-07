@@ -26,7 +26,7 @@ import { StructurePreview } from "../components/StructurePreview";
 import { playSound } from "../sound/utils";
 import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
-import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
+import { DUMMY_HYPERSTRUCTURE_ENTITY_ID, HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -114,8 +114,12 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
     this.systemManager.Structure.onUpdate((value) => {
-      const optimisticStructure = this.structureManager.structures.removeStructure(99999999);
+      const optimisticStructure = this.structureManager.structures.removeStructure(
+        Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
+      );
       if (optimisticStructure) {
+        this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
+        this.dojo.components.Position.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
         this.structureManager.structureHexCoords
           .get(optimisticStructure.hexCoords.col)
           ?.delete(optimisticStructure.hexCoords.row);

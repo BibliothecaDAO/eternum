@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { BUILDINGS_CENTER } from "@/three/scenes/constants";
+import { BUILDINGS_CENTER, DUMMY_HYPERSTRUCTURE_ENTITY_ID } from "@/three/scenes/constants";
 import { playBuildingSound } from "@/three/sound/utils";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
@@ -341,24 +341,24 @@ export class TileManager {
   };
 
   private _optimisticStructure = (coords: Position, structureType: StructureType) => {
-    const overrideId = uuid();
-    const entity: Entity = getEntityIdFromKeys([BigInt(99999999n)]);
+    const overrideId = DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString();
+    const entity: Entity = getEntityIdFromKeys([BigInt(DUMMY_HYPERSTRUCTURE_ENTITY_ID)]);
+
+    this.setup.components.Position.addOverride(overrideId, {
+      entity,
+      value: {
+        entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
+        x: coords.x,
+        y: coords.y,
+      },
+    });
 
     this.setup.components.Structure.addOverride(overrideId, {
       entity,
       value: {
         category: StructureType[structureType],
-        entity_id: 99999999,
+        entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
         created_at: 0n,
-      },
-    });
-
-    this.setup.components.Position.addOverride(overrideId, {
-      entity,
-      value: {
-        entity_id: 99999999,
-        x: coords.x,
-        y: coords.y,
       },
     });
 
@@ -457,7 +457,7 @@ export class TileManager {
   };
 
   placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
-    this._optimisticStructure(coords, structureType);
+    const { overrideId } = this._optimisticStructure(coords, structureType);
     try {
       if (structureType == StructureType.Hyperstructure) {
         return await this.setup.systemCalls.create_hyperstructure({
@@ -467,6 +467,8 @@ export class TileManager {
         });
       }
     } catch (error) {
+      this.setup.components.Structure.removeOverride(overrideId);
+      this.setup.components.Position.removeOverride(overrideId);
       console.error(error);
       throw error;
     }
