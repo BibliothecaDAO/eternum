@@ -371,6 +371,20 @@ export enum ResourceTier {
   Mythic,
 }
 
+export const GET_RESOURCE_TIER = (resource: ResourcesIds): ResourceTier => {
+  if (RESOURCE_TIERS.lords.includes(resource)) return ResourceTier.Lords;
+  if (RESOURCE_TIERS.military.includes(resource)) return ResourceTier.Military;
+  if (RESOURCE_TIERS.transport.includes(resource)) return ResourceTier.Transport;
+  if (RESOURCE_TIERS.food.includes(resource)) return ResourceTier.Food;
+  if (RESOURCE_TIERS.common.includes(resource)) return ResourceTier.Common;
+  if (RESOURCE_TIERS.uncommon.includes(resource)) return ResourceTier.Uncommon;
+  if (RESOURCE_TIERS.rare.includes(resource)) return ResourceTier.Rare;
+  if (RESOURCE_TIERS.unique.includes(resource)) return ResourceTier.Unique;
+  if (RESOURCE_TIERS.mythic.includes(resource)) return ResourceTier.Mythic;
+  
+  throw new Error(`Resource ${resource} not found in any tier`);
+};
+
 export const RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
   military: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],
