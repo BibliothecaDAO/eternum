@@ -5170,6 +5170,7 @@ export enum S0_Eternum_SeasonOrderField {
   ConfigId = "CONFIG_ID",
   IsOver = "IS_OVER",
   StartAt = "START_AT",
+  EndedAt = "ENDED_AT",
 }
 
 export type S0_Eternum_SeasonWhereInput = {
@@ -5196,6 +5197,17 @@ export type S0_Eternum_SeasonWhereInput = {
   start_atNEQ?: InputMaybe<Scalars["u64"]["input"]>;
   start_atNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
   start_atNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  ended_at?: InputMaybe<Scalars["u64"]["input"]>;
+  ended_atEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  ended_atGT?: InputMaybe<Scalars["u64"]["input"]>;
+  ended_atGTE?: InputMaybe<Scalars["u64"]["input"]>;
+  ended_atIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  ended_atLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  ended_atLT?: InputMaybe<Scalars["u64"]["input"]>;
+  ended_atLTE?: InputMaybe<Scalars["u64"]["input"]>;
+  ended_atNEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  ended_atNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  ended_atNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
 export type S0_Eternum_SettleRealmDataOrder = {
