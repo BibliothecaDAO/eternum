@@ -244,7 +244,7 @@ mod resource_systems {
 
             // create donkey that can carry weight
             donkey::create_donkey(ref world, false, donkey_to_bank_id, owner_id, owner_coord, bank_coord);
-            donkey::burn_donkey(ref world, owner_id, total_resources_weight);
+            donkey::burn_donkey(ref world, owner_id, total_resources_weight, true);
 
             // emit transfer event
             Self::emit_transfer_event(ref world, owner_id, donkey_to_bank_id, array![resource].span());
@@ -350,7 +350,7 @@ mod resource_systems {
                     ref world, is_round_trip, actual_recipient_id, recipient_id, owner_coord, recipient_coord
                 );
                 if transport_resource_burn {
-                    donkey::burn_donkey(ref world, transport_provider_id, total_resources_weight);
+                    donkey::burn_donkey(ref world, transport_provider_id, total_resources_weight, true);
                 }
             }
 
