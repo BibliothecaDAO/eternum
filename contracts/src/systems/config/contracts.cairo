@@ -349,7 +349,7 @@ mod config_systems {
         }
     }
 
-
+    #[abi(embed_v0)]
     impl VRFConfigImpl of super::IVRFConfig<ContractState> {
         fn set_vrf_config(ref self: ContractState, vrf_provider_address: starknet::ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
