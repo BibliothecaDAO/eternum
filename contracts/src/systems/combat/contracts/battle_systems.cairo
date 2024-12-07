@@ -853,8 +853,8 @@ mod battle_pillage_systems {
 
     use s0_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
     use s0_eternum::utils::math::{min, max};
-    use s0_eternum::utils::random;
     use s0_eternum::utils::random::{VRFImpl};
+    use s0_eternum::utils::random;
     use starknet::ContractAddress;
 
     use super::{IBattlePillageContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait};

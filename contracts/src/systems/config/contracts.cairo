@@ -345,12 +345,7 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(
-                @VRFConfig {
-                    config_id: WORLD_CONFIG_ID, 
-                    vrf_provider_address
-                }
-            );
+            world.write_model(@VRFConfig { config_id: WORLD_CONFIG_ID, vrf_provider_address });
         }
     }
 
