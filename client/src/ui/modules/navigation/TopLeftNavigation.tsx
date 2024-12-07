@@ -19,7 +19,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SecondaryMenuItems } from "./SecondaryMenuItems";
+import { QuestsMenu, SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -320,7 +320,12 @@ export const TopLeftNavigation = () => {
           ></div>
         </div>
       </motion.div>
-      <SecondaryMenuItems />
+      <div className="relative">
+        <SecondaryMenuItems />
+        <div className="absolute right-0 px-4 top-full mt-2">
+          <QuestsMenu />
+        </div>
+      </div>
     </div>
   );
 };
