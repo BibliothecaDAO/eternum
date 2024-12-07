@@ -1,5 +1,4 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
-import { SetupResult } from "@/dojo/setup";
 import { questDetails } from "@/ui/components/quest/questDetails";
 import { BuildingType, ContractAddress, ID, QuestType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
@@ -35,9 +34,7 @@ export enum QuestStatus {
 }
 
 export const useQuests = () => {
-  const { setup } = useDojo();
-
-  const questDependencies = useQuestDependencies(setup);
+  const questDependencies = useQuestDependencies();
 
   const createQuest = (QuestType: QuestType) => {
     const dependency = questDependencies[QuestType];
@@ -65,7 +62,12 @@ export const useQuests = () => {
   return { quests };
 };
 
-const useQuestDependencies = (setup: SetupResult) => {
+const useQuestDependencies = () => {
+  const {
+    setup,
+    account: { account },
+  } = useDojo();
+
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const entityUpdate = useEntityQuery([
@@ -78,7 +80,10 @@ const useQuestDependencies = (setup: SetupResult) => {
   const orders = useGetMyOffers();
   const { getEntityInfo } = useEntitiesUtils();
 
-  const structurePosition = getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 };
+  const structurePosition = useMemo(
+    () => getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 },
+    [structureEntityId, getEntityInfo],
+  );
 
   const tileManager = new TileManager(setup, {
     col: structurePosition.x,

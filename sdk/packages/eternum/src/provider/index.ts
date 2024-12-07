@@ -531,40 +531,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Create a new realm
-   *
-   * @param props - Properties for creating realm
-   * @param props.realm_id - ID for the new realm
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Create realm with ID 123
-   * {
-   *   realm_id: 123,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async create_realm(props: SystemProps.CreateRealmProps) {
-    const { realm_id, signer } = props;
-
-    const tx = await this.execute(
-      signer,
-      [
-        {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
-          entrypoint: "create",
-          calldata: [realm_id, "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"],
-        },
-      ],
-      NAMESPACE,
-    );
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  /**
    * Upgrade a realm's level
    *
    * @param props - Properties for upgrading realm
@@ -608,7 +574,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
+  public async create_multiple_realms_dev(props: SystemProps.CreateMultipleRealmsDevProps) {
     let { realm_ids, signer } = props;
 
     let calldata = realm_ids.flatMap((realm_id) => {
@@ -623,6 +589,42 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     return await this.executeAndCheckTransaction(signer, calldata);
+  }
+  /**
+   * Create multiple realms at once
+   *
+   * @param props - Properties for creating realms
+   * @param props.realm_ids - Array of realm IDs to create
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Create realms with IDs 123, 456, 789
+   * {
+   *   realm_ids: [123, 456, 789],
+   *   signer: account
+   * }
+   * ```
+   */
+  public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
+    let { realm_ids, owner, frontend, signer, season_pass_address } = props;
+
+    const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
+
+    const approvalForAllCall = {
+      contractAddress: season_pass_address,
+      entrypoint: "set_approval_for_all",
+      calldata: [realmSystemsContractAddress, true],
+    };
+
+    const createCalls = realm_ids.map((realm_id) => ({
+      contractAddress: realmSystemsContractAddress,
+      entrypoint: "create",
+      calldata: [owner, realm_id, frontend],
+    }));
+
+    return await this.executeAndCheckTransaction(signer, [approvalForAllCall, ...createCalls]);
   }
 
   /**

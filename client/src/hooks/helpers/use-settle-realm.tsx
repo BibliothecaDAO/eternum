@@ -16,7 +16,7 @@ export const useSettleRealm = () => {
 
   const {
     setup: {
-      systemCalls: { create_multiple_realms },
+      systemCalls: { create_multiple_realms_dev },
     },
     account: { account },
   } = useDojo();
@@ -31,7 +31,7 @@ export const useSettleRealm = () => {
       setErrorMessage(null); // Reset error message before attempting to settle
       const calldata = [Number(id)];
 
-      await create_multiple_realms({
+      await create_multiple_realms_dev({
         signer: account,
         realm_ids: [...calldata],
       });
@@ -39,7 +39,6 @@ export const useSettleRealm = () => {
       playSign();
       return id;
     } catch (error) {
-      setErrorMessage("Realm already settled. Please try a different Realm.");
       console.error("Error during minting:", error);
     } finally {
       setIsLoading(false);

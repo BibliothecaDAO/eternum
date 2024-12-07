@@ -15,15 +15,16 @@ import { Has } from "@dojoengine/recs";
 import clsx from "clsx";
 import { useCallback, useMemo, useState } from "react";
 import { social } from "../../components/navigation/Config";
+import { Controller } from "../controller/Controller";
 
 export const SecondaryMenuItems = () => {
   const {
+    account: { account },
     setup: {
       systemCalls: { claim_quest },
       components: {
         events: { GameEnded },
       },
-      account: { account },
     },
   } = useDojo();
 
@@ -47,11 +48,7 @@ export const SecondaryMenuItems = () => {
   const [skipQuest, setSkipQuest] = useState(false);
 
   const handleTrophyClick = useCallback(() => {
-    if (!connector?.controller) {
-      console.error("Connector not initialized");
-      return;
-    }
-    connector.controller.openProfile("trophies");
+    connector?.controller?.openProfile("trophies");
   }, [connector]);
 
   const handleAllClaims = async () => {
@@ -136,12 +133,12 @@ export const SecondaryMenuItems = () => {
       {
         button: (
           <CircleButton
-            className="social-selector"
+            className="social-selector border-none"
             tooltipLocation="bottom"
             image={BuildingThumbs.guild}
             label={social}
             active={isPopupOpen(social)}
-            size="lg"
+            size="sm"
             onClick={() => togglePopup(social)}
           />
         ),
@@ -155,7 +152,8 @@ export const SecondaryMenuItems = () => {
             image={BuildingThumbs.rewards}
             label={rewards}
             active={isPopupOpen(rewards)}
-            size="lg"
+            size="sm"
+            className="border-none"
             onClick={() => togglePopup(rewards)}
           />
         ),
@@ -165,42 +163,43 @@ export const SecondaryMenuItems = () => {
   }, [unclaimedQuestsCount, quests, currentQuest, structureEntityId, gameEnded]);
 
   return (
-    <div className="flex gap-1 md:gap-3">
-      <div className="top-right-navigation-selector self-center px-1 md:px-3 flex space-x-1 md:space-x-2 my-1">
+    <div className="flex gap-1 md:gap-4">
+      <div className="top-right-navigation-selector self-center px-1 md:px-3 flex space-x-4 md:space-x-4 my-4">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
         <CircleButton
-          className="trophies-selector"
+          className="trophies-selector border-none"
           image={BuildingThumbs.trophy}
           label={"Trophies"}
-          size="lg"
+          size="sm"
           onClick={handleTrophyClick}
         />
         <CircleButton
-          className="hints-selector"
+          className="hints-selector border-none"
           image={BuildingThumbs.question}
           label={"Lordpedia"}
-          size="lg"
+          size="sm"
           onClick={() => toggleModal(<HintModal />)}
         />
         <CircleButton
-          className="discord-selector"
+          className="discord-selector border-none"
           tooltipLocation="bottom"
           image={BuildingThumbs.discord}
           label={"Discord"}
-          size="lg"
+          size="sm"
           onClick={() => window.open("https://discord.gg/realmsworld")}
         />
         <CircleButton
-          className="settings-selector"
+          className="settings-selector border-none"
           tooltipLocation="bottom"
           active={isPopupOpen(settings)}
           image={BuildingThumbs.settings}
           label={"Support"}
-          size="lg"
+          size="sm"
           onClick={() => togglePopup(settings)}
         />
+        <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
       </div>
     </div>
   );

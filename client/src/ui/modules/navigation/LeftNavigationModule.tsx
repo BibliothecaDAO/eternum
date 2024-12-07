@@ -12,7 +12,6 @@ import { motion } from "framer-motion";
 import { Suspense, lazy, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
-// import { Chat } from "../chat/Chat";
 import { Chat } from "../chat/Chat";
 
 const EntityDetails = lazy(() =>
@@ -212,7 +211,7 @@ export const LeftNavigationModule = () => {
       ].includes(item.name as MenuEnum),
     );
 
-    return isMapView ? filteredNavigation : filteredNavigation;
+    return filteredNavigation;
   }, [view, openedPopups, structureEntityId, isMapView, structureIsMine, isRealm, notificationLength]);
 
   const slideLeft = {

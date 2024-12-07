@@ -193,8 +193,11 @@ export const BridgeOutStep1 = () => {
         <hr />
         <Collapsible>
           <CollapsibleTrigger asChild>
-          <Button className="w-full flex justify-between font-bold px-0" variant={'ghost'}>
-              <div className="flex items-center"><Plus className="mr-4" />Total Transfer Fee</div>
+            <Button className="w-full flex justify-between font-bold px-0" variant={"ghost"}>
+              <div className="flex items-center">
+                <Plus className="mr-4" />
+                Total Transfer Fee
+              </div>
               <div>{totalFeeOnWithdrawal}</div>
             </Button>
           </CollapsibleTrigger>

@@ -75,7 +75,7 @@ export function useResourcesUtils() {
     const realmsWithResource = allRealms
       .map((id: Entity) => {
         const realm = getComponentValue(Realm, id);
-        const resourceManager = realm ? new ResourceManager(useDojo().setup, realm.entity_id, resourceId) : undefined;
+        const resourceManager = realm ? new ResourceManager(setup, realm.entity_id, resourceId) : undefined;
         const resource = resourceManager
           ? {
               balance: resourceManager.balance(currentDefaultTick),

@@ -187,8 +187,11 @@ export const BridgeIn = () => {
         <Collapsible>
           <CollapsibleTrigger asChild>
             <Button className="w-full flex justify-between font-bold px-0" variant={"ghost"}>
-            <div className="flex items-center"><Plus className="mr-4" />Total Transfer Fee</div>
-            <div>{totalFeeOnDeposit}</div>
+              <div className="flex items-center">
+                <Plus className="mr-4" />
+                Total Transfer Fee
+              </div>
+              <div>{totalFeeOnDeposit}</div>
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="flex flex-col gap-2">

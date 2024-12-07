@@ -181,6 +181,7 @@ export interface RealmInterface {
   resourceTypesPacked: bigint;
   order: number;
   owner?: ContractAddress;
+  imageUrl: string;
 }
 
 /// LABOR

@@ -182,6 +182,7 @@ export const useEntitiesUtils = () => {
     account: { account },
     setup: {
       components: {
+        Army,
         EntityName,
         ArrivalTime,
         EntityOwner,
@@ -189,7 +190,6 @@ export const useEntitiesUtils = () => {
         CapacityCategory,
         CapacityConfig,
         Position,
-        Army,
         AddressName,
         Owner,
         Realm,

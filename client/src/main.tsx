@@ -76,7 +76,7 @@ async function init() {
     <React.StrictMode>
       <ShepherdJourneyProvider>
         <StarknetProvider>
-          <DojoProvider value={setupResult}>
+          <DojoProvider value={setupResult} backgroundImage={backgroundImage}>
             <App backgroundImage={backgroundImage} />
           </DojoProvider>
         </StarknetProvider>
