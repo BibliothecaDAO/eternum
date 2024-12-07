@@ -151,6 +151,7 @@ class Minimap {
   }
 
   private recomputeScales() {
+    if (!this.canvas || !this.mapSize) return;
     this.scaleX = this.canvas.width / this.mapSize.width;
     this.scaleY = this.canvas.height / this.mapSize.height;
     this.scaledCoords.clear();
@@ -326,6 +327,7 @@ class Minimap {
   }
 
   showMinimap() {
+    if (!this.canvas) return;
     this.canvas.style.display = "block";
     useUIStore.getState().setShowMinimap(true);
   }

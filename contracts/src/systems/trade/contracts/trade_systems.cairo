@@ -209,7 +209,7 @@ mod trade_systems {
             };
 
             // burn enough maker donkeys to carry resources given by taker
-            donkey::burn_donkey(ref world, maker_id, taker_gives_resources_weight);
+            donkey::burn_donkey(ref world, maker_id, taker_gives_resources_weight, false);
 
             // create trade entity
             let trade_id = world.dispatcher.uuid();
@@ -522,6 +522,11 @@ mod trade_systems {
                 maker_receives_resources_hash == trade.taker_gives_resources_hash,
                 "wrong taker_gives_resources provided"
             );
+
+            // give donkey burn achievement to trade maker only after successful transfer
+            let donkey_amount = donkey::get_donkey_needed(ref world, trade.taker_gives_resources_weight);
+            let maker_owner: Owner = world.read_model(trade.maker_id);
+            donkey::give_breeder_achievement(ref world, donkey_amount, maker_owner.address);
 
             world
                 .emit_event(

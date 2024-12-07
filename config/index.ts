@@ -20,7 +20,10 @@ const {
   VITE_PUBLIC_DEV,
   VITE_PUBLIC_NODE_URL,
   VITE_PUBLIC_CHAIN,
+  VITE_VRF_PROVIDER_ADDRESS,
 } = process.env;
+
+console.log("VRF_PROVIDER_ADDRESS", VITE_VRF_PROVIDER_ADDRESS);
 
 const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 
@@ -38,7 +41,7 @@ if (!VITE_PUBLIC_DEV) {
 }
 
 console.log("Provider set up");
-const provider = new EternumProvider(manifest, nodeUrl);
+const provider = new EternumProvider(manifest, nodeUrl, VITE_VRF_PROVIDER_ADDRESS);
 
 console.log("Account set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
@@ -62,6 +65,20 @@ const setupConfig: Config =
           graceTickCountHyp: 0,
           delaySeconds: 0,
         },
+
+        // bridge close after 2 hours in dev mode
+        season: {
+          ...EternumGlobalConfig.season,
+          bridgeCloseAfterEndSeconds: 60 * 60 * 2, // 2 hours
+        },
+
+        // bridge fees to multi in dev mode
+        bridge: {
+          ...EternumGlobalConfig.bridge,
+          velords_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
+          season_pool_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
+        },
+
         // make it easier to build hyperstructures in dev mode
         hyperstructures: {
           ...EternumGlobalConfig.hyperstructures,
@@ -69,6 +86,7 @@ const setupConfig: Config =
             resource: cost.resource,
             amount: 1,
           })),
+          hyperstructurePointsForWin: 500_000,
           hyperstructureTotalCosts: EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
             resource: cost.resource,
             amount: 0.1,
@@ -77,12 +95,15 @@ const setupConfig: Config =
       }
     : EternumGlobalConfig;
 
+setupConfig.vrf.vrfProviderAddress = VITE_VRF_PROVIDER_ADDRESS!;
+
 // probably should be refactored
 setupConfig.season = {
   seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
   realmsAddress: process.env.VITE_REALMS_ADDRESS!,
   lordsAddress: process.env.VITE_LORDS_ADDRESS!,
   startAfterSeconds: 60 * 5, // 5 minutes
+  bridgeCloseAfterEndSeconds: 60 * 60 * 2, // 2 hours
 };
 
 export const config = new EternumConfig(setupConfig);

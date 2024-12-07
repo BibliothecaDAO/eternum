@@ -4,15 +4,6 @@ use s0_eternum::models::position::{Coord};
 
 #[starknet::interface]
 trait IBankSystems<T> {
-    fn create_bank(
-        ref self: T,
-        realm_entity_id: ID,
-        coord: Coord,
-        owner_fee_num: u128,
-        owner_fee_denom: u128,
-        owner_bridge_fee_dpt_percent: u16,
-        owner_bridge_fee_wtdr_percent: u16
-    ) -> ID;
     fn change_owner_amm_fee(ref self: T, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,);
     fn change_owner_bridge_fee(
         ref self: T, bank_entity_id: ID, owner_bridge_fee_dpt_percent: u16, owner_bridge_fee_wtdr_percent: u16,
@@ -43,8 +34,49 @@ mod bank_systems {
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
-        fn create_bank(
+        fn change_owner_amm_fee(
+            ref self: ContractState, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            let player = starknet::get_caller_address();
+
+            let owner: Owner = world.read_model(bank_entity_id);
+            assert(owner.address == player, 'Only owner can change fee');
+
+            let mut bank: Bank = world.read_model(bank_entity_id);
+            bank.owner_fee_num = new_owner_fee_num;
+            bank.owner_fee_denom = new_owner_fee_denom;
+            world.write_model(@bank);
+        }
+
+
+        fn change_owner_bridge_fee(
             ref self: ContractState,
+            bank_entity_id: ID,
+            owner_bridge_fee_dpt_percent: u16,
+            owner_bridge_fee_wtdr_percent: u16
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            let player = starknet::get_caller_address();
+
+            let owner: Owner = world.read_model(bank_entity_id);
+            assert(owner.address == player, 'Only owner can change fee');
+
+            let mut bank: Bank = world.read_model(bank_entity_id);
+            bank.owner_bridge_fee_dpt_percent = owner_bridge_fee_dpt_percent;
+            bank.owner_bridge_fee_wtdr_percent = owner_bridge_fee_wtdr_percent;
+            world.write_model(@bank);
+        }
+    }
+
+    #[generate_trait]
+    pub impl InternalBankSystemsImpl of BankSystemsTrait {
+        fn create_bank(
+            ref world: WorldStorage,
             realm_entity_id: ID,
             coord: Coord,
             owner_fee_num: u128,
@@ -52,8 +84,7 @@ mod bank_systems {
             owner_bridge_fee_dpt_percent: u16,
             owner_bridge_fee_wtdr_percent: u16
         ) -> ID {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            // SeasonImpl::assert_season_is_not_over(world);
 
             let bank_entity_id: ID = world.dispatcher.uuid();
 
@@ -100,47 +131,6 @@ mod bank_systems {
             bank_entity_id
         }
 
-        fn change_owner_amm_fee(
-            ref self: ContractState, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
-        ) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
-
-            let player = starknet::get_caller_address();
-
-            let owner: Owner = world.read_model(bank_entity_id);
-            assert(owner.address == player, 'Only owner can change fee');
-
-            let mut bank: Bank = world.read_model(bank_entity_id);
-            bank.owner_fee_num = new_owner_fee_num;
-            bank.owner_fee_denom = new_owner_fee_denom;
-            world.write_model(@bank);
-        }
-
-
-        fn change_owner_bridge_fee(
-            ref self: ContractState,
-            bank_entity_id: ID,
-            owner_bridge_fee_dpt_percent: u16,
-            owner_bridge_fee_wtdr_percent: u16
-        ) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
-
-            let player = starknet::get_caller_address();
-
-            let owner: Owner = world.read_model(bank_entity_id);
-            assert(owner.address == player, 'Only owner can change fee');
-
-            let mut bank: Bank = world.read_model(bank_entity_id);
-            bank.owner_bridge_fee_dpt_percent = owner_bridge_fee_dpt_percent;
-            bank.owner_bridge_fee_wtdr_percent = owner_bridge_fee_wtdr_percent;
-            world.write_model(@bank);
-        }
-    }
-
-    #[generate_trait]
-    pub impl InternalBankSystemsImpl of BankSystemsTrait {
         fn pickup_resources_from_bank(
             ref world: WorldStorage, bank_entity_id: ID, entity_id: ID, resources: Span<(u8, u128)>,
         ) -> ID {

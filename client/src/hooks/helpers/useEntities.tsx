@@ -114,7 +114,7 @@ export const useEntities = () => {
         const name = realm
           ? getRealmNameById(realm.realm_id)
           : structureName
-            ? `${structure?.category} ${structureName}`
+            ? `${structureName}`
             : structure.category || "";
         return { ...structure, position: position!, name, owner: getComponentValue(Owner, id) };
       })
@@ -182,6 +182,7 @@ export const useEntitiesUtils = () => {
     account: { account },
     setup: {
       components: {
+        Army,
         EntityName,
         ArrivalTime,
         EntityOwner,
@@ -189,7 +190,6 @@ export const useEntitiesUtils = () => {
         CapacityCategory,
         CapacityConfig,
         Position,
-        Army,
         AddressName,
         Owner,
         Realm,

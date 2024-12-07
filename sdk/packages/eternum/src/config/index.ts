@@ -26,6 +26,7 @@ export class EternumConfig {
     await setQuestConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
+    await setVRFConfig(config);
     await setResourceBridgeFeesConfig(config);
     await setBuildingCategoryPopConfig(config);
     await setPopulationConfig(config);
@@ -467,6 +468,21 @@ export const setSeasonConfig = async (config: Config) => {
 
   console.log(`Configuring season ${tx.statusReceipt}`);
   console.log(`Season starts at ${new Date(startAt * 1000).toISOString()}`);
+
+  const txBridge = await config.provider.set_season_bridge_config({
+    signer: config.account,
+    close_after_end_seconds: config.config.season.bridgeCloseAfterEndSeconds,
+  });
+  console.log(`Configuring season bridge ${txBridge.statusReceipt}`);
+};
+
+export const setVRFConfig = async (config: Config) => {
+  const tx = await config.provider.set_vrf_config({
+    signer: config.account,
+    vrf_provider_address: config.config.vrf.vrfProviderAddress,
+  });
+
+  console.log(`Configuring VRF ${tx.statusReceipt}`);
 };
 
 export const setResourceBridgeLordsWhitlelistConfig = async (config: Config) => {
@@ -621,7 +637,7 @@ export const setSettlementConfig = async (config: Config) => {
 };
 
 export const createAdminBank = async (config: Config) => {
-  const tx = await config.provider.create_admin_bank({
+  await config.provider.create_admin_bank({
     signer: config.account,
     name: config.config.banks.name,
     coord: { x: FELT_CENTER, y: FELT_CENTER },
@@ -630,7 +646,7 @@ export const createAdminBank = async (config: Config) => {
     owner_bridge_fee_dpt_percent: config.config.banks.ownerBridgeFeeOnDepositPercent,
     owner_bridge_fee_wtdr_percent: config.config.banks.ownerBridgeFeeOnWithdrawalPercent,
   });
-  console.log(`Creating admin bank ${tx.statusReceipt}...`);
+  console.log(`Creating admin bank ...`);
 };
 
 export const mintResources = async (config: Config) => {

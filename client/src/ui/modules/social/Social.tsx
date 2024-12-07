@@ -55,9 +55,15 @@ export const Social = ({ players }: { players: Player[] }) => {
   const tabs = useMemo(
     () => [
       {
+        key: "Players",
+        label: <div>Players</div>,
+        component: <PlayersPanel players={players} viewPlayerInfo={viewPlayerInfo} />,
+        expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
+      },
+      {
         key: "Guild",
         label: <div>Tribes</div>,
-        component: <Guilds viewGuildMembers={viewGuildMembers} />,
+        component: <Guilds players={players} viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer ? (
           <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
         ) : (
@@ -69,19 +75,13 @@ export const Social = ({ players }: { players: Player[] }) => {
           />
         ),
       },
-      {
-        key: "Players",
-        label: <div>Players</div>,
-        component: <PlayersPanel players={players} viewPlayerInfo={viewPlayerInfo} />,
-        expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
-      },
     ],
     [selectedTab, isExpanded, selectedGuild, selectedPlayer],
   );
 
   return (
     <ExpandableOSWindow
-      width="400px"
+      width="800px"
       widthExpanded="400px"
       onClick={() => togglePopup(social)}
       show={isOpen}

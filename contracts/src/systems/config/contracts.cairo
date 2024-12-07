@@ -25,7 +25,16 @@ trait ISeasonConfig<T> {
         lords_address: starknet::ContractAddress,
         start_at: u64
     );
+
+    fn set_season_bridge_config(ref self: T, close_after_end_seconds: u64);
 }
+
+
+#[starknet::interface]
+trait IVRFConfig<T> {
+    fn set_vrf_config(ref self: T, vrf_provider_address: starknet::ContractAddress);
+}
+
 
 #[starknet::interface]
 trait IQuestConfig<T> {
@@ -221,7 +230,7 @@ mod config_systems {
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig
     };
 
     use s0_eternum::models::position::{Position, PositionTrait, Coord};
@@ -329,6 +338,24 @@ mod config_systems {
                 season.start_at = start_at;
                 world.write_model(@season);
             }
+        }
+
+
+        fn set_season_bridge_config(ref self: ContractState, close_after_end_seconds: u64) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            world.write_model(@SeasonBridgeConfig { config_id: WORLD_CONFIG_ID, close_after_end_seconds });
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl VRFConfigImpl of super::IVRFConfig<ContractState> {
+        fn set_vrf_config(ref self: ContractState, vrf_provider_address: starknet::ContractAddress) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            world.write_model(@VRFConfig { config_id: WORLD_CONFIG_ID, vrf_provider_address });
         }
     }
 

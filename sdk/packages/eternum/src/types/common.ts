@@ -181,6 +181,7 @@ export interface RealmInterface {
   resourceTypesPacked: bigint;
   order: number;
   owner?: ContractAddress;
+  imageUrl: string;
 }
 
 /// LABOR
@@ -356,6 +357,7 @@ export interface Config {
     realmsAddress: string;
     lordsAddress: string;
     startAfterSeconds: number;
+    bridgeCloseAfterEndSeconds: number;
   };
   bridge: {
     velords_fee_on_dpt_percent: number;
@@ -368,6 +370,9 @@ export interface Config {
     season_pool_fee_recipient: ContractAddress;
     max_bank_fee_dpt_percent: number;
     max_bank_fee_wtdr_percent: number;
+  };
+  vrf: {
+    vrfProviderAddress: string;
   };
   buildings: {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
@@ -392,11 +397,17 @@ export interface Config {
 }
 
 export interface Player {
-  address: ContractAddress;
-  addressName: string;
-  rank?: number;
-  points?: number;
-  isAlive?: boolean;
+  rank: number;
+  address: bigint;
+  name: string;
+  points: number;
+  percentage: number;
+  lords: number;
+  realms: number;
+  mines: number;
+  hyperstructures: number;
+  isAlive: boolean;
+  guildName: string;
 }
 
 export type GuildInfo = {

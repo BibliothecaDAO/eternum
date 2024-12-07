@@ -284,7 +284,13 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
+    const overlay = document.querySelector(".shepherd-modal-overlay-container");
+    const overlayClick = document.querySelector(".allow-modal-click");
+    if (overlay && !overlayClick) {
+      return;
+    }
     if (hexCoords === null) return;
+
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
     if (buildingType) {

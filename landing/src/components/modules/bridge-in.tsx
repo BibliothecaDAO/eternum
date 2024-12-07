@@ -12,9 +12,10 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { Loader } from "lucide-react";
+import { Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
@@ -24,7 +25,7 @@ function formatFee(fee: number) {
 }
 
 export const BridgeIn = () => {
-  const { account } = useAccount();
+  const { account, address } = useAccount();
 
   const { computeTravelTime } = useTravel();
   const { getRealmNameById } = useRealm();
@@ -161,7 +162,7 @@ export const BridgeIn = () => {
           {playerRealmsIdAndName.map((realm) => {
             return (
               <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                {realm.name}
+                #{realm.realmId} - {realm.name}
               </SelectItem>
             );
           })}
@@ -183,30 +184,41 @@ export const BridgeIn = () => {
           <div>{donkeysNeeded}</div>
         </div>
         <hr />
-        <div className="flex justify-between font-bold">
-          <div>Total Transfer Fee</div>
-          <div>{totalFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_dpt_percent)}%)</div>
-          <div>{bankFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_dpt_percent)}%)</div>
-          <div>{velordsFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_dpt_percent)}%)</div>
-          <div>{seasonPoolFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_dpt_percent)}%)</div>
-          <div>{clientFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between font-bold mt-5 mb-5">
-          <div>Total Amount Received</div>
-          <div>{formatFee(Number(selectedResourceAmount) - Number(totalFeeOnDeposit))}</div>
-        </div>
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button className="w-full flex justify-between font-bold px-0" variant={"ghost"}>
+              <div className="flex items-center">
+                <Plus className="mr-4" />
+                Total Transfer Fee
+              </div>
+              <div>{totalFeeOnDeposit}</div>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="flex flex-col gap-2">
+            <div className="flex justify-between text-xs">
+              <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_dpt_percent)}%)</div>
+              <div>{bankFeeOnDeposit}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_dpt_percent)}%)</div>
+              <div>{velordsFeeOnDeposit}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>
+                Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_dpt_percent)}%)
+              </div>
+              <div>{seasonPoolFeeOnDeposit}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_dpt_percent)}%)</div>
+              <div>{clientFeeOnDeposit}</div>
+            </div>
+            <div className="flex justify-between font-bold mt-5 mb-5">
+              <div>Total Amount Received</div>
+              <div>{formatFee(Number(selectedResourceAmount) - Number(totalFeeOnDeposit))}</div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
       <Button
         disabled={(!selectedResourceAmount && !selectedResourceContract && !realmEntityId) || isLoading}

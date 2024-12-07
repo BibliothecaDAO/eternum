@@ -29,7 +29,7 @@ mod map_generation_systems {
     };
     use s0_eternum::models::config::{
         ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, MercenariesConfig, TroopConfigImpl,
-        TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig, TravelFoodCostConfigImpl
+        TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig, TravelFoodCostConfigImpl, VRFConfigImpl
     };
     use s0_eternum::models::map::Tile;
     use s0_eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
@@ -49,6 +49,7 @@ mod map_generation_systems {
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use s0_eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
     use s0_eternum::utils::map::biomes::{Biome, get_biome};
+    use s0_eternum::utils::random::{VRFImpl};
     use s0_eternum::utils::random;
     use s0_eternum::utils::tasks::index::{Task, TaskTrait};
 
@@ -117,27 +118,34 @@ mod map_generation_systems {
 
             let army_entity_id = InternalTroopImpl::create_defensive_army(ref world, structure_entity_id);
 
-            let tx_info = starknet::get_tx_info();
-            let salt_one: u256 = tx_info.transaction_hash.into();
-            let salt_two: u256 = starknet::get_block_timestamp().into();
-            let salt_three: u256 = tx_info.nonce.into();
+            let caller_address = starknet::get_caller_address();
+            let mut seed: u256 = 0;
+            let (dev_bank_systems_address, _) = world.dns(@"dev_bank_systems").unwrap();
+            if caller_address != dev_bank_systems_address {
+                let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+                seed = VRFImpl::seed(caller_address, vrf_provider);
+            } else {
+                // hack to bypass vrf for the dev bank
+                // because it will be created from the cli
+                // and vrf can't be called from the cli
+                seed = 'I AM SEED FOR THE DEV BANK'.into() - starknet::get_block_timestamp().into();
+            }
 
             let random_knights_amount: u64 = random::random(
-                salt_one.low,
-                mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
+                seed, 1, mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
             )
                 .try_into()
                 .unwrap()
                 + mercenaries_config.knights_lower_bound;
             let random_paladins_amount: u64 = random::random(
-                salt_two.low,
-                mercenaries_config.paladins_upper_bound.into() - mercenaries_config.paladins_lower_bound.into()
+                seed, 2, mercenaries_config.paladins_upper_bound.into() - mercenaries_config.paladins_lower_bound.into()
             )
                 .try_into()
                 .unwrap()
                 + mercenaries_config.paladins_lower_bound;
             let random_crossbowmen_amount: u64 = random::random(
-                salt_three.low,
+                seed,
+                3,
                 mercenaries_config.crossbowmen_upper_bound.into() - mercenaries_config.crossbowmen_lower_bound.into()
             )
                 .try_into()
@@ -162,12 +170,15 @@ mod map_generation_systems {
 
             let earthen_shard_production_amount_per_tick: u128 = earthen_shard_production_config.amount;
 
+            let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+            let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
             let random_multiplier: u128 = *random::choices(
                 array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span(),
                 array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span(),
                 array![].span(),
                 1,
-                true
+                true,
+                vrf_seed
             )[0];
             let min_production_amount: u128 = 100_000 * RESOURCE_PRECISION;
             let actual_production_amount: u128 = min_production_amount * random_multiplier;
@@ -186,12 +197,15 @@ mod map_generation_systems {
         fn discover_shards_mine(ref world: WorldStorage, unit_entity_owner: EntityOwner, coord: Coord) -> bool {
             let exploration_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
 
+            let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+            let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
             let is_shards_mine: bool = *random::choices(
                 array![true, false].span(),
                 array![1000, exploration_config.shards_mines_fail_probability].span(),
                 array![].span(),
                 1,
-                true
+                true,
+                vrf_seed
             )[0];
 
             if is_shards_mine {

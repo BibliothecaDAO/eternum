@@ -68,7 +68,7 @@ echo "Migrating world..."
 sozo migrate --profile prod 
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic realms-world-5 torii --version preview--683d381 --world 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --rpc https://api.cartridge.gg/x/starknet/mainnet --indexing.pending true --config ./torii.toml
+slot deployments create -t epic sepolia-rc-7 torii --version v1.0.5 --world 0x06ccdff2074b5642afa7204ea96b83a8d164727afa49e6f72a2c3e94693ab6ca --rpc https://api.cartridge.gg/x/starknet/sepolia --indexing.pending true --config ./torii-sepolia.toml
 
 echo "Setting up config..."
 
@@ -84,4 +84,4 @@ echo "----- Building Season Resources Contract ----- "
 # build and deploy season resources contract
 cd ..
 cd season_resources/contracts && scarb --release build
-cd ../scripts/deployment && npm run deploy 
+cd ../scripts/deployment && npm run deploy::sepolia 

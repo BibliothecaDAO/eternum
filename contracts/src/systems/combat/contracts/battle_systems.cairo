@@ -314,7 +314,7 @@ mod battle_systems {
     use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
-        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
+        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, VRFConfigImpl
     };
     use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
     use s0_eternum::models::event::{
@@ -820,7 +820,7 @@ mod battle_pillage_systems {
     use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
-        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
+        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, VRFConfigImpl
     };
     use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
     use s0_eternum::models::event::{
@@ -853,7 +853,9 @@ mod battle_pillage_systems {
 
     use s0_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
     use s0_eternum::utils::math::{min, max};
+    use s0_eternum::utils::random::{VRFImpl};
     use s0_eternum::utils::random;
+    use starknet::ContractAddress;
 
     use super::{IBattlePillageContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait};
 
@@ -929,12 +931,15 @@ mod battle_pillage_systems {
                 * attacking_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
 
+            let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+            let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
             let attack_successful: @bool = random::choices(
                 array![true, false].span(),
                 array![attacking_army_strength, structure_army_strength].span(),
                 array![].span(),
                 1,
-                true
+                true,
+                vrf_seed
             )[0];
 
             let mut pillaged_resources: Array<(u8, u128)> = array![(0, 0)];
@@ -949,7 +954,8 @@ mod battle_pillage_systems {
                     get_resources_without_earthenshards_probs(),
                     array![].span(),
                     MAX_PILLAGE_TRIAL_COUNT.try_into().unwrap(),
-                    true
+                    true,
+                    vrf_seed
                 );
 
                 loop {
@@ -1035,7 +1041,8 @@ mod battle_pillage_systems {
                     array![1, 7, 14, 30].span(), // these are the weights of each option
                     array![].span(),
                     1,
-                    true
+                    true,
+                    vrf_seed
                 )[0];
 
                 // make different sets of direction arrangements so the targeted
@@ -1084,7 +1091,8 @@ mod battle_pillage_systems {
                                 array![1, 1, 1, 1].span(), // each carry the same weight so equal probs
                                 array![].span(),
                                 1,
-                                true
+                                true,
+                                vrf_seed
                             )[0]
                         )
                         .span(),
@@ -1092,7 +1100,8 @@ mod battle_pillage_systems {
                         .span(), // direction weights are in ascending order so the last 3 carry the most weight
                     array![].span(),
                     chosen_direction_count.into(),
-                    true
+                    true,
+                    vrf_seed
                 );
 
                 let mut final_coord = BuildingImpl::center();

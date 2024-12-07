@@ -165,11 +165,22 @@ export interface ClaimQuestProps extends SystemSigner {
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
+  owner: num.BigNumberish;
   realm_ids: num.BigNumberish[];
+  frontend: num.BigNumberish;
+  season_pass_address: string;
 }
 
-export interface CreateRealmProps extends SystemSigner {
+export interface CreateMultipleRealmsDevProps extends SystemSigner {
+  realm_ids: num.BigNumberish[];
+}
+export interface CreateRealmDevProps extends SystemSigner {
   realm_id: num.BigNumberish;
+}
+export interface CreateRealmProps extends SystemSigner {
+  owner: num.BigNumberish;
+  realm_id: num.BigNumberish;
+  frontend: num.BigNumberish;
 }
 
 export interface UpgradeRealmProps extends SystemSigner {
@@ -530,6 +541,14 @@ export interface SetSeasonConfigProps extends SystemSigner {
   realms_address: num.BigNumberish;
   lords_address: num.BigNumberish;
   start_at: num.BigNumberish;
+}
+
+export interface SetVRFConfigProps extends SystemSigner {
+  vrf_provider_address: num.BigNumberish;
+}
+
+export interface SetSeasonBridgeConfigProps extends SystemSigner {
+  close_after_end_seconds: num.BigNumberish;
 }
 
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {

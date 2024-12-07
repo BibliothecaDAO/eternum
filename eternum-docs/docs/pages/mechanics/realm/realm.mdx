@@ -51,18 +51,19 @@ with unique metadata of resources and traits.
 >
 > _These are the default values for a newly settled realm before any buildings are constructed._
 
-**Starting resources**
-
-> Quests have been prepared to help you learn the ropes as a newly appointed Lord of your Realm Going through these will
-> help you learn the game and reward you with starting resources.
-
-<QuestRewards />
-
 ## Settlement Immunity
 
 When first settling a realm, you receive:
 
-- {Math.floor((EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 3600) \*
-  EternumGlobalConfig.battle.graceTickCount)}-hour immunity from attacks and from attacking others
+- <span>
+    {(EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 3600) * EternumGlobalConfig.battle.graceTickCount}-hour
+    immunity from attacks and from attacking others
+  </span>
+
 - Protection from resource raids
 - Time to establish basic defenses
+
+**Starting resources**
+
+> Quests have been prepared to help you learn the ropes as a newly appointed Lord of your Realm. Going through these
+> will help you learn the game and reward you with starting resources. Once completed, you can claim the resources.

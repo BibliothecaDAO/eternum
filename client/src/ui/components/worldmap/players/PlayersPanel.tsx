@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import TextInput from "@/ui/elements/TextInput";
 import { getEntityIdFromKeys, toHexString } from "@/ui/utils/utils";
@@ -36,11 +36,10 @@ export const PlayersPanel = ({
   const getPlayers = useGetAllPlayers();
 
   const playersWithStructures: PlayerCustom[] = useMemo(() => {
-    // const players = getPlayers();
+    // Sort players by points in descending order
+    const sortedPlayers = [...players].sort((a, b) => (b.points || 0) - (a.points || 0));
 
-    const playersWithStructures = players.map((player) => {
-      const playerIndex = players.findIndex((item) => item.address === player.address);
-
+    const playersWithStructures = sortedPlayers.map((player, index) => {
       const structuresEntityIds = runQuery([
         Has(Structure),
         HasValue(Owner, { address: ContractAddress(player.address) }),
@@ -64,23 +63,15 @@ export const PlayersPanel = ({
             ?.is_whitelisted ?? false;
       }
       return {
-        name: player.addressName,
-        address: player.address,
+        ...player,
         structures,
         isUser: player.address === ContractAddress(account.address),
-        rank: players[playerIndex].rank!,
-        points: players[playerIndex].points!,
+        points: player.points || 0,
+        rank: index + 1,
         isInvited,
         guild,
       };
     });
-    // .sort((a, b) => a.rank - b.rank);
-    // .map((player, index) => {
-    //   if (player.rank === "#NA") {
-    //     player.rank = "#" + (index + 1);
-    //   }
-    //   return player;
-    // });
     return playersWithStructures;
   }, [getPlayers, isLoading]);
 

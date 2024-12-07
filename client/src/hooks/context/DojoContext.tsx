@@ -1,14 +1,24 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
+import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
+import { Position } from "@/types/Position";
+import { OnboardingContainer, StepContainer } from "@/ui/layouts/Onboarding";
+import { OnboardingButton } from "@/ui/layouts/OnboardingButton";
 import { LoadingScreen } from "@/ui/modules/LoadingScreen";
+import { ACCOUNT_CHANGE_EVENT } from "@/ui/modules/onboarding/Steps";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import ControllerConnector from "@cartridge/connector/controller";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
+import { HasValue, runQuery } from "@dojoengine/recs";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
 import { displayAddress, getRandomBackgroundImage } from "../../ui/utils/utils";
+import { useQuery } from "../helpers/useQuery";
+import { useAddressStore } from "../store/useAddressStore";
+import useUIStore from "../store/useUIStore";
 import { useAccountStore } from "./accountStore";
 
 interface DojoAccount {
@@ -87,7 +97,7 @@ const useControllerAccount = () => {
   return account;
 };
 
-export const DojoProvider = ({ children, value }: DojoProviderProps) => {
+export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderProps & { backgroundImage: string }) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
@@ -104,7 +114,12 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
         feeTokenAddress: env.VITE_PUBLIC_FEE_TOKEN_ADDRESS,
       }}
     >
-      <DojoContextProvider value={value} masterAccount={masterAccount} controllerAccount={controllerAccount!}>
+      <DojoContextProvider
+        value={value}
+        masterAccount={masterAccount}
+        controllerAccount={controllerAccount!}
+        backgroundImage={backgroundImage}
+      >
         {children}
       </DojoContextProvider>
     </BurnerProvider>
@@ -128,7 +143,19 @@ const DojoContextProvider = ({
   value,
   masterAccount,
   controllerAccount,
-}: DojoProviderProps & { masterAccount: Account; controllerAccount: AccountInterface | null }) => {
+  backgroundImage,
+}: DojoProviderProps & {
+  masterAccount: Account;
+  controllerAccount: AccountInterface | null;
+  backgroundImage: string;
+}) => {
+  const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
+  const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
+  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const setAddressName = useAddressStore((state) => state.setAddressName);
+
+  const { handleUrlChange } = useQuery();
+
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
@@ -145,9 +172,11 @@ const DojoContextProvider = ({
   });
 
   const { connect, connectors } = useConnect();
-  const { isConnected, isConnecting } = useAccount();
+  const { isConnected, isConnecting, connector } = useAccount();
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
+
+  const [retries, setRetries] = useState(0);
 
   const connectWallet = async () => {
     try {
@@ -159,11 +188,33 @@ const DojoContextProvider = ({
     }
   };
 
+  const onSpectatorModeClick = () => {
+    setSpectatorMode(true);
+    handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
+    window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+    showBlankOverlay(false);
+  };
+
   // Determine which account to use based on environment
   const isDev = env.VITE_PUBLIC_DEV === true;
-  const accountToUse = isDev ? burnerAccount : controllerAccount;
+  const accountToUse = isDev
+    ? burnerAccount
+    : isSpectatorMode
+      ? new Account(value.network.provider.provider, "0x0", "0x0")
+      : controllerAccount;
 
   useEffect(() => {
+    const setUserName = async () => {
+      const username = await (connector as ControllerConnector)?.username();
+      if (!username) return;
+
+      //   value.systemCalls.set_address_name({
+      //     signer: controllerAccount!,
+      //     name: username,
+      //   });
+      //   setAddressName(username);
+    };
+
     if (isDev) {
       if (burnerAccount) {
         console.log("Setting account from burner hook:", burnerAccount);
@@ -176,74 +227,76 @@ const DojoContextProvider = ({
       if (controllerAccount) {
         console.log("Setting account from controllerAccount:", controllerAccount);
         useAccountStore.getState().setAccount(controllerAccount);
+
+        const addressName = runQuery([
+          HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
+        ]);
+
+        if (addressName.size === 0) {
+          setUserName();
+        }
+
         setAccountsInitialized(true);
       } else {
         console.log("ControllerAccount is null in production or not connected.");
-        setAccountsInitialized(true);
+        setTimeout(() => {
+          setRetries((prevRetries) => {
+            // Explicitly set a maximum number of renders/retries
+            if (prevRetries < 10) {
+              // Change 10 to your desired number of renders
+              // Force a re-render by updating state
+              return prevRetries + 1;
+            } else {
+              setAccountsInitialized(true);
+              return prevRetries;
+            }
+          });
+        }, 100);
       }
     }
-  }, [isDev, controllerAccount, burnerAccount]);
+  }, [isDev, controllerAccount, burnerAccount, retries]);
 
   const bg = `/images/covers/${getRandomBackgroundImage()}.png`;
 
   if (!accountsInitialized) {
-    return <LoadingScreen backgroundImage={bg} />;
+    return <LoadingScreen backgroundImage={backgroundImage} />;
   }
 
   // Handle Loading Screen
   if (isDev) {
     if (!burnerAccount) {
-      return <LoadingScreen backgroundImage={bg} />;
+      return <LoadingScreen backgroundImage={backgroundImage} />;
     }
   } else {
     if (isConnecting) {
-      return <LoadingScreen backgroundImage={bg} />;
+      return <LoadingScreen backgroundImage={backgroundImage} />;
     }
-    if (!isConnected && !isConnecting && !controllerAccount) {
+    if (!isConnected && !isConnecting && !controllerAccount && !isSpectatorMode) {
       return (
-        <div className="relative h-screen w-screen pointer-events-auto">
-          <img className="absolute h-screen w-screen object-cover" src={bg} alt="Cover" />
-          <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
-            <div className="self-center bg-brown rounded-lg border p-4 md:p-8 text-gold w-[90%] md:min-w-[600px] md:max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient mx-4">
-              <div className="w-full text-center pt-2 md:pt-6">
-                <div className="mx-auto flex mb-2 md:mb-8">
-                  <img src="/images/eternum_with_snake.png" className="w-48 md:w-96 mx-auto" alt="Eternum Logo" />
-                </div>
-              </div>
-              <div className="flex space-x-2 mt-2 md:mt-8 justify-center">
-                {!isConnected && (
-                  <button
-                    className="px-3 md:px-4 py-2 bg-[#ffc52a] border-2 border-[#ffc52a] text-black flex font-bold rounded text-base md:text-lg fill-black uppercase leading-6 shadow-md hover:shadow-lg active:shadow-inner hover:scale-105 transition-all duration-300 hover:-translate-y-1"
-                    onClick={connectWallet}
-                  >
-                    <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-current self-center" /> Login
-                  </button>
-                )}
-              </div>
-              <div className="text-center text-xs md:text-sm text-white/50 mt-1 md:mt-4 px-2 md:px-0">
-                Eternum uses a next generation smart contract wallet -{" "}
-                <a href="https://cartridge.gg/" target="_blank" className="underline">
-                  Cartridge Controller
-                </a>{" "}
-                <br />
-                No download, no seed or passphrase - only a Passkey. <br />
-                No transaction signatures needed. <br /> We recommend using a phone however you can also use{" "}
-                <a href="https://www.bitwarden.com/" target="_blank" className="underline">
-                  {" "}
-                  bitwarden
-                </a>{" "}
-                <br />
-                to manage your passkeys
-              </div>
+        <OnboardingContainer backgroundImage={backgroundImage}>
+          <StepContainer>
+            <div className="flex justify-center space-x-8 mt-2 md:mt-4">
+              {!isConnected && (
+                <>
+                  <OnboardingButton onClick={onSpectatorModeClick}>
+                    <Eye className="w-5 h-5 fill-current mr-2" />
+                    <div>Spectate</div>
+                  </OnboardingButton>
+                  <OnboardingButton onClick={connectWallet} className="!bg-[#FCB843] !text-black border-none">
+                    <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
+                    Log In
+                  </OnboardingButton>
+                </>
+              )}
             </div>
-          </div>
-        </div>
+          </StepContainer>
+        </OnboardingContainer>
       );
     }
 
     if (!controllerAccount && isConnected) {
       // Connected but controllerAccount is not set yet
-      return <LoadingScreen backgroundImage="/images/cover.png" />;
+      return <LoadingScreen backgroundImage={backgroundImage} />;
     }
   }
 

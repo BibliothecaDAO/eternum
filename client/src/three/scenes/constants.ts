@@ -9,6 +9,8 @@ export const BUILDINGS_CENTER = [10, 10];
 export const PREVIEW_BUILD_COLOR_VALID = 0x00a300;
 export const PREVIEW_BUILD_COLOR_INVALID = 0xff0000;
 
+export const DUMMY_HYPERSTRUCTURE_ENTITY_ID = 99999999n;
+
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.Bank,
   [StructureType.Realm]: BuildingType.Castle,
@@ -73,8 +75,8 @@ export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
 };
 
-export const PROGRESS_HALF_THRESHOLD = 0.5;
-export const PROGRESS_FINAL_THRESHOLD = 1;
+export const PROGRESS_HALF_THRESHOLD = 50;
+export const PROGRESS_FINAL_THRESHOLD = 100;
 
 export enum StructureProgress {
   STAGE_1 = 0,

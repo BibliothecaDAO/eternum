@@ -200,19 +200,19 @@ export const ResourceSwap = ({
         onConfirm={onSwap}
         onCancel={() => setOpenConfirmation(false)}
       >
-        <div>
-          <div className="flex items-center justify-center space-x-2">
+        <div className="amm-swap-fee-selector">
+          <div className=" flex items-center justify-center space-x-2">
             <div className="flex justify-center items-center text-danger">
-              -{negativeAmount}
+              -{negativeAmount.toLocaleString()}
               <ResourceIcon resource={negativeResource} size="md" />
             </div>
             <span>→</span>
             <div className="flex items-center text-green">
-              +{positiveAmount}
+              +{positiveAmount.toLocaleString()}
               <ResourceIcon resource={positiveResource} size="md" />
             </div>
           </div>
-          <div className="bg-gold/10 p-2 rounded-lg h-auto">
+          <div className="amm-swap-donkey-selector bg-gold/10 p-2 rounded-lg h-auto">
             <div className="flex flex-col p-2 items-center">
               <TravelInfo
                 entityId={entityId}
@@ -306,7 +306,7 @@ export const ResourceSwap = ({
           </div>
           <div className="w-full flex flex-col justify-center mt-4">
             <Button
-              className="text-brown"
+              className="swap-button-selector text-brown"
               isLoading={false}
               disabled={!canSwap}
               onClick={() => setOpenConfirmation(true)}

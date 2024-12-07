@@ -1,4 +1,5 @@
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
+import { DUMMY_HYPERSTRUCTURE_ENTITY_ID } from "@/three/scenes/constants";
 import Button from "@/ui/elements/Button";
 import { ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
@@ -59,7 +60,7 @@ export const EntityList = ({
             {list.map((entity, index) => (
               <li
                 className={clsx("py-2 px-2 bg-gold/20 hover:bg-crimson/40 my-1 rounded border border-gold/10", {
-                  "animate-pulse": questing,
+                  "animate-pulse pointer-events-none": questing || entity.id === Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
                 })}
                 key={index}
                 onClick={() => setSelectedEntity(entity)}
@@ -73,9 +74,11 @@ export const EntityList = ({
                     <ArrowRight className="w-2 fill-current" />
                   </div>
 
-                  <div className="border border-gold/20 bg-gold/10 rounded p-2">
-                    {entityContent && entityContent(entity.id)}
-                  </div>
+                  {entity.id !== Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID) && (
+                    <div className="border border-gold/20 bg-gold/10 rounded p-2">
+                      {entityContent && entityContent(entity.id)}
+                    </div>
+                  )}
                 </div>
               </li>
             ))}
