@@ -2,7 +2,8 @@ import { ResourceCostMinMax } from "../types";
 import { ResourceTier } from "./index";
 
 export const HYPERSTRUCTURE_CREATION_COSTS: ResourceCostMinMax[] = [
-  { resource_tier: ResourceTier.Lords, min_amount: 2000, max_amount: 2000 },
+  // this is actually fragments min max since lords and fragments are the same tier and we don't take into account lords
+  { resource_tier: ResourceTier.Lords, min_amount: 1000, max_amount: 1000 },
 ];
 export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: ResourceCostMinMax[] = [
   { resource_tier: ResourceTier.Military, min_amount: 0, max_amount: 0 },
