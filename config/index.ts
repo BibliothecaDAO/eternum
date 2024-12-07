@@ -43,8 +43,6 @@ const provider = new EternumProvider(manifest, nodeUrl);
 console.log("Account set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
-const MULTI = BigInt("0x0065a4fbbDb1d40Adb1BbA07E31Ac91FAB12D881b644Ac6bb680502C23E32B01");
-
 const setupConfig: Config =
   VITE_PUBLIC_DEV === "true" || VITE_PUBLIC_CHAIN === "sepolia"
     ? {
@@ -64,11 +62,20 @@ const setupConfig: Config =
           graceTickCountHyp: 0,
           delaySeconds: 0,
         },
+
+        // bridge close after 2 hours in dev mode
+        season: {
+          ...EternumGlobalConfig.season,
+          bridgeCloseAfterEndSeconds: 60 * 60 * 2, // 2 hours
+        },
+
+        // bridge fees to multi in dev mode
         bridge: {
           ...EternumGlobalConfig.bridge,
-          velords_fee_recipient: MULTI,
-          season_pool_fee_recipient: MULTI,
+          velords_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
+          season_pool_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
         },
+
         // make it easier to build hyperstructures in dev mode
         hyperstructures: {
           ...EternumGlobalConfig.hyperstructures,
