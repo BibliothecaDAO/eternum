@@ -109,6 +109,26 @@ export class SystemManager {
 
   public get Structure() {
     return {
+      onContribution: (callback: (value: { entityId: ID; structureType: StructureType; stage: number }) => void) => {
+        this.setupSystem(this.setup.components.Progress, callback, (update: any) => {
+          const structure = getComponentValue(
+            this.setup.components.Structure,
+            getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_entity_id)]),
+          );
+
+          if (!structure) return;
+
+          const categoryKey = structure.category as keyof typeof StructureType;
+
+          const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+
+          return {
+            entityId: structure.entity_id,
+            structureType: StructureType[categoryKey],
+            stage,
+          };
+        });
+      },
       onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
         this.setupSystem(this.setup.components.Position, callback, (update: any) => {
           const structure = getComponentValue(this.setup.components.Structure, update.entity);
@@ -258,7 +278,7 @@ export class SystemManager {
         return getComponentValue(this.setup.components.Progress, progressEntityId);
       });
 
-      const { percentage } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
+      const { percentage, allProgresses } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
 
       if (percentage < PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_1;
@@ -276,33 +296,26 @@ export class SystemManager {
     progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
     hyperstructureEntityId: ID,
   ) => {
-    const totalContributableAmount = configManager.getHyperstructureTotalContributableAmount();
     let percentage = 0;
-    const epsilon = 1e-10; // Small value to account for floating-point precision errors
-
     const allProgresses = Object.values(configManager.hyperstructureTotalCosts).map(
       ({ resource, amount: resourceCost }) => {
         let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+        const resourcePercentage = !foundProgress
+          ? 0
+          : Math.floor((divideByPrecision(Number(foundProgress.amount)) / resourceCost!) * 100);
         let progress = {
           hyperstructure_entity_id: hyperstructureEntityId,
           resource_type: resource,
           amount: !foundProgress ? 0 : divideByPrecision(Number(foundProgress.amount)),
-          percentage: !foundProgress
-            ? 0
-            : Math.floor((divideByPrecision(Number(foundProgress.amount)) / resourceCost!) * 100),
+          percentage: resourcePercentage,
           costNeeded: resourceCost,
         };
-        percentage +=
-          (progress.amount * configManager.getResourceRarity(progress.resource_type)) / totalContributableAmount;
+
+        percentage += resourcePercentage;
         return progress;
       },
     );
-
-    // Adjust percentage to account for floating-point precision issues
-    if (Math.abs(percentage - 1.0) < epsilon) {
-      percentage = 1.0;
-    }
-
-    return { allProgresses, percentage };
+    const totalPercentage = percentage / allProgresses.length;
+    return { allProgresses, percentage: totalPercentage };
   };
 }
