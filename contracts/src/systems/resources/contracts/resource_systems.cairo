@@ -210,9 +210,14 @@ mod resource_systems {
             let owner_resource_lock: ResourceTransferLock = world.read_model(owner_id);
             owner_resource_lock.assert_not_locked();
 
-            // ensure bank has no resource lock
-            let bank_resource_lock: ResourceTransferLock = world.read_model(bank_id);
-            bank_resource_lock.assert_not_locked();
+            //
+            // Allow sending resources to the bank even with battle resource lock
+            // This is so as not to block bridge withdrawals at any point
+            //
+
+            // // ensure bank has no resource lock
+            // let bank_resource_lock: ResourceTransferLock = world.read_model(bank_id);
+            // bank_resource_lock.assert_not_locked();
 
             // burn resources from sender's balance
             let (resource_type, resource_amount) = resource;
@@ -282,8 +287,10 @@ mod resource_systems {
             let mut resources_clone = resources.clone();
 
             // ensure resource spending is not locked
-            let owner_resource_lock: ResourceTransferLock = world.read_model(owner_id);
-            owner_resource_lock.assert_not_locked();
+            if enforce_owner_payment {
+                let owner_resource_lock: ResourceTransferLock = world.read_model(owner_id);
+                owner_resource_lock.assert_not_locked();
+            }
 
             // ensure resource receipt is not locked
             let recipient_resource_lock: ResourceTransferLock = world.read_model(actual_recipient_id);
