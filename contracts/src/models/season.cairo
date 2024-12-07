@@ -8,7 +8,8 @@ pub struct Season {
     #[key]
     config_id: ID,
     start_at: u64,
-    is_over: bool
+    is_over: bool,
+    ended_at: u64
 }
 
 #[generate_trait]
@@ -17,6 +18,7 @@ pub impl SeasonImpl of SeasonTrait {
         // world.read_model(
         let mut season: Season = world.read_model(WORLD_CONFIG_ID);
         season.is_over = true;
+        season.ended_at = starknet::get_block_timestamp();
         world.write_model(@season);
     }
 

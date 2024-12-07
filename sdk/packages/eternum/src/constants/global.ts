@@ -141,6 +141,7 @@ export const MAX_BANK_FEE_ON_WITHDRAWAL = 1000; // 10%
 // TODO: CHECKLIST
 // - [ ] Check if this is correct
 export const SEASON_START_AFTER_SECONDS = 60 * 60 * 24 * 7; // 7 days
+export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = 48 * 60 * 60; // 2 days
 
 export const EternumGlobalConfig: Config = {
   stamina: {
@@ -261,6 +262,7 @@ export const EternumGlobalConfig: Config = {
     realmsAddress: REALMS_ADDRESS,
     lordsAddress: LORDS_ADDRESS,
     startAfterSeconds: SEASON_START_AFTER_SECONDS,
+    bridgeCloseAfterEndSeconds: SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS,
   },
   bridge: {
     velords_fee_on_dpt_percent: VELORDS_FEE_ON_DEPOSIT,
