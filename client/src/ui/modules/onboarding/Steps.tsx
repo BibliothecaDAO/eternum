@@ -97,6 +97,45 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
     });
   }, [loading, realms]);
 
+  const seasonPassElements = useMemo(() => {
+    const elements = [];
+    for (let i = 0; i < seasonPassRealms.length; i += 2) {
+      const seasonPassElement = seasonPassRealms[i];
+      const seasonPassElement2 = seasonPassRealms[i + 1];
+      elements.push(
+        <div className="grid grid-cols-2 gap-3">
+          <SeasonPassRealm
+            key={seasonPassElement.realmId}
+            seasonPassRealm={seasonPassElement}
+            selected={selectedRealms.includes(seasonPassElement.realmId)}
+            setSelected={(selected) =>
+              setSelectedRealms(
+                selected
+                  ? [...selectedRealms, seasonPassElement.realmId]
+                  : selectedRealms.filter((id) => id !== seasonPassElement.realmId),
+              )
+            }
+          />
+          {seasonPassElement2 && (
+            <SeasonPassRealm
+              key={seasonPassElement2.realmId}
+              seasonPassRealm={seasonPassElement2}
+              selected={selectedRealms.includes(seasonPassElement2.realmId)}
+              setSelected={(selected) =>
+                setSelectedRealms(
+                  selected
+                    ? [...selectedRealms, seasonPassElement2.realmId]
+                    : selectedRealms.filter((id) => id !== seasonPassElement2.realmId),
+                )
+              }
+            />
+          )}
+        </div>,
+      );
+    }
+    return elements;
+  }, [seasonPassRealms, selectedRealms]);
+
   const width = "max-w-[600px] w-[40vw]";
   const height = "max-h-[500px] h-[46vh]";
   const size = `${width} ${height}`;
@@ -113,49 +152,34 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         className={`backdrop-blur-lg bg-black/20 self-center border-[0.5px] border-gradient rounded-lg text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${size} 
 		shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] p-8`}
       >
-        <div className="flex flex-col gap-6 h-full max-h-full">
+        <div className="relative flex flex-col gap-6 min-h-full h-full max-h-full">
           <Header onPrevious={onPrevious} />
 
-          <div className="h-62 max-h-62 overflow-y-auto no-scrollbar">
-            <div className="flex flex-row justify-between mb-4 ml-1">
-              {selectedRealms.length === 0 ? (
-                <div
-                  className="flex flex-row items-center gap-2"
-                  onClick={() => setSelectedRealms(seasonPassRealms.map((realm) => realm.realmId))}
-                >
-                  <CheckboxUnchecked className="w-4 h-4 fill-current text-gold" />
-                  <div className="text-sm">{seasonPassRealms.length} Available</div>
+          <div className="flex flex-row justify-between ml-1 relative top-2">
+            {selectedRealms.length === 0 ? (
+              <div
+                className="flex flex-row items-center gap-2"
+                onClick={() => setSelectedRealms(seasonPassRealms.map((realm) => realm.realmId))}
+              >
+                <CheckboxUnchecked className="w-4 h-4 fill-current text-gold" />
+                <div className="text-sm">{seasonPassRealms.length} Available</div>
+              </div>
+            ) : (
+              <div className="flex flex-row items-center gap-2" onClick={() => setSelectedRealms([])}>
+                <CheckboxMinus className="w-4 h-4 fill-current text-gold" />
+                <div className="text-sm">
+                  {selectedRealms.length} / {seasonPassRealms.length} Selected
                 </div>
-              ) : (
-                <div className="flex flex-row items-center gap-2" onClick={() => setSelectedRealms([])}>
-                  <CheckboxMinus className="w-4 h-4 fill-current text-gold" />
-                  <div className="text-sm">
-                    {selectedRealms.length} / {seasonPassRealms.length} Selected
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {seasonPassRealms.map((realm) => (
-                <SeasonPassRealm
-                  key={realm.realmId}
-                  seasonPassRealm={realm}
-                  selected={selectedRealms.includes(realm.realmId)}
-                  setSelected={(selected) =>
-                    setSelectedRealms(
-                      selected
-                        ? [...selectedRealms, realm.realmId]
-                        : selectedRealms.filter((id) => id !== realm.realmId),
-                    )
-                  }
-                />
-              ))}
-            </div>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-3 min-h-[20vh] h-[20vh] max-h-[20vh] overflow-hidden overflow-y-auto no-scrollbar">
+            {seasonPassElements}
           </div>
           <Button
             disabled={selectedRealms.length === 0}
             onClick={() => settleRealms(selectedRealms)}
-            className={`w-full h-12 !text-black !normal-case rounded-md ${
+            className={`absolute bottom-0 w-full h-12 !text-black !normal-case rounded-md ${
               selectedRealms.length <= 0
                 ? "opacity-50 !bg-gold/50 hover:scale-100 hover:translate-y-0 cursor-not-allowed"
                 : "!bg-gold hover:!bg-gold/80"

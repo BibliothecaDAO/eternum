@@ -193,57 +193,6 @@ export const SeasonPassRealm = ({
 
 export const getUnusedSeasonPasses = async (accountAddress: string, realms: RealmInfo[]) => {
   const balances = await querySeasonPasses(accountAddress);
-  //   let balances: any = {
-  //     tokenBalances: {
-  //       edges: [
-  //         {
-  //           node: {
-  //             tokenMetadata: {
-  //               tokenId: "1",
-  //               __typename: "ERC721__Token",
-  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
-  //             },
-  //           },
-  //         },
-  //         {
-  //           node: {
-  //             tokenMetadata: {
-  //               tokenId: "2",
-  //               __typename: "ERC721__Token",
-  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
-  //             },
-  //           },
-  //         },
-  //         {
-  //           node: {
-  //             tokenMetadata: {
-  //               tokenId: "3",
-  //               __typename: "ERC721__Token",
-  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
-  //             },
-  //           },
-  //         },
-  //         {
-  //           node: {
-  //             tokenMetadata: {
-  //               tokenId: "4",
-  //               __typename: "ERC721__Token",
-  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
-  //             },
-  //           },
-  //         },
-  //         {
-  //           node: {
-  //             tokenMetadata: {
-  //               tokenId: "5",
-  //               __typename: "ERC721__Token",
-  //               contractAddress: "0x78e32168b94452f5e9c1c59256c719b6ad436210ed5e18675cab749a67e0e8",
-  //             },
-  //           },
-  //         },
-  //       ],
-  //     },
-  //   };
   return balances?.tokenBalances?.edges
     ?.filter(
       (token: { node: { tokenMetadata: { __typename: string; contractAddress?: string } } }) =>

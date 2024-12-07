@@ -76,7 +76,7 @@ export const StepContainer = ({
         <div className={`relative ${width}`}>
           <div className="w-full flex justify-center">
             <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
-            <p className="text-xs align-bottom my-auto">
+            <p className="text-xs text-center align-bottom my-auto">
               By continuing you are agreeing to Eternum's <div className="inline underline">Terms of Service</div>
             </p>
           </div>
@@ -110,7 +110,7 @@ export const OnboardingContainer = ({
 };
 
 export const Onboarding = ({ backgroundImage }: { backgroundImage: string }) => {
-  const [settleRealm, setSettleRealm] = useState<boolean>(true);
+  const [settleRealm, setSettleRealm] = useState<boolean>(false);
   const bottomChildren = useMemo(() => <SeasonPassButton setSettleRealm={setSettleRealm} />, [setSettleRealm]);
 
   return (
@@ -147,7 +147,7 @@ const SeasonPassButton = ({ setSettleRealm }: { setSettleRealm: React.Dispatch<R
 
   return (
     <Button
-      onClick={() => setSettleRealm((prev) => !prev)}
+      onClick={seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined}
       className="mt-8 w-full h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1"
     >
       {seasonPassRealms.length === 0 ? (
