@@ -159,9 +159,11 @@ export const buildVrfCalls = async ({
 }: {
   account: AccountInterface;
   call: Call;
-  vrfProviderAddress: string;
+  vrfProviderAddress: string | undefined;
 }): Promise<Call[]> => {
   if (!account) return [];
+  if (!vrfProviderAddress) throw new Error("VRF provider address is not defined");
+
   const requestRandomCall: Call = {
     contractAddress: vrfProviderAddress,
     entrypoint: "request_random",
@@ -919,10 +921,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
-    if (this.VRF_PROVIDER_ADDRESS === undefined) {
-      throw new Error("VRF provider address is not set");
-    }
-
     const calls = await buildVrfCalls({
       account: signer,
       call: {
@@ -1511,11 +1509,17 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async battle_pillage(props: SystemProps.BattlePillageProps) {
     const { army_id, structure_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
-      entrypoint: "battle_pillage",
-      calldata: [army_id, structure_id],
+    const calls = await buildVrfCalls({
+      account: signer,
+      call: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
+        entrypoint: "battle_pillage",
+        calldata: [army_id, structure_id],
+      },
+      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
     });
+
+    return await this.executeAndCheckTransaction(signer, calls);
   }
 
   public async battle_claim(props: SystemProps.BattleClaimProps) {
@@ -2013,11 +2017,18 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async create_hyperstructure(props: SystemProps.CreateHyperstructureProps) {
     const { creator_entity_id, coords, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "create",
-      calldata: [creator_entity_id, coords],
+
+    const vrfCalls = await buildVrfCalls({
+      account: signer,
+      call: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+        entrypoint: "create",
+        calldata: [creator_entity_id, coords],
+      },
+      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
     });
+
+    return await this.executeAndCheckTransaction(signer, vrfCalls);
   }
 
   public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
