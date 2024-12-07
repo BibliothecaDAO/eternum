@@ -1,5 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
+import { DUMMY_HYPERSTRUCTURE_ENTITY_ID } from "@/three/scenes/constants";
 import { divideByPrecision, toHexString, toInteger } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
@@ -46,7 +47,9 @@ export const useHyperstructures = () => {
         entityIdPoseidon: hyperstructureEntityId,
         name: entityName
           ? shortString.decodeShortString(entityName.name.toString())
-          : `Hyperstructure ${hyperstructure?.entity_id}`,
+          : `Hyperstructure ${
+              hyperstructure?.entity_id === Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID) ? "" : hyperstructure?.entity_id
+            }`,
       };
     },
   );

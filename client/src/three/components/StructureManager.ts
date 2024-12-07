@@ -243,7 +243,7 @@ class Structures {
   }
 
   updateStructureStage(entityId: ID, structureType: StructureType, stage: number) {
-    const structure = this.structures.get(structureType)!.get(entityId);
+    const structure = this.structures.get(structureType)?.get(entityId);
     if (structure) {
       structure.stage = stage;
     }
