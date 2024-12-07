@@ -13,9 +13,10 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { Loader } from "lucide-react";
+import { Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { SelectSingleResource } from "../ui/SelectResources";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
@@ -129,7 +130,7 @@ export const BridgeOutStep1 = () => {
       const resourceAddresses = await getSeasonAddresses();
       const selectedResourceName = ResourcesIds[selectedResourceId];
 
-      let tokenAddress = resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddresses][1];
+      const tokenAddress = resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
         await bridgeStartWithdrawFromRealm(
@@ -164,7 +165,7 @@ export const BridgeOutStep1 = () => {
           {playerRealmsIdAndName.map((realm) => {
             return (
               <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                {realm.name}
+                #{realm.realmId} - {realm.name}
               </SelectItem>
             );
           })}
@@ -190,28 +191,34 @@ export const BridgeOutStep1 = () => {
           <div>{donkeysNeeded}</div>
         </div>
         <hr />
-        <div className="flex justify-between font-bold">
-          <div>Total Transfer Fee</div>
-          <div>{totalFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_wtdr_percent)}%)</div>
-          <div>{bankFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_wtdr_percent)}%)</div>
-          <div>{velordsFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>
-            Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_wtdr_percent)}%)
-          </div>
-          <div>{seasonPoolFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_wtdr_percent)}%)</div>
-          <div>{clientFeeOnWithdrawal}</div>
-        </div>
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+          <Button className="w-full flex justify-between font-bold px-0" variant={'ghost'}>
+              <div className="flex items-center"><Plus className="mr-4" />Total Transfer Fee</div>
+              <div>{totalFeeOnWithdrawal}</div>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="flex flex-col gap-2">
+            <div className="flex justify-between text-xs">
+              <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_wtdr_percent)}%)</div>
+              <div>{bankFeeOnWithdrawal}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_wtdr_percent)}%)</div>
+              <div>{velordsFeeOnWithdrawal}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>
+                Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_wtdr_percent)}%)
+              </div>
+              <div>{seasonPoolFeeOnWithdrawal}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_wtdr_percent)}%)</div>
+              <div>{clientFeeOnWithdrawal}</div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
         <div className="flex justify-between font-bold mt-5 mb-5">
           <div>Total Amount Received</div>
           <div>{formatFee(Number(selectedResourceAmount) - Number(totalFeeOnWithdrawal))}</div>

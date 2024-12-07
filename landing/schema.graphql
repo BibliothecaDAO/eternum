@@ -1490,14 +1490,7 @@ type World__Query {
     offset: Int
   ): Token__TransferConnection
   transaction(transactionHash: ID!): World__Transaction!
-  transactions(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-  ): World__TransactionConnection
+  transactions(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): World__TransactionConnection
 }
 
 type World__Social {

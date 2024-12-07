@@ -176,7 +176,7 @@ export const SelectSingleResource = ({
               }}
             />
             <NumberInput
-              className="h-14 "
+              className="h-14"
               max={divideByPrecision(resource?.balance || 0)}
               min={1}
               value={selectedResourceAmounts[id]}
