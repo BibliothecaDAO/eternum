@@ -356,6 +356,7 @@ export interface Config {
     realmsAddress: string;
     lordsAddress: string;
     startAfterSeconds: number;
+    bridgeCloseAfterEndSeconds: number;
   };
   bridge: {
     velords_fee_on_dpt_percent: number;

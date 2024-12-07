@@ -17,6 +17,7 @@ use s0_eternum::models::position::{Coord};
 use s0_eternum::models::quantity::Quantity;
 
 use s0_eternum::models::resources::{ResourceFoodImpl};
+use s0_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
 use s0_eternum::models::weight::Weight;
 use s0_eternum::utils::map::constants::fixed_constants as fc;
 use s0_eternum::utils::math::{max, min};
@@ -47,6 +48,32 @@ pub struct SeasonAddressesConfig {
     lords_address: ContractAddress,
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct SeasonBridgeConfig {
+    #[key]
+    config_id: ID,
+    // the number of seconds after the season ends
+    // that the bridge will be closed
+    close_after_end_seconds: u64,
+}
+
+#[generate_trait]
+impl SeasonBridgeConfigImpl of SeasonBridgeConfigTrait {
+    fn assert_bridge_is_open(world: WorldStorage) {
+        // ensure season has started
+        let season: Season = world.read_model(WORLD_CONFIG_ID);
+        SeasonImpl::assert_has_started(world);
+
+        // check if season is over
+        if season.ended_at.is_non_zero() {
+            // close bridge after grace period has elapsed
+            let season_bridge_config: SeasonBridgeConfig = world.read_model(WORLD_CONFIG_ID);
+            let now = starknet::get_block_timestamp();
+            assert!(now <= season.ended_at + season_bridge_config.close_after_end_seconds, "Bridge is closed");
+        }
+    }
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

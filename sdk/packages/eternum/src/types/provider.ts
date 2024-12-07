@@ -532,6 +532,10 @@ export interface SetSeasonConfigProps extends SystemSigner {
   start_at: num.BigNumberish;
 }
 
+export interface SetSeasonBridgeConfigProps extends SystemSigner {
+  close_after_end_seconds: num.BigNumberish;
+}
+
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
   token: num.BigNumberish;
   resource_type: num.BigNumberish;

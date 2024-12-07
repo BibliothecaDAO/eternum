@@ -1699,6 +1699,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_season_bridge_config(props: SystemProps.SetSeasonBridgeConfigProps) {
+    const { close_after_end_seconds, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_season_bridge_config",
+      calldata: [close_after_end_seconds],
+    });
+  }
+
   public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
     const { token, resource_type, signer } = props;
 

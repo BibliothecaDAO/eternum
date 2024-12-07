@@ -25,6 +25,8 @@ trait ISeasonConfig<T> {
         lords_address: starknet::ContractAddress,
         start_at: u64
     );
+
+    fn set_season_bridge_config(ref self: T, close_after_end_seconds: u64);
 }
 
 #[starknet::interface]
@@ -221,7 +223,7 @@ mod config_systems {
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, SeasonBridgeConfig
     };
 
     use s0_eternum::models::position::{Position, PositionTrait, Coord};
@@ -329,6 +331,14 @@ mod config_systems {
                 season.start_at = start_at;
                 world.write_model(@season);
             }
+        }
+
+
+        fn set_season_bridge_config(ref self: ContractState, close_after_end_seconds: u64) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            world.write_model(@SeasonBridgeConfig { config_id: WORLD_CONFIG_ID, close_after_end_seconds });
         }
     }
 

@@ -467,6 +467,12 @@ export const setSeasonConfig = async (config: Config) => {
 
   console.log(`Configuring season ${tx.statusReceipt}`);
   console.log(`Season starts at ${new Date(startAt * 1000).toISOString()}`);
+
+  const txBridge = await config.provider.set_season_bridge_config({
+    signer: config.account,
+    close_after_end_seconds: config.config.season.bridgeCloseAfterEndSeconds,
+  });
+  console.log(`Configuring season bridge ${txBridge.statusReceipt}`);
 };
 
 export const setResourceBridgeLordsWhitlelistConfig = async (config: Config) => {
