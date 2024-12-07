@@ -190,7 +190,7 @@ export const TopLeftNavigation = () => {
         initial="hidden"
         animate="visible"
       >
-        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown/90 border-gold/10 relative">
+        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold justify-center border text-center rounded-b-xl bg-brown border-gold/10 relative">
           <div className="structure-name-selector self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -202,7 +202,7 @@ export const TopLeftNavigation = () => {
                 <SelectTrigger className="truncate">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className="bg-brown/80">
+                <SelectContent className="bg-brown">
                   {structuresWithFavorites.map((structure, index) => (
                     <div key={index} className="flex flex-row items-center">
                       <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entity_id)}>
@@ -213,10 +213,10 @@ export const TopLeftNavigation = () => {
                         key={index}
                         value={structure.entity_id?.toString() || ""}
                       >
-                        <h5 className="self-center flex gap-4">
+                        <div className="self-center flex gap-4 text-xl">
                           {structure.name}
                           {IS_MOBILE ? structureIcons[structure.category] : ""}
-                        </h5>
+                        </div>
                       </SelectItem>
                     </div>
                   ))}

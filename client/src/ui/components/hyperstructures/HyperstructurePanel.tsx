@@ -155,8 +155,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
     <div className="flex flex-col justify-between h-full">
       <div className="grid grid-cols-5 text-xxs bg-blueish/10 p-1">
         <div className="flex flex-col">
-          <div className="">Owner:</div>
-          <div>{ownerName}</div>
+          <div>Owner:</div>
+          <h4>{ownerName}</h4>
         </div>
         <div className="col-span-4">
           {editName ? (
@@ -232,31 +232,23 @@ export const HyperstructurePanel = ({ entity }: any) => {
         </div>
       </div>
 
-      <div className="w-[100%] grid justify-between m-auto mb-1 gap-1 grid-cols-4">
-        <div className="p-1 bg-gold/10 gap-0.5 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="flex flex-col justify-center items-center text-center">
-            <div className="uppercase text-[10px]">Initial points</div>
-            <div className="font-bold text-sm">{currencyIntlFormat(initialPoints)}</div>
-          </div>
+      <div className="grid grid-cols-4 gap-1 w-full mb-1">
+        <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="uppercase text-[10px]">Initial points</div>
+          <div className="font-bold text-sm">{currencyIntlFormat(initialPoints)}</div>
         </div>
-        <div className="p-1 bg-gold/10 gap-0.5 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="flex flex-col justify-center items-center text-center">
-            <div className="uppercase text-[10px]">Progress</div>
-            <div className="font-bold text-sm">{currencyIntlFormat(progresses.percentage)}%</div>
-          </div>
+        <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="uppercase text-[10px]">Progress</div>
+          <div className="font-bold text-sm">{currencyIntlFormat(progresses.percentage)}%</div>
         </div>
-        <div className="p-1 bg-gold/10 gap-0.5 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="flex flex-col justify-center items-center text-center">
-            <div className="uppercase text-[10px]">Shares</div>
-            <div className="font-bold text-sm">{currencyIntlFormat((myShares || 0) * 100)}%</div>
-          </div>
+        <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="uppercase text-[10px]">Shares</div>
+          <div className="font-bold text-sm">{currencyIntlFormat((myShares || 0) * 100)}%</div>
         </div>
-        <div className="p-1 bg-gold/10 gap-0.5 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="flex flex-col justify-center items-center text-center">
-            <div className="uppercase text-[10px]">Points/cycle</div>
-            <div className="font-bold text-sm">
-              {currencyIntlFormat((myShares || 0) * configManager.getHyperstructureConfig().pointsPerCycle)}
-            </div>
+        <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="uppercase text-[10px]">Points/cycle</div>
+          <div className="font-bold text-sm">
+            {currencyIntlFormat((myShares || 0) * configManager.getHyperstructureConfig().pointsPerCycle)}
           </div>
         </div>
       </div>
@@ -283,11 +275,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
               >
                 <Button
                   isLoading={isLoading === Loading.Contribute}
-                  className="mt-4 bg-gold/20"
+                  variant="primary"
                   disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None || !canContribute}
                   onClick={contributeToConstruction}
                 >
-                  Contribute
+                  Contribute To Construction
                 </Button>
               </div>
             </div>

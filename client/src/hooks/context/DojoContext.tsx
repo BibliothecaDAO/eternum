@@ -259,33 +259,32 @@ const DojoContextProvider = ({
   const bg = `/images/covers/${getRandomBackgroundImage()}.png`;
 
   if (!accountsInitialized) {
-    return <LoadingScreen backgroundImage={bg} />;
+    return <LoadingScreen backgroundImage={backgroundImage} />;
   }
 
   // Handle Loading Screen
   if (isDev) {
     if (!burnerAccount) {
-      return <LoadingScreen backgroundImage={bg} />;
+      return <LoadingScreen backgroundImage={backgroundImage} />;
     }
   } else {
     if (isConnecting) {
-      return <LoadingScreen backgroundImage={bg} />;
+      return <LoadingScreen backgroundImage={backgroundImage} />;
     }
     if (!isConnected && !isConnecting && !controllerAccount && !isSpectatorMode) {
       return (
         <OnboardingContainer backgroundImage={backgroundImage}>
           <StepContainer>
-            <div className="flex space-x-8 mt-2 md:mt-4 justify-center">
+            <div className="flex justify-center space-x-8 mt-2 md:mt-4">
               {!isConnected && (
                 <>
                   <OnboardingButton onClick={onSpectatorModeClick}>
-                    <Eye className="w-5 h-5 fill-current mr-2" /> <div>Spectate</div>
+                    <Eye className="w-5 h-5 fill-current mr-2" />
+                    <div>Spectate</div>
                   </OnboardingButton>
-                  <OnboardingButton
-                    onClick={connectWallet}
-                    className="!bg-[#FCB843] !text-black border-none text-black"
-                  >
-                    <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" /> Log In
+                  <OnboardingButton onClick={connectWallet} className="!bg-[#FCB843] !text-black border-none">
+                    <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
+                    Log In
                   </OnboardingButton>
                 </>
               )}

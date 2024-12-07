@@ -406,7 +406,6 @@ const OrderRow = ({
               setConfirmOrderModal(true);
             }}
             size="xs"
-            disabled={!isBuy ? lordsBalance < getTotalLords : resourceBalance < calculatedResourceAmount}
             className={`self-center flex flex-grow ${isMakerResourcesLocked ? "pointer-events-none" : ""}`}
           >
             {!isBuy ? "Buy" : "Sell"}
@@ -440,6 +439,7 @@ const OrderRow = ({
         <ConfirmationPopup
           title="Confirm Trade"
           onConfirm={onAccept}
+          disabled={donkeysNeeded > donkeyBalance || donkeyBalance === 0}
           onCancel={() => {
             setConfirmOrderModal(false);
           }}
