@@ -80,6 +80,7 @@ export class TileManager {
         category,
         resource: productionModelValue?.produced_resource_type,
         paused: productionModelValue?.paused,
+        structureType: null,
       };
     });
 
