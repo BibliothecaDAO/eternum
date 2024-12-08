@@ -7,7 +7,6 @@
     "build-client": "pnpm --dir ./client build",
     "build-landing": "pnpm --dir ./landing build",
     "build-docs": "pnpm --dir ./eternum-docs build",
-    "build-docs-vercel": "pnpm --dir sdk/packages/eternum build && pnpm --dir ./eternum-docs build",
     "test-client": "pnpm --dir ./client test",
     "prettier-check": "npx prettier --check .",
     "prettier": "npx prettier --write .",
