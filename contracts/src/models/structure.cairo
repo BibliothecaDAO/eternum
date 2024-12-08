@@ -33,6 +33,11 @@ impl StructureImpl of StructureTrait {
     fn no_initial_attack_immunity(
         self: Structure, battle_config: BattleConfig, tick_config: TickConfig
     ) -> (bool, ByteArray) {
+        // Fragment mines have no immunity
+        if self.category == StructureCategory::FragmentMine {
+            return (true, "");
+        }
+
         let current_tick = tick_config.current();
         let mut allow_attack_tick: u64 = 0;
         if self.category == StructureCategory::Hyperstructure {
