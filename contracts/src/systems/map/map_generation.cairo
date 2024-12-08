@@ -165,20 +165,17 @@ mod map_generation_systems {
             army_entity_id
         }
 
-        fn add_production_deadline(ref world: WorldStorage, mine_entity_id: ID) -> u64 {
+        fn add_production_deadline(ref world: WorldStorage, randomness: u256, mine_entity_id: ID) -> u64 {
             let earthen_shard_production_config: ProductionConfig = world.read_model(ResourceTypes::EARTHEN_SHARD);
 
             let earthen_shard_production_amount_per_tick: u128 = earthen_shard_production_config.amount;
-
-            let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
-            let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
             let random_multiplier: u128 = *random::choices(
                 array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span(),
                 array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span(),
                 array![].span(),
                 1,
                 true,
-                vrf_seed
+                randomness
             )[0];
             let min_production_amount: u128 = 100_000 * RESOURCE_PRECISION;
             let actual_production_amount: u128 = min_production_amount * random_multiplier;
@@ -197,8 +194,9 @@ mod map_generation_systems {
         fn discover_shards_mine(ref world: WorldStorage, unit_entity_owner: EntityOwner, coord: Coord) -> bool {
             let exploration_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
 
+            let owner: Owner = world.read_model(unit_entity_owner.entity_owner_id);
             let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
-            let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
+            let vrf_seed: u256 = VRFImpl::seed(owner.address, vrf_provider);
             let is_shards_mine: bool = *random::choices(
                 array![true, false].span(),
                 array![1000, exploration_config.shards_mines_fail_probability].span(),
@@ -218,7 +216,7 @@ mod map_generation_systems {
                     ref world, 0, mine_structure_entity_id, mercenaries_config.rewards, 0, false, false
                 );
 
-                let deadline = Self::add_production_deadline(ref world, mine_structure_entity_id);
+                let deadline = Self::add_production_deadline(ref world, vrf_seed, mine_structure_entity_id);
 
                 // create shards production building
                 BuildingImpl::create(
