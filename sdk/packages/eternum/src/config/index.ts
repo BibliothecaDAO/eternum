@@ -22,30 +22,30 @@ export class EternumConfig {
 
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    // await setProductionConfig(config);
-    // await setQuestConfig(config);
-    // await setQuestRewardConfig(config);
-    // await setSeasonConfig(config);
-    // await setVRFConfig(config);
-    // await setResourceBridgeFeesConfig(config);
-    // await setBuildingCategoryPopConfig(config);
-    // await setPopulationConfig(config);
-    // await setBuildingConfig(config);
-    // await setResourceBuildingConfig(config);
-    // await setWeightConfig(config);
-    // await setBattleConfig(config);
-    // await setCombatConfig(config);
-    // await setRealmUpgradeConfig(config);
-    // await setRealmMaxLevelConfig(config);
-    // await setupGlobals(config);
-    // await setCapacityConfig(config);
-    // await setSpeedConfig(config);
+    await setProductionConfig(config);
+    await setQuestConfig(config);
+    await setQuestRewardConfig(config);
+    await setSeasonConfig(config);
+    await setVRFConfig(config);
+    await setResourceBridgeFeesConfig(config);
+    await setBuildingCategoryPopConfig(config);
+    await setPopulationConfig(config);
+    await setBuildingConfig(config);
+    await setResourceBuildingConfig(config);
+    await setWeightConfig(config);
+    await setBattleConfig(config);
+    await setCombatConfig(config);
+    await setRealmUpgradeConfig(config);
+    await setRealmMaxLevelConfig(config);
+    await setupGlobals(config);
+    await setCapacityConfig(config);
+    await setSpeedConfig(config);
     await setHyperstructureConfig(config);
-    // await setStaminaConfig(config);
-    // await setStaminaRefillConfig(config);
-    // await setMercenariesConfig(config);
-    // await setBuildingGeneralConfig(config);
-    // await setSettlementConfig(config);
+    await setStaminaConfig(config);
+    await setStaminaRefillConfig(config);
+    await setMercenariesConfig(config);
+    await setBuildingGeneralConfig(config);
+    await setSettlementConfig(config);
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
