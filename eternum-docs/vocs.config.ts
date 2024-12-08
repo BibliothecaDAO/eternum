@@ -37,7 +37,7 @@ export default defineConfig({
       items: [
         { text: "Key Concepts", link: "/mechanics/key-concepts" },
         {
-          text: "Realm management",
+          text: "Realm Management",
           collapsed: true,
           items: [
             { text: "Realm", link: "/mechanics/realm/realm" },
