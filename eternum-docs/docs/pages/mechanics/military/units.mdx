@@ -23,23 +23,23 @@ description: Military and combat mechanics in Eternum
 - **Knights** <img src="/resources/250.png" alt="Market" width="100" className="float-right" />
   - Standard unit with baseline stats
 
-### Army Energy System
+### Army Stamina System
 
-⚡ **Energy Mechanics**
+⚡ **Stamina Mechanics**
 
-- Army's maximum energy is determined by its composition
-- The unit with the lowest energy pool sets the army's limit
-- Energy regenerates at a fixed rate for all unit types every Eternum cycle
-- Energy is consumed when moving across tiles
+- Army's maximum stamina is determined by its composition
+- The unit with the lowest stamina pool sets the army's limit
+- Stamina regenerates at a fixed rate for all unit types every Eternum cycle
+- Stamina is consumed when moving across tiles
 
 ## Army Movement
 
-### Energy Consumption
+### Stamina Consumption
 
 🏃 **Movement Mechanics**
 
-- Moving armies requires energy
-- Each tile crossed consumes energy
+- Moving armies requires stamina
+- Each tile crossed consumes stamina
 - Food is consumed during movement
 
 ### Unit-Specific Movement
@@ -48,10 +48,26 @@ description: Military and combat mechanics in Eternum
 
 - **Paladins**
   - Larger energy pool for extended movement
-  - Takes longer to fully recharge energy
+  - Takes longer to fully recharge stamina
 - **Crossbowmen**
   - Uses 50% less food while moving
   - Ideal for long-distance exploration
 - **Knights**
   - Standard movement costs
   - Standard food consumption
+
+### Army Types
+
+🛡️ **Defending Army**
+
+- One defensive army can be created
+- Defends your realm from attacks
+- Can transfer military to an attacking army
+
+⚔️ **Attacking Army**
+
+- Three attacking armies can be created to start but increases as realm upgrades
+- Explores map, can initiate a battle and can join a side in an existing battle
+- Can only transfer military to armies on the same hex
+- Armies have limited storage and cannot move if storage is full, stamina is depleted or there is not enough food at the
+  home realm
