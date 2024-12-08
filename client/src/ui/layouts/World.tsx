@@ -89,6 +89,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   const battleView = useUIStore((state) => state.battleView);
 
+  console.log("World render");
+
   // Setup hooks
   useFetchBlockchainData();
   useSubscriptionToHyperstructureEvents();

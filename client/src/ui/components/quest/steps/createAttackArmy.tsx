@@ -21,7 +21,7 @@ export const createAttackArmySteps: StepOptions[] = [
     text: "Open the Military menu.",
     attachTo: {
       element: ".military-selector",
-      on: "right",
+      on: "right-start",
     },
     advanceOn: {
       selector: ".military-selector",

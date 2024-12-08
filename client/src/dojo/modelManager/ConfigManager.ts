@@ -5,7 +5,7 @@ import {
   BuildingType,
   CapacityConfigCategory,
   EternumGlobalConfig,
-  GET_RESOURCE,
+  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
   HYPERSTRUCTURE_CONFIG_ID,
   POPULATION_CONFIG_ID,
   ResourcesIds,
@@ -18,6 +18,7 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ContractComponents } from "../contractComponents";
+import { configManager } from "../setup";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
@@ -25,7 +26,7 @@ export class ClientConfigManager {
 
   resourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
-  hyperstructureTotalCosts: Record<number, { resource: ResourcesIds; min_amount: number; max_amount: number }> = {};
+  hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   buildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
@@ -103,12 +104,12 @@ export class ClientConfigManager {
   }
 
   private initializeHyperstructureTotalCosts() {
-    const hyperstructureTotalCosts: { resource: ResourcesIds; min_amount: number; max_amount: number }[] = [];
+    const hyperstructureTotalCosts: { resource: ResourceTier; min_amount: number; max_amount: number }[] = [];
 
-    for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
+    for (const resourceTier of Object.values(ResourceTier).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
         this.components.HyperstructureResourceConfig,
-        getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceId)]),
+        getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceTier)]),
       );
 
       const min_amount =
@@ -117,11 +118,7 @@ export class ClientConfigManager {
       const max_amount =
         Number(hyperstructureResourceConfig?.max_amount ?? 0) / EternumGlobalConfig.resources.resourcePrecision;
 
-      hyperstructureTotalCosts.push({ resource: resourceId as ResourcesIds, min_amount, max_amount });
-
-      if (resourceId === ResourcesIds.AncientFragment) {
-        break;
-      }
+      hyperstructureTotalCosts.push({ resource: resourceTier as ResourceTier, min_amount, max_amount });
     }
 
     this.hyperstructureTotalCosts = hyperstructureTotalCosts;
@@ -228,7 +225,7 @@ export class ClientConfigManager {
     );
 
     return {
-      amount: Number(hyperstructureResourceConfig?.min_amount) ?? 0,
+      amount: divideByPrecision(Number(hyperstructureResourceConfig?.min_amount) ?? 0),
       resource: ResourcesIds.AncientFragment,
     };
   }
@@ -474,19 +471,11 @@ export class ClientConfigManager {
   }
 
   getHyperstructureTotalContributableAmount(hyperstructureId: number) {
-    const hyperstructure = getComponentValue(
-      this.components.Hyperstructure,
-      getEntityIdFromKeys([BigInt(hyperstructureId)]),
+    const requiredAmounts = this.getHyperstructureRequiredAmounts(hyperstructureId);
+    return requiredAmounts.reduce(
+      (total, { amount, resource }) => total + amount * configManager.getResourceRarity(resource),
+      0,
     );
-
-    let total = 0;
-    const randomness = Number(hyperstructure?.randomness ?? 0);
-    for (const tier in ResourceTier) {
-      if (isNaN(Number(tier))) continue; // Skip non-numeric enum values
-      const resourceCount = GET_RESOURCE(Number(tier) as ResourceTier).length;
-      total += this.getHyperstructureRequiredAmountPerTier(Number(tier), randomness) * resourceCount;
-    }
-    return total;
   }
 
   getHyperstructureRequiredAmounts(hyperstructureId: number) {
@@ -495,7 +484,7 @@ export class ClientConfigManager {
       getEntityIdFromKeys([BigInt(hyperstructureId)]),
     );
 
-    const randomness = Number(hyperstructure?.randomness ?? 0);
+    const randomness = BigInt(hyperstructure?.randomness ?? 0);
     const requiredAmounts: { resource: ResourcesIds; amount: number }[] = [];
 
     // Get amounts for each tier
@@ -503,7 +492,7 @@ export class ClientConfigManager {
       if (isNaN(Number(tier))) continue; // Skip non-numeric enum values
 
       const resourceTierNumber = Number(tier) as ResourceTier;
-      const resourcesInTier = GET_RESOURCE(resourceTierNumber);
+      const resourcesInTier = GET_HYPERSTRUCTURE_RESOURCES_PER_TIER(resourceTierNumber, true);
       const amountForTier = this.getHyperstructureRequiredAmountPerTier(resourceTierNumber, randomness);
 
       // Add entry for each resource in this tier
@@ -518,7 +507,7 @@ export class ClientConfigManager {
     return requiredAmounts;
   }
 
-  getHyperstructureRequiredAmountPerTier(resourceTier: ResourceTier, randomness: number): number {
+  getHyperstructureRequiredAmountPerTier(resourceTier: ResourceTier, randomness: bigint): number {
     const hyperstructureResourceConfig = getComponentValue(
       this.components.HyperstructureResourceConfig,
       getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceTier)]),
@@ -535,8 +524,8 @@ export class ClientConfigManager {
       return divideByPrecision(minAmount);
     }
 
-    const additionalAmount = randomness % (maxAmount - minAmount);
-    return divideByPrecision(minAmount + additionalAmount);
+    const additionalAmount = Number(randomness % BigInt(maxAmount - minAmount));
+    return divideByPrecision(minAmount + Number(additionalAmount));
   }
 
   getBasePopulationCapacity(): number {

@@ -8,7 +8,7 @@ export const HYPERSTRUCTURE_CREATION_COSTS: ResourceCostMinMax[] = [
 export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: ResourceCostMinMax[] = [
   { resource_tier: ResourceTier.Military, min_amount: 0, max_amount: 0 },
   { resource_tier: ResourceTier.Transport, min_amount: 0, max_amount: 0 },
-  { resource_tier: ResourceTier.Food, min_amount: 50, max_amount: 90 },
+  { resource_tier: ResourceTier.Food, min_amount: 0, max_amount: 0 },
   { resource_tier: ResourceTier.Common, min_amount: 2, max_amount: 5 },
   { resource_tier: ResourceTier.Uncommon, min_amount: 5, max_amount: 7 },
   { resource_tier: ResourceTier.Rare, min_amount: 1, max_amount: 2 },

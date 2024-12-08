@@ -57,7 +57,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const progresses = useHyperstructureProgress(entity.entity_id);
 
-  const { useContributionsByPlayerAddress } = useContributions();
+  const { useContributionsByPlayerAddress } = useContributions({ componentName: "HyperstructurePanel" });
 
   const myContributions = useContributionsByPlayerAddress(BigInt(account.address), entity.entity_id);
 
@@ -75,11 +75,12 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
       resource: Number(resourceId),
-      amount: multiplyByPrecision(amount),
+      amount: multiplyByPrecision(amount + 1), // add 1 to the amount to account for precision loss in client
     }));
 
     setIsLoading(Loading.Contribute);
     setResetContributions(true);
+
     try {
       await contribute_to_construction({
         signer: account,
@@ -96,7 +97,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
-    return Object.values(configManager.hyperstructureTotalCosts).map(({ resource }) => {
+
+    return Object.values(configManager.getHyperstructureRequiredAmounts(entity.entity_id)).map(({ resource }) => {
       const progress = progresses.progresses.find(
         (progress: ProgressWithPercentage) => progress.resource_type === resource,
       );

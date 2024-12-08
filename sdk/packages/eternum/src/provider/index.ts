@@ -68,21 +68,22 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
 }
 const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
 class PromiseQueue {
-  private readonly queue: Array<{
+  private queue: Array<{
     providerCall: () => Promise<any>;
     resolve: (value: any) => void;
     reject: (reason?: any) => void;
+    batchId?: string; // Added batchId to group related calls
   }> = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
-  private readonly BATCH_DELAY = 3000; // ms to wait for batching
-  private readonly MAX_BATCH_SIZE = 4; // Maximum number of calls to batch together
+  private readonly BATCH_DELAY = 2000; // ms to wait for batching
+  private readonly MAX_BATCH_SIZE = 12; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
 
-  async enqueue<T>(providerCall: () => Promise<T>): Promise<T> {
+  async enqueue<T>(providerCall: () => Promise<T>, batchId?: string): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      this.queue.push({ providerCall, resolve, reject });
+      this.queue.push({ providerCall, resolve, reject, batchId });
 
       // Only set timeout if we're not already processing
       if (!this.processing) {
@@ -103,46 +104,67 @@ class PromiseQueue {
 
     try {
       while (this.queue.length > 0) {
-        // Get up to MAX_BATCH_SIZE calls for batching
-        const batch = this.queue.splice(0, Math.min(this.queue.length, this.MAX_BATCH_SIZE));
-        console.log("Processing batch of size:", batch.length); // Debug log
+        // Group calls by batchId
+        const batchGroups = new Map<string | undefined, typeof this.queue>();
+        this.queue.forEach((item) => {
+          const group = batchGroups.get(item.batchId) || [];
+          group.push(item);
+          batchGroups.set(item.batchId, group);
+        });
 
-        if (batch.length === 1) {
-          const { providerCall, resolve, reject } = batch[0];
-          try {
-            const result = await providerCall();
-            resolve(result);
-          } catch (error) {
-            reject(error);
+        // Process each batch group
+        for (const [batchId, group] of batchGroups) {
+          // Clear processed items from queue
+          this.queue = this.queue.filter((item) => item.batchId !== batchId);
+
+          // Split into chunks if needed while keeping batched items together
+          const chunks = [];
+          for (let i = 0; i < group.length; i += this.MAX_BATCH_SIZE) {
+            chunks.push(group.slice(i, i + this.MAX_BATCH_SIZE));
           }
-        } else {
-          try {
-            // Extract the actual calls from the providerCalls
-            const allCalls = await Promise.all(
-              batch.map(async ({ providerCall }) => {
-                // Access the internal call object
-                const fn = providerCall as any;
-                const calls = fn._transactionDetails;
-                // Handle both single calls and arrays of calls
-                return Array.isArray(calls) ? calls : [calls];
-              }),
-            );
 
-            // Flatten all calls into a single array
-            const flattenedCalls = allCalls.flat();
-            console.log("Batched calls:", flattenedCalls); // Debug log
+          // Process each chunk
+          for (const batch of chunks) {
+            console.log("Processing batch of size:", batch.length); // Debug log
 
-            // Get signer from first call
-            const signer = (batch[0].providerCall as any)._signer;
+            if (batch.length === 1) {
+              const { providerCall, resolve, reject } = batch[0];
+              try {
+                const result = await providerCall();
+                resolve(result);
+              } catch (error) {
+                reject(error);
+              }
+            } else {
+              try {
+                // Extract the actual calls from the providerCalls
+                const allCalls = await Promise.all(
+                  batch.map(async ({ providerCall }) => {
+                    // Access the internal call object
+                    const fn = providerCall as any;
+                    const calls = fn._transactionDetails;
+                    // Handle both single calls and arrays of calls
+                    return Array.isArray(calls) ? calls : [calls];
+                  }),
+                );
 
-            // Execute the batched transaction
-            const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
+                // Flatten all calls into a single array
+                const flattenedCalls = allCalls.flat();
+                console.log("Batched calls:", flattenedCalls); // Debug log
 
-            // Resolve all promises with the result
-            batch.forEach((item) => item.resolve(result));
-          } catch (error) {
-            console.error("Batch processing error:", error); // Debug log
-            batch.forEach((item) => item.reject(error));
+                // Get signer from first call
+                const signer = (batch[0].providerCall as any)._signer;
+
+                // Execute the batched transaction
+                const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
+
+                // Resolve all promises with the result
+                batch.forEach((item) => item.resolve(result));
+              } catch (error) {
+                console.error("Batch processing error:", error); // Debug log
+                batch.forEach((item) => item.reject(error));
+              }
+            }
           }
         }
       }
@@ -156,10 +178,12 @@ export const buildVrfCalls = async ({
   account,
   call,
   vrfProviderAddress,
+  addressToCall,
 }: {
   account: AccountInterface;
   call: Call;
   vrfProviderAddress: string | undefined;
+  addressToCall: string;
 }): Promise<Call[]> => {
   if (!account) return [];
   if (!vrfProviderAddress) throw new Error("VRF provider address is not defined");
@@ -167,7 +191,7 @@ export const buildVrfCalls = async ({
   const requestRandomCall: Call = {
     contractAddress: vrfProviderAddress,
     entrypoint: "request_random",
-    calldata: [call.contractAddress, 0, account.address],
+    calldata: [addressToCall, 0, account.address],
   };
 
   let calls = [];
@@ -921,19 +945,33 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
-    const calls = await buildVrfCalls({
-      account: signer,
-      call: {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
-        entrypoint: "explore",
-        calldata: [unit_id, direction],
-      },
-      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
-    });
+    const requestTwoCall: Call = {
+      contractAddress: this.VRF_PROVIDER_ADDRESS!,
+      entrypoint: "request_random",
+      calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_systems`), 0, signer.address],
+    };
 
-    const call = this.createProviderCall(signer, calls);
+    const requestRandomCall: Call = {
+      contractAddress: this.VRF_PROVIDER_ADDRESS!,
+      entrypoint: "request_random",
+      calldata: [
+        getContractByName(this.manifest, `${NAMESPACE}-map_generation_systems`),
+        0,
+        getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
+      ],
+    };
 
-    return await this.promiseQueue.enqueue(call);
+    const exploreCall: Call = {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
+      entrypoint: "explore",
+      calldata: [unit_id, direction],
+    };
+
+    // const call = this.createProviderCall(signer, [requestTwoCall, requestRandomCall, exploreCall]);
+
+    // return await this.promiseQueue.enqueue(call);
+
+    return this.executeAndCheckTransaction(signer, [requestTwoCall, requestRandomCall, exploreCall]);
   }
 
   /**
@@ -1517,6 +1555,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: [army_id, structure_id],
       },
       vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+      addressToCall: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
     });
 
     return await this.executeAndCheckTransaction(signer, calls);
@@ -2043,9 +2082,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       call: {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
         entrypoint: "create",
-        calldata: [creator_entity_id, coords],
+        calldata: [creator_entity_id, coords.x, coords.y],
       },
       vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+      addressToCall: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
     });
 
     return await this.executeAndCheckTransaction(signer, vrfCalls);

@@ -12,7 +12,9 @@ export const ContributionSummary = ({
   hyperstructureEntityId: ID;
   className?: string;
 }) => {
-  const { getContributions, getContributionsTotalPercentage } = useContributions();
+  const { getContributions, getContributionsTotalPercentage } = useContributions({
+    componentName: "ContributionSummary",
+  });
   const { getAddressName } = useRealm();
 
   type Resource = {

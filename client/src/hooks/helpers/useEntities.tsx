@@ -60,7 +60,7 @@ export const useEntities = () => {
   }, [allRealms, address]);
 
   // Get all structures
-  const allStructures = useEntityQuery([Has(Structure)]);
+  const allStructures = useEntityQuery([Has(Structure), Has(Owner)]);
 
   const filterPlayerStructures = useMemo(() => {
     return allStructures.filter((id) => {

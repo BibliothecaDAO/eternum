@@ -10,7 +10,7 @@ export const buildFoodSteps: StepOptions[] = [
     text: "Open the Construction menu.",
     attachTo: {
       element: ".construction-selector",
-      on: "right",
+      on: "right-start",
     },
     advanceOn: {
       selector: ".construction-selector",
@@ -46,7 +46,7 @@ export const buildFoodSteps: StepOptions[] = [
     text: "Buildings are organized by type - Resource, Economy and Military.",
     attachTo: {
       element: ".construction-tabs-selector",
-      on: "right",
+      on: "right-start",
     },
     canClickTarget: false,
     classes: "ml-5",
@@ -121,7 +121,7 @@ export const buildFoodSteps: StepOptions[] = [
     text: "Constructing buildings requires available population.",
     attachTo: {
       element: ".population-selector",
-      on: "right",
+      on: "right-start",
     },
     classes: "ml-5",
     buttons: [StepButton.next],
@@ -138,13 +138,13 @@ export const buildFoodSteps: StepOptions[] = [
     buttons: [StepButton.next],
   },
   {
-    title: "Storage",
+    title: "Important",
     text: "Each resource has its own individual storage limit.",
     attachTo: {
       element: ".storehouse-selector",
-      on: "right",
+      on: "right-start",
     },
-    classes: "ml-5",
+    classes: "ml-5 shepherd-warning",
     buttons: [StepButton.next],
   },
   {
@@ -182,7 +182,7 @@ export const buildFoodSteps: StepOptions[] = [
     text: "Open the menu.",
     attachTo: {
       element: ".resource-table-selector",
-      on: "left",
+      on: "left-start",
     },
     advanceOn: {
       selector: ".resource-table-selector",

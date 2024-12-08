@@ -32,7 +32,7 @@ export const createDefenseArmySteps: StepOptions[] = [
     text: "Open the Construction menu.",
     attachTo: {
       element: ".construction-selector",
-      on: "right",
+      on: "right-start",
     },
     classes: "ml-5",
     advanceOn: {
@@ -46,7 +46,7 @@ export const createDefenseArmySteps: StepOptions[] = [
     text: "Open the Military section",
     attachTo: {
       element: ".military-tab-selector",
-      on: "right",
+      on: "right-start",
     },
     advanceOn: {
       selector: ".military-tab-selector",
@@ -125,7 +125,7 @@ export const createDefenseArmySteps: StepOptions[] = [
     text: "Open the Military menu",
     attachTo: {
       element: ".military-selector",
-      on: "right",
+      on: "right-start",
     },
     advanceOn: {
       selector: ".military-selector",

@@ -371,7 +371,35 @@ export enum ResourceTier {
   Mythic,
 }
 
-export const GET_RESOURCE = (tier: ResourceTier): ResourcesIds[] => {
+export const GET_HYPERSTRUCTURE_RESOURCES_PER_TIER = (
+  tier: ResourceTier,
+  hyperstructure: boolean = false,
+): ResourcesIds[] => {
+  switch (tier) {
+    case ResourceTier.Lords:
+      return RESOURCE_TIERS.lords.filter((resource) => (hyperstructure ? resource !== ResourcesIds.Lords : true));
+    case ResourceTier.Military:
+      return [];
+    case ResourceTier.Transport:
+      return [];
+    case ResourceTier.Food:
+      return [];
+    case ResourceTier.Common:
+      return RESOURCE_TIERS.common;
+    case ResourceTier.Uncommon:
+      return RESOURCE_TIERS.uncommon;
+    case ResourceTier.Rare:
+      return RESOURCE_TIERS.rare;
+    case ResourceTier.Unique:
+      return RESOURCE_TIERS.unique;
+    case ResourceTier.Mythic:
+      return RESOURCE_TIERS.mythic;
+    default:
+      throw new Error(`Invalid resource tier: ${tier}`);
+  }
+};
+
+export const GET_RESOURCES_PER_TIER = (tier: ResourceTier, hyperstructure: boolean = false): ResourcesIds[] => {
   switch (tier) {
     case ResourceTier.Lords:
       return RESOURCE_TIERS.lords;

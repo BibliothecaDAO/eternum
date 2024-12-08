@@ -12,19 +12,28 @@ import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/u
 
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { getArmiesByPosition } from "@/hooks/helpers/useArmies";
+import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { HintSection } from "@/ui/components/hints/HintModal";
+import { Checkbox } from "@/ui/elements/Checkbox";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { BattleSide, ContractAddress, findResourceById, ID, ResourcesIds } from "@bibliothecadao/eternum";
 
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
+  const {
+    account: { account },
+  } = useDojo();
+
   const [selectedTab, setSelectedTab] = useState(0);
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const { hyperstructures } = useHyperstructures();
   const { fragmentMines } = useFragmentMines();
+
+  const myHyperstructures = useGetHyperstructuresWithContributionsFromPlayer();
 
   const hyperstructureExtraContent = (entityId: any) => {
     const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === entityId);
@@ -57,18 +66,27 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
           </div>
         ),
         component: (
-          <EntityList
-            title="Hyperstructures"
-            panel={({ entity }) => <HyperstructurePanel entity={entity} />}
-            entityContent={hyperstructureExtraContent}
-            list={hyperstructures
-              .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
-              .map((hyperstructure) => ({
-                id: hyperstructure.entity_id,
-                position: { x: hyperstructure.x, y: hyperstructure.y },
-                ...hyperstructure,
-              }))}
-          />
+          <>
+            <div className="px-2 pb-2">
+              <label className="flex items-center space-x-1 text-xs">
+                <Checkbox enabled={showOnlyMine} onClick={() => setShowOnlyMine(!showOnlyMine)} />
+                <span>Show only mine</span>
+              </label>
+            </div>
+            <EntityList
+              title="Hyperstructures"
+              panel={({ entity }) => <HyperstructurePanel entity={entity} />}
+              entityContent={hyperstructureExtraContent}
+              list={hyperstructures
+                .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
+                .map((hyperstructure) => ({
+                  id: hyperstructure.entity_id,
+                  position: { x: hyperstructure.x, y: hyperstructure.y },
+                  ...hyperstructure,
+                }))}
+              filterEntityIds={showOnlyMine ? Array.from(myHyperstructures()) : undefined}
+            />
+          </>
         ),
       },
       {
@@ -79,18 +97,33 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
           </div>
         ),
         component: (
-          <EntityList
-            title="FragmentMines"
-            panel={({ entity }) => <FragmentMinePanel entity={entity} />}
-            entityContent={fragmentMineExtraContent}
-            list={fragmentMines
-              .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
-              .map((fragmentMine) => ({
-                id: fragmentMine.entity_id,
-                position: { x: fragmentMine.x, y: fragmentMine.y },
-                ...fragmentMine,
-              }))}
-          />
+          <>
+            <div className="px-2 pb-2">
+              <label className="flex items-center space-x-1 text-xs">
+                <Checkbox enabled={showOnlyMine} onClick={() => setShowOnlyMine(!showOnlyMine)} />
+                <span>Show only mine</span>
+              </label>
+            </div>
+            <EntityList
+              title="FragmentMines"
+              panel={({ entity }) => <FragmentMinePanel entity={entity} />}
+              entityContent={fragmentMineExtraContent}
+              list={fragmentMines
+                .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
+                .map((fragmentMine) => ({
+                  id: fragmentMine.entity_id,
+                  position: { x: fragmentMine.x, y: fragmentMine.y },
+                  ...fragmentMine,
+                }))}
+              filterEntityIds={
+                fragmentMines
+                  .filter((mine) => {
+                    mine.owner === account.address;
+                  })
+                  .map((mine) => mine.entity_id) as ID[]
+              }
+            />
+          </>
         ),
       },
     ],
