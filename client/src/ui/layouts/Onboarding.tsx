@@ -1,8 +1,10 @@
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum_words_logo.svg";
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { usePlayerRealms } from "@/hooks/helpers/useRealm";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
@@ -117,6 +119,7 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
     />
     <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
       <OnboardingOverlay controller={controller} />
+      <SeasonStartTimer />
       {children}
     </div>
   </div>
@@ -196,5 +199,38 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
         </div>
       )}
     </Button>
+  );
+};
+
+const SeasonStartTimer = () => {
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0n;
+  const seasonStart = (configManager.getSeasonConfig().startAt || 0n);
+
+  const [countdown, setCountdown] = useState(() => {
+    return BigInt(seasonStart) - BigInt(nextBlockTimestamp);
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1n);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  if (countdown < 0 || nextBlockTimestamp === 0n || seasonStart === 0n) return null;
+
+  const hours = Math.floor(Number(countdown) / 3600);
+  const minutes = Math.floor((Number(countdown) % 3600) / 60);
+  const seconds = Number(countdown) % 60;
+
+  return (
+    <div className="fixed top-40 left-1/2 -translate-x-1/2 z-50">
+      <div className="text-4xl bg-black/20 border-[0.5px] border-gradient rounded-lg px-6 py-3 text-gold backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex gap-2">
+        <p className="font-semibold">
+          {String(hours).padStart(2, "0")}:{String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+        </p>
+      </div>
+    </div>
   );
 };
