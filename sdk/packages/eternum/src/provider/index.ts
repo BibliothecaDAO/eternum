@@ -76,7 +76,7 @@ class PromiseQueue {
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
   private readonly BATCH_DELAY = 3000; // ms to wait for batching
-  private readonly MAX_BATCH_SIZE = 4; // Maximum number of calls to batch together
+  private readonly MAX_BATCH_SIZE = 6; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
 
@@ -156,10 +156,12 @@ export const buildVrfCalls = async ({
   account,
   call,
   vrfProviderAddress,
+  addressToCall,
 }: {
   account: AccountInterface;
   call: Call;
   vrfProviderAddress: string | undefined;
+  addressToCall: string;
 }): Promise<Call[]> => {
   if (!account) return [];
   if (!vrfProviderAddress) throw new Error("VRF provider address is not defined");
@@ -167,7 +169,7 @@ export const buildVrfCalls = async ({
   const requestRandomCall: Call = {
     contractAddress: vrfProviderAddress,
     entrypoint: "request_random",
-    calldata: [call.contractAddress, 0, account.address],
+    calldata: [addressToCall, 0, call.contractAddress],
   };
 
   let calls = [];
@@ -921,17 +923,33 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
-    const calls = await buildVrfCalls({
-      account: signer,
-      call: {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
-        entrypoint: "explore",
-        calldata: [unit_id, direction],
-      },
-      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
-    });
+    const requestTwoCall: Call = {
+      contractAddress: this.VRF_PROVIDER_ADDRESS!,
+      entrypoint: "request_random",
+      calldata: [
+        getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
+        0,
+        getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
+      ],
+    };
 
-    const call = this.createProviderCall(signer, calls);
+    const requestRandomCall: Call = {
+      contractAddress: this.VRF_PROVIDER_ADDRESS!,
+      entrypoint: "request_random",
+      calldata: [
+        getContractByName(this.manifest, `${NAMESPACE}-map_generation_systems`),
+        0,
+        getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
+      ],
+    };
+
+    const exploreCall: Call = {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
+      entrypoint: "explore",
+      calldata: [unit_id, direction],
+    };
+
+    const call = this.createProviderCall(signer, [requestTwoCall, requestRandomCall, exploreCall]);
 
     return await this.promiseQueue.enqueue(call);
   }
@@ -1517,6 +1535,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: [army_id, structure_id],
       },
       vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+      addressToCall: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
     });
 
     return await this.executeAndCheckTransaction(signer, calls);
@@ -2046,6 +2065,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: [creator_entity_id, coords],
       },
       vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+      addressToCall: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
     });
 
     return await this.executeAndCheckTransaction(signer, vrfCalls);
