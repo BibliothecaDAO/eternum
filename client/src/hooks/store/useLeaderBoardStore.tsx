@@ -28,7 +28,7 @@ export const useSubscriptionToHyperstructureEvents = () => {
     },
   } = useDojo();
 
-  const { getContributions } = useContributions({ componentName: "useSubscriptionToHyperstructureEvents" });
+  const { getContributions } = useContributions();
 
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
   const setFinishedHyperstructures = useLeaderBoardStore((state) => state.setFinishedHyperstructures);
