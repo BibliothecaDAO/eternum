@@ -309,10 +309,17 @@ export class ClientConfigManager {
     );
   }
 
-  getBattleGraceTickCount() {
+  getBattleGraceTickCount(category: StructureType) {
     return this.getValueOrDefault(() => {
       const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-      return Number(battleConfig?.regular_immunity_ticks ?? 0);
+      switch (category) {
+        case StructureType.Hyperstructure:
+          return Number(battleConfig?.hyperstructure_immunity_ticks ?? 0);
+        case StructureType.FragmentMine:
+          return 0;
+        default:
+          return Number(battleConfig?.regular_immunity_ticks ?? 0);
+      }
     }, 0);
   }
 
