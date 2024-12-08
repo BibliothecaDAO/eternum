@@ -2,7 +2,13 @@ import type { Config } from "@bibliothecadao/eternum";
 import devManifest from "../contracts/manifest_dev.json";
 import productionManifest from "../contracts/manifest_prod.json";
 
-import { CapacityConfigCategory, EternumConfig, EternumGlobalConfig, EternumProvider } from "@bibliothecadao/eternum";
+import {
+  CapacityConfigCategory,
+  EternumConfig,
+  EternumGlobalConfig,
+  EternumProvider,
+  ResourceTier,
+} from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 import { MAX_QUEST_RESOURCES } from "./speed";
 
@@ -88,11 +94,18 @@ const setupConfig: Config =
           //   max_amount: 1,
           // })),
           hyperstructurePointsForWin: 500_000,
-          hyperstructureTotalCosts: EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
-            resource_tier: cost.resource_tier,
-            min_amount: Math.floor(Math.random() * 10) + 1,
-            max_amount: Math.floor(Math.random() * 10) + 1,
-          })),
+          hyperstructureTotalCosts: [
+            ...EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
+              resource_tier: cost.resource_tier,
+              min_amount: Math.floor(Math.random() * 4) + 1,
+              max_amount: Math.floor(Math.random() * 10) + 5,
+            })),
+            {
+              resource_tier: ResourceTier.Lords,
+              min_amount: 3,
+              max_amount: 3,
+            },
+          ],
         },
       }
     : EternumGlobalConfig;
