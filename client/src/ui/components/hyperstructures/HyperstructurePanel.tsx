@@ -75,7 +75,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
       resource: Number(resourceId),
-      amount: multiplyByPrecision(amount),
+      amount: multiplyByPrecision(amount + 1), // add 1 to the amount to account for precision loss in client
     }));
 
     setIsLoading(Loading.Contribute);

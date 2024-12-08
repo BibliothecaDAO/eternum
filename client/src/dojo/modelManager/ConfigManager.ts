@@ -480,7 +480,7 @@ export class ClientConfigManager {
       getEntityIdFromKeys([BigInt(hyperstructureId)]),
     );
 
-    const randomness = Number(hyperstructure?.randomness ?? 0);
+    const randomness = BigInt(hyperstructure?.randomness ?? 0);
     const requiredAmounts: { resource: ResourcesIds; amount: number }[] = [];
 
     // Get amounts for each tier
@@ -503,7 +503,7 @@ export class ClientConfigManager {
     return requiredAmounts;
   }
 
-  getHyperstructureRequiredAmountPerTier(resourceTier: ResourceTier, randomness: number): number {
+  getHyperstructureRequiredAmountPerTier(resourceTier: ResourceTier, randomness: bigint): number {
     const hyperstructureResourceConfig = getComponentValue(
       this.components.HyperstructureResourceConfig,
       getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceTier)]),
@@ -520,8 +520,8 @@ export class ClientConfigManager {
       return divideByPrecision(minAmount);
     }
 
-    const additionalAmount = randomness % (maxAmount - minAmount);
-    return divideByPrecision(minAmount + additionalAmount);
+    const additionalAmount = Number(randomness % BigInt(maxAmount - minAmount));
+    return divideByPrecision(minAmount + Number(additionalAmount));
   }
 
   getBasePopulationCapacity(): number {
