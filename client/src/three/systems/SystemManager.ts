@@ -16,6 +16,7 @@ import {
   runQuery,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
 import {
   ArmySystemUpdate,
@@ -92,6 +93,23 @@ export class SystemManager {
               getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
             );
 
+            const addressName = getComponentValue(
+              this.setup.components.AddressName,
+              getEntityIdFromKeys([BigInt(owner?.address || 0)]),
+            );
+
+            const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
+
+            const guild = getComponentValue(this.setup.components.GuildMember, update.entity);
+
+            const guilEntitydName = getComponentValue(
+              this.setup.components.EntityName,
+              getEntityIdFromKeys([BigInt(guild?.guild_entity_id || 0)]),
+            );
+            const guildName = guilEntitydName ? shortString.decodeShortString(guilEntitydName.name.toString()) : "";
+
+            console.log({ ownerName, guildName });
+
             callback({
               entityId: army.entity_id,
               hexCoords: { col: position.x, row: position.y },
@@ -99,7 +117,7 @@ export class SystemManager {
               defender: Boolean(protectee),
               currentHealth: health.current / healthMultiplier,
               order: realm.order,
-              owner: { address: owner?.address || 0n },
+              owner: { address: owner?.address || 0n, ownerName, guildName },
             });
           }
         });
