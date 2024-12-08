@@ -1,18 +1,17 @@
 import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { formatTime } from "@/ui/utils/utils";
 import {
   findResourceById,
-  GET_RESOURCES_PER_TIER,
+  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
   ResourcesIds,
-  ResourceTier,
   StructureType,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
 import { tableOfContents } from "./utils";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 export const WorldStructures = () => {
   const chapters = useMemo(
@@ -132,7 +131,7 @@ const HyperstructureCompletionTable = () => {
             {completionCosts.map(({ resource, min_amount, max_amount }) => {
               return (
                 <div className="flex px-2">
-                  {GET_RESOURCES_PER_TIER(resource).map((resourceId) => {
+                  {GET_HYPERSTRUCTURE_RESOURCES_PER_TIER(resource, true).map((resourceId) => {
                     return (
                       <td key={resourceId} className="p-2">
                         <ResourceIcon size="md" resource={ResourcesIds[resourceId]} />
