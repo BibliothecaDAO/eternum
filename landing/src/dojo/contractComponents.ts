@@ -498,7 +498,7 @@ export function defineContractComponents(world: World) {
           last_updated_by: RecsType.BigInt,
           last_updated_timestamp: RecsType.Number,
           access: RecsType.String,
-          randomness: RecsType.BigInt
+          randomness: RecsType.BigInt,
         },
         {
           metadata: {
