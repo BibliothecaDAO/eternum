@@ -38,6 +38,7 @@ import {
   BUILDINGS_CENTER,
   HEX_SIZE,
   MinesMaterialsParams,
+  StructureProgress,
   buildingModelPaths,
   castleLevelToRealmCastle,
   hyperstructureStageToModel,
@@ -116,7 +117,7 @@ export default class HexceptionScene extends HexagonScene {
     row: number;
     label: CSS2DObject;
   }[] = [];
-  private castleLevel: RealmLevels = RealmLevels.Settlement;
+  private structureStage: RealmLevels | StructureProgress = RealmLevels.Settlement;
   private minesMaterials: Map<number, THREE.MeshStandardMaterial> = new Map();
 
   constructor(
@@ -152,8 +153,8 @@ export default class HexceptionScene extends HexagonScene {
     this.state = useUIStore.getState();
 
     // add gui to change castle level
-    this.GUIFolder.add(this, "castleLevel", 0, 3).onFinishChange((value: RealmLevels) => {
-      this.castleLevel = value;
+    this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
+      this.structureStage = value;
       this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
     });
@@ -261,13 +262,12 @@ export default class HexceptionScene extends HexagonScene {
     this.realmSubscription?.unsubscribe();
     this.realmSubscription = this.systemManager.Realm.onUpdate((update: RealmSystemUpdate) => {
       if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
-        this.castleLevel = update.level as RealmLevels;
+        this.structureStage = update.level as RealmLevels;
         this.removeCastleFromScene();
         this.updateHexceptionGrid(this.hexceptionRadius);
       }
     });
 
-    this.castleLevel = this.tileManager.getRealmLevel();
     this.removeCastleFromScene();
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.controls.maxDistance = 18;
@@ -399,9 +399,21 @@ export default class HexceptionScene extends HexagonScene {
     this.moveCameraToColRow(10, 10, 0);
   }
 
+  updateCastleLevel() {
+    const structureType = this.tileManager.structureType();
+    if (structureType === StructureType.Realm) {
+      this.structureStage = this.tileManager.getRealmLevel();
+    } else if (structureType === StructureType.Hyperstructure) {
+      this.structureStage = this.systemManager.getStructureStage(
+        structureType,
+        useUIStore.getState().structureEntityId,
+      );
+    }
+  }
+
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();
-
+    this.updateCastleLevel();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
       Ocean: [],
       DeepOcean: [],
@@ -456,10 +468,10 @@ export default class HexceptionScene extends HexagonScene {
               : (BuildingType[building.category].toString() as any);
 
           if (parseInt(buildingType) === BuildingType.Castle) {
-            buildingType = castleLevelToRealmCastle[this.castleLevel];
+            buildingType = castleLevelToRealmCastle[this.structureStage];
           }
           if (building.structureType === StructureType.Hyperstructure) {
-            buildingType = hyperstructureStageToModel[this.castleLevel];
+            buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
           }
           const buildingData = this.buildingModels.get(buildingType);
 
@@ -586,7 +598,7 @@ export default class HexceptionScene extends HexagonScene {
     if (isMainHex) {
       const buildablePositions = generateHexPositions(
         { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
-        this.castleLevel + 1,
+        this.structureStage + 1,
       );
 
       positions = positions.filter(

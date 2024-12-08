@@ -1,4 +1,4 @@
-import { HyperstructureTypes, HyperstructureTypesNames, ResourceMiningTypes } from "@/types";
+import { HyperstructureTypesNames, ResourceMiningTypes } from "@/types";
 import { BuildingType, RealmLevelNames, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { BiomeType } from "../components/Biome";
@@ -26,10 +26,16 @@ export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
   [RealmLevels.Empire]: RealmLevelNames.Empire,
 };
 
-export const hyperstructureStageToModel: Record<HyperstructureTypes, string> = {
-  [HyperstructureTypes.Stage0]: HyperstructureTypesNames.Stage0,
-  [HyperstructureTypes.Stage1]: HyperstructureTypesNames.Stage1,
-  [HyperstructureTypes.Stage2]: HyperstructureTypesNames.Stage2,
+export enum StructureProgress {
+  STAGE_1 = 0,
+  STAGE_2 = 1,
+  STAGE_3 = 2,
+}
+
+export const hyperstructureStageToModel: Record<StructureProgress, string> = {
+  [StructureProgress.STAGE_1]: HyperstructureTypesNames.STAGE_1,
+  [StructureProgress.STAGE_2]: HyperstructureTypesNames.STAGE_2,
+  [StructureProgress.STAGE_3]: HyperstructureTypesNames.STAGE_3,
 };
 
 export const buildingModelPaths: Record<
@@ -61,9 +67,9 @@ export const buildingModelPaths: Record<
   [RealmLevelNames.City]: "/models/buildings-opt/castle1.glb",
   [RealmLevelNames.Kingdom]: "/models/buildings-opt/castle2.glb",
   [RealmLevelNames.Empire]: "/models/buildings-opt/castle3.glb",
-  [HyperstructureTypesNames.Stage0]: "/models/buildings-opt/hyperstructure_init.glb",
-  [HyperstructureTypesNames.Stage1]: "/models/buildings-opt/hyperstructure_half.glb",
-  [HyperstructureTypesNames.Stage2]: "/models/buildings-opt/hyperstructure.glb",
+  [HyperstructureTypesNames.STAGE_1]: "/models/buildings-opt/hyperstructure_init.glb",
+  [HyperstructureTypesNames.STAGE_2]: "/models/buildings-opt/hyperstructure_half.glb",
+  [HyperstructureTypesNames.STAGE_3]: "/models/buildings-opt/hyperstructure.glb",
 };
 
 const BASE_PATH = "/models/biomes-opt/";
@@ -89,12 +95,6 @@ export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
 
 export const PROGRESS_HALF_THRESHOLD = 50;
 export const PROGRESS_FINAL_THRESHOLD = 100;
-
-export enum StructureProgress {
-  STAGE_1 = 0,
-  STAGE_2 = 1,
-  STAGE_3 = 2,
-}
 
 export const StructureModelPaths: Record<StructureType, string[]> = {
   [StructureType.Realm]: [

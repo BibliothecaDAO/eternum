@@ -289,7 +289,7 @@ export class SystemManager {
     return { col: value[0]?.x || 0, row: value[0]?.y || 0 };
   }
 
-  private getStructureStage(structureType: StructureType, entityId: ID): number {
+  public getStructureStage(structureType: StructureType, entityId: ID): number {
     if (structureType === StructureType.Hyperstructure) {
       const progressQueryResult = Array.from(
         runQuery([
