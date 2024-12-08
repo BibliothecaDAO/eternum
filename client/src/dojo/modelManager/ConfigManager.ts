@@ -614,4 +614,22 @@ export class ClientConfigManager {
       return buildingGeneralConfig?.base_cost_percent_increase ?? 0;
     }, 0);
   }
+
+  getSeasonConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const season = getComponentValue(this.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        return {
+          startAt: season?.start_at,
+          isOver: season?.is_over,
+          endedAt: season?.ended_at,
+        };
+      },
+      {
+        startAt: 0n,
+        isOver: true,
+        endedAt: 0n,
+      },
+    );
+  }
 }

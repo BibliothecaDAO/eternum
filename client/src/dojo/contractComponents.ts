@@ -1207,6 +1207,25 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Season: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          start_at: RecsType.BigInt,
+          is_over: RecsType.Boolean,
+          ended_at: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "Season",
+            types: ["u32", "u64", "bool", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     SeasonAddressesConfig: (() => {
       return defineComponent(
         world,

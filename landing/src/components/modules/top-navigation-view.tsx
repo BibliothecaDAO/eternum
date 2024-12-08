@@ -7,6 +7,7 @@ import { formatEther } from "viem";
 import { Button } from "../ui/button";
 import { SidebarTrigger } from "../ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
+import { SeasonStartTimer } from "./season-start-timer";
 
 interface TopNavigationViewProps {
   lordsBalance: Uint256 | undefined;
@@ -45,6 +46,7 @@ export const TopNavigationView = ({
           </Button>
         ) : null}
       </div>
+      <SeasonStartTimer />
       <div className="flex gap-2 justify-between">
         {!isConnected ? (
           <>
