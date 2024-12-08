@@ -112,6 +112,16 @@ export const StepContainer = ({
               </p>
             </div>
             {bottomChildren}
+            <div className="w-full text-center mt-4">
+              <a
+                href="https://eternum-docs.realms.world/overview/entry#season-access"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gold/80 hover:text-gold underline"
+              >
+                Learn more about Season Access
+              </a>
+            </div>
           </div>
         </div>
       )}

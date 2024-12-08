@@ -57,7 +57,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const progresses = useHyperstructureProgress(entity.entity_id);
 
-  const { useContributionsByPlayerAddress } = useContributions({ componentName: "HyperstructurePanel" });
+  const { useContributionsByPlayerAddress } = useContributions();
 
   const myContributions = useContributionsByPlayerAddress(BigInt(account.address), entity.entity_id);
 
