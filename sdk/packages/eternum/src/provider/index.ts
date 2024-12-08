@@ -954,11 +954,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const requestRandomCall: Call = {
       contractAddress: this.VRF_PROVIDER_ADDRESS!,
       entrypoint: "request_random",
-      calldata: [
-        getContractByName(this.manifest, `${NAMESPACE}-map_generation_systems`),
-        0,
-        getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
-      ],
+      calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_generation_systems`), 0, signer.address],
     };
 
     const exploreCall: Call = {
@@ -967,11 +963,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [unit_id, direction],
     };
 
-    // const call = this.createProviderCall(signer, [requestTwoCall, requestRandomCall, exploreCall]);
+    const call = this.createProviderCall(signer, [requestTwoCall, requestRandomCall, exploreCall]);
 
-    // return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(call);
 
-    return this.executeAndCheckTransaction(signer, [requestTwoCall, requestRandomCall, exploreCall]);
+    // return this.executeAndCheckTransaction(signer, [requestTwoCall, requestRandomCall, exploreCall]);
   }
 
   /**
