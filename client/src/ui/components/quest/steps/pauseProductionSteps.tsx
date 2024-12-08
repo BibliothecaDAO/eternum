@@ -27,7 +27,7 @@ export const pauseProductionSteps: StepOptions[] = [
     text: "Open the Details menu.",
     attachTo: {
       element: ".entity-details-selector",
-      on: "right",
+      on: "right-start",
     },
 
     beforeShowPromise: function () {
@@ -62,7 +62,7 @@ export const pauseProductionSteps: StepOptions[] = [
     text: "Open the  buildings section.",
     attachTo: {
       element: ".buildings-tab-selector",
-      on: "right",
+      on: "right-start",
     },
     advanceOn: {
       selector: ".buildings-tab-selector",
@@ -118,23 +118,23 @@ export const pauseProductionSteps: StepOptions[] = [
     buttons: [],
   },
   {
-    title: "Storage Waste",
+    title: "Important",
     text: "When a resource reaches its storage limit, any additional production of it will be lost.",
     attachTo: {
       element: ".storehouse-selector",
-      on: "right",
+      on: "right-start",
     },
-    classes: "ml-5",
+    classes: "ml-5 shepherd-warning",
     buttons: [StepButton.next],
   },
   {
-    title: "Resource Efficiency",
+    title: "Important",
     text: "If any input resource runs out, others will still be consumed without producing. Pause to prevent waste!",
     attachTo: {
       element: ".storehouse-selector",
-      on: "right",
+      on: "right-start",
     },
-    classes: "ml-5",
+    classes: "ml-5 shepherd-warning",
     buttons: [StepButton.finish],
   },
 ];

@@ -63,7 +63,7 @@ export const settleSteps: StepOptions[] = [
     text: "Open the Balance menu.",
     attachTo: {
       element: ".resource-table-selector",
-      on: "left",
+      on: "left-start",
     },
     advanceOn: {
       selector: ".resource-table-selector",

@@ -10,7 +10,7 @@ export const buildResourceSteps: StepOptions[] = [
     text: "Open the Construction menu",
     attachTo: {
       element: ".construction-selector",
-      on: "right",
+      on: "right-start",
     },
     advanceOn: {
       selector: ".construction-selector",
@@ -30,7 +30,7 @@ export const buildResourceSteps: StepOptions[] = [
     text: "Open the Resource section.",
     attachTo: {
       element: ".resource-tab-selector",
-      on: "right",
+      on: "right-start",
     },
     advanceOn: {
       selector: ".resource-tab-selector",
@@ -47,9 +47,9 @@ export const buildResourceSteps: StepOptions[] = [
     text: "Each realm has access to a set of resources it can produce.",
     attachTo: {
       element: ".construction-panel-selector",
-      on: "bottom",
+      on: "right",
     },
-    classes: "mt-5",
+    classes: "ml-5",
     canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".construction-panel-selector");
@@ -57,13 +57,13 @@ export const buildResourceSteps: StepOptions[] = [
     buttons: [StepButton.next],
   },
   {
-    title: "Consumption",
+    title: "Important",
     text: "Producing resources requires consuming others in the process.",
     attachTo: {
       element: ".construction-panel-selector",
-      on: "bottom",
+      on: "right",
     },
-    classes: "mt-5",
+    classes: "ml-5 shepherd-warning",
     canClickTarget: false,
     buttons: [StepButton.next],
   },
@@ -72,9 +72,9 @@ export const buildResourceSteps: StepOptions[] = [
     text: "For example, a Wood producing facility will consume Coal, Stone, and Wheat.",
     attachTo: {
       element: ".construction-panel-selector",
-      on: "bottom",
+      on: "right",
     },
-    classes: "mt-5",
+    classes: "ml-5",
     canClickTarget: false,
     buttons: [StepButton.next],
   },
@@ -112,7 +112,7 @@ export const buildResourceSteps: StepOptions[] = [
     text: "Open the menu.",
     attachTo: {
       element: ".resource-table-selector",
-      on: "left",
+      on: "left-start",
     },
     advanceOn: {
       selector: ".resource-table-selector",
@@ -135,13 +135,13 @@ export const buildResourceSteps: StepOptions[] = [
     buttons: [StepButton.next],
   },
   {
-    title: "Warning",
+    title: "Important",
     text: "Missing resources won't stop other materials from being consumed !",
     attachTo: {
       element: ".entity-resource-table-selector",
       on: "left",
     },
-    classes: "-ml-5",
+    classes: "-ml-5 shepherd-warning",
     buttons: [StepButton.finish],
   },
 ];
