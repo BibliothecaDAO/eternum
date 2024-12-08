@@ -80,6 +80,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
     setIsLoading(Loading.Contribute);
     setResetContributions(true);
+
     try {
       await contribute_to_construction({
         signer: account,
@@ -96,7 +97,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
-    return Object.values(configManager.hyperstructureTotalCosts).map(({ resource }) => {
+
+    return Object.values(configManager.getHyperstructureRequiredAmounts(entity.entity_id)).map(({ resource }) => {
       const progress = progresses.progresses.find(
         (progress: ProgressWithPercentage) => progress.resource_type === resource,
       );
