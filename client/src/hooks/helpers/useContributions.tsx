@@ -1,5 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { getTotalPointsPercentage } from "@/dojo/modelManager/utils/LeaderboardUtils";
+import { configManager } from "@/dojo/setup";
+import { divideByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, ID, Resource } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -32,9 +33,15 @@ export const useContributions = () => {
   };
 
   const getContributionsTotalPercentage = (hyperstructureId: number, contributions: Resource[]) => {
-    return contributions.reduce((acc, { resourceId, amount }) => {
-      return acc + getTotalPointsPercentage(hyperstructureId, resourceId, BigInt(amount));
-    }, 0);
+    const totalPlayerContribution = divideByPrecision(
+      contributions.reduce((acc, { amount, resourceId }) => {
+        return acc + amount * configManager.getResourceRarity(resourceId);
+      }, 0),
+    );
+
+    const totalHyperstructureContribution = configManager.getHyperstructureTotalContributableAmount(hyperstructureId);
+
+    return totalPlayerContribution / totalHyperstructureContribution;
   };
 
   return {
