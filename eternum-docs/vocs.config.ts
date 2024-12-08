@@ -88,6 +88,7 @@ export default defineConfig({
         { text: "Contracts", link: "/development/contracts" },
         { text: "SDK", link: "/development/sdk" },
         { text: "Common issues", link: "/development/common-issues" },
+        { text: "Collaborators", link: "/development/collaborators" },
       ],
     },
   ],
