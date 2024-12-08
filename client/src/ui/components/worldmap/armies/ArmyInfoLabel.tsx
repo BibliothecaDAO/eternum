@@ -1,16 +1,14 @@
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { currencyFormat } from "../../../utils/utils";
 
-import { configManager } from "@/dojo/setup";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/useStructures";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
-import { TickIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
@@ -56,19 +54,8 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
-  const isImmune = useIsStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
-
-  const immunityEndTimestamp = useMemo(() => {
-    return (
-      Number(structure?.created_at || 0) +
-      configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
-    );
-  }, [structure?.created_at]);
-
-  const timer = useMemo(() => {
-    if (!nextBlockTimestamp) return 0;
-    return immunityEndTimestamp - nextBlockTimestamp!;
-  }, [immunityEndTimestamp, nextBlockTimestamp]);
+  const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
+  const timer = useStructureImmunityTimer(structure, nextBlockTimestamp || 0);
 
   return (
     <BaseThreeTooltip
