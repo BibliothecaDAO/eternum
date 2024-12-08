@@ -13,7 +13,14 @@ import {
   getHexForWorldPosition,
   getWorldPositionForHex,
 } from "@/ui/utils/utils";
-import { BuildingType, RealmLevels, ResourcesIds, findResourceById, getNeighborHexes } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  RealmLevels,
+  ResourcesIds,
+  StructureType,
+  findResourceById,
+  getNeighborHexes,
+} from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { CSS2DObject } from "three-stdlib";
@@ -33,6 +40,7 @@ import {
   MinesMaterialsParams,
   buildingModelPaths,
   castleLevelToRealmCastle,
+  hyperstructureStageToModel,
   structureTypeToBuildingType,
 } from "./constants";
 
@@ -450,6 +458,9 @@ export default class HexceptionScene extends HexagonScene {
           if (parseInt(buildingType) === BuildingType.Castle) {
             buildingType = castleLevelToRealmCastle[this.castleLevel];
           }
+          if (building.structureType === StructureType.Hyperstructure) {
+            buildingType = hyperstructureStageToModel[this.castleLevel];
+          }
           const buildingData = this.buildingModels.get(buildingType);
 
           if (buildingData) {
@@ -661,12 +672,13 @@ export default class HexceptionScene extends HexagonScene {
     targetHex: HexPosition,
     biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
   ) => {
-    const existingBuildings = this.tileManager.existingBuildings();
+    const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
     if (structureType) {
       existingBuildings.push({
         col: BUILDINGS_CENTER[0],
         row: BUILDINGS_CENTER[1],
+        structureType,
         category: BuildingType[structureTypeToBuildingType[structureType]],
         resource: undefined,
         paused: false,

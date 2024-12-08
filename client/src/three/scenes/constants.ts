@@ -1,4 +1,4 @@
-import { ResourceMiningTypes } from "@/types";
+import { HyperstructureTypes, HyperstructureTypesNames, ResourceMiningTypes } from "@/types";
 import { BuildingType, RealmLevelNames, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { BiomeType } from "../components/Biome";
@@ -26,7 +26,16 @@ export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
   [RealmLevels.Empire]: RealmLevelNames.Empire,
 };
 
-export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | RealmLevelNames, string> = {
+export const hyperstructureStageToModel: Record<HyperstructureTypes, string> = {
+  [HyperstructureTypes.Stage0]: HyperstructureTypesNames.Stage0,
+  [HyperstructureTypes.Stage1]: HyperstructureTypesNames.Stage1,
+  [HyperstructureTypes.Stage2]: HyperstructureTypesNames.Stage2,
+};
+
+export const buildingModelPaths: Record<
+  BuildingType | ResourceMiningTypes | RealmLevelNames | HyperstructureTypesNames,
+  string
+> = {
   // placeholder for now
   [BuildingType.None]: "/models/buildings-opt/farm.glb",
   [BuildingType.Bank]: "/models/buildings-opt/bank.glb",
@@ -52,6 +61,9 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
   [RealmLevelNames.City]: "/models/buildings-opt/castle1.glb",
   [RealmLevelNames.Kingdom]: "/models/buildings-opt/castle2.glb",
   [RealmLevelNames.Empire]: "/models/buildings-opt/castle3.glb",
+  [HyperstructureTypesNames.Stage0]: "/models/buildings-opt/hyperstructure_init.glb",
+  [HyperstructureTypesNames.Stage1]: "/models/buildings-opt/hyperstructure_half.glb",
+  [HyperstructureTypesNames.Stage2]: "/models/buildings-opt/hyperstructure.glb",
 };
 
 const BASE_PATH = "/models/biomes-opt/";

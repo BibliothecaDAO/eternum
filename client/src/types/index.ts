@@ -19,6 +19,18 @@ export enum ResourceMiningTypes {
   Dragonhide = "dragonhide",
 }
 
+export enum HyperstructureTypes {
+  Stage0 = 0,
+  Stage1 = 1,
+  Stage2 = 2,
+}
+
+export enum HyperstructureTypesNames {
+  Stage0 = "hyperstructure_stage0",
+  Stage1 = "hyperstructure_stage1",
+  Stage2 = "hyperstructure_stage2",
+}
+
 export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };
