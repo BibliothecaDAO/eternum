@@ -65,7 +65,7 @@ echo "Deleting previous indexer and network..."
 # slot deployments delete eternum-40 katana
 
 echo "Migrating world..."
-sozo migrate --profile prod 
+sozo migrate --profile prod --fee eth
 
 echo "Setting up remote indexer on slot..."
 slot deployments create -t epic sepolia-rc-9 torii --version v1.0.5 --world 0x01418a50b94a1bcaa120780aaaeab8986f3c1b7b710863b482bb1becc8b29443 --rpc https://api.cartridge.gg/x/starknet/sepolia --indexing.pending true --config ./torii-sepolia.toml
