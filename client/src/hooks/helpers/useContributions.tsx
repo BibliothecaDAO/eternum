@@ -7,17 +7,21 @@ import { ComponentValue, HasValue, getComponentValue, runQuery } from "@dojoengi
 import { useCallback } from "react";
 import { useDojo } from "../context/DojoContext";
 
-export const useContributions = () => {
+export const useContributions = ({ componentName }: { componentName: string }) => {
   const {
     setup: {
       components: { Contribution },
     },
   } = useDojo();
 
+  console.log("rerendering useContributions", componentName);
+
   const getContributions = (hyperstructureEntityId: ID) => {
     const contributionsToHyperstructure = Array.from(
       runQuery([HasValue(Contribution, { hyperstructure_entity_id: hyperstructureEntityId })]),
     ).map((id) => getComponentValue(Contribution, id));
+
+    console.log("calculating contributions becuase of ", componentName);
 
     return contributionsToHyperstructure as ComponentValue<ClientComponents["Contribution"]["schema"]>[];
   };
