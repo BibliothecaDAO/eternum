@@ -52,7 +52,7 @@ export const ContributionSummary = ({
     .map(([playerAddress, resources]) => ({
       playerAddress,
       resources,
-      percentage: getContributionsTotalPercentage(resourceContributions[playerAddress]) * 100,
+      percentage: getContributionsTotalPercentage(hyperstructureEntityId, resourceContributions[playerAddress]) * 100,
     }))
     .sort((a, b) => b.percentage - a.percentage);
 

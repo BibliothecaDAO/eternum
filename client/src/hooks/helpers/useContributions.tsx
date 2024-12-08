@@ -31,9 +31,9 @@ export const useContributions = () => {
     return contributionsToHyperstructure;
   };
 
-  const getContributionsTotalPercentage = (contributions: Resource[]) => {
+  const getContributionsTotalPercentage = (hyperstructureId: number, contributions: Resource[]) => {
     return contributions.reduce((acc, { resourceId, amount }) => {
-      return acc + getTotalPointsPercentage(resourceId, BigInt(amount));
+      return acc + getTotalPointsPercentage(hyperstructureId, resourceId, BigInt(amount));
     }, 0);
   };
 

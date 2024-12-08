@@ -498,12 +498,13 @@ export function defineContractComponents(world: World) {
           last_updated_by: RecsType.BigInt,
           last_updated_timestamp: RecsType.Number,
           access: RecsType.String,
+          randomness: RecsType.BigInt
         },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "Hyperstructure",
-            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum"],
+            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum", "felt252"],
             customTypes: ["Access"],
           },
         },

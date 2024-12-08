@@ -359,6 +359,57 @@ export const WEIGHTS_GRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Fish]: 100,
 };
 
+export enum ResourceTier {
+  Lords = 1,
+  Military,
+  Transport,
+  Food,
+  Common,
+  Uncommon,
+  Rare,
+  Unique,
+  Mythic,
+}
+
+export const GET_RESOURCE = (tier: ResourceTier): ResourcesIds[] => {
+  switch (tier) {
+    case ResourceTier.Lords:
+      return RESOURCE_TIERS.lords;
+    case ResourceTier.Military:
+      return RESOURCE_TIERS.military;
+    case ResourceTier.Transport:
+      return RESOURCE_TIERS.transport;
+    case ResourceTier.Food:
+      return RESOURCE_TIERS.food;
+    case ResourceTier.Common:
+      return RESOURCE_TIERS.common;
+    case ResourceTier.Uncommon:
+      return RESOURCE_TIERS.uncommon;
+    case ResourceTier.Rare:
+      return RESOURCE_TIERS.rare;
+    case ResourceTier.Unique:
+      return RESOURCE_TIERS.unique;
+    case ResourceTier.Mythic:
+      return RESOURCE_TIERS.mythic;
+    default:
+      throw new Error(`Invalid resource tier: ${tier}`);
+  }
+};
+
+export const GET_RESOURCE_TIER = (resource: ResourcesIds): ResourceTier => {
+  if (RESOURCE_TIERS.lords.includes(resource)) return ResourceTier.Lords;
+  if (RESOURCE_TIERS.military.includes(resource)) return ResourceTier.Military;
+  if (RESOURCE_TIERS.transport.includes(resource)) return ResourceTier.Transport;
+  if (RESOURCE_TIERS.food.includes(resource)) return ResourceTier.Food;
+  if (RESOURCE_TIERS.common.includes(resource)) return ResourceTier.Common;
+  if (RESOURCE_TIERS.uncommon.includes(resource)) return ResourceTier.Uncommon;
+  if (RESOURCE_TIERS.rare.includes(resource)) return ResourceTier.Rare;
+  if (RESOURCE_TIERS.unique.includes(resource)) return ResourceTier.Unique;
+  if (RESOURCE_TIERS.mythic.includes(resource)) return ResourceTier.Mythic;
+
+  throw new Error(`Resource ${resource} not found in any tier`);
+};
+
 export const RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
   military: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],
