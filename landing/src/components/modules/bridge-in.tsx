@@ -24,21 +24,45 @@ function formatFee(fee: number) {
   return fee.toFixed(2);
 }
 
+interface ResourceSelection {
+  id: number;
+  amount: string;
+  contract: string;
+}
+
 export const BridgeIn = () => {
   const { account, address } = useAccount();
-
+  const [realmEntityId, setRealmEntityId] = useState<number>();
+  const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>([]);
+  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<string[]>([]);
   const { computeTravelTime } = useTravel();
   const { getRealmNameById } = useRealm();
-
-  const [selectedResourceContract, setselectedResourceContract] = useState("");
-  const [selectedResourceAmount, setselectedResourceAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [realmEntityId, setRealmEntityId] = useState<string>("");
+  const [resourceSelections, setResourceSelections] = useState<ResourceSelection[]>([
+    { id: 0, amount: "", contract: "" }
+  ]);
+
+  const handleResourceChange = (id: number, field: 'amount' | 'contract', value: string) => {
+    setResourceSelections(prev => 
+      prev.map(selection => 
+        selection.id === id ? { ...selection, [field]: value } : selection
+      )
+    );
+  };
+
+ 
+
+  const addResourceSelection = () => {
+    setResourceSelections(prev => [
+      ...prev, 
+      { id: prev.length, amount: "", contract: "" }
+    ]);
+  };
 
   const bridgeConfig = EternumGlobalConfig.bridge;
 
   const calculateBridgeFee = (percent: number) => {
-    return (percent * Number(selectedResourceAmount)) / BRIDGE_FEE_DENOMINATOR;
+    return (percent * Number(resourceSelections[0].amount)) / BRIDGE_FEE_DENOMINATOR;
   };
 
   const calculateBridgeFeeDisplayPercent = (percent: number) => {
@@ -47,19 +71,19 @@ export const BridgeIn = () => {
 
   const velordsFeeOnDeposit = useMemo(
     () => formatFee(calculateBridgeFee(bridgeConfig.velords_fee_on_dpt_percent)),
-    [selectedResourceAmount],
+    [resourceSelections],
   );
   const seasonPoolFeeOnDeposit = useMemo(
     () => formatFee(calculateBridgeFee(bridgeConfig.season_pool_fee_on_dpt_percent)),
-    [selectedResourceAmount],
+    [resourceSelections],
   );
   const clientFeeOnDeposit = useMemo(
     () => formatFee(calculateBridgeFee(bridgeConfig.client_fee_on_dpt_percent)),
-    [selectedResourceAmount],
+    [resourceSelections],
   );
   const bankFeeOnDeposit = useMemo(
     () => formatFee(calculateBridgeFee(bridgeConfig.max_bank_fee_dpt_percent)),
-    [selectedResourceAmount],
+    [resourceSelections],
   );
 
   const totalFeeOnDeposit = useMemo(
@@ -83,17 +107,18 @@ export const BridgeIn = () => {
   }, [playerRealms]);
 
   const travelTime = useMemo(() => {
-    if (realmEntityId) {
+    console.log(resourceSelections[0].contract)
+    if (resourceSelections[0].contract) {
       return computeTravelTime(
         Number(ADMIN_BANK_ENTITY_ID),
-        Number(realmEntityId!),
+        Number(resourceSelections[0].contract!),
         configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
         true,
       );
     } else {
       return 0;
     }
-  }, [selectedResourceContract, realmEntityId, selectedResourceAmount]);
+  }, [resourceSelections]);
 
   const travelTimeInHoursAndMinutes = (travelTime: number) => {
     const hours = Math.floor(travelTime / 60);
@@ -102,18 +127,18 @@ export const BridgeIn = () => {
   };
 
   const orderWeight = useMemo(() => {
-    if (selectedResourceContract && selectedResourceAmount) {
+    if (resourceSelections[0].contract && resourceSelections[0].amount) {
       const totalWeight = getTotalResourceWeight([
         {
-          resourceId: ResourcesIds[selectedResourceContract as keyof typeof ResourcesIds],
-          amount: Number(selectedResourceAmount),
+          resourceId: ResourcesIds[resourceSelections[0].contract as keyof typeof ResourcesIds],
+          amount: Number(resourceSelections[0].amount),
         },
       ]);
       return totalWeight;
     } else {
       return 0;
     }
-  }, [selectedResourceContract, selectedResourceAmount]);
+  }, [resourceSelections]);
 
   const donkeysNeeded = useMemo(() => {
     if (orderWeight) {
@@ -126,18 +151,19 @@ export const BridgeIn = () => {
   const { bridgeIntoRealm } = useBridgeAsset();
 
   const onBridgeIntoRealm = async () => {
-    if (realmEntityId) {
+    if (resourceSelections[0].contract) {
       const resourceAddresses = await getSeasonAddresses();
       console.log({ resourceAddresses });
       const tokenAddress =
-        resourceAddresses[selectedResourceContract.toLocaleUpperCase() as keyof typeof resourceAddresses][1];
+        resourceAddresses[resourceSelections[0].contract.toLocaleUpperCase() as keyof typeof resourceAddresses][1];
+
       try {
         setIsLoading(true);
         await bridgeIntoRealm(
           tokenAddress as string,
           ADMIN_BANK_ENTITY_ID,
-          BigInt(realmEntityId!),
-          BigInt((selectedResourceAmount as unknown as number) * 10 ** 18),
+          BigInt(resourceSelections[0].contract!),
+          BigInt((resourceSelections[0].amount as unknown as number) * 10 ** 18),
         );
       } finally {
         setIsLoading(false);
@@ -159,21 +185,34 @@ export const BridgeIn = () => {
           <SelectValue placeholder="Select Realm To Transfer" />
         </SelectTrigger>
         <SelectContent>
-          {playerRealmsIdAndName.map((realm) => {
+          {playerRealmsIdAndName.length ? playerRealmsIdAndName.map((realm) => {
             return (
               <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
                 #{realm.realmId} - {realm.name}
               </SelectItem>
             );
-          })}
+          }) : "No Realms settled in Eternum"}
         </SelectContent>
       </Select>
 
-      <SelectResourceToBridge
-        selectedResourceAmount={selectedResourceAmount}
-        setselectedResourceAmount={setselectedResourceAmount}
-        setselectedResourceContract={setselectedResourceContract}
-      />
+      {resourceSelections.map((selection) => (
+        <SelectResourceToBridge
+          key={selection.id}
+          selectedResourceAmount={selection.amount}
+          setselectedResourceAmount={(value) => handleResourceChange(selection.id, 'amount', value)}
+          setselectedResourceContract={(value) => handleResourceChange(selection.id, 'contract', value)}
+        />
+      ))}
+
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={addResourceSelection}
+        className="mt-2"
+      >
+        <Plus className="h-4 w-4 mr-2" /> Add Resource
+      </Button>
+
       <div className="flex flex-col gap-1">
         <div className="flex justify-between">
           <div>Time to Transfer</div>
@@ -213,15 +252,15 @@ export const BridgeIn = () => {
               <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_dpt_percent)}%)</div>
               <div>{clientFeeOnDeposit}</div>
             </div>
-            <div className="flex justify-between font-bold mt-5 mb-5">
-              <div>Total Amount Received</div>
-              <div>{formatFee(Number(selectedResourceAmount) - Number(totalFeeOnDeposit))}</div>
-            </div>
           </CollapsibleContent>
         </Collapsible>
+        <div className="flex justify-between font-bold mt-5 mb-5">
+          <div>Total Amount Received</div>
+          <div>{formatFee(Number(resourceSelections[0].amount) - Number(totalFeeOnDeposit))}</div>
+        </div>
       </div>
       <Button
-        disabled={(!selectedResourceAmount && !selectedResourceContract && !realmEntityId) || isLoading}
+        disabled={(resourceSelections[0].amount === "" || !resourceSelections[0].contract) || isLoading}
         onClick={() => onBridgeIntoRealm()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
@@ -241,13 +280,13 @@ export const SelectResourceToBridge = ({
   setselectedResourceContract: (value: string) => void;
 }) => {
   return (
-    <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3">
+    <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
       <Input
         type="text"
         placeholder="0.0"
         value={selectedResourceAmount}
         onChange={(e) => setselectedResourceAmount(e.target.value)}
-        className="bg-dark-brown text-2xl w-full outline-none h-16 border-none "
+        className="bg-dark-brown text-2xl w-full outline-none h-10 border-none "
       />
 
       <Select onValueChange={(value) => setselectedResourceContract(value)}>
