@@ -129,7 +129,9 @@ export const BuildingEntityDetails = () => {
   return (
     <div className="building-entity-details-selector flex flex-col h-full">
       {isCastleSelected ? (
-        <RealmDetails />
+        <div className="flex-grow w-full space-y-1 text-sm">
+          <RealmDetails />
+        </div>
       ) : (
         <>
           <div className="flex-grow w-full space-y-1 text-sm">

@@ -19,7 +19,8 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { QuestsMenu, SecondaryMenuItems } from "./SecondaryMenuItems";
+import { SecondaryMenuItems } from "./SecondaryMenuItems";
+import { QuestsMenu } from "./QuestMenu";
 
 const slideDown = {
   hidden: { y: "-100%" },

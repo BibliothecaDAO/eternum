@@ -198,9 +198,16 @@ canvas {
 .shepherd-has-title .shepherd-content .shepherd-header {
   @apply bg-gray-gold;
 }
+.shepherd-element.shepherd-warning .shepherd-header {
+  @apply bg-enemy;
+}
 
 .shepherd-title {
   @apply text-brown text-2xl;
+}
+
+.shepherd-element.shepherd-warning .shepherd-title {
+  @apply text-gold text-2xl;
 }
 
 .shepherd-text {
@@ -232,10 +239,6 @@ canvas {
   @apply bg-light-pink !important;
 }
 
-.shepherd-has-title .shepherd-content .shepherd-header .shepherd-arrow:before {
-  @apply bg-gray-gold !important;
-}
-
 .shepherd-element[data-popper-placement^="top"] .shepherd-arrow:before {
   @apply bg-light-pink !important;
 }
@@ -247,4 +250,12 @@ canvas {
 .shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
 .shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
   @apply bg-light-pink !important;
+}
+
+.shepherd-element[data-popper-placement$="-start"] .shepherd-arrow:before {
+  @apply bg-gray-gold !important;
+}
+
+.shepherd-element.shepherd-warning[data-popper-placement$="-start"] .shepherd-arrow:before {
+  @apply bg-enemy !important;
 }

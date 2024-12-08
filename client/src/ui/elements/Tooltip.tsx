@@ -13,6 +13,8 @@ export const Tooltip = ({ className }: TooltipProps) => {
   const position = tooltip?.position ? tooltip.position : "top";
 
   useEffect(() => {
+    if (tooltip?.fixed) return;
+
     const mouseMoveHandler = throttle((e: MouseEvent) => {
       if (ref.current) {
         ref.current.style.left = `${e.clientX}px`;
@@ -26,19 +28,21 @@ export const Tooltip = ({ className }: TooltipProps) => {
       document.body.removeEventListener("mousemove", mouseMoveHandler);
       mouseMoveHandler.cancel(); // Cancel any trailing invocation of the throttled function
     };
-  }, []);
+  }, [tooltip?.fixed]);
 
   return (
     <>
       {tooltip && tooltip.content && (
         <div
           ref={ref}
+          style={tooltip.fixed ? { left: tooltip.fixed.x, top: tooltip.fixed.y } : undefined}
           className={clsx(
-            "fixed z-[250] inline-flex border-gradient border  text-xxs -translate-x-1/2 px-4 py-1 bg-brown/90 flex-col justify-start items-center text-gold leading-loose  shadow-3xl",
-            position == "top" && "-translate-y-[110%]",
-            position == "bottom" && "translate-y-[70%]",
-            position == "left" && "-translate-x-[110%] -translate-y-1/2",
-            position == "right" && "translate-x-[30%] -translate-y-1/2",
+            "fixed z-[250] inline-flex border-gradient border text-xxs px-4 py-1 bg-brown/90 flex-col justify-start items-center text-gold leading-loose shadow-3xl",
+            !tooltip.fixed && "-translate-x-1/2",
+            position == "top" && !tooltip.fixed && "-translate-y-[110%]",
+            position == "bottom" && !tooltip.fixed && "translate-y-[70%]",
+            position == "left" && !tooltip.fixed && "-translate-x-[110%] -translate-y-1/2",
+            position == "right" && !tooltip.fixed && "translate-x-[30%] -translate-y-1/2",
             className,
           )}
         >

@@ -21,7 +21,7 @@ export const createTradeSteps: StepOptions[] = [
     text: "Open the Lord's Market.",
     attachTo: {
       element: ".trade-selector",
-      on: "right",
+      on: "right-start",
     },
     advanceOn: {
       selector: ".trade-selector",
@@ -40,7 +40,7 @@ export const createTradeSteps: StepOptions[] = [
   },
   {
     title: "Realm Selection",
-    text: "Switch between your realms to manage their trade offers.",
+    text: "Switch between your realms to manage their own trade offers efficiently.",
     attachTo: {
       element: ".market-realm-selector",
       on: "bottom",
@@ -75,18 +75,19 @@ export const createTradeSteps: StepOptions[] = [
     classes: "mt-5",
     buttons: [],
   },
+
   {
     title: "Automated Market Maker",
     text: "Swap resources and $Lords on the AMM.",
     attachTo: {
-      element: ".amm-selector",
-      on: "left-start",
+      element: ".amm-swap-selector",
+      on: "bottom",
     },
     beforeShowPromise: function () {
-      return waitForElement(".amm-selector");
+      return waitForElement(".amm-swap-selector");
     },
     canClickTarget: false,
-    classes: "-ml-5",
+    classes: "mt-5",
     buttons: [StepButton.next],
   },
   {
@@ -94,76 +95,25 @@ export const createTradeSteps: StepOptions[] = [
     text: "Prices are dictated by each Resource/$Lords liquidity pool.",
     attachTo: {
       element: ".amm-liquidity-selector",
-      on: "left-start",
+      on: "top",
     },
     scrollTo: true,
     canClickTarget: false,
-    classes: "-ml-5",
+    classes: "-mt-5",
     buttons: [StepButton.next],
   },
+
   {
-    title: "Swap",
-    text: "Try setting a few $Lords here.",
+    title: "Important",
+    text: "Trading using the AMM incurs fees, while the Order Book does not.",
     attachTo: {
-      element: ".resource-bar-selector",
-      on: "left-start",
+      element: ".amm-selector",
+      on: "bottom",
     },
     scrollTo: true,
-    classes: "-ml-5",
-    buttons: [StepButton.next],
-  },
-  {
-    title: "Fees",
-    text: "Click here for a trade overview before confirmation.",
-    attachTo: {
-      element: ".swap-button-selector",
-      on: "left-start",
-    },
-    advanceOn: {
-      selector: ".swap-button-selector",
-      event: "click",
-    },
-    classes: "-ml-5",
-    buttons: [],
-  },
-  {
-    title: "Swap Overview",
-    text: "Fees are taken on each AMM trade.",
-    attachTo: {
-      element: ".amm-swap-fee-selector",
-      on: "left",
-    },
-    beforeShowPromise: function () {
-      return waitForElement(".amm-swap-fee-selector");
-    },
     canClickTarget: false,
-    classes: "-ml-5",
+    classes: "mt-5 shepherd-warning",
     buttons: [StepButton.next],
-  },
-  {
-    title: "Swap Overview",
-    text: "Donkeys are also needed for transportation.",
-    attachTo: {
-      element: ".amm-swap-donkey-selector",
-      on: "left-start",
-    },
-    canClickTarget: false,
-    classes: "-ml-5",
-    buttons: [StepButton.next],
-  },
-  {
-    title: "Close",
-    text: "Let's close this for now.",
-    attachTo: {
-      element: ".amm-swap-confirm-close-selector",
-      on: "left-start",
-    },
-    advanceOn: {
-      selector: ".amm-swap-confirm-close-selector",
-      event: "click",
-    },
-    classes: "-ml-5",
-    buttons: [],
   },
 
   {
@@ -190,7 +140,7 @@ export const createTradeSteps: StepOptions[] = [
 
   {
     title: "Order Book",
-    text: "Click here.",
+    text: "Open the Order Book section.",
     attachTo: {
       element: ".orderbook-tab-selector",
       on: "bottom",
@@ -205,10 +155,10 @@ export const createTradeSteps: StepOptions[] = [
   },
   {
     title: "Market Orders",
-    text: "View all active player buy and sell orders here.",
+    text: "View all active players' Buy and Sell orders.",
     attachTo: {
       element: ".order-book-selector",
-      on: "left-start",
+      on: "left",
     },
     classes: "-ml-5",
     beforeShowPromise: function () {
@@ -220,7 +170,7 @@ export const createTradeSteps: StepOptions[] = [
 
   {
     title: "Buy",
-    text: "Spend Lords to get resources.",
+    text: "Spend $Lords to get resources.",
     attachTo: {
       element: ".order-create-buy-selector",
       on: "top",
@@ -232,7 +182,7 @@ export const createTradeSteps: StepOptions[] = [
   },
   {
     title: "Sell",
-    text: "Or sell your resources to gain Lords.",
+    text: "Or sell your resources to gain $Lords.",
     attachTo: {
       element: ".order-create-sell-selector",
       on: "top",
@@ -244,7 +194,7 @@ export const createTradeSteps: StepOptions[] = [
   },
   {
     title: "Transportation Cost",
-    text: "All resource movements cost Donkeys based on total weight. No donkeys = No trading !",
+    text: "All resource movements cost Donkeys based on total weight. No donkeys = No trading, AMM included !",
     attachTo: {
       element: ".donkeys-used-selector",
       on: "top",
@@ -256,7 +206,7 @@ export const createTradeSteps: StepOptions[] = [
   },
   {
     title: "Place Your First Order",
-    text: "Select a resource, check the AMM price, then create your order!",
+    text: "Select a resource, check the AMM price, then create your order.",
     attachTo: {
       element: ".order-book-selector",
       on: "top",
