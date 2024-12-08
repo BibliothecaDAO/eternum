@@ -2,6 +2,8 @@ import { TROOPS_STAMINAS, TROOPS_FOOD_CONSUMPTION, ResourcesIds, findResourceByI
 import ResourceIcon from "./ResourceIcon";
 import { formatNumberWithSpaces } from "../utils/formatting";
 
+type TroopId = keyof typeof TROOPS_STAMINAS;
+
 export default function TroopsTable() {
   const troops = [ResourcesIds.Paladin, ResourcesIds.Knight, ResourcesIds.Crossbowman];
 
@@ -11,8 +13,8 @@ export default function TroopsTable() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {troops.map((troopId) => {
           const resource = findResourceById(troopId);
-          const stamina = TROOPS_STAMINAS[troopId as keyof typeof TROOPS_STAMINAS];
-          const foodConsumption = TROOPS_FOOD_CONSUMPTION[troopId];
+          const stamina = TROOPS_STAMINAS[troopId as TroopId];
+          const foodConsumption = TROOPS_FOOD_CONSUMPTION[troopId as TroopId];
 
           return (
             <div key={troopId} className="border border-gray-700 p-4 rounded-lg">

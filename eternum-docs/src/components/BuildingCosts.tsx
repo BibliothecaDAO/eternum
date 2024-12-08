@@ -6,9 +6,9 @@ type Props = {
 };
 
 export default function BuildingCosts({ buildingType }: Props) {
-  const costs = EternumGlobalConfig.buildings.buildingCosts[buildingType];
-  const resourceCostsWheat = EternumGlobalConfig.resources.resourceBuildingCosts[ResourcesIds.Wood];
-  const resourceCostsFish = EternumGlobalConfig.resources.resourceBuildingCosts[ResourcesIds.Stone];
+  const costs = EternumGlobalConfig.buildings.buildingCosts[buildingType] || [];
+  const resourceCostsWheat = EternumGlobalConfig.resources.resourceBuildingCosts[ResourcesIds.Wood] || [];
+  const resourceCostsFish = EternumGlobalConfig.resources.resourceBuildingCosts[ResourcesIds.Stone] || [];
 
   const formatAmount = (amount: number) => {
     if (amount < 1000) {
@@ -20,7 +20,7 @@ export default function BuildingCosts({ buildingType }: Props) {
 
   if (buildingType === BuildingType.Resource) {
     return (
-      <div className="my-4 p-3 ">
+      <div className="my-4 p-3">
         <div className="font-bold mb-2">Building costs:</div>
         <div className="flex flex-row items-center gap-4">
           {resourceCostsWheat.map((cost) => {
@@ -32,7 +32,7 @@ export default function BuildingCosts({ buildingType }: Props) {
               </div>
             );
           })}
-          <span className="">or</span>
+          <span>or</span>
           {resourceCostsFish.map((cost) => {
             const resource = findResourceById(cost.resource);
             return (
@@ -47,10 +47,10 @@ export default function BuildingCosts({ buildingType }: Props) {
     );
   }
 
-  if (costs.length === 0) return null;
+  if (!costs || costs.length === 0) return null;
 
   return (
-    <div className="my-4 p-3 ">
+    <div className="my-4 p-3">
       <div className="font-bold mb-2">Building costs:</div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {costs.map((cost) => {
