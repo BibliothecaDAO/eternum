@@ -12,6 +12,7 @@ export const pauseProductionSteps: StepOptions[] = [
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
+      useUIStore.getState().closeAllPopups();
       return new Promise<void>((resolve) => resolve());
     },
     buttons: [StepButton.next],
@@ -19,21 +20,16 @@ export const pauseProductionSteps: StepOptions[] = [
   {
     title: "Pause",
     text: "To manage your resources, pausing a production building can be essential.",
-    beforeShowPromise: function () {
-      useUIStore.getState().setRightNavigationView(RightView.None);
-      useUIStore.getState().setLeftNavigationView(LeftView.None);
-      return new Promise<void>((resolve) => resolve());
-    },
     buttons: [StepButton.next],
   },
   {
     title: "Details",
-    text: "Click here.",
+    text: "Open the Details menu.",
     attachTo: {
       element: ".entity-details-selector",
       on: "right",
     },
-    classes: "ml-5",
+
     beforeShowPromise: function () {
       const selectedBuildingHex = useUIStore.getState().selectedBuildingHex;
       const setSelectedBuildingHex = useUIStore.getState().setSelectedBuildingHex;
@@ -44,7 +40,8 @@ export const pauseProductionSteps: StepOptions[] = [
       selector: ".entity-details-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    classes: "ml-5",
+    buttons: [],
   },
   {
     title: "Realm Overview",
@@ -53,35 +50,26 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".building-entity-details-selector",
       on: "right",
     },
-    classes: "ml-5",
     beforeShowPromise: function () {
       return waitForElement(".building-entity-details-selector");
     },
     canClickTarget: false,
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().setLeftNavigationView(LeftView.None);
-          return this.back();
-        },
-      },
-      StepButton.next,
-    ],
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Buildings Management",
-    text: "Open the buildings tab",
+    text: "Open the  buildings section.",
     attachTo: {
       element: ".buildings-tab-selector",
       on: "right",
     },
-    classes: "ml-5",
     advanceOn: {
       selector: ".buildings-tab-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    classes: "ml-5",
+    buttons: [],
   },
   {
     title: "Production Control",
@@ -90,26 +78,27 @@ export const pauseProductionSteps: StepOptions[] = [
       element: ".buildings-selector",
       on: "right",
     },
-    classes: "ml-5",
-    canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".buildings-selector");
     },
-    buttons: [StepButton.prev, StepButton.next],
+    canClickTarget: false,
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
   {
-    title: "Economy Buildigns",
+    title: "Economy Buildings",
     text: "Open the Economy section.",
     attachTo: {
       element: ".economy-building-selector",
       on: "bottom",
     },
-    classes: "mt-5",
     advanceOn: {
       selector: ".economy-building-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    canClickTarget: true,
+    classes: "mt-5",
+    buttons: [],
   },
   {
     title: "Pause Production",
@@ -126,7 +115,7 @@ export const pauseProductionSteps: StepOptions[] = [
     beforeShowPromise: function () {
       return waitForElement(".pause-building-button-selector");
     },
-    buttons: [StepButton.prev],
+    buttons: [],
   },
   {
     title: "Storage Waste",
@@ -136,7 +125,7 @@ export const pauseProductionSteps: StepOptions[] = [
       on: "right",
     },
     classes: "ml-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Resource Efficiency",
@@ -146,6 +135,6 @@ export const pauseProductionSteps: StepOptions[] = [
       on: "right",
     },
     classes: "ml-5",
-    buttons: [StepButton.prev, StepButton.complete],
+    buttons: [StepButton.finish],
   },
 ];

@@ -82,14 +82,16 @@ const setupConfig: Config =
         // make it easier to build hyperstructures in dev mode
         hyperstructures: {
           ...EternumGlobalConfig.hyperstructures,
-          hyperstructureCreationCosts: EternumGlobalConfig.hyperstructures.hyperstructureCreationCosts.map((cost) => ({
-            resource: cost.resource,
-            amount: 1,
-          })),
+          // hyperstructureCreationCosts: EternumGlobalConfig.hyperstructures.hyperstructureCreationCosts.map((cost) => ({
+          //   resource_tier: cost.resource_tier,
+          //   min_amount: 1,
+          //   max_amount: 1,
+          // })),
           hyperstructurePointsForWin: 500_000,
           hyperstructureTotalCosts: EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
-            resource: cost.resource,
-            amount: 0.1,
+            resource_tier: cost.resource_tier,
+            min_amount: 1,
+            max_amount: 1,
           })),
         },
       }

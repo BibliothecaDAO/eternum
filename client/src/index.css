@@ -223,39 +223,6 @@ canvas {
   @apply text-brown/50;
 }
 
-/* Interactive step styling */
-.shepherd-element.requires-interaction {
-  @apply bg-light-pink;
-}
-
-.requires-interaction .shepherd-content .shepherd-header {
-  @apply bg-gray-gold;
-}
-
-.requires-interaction .shepherd-title {
-  @apply text-brown text-2xl;
-}
-
-.requires-interaction .shepherd-text {
-  @apply text-light-brown;
-}
-
-.requires-interaction .shepherd-button {
-  @apply cursor-fancy bg-gray-gold text-brown;
-}
-
-.requires-interaction .shepherd-button:not(:disabled):hover {
-  @apply bg-gray-gold/50 text-brown;
-}
-
-.requires-interaction .shepherd-cancel-icon {
-  @apply text-brown cursor-fancy;
-}
-
-.requires-interaction .shepherd-cancel-icon:hover {
-  @apply text-brown/50;
-}
-
 /* Arrow styling */
 .shepherd-arrow {
   @apply bg-transparent !important;
@@ -279,23 +246,5 @@ canvas {
 
 .shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
 .shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
-  @apply bg-light-pink !important;
-}
-
-/* Interactive arrow styles */
-.requires-interaction.shepherd-element .shepherd-arrow:before {
-  @apply bg-light-pink !important;
-}
-
-.requires-interaction.shepherd-element[data-popper-placement^="top"] .shepherd-arrow:before {
-  @apply bg-light-pink !important;
-}
-
-.requires-interaction.shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow:before {
-  @apply bg-gray-gold !important;
-}
-
-.requires-interaction.shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
-.requires-interaction.shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
   @apply bg-light-pink !important;
 }

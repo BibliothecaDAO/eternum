@@ -3,7 +3,7 @@ import { ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, QuestType, 
 import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
 import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
-import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
+import { scaleResourceCostMinMax, scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
 import { EternumGlobalConfig as DefaultConfig, FELT_CENTER } from "../constants/global";
 
@@ -558,12 +558,14 @@ export const setHyperstructureConfig = async (config: Config) => {
 
   const tx = await config.provider.set_hyperstructure_config({
     signer: config.account,
-    resources_for_completion: scaleResources(hyperstructureTotalCosts, config.config.resources.resourceMultiplier).map(
-      (resource) => ({
-        ...resource,
-        amount: resource.amount * config.config.resources.resourcePrecision,
-      }),
-    ),
+    resources_for_completion: scaleResourceCostMinMax(
+      hyperstructureTotalCosts,
+      config.config.resources.resourceMultiplier,
+    ).map((resource) => ({
+      ...resource,
+      min_amount: resource.min_amount * config.config.resources.resourcePrecision,
+      max_amount: resource.max_amount * config.config.resources.resourcePrecision,
+    })),
     time_between_shares_change: hyperstructureTimeBetweenSharesChangeSeconds,
     points_per_cycle: hyperstructurePointsPerCycle,
     points_for_win: hyperstructurePointsForWin,

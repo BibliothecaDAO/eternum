@@ -60,7 +60,7 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
   return (
     <OnboardingContainer backgroundImage={backgroundImage} controller={false}>
       <StepContainer tos={false} transition={false}>
-        <div className="p-4 text-center">{renderStatementWithDots()}</div>
+        <div className="mt-10 relative bottom-1 text-center">{renderStatementWithDots()}</div>
       </StepContainer>
     </OnboardingContainer>
   );

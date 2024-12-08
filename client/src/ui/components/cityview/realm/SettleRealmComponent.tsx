@@ -94,8 +94,6 @@ const SettleRealmComponent = ({ setSettledRealmId }: { setSettledRealmId: (id: n
   );
 };
 
-export default SettleRealmComponent;
-
 const querySeasonPasses = async (accountAddress: string) => {
   const getAccountTokens = gql`
     query getAccountTokens($accountAddress: String!) {

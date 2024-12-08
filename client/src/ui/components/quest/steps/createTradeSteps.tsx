@@ -11,23 +11,24 @@ export const createTradeSteps: StepOptions[] = [
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
+      useUIStore.getState().closeAllPopups();
       return new Promise<void>((resolve) => resolve());
     },
     buttons: [StepButton.next],
   },
   {
     title: "Trade Menu",
-    text: "Click here.",
+    text: "Open the Lord's Market.",
     attachTo: {
       element: ".trade-selector",
       on: "right",
     },
-    classes: "ml-5",
     advanceOn: {
       selector: ".trade-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    classes: "ml-5",
+    buttons: [],
   },
   {
     title: "Marketplace",
@@ -35,16 +36,7 @@ export const createTradeSteps: StepOptions[] = [
     beforeShowPromise: function () {
       return waitForElement(".market-modal-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().toggleModal(null);
-          return this.back();
-        },
-      },
-      StepButton.next,
-    ],
+    buttons: [StepButton.next],
   },
   {
     title: "Realm Selection",
@@ -55,7 +47,7 @@ export const createTradeSteps: StepOptions[] = [
     },
     classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Resource Overview",
@@ -65,23 +57,23 @@ export const createTradeSteps: StepOptions[] = [
       on: "right",
     },
     classes: "ml-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
 
   {
     title: "AMM",
-    text: "Click here.",
+    text: "Open the AMM section.",
     attachTo: {
       element: ".amm-tab-selector",
       on: "bottom",
     },
-    classes: "mt-5",
     advanceOn: {
       selector: ".amm-tab-selector",
       event: "click",
     },
     scrollTo: true,
-    buttons: [StepButton.prev],
+    classes: "mt-5",
+    buttons: [],
   },
   {
     title: "Automated Market Maker",
@@ -90,12 +82,12 @@ export const createTradeSteps: StepOptions[] = [
       element: ".amm-selector",
       on: "left-start",
     },
-    classes: "-ml-5",
     beforeShowPromise: function () {
       return waitForElement(".amm-selector");
     },
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "-ml-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Liquidity",
@@ -105,9 +97,9 @@ export const createTradeSteps: StepOptions[] = [
       on: "left-start",
     },
     scrollTo: true,
-    classes: "-ml-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "-ml-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Swap",
@@ -118,7 +110,7 @@ export const createTradeSteps: StepOptions[] = [
     },
     scrollTo: true,
     classes: "-ml-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Fees",
@@ -132,7 +124,7 @@ export const createTradeSteps: StepOptions[] = [
       event: "click",
     },
     classes: "-ml-5",
-    buttons: [StepButton.prev],
+    buttons: [],
   },
   {
     title: "Swap Overview",
@@ -146,7 +138,7 @@ export const createTradeSteps: StepOptions[] = [
     },
     canClickTarget: false,
     classes: "-ml-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Swap Overview",
@@ -157,7 +149,7 @@ export const createTradeSteps: StepOptions[] = [
     },
     canClickTarget: false,
     classes: "-ml-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Close",
@@ -171,7 +163,7 @@ export const createTradeSteps: StepOptions[] = [
       event: "click",
     },
     classes: "-ml-5",
-    buttons: [StepButton.prev],
+    buttons: [],
   },
 
   {
@@ -183,7 +175,7 @@ export const createTradeSteps: StepOptions[] = [
     },
     scrollTo: true,
     classes: "mt-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Combat",
@@ -193,7 +185,7 @@ export const createTradeSteps: StepOptions[] = [
       on: "bottom",
     },
     classes: "mt-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
 
   {
@@ -209,7 +201,7 @@ export const createTradeSteps: StepOptions[] = [
       event: "click",
     },
     scrollTo: true,
-    buttons: [StepButton.prev],
+    buttons: [],
   },
   {
     title: "Market Orders",
@@ -223,7 +215,7 @@ export const createTradeSteps: StepOptions[] = [
       return waitForElement(".order-book-selector");
     },
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
 
   {
@@ -236,7 +228,7 @@ export const createTradeSteps: StepOptions[] = [
     classes: "-mt-5",
     scrollTo: true,
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Sell",
@@ -248,7 +240,7 @@ export const createTradeSteps: StepOptions[] = [
     classes: "-mt-5",
     scrollTo: true,
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Transportation Cost",
@@ -260,7 +252,7 @@ export const createTradeSteps: StepOptions[] = [
     classes: "-mt-5",
     scrollTo: true,
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Place Your First Order",
@@ -272,6 +264,6 @@ export const createTradeSteps: StepOptions[] = [
     classes: "-mt-5",
     extraHighlights: [".market-resource-bar-selector"],
     scrollTo: true,
-    buttons: [StepButton.prev, StepButton.finish],
+    buttons: [StepButton.finish],
   },
 ];
