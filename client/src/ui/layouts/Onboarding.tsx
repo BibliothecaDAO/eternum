@@ -20,6 +20,7 @@ interface StepContainerProps {
   bottomChildren?: React.ReactNode;
   tos?: boolean;
   transition?: boolean;
+  loading?: boolean;
 }
 
 interface OnboardingContainerProps {
@@ -64,7 +65,13 @@ const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
   );
 };
 
-export const StepContainer = ({ children, bottomChildren, tos = true, transition = true }: StepContainerProps) => {
+export const StepContainer = ({
+  children,
+  bottomChildren,
+  tos = true,
+  transition = true,
+  loading = false,
+}: StepContainerProps) => {
   const width = "max-w-[456px] w-full xl:w-[33vw]";
   const height = "max-h-[316px] h-[44vh] lg:h-[36vh] 2xl:h-[33vh]";
   const size = `${width} ${height}`;
@@ -85,7 +92,11 @@ export const StepContainer = ({ children, bottomChildren, tos = true, transition
       >
         <div className="w-full text-center">
           <div className="mx-auto flex mb-4 sm:mb-4 lg:mb-8 xl:mb-8 2xl:mb-10">
-            <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-64 xl:w-64 stroke-current mx-auto" />
+            {loading ? (
+              <img src="/images/eternumloader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
+            ) : (
+              <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-64 xl:w-64 stroke-current mx-auto" />
+            )}
           </div>
         </div>
         {children}
@@ -101,6 +112,16 @@ export const StepContainer = ({ children, bottomChildren, tos = true, transition
               </p>
             </div>
             {bottomChildren}
+            <div className="w-full text-center mt-4">
+              <a
+                href="https://eternum-docs.realms.world/overview/entry#season-access"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gold/80 hover:text-gold underline"
+              >
+                Learn more about Season Access
+              </a>
+            </div>
           </div>
         </div>
       )}

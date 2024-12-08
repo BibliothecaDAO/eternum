@@ -62,20 +62,14 @@ export const Chat = () => {
   }, [currentTab.name]);
 
   const allMessageEntities = useEntityQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
-
-  const latestSalt = useMemo(() => {
-    const salt = Array.from(allMessageEntities).reduce((maxSalt, entity) => {
+  useEffect(() => {
+    const latestSalt = Array.from(allMessageEntities).reduce((maxSalt, entity) => {
       const currentSalt = getComponentValue(Message, entity)?.salt ?? 0n;
       return currentSalt > maxSalt ? currentSalt : maxSalt;
     }, 0n);
 
-    console.log("Setting new salt value:", salt + 1n);
-    return salt + 1n;
-  }, [account.address, allMessageEntities, currentTab]);
-
-  useEffect(() => {
-    setSalt(latestSalt);
-  }, [latestSalt]);
+    setSalt(latestSalt + 1n);
+  }, [account.address, allMessageEntities]);
 
   const changeTabs = useCallback(
     (tab: string | undefined, address: string, fromSelector: boolean = false) => {

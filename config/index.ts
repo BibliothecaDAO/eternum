@@ -72,6 +72,12 @@ const setupConfig: Config =
           delaySeconds: 0,
         },
 
+        // increase the probability of failure for shards mines
+        exploration: {
+          ...EternumGlobalConfig.exploration,
+          shardsMinesFailProbability: 10000,
+        },
+
         // bridge close after 2 hours in dev mode
         season: {
           ...EternumGlobalConfig.season,

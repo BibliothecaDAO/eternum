@@ -368,7 +368,12 @@ mod hyperstructure_systems {
 
             // ensure the total points are enough to end the game
             let hyperstructure_config: HyperstructureConfig = world.read_model(HYPERSTRUCTURE_CONFIG_ID);
-            assert!(total_points >= hyperstructure_config.points_for_win, "Not enough points to end the game");
+            assert!(
+                total_points >= hyperstructure_config.points_for_win,
+                "Not enough points to end the game. You have {} points, but need {}",
+                total_points,
+                hyperstructure_config.points_for_win
+            );
 
             SeasonImpl::end_season(ref world);
 

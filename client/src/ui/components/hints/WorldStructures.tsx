@@ -2,10 +2,17 @@ import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { formatTime } from "@/ui/utils/utils";
-import { findResourceById, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import {
+  findResourceById,
+  GET_RESOURCES_PER_TIER,
+  ResourcesIds,
+  ResourceTier,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
 import { tableOfContents } from "./utils";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 export const WorldStructures = () => {
   const chapters = useMemo(
@@ -103,9 +110,12 @@ const HyperstructureCreationTable = () => {
   );
 };
 const HyperstructureCompletionTable = () => {
-  const completionCosts = Object.keys(configManager.hyperstructureTotalCosts).map(
-    (key) => configManager.hyperstructureTotalCosts[Number(key) as keyof typeof configManager.hyperstructureTotalCosts],
-  );
+  const completionCosts = Object.keys(configManager.hyperstructureTotalCosts)
+    .map(
+      (key) =>
+        configManager.hyperstructureTotalCosts[Number(key) as keyof typeof configManager.hyperstructureTotalCosts],
+    )
+    .filter((tier) => tier.max_amount !== 0);
 
   return (
     <table className="not-prose w-full p-2 border-gold/10 mt-5">
@@ -118,33 +128,31 @@ const HyperstructureCompletionTable = () => {
 
       <tbody>
         <tr className="border border-gold/10">
-          {[0, 1, 2, 3, 4].map((colIndex) => (
-            <td key={colIndex} className="p-2">
-              {completionCosts.slice(colIndex * 6, (colIndex + 1) * 6).map((cost, index) => (
-                <div className="flex flex-col" key={index}>
-                  <ResourceCost
-                    className="truncate mb-1"
-                    resourceId={cost.resource}
-                    amount={cost.min_amount}
-                    size="lg"
-                  />
-                  <ResourceCost
-                    className="truncate mb-1"
-                    resourceId={cost.resource}
-                    amount={cost.max_amount}
-                    size="lg"
-                  />
+          <div className="flex flex-col">
+            {completionCosts.map(({ resource, min_amount, max_amount }) => {
+              return (
+                <div className="flex px-2">
+                  {GET_RESOURCES_PER_TIER(resource).map((resourceId) => {
+                    return (
+                      <td key={resourceId} className="p-2">
+                        <ResourceIcon size="md" resource={ResourcesIds[resourceId]} />
+                      </td>
+                    );
+                  })}
+                  <div className="ml-auto">
+                    {min_amount} - {max_amount}
+                  </div>
                 </div>
-              ))}
-            </td>
-          ))}
+              );
+            })}
+          </div>
         </tr>
       </tbody>
       <tfoot className="border border-gold/10">
         <tr>
           <td colSpan={6} className="p-2">
-            Contributing to the construction of a Hyperstructure can be done from the 'World Structures' menu. Donkeys
-            will be required to transfer the resources to the construction site.
+            Once constructed, the amount of resources needed to complete it is randomly assigned for each resource tier
+            Contributing to the construction of a Hyperstructure can be done from the 'World Structures' menu.
           </td>
         </tr>
       </tfoot>

@@ -180,7 +180,7 @@ fn map_test_map_explore__mine_production_deadline() {
 
     let army_position: Position = world.read_model(realm_army_unit_id);
     let mine_entity_id = InternalMapGenerationSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
-    InternalMapGenerationSystemsImpl::add_production_deadline(ref world, mine_entity_id);
+    InternalMapGenerationSystemsImpl::add_production_deadline(ref world, 'randomness'.into(), mine_entity_id);
     let mine_earthen_shard_production_deadline: ProductionDeadline = world.read_model(mine_entity_id);
 
     let current_ts = starknet::get_block_timestamp();

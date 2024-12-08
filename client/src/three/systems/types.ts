@@ -33,6 +33,7 @@ export type BattleSystemUpdate = {
   isEmpty: boolean;
   deleted: boolean;
   isSiege: boolean;
+  isOngoing: boolean;
 };
 
 export type BuildingSystemUpdate = {
