@@ -63,9 +63,9 @@ export class BattleManager {
   async onUpdate(update: BattleSystemUpdate) {
     await this.battleModel.loadPromise;
 
-    const { entityId, hexCoords, isEmpty, deleted, isSiege } = update;
+    const { entityId, hexCoords, isEmpty, deleted, isSiege, isOngoing } = update;
 
-    if (deleted) {
+    if (deleted || !isOngoing) {
       this.removeBattle(entityId);
       return;
     }

@@ -211,6 +211,7 @@ export class SystemManager {
               isEmpty: false,
               deleted: true,
               isSiege: false,
+              isOngoing: false,
             };
           }
 
@@ -223,6 +224,10 @@ export class SystemManager {
             battle.defence_army_health.current < healthMultiplier;
 
           const isSiege = battle.start_at > Date.now() / 1000;
+          const currentTimestamp = Math.floor(Date.now() / 1000);
+          const isOngoing =
+            battle.duration_left !== 0n &&
+            currentTimestamp - Number(battle.last_updated) < Number(battle.duration_left);
 
           return {
             entityId: battle.entity_id,
@@ -230,6 +235,7 @@ export class SystemManager {
             isEmpty,
             deleted: false,
             isSiege,
+            isOngoing,
           };
         });
       },
