@@ -45,14 +45,14 @@ export default function ResourceTable() {
             return (
               <tr key={resource.resource_type}>
                 <td className="border-b">
-                  <ResourceIcon size={100} id={resource.resource?.id || 0} name={resource.resource?.trait || ""} />
+                  <ResourceIcon size={80} id={resource.resource?.id || 0} name={resource.resource?.trait || ""} />
                 </td>
                 <td className="text-center border-b">{resource.amount}</td>
                 <td className="py-2 border-b">
                   <div className="flex flex-col gap-4 justify-between">
                     {resource.cost.map((cost) => (
                       <div key={cost.resource} className="grid grid-cols-2">
-                        <ResourceIcon size={50} id={cost.resource} name={cost.name || ""} />
+                        <ResourceIcon size={30} id={cost.resource} name={cost.name || ""} />
                         <div className="flex flex-col">
                           <span>{cost.amount}</span>
                           <span className="font-bold">{cost.name}</span>
