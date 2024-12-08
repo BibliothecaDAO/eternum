@@ -39,7 +39,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private totalStructures: number = 0;
 
-  private currentChunk: string = "0,0";
+  private currentChunk: string = "null";
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
@@ -468,9 +468,8 @@ export default class WorldmapScene extends HexagonScene {
 
       this.interactiveHexManager.renderHexes();
     }
-    if (this.currentChunk !== "0,0") {
-      this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
-    }
+
+    this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
   }
 
   removeCachedMatricesAroundColRow(col: number, row: number) {

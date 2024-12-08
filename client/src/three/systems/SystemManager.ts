@@ -280,12 +280,11 @@ export class SystemManager {
         return getComponentValue(this.setup.components.Progress, progressEntityId);
       });
 
-      const { percentage, allProgresses } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
-
+      const { percentage } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
       if (percentage < PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_1;
       }
-      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage > PROGRESS_HALF_THRESHOLD) {
+      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage >= PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_2;
       }
       return StructureProgress.STAGE_3;
@@ -313,7 +312,6 @@ export class SystemManager {
           percentage: resourcePercentage,
           costNeeded: resourceCost,
         };
-
         percentage += resourcePercentage;
         return progress;
       });
