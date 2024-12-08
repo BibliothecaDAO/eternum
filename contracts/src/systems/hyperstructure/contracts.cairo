@@ -87,8 +87,8 @@ mod hyperstructure_systems {
         #[key]
         hyperstructure_entity_id: ID,
         contributor_entity_id: ID,
-        hyperstructure_owner_name: felt252,
         timestamp: u64,
+        hyperstructure_owner_name: felt252,
     }
 
     #[derive(Copy, Drop, Serde)]

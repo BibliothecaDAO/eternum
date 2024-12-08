@@ -5320,7 +5320,7 @@
     },
     {
       "address": "0x46a7a2fefd1af563027bfd43a19d4fd26d2654cbb99b2ba43481d35384daad",
-      "class_hash": "0x3b69f6372a54acb03bb1cdd3d7e96ac7e0d511bafa3e6bee0c726b7910f8d0f",
+      "class_hash": "0x55faabf9f4d9bbb450034d36eaf1dfd40b67daf8b2e52211dd3709cc80f1693",
       "abi": [
         {
           "type": "impl",
@@ -9640,9 +9640,15 @@
     },
     {
       "members": [],
-      "class_hash": "0x3de4596b762e454e529e3ecc3aaaa34de4ef936ca050844d2bb007db854734b",
+      "class_hash": "0x3a5f236a8854f32ed034b3f68bda881b3a28be9b2f5563fbd479ee415fa489b",
       "tag": "s0_eternum-HyperstructureFinished",
       "selector": "0x18188e073773854e47229a73718f205c22955838714d847ff4bab4ed315852c"
+    },
+    {
+      "members": [],
+      "class_hash": "0x19167b2efb0019a2d2547e6b97653c2e44eaa0648110a8d0492857d48f7628",
+      "tag": "s0_eternum-HyperstructureStarted",
+      "selector": "0x524d52c11289b16c879df0675bb7168b4556196e805130884ff7399568955f4"
     },
     {
       "members": [],
