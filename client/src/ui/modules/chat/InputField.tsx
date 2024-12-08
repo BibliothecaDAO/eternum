@@ -18,14 +18,17 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
 
   const inputRef = useRef<string>("");
 
-  const handleKeyPress = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter" || inputRef.current.length === 0) return;
-    publish(inputRef.current);
-    inputRef.current = "";
-  }, []);
+  const handleKeyPress = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== "Enter" || inputRef.current.length === 0) return;
+      publish(inputRef.current, salt);
+      inputRef.current = "";
+    },
+    [salt],
+  );
 
   const publish = useCallback(
-    async (message: string) => {
+    async (message: string, salt: bigint) => {
       const recipientEntities = Array.from(
         runQuery([Has(AddressName), HasValue(AddressName, { name: BigInt("0x0") })]),
       );
