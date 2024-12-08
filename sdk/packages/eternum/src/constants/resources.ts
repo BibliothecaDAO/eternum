@@ -371,10 +371,10 @@ export enum ResourceTier {
   Mythic,
 }
 
-export const GET_RESOURCE = (tier: ResourceTier): ResourcesIds[] => {
+export const GET_RESOURCES_PER_TIER = (tier: ResourceTier, hyperstructure: boolean = false): ResourcesIds[] => {
   switch (tier) {
     case ResourceTier.Lords:
-      return RESOURCE_TIERS.lords;
+      return RESOURCE_TIERS.lords.filter((resource) => (hyperstructure ? resource !== ResourcesIds.Lords : true));
     case ResourceTier.Military:
       return RESOURCE_TIERS.military;
     case ResourceTier.Transport:

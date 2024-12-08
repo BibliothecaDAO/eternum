@@ -16,6 +16,7 @@ import {
   runQuery,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
 import {
   ArmySystemUpdate,
@@ -92,6 +93,27 @@ export class SystemManager {
               getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
             );
 
+            const addressName = getComponentValue(
+              this.setup.components.AddressName,
+              getEntityIdFromKeys([BigInt(owner?.address || 0)]),
+            );
+
+            const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
+
+            const guild = getComponentValue(
+              this.setup.components.GuildMember,
+              getEntityIdFromKeys([owner?.address || 0n]),
+            );
+
+            let guildName = "";
+            if (guild?.guild_entity_id) {
+              const guildEntityName = getComponentValue(
+                this.setup.components.EntityName,
+                getEntityIdFromKeys([BigInt(guild.guild_entity_id)]),
+              );
+              guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
+            }
+
             callback({
               entityId: army.entity_id,
               hexCoords: { col: position.x, row: position.y },
@@ -99,7 +121,7 @@ export class SystemManager {
               defender: Boolean(protectee),
               currentHealth: health.current / healthMultiplier,
               order: realm.order,
-              owner: { address: owner?.address || 0n },
+              owner: { address: owner?.address || 0n, ownerName, guildName },
             });
           }
         });
@@ -280,12 +302,11 @@ export class SystemManager {
         return getComponentValue(this.setup.components.Progress, progressEntityId);
       });
 
-      const { percentage, allProgresses } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
-
+      const { percentage } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
       if (percentage < PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_1;
       }
-      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage > PROGRESS_HALF_THRESHOLD) {
+      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage >= PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_2;
       }
       return StructureProgress.STAGE_3;
@@ -313,7 +334,6 @@ export class SystemManager {
           percentage: resourcePercentage,
           costNeeded: resourceCost,
         };
-
         percentage += resourcePercentage;
         return progress;
       });

@@ -39,16 +39,14 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
       const channel = recipientAddress !== undefined ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
 
       const messageInValidAscii = toValidAscii(message);
+
       const data = generateMessageTypedData(account.address, channel, messageInValidAscii, toHexString(salt));
 
-      console.log("data", data);
       const signature: Signature = await account.signMessage(data);
-
-      console.log("data", signature);
 
       await toriiClient.publishMessage(JSON.stringify(data), signature as string[], false);
     },
-    [account, salt, toriiClient, currentTab],
+    [inputRef],
   );
 
   return (

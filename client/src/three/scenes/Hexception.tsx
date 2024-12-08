@@ -612,6 +612,12 @@ export default class HexceptionScene extends HexagonScene {
           }
           if (
             BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Dragonhide
+          ) {
+            buildingObj.rotation.y = rotation * 2;
+          }
+          if (
+            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
             ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Forge
           ) {
             buildingObj.rotation.y = rotation * 6;

@@ -63,14 +63,19 @@ export const Chat = () => {
 
   const allMessageEntities = useEntityQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
 
-  useEffect(() => {
-    const latestSalt = Array.from(allMessageEntities).reduce((maxSalt, entity) => {
+  const latestSalt = useMemo(() => {
+    const salt = Array.from(allMessageEntities).reduce((maxSalt, entity) => {
       const currentSalt = getComponentValue(Message, entity)?.salt ?? 0n;
       return currentSalt > maxSalt ? currentSalt : maxSalt;
     }, 0n);
 
-    setSalt(latestSalt + 1n);
-  }, [account.address, allMessageEntities]);
+    console.log("Setting new salt value:", salt + 1n);
+    return salt + 1n;
+  }, [account.address, allMessageEntities, currentTab]);
+
+  useEffect(() => {
+    setSalt(latestSalt);
+  }, [latestSalt]);
 
   const changeTabs = useCallback(
     (tab: string | undefined, address: string, fromSelector: boolean = false) => {
@@ -207,6 +212,7 @@ const Messages = ({
 
   const messages = useMemo(() => {
     const messageMap = new Map<ContractAddress, ChatMetadata>();
+    const pendingTabs = new Set<Tab>();
 
     allMessageEntities.forEach((entity) => {
       const message = getComponentValue(Message, entity);
@@ -240,7 +246,7 @@ const Messages = ({
           return msg.timestamp > latest ? msg.timestamp : latest;
         }, timestamp);
 
-        addTab({
+        pendingTabs.add({
           name,
           address,
           displayed: true,
@@ -286,17 +292,30 @@ const Messages = ({
       chatMetadata.messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     });
 
-    return messageMap;
+    return { messageMap, pendingTabs };
   }, [allMessageEntities, account.address, guildKey]);
+
+  useEffect(() => {
+    messages.pendingTabs.forEach((tabInfo) => {
+      addTab({
+        name: tabInfo.name,
+        address: tabInfo.address,
+        displayed: true,
+        lastSeen: tabInfo.lastSeen,
+        key: tabInfo.key,
+        lastMessage: tabInfo.lastMessage,
+      });
+    });
+  }, [messages.pendingTabs]);
 
   const messagesToDisplay = useMemo(() => {
     if (currentTab.name === GLOBAL_CHANNEL_KEY) {
-      return messages.get(BigInt(GLOBAL_CHANNEL));
+      return messages.messageMap.get(BigInt(GLOBAL_CHANNEL));
     }
     if (currentTab.name === guildName && guildKey) {
-      return messages.get(ContractAddress(guildKey));
+      return messages.messageMap.get(ContractAddress(guildKey));
     }
-    return messages.get(ContractAddress(getMessageKey(currentTab.address, account.address)));
+    return messages.messageMap.get(ContractAddress(getMessageKey(currentTab.address, account.address)));
   }, [messages, currentTab.address, currentTab.name, guildName, guildKey, account.address]);
 
   return (
