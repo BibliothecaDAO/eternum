@@ -34,7 +34,7 @@ export const CoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: I
   return (
     <>
       {isChangingCoOwners ? (
-        <ChangeCoOwners hyperstructureEntityId={hyperstructureEntityId} />
+        <ChangeCoOwners hyperstructureEntityId={hyperstructureEntityId} setIsChangingCoOwners={setIsChangingCoOwners} />
       ) : (
         <CoOwnersRows
           coOwnersWithTimestamp={coOwnersWithTimestamp}
@@ -166,7 +166,13 @@ const CoOwnersRows = ({
   );
 };
 
-const ChangeCoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID }) => {
+const ChangeCoOwners = ({
+  hyperstructureEntityId,
+  setIsChangingCoOwners,
+}: {
+  hyperstructureEntityId: ID;
+  setIsChangingCoOwners: (isChanging: boolean) => void;
+}) => {
   const {
     account: { account },
     setup: {
@@ -198,10 +204,10 @@ const ChangeCoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID
     setNextId(nextId + 1);
   };
 
-  const setCoOwners = () => {
+  const setCoOwners = async () => {
     setIsLoading(true);
     // percentage is in precision 10_000
-    set_co_owners({
+    await set_co_owners({
       signer: account,
       hyperstructure_entity_id: hyperstructureEntityId,
       co_owners: newCoOwners
@@ -212,6 +218,7 @@ const ChangeCoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID
         })),
     });
     setIsLoading(false);
+    setIsChangingCoOwners(false);
   };
 
   const removeCoOwner = (id: number) => {
