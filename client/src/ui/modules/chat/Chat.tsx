@@ -164,7 +164,7 @@ export const Chat = () => {
           }}
           className={`grid gap-2 grid-cols-2 ${hideChat ? "hidden" : "mt-2"}`}
         >
-          <InputField currentTab={currentTab} salt={salt} />
+          <InputField currentTab={currentTab} salt={salt} bottomChatRef={bottomChatRef} />
           <ChatSelect
             selectedChannel={currentTab.name}
             changeTabs={changeTabs}
@@ -218,10 +218,11 @@ const Messages = ({
 
       const fromSelf = message.identity === BigInt(account.address);
       const toSelf = message.channel === BigInt(account.address);
+
       const isGlobalMessage = BigInt(message.channel) === BigInt(GLOBAL_CHANNEL);
       const isGuildMessage = guildKey && BigInt(message.channel) === BigInt(guildKey);
-      const isRelevantMessage = fromSelf || toSelf || isGlobalMessage || isGuildMessage;
 
+      const isRelevantMessage = fromSelf || toSelf || isGlobalMessage || isGuildMessage;
       if (!isRelevantMessage) return;
 
       const senderName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
@@ -359,12 +360,12 @@ const Messages = ({
   );
 };
 
-const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
+export const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
   setTimeout(() => {
     if (ref.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      ref.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, 1);
+  }, 300);
 };
 
 const ChatSelect = ({
