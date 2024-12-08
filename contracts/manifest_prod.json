@@ -4189,7 +4189,7 @@
     },
     {
       "address": "0x7f94a67cd3fbfef3d11844c216483c63ca712adaa5f21c7cb62dd36de0f004b",
-      "class_hash": "0x4a67b90b5bcdfd6cdc139c5e8fc204d8e31d59c038b192d30c33dea54f1d46e",
+      "class_hash": "0x5ffed6c73f9f2219e87b2fc6b2a35c14e50c0ee70a0c914b098049ab86ea228",
       "abi": [
         {
           "type": "impl",
@@ -5945,7 +5945,7 @@
     },
     {
       "address": "0x37accaa792a097a6f63381cc2be1afc64d22952cf6b8295fa98632ead7a1d37",
-      "class_hash": "0x5b4eed04d670bad635e47f5bca2680654290a1f46df465fc42019beb2fa3db4",
+      "class_hash": "0x2e3c0d6a5a26c91cadd794a04329a23f030c89d03ec50a8199244d545b912d6",
       "abi": [
         {
           "type": "impl",
@@ -6045,6 +6045,20 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "core::integer::u256",
+          "members": [
+            {
+              "name": "low",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "high",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "s0_eternum::systems::map::map_generation::IMapGenerationSystems",
           "items": [
@@ -6072,6 +6086,10 @@
               "type": "function",
               "name": "add_mercenaries_to_structure",
               "inputs": [
+                {
+                  "name": "randomness",
+                  "type": "core::integer::u256"
+                },
                 {
                   "name": "structure_entity_id",
                   "type": "core::integer::u32"
