@@ -109,7 +109,10 @@ export const SecondaryMenuItems = () => {
           size="sm"
           onClick={() => togglePopup(settings)}
         />
-        <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
+        <Controller
+          className="!bg-black !border-none !text-gold hover:!opacity-80"
+          iconClassName="!fill-current !text-gold"
+        />
       </div>
     </div>
   );

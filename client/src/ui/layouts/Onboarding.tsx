@@ -47,7 +47,7 @@ const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
   return (
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
       <Button
-        className="!h-8 !w-40 normal-case font-normal flex items-center rounded-md !text-md !px-3 !text-black shadow-[0px_4px_4px_0px_#00000040] border border-[0.5px] !border-[#F5C2971F] backdrop-blur-xs bg-white/5 hover:scale-105 hover:-translate-y-1"
+        className="!h-8 !w-40 normal-case font-normal flex items-center rounded-md !text-md !px-3 !text-black shadow-[0px_4px_4px_0px_#00000040] border border-[0.5px] !border-[#F5C2971F] backdrop-blur-xs bg-white/5 hover:scale-105 hover:-translate-y-1 hover:!bg-gold/20"
         variant="default"
       >
         <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
@@ -57,7 +57,7 @@ const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
       </Button>
       {controller && (
         <Controller
-          className="!text-black !h-10 w-24 normal-case font-normal !bg-[#FCB843]"
+          className="!text-black !h-10 w-24 normal-case font-normal !bg-[#FCB843] hover:!bg-[#FCB843]/80"
           iconClassName="!fill-black"
         />
       )}
@@ -189,25 +189,15 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
 
   const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
 
-  return (
+  return seasonPassRealms.length > 0 ? (
     <Button
       onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
-      className="mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1"
+      className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+        realms.length === 0 ? "animate-pulse" : ""
+      }`}
     >
       {env.VITE_PUBLIC_DEV ? (
         "Create Random Realm"
-      ) : seasonPassRealms.length === 0 ? (
-        <div className="flex items-center">
-          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-black text-black" />
-          <a
-            className="text-black cursor-pointer text-lg"
-            href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Get Season Pass
-          </a>
-        </div>
       ) : (
         <div className="flex items-center">
           <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
@@ -217,5 +207,24 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
         </div>
       )}
     </Button>
+  ) : (
+    <a
+      className="text-black cursor-pointer text-lg"
+      href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Button
+        onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
+        className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+          realms.length === 0 ? "animate-pulse" : ""
+        }`}
+      >
+        <div className="flex items-center">
+          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-black text-black" />
+          Get Season Pass
+        </div>
+      </Button>
+    </a>
   );
 };
