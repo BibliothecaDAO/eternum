@@ -52,8 +52,6 @@ export const StepOne = () => {
     window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
   };
 
-  console.log(realms);
-
   return (
     <div className="flex flex-row justify-center space-x-8 items-center">
       <OnboardingButton onClick={onSpectatorModeClick}>
