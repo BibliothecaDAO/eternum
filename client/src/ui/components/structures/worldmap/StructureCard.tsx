@@ -3,7 +3,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useIsStructureImmune, useStructureAtPosition } from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructureAtPosition, useStructureImmunityTimer } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
@@ -14,7 +14,7 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/Tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
-import { ContractAddress, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
@@ -45,19 +45,8 @@ export const StructureCard = ({
 
   const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));
 
-  const isImmune = useIsStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
-
-  const immunityEndTimestamp = useMemo(() => {
-    return (
-      Number(structure?.created_at || 0) +
-      configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
-    );
-  }, [structure?.created_at]);
-
-  const timer = useMemo(() => {
-    if (!nextBlockTimestamp) return 0;
-    return immunityEndTimestamp - nextBlockTimestamp!;
-  }, [immunityEndTimestamp, nextBlockTimestamp]);
+  const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
+  const timer = useStructureImmunityTimer(structure, nextBlockTimestamp || 0);
 
   const goToHexView = () => {
     const url = position.toHexLocationUrl();
