@@ -38,7 +38,7 @@ interface SeasonPassButtonProps {
 
 const SEASON_PASS_MARKET_URL = "0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80";
 
-export const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
+const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
   const mintUrl = env.VITE_PUBLIC_DEV
     ? "https://empire-next.realms.world/season-passes"
     : "https://empire.realms.world/season-passes";
@@ -65,8 +65,8 @@ export const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
 };
 
 export const StepContainer = ({ children, bottomChildren, tos = true, transition = true }: StepContainerProps) => {
-  const width = "max-w-[456px] w-[33vw]";
-  const height = "max-h-[316px] h-[33vh]";
+  const width = "max-w-[456px] w-full xl:w-[33vw]";
+  const height = "max-h-[316px] h-[44vh] lg:h-[36vh] 2xl:h-[33vh]";
   const size = `${width} ${height}`;
 
   const motionProps = transition
@@ -80,17 +80,15 @@ export const StepContainer = ({ children, bottomChildren, tos = true, transition
 
   return (
     <motion.div className="flex justify-center z-50 px-4 md:px-0 flex-col" {...motionProps}>
-      <div>
-        <div
-          className={`bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-6 md:p-12 text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${size} shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
-        >
-          <div className="w-full text-center">
-            <div className="mx-auto flex mb-4 md:mb-10">
-              <EternumWordsLogo className="fill-current w-64 stroke-current mx-auto" />
-            </div>
+      <div
+        className={`bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-6 lg:p-10 xl:p-8 2xl:p-12 text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${size} shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
+      >
+        <div className="w-full text-center">
+          <div className="mx-auto flex mb-4 sm:mb-4 lg:mb-8 xl:mb-8 2xl:mb-10">
+            <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-64 xl:w-64 stroke-current mx-auto" />
           </div>
-          {children}
         </div>
+        {children}
       </div>
 
       {tos && (
@@ -148,9 +146,17 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
 const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const {
     account: { account },
+    setup: {
+      systemCalls: { create_multiple_realms_dev },
+    },
   } = useDojo();
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
   const realms = usePlayerRealms();
+
+  const createRandomRealm = () => {
+    const newRealmId = Math.max(...realms.map((realm) => realm.realmId), 0) + 1;
+    create_multiple_realms_dev({ signer: account, realm_ids: [newRealmId] });
+  };
 
   useEffect(() => {
     const fetchSeasonPasses = async () => {
@@ -164,10 +170,12 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
 
   return (
     <Button
-      onClick={handleClick}
-      className="mt-8 w-full h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1"
+      onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
+      className="mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1"
     >
-      {seasonPassRealms.length === 0 ? (
+      {env.VITE_PUBLIC_DEV ? (
+        "Create Random Realm"
+      ) : seasonPassRealms.length === 0 ? (
         <div className="flex items-center">
           <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-black text-black" />
           <a

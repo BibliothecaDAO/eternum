@@ -93,6 +93,7 @@ export class LeaderboardManager {
 
       const playerAddress = contribution.player_address;
       const points = computeInitialContributionPoints(
+        contribution.hyperstructure_entity_id,
         contribution.resource_type,
         contribution.amount,
         pointsOnCompletion,

@@ -133,11 +133,10 @@ export const SEASON_POOL_FEE_ON_DEPOSIT = 250; // 2.5%
 export const SEASON_POOL_FEE_ON_WITHDRAWAL = 250; // 2.5%
 export const CLIENT_FEE_ON_DEPOSIT = 250; // 2.5%
 export const CLIENT_FEE_ON_WITHDRAWAL = 250; // 2.5%
-export const VELORDS_FEE_RECIPIENT = "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b";
+export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
 export const SEASON_POOL_FEE_RECIPIENT = "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b";
 export const MAX_BANK_FEE_ON_DEPOSIT = 1000; // 10%
 export const MAX_BANK_FEE_ON_WITHDRAWAL = 1000; // 10%
-export const VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
 
 // TODO: CHECKLIST
 // - [ ] Check if this is correct
@@ -278,7 +277,7 @@ export const EternumGlobalConfig: Config = {
     max_bank_fee_wtdr_percent: MAX_BANK_FEE_ON_WITHDRAWAL,
   },
   vrf: {
-    vrfProviderAddress: VRF_PROVIDER_ADDRESS,
+    vrfProviderAddress: "0x0", // set in config/index.ts
   },
   questResources: QUEST_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,

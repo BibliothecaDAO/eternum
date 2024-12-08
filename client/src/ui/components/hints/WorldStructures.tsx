@@ -15,7 +15,7 @@ export const WorldStructures = () => {
         content: (
           <>
             <HyperstructureCreationTable />
-            <HyperstructureConstructionTable />
+            <HyperstructureCompletionTable />
           </>
         ),
       },
@@ -53,11 +53,9 @@ export const WorldStructures = () => {
 const HyperstructureCreationTable = () => {
   const structureId = StructureType["Hyperstructure"];
 
-  const creationCost = configManager.structureCosts[structureId]
-    .filter((cost) => cost.resource === ResourcesIds["AncientFragment"])
-    .map((cost) => ({
-      ...cost,
-    }));
+  const creationCost = configManager.structureCosts[structureId].map((cost) => ({
+    ...cost,
+  }));
 
   return (
     <>
@@ -104,17 +102,16 @@ const HyperstructureCreationTable = () => {
     </>
   );
 };
-
-const HyperstructureConstructionTable = () => {
-  const constructionCost = configManager.structureCosts[StructureType.Hyperstructure]
-    .filter((cost) => cost.resource !== ResourcesIds["AncientFragment"])
-    .map((cost) => ({ ...cost }));
+const HyperstructureCompletionTable = () => {
+  const completionCosts = Object.keys(configManager.hyperstructureTotalCosts).map(
+    (key) => configManager.hyperstructureTotalCosts[Number(key) as keyof typeof configManager.hyperstructureTotalCosts],
+  );
 
   return (
     <table className="not-prose w-full p-2 border-gold/10 mt-5">
       <thead>
         <tr>
-          <th colSpan={2}>Contruction Costs</th>
+          <th colSpan={2}>Completion Costs</th>
           <th colSpan={6}></th>
         </tr>
       </thead>
@@ -123,9 +120,20 @@ const HyperstructureConstructionTable = () => {
         <tr className="border border-gold/10">
           {[0, 1, 2, 3, 4].map((colIndex) => (
             <td key={colIndex} className="p-2">
-              {constructionCost.slice(colIndex * 6, (colIndex + 1) * 6).map((cost, index) => (
-                <div key={index}>
-                  <ResourceCost className="truncate mb-1" resourceId={cost.resource} amount={cost.amount} size="lg" />
+              {completionCosts.slice(colIndex * 6, (colIndex + 1) * 6).map((cost, index) => (
+                <div className="flex flex-col" key={index}>
+                  <ResourceCost
+                    className="truncate mb-1"
+                    resourceId={cost.resource}
+                    amount={cost.min_amount}
+                    size="lg"
+                  />
+                  <ResourceCost
+                    className="truncate mb-1"
+                    resourceId={cost.resource}
+                    amount={cost.max_amount}
+                    size="lg"
+                  />
                 </div>
               ))}
             </td>

@@ -7,12 +7,11 @@ import { StepButton, waitForElement } from "./utils";
 export const buildResourceSteps: StepOptions[] = [
   {
     title: "Construction",
-    text: "Open the construction menu",
+    text: "Open the Construction menu",
     attachTo: {
       element: ".construction-selector",
       on: "right",
     },
-    classes: "ml-5",
     advanceOn: {
       selector: ".construction-selector",
       event: "click",
@@ -20,36 +19,28 @@ export const buildResourceSteps: StepOptions[] = [
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
+      useUIStore.getState().closeAllPopups();
       return new Promise<void>((resolve) => resolve());
     },
-    buttons: [StepButton.prev],
+    classes: "ml-5",
+    buttons: [],
   },
   {
-    title: "Resource buildings",
-    text: "Open the Resources tab",
+    title: "Tab Navigation",
+    text: "Open the Resource section.",
     attachTo: {
       element: ".resource-tab-selector",
       on: "right",
     },
-    classes: "ml-5",
-    modalOverlayOpeningPadding: 10,
     advanceOn: {
       selector: ".resource-tab-selector",
       event: "click",
     },
     beforeShowPromise: function () {
-      useUIStore.getState().closeAllPopups();
       return waitForElement(".resource-tab-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().setLeftNavigationView(LeftView.None);
-          return this.back();
-        },
-      },
-    ],
+    classes: "ml-5",
+    buttons: [],
   },
   {
     title: "Resources",
@@ -63,7 +54,7 @@ export const buildResourceSteps: StepOptions[] = [
     beforeShowPromise: function () {
       return waitForElement(".construction-panel-selector");
     },
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Consumption",
@@ -74,7 +65,7 @@ export const buildResourceSteps: StepOptions[] = [
     },
     classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Consumption",
@@ -85,7 +76,7 @@ export const buildResourceSteps: StepOptions[] = [
     },
     classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Resources Buildings",
@@ -99,26 +90,26 @@ export const buildResourceSteps: StepOptions[] = [
       selector: ".resource-cards-selector",
       event: "click",
     },
-    beforeShowPromise: function () {
-      const closeAllPopups = useUIStore.getState().closeAllPopups;
-      closeAllPopups();
-      return waitForElement(".resource-cards-selector");
-    },
-    buttons: [StepButton.prev],
+    buttons: [],
   },
   {
     title: "Place Building",
-    text: "Left-click to confirm, mouse wheel to zoom, right-click or ESC to cancel.",
+    text: `
+      <div class="flex flex-col">
+        <span>Left-click to confirm</span>
+        <span>Mouse-wheel to zoom</span>
+        <span>Right-click or ESC to cancel.</span>
+      </div>`,
     classes: "!left-3/4 !top-1/4",
     attachTo: {
       element: ".world-selector",
     },
     highlightClass: "allow-modal-click",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
-    title: "Balance",
-    text: "Click here to view your resources.",
+    title: "Resource Balance",
+    text: "Open the menu.",
     attachTo: {
       element: ".resource-table-selector",
       on: "left",
@@ -127,8 +118,8 @@ export const buildResourceSteps: StepOptions[] = [
       selector: ".resource-table-selector",
       event: "click",
     },
-    classes: "-ml-5 requires-interaction",
-    buttons: [StepButton.prev],
+    classes: "-ml-5",
+    buttons: [],
   },
   {
     title: "Consumption",
@@ -141,16 +132,16 @@ export const buildResourceSteps: StepOptions[] = [
       return waitForElement(".entity-resource-table-selector");
     },
     classes: "-ml-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Warning",
-    text: "Missing resources won't stop other materials from being consumed!",
+    text: "Missing resources won't stop other materials from being consumed !",
     attachTo: {
       element: ".entity-resource-table-selector",
       on: "left",
     },
     classes: "-ml-5",
-    buttons: [StepButton.prev, StepButton.finish],
+    buttons: [StepButton.finish],
   },
 ];

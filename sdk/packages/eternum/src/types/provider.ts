@@ -570,7 +570,11 @@ export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
 }
 
 export interface SetHyperstructureConfig extends SystemSigner {
-  resources_for_completion: { resource: number; amount: number }[];
+  resources_for_completion: {
+    resource_tier: number;
+    min_amount: number;
+    max_amount: number;
+  }[];
   time_between_shares_change: num.BigNumberish;
   points_per_cycle: num.BigNumberish;
   points_for_win: num.BigNumberish;

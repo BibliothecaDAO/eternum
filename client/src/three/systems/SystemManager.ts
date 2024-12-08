@@ -299,8 +299,9 @@ export class SystemManager {
     hyperstructureEntityId: ID,
   ) => {
     let percentage = 0;
-    const allProgresses = Object.values(configManager.hyperstructureTotalCosts).map(
-      ({ resource, amount: resourceCost }) => {
+    const allProgresses = configManager
+      .getHyperstructureRequiredAmounts(hyperstructureEntityId)
+      .map(({ resource, amount: resourceCost }) => {
         let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
         const resourcePercentage = !foundProgress
           ? 0
@@ -315,8 +316,7 @@ export class SystemManager {
 
         percentage += resourcePercentage;
         return progress;
-      },
-    );
+      });
     const totalPercentage = percentage / allProgresses.length;
     return { allProgresses, percentage: totalPercentage };
   };

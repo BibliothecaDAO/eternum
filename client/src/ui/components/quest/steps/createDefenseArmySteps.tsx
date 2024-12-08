@@ -11,6 +11,7 @@ export const createDefenseArmySteps: StepOptions[] = [
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
+      useUIStore.getState().closeAllPopups();
       return new Promise<void>((resolve) => resolve());
     },
     buttons: [StepButton.next],
@@ -23,8 +24,9 @@ export const createDefenseArmySteps: StepOptions[] = [
       on: "bottom",
     },
     classes: "mt-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
+
   {
     title: "Construction",
     text: "Open the Construction menu.",
@@ -32,39 +34,29 @@ export const createDefenseArmySteps: StepOptions[] = [
       element: ".construction-selector",
       on: "right",
     },
-    classes: "ml-5 requires-interaction",
+    classes: "ml-5",
     advanceOn: {
       selector: ".construction-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    buttons: [],
   },
   {
-    title: "Military Buildings",
-    text: "Open the Military tab",
+    title: "Tab Navigation",
+    text: "Open the Military section",
     attachTo: {
       element: ".military-tab-selector",
       on: "right",
     },
-    classes: "ml-5",
-    modalOverlayOpeningPadding: 10,
     advanceOn: {
       selector: ".military-tab-selector",
       event: "click",
     },
     beforeShowPromise: function () {
-      useUIStore.getState().closeAllPopups();
       return waitForElement(".military-tab-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().setLeftNavigationView(LeftView.None);
-          return this.back();
-        },
-      },
-    ],
+    classes: "ml-5",
+    buttons: [],
   },
   {
     title: "Buildings",
@@ -73,12 +65,12 @@ export const createDefenseArmySteps: StepOptions[] = [
       element: ".construction-panel-selector",
       on: "bottom",
     },
-    classes: "mt-5",
-    canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".construction-panel-selector");
     },
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "mt-5",
+    canClickTarget: false,
+    buttons: [StepButton.next],
   },
   {
     title: "Buildings",
@@ -87,12 +79,12 @@ export const createDefenseArmySteps: StepOptions[] = [
       element: ".construction-panel-selector",
       on: "bottom",
     },
-    classes: "mt-5",
-    canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".construction-panel-selector");
     },
-    buttons: [StepButton.prev, StepButton.next],
+    canClickTarget: false,
+    classes: "mt-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Barracks",
@@ -103,7 +95,7 @@ export const createDefenseArmySteps: StepOptions[] = [
     },
     classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Archery Range",
@@ -114,7 +106,7 @@ export const createDefenseArmySteps: StepOptions[] = [
     },
     classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Stables",
@@ -125,66 +117,44 @@ export const createDefenseArmySteps: StepOptions[] = [
     },
     classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
 
   {
     title: "Military Menu",
-    text: "Open the military menu",
+    text: "Open the Military menu",
     attachTo: {
       element: ".military-selector",
       on: "right",
     },
-    classes: "ml-5",
     advanceOn: {
       selector: ".military-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
-  },
-  {
-    title: "Military",
-    text: "Manage your armies here.",
-    attachTo: {
-      element: ".military-panel-selector",
-      on: "right",
-    },
-    canClickTarget: false,
     classes: "ml-5",
-    beforeShowPromise: function () {
-      return waitForElement(".military-panel-selector");
-    },
-
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().setLeftNavigationView(LeftView.None);
-          return this.back();
-        },
-      },
-      StepButton.next,
-    ],
+    buttons: [],
   },
   {
-    title: "Create Defense Army",
-    text: "Click here",
+    title: "Defense Army",
+    text: "Create a Defense army.",
     attachTo: {
       element: ".defense-army-selector",
       on: "top",
     },
-    classes: "-mt-5",
     advanceOn: {
       selector: ".defense-army-selector",
       event: "click",
+    },
+    beforeShowPromise: function () {
+      return waitForElement(".defense-army-selector");
     },
     showOn: () => {
       const showStep = document.querySelector(".defensive-army-selector");
       return !Boolean(showStep);
     },
-    buttons: [StepButton.next],
+    classes: "-mt-5",
+    buttons: [],
   },
-
   {
     title: "Army Managemenet",
     text: "Monitor your army's stamina and inventory.",
@@ -192,13 +162,12 @@ export const createDefenseArmySteps: StepOptions[] = [
       element: ".defensive-army-selector",
       on: "bottom",
     },
-    canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".defensive-army-selector");
     },
-
+    canClickTarget: false,
     classes: "mt-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Edit",
@@ -207,7 +176,6 @@ export const createDefenseArmySteps: StepOptions[] = [
       element: ".defensive-army-edit-selector",
       on: "top",
     },
-    classes: "-mt-5",
     beforeShowPromise: function () {
       return waitForElement(".defensive-army-edit-selector");
     },
@@ -215,7 +183,8 @@ export const createDefenseArmySteps: StepOptions[] = [
       selector: ".defensive-army-edit-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    classes: "-mt-5",
+    buttons: [],
   },
   {
     title: "Assign Troops",
@@ -224,10 +193,10 @@ export const createDefenseArmySteps: StepOptions[] = [
       element: ".defensive-army-selector",
       on: "top",
     },
-    classes: "-mt-5",
     beforeShowPromise: function () {
       return waitForElement(".defensive-army-selector");
     },
-    buttons: [StepButton.prev, StepButton.finish],
+    classes: "-mt-5",
+    buttons: [StepButton.finish],
   },
 ];

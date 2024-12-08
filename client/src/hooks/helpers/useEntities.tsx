@@ -292,23 +292,3 @@ export const useEntitiesUtils = () => {
 
   return { getEntityName, getEntityInfo, getAddressNameFromEntity, getPlayerAddressFromEntity };
 };
-
-export const getAddressNameFromEntityIds = (
-  entityId: Entity[],
-  Owner: Component<ClientComponents["Owner"]["schema"]>,
-  getAddressNameFromEntity: (entityId: ID) => string | undefined,
-) => {
-  return Array.from(entityId)
-    .map((id) => {
-      const owner = getComponentValue(Owner, id);
-      if (!owner) return;
-
-      const addressName = getAddressNameFromEntity(owner?.entity_id);
-      if (!addressName) return;
-      return { ...owner, addressName };
-    })
-    .filter(
-      (owner): owner is ComponentValue<ClientComponents["Owner"]["schema"]> & { addressName: string } =>
-        owner !== undefined,
-    );
-};

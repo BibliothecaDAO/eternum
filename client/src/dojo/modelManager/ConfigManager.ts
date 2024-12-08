@@ -5,9 +5,11 @@ import {
   BuildingType,
   CapacityConfigCategory,
   EternumGlobalConfig,
+  GET_RESOURCE,
   HYPERSTRUCTURE_CONFIG_ID,
   POPULATION_CONFIG_ID,
   ResourcesIds,
+  ResourceTier,
   StructureType,
   TickIds,
   TravelTypes,
@@ -23,7 +25,7 @@ export class ClientConfigManager {
 
   resourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
-  hyperstructureTotalCosts: Record<number, { resource: ResourcesIds; amount: number }> = {};
+  hyperstructureTotalCosts: Record<number, { resource: ResourcesIds; min_amount: number; max_amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   buildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
@@ -101,7 +103,7 @@ export class ClientConfigManager {
   }
 
   private initializeHyperstructureTotalCosts() {
-    const hyperstructureTotalCosts: { resource: ResourcesIds; amount: number }[] = [];
+    const hyperstructureTotalCosts: { resource: ResourcesIds; min_amount: number; max_amount: number }[] = [];
 
     for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
@@ -109,11 +111,13 @@ export class ClientConfigManager {
         getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceId)]),
       );
 
-      const amount =
-        Number(hyperstructureResourceConfig?.amount_for_completion ?? 0) /
-        EternumGlobalConfig.resources.resourcePrecision;
+      const min_amount =
+        Number(hyperstructureResourceConfig?.min_amount ?? 0) / EternumGlobalConfig.resources.resourcePrecision;
 
-      hyperstructureTotalCosts.push({ resource: resourceId as ResourcesIds, amount });
+      const max_amount =
+        Number(hyperstructureResourceConfig?.max_amount ?? 0) / EternumGlobalConfig.resources.resourcePrecision;
+
+      hyperstructureTotalCosts.push({ resource: resourceId as ResourcesIds, min_amount, max_amount });
 
       if (resourceId === ResourcesIds.AncientFragment) {
         break;
@@ -214,28 +218,19 @@ export class ClientConfigManager {
   }
 
   private initializeStructureCosts() {
-    this.structureCosts[StructureType.Hyperstructure] = this.getHyperstructureTotalCosts();
+    this.structureCosts[StructureType.Hyperstructure] = [this.getHyperstructureConstructionCosts()];
   }
 
-  private getHyperstructureTotalCosts(): {
-    resource: ResourcesIds;
-    amount: number;
-  }[] {
-    const hyperstructureTotalCosts: { resource: ResourcesIds; amount: number }[] = [];
+  private getHyperstructureConstructionCosts() {
+    const hyperstructureResourceConfig = getComponentValue(
+      this.components.HyperstructureResourceConfig,
+      getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(ResourceTier.Lords)]),
+    );
 
-    for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
-      const entity = getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceId)]);
-      const hyperstructureResourceConfig = getComponentValue(this.components.HyperstructureResourceConfig, entity);
-      const amount = divideByPrecision(Number(hyperstructureResourceConfig?.amount_for_completion)) ?? 0;
-
-      hyperstructureTotalCosts.push({ resource: resourceId as ResourcesIds, amount });
-
-      if (resourceId === ResourcesIds.AncientFragment) {
-        break;
-      }
-    }
-
-    return hyperstructureTotalCosts;
+    return {
+      amount: Number(hyperstructureResourceConfig?.min_amount) ?? 0,
+      resource: ResourcesIds.AncientFragment,
+    };
   }
 
   getResourceWeight(resourceId: number): number {
@@ -478,10 +473,70 @@ export class ClientConfigManager {
     );
   }
 
-  getHyperstructureTotalContributableAmount() {
-    return Object.values(this.hyperstructureTotalCosts).reduce((total, { resource, amount }) => {
-      return total + this.getResourceRarity(resource) * amount;
-    }, 0);
+  getHyperstructureTotalContributableAmount(hyperstructureId: number) {
+    const hyperstructure = getComponentValue(
+      this.components.Hyperstructure,
+      getEntityIdFromKeys([BigInt(hyperstructureId)]),
+    );
+
+    let total = 0;
+    const randomness = Number(hyperstructure?.randomness ?? 0);
+    for (const tier in ResourceTier) {
+      if (isNaN(Number(tier))) continue; // Skip non-numeric enum values
+      const resourceCount = GET_RESOURCE(Number(tier) as ResourceTier).length;
+      total += this.getHyperstructureRequiredAmountPerTier(Number(tier), randomness) * resourceCount;
+    }
+    return total;
+  }
+
+  getHyperstructureRequiredAmounts(hyperstructureId: number) {
+    const hyperstructure = getComponentValue(
+      this.components.Hyperstructure,
+      getEntityIdFromKeys([BigInt(hyperstructureId)]),
+    );
+
+    const randomness = Number(hyperstructure?.randomness ?? 0);
+    const requiredAmounts: { resource: ResourcesIds; amount: number }[] = [];
+
+    // Get amounts for each tier
+    for (const tier in ResourceTier) {
+      if (isNaN(Number(tier))) continue; // Skip non-numeric enum values
+
+      const resourceTierNumber = Number(tier) as ResourceTier;
+      const resourcesInTier = GET_RESOURCE(resourceTierNumber);
+      const amountForTier = this.getHyperstructureRequiredAmountPerTier(resourceTierNumber, randomness);
+
+      // Add entry for each resource in this tier
+      resourcesInTier.forEach((resourceId) => {
+        requiredAmounts.push({
+          resource: resourceId,
+          amount: amountForTier,
+        });
+      });
+    }
+
+    return requiredAmounts;
+  }
+
+  getHyperstructureRequiredAmountPerTier(resourceTier: ResourceTier, randomness: number): number {
+    const hyperstructureResourceConfig = getComponentValue(
+      this.components.HyperstructureResourceConfig,
+      getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceTier)]),
+    );
+
+    if (!hyperstructureResourceConfig) {
+      return 0;
+    }
+
+    const minAmount = Number(hyperstructureResourceConfig.min_amount);
+    const maxAmount = Number(hyperstructureResourceConfig.max_amount);
+
+    if (minAmount === maxAmount) {
+      return divideByPrecision(minAmount);
+    }
+
+    const additionalAmount = randomness % (maxAmount - minAmount);
+    return divideByPrecision(minAmount + additionalAmount);
   }
 
   getBasePopulationCapacity(): number {

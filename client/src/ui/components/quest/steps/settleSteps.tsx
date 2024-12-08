@@ -11,10 +11,12 @@ export const settleSteps: StepOptions[] = [
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
+      useUIStore.getState().closeAllPopups();
       return new Promise<void>((resolve) => resolve());
     },
     buttons: [StepButton.next],
   },
+
   {
     title: "Quests & Rewards",
     text: "Complete quests to claim valuable resources.",
@@ -24,11 +26,26 @@ export const settleSteps: StepOptions[] = [
     },
     canClickTarget: false,
     classes: "mt-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Claim your reward",
-    text: "Click here to receive free Wheat and Fish.",
+    text: () => {
+      const wheatIcon = document.createElement("img");
+      wheatIcon.src = "/images/resources/254.png";
+      wheatIcon.className = "w-8 h-8 inline-block mx-1";
+      wheatIcon.title = "Wheat";
+
+      const fishIcon = document.createElement("img");
+      fishIcon.src = "/images/resources/255.png";
+      fishIcon.className = "w-8 h-8 inline-block mx-1";
+      fishIcon.title = "Fish";
+
+      const container = document.createElement("div");
+      container.innerHTML = `Claim your gift: free ${wheatIcon.outerHTML} and ${fishIcon.outerHTML}`;
+
+      return container.innerHTML;
+    },
     attachTo: {
       element: ".claim-selector",
       on: "bottom",
@@ -37,12 +54,13 @@ export const settleSteps: StepOptions[] = [
       selector: ".claim-selector",
       event: "click",
     },
-    classes: "mt-5 requires-interaction",
-    buttons: [StepButton.prev],
+    classes: "mt-5",
+    buttons: [],
   },
+
   {
-    title: "Balance",
-    text: "Click here to view your resources.",
+    title: "Resource Balance",
+    text: "Open the Balance menu.",
     attachTo: {
       element: ".resource-table-selector",
       on: "left",
@@ -51,42 +69,39 @@ export const settleSteps: StepOptions[] = [
       selector: ".resource-table-selector",
       event: "click",
     },
-    classes: "-ml-5 requires-interaction",
-    buttons: [StepButton.prev],
+    classes: "-ml-5",
+    buttons: [],
   },
+
   {
     title: "Resources",
-    text: "Fish and Wheat are lifeblood of your people economy.",
+    text: () => {
+      const wheatIcon = document.createElement("img");
+      wheatIcon.src = "/images/resources/254.png";
+      wheatIcon.className = "w-8 h-8 inline-block mx-1";
+      wheatIcon.title = "Wheat";
+
+      const fishIcon = document.createElement("img");
+      fishIcon.src = "/images/resources/255.png";
+      fishIcon.className = "w-8 h-8 inline-block mx-1";
+      fishIcon.title = "Fish";
+
+      const container = document.createElement("div");
+      container.innerHTML = `${wheatIcon.outerHTML} and ${fishIcon.outerHTML} are the lifeblood of your economy.`;
+
+      return container.innerHTML;
+    },
     attachTo: {
       element: ".entity-resource-table-selector",
       on: "left",
     },
-    classes: "-ml-5",
     beforeShowPromise: function () {
       return waitForElement(".entity-resource-table-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().setRightNavigationView(RightView.None);
-          return this.back();
-        },
-      },
-      StepButton.next,
-    ],
+    classes: "-ml-5",
+    buttons: [StepButton.next],
   },
-  {
-    title: "Continue Your Journey",
-    attachTo: {
-      element: ".tutorial-selector",
-      on: "bottom",
-    },
-    classes: "mt-5",
-    canClickTarget: false,
-    text: "Complete more quests and discover everything Eternum has to offer!",
-    buttons: [StepButton.prev, StepButton.next],
-  },
+
   {
     title: "Social",
     text: "Forge alliances, create or join a Tribe.",
@@ -94,9 +109,13 @@ export const settleSteps: StepOptions[] = [
       element: ".social-selector",
       on: "bottom",
     },
-    classes: "mt-5",
+    beforeShowPromise: function () {
+      useUIStore.getState().setRightNavigationView(RightView.None);
+      return new Promise<void>((resolve) => resolve());
+    },
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "mt-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Join our Discord",
@@ -106,7 +125,7 @@ export const settleSteps: StepOptions[] = [
       on: "bottom",
     },
     classes: "mt-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Settings",
@@ -115,8 +134,19 @@ export const settleSteps: StepOptions[] = [
       element: ".settings-selector",
       on: "bottom",
     },
-    classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.finish],
+    classes: "mt-5",
+    buttons: [StepButton.next],
+  },
+  {
+    title: "Continue Your Journey",
+    text: "Complete more quests and discover everything Eternum has to offer!",
+    attachTo: {
+      element: ".tutorial-selector",
+      on: "bottom",
+    },
+    canClickTarget: false,
+    classes: "mt-5",
+    buttons: [StepButton.finish],
   },
 ];

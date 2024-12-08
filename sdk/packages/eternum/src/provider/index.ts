@@ -1160,21 +1160,17 @@ export class EternumProvider extends EnhancedDojoProvider {
       signer,
     } = props;
 
-    return await buildVrfCalls({
-      account: signer,
-      call: {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_bank_systems`),
-        entrypoint: "create_admin_bank",
-        calldata: [
-          name,
-          coord,
-          owner_fee_num,
-          owner_fee_denom,
-          owner_bridge_fee_dpt_percent,
-          owner_bridge_fee_wtdr_percent,
-        ],
-      },
-      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_bank_systems`),
+      entrypoint: "create_admin_bank",
+      calldata: [
+        name,
+        coord,
+        owner_fee_num,
+        owner_fee_denom,
+        owner_bridge_fee_dpt_percent,
+        owner_bridge_fee_wtdr_percent,
+      ],
     });
   }
 

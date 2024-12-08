@@ -4,6 +4,7 @@ import {
   QuestType,
   RealmLevels,
   ResourcesIds,
+  ResourceTier,
   TroopFoodConsumption,
 } from "../constants";
 
@@ -239,6 +240,11 @@ export interface ResourceCost {
   resource: ResourcesIds;
   amount: number;
 }
+export interface ResourceCostMinMax {
+  resource_tier: ResourceTier;
+  min_amount: number;
+  max_amount: number;
+}
 
 export interface ResourceInputs {
   [key: number]: ResourceCost[];
@@ -383,9 +389,9 @@ export interface Config {
   };
 
   hyperstructures: {
-    hyperstructureCreationCosts: ResourceCost[];
-    hyperstructureConstructionCosts: ResourceCost[];
-    hyperstructureTotalCosts: ResourceCost[];
+    hyperstructureCreationCosts: ResourceCostMinMax[];
+    hyperstructureConstructionCosts: ResourceCostMinMax[];
+    hyperstructureTotalCosts: ResourceCostMinMax[];
     hyperstructurePointsPerCycle: number;
     hyperstructurePointsOnCompletion: number;
     hyperstructureTimeBetweenSharesChangeSeconds: number;

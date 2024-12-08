@@ -12,7 +12,6 @@ export const buildFoodSteps: StepOptions[] = [
       element: ".construction-selector",
       on: "right",
     },
-    classes: "ml-5 requires-interaction",
     advanceOn: {
       selector: ".construction-selector",
       event: "click",
@@ -20,9 +19,11 @@ export const buildFoodSteps: StepOptions[] = [
     beforeShowPromise: function () {
       useUIStore.getState().setRightNavigationView(RightView.None);
       useUIStore.getState().setLeftNavigationView(LeftView.None);
+      useUIStore.getState().closeAllPopups();
       return new Promise<void>((resolve) => resolve());
     },
-    buttons: [StepButton.prev],
+    classes: "ml-5",
+    buttons: [],
   },
 
   {
@@ -32,22 +33,12 @@ export const buildFoodSteps: StepOptions[] = [
       element: ".construction-panel-selector",
       on: "right",
     },
-    classes: "ml-5",
-    canClickTarget: false,
     beforeShowPromise: function () {
-      useUIStore.getState().closeAllPopups();
       return waitForElement(".construction-panel-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().setLeftNavigationView(LeftView.None);
-          return this.back();
-        },
-      },
-      StepButton.next,
-    ],
+    canClickTarget: false,
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
 
   {
@@ -57,74 +48,94 @@ export const buildFoodSteps: StepOptions[] = [
       element: ".construction-tabs-selector",
       on: "right",
     },
-    classes: "ml-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Farm",
-    text: "Produces Wheat and provides a 10% production bonus to adjacent buildings.",
+    text: () => {
+      const wheatIcon = document.createElement("img");
+      wheatIcon.src = "/images/resources/254.png";
+      wheatIcon.className = "w-8 h-8 inline-block mx-1";
+      wheatIcon.title = "Wheat";
+
+      const container = document.createElement("div");
+      container.innerHTML = `Produces ${wheatIcon.outerHTML} and provides a 10% production bonus to adjacent buildings `;
+
+      return container.innerHTML;
+    },
     attachTo: {
       element: ".farm-card-selector",
-      on: "bottom",
+      on: "right",
     },
-    classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Fishing Village",
-    text: "Provides a steady supply of Fish.",
+    text: () => {
+      const fishIcon = document.createElement("img");
+      fishIcon.src = "/images/resources/255.png";
+      fishIcon.className = "w-8 h-8 inline-block mx-1";
+      fishIcon.title = "Fish";
+
+      const container = document.createElement("div");
+      container.innerHTML = `Provides a steady supply of ${fishIcon.outerHTML}`;
+
+      return container.innerHTML;
+    },
     attachTo: {
       element: ".fish-card-selector",
-      on: "bottom",
+      on: "right",
     },
-    classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Market",
     text: "Produces Donkeys. More on that later.",
     attachTo: {
       element: ".market-card-selector",
-      on: "bottom",
+      on: "right",
     },
-    classes: "mt-5",
+    classes: "ml-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Worker's Hut",
     text: "Increases your population capacity.",
     attachTo: {
       element: ".workers-hut-card-selector",
-      on: "bottom",
+      on: "right",
     },
-    classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Population",
-    text: "Constructing buildings use up available population.",
+    text: "Constructing buildings requires available population.",
     attachTo: {
       element: ".population-selector",
-      on: "bottom",
+      on: "right",
     },
-    classes: "mt-5",
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Storehouse",
     text: "Increases your storage limit.",
     attachTo: {
       element: ".storehouse-card-selector",
-      on: "bottom",
+      on: "right",
     },
-    classes: "mt-5",
     canClickTarget: false,
-    buttons: [StepButton.prev, StepButton.next],
+    classes: "ml-5",
+    buttons: [StepButton.next],
   },
   {
     title: "Storage",
@@ -134,47 +145,41 @@ export const buildFoodSteps: StepOptions[] = [
       on: "right",
     },
     classes: "ml-5",
-    buttons: [StepButton.prev, StepButton.next],
+    buttons: [StepButton.next],
   },
   {
     title: "Choose Your Food Source",
     text: "Select either a Farm or Fishing Village.",
     attachTo: {
-      element: ".economy-selector",
-      on: "bottom",
+      element: ".farm-card-selector",
+      on: "top",
     },
-    classes: "mt-5 requires-interaction",
-    beforeShowPromise: function () {
-      return waitForElement(".economy-selector");
-    },
+    extraHighlights: [".fish-card-selector"],
     advanceOn: {
       selector: ".economy-selector",
       event: "click",
     },
-    buttons: [StepButton.prev],
+    classes: "-mt-5",
+    buttons: [],
   },
   {
     title: "Place Building",
-    text: "Left-click to confirm, mouse wheel to zoom, right-click or ESC to cancel.",
+    text: `
+      <div class="flex flex-col">
+        <span>Left-click to confirm</span>
+        <span>Mouse-wheel to zoom</span>
+        <span>Right-click or ESC to cancel.</span>
+      </div>`,
     classes: "!left-3/4 !top-1/4",
     attachTo: {
       element: ".world-selector",
     },
     highlightClass: "allow-modal-click",
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          useUIStore.getState().setLeftNavigationView(LeftView.ConstructionView);
-          return this.back();
-        },
-      },
-      StepButton.next,
-    ],
+    buttons: [StepButton.next],
   },
   {
-    title: "Balance",
-    text: "Click here to view your resources.",
+    title: "Resource Balance",
+    text: "Open the menu.",
     attachTo: {
       element: ".resource-table-selector",
       on: "left",
@@ -183,8 +188,8 @@ export const buildFoodSteps: StepOptions[] = [
       selector: ".resource-table-selector",
       event: "click",
     },
-    classes: "-ml-5 requires-interaction",
-    buttons: [StepButton.prev],
+    classes: "-ml-5",
+    buttons: [],
   },
   {
     title: "Production",
@@ -197,6 +202,6 @@ export const buildFoodSteps: StepOptions[] = [
       return waitForElement(".entity-resource-table-selector");
     },
     classes: "-ml-5",
-    buttons: [StepButton.prev, StepButton.finish],
+    buttons: [StepButton.finish],
   },
 ];

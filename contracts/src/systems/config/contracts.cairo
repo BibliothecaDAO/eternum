@@ -92,7 +92,7 @@ trait ITransportConfig<T> {
 trait IHyperstructureConfig<T> {
     fn set_hyperstructure_config(
         ref self: T,
-        resources_for_completion: Span<(u8, u128)>,
+        resources_for_completion: Span<(u8, u128, u128)>,
         time_between_shares_change: u64,
         points_per_cycle: u128,
         points_for_win: u128,
@@ -677,7 +677,7 @@ mod config_systems {
     impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
             ref self: ContractState,
-            resources_for_completion: Span<(u8, u128)>,
+            resources_for_completion: Span<(u8, u128, u128)>,
             time_between_shares_change: u64,
             points_per_cycle: u128,
             points_for_win: u128,
@@ -688,12 +688,12 @@ mod config_systems {
 
             let mut i = 0;
             while (i < resources_for_completion.len()) {
-                let (resource_type, amount_for_completion) = *resources_for_completion.at(i);
+                let (tier, min_amount, max_amount) = *resources_for_completion.at(i);
 
                 world
                     .write_model(
                         @HyperstructureResourceConfig {
-                            config_id: HYPERSTRUCTURE_CONFIG_ID, resource_type, amount_for_completion
+                            config_id: HYPERSTRUCTURE_CONFIG_ID, resource_tier: tier, min_amount, max_amount
                         }
                     );
                 i += 1;
