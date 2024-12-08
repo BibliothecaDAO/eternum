@@ -373,12 +373,15 @@ export default class WorldmapScene extends HexagonScene {
       const { outerCol, outerRow } = this.state.selectedBuildingHex;
       this.state.setSelectedHex({ col: outerCol, row: outerRow });
     }
+
+    this.armyManager.addLabelsToScene();
   }
 
   onSwitchOff() {
     if (!IS_MOBILE) {
       this.minimap.hideMinimap();
     }
+    this.armyManager.removeLabelsFromScene();
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {

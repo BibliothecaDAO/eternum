@@ -29,6 +29,7 @@ const MINIMAP_CONFIG = {
   MAX_ZOOM_RANGE: 300,
   MAP_COLS_WIDTH: 200,
   MAP_ROWS_HEIGHT: 100,
+  EXPANDED_MODIFIER: 0.5,
   COLORS: {
     ARMY: "#FF0000",
     MY_ARMY: "#00FF00",
@@ -42,7 +43,7 @@ const MINIMAP_CONFIG = {
     },
   },
   SIZES: {
-    BATTLE: 15,
+    BATTLE: 12,
     STRUCTURE: 10,
     ARMY: 10,
     CAMERA: {
@@ -171,18 +172,22 @@ class Minimap {
     }
 
     this.dragSpeed = this.mapSize.width / MINIMAP_CONFIG.MAX_ZOOM_RANGE;
+    let modifier = 1;
+    if (this.canvas.width > 300) {
+      modifier = MINIMAP_CONFIG.EXPANDED_MODIFIER;
+    }
     // Precompute sizes
     this.structureSize = {
-      width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX,
-      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX,
+      width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier,
+      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier,
     };
     this.armySize = {
-      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX,
-      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX,
+      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
+      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
     };
     this.battleSize = {
-      width: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX,
-      height: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX,
+      width: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX * modifier,
+      height: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX * modifier,
     };
     this.cameraSize = {
       topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,

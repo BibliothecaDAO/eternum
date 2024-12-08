@@ -526,6 +526,18 @@ export class ArmyManager {
     this.entityIdLabels.set(army.entityId, label);
   }
 
+  removeLabelsFromScene() {
+    this.entityIdLabels.forEach((label) => this.scene.remove(label));
+  }
+
+  addLabelsToScene() {
+    this.entityIdLabels.forEach((label) => {
+      if (!this.scene.children.includes(label)) {
+        this.scene.add(label);
+      }
+    });
+  }
+
   private removeEntityIdLabel(entityId: ID) {
     const label = this.entityIdLabels.get(entityId);
     if (label) {
