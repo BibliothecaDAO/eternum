@@ -2010,8 +2010,8 @@ const eventsComponents = (world: World) => {
             id: RecsType.Number,
             hyperstructure_entity_id: RecsType.Number,
             contributor_entity_id: RecsType.Number,
-            hyperstructure_owner_name: RecsType.BigInt,
             timestamp: RecsType.Number,
+            hyperstructure_owner_name: RecsType.BigInt,
           },
           {
             metadata: {
