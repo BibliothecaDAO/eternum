@@ -1,13 +1,8 @@
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { ContractAddress, Player } from "@bibliothecadao/eternum";
 import React, { useMemo, useRef, useState } from "react";
 import { displayAddress, toHexString } from "../utils/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./Select";
 import TextInput from "./TextInput";
-
-type Player = {
-  address: ContractAddress;
-  addressName: string;
-};
 
 interface SelectAddressProps {
   initialSelectedAddress: ContractAddress;
@@ -34,7 +29,7 @@ export const SelectAddress: React.FC<SelectAddressProps> = ({
   const filteredPlayers = useMemo(() => {
     return players.filter((player) => {
       const searchStr = searchInput.toLowerCase();
-      return player.addressName.toLowerCase().includes(searchStr) || player.address === selectedAddress?.address;
+      return player.name.toLowerCase().includes(searchStr) || player.address === selectedAddress?.address;
     });
   }, [players, searchInput]);
 
@@ -91,9 +86,7 @@ export const SelectAddress: React.FC<SelectAddressProps> = ({
           {filteredPlayers.map((player) => (
             <SelectItem key={player.address} value={player.address.toString()}>
               <div className="flex items-center">
-                <h5 className="text-[1rem]">{`${player.addressName} (${displayAddress(
-                  toHexString(player.address),
-                )})`}</h5>
+                <h5 className="text-[1rem]">{`${player.name} (${displayAddress(toHexString(player.address))})`}</h5>
               </div>
             </SelectItem>
           ))}

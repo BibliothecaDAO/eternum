@@ -3,7 +3,7 @@ import { ReactComponent as CaretUp } from "@/assets/icons/common/caret-up.svg";
 import clsx from "clsx";
 
 type SortButtonProps = {
-  label: string;
+  label: string | JSX.Element;
   sortKey: string;
   activeSort: {
     sortKey: string;

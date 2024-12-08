@@ -1,6 +1,6 @@
 import { PRIZE_POOL_GUILDS } from "@/constants";
-import { Guild, Player } from "@/types";
-import { calculateLordsShare } from "@/utils/leaderboard";
+import { Guild } from "@/types";
+import { calculateGuildLordsPrize, Player } from "@bibliothecadao/eternum";
 
 export const getGuilds = (players: Player[]): Guild[] => {
   const guildMap = new Map<string, Guild>();
@@ -34,9 +34,13 @@ export const getGuilds = (players: Player[]): Guild[] => {
 
   const totalPoints = Array.from(guildMap.values()).reduce((sum, guild) => sum + guild.points, 0);
 
-  return Array.from(guildMap.values()).map((guild) => ({
-    ...guild,
-    percentage: (guild.points / totalPoints) * 100,
-    lords: calculateLordsShare(guild.points, totalPoints, PRIZE_POOL_GUILDS),
-  }));
+  const guildsArray = Array.from(guildMap.values())
+    .sort((a, b) => b.points - a.points)
+    .map((guild, index) => ({
+      ...guild,
+      percentage: (guild.points / totalPoints) * 100,
+      lords: calculateGuildLordsPrize(index + 1, PRIZE_POOL_GUILDS),
+    }));
+
+  return guildsArray;
 };

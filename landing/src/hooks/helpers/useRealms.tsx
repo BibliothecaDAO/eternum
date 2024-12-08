@@ -1,20 +1,7 @@
 import { type ID } from "@bibliothecadao/eternum";
 import { type Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import realmsJson from "../../../../client/src/data/geodata/realms.json";
 import { useDojo } from "../context/DojoContext";
-
-// interface RealmInfo {
-//   realmId: ID;
-//   entityId: ID;
-//   name: string;
-//   resourceTypesPacked: bigint;
-//   order: number;
-//   position: ComponentValue<ClientComponents["Position"]["schema"]>;
-//   population?: number | undefined;
-//   capacity?: number;
-//   hasCapacity: boolean;
-//   owner: ContractAddress;
-//   ownerName: string;
-// }
 
 export function useRealm() {
   const {
@@ -22,6 +9,12 @@ export function useRealm() {
       components: { Realm },
     },
   } = useDojo();
+
+  const getRealmNameById = (realmId: ID): string => {
+    const features = realmsJson["features"][realmId - 1];
+    if (!features) return "";
+    return features["name"];
+  };
 
   const getRealmEntityIdFromRealmId = (realmId: ID): ID | undefined => {
     const realmEntityIds = runQuery([HasValue(Realm, { realm_id: realmId })]);
@@ -32,5 +25,6 @@ export function useRealm() {
   };
   return {
     getRealmEntityIdFromRealmId,
+    getRealmNameById,
   };
 }

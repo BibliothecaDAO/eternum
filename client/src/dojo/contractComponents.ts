@@ -498,12 +498,13 @@ export function defineContractComponents(world: World) {
           last_updated_by: RecsType.BigInt,
           last_updated_timestamp: RecsType.Number,
           access: RecsType.String,
+          randomness: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "Hyperstructure",
-            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum"],
+            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum", "felt252"],
             customTypes: ["Access"],
           },
         },
@@ -532,12 +533,17 @@ export function defineContractComponents(world: World) {
     HyperstructureResourceConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, resource_type: RecsType.Number, amount_for_completion: RecsType.BigInt },
+        {
+          config_id: RecsType.Number,
+          resource_tier: RecsType.Number,
+          min_amount: RecsType.BigInt,
+          max_amount: RecsType.BigInt,
+        },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "HyperstructureResourceConfig",
-            types: ["u32", "u8", "u128"],
+            types: ["u32", "u8", "u128", "u128"],
             customTypes: [],
           },
         },

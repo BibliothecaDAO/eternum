@@ -1,8 +1,7 @@
 import { PRIZE_POOL_PLAYERS } from "@/constants";
 import { LeaderboardManager } from "@/dojo/modelManager/leaderboard/LeaderboardManager";
-import { Player } from "@/types";
 import { calculateLordsShare, calculatePlayerSharePercentage } from "@/utils/leaderboard";
-import { StructureType } from "@bibliothecadao/eternum";
+import { Player, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "./context/DojoContext";
@@ -53,7 +52,9 @@ export const useGetAllPlayers = () => {
 
       return {
         name: player.addressName,
+        address: player.address,
         points,
+        rank: rankIndex === -1 ? Number.MAX_SAFE_INTEGER : rankIndex + 1,
         percentage: calculatePlayerSharePercentage(points, totalPoints),
         lords: calculateLordsShare(points, totalPoints, PRIZE_POOL_PLAYERS),
         realms: runQuery([Has(Realm), HasValue(Owner, { address: player.address })]).size,

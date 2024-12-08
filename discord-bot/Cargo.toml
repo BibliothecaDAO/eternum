@@ -2,7 +2,7 @@
 name = "eternum-discord"
 version = "0.1.0"
 authors = ["my name <my@email.address>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 dotenv = "0.15"
@@ -20,18 +20,17 @@ strum_macros = "0.26.4"
 starknet = "0.12.0"
 starknet-crypto = "0.7.0"
 starknet-types-core = "~0.1.4"
-dojo-types = { git = "https://github.com/edisontim/dojo", rev = "756027b" }
-torii-client = { git = "https://github.com/edisontim/dojo", rev = "756027b" }
-torii-grpc = { git = "https://github.com/edisontim/dojo", features = [
+dojo-types = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.3" }
+torii-client = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.3" }
+torii-grpc = { git = "https://github.com/dojoengine/dojo", features = [
     "client",
-], rev = "756027b" }
-torii-relay = { git = "https://github.com/edisontim/dojo", rev = "756027b" }
-dojo-world = { git = "https://github.com/edisontim/dojo", rev = "756027b" }
+], tag = "v1.0.3" }
+torii-relay = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.3" }
+dojo-world = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.3" }
 
-cainome = { git = "https://github.com/cartridge-gg/cainome", tag = "v0.4.7", features = ["abigen-rs"] }
-cainome-cairo-serde = { git = "https://github.com/cartridge-gg/cainome", tag = "v0.4.7" }
+cainome = { git = "https://github.com/cartridge-gg/cainome", tag = "v0.4.9", features = ["abigen-rs"] }
+cainome-cairo-serde = { git = "https://github.com/cartridge-gg/cainome", tag = "v0.4.9" }
 cairo-lang-filesystem = "=2.8.4"
-scarb = { git = "https://github.com/software-mansion/scarb", tag = "v2.8.4" }
 shuttle-runtime = { version = "0.49.0" }
 shuttle-serenity = { version = "0.49.0" }
 shuttle-rocket = { version = "0.49.0" }

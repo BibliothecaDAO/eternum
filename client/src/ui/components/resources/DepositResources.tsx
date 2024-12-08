@@ -62,7 +62,7 @@ export const DepositResources = ({
             carrierId: arrivalTime?.entity_id || 0,
             senderEntityId: entityId,
             recipientEntityId: depositEntityId,
-            resources: inventoryResources.flatMap((resource) => [BigInt(resource.resourceId), BigInt(resource.amount)]),
+            resources: inventoryResources,
           },
         ];
       });

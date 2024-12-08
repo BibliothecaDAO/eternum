@@ -1,25 +1,28 @@
+import { divideByPrecision } from "@/components/ui/utils/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager } from "@/dojo/setup";
+import { Resource } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { ClientConfigManager } from "../ConfigManager";
 
 export function computeInitialContributionPoints(
-  resourceType: ResourcesIds,
-  resourceQuantity: bigint,
+  hyperstructureId: number,
+  contributions: Resource[],
   totalPoints: number,
 ): number {
-  return getTotalPointsPercentage(resourceType, resourceQuantity) * totalPoints;
+  return getContributionsTotalPercentage(hyperstructureId, contributions) * totalPoints;
 }
 
-export function getTotalPointsPercentage(resourceType: ResourcesIds, resourceQuantity: bigint): number {
-  const configManager = ClientConfigManager.instance();
+function getContributionsTotalPercentage(hyperstructureId: number, contributions: Resource[]): number {
+  const totalPlayerContribution = divideByPrecision(
+    contributions.reduce((acc, { amount, resourceId }) => {
+      return acc + amount * configManager.getResourceRarity(resourceId);
+    }, 0),
+  );
 
-  const effectiveContribution =
-    Number(resourceQuantity / BigInt(configManager.getResourcePrecision())) *
-    configManager.getResourceRarity(resourceType);
-  const totalContributableAmount = configManager.getHyperstructureTotalContributableAmount();
+  const totalHyperstructureContribution = configManager.getHyperstructureTotalContributableAmount(hyperstructureId);
 
-  return effectiveContribution / totalContributableAmount;
+  return totalPlayerContribution / totalHyperstructureContribution;
 }
 
 export const calculateCompletionPoints = (
@@ -28,7 +31,17 @@ export const calculateCompletionPoints = (
   const configManager = ClientConfigManager.instance();
   const pointsOnCompletion = configManager.getHyperstructureConfig().pointsOnCompletion;
 
-  return contributions.reduce((acc, contribution) => {
-    return acc + computeInitialContributionPoints(contribution.resource_type, contribution.amount, pointsOnCompletion);
-  }, 0);
+  if (contributions.length === 0) {
+    return 0;
+  }
+  const hyperstructureId = contributions[0].hyperstructure_entity_id;
+
+  const formattedContributions = contributions.map((contribution) => {
+    return {
+      resourceId: contribution.resource_type,
+      amount: Number(contribution.amount),
+    };
+  });
+
+  return computeInitialContributionPoints(hyperstructureId, formattedContributions, pointsOnCompletion);
 };

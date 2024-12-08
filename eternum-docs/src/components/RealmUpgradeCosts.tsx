@@ -1,5 +1,4 @@
 import { REALM_UPGRADE_COSTS, RealmLevels, findResourceById } from "@bibliothecadao/eternum";
-import { formatNumberWithSpaces } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
 
 type Props = {
@@ -8,6 +7,14 @@ type Props = {
 
 export default function RealmUpgradeCosts({ level }: Props) {
   const costs = REALM_UPGRADE_COSTS[level];
+
+  const formatAmount = (amount: number) => {
+    if (amount < 1000) {
+      return `${amount}K`;
+    } else {
+      return `${Math.floor(amount / 1000)}M`;
+    }
+  };
 
   if (costs.length === 0) return null;
 
@@ -20,7 +27,7 @@ export default function RealmUpgradeCosts({ level }: Props) {
           return (
             <div key={cost.resource} className="flex items-center gap-2 px-3 py-1.5">
               <ResourceIcon size={24} id={cost.resource} name={resource?.trait || ""} />
-              <span className="font-medium">{formatNumberWithSpaces(cost.amount)}K</span>
+              <span className="font-medium">{formatAmount(cost.amount)}</span>
             </div>
           );
         })}

@@ -10,7 +10,7 @@ export type ArmySystemUpdate = {
   defender: boolean;
   currentHealth: bigint;
   order: number;
-  owner: { address: bigint };
+  owner: { address: bigint; ownerName: string; guildName: string };
 };
 
 export type StructureSystemUpdate = {
@@ -33,6 +33,7 @@ export type BattleSystemUpdate = {
   isEmpty: boolean;
   deleted: boolean;
   isSiege: boolean;
+  isOngoing: boolean;
 };
 
 export type BuildingSystemUpdate = {

@@ -1,7 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { execute } from "@/hooks/gql/execute";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
-import { GET_ERC_MINTS } from "@/hooks/query/realms";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress } from "@/lib/utils";
@@ -13,11 +12,10 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { Loader } from "lucide-react";
+import { Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { env } from "../../../env";
 import { Button } from "../ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
@@ -27,22 +25,16 @@ function formatFee(fee: number) {
 }
 
 export const BridgeIn = () => {
-  const { account } = useAccount();
+  const { account, address } = useAccount();
 
-  const { getRealmEntityIdFromRealmId } = useRealm();
   const { computeTravelTime } = useTravel();
+  const { getRealmNameById } = useRealm();
 
   const [selectedResourceContract, setselectedResourceContract] = useState("");
   const [selectedResourceAmount, setselectedResourceAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [realmId, setRealmId] = useState<string>("");
+  const [realmEntityId, setRealmEntityId] = useState<string>("");
 
-  const realmEntityId = useMemo(() => {
-    if (!realmId) {
-      return 0;
-    }
-    return getRealmEntityIdFromRealmId(Number(realmId));
-  }, [realmId]);
   const bridgeConfig = EternumGlobalConfig.bridge;
 
   const calculateBridgeFee = (percent: number) => {
@@ -81,30 +73,14 @@ export const BridgeIn = () => {
     [velordsFeeOnDeposit, seasonPoolFeeOnDeposit, clientFeeOnDeposit, bankFeeOnDeposit],
   );
 
-  const { data: seasonPassMints } = useSuspenseQuery({
-    queryKey: ["ERCMints"],
-    queryFn: () => execute(GET_ERC_MINTS),
-    refetchInterval: 10_000,
-  });
-
-  const seasonPassTokens = useMemo(
-    () =>
-      seasonPassMints?.tokenTransfers?.edges
-        ?.filter(
-          (token) =>
-            token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
-            token.node.tokenMetadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS,
-        )
-        .map((token) => {
-          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return undefined;
-          return {
-            id: Number(token.node.tokenMetadata.tokenId),
-            name_: JSON.parse(token.node.tokenMetadata.metadata).name,
-          };
-        })
-        .filter((token): token is { id: number; name_: string } => token !== undefined),
-    [seasonPassMints],
-  );
+  const { playerRealms } = useEntities();
+  const playerRealmsIdAndName = useMemo(() => {
+    return playerRealms.map((realm) => ({
+      realmId: realm!.realm_id,
+      entityId: realm!.entity_id,
+      name: getRealmNameById(realm!.realm_id),
+    }));
+  }, [playerRealms]);
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
@@ -117,7 +93,7 @@ export const BridgeIn = () => {
     } else {
       return 0;
     }
-  }, [selectedResourceContract, realmId, selectedResourceAmount]);
+  }, [selectedResourceContract, realmEntityId, selectedResourceAmount]);
 
   const travelTimeInHoursAndMinutes = (travelTime: number) => {
     const hours = Math.floor(travelTime / 60);
@@ -152,7 +128,8 @@ export const BridgeIn = () => {
   const onBridgeIntoRealm = async () => {
     if (realmEntityId) {
       const resourceAddresses = await getSeasonAddresses();
-      let tokenAddress =
+      console.log({ resourceAddresses });
+      const tokenAddress =
         resourceAddresses[selectedResourceContract.toLocaleUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
@@ -177,16 +154,18 @@ export const BridgeIn = () => {
 
         <div>{displayAddress(account?.address || "")}</div>
       </div>
-      <Select onValueChange={(value) => setRealmId(value)}>
+      <Select onValueChange={(value) => setRealmEntityId(value)}>
         <SelectTrigger className="w-full border-gold/15">
           <SelectValue placeholder="Select Realm To Transfer" />
         </SelectTrigger>
         <SelectContent>
-          {seasonPassTokens?.map((token) => (
-            <SelectItem key={token.id} value={token.id.toString()}>
-              {token.name_} {token.id} {!getRealmEntityIdFromRealmId(token.id) && <span>(NOT IN GAME)</span>}
-            </SelectItem>
-          ))}
+          {playerRealmsIdAndName.map((realm) => {
+            return (
+              <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
+                #{realm.realmId} - {realm.name}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
 
@@ -205,33 +184,44 @@ export const BridgeIn = () => {
           <div>{donkeysNeeded}</div>
         </div>
         <hr />
-        <div className="flex justify-between font-bold">
-          <div>Total Transfer Fee</div>
-          <div>{totalFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_dpt_percent)}%)</div>
-          <div>{bankFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_dpt_percent)}%)</div>
-          <div>{velordsFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_dpt_percent)}%)</div>
-          <div>{seasonPoolFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_dpt_percent)}%)</div>
-          <div>{clientFeeOnDeposit}</div>
-        </div>
-        <div className="flex justify-between font-bold mt-5 mb-5">
-          <div>Total Amount Received</div>
-          <div>{formatFee(Number(selectedResourceAmount) - Number(totalFeeOnDeposit))}</div>
-        </div>
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button className="w-full flex justify-between font-bold px-0" variant={"ghost"}>
+              <div className="flex items-center">
+                <Plus className="mr-4" />
+                Total Transfer Fee
+              </div>
+              <div>{totalFeeOnDeposit}</div>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="flex flex-col gap-2">
+            <div className="flex justify-between text-xs">
+              <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_dpt_percent)}%)</div>
+              <div>{bankFeeOnDeposit}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_dpt_percent)}%)</div>
+              <div>{velordsFeeOnDeposit}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>
+                Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_dpt_percent)}%)
+              </div>
+              <div>{seasonPoolFeeOnDeposit}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_dpt_percent)}%)</div>
+              <div>{clientFeeOnDeposit}</div>
+            </div>
+            <div className="flex justify-between font-bold mt-5 mb-5">
+              <div>Total Amount Received</div>
+              <div>{formatFee(Number(selectedResourceAmount) - Number(totalFeeOnDeposit))}</div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
       <Button
-        disabled={(!selectedResourceAmount && !selectedResourceContract && !realmId) || isLoading}
+        disabled={(!selectedResourceAmount && !selectedResourceContract && !realmEntityId) || isLoading}
         onClick={() => onBridgeIntoRealm()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}

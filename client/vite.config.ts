@@ -15,7 +15,6 @@ export default defineConfig({
     wasm(),
     topLevelAwait(),
     VitePWA({
-      registerType: "autoUpdate",
       devOptions: {
         enabled: process.env.VITE_PUBLIC_DEV === "true",
       },

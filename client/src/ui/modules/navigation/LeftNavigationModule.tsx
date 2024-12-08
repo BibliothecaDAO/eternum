@@ -1,30 +1,17 @@
-import { useQuery } from "@/hooks/helpers/useQuery";
-import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { useModalStore } from "@/hooks/store/useModalStore";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
-import useUIStore from "@/hooks/store/useUIStore";
-
-import { QuestId } from "@/ui/components/quest/questDetails";
-
 import { usePlayerArrivalsNotificationLength } from "@/hooks/helpers/use-resource-arrivals";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useQuery } from "@/hooks/helpers/useQuery";
+import { useModalStore } from "@/hooks/store/useModalStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
-import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useEffect, useMemo } from "react";
-import {
-  construction,
-  military,
-  quests as questsPopup,
-  trade,
-  worldStructures,
-} from "../../components/navigation/Config";
+import { construction, military, trade, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
-// import { Chat } from "../chat/Chat";
 import { Chat } from "../chat/Chat";
 
 const EntityDetails = lazy(() =>
@@ -68,24 +55,10 @@ export const LeftNavigationModule = () => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
-
   const { toggleModal } = useModalStore();
   const { isMapView } = useQuery();
 
   const { notificationLength, arrivals } = usePlayerArrivalsNotificationLength();
-
-  const { questClaimStatus } = useQuestClaimStatus();
-
-  const isBuildQuest = useMemo(() => {
-    return (
-      selectedQuest?.id === QuestId.BuildFood ||
-      selectedQuest?.id === QuestId.BuildResource ||
-      selectedQuest?.id === QuestId.BuildWorkersHut ||
-      selectedQuest?.id === QuestId.Market ||
-      (selectedQuest?.id === QuestId.Hyperstructure && isMapView)
-    );
-  }, [selectedQuest, isMapView]);
 
   const { getEntityInfo } = useEntitiesUtils();
 
@@ -120,6 +93,7 @@ export const LeftNavigationModule = () => {
         button: (
           <div className="relative">
             <CircleButton
+              className="entity-details-selector"
               image={BuildingThumbs.hex}
               tooltipLocation="top"
               label="Details"
@@ -138,13 +112,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx({
-              "animate-pulse":
-                view !== LeftView.ConstructionView &&
-                selectedQuest?.id === QuestId.CreateAttackArmy &&
-                isPopupOpen(questsPopup),
-              hidden: !questClaimStatus[QuestId.CreateTrade] && isRealm,
-            })}
+            className="military-selector"
             image={BuildingThumbs.military}
             tooltipLocation="top"
             label={military}
@@ -159,10 +127,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine || !isRealm}
-            className={clsx({
-              "animate-pulse": view !== LeftView.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
-              hidden: !questClaimStatus[QuestId.Settle] && isRealm,
-            })}
+            className="construction-selector"
             image={BuildingThumbs.construction}
             tooltipLocation="top"
             label={construction}
@@ -177,7 +142,6 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx({ hidden: !questClaimStatus[QuestId.CreateTrade] && isRealm })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label="Resource Arrivals"
@@ -194,13 +158,6 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx({
-              hidden: !questClaimStatus[QuestId.CreateAttackArmy] && isRealm,
-              "animate-pulse":
-                view !== LeftView.ConstructionView &&
-                selectedQuest?.id === QuestId.Contribution &&
-                isPopupOpen(questsPopup),
-            })}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"
             label={worldStructures}
@@ -217,13 +174,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx({
-              "animate-pulse":
-                selectedQuest?.id === QuestId.CreateTrade &&
-                selectedQuest.status !== QuestStatus.Completed &&
-                isPopupOpen(questsPopup),
-              hidden: !questClaimStatus[QuestId.BuildResource] && isRealm,
-            })}
+            className="trade-selector"
             image={BuildingThumbs.scale}
             tooltipLocation="top"
             label={trade}
@@ -260,18 +211,8 @@ export const LeftNavigationModule = () => {
       ].includes(item.name as MenuEnum),
     );
 
-    return isMapView ? filteredNavigation : filteredNavigation;
-  }, [
-    view,
-    openedPopups,
-    selectedQuest,
-    questClaimStatus,
-    structureEntityId,
-    isMapView,
-    structureIsMine,
-    isRealm,
-    notificationLength,
-  ]);
+    return filteredNavigation;
+  }, [view, openedPopups, structureEntityId, isMapView, structureIsMine, isRealm, notificationLength]);
 
   const slideLeft = {
     hidden: { x: "-100%" },

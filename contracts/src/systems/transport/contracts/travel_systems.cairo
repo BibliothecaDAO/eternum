@@ -1,8 +1,9 @@
 #[starknet::interface]
 trait ITravelSystems<T> {
-    fn travel(
-        ref self: T, travelling_entity_id: s0_eternum::alias::ID, destination_coord: s0_eternum::models::position::Coord
-    );
+    // fn travel(
+    //     ref self: T, travelling_entity_id: s0_eternum::alias::ID, destination_coord:
+    //     s0_eternum::models::position::Coord
+    // );
     fn travel_hex(
         ref self: T,
         travelling_entity_id: s0_eternum::alias::ID,
@@ -64,31 +65,31 @@ mod travel_systems {
         /// * `travelling_entity_id` - The ID of the entity that is travelling
         /// * `destination_coord` - The coordinate to travel to
         ///
-        fn travel(ref self: ContractState, travelling_entity_id: ID, destination_coord: Coord) {
-            let mut world = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+        // fn travel(ref self: ContractState, travelling_entity_id: ID, destination_coord: Coord) {
+        //     let mut world = self.world(DEFAULT_NS());
+        //     SeasonImpl::assert_season_is_not_over(world);
 
-            // todo@security prevent free transport units from travelling
-            let travelling_entity_owner: EntityOwner = world.read_model(travelling_entity_id);
-            travelling_entity_owner.assert_caller_owner(world);
+        //     // todo@security prevent free transport units from travelling
+        //     let travelling_entity_owner: EntityOwner = world.read_model(travelling_entity_id);
+        //     travelling_entity_owner.assert_caller_owner(world);
 
-            let travelling_entity_movable: Movable = world.read_model(travelling_entity_id);
-            assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');
-            assert(travelling_entity_movable.blocked == false, 'entity is blocked');
+        //     let travelling_entity_movable: Movable = world.read_model(travelling_entity_id);
+        //     assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');
+        //     assert(travelling_entity_movable.blocked == false, 'entity is blocked');
 
-            let travelling_entity_arrival_time: ArrivalTime = world.read_model(travelling_entity_id);
-            let ts = starknet::get_block_timestamp();
-            assert(travelling_entity_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
+        //     let travelling_entity_arrival_time: ArrivalTime = world.read_model(travelling_entity_id);
+        //     let ts = starknet::get_block_timestamp();
+        //     assert(travelling_entity_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
 
-            let travelling_entity_position: Position = world.read_model(travelling_entity_id);
-            let travelling_entity_coord: Coord = travelling_entity_position.into();
-            assert(travelling_entity_coord != destination_coord, 'entity is at destination');
+        //     let travelling_entity_position: Position = world.read_model(travelling_entity_id);
+        //     let travelling_entity_coord: Coord = travelling_entity_position.into();
+        //     assert(travelling_entity_coord != destination_coord, 'entity is at destination');
 
-            InternalTravelSystemsImpl::travel(
-                ref world, travelling_entity_id, travelling_entity_movable, travelling_entity_coord, destination_coord
-            );
-        }
-
+        //     InternalTravelSystemsImpl::travel(
+        //         ref world, travelling_entity_id, travelling_entity_movable, travelling_entity_coord,
+        //         destination_coord
+        //     );
+        // }
 
         fn travel_hex(ref self: ContractState, travelling_entity_id: ID, directions: Span<Direction>) {
             let mut world = self.world(DEFAULT_NS());

@@ -3,10 +3,7 @@ use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s0_eternum::{
     alias::ID,
-    constants::{
-        HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
-        get_contributable_resources_with_rarity, RESOURCE_PRECISION
-    },
+    constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_contributable_resources_with_rarity, RESOURCE_PRECISION},
     models::{
         owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
         resources::{Resource, ResourceImpl, ResourceCost},
@@ -28,6 +25,7 @@ pub struct Hyperstructure {
     last_updated_by: ContractAddress,
     last_updated_timestamp: u64,
     access: Access,
+    randomness: felt252,
 }
 
 #[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked)]

@@ -48,7 +48,7 @@ export const useBridgeAsset = () => {
           amount,
         })
           .then(() => {
-            toast(`Withdrawal initiated successfully. Resources will be sent to the bank.`);
+            toast(`Withdrawal initiated successfully. Resources are on their way to the bank.`);
           })
           .catch((e) => {
             console.error(`Bridge withdraw from realm error:`, e);

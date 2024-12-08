@@ -13,7 +13,8 @@ use torii_grpc::types::{EntityKeysClause, KeysClause, PatternMatching};
 use crate::{
     events::{
         battle_claim::BattleClaim, battle_join::BattleJoin, battle_leave::BattleLeave,
-        battle_pillage::BattlePillage, battle_start::BattleStart, settle_realm::SettleRealm,
+        battle_pillage::BattlePillage, battle_start::BattleStart, game_ended::GameEnded,
+        settle_realm::SettleRealm,
     },
     types::{Config, Event},
 };
@@ -160,6 +161,13 @@ impl ToriiClientSubscriber {
                     Event {
                         event: Box::new(event),
                         identifier: event.owner_address,
+                    }
+                }
+                "s0_eternum-GameEnded" => {
+                    let event = GameEnded::cairo_deserialize(&felts, 0).unwrap();
+                    Event {
+                        event: Box::new(event),
+                        identifier: event.winner_address,
                     }
                 }
                 _ => {

@@ -1,6 +1,6 @@
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
+import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -45,10 +45,10 @@ export const Chat = () => {
 
   const addTab = useChatStore((state) => state.addTab);
 
-  const getPlayers = useGetOtherPlayers();
+  const getPlayers = useGetAllPlayers();
 
   const players = useMemo(() => {
-    return getPlayers();
+    return getPlayers().filter((player) => player.address !== BigInt(account.address));
   }, []);
 
   useEffect(() => {
@@ -62,7 +62,6 @@ export const Chat = () => {
   }, [currentTab.name]);
 
   const allMessageEntities = useEntityQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
-
   useEffect(() => {
     const latestSalt = Array.from(allMessageEntities).reduce((maxSalt, entity) => {
       const currentSalt = getComponentValue(Message, entity)?.salt ?? 0n;
@@ -207,6 +206,7 @@ const Messages = ({
 
   const messages = useMemo(() => {
     const messageMap = new Map<ContractAddress, ChatMetadata>();
+    const pendingTabs = new Set<Tab>();
 
     allMessageEntities.forEach((entity) => {
       const message = getComponentValue(Message, entity);
@@ -240,7 +240,7 @@ const Messages = ({
           return msg.timestamp > latest ? msg.timestamp : latest;
         }, timestamp);
 
-        addTab({
+        pendingTabs.add({
           name,
           address,
           displayed: true,
@@ -286,17 +286,30 @@ const Messages = ({
       chatMetadata.messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     });
 
-    return messageMap;
+    return { messageMap, pendingTabs };
   }, [allMessageEntities, account.address, guildKey]);
+
+  useEffect(() => {
+    messages.pendingTabs.forEach((tabInfo) => {
+      addTab({
+        name: tabInfo.name,
+        address: tabInfo.address,
+        displayed: true,
+        lastSeen: tabInfo.lastSeen,
+        key: tabInfo.key,
+        lastMessage: tabInfo.lastMessage,
+      });
+    });
+  }, [messages.pendingTabs]);
 
   const messagesToDisplay = useMemo(() => {
     if (currentTab.name === GLOBAL_CHANNEL_KEY) {
-      return messages.get(BigInt(GLOBAL_CHANNEL));
+      return messages.messageMap.get(BigInt(GLOBAL_CHANNEL));
     }
     if (currentTab.name === guildName && guildKey) {
-      return messages.get(ContractAddress(guildKey));
+      return messages.messageMap.get(ContractAddress(guildKey));
     }
-    return messages.get(ContractAddress(getMessageKey(currentTab.address, account.address)));
+    return messages.messageMap.get(ContractAddress(getMessageKey(currentTab.address, account.address)));
   }, [messages, currentTab.address, currentTab.name, guildName, guildKey, account.address]);
 
   return (
@@ -378,7 +391,7 @@ const ChatSelect = ({
     } else if (channel === guildKey) {
       changeTabs(undefined, guildKey, true);
     } else {
-      const player = players.find((p) => p.addressName === channel);
+      const player = players.find((p) => p.name === channel);
       if (player) {
         changeTabs(undefined, toHexString(player.address), true);
       }
@@ -386,8 +399,7 @@ const ChatSelect = ({
   };
 
   const filteredPlayers = players.filter(
-    (player) =>
-      player.addressName.toLowerCase().startsWith(searchInput.toLowerCase()) || player.addressName === selectedChannel,
+    (player) => player.name.toLowerCase().startsWith(searchInput.toLowerCase()) || player.name === selectedChannel,
   );
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -403,9 +415,9 @@ const ChatSelect = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       if (filteredPlayers.length > 0) {
-        const selectedPlayer = filteredPlayers.find((player) => player.addressName !== selectedChannel);
+        const selectedPlayer = filteredPlayers.find((player) => player.name !== selectedChannel);
         if (selectedPlayer) {
-          handleTabChange(selectedPlayer.addressName);
+          handleTabChange(selectedPlayer.name);
           setOpen(false);
         }
       }
@@ -446,8 +458,8 @@ const ChatSelect = ({
           </SelectItem>
         )}
         {filteredPlayers.map((player) => (
-          <SelectItem key={player.address} value={player.addressName} style={{ color: CHAT_COLORS.PRIVATE }}>
-            {player.addressName}
+          <SelectItem key={player.address} value={player.name} style={{ color: CHAT_COLORS.PRIVATE }}>
+            {player.name}
           </SelectItem>
         ))}
       </SelectContent>

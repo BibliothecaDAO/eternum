@@ -93,7 +93,9 @@ mod dev_bank_systems {
             let (contract_address, _) = world.dns(@"map_generation_systems").unwrap();
             let map_generation_contract = IMapGenerationSystemsDispatcher { contract_address };
 
-            map_generation_contract.add_mercenaries_to_structure(ADMIN_BANK_ENTITY_ID);
+            let seed = 'I AM SEED FOR THE DEV BANK'.into() - starknet::get_block_timestamp().into();
+
+            map_generation_contract.add_mercenaries_to_structure(seed, ADMIN_BANK_ENTITY_ID);
 
             ADMIN_BANK_ENTITY_ID
         }

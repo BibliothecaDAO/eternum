@@ -7,7 +7,7 @@ import { BattleSystemUpdate } from "../systems/types";
 import { BattleModel } from "./BattleModel";
 import { LabelManager } from "./LabelManager";
 
-const LABEL_PATH = "textures/army_label.png";
+const LABEL_PATH = "textures/battle_label.png";
 
 export class BattleManager {
   private scene: THREE.Scene;
@@ -63,9 +63,9 @@ export class BattleManager {
   async onUpdate(update: BattleSystemUpdate) {
     await this.battleModel.loadPromise;
 
-    const { entityId, hexCoords, isEmpty, deleted, isSiege } = update;
+    const { entityId, hexCoords, isEmpty, deleted, isSiege, isOngoing } = update;
 
-    if (deleted) {
+    if (deleted || !isOngoing) {
       this.removeBattle(entityId);
       return;
     }
@@ -92,7 +92,10 @@ export class BattleManager {
     this.battleModel.mesh.count = this.battles.counter;
     this.battleModel.mesh.instanceMatrix.needsUpdate = true;
     this.battleModel.mesh.computeBoundingSphere();
-    const label = this.labelManager.createLabel(position, isSiege ? new THREE.Color("orange") : new THREE.Color("red"));
+    const label = this.labelManager.createLabel(
+      position,
+      isSiege ? new THREE.Color("yellow") : new THREE.Color("orange"),
+    );
 
     this.labels.set(entityId, label);
     this.scene.add(label);

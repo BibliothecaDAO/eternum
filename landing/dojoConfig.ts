@@ -12,9 +12,11 @@ const {
   VITE_PUBLIC_ACCOUNT_CLASS_HASH,
   VITE_PUBLIC_DEV,
   VITE_PUBLIC_FEE_TOKEN_ADDRESS,
+  VITE_PUBLIC_CHAIN,
 } = env;
 
-const manifest = VITE_PUBLIC_DEV === true ? devManifest : productionManifest;
+const isLocal = VITE_PUBLIC_CHAIN === "local" || VITE_PUBLIC_CHAIN === "testnet";
+const manifest = VITE_PUBLIC_DEV === true && isLocal ? devManifest : productionManifest;
 
 export const getManifest = () => {
   return manifest;

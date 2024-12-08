@@ -165,11 +165,22 @@ export interface ClaimQuestProps extends SystemSigner {
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
+  owner: num.BigNumberish;
   realm_ids: num.BigNumberish[];
+  frontend: num.BigNumberish;
+  season_pass_address: string;
 }
 
-export interface CreateRealmProps extends SystemSigner {
+export interface CreateMultipleRealmsDevProps extends SystemSigner {
+  realm_ids: num.BigNumberish[];
+}
+export interface CreateRealmDevProps extends SystemSigner {
   realm_id: num.BigNumberish;
+}
+export interface CreateRealmProps extends SystemSigner {
+  owner: num.BigNumberish;
+  realm_id: num.BigNumberish;
+  frontend: num.BigNumberish;
 }
 
 export interface UpgradeRealmProps extends SystemSigner {
@@ -532,6 +543,14 @@ export interface SetSeasonConfigProps extends SystemSigner {
   start_at: num.BigNumberish;
 }
 
+export interface SetVRFConfigProps extends SystemSigner {
+  vrf_provider_address: num.BigNumberish;
+}
+
+export interface SetSeasonBridgeConfigProps extends SystemSigner {
+  close_after_end_seconds: num.BigNumberish;
+}
+
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
   token: num.BigNumberish;
   resource_type: num.BigNumberish;
@@ -551,7 +570,11 @@ export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
 }
 
 export interface SetHyperstructureConfig extends SystemSigner {
-  resources_for_completion: { resource: number; amount: number }[];
+  resources_for_completion: {
+    resource_tier: number;
+    min_amount: number;
+    max_amount: number;
+  }[];
   time_between_shares_change: num.BigNumberish;
   points_per_cycle: num.BigNumberish;
   points_for_win: num.BigNumberish;

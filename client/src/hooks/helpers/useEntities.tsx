@@ -60,7 +60,7 @@ export const useEntities = () => {
   }, [allRealms, address]);
 
   // Get all structures
-  const allStructures = useEntityQuery([Has(Structure)]);
+  const allStructures = useEntityQuery([Has(Structure), Has(Owner)]);
 
   const filterPlayerStructures = useMemo(() => {
     return allStructures.filter((id) => {
@@ -114,7 +114,7 @@ export const useEntities = () => {
         const name = realm
           ? getRealmNameById(realm.realm_id)
           : structureName
-            ? `${structure?.category} ${structureName}`
+            ? `${structureName}`
             : structure.category || "";
         return { ...structure, position: position!, name, owner: getComponentValue(Owner, id) };
       })
@@ -182,6 +182,7 @@ export const useEntitiesUtils = () => {
     account: { account },
     setup: {
       components: {
+        Army,
         EntityName,
         ArrivalTime,
         EntityOwner,
@@ -189,7 +190,6 @@ export const useEntitiesUtils = () => {
         CapacityCategory,
         CapacityConfig,
         Position,
-        Army,
         AddressName,
         Owner,
         Realm,
@@ -291,24 +291,4 @@ export const useEntitiesUtils = () => {
   };
 
   return { getEntityName, getEntityInfo, getAddressNameFromEntity, getPlayerAddressFromEntity };
-};
-
-export const getAddressNameFromEntityIds = (
-  entityId: Entity[],
-  Owner: Component<ClientComponents["Owner"]["schema"]>,
-  getAddressNameFromEntity: (entityId: ID) => string | undefined,
-) => {
-  return Array.from(entityId)
-    .map((id) => {
-      const owner = getComponentValue(Owner, id);
-      if (!owner) return;
-
-      const addressName = getAddressNameFromEntity(owner?.entity_id);
-      if (!addressName) return;
-      return { ...owner, addressName };
-    })
-    .filter(
-      (owner): owner is ComponentValue<ClientComponents["Owner"]["schema"]> & { addressName: string } =>
-        owner !== undefined,
-    );
 };

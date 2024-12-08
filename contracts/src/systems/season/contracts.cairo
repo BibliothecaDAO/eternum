@@ -22,7 +22,10 @@ mod season_systems {
     use s0_eternum::{
         constants::{HYPERSTRUCTURE_CONFIG_ID, WORLD_CONFIG_ID, DEFAULT_NS, ResourceTypes}, alias::ID,
         models::{
-            config::{HyperstructureConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig},
+            config::{
+                HyperstructureConfig, HyperstructureResourceConfigTrait, ResourceBridgeFeeSplitConfig,
+                ResourceBridgeWhitelistConfig
+            },
             season::{Leaderboard, LeaderboardEntryImpl, LeaderboardEntry, LeaderboardRewardClaimed}
         },
         systems::{
@@ -51,10 +54,10 @@ mod season_systems {
             );
 
             let mut total_points: u128 = 0;
-
+            let hyperstructure_tier_configs = HyperstructureResourceConfigTrait::get_all(world);
             total_points +=
                 InternalHyperstructureSystemsImpl::compute_total_contribution_points(
-                    ref world, hyperstructures_contributed_to
+                    ref world, hyperstructures_contributed_to, hyperstructure_tier_configs
                 );
 
             total_points +=

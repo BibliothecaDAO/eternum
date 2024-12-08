@@ -42,6 +42,7 @@ export async function setup({ ...config }: DojoConfig) {
     "ArrivalTime",
     "OwnedResourcesTracker",
     "Weight",
+    "Resource",
   ]) as any;
 
   const filteredEvents = getFilteredEvents([

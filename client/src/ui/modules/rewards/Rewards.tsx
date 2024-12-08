@@ -95,9 +95,8 @@ export const Rewards = () => {
       const prizePool = await provider.provider.callContract({
         contractAddress: env.VITE_LORDS_ADDRESS!,
         entrypoint: "balance_of",
-        calldata: ["0x" + season_pool_fee_recipient.toString()],
+        calldata: ["0x" + season_pool_fee_recipient.toString(16)],
       });
-      prizePool;
       setPrizePool(BigInt(prizePool[0]));
     };
     if (leaderboard && leaderboard.total_price_pool !== null) {

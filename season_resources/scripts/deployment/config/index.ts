@@ -6,7 +6,7 @@ import productionManifest from "../../../../contracts/manifest_prod.json";
 import { EternumProvider, ResourceWhitelistConfig } from "./provider";
 
 const getResourceAddresses = () => {
-  const network = process.env.STARKNET_NETWORK === "local" ? "dev" : "prod";
+  const network = process.env.STARKNET_NETWORK;
   const filePath = join(__dirname, `../addresses/${network}/resource_addresses.json`);
   return JSON.parse(readFileSync(filePath, "utf-8"));
 };
@@ -40,6 +40,9 @@ export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
   });
 
   console.log(`Finished configuring whitelist for in-game asset bridge ${tx.statusReceipt}`);
+
+  // wait for 3 seconds
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 };
 
 //////////////////////////////////////////////////////////////

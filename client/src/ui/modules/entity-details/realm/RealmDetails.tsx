@@ -32,12 +32,12 @@ export const RealmDetails = () => {
     () => [
       {
         key: "Castle",
-        label: <div>Castle</div>,
+        label: <div className="castle-tab-selector">Castle</div>,
         component: <Castle />,
       },
       {
         key: "Buildings",
-        label: <div>Buildings</div>,
+        label: <div className="buildings-tab-selector">Buildings</div>,
         component: <Buildings structure={structure} />,
       },
     ],
@@ -104,14 +104,14 @@ export const RealmDetails = () => {
             selectedIndex={selectedTab}
             onChange={(index: number) => setSelectedTab(index)}
             variant="default"
-            className="h-full "
+            className="h-full"
           >
             <Tabs.List className="border border-gold/20 rounded-lg p-1">
               {tabs.map((tab, index) => (
                 <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
               ))}
             </Tabs.List>
-            <Tabs.Panels className="">
+            <Tabs.Panels>
               {tabs.map((tab, index) => (
                 <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
               ))}

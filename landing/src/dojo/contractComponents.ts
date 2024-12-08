@@ -498,12 +498,13 @@ export function defineContractComponents(world: World) {
           last_updated_by: RecsType.BigInt,
           last_updated_timestamp: RecsType.Number,
           access: RecsType.String,
+          randomness: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "Hyperstructure",
-            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum"],
+            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum", "felt252"],
             customTypes: ["Access"],
           },
         },
@@ -532,17 +533,97 @@ export function defineContractComponents(world: World) {
     HyperstructureResourceConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, resource_type: RecsType.Number, amount_for_completion: RecsType.BigInt },
+        {
+          config_id: RecsType.Number,
+          resource_tier: RecsType.Number,
+          min_amount: RecsType.BigInt,
+          max_amount: RecsType.BigInt,
+        },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "HyperstructureResourceConfig",
-            types: ["u32", "u8", "u128"],
+            types: ["u32", "u8", "u128", "u128"],
             customTypes: [],
           },
         },
       );
     })(),
+    Leaderboard: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          registration_end_timestamp: RecsType.Number,
+          total_points: RecsType.BigInt,
+          total_price_pool: RecsType.OptionalBigInt,
+          distribution_started: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "Leaderboard",
+            types: ["u32", "u64", "u128", "u256", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    LeaderboardEntry: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          points: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardEntry",
+            types: ["contractaddress", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    LeaderboardRewardClaimed: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          claimed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardRewardClaimed",
+            types: ["contractaddress", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    LeaderboardRegistered: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardRegistered",
+            types: ["contractaddress", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
     Liquidity: (() => {
       return defineComponent(
         world,
@@ -562,6 +643,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+
     MapConfig: (() => {
       return defineComponent(
         world,
@@ -969,12 +1051,13 @@ export function defineContractComponents(world: World) {
           order: RecsType.Number,
           level: RecsType.Number,
           has_wonder: RecsType.Boolean,
+          settler_address: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8", "bool"],
+            types: ["u32", "u32", "u128", "u8", "u8", "bool", "contractaddress"],
             customTypes: [],
           },
         },

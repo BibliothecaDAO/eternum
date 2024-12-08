@@ -4,13 +4,11 @@ import { useHyperstructureUpdates } from "@/hooks/helpers/useHyperstructures";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
-import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, getOrderName, ID } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, HasValue } from "@dojoengine/recs";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 
 export const Leaderboard = ({
@@ -31,7 +29,9 @@ export const Leaderboard = ({
   const { getAddressName } = useRealm();
 
   const playerPointsLeaderboard = useMemo(() => {
-    return LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0, hyperstructureEntityId);
+    return LeaderboardManager.instance()
+      .getPlayersByRank(nextBlockTimestamp || 0, hyperstructureEntityId)
+      .filter(([_, points]) => points > 0);
   }, [nextBlockTimestamp, hyperstructureEntityId]);
 
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);

@@ -1,7 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { execute } from "@/hooks/gql/execute";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
-import { GET_ERC_MINTS } from "@/hooks/query/realms";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress } from "@/lib/utils";
@@ -14,11 +13,10 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { Loader } from "lucide-react";
+import { Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { env } from "../../../env";
 import { Button } from "../ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { SelectSingleResource } from "../ui/SelectResources";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
@@ -30,11 +28,11 @@ function formatFee(fee: number) {
 export const BridgeOutStep1 = () => {
   const { account } = useAccount();
 
-  const { getRealmEntityIdFromRealmId } = useRealm();
+  const { getRealmNameById } = useRealm();
   const { computeTravelTime } = useTravel();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [realmId, setRealmId] = useState<string>("");
+  const [realmEntityId, setRealmEntityId] = useState<string>("");
   const { bridgeStartWithdrawFromRealm } = useBridgeAsset();
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
@@ -44,12 +42,6 @@ export const BridgeOutStep1 = () => {
     [selectedResourceAmounts, selectedResourceId],
   );
 
-  const realmEntityId = useMemo(() => {
-    if (!realmId) {
-      return 0;
-    }
-    return getRealmEntityIdFromRealmId(Number(realmId));
-  }, [realmId]);
   const bridgeConfig = EternumGlobalConfig.bridge;
 
   const calculateBridgeFee = (percent: number) => {
@@ -88,32 +80,14 @@ export const BridgeOutStep1 = () => {
     [velordsFeeOnWithdrawal, seasonPoolFeeOnWithdrawal, clientFeeOnWithdrawal, bankFeeOnWithdrawal],
   );
 
-  const { data: seasonPassMints } = useSuspenseQuery({
-    queryKey: ["ERCMints"],
-    queryFn: () => execute(GET_ERC_MINTS),
-    refetchInterval: 10_000,
-  });
-
-  const seasonPassTokens = useMemo(
-    () =>
-      seasonPassMints?.tokenTransfers?.edges
-        ?.filter((token) => {
-          const metadata = token?.node?.tokenMetadata;
-          return metadata?.__typename === "ERC721__Token" && metadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS;
-        })
-        .map((token) => {
-          const metadata = token?.node?.tokenMetadata;
-          if (metadata?.__typename === "ERC721__Token") {
-            return {
-              id: Number(metadata.tokenId),
-              name_: JSON.parse(metadata.metadata).name,
-            };
-          }
-          return undefined;
-        })
-        .filter((id): id is { id: number; name_: string } => id !== undefined),
-    [seasonPassMints],
-  );
+  const { playerRealms } = useEntities();
+  const playerRealmsIdAndName = useMemo(() => {
+    return playerRealms.map((realm) => ({
+      realmId: realm!.realm_id,
+      entityId: realm!.entity_id,
+      name: getRealmNameById(realm!.realm_id),
+    }));
+  }, [playerRealms]);
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
@@ -126,7 +100,7 @@ export const BridgeOutStep1 = () => {
     } else {
       return 0;
     }
-  }, [selectedResourceId, realmId, selectedResourceAmount]);
+  }, [selectedResourceId, realmEntityId, selectedResourceAmount]);
 
   const travelTimeInHoursAndMinutes = (travelTime: number) => {
     const hours = Math.floor(travelTime / 60);
@@ -156,7 +130,7 @@ export const BridgeOutStep1 = () => {
       const resourceAddresses = await getSeasonAddresses();
       const selectedResourceName = ResourcesIds[selectedResourceId];
 
-      let tokenAddress = resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddresses][1];
+      const tokenAddress = resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
         await bridgeStartWithdrawFromRealm(
@@ -183,16 +157,18 @@ export const BridgeOutStep1 = () => {
 
         <div>{displayAddress(account?.address || "")}</div>
       </div>
-      <Select onValueChange={(value) => setRealmId(value)}>
+      <Select onValueChange={(value) => setRealmEntityId(value)}>
         <SelectTrigger className="w-full border-gold/15">
           <SelectValue placeholder="Select Realm" />
         </SelectTrigger>
         <SelectContent>
-          {seasonPassTokens?.map((token) => (
-            <SelectItem key={token.id} value={token.id.toString()}>
-              {token.name_} {token.id} {!getRealmEntityIdFromRealmId(token.id) && <span>(NOT IN GAME)</span>}
-            </SelectItem>
-          ))}
+          {playerRealmsIdAndName.map((realm) => {
+            return (
+              <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
+                #{realm.realmId} - {realm.name}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
 
@@ -215,35 +191,44 @@ export const BridgeOutStep1 = () => {
           <div>{donkeysNeeded}</div>
         </div>
         <hr />
-        <div className="flex justify-between font-bold">
-          <div>Total Transfer Fee</div>
-          <div>{totalFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_wtdr_percent)}%)</div>
-          <div>{bankFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_wtdr_percent)}%)</div>
-          <div>{velordsFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>
-            Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_wtdr_percent)}%)
-          </div>
-          <div>{seasonPoolFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_wtdr_percent)}%)</div>
-          <div>{clientFeeOnWithdrawal}</div>
-        </div>
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button className="w-full flex justify-between font-bold px-0" variant={"ghost"}>
+              <div className="flex items-center">
+                <Plus className="mr-4" />
+                Total Transfer Fee
+              </div>
+              <div>{totalFeeOnWithdrawal}</div>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="flex flex-col gap-2">
+            <div className="flex justify-between text-xs">
+              <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_wtdr_percent)}%)</div>
+              <div>{bankFeeOnWithdrawal}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_wtdr_percent)}%)</div>
+              <div>{velordsFeeOnWithdrawal}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>
+                Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_wtdr_percent)}%)
+              </div>
+              <div>{seasonPoolFeeOnWithdrawal}</div>
+            </div>
+            <div className="flex justify-between text-xs">
+              <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_wtdr_percent)}%)</div>
+              <div>{clientFeeOnWithdrawal}</div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
         <div className="flex justify-between font-bold mt-5 mb-5">
           <div>Total Amount Received</div>
           <div>{formatFee(Number(selectedResourceAmount) - Number(totalFeeOnWithdrawal))}</div>
         </div>
       </div>
       <Button
-        disabled={(!selectedResourceAmount && !selectedResourceId && !realmId) || isLoading}
+        disabled={(!selectedResourceAmount && !selectedResourceId && !realmEntityId) || isLoading}
         onClick={() => onSendToBank()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}

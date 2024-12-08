@@ -11,6 +11,15 @@ import { BattleViewInfo } from "./types";
 import { BlockchainStore, createBlockchainStore } from "./useBlockchainStore";
 import { RealmStore, createRealmStoreSlice } from "./useRealmStore";
 
+type TooltipType = {
+  content: React.ReactNode;
+  position?: "top" | "left" | "right" | "bottom";
+  fixed?: {
+    x: number;
+    y: number;
+  };
+} | null;
+
 interface UIStore {
   theme: string;
   setTheme: (theme: string) => void;
@@ -34,11 +43,8 @@ interface UIStore {
   setEffectsLevel: (level: number) => void;
   compassDirection: number;
   setCompassDirection: (direction: number) => void;
-  tooltip: {
-    content: React.ReactNode;
-    position: "top" | "left" | "right" | "bottom";
-  } | null;
-  setTooltip: (tooltip: { content: React.ReactNode; position: "top" | "left" | "right" | "bottom" } | null) => void;
+  tooltip: TooltipType;
+  setTooltip: (tooltip: TooltipType) => void;
   showRealmsFlags: boolean;
   setShowRealmsFlags: (show: boolean) => void;
   isLoadingScreenEnabled: boolean;

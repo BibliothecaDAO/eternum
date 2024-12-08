@@ -1,6 +1,6 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { ContractAddress, GuildInfo, ID, TickIds } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
-import { ClientComponents } from "../../createClientComponents";
 import { ClientConfigManager } from "../ConfigManager";
 import { computeInitialContributionPoints } from "./LeaderboardUtils";
 
@@ -85,28 +85,30 @@ export class LeaderboardManager {
       timestamp: event.timestamp,
     };
 
-    const contributions = getContributions(parsedEvent.hyperstructureEntityId);
+    // format contributions
+    const contributions = getContributions(parsedEvent.hyperstructureEntityId)
+      .filter((x): x is ComponentValue<ClientComponents["Contribution"]["schema"]> => x !== undefined)
+      .map((contribution) => ({
+        playerAddress: contribution.player_address,
+        resourceId: contribution.resource_type,
+        amount: Number(contribution.amount),
+      }));
+
     const pointsOnCompletion = ClientConfigManager.instance().getHyperstructureConfig().pointsOnCompletion;
 
-    contributions.forEach((contribution) => {
-      if (!contribution) return;
+    const points = contributions
+      ? computeInitialContributionPoints(parsedEvent.hyperstructureEntityId, contributions, pointsOnCompletion)
+      : 0;
 
-      const playerAddress = contribution.player_address;
-      const points = computeInitialContributionPoints(
-        contribution.resource_type,
-        contribution.amount,
-        pointsOnCompletion,
-      );
+    const playerAddress = contributions[0]?.playerAddress || 0n;
 
-      const playerPointsForEachHyperstructure =
-        this.pointsOnCompletionPerPlayer.get(playerAddress) || new Map<ID, number>();
+    const playerPointsForEachHyperstructure =
+      this.pointsOnCompletionPerPlayer.get(playerAddress) || new Map<ID, number>();
 
-      const previousPoints = playerPointsForEachHyperstructure.get(parsedEvent.hyperstructureEntityId) || 0;
+    playerPointsForEachHyperstructure.set(parsedEvent.hyperstructureEntityId, points);
 
-      playerPointsForEachHyperstructure.set(parsedEvent.hyperstructureEntityId, previousPoints + points);
+    this.pointsOnCompletionPerPlayer.set(playerAddress, playerPointsForEachHyperstructure);
 
-      this.pointsOnCompletionPerPlayer.set(playerAddress, playerPointsForEachHyperstructure);
-    });
     return parsedEvent;
   }
 

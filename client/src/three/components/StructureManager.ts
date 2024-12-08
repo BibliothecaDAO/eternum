@@ -25,7 +25,6 @@ export class StructureManager {
   modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
   structureHexCoords: Map<number, Set<number>> = new Map();
-  totalStructures: number = 0;
   private currentChunk: string = "";
   private renderChunkSize: RenderChunkSize;
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
@@ -38,6 +37,10 @@ export class StructureManager {
     useAccountStore.subscribe(() => {
       this.structures.recheckOwnership();
     });
+  }
+
+  getTotalStructures() {
+    return Array.from(this.structures.getStructures().values()).reduce((acc, structures) => acc + structures.size, 0);
   }
 
   public async loadModels() {
@@ -99,7 +102,6 @@ export class StructureManager {
     }
     if (!this.structureHexCoords.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
       this.structureHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
-      this.totalStructures++;
     }
 
     const key = structureType;
@@ -113,10 +115,8 @@ export class StructureManager {
   }
 
   updateChunk(chunkKey: string) {
-    if (this.currentChunk !== chunkKey) {
-      this.currentChunk = chunkKey;
-      this.updateVisibleStructures();
-    }
+    this.currentChunk = chunkKey;
+    this.updateVisibleStructures();
   }
 
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
@@ -186,7 +186,6 @@ export class StructureManager {
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
     const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
-
     return (
       hexCoords.col >= chunkCol - this.renderChunkSize.width / 2 &&
       hexCoords.col < chunkCol + this.renderChunkSize.width / 2 &&
@@ -232,9 +231,46 @@ class Structures {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
     }
-    this.structures
-      .get(structureType)!
-      .set(entityId, { entityId, hexCoords, stage, level, isMine: isAddressEqualToAccount(owner.address), owner });
+    this.structures.get(structureType)!.set(entityId, {
+      entityId,
+      hexCoords,
+      stage,
+      level,
+      isMine: isAddressEqualToAccount(owner.address),
+      owner,
+      structureType,
+    });
+  }
+
+  updateStructureStage(entityId: ID, structureType: StructureType, stage: number) {
+    const structure = this.structures.get(structureType)?.get(entityId);
+    if (structure) {
+      structure.stage = stage;
+    }
+  }
+
+  removeStructureFromPosition(hexCoords: { col: number; row: number }) {
+    this.structures.forEach((structures) => {
+      structures.forEach((structure) => {
+        if (structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row) {
+          structures.delete(structure.entityId);
+        }
+      });
+    });
+  }
+
+  removeStructure(entityId: ID): StructureInfo | null {
+    let removedStructure: StructureInfo | null = null;
+
+    this.structures.forEach((structures) => {
+      const structure = structures.get(entityId);
+      if (structure) {
+        structures.delete(entityId);
+        removedStructure = structure;
+      }
+    });
+
+    return removedStructure;
   }
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {

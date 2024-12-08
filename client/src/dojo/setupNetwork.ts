@@ -7,10 +7,13 @@ import { BurnerManager } from "@dojoengine/create-burner";
 import * as torii from "@dojoengine/torii-client";
 import { Account } from "starknet";
 
+import { env } from "./../../env";
+const { VITE_VRF_PROVIDER_ADDRESS } = env;
+
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
 export async function setupNetwork({ ...config }: DojoConfig) {
-  const provider = new EternumProvider(config.manifest, config.rpcUrl);
+  const provider = new EternumProvider(config.manifest, config.rpcUrl, VITE_VRF_PROVIDER_ADDRESS);
 
   const toriiClient = await torii.createClient({
     rpcUrl: config.rpcUrl,

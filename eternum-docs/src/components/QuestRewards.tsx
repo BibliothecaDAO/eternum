@@ -1,4 +1,4 @@
-import { EternumGlobalConfig, findResourceById, QuestType } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, QuestType } from "@bibliothecadao/eternum";
 import { formatNumberWithSpaces } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
 
@@ -15,10 +15,9 @@ export default function QuestRewards() {
             <div className="font-bold mb-2">{addSpacesBeforeCapitals(QuestType[Number(questType)])}</div>
             <div className="grid grid-cols-6 gap-2">
               {rewards.map((cost, index) => {
-                const resource = findResourceById(cost.resource);
                 return (
                   <div key={index} className="flex items-center gap-1 px-2 py-1.5 rounded-md">
-                    <ResourceIcon size={24} id={cost.resource} name={resource?.trait || ""} />
+                    <ResourceIcon size={24} id={cost.resource} name="" />
                     <span className="font-medium">{formatNumberWithSpaces(cost.amount)}K</span>
                   </div>
                 );
