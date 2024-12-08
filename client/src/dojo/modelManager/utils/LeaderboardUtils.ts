@@ -13,7 +13,7 @@ export function computeInitialContributionPoints(
   return getContributionsTotalPercentage(hyperstructureId, contributions) * totalPoints;
 }
 
-export function getContributionsTotalPercentage(hyperstructureId: number, contributions: Resource[]): number {
+function getContributionsTotalPercentage(hyperstructureId: number, contributions: Resource[]): number {
   const totalPlayerContribution = divideByPrecision(
     contributions.reduce((acc, { amount, resourceId }) => {
       return acc + amount * configManager.getResourceRarity(resourceId);
