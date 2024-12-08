@@ -1965,6 +1965,25 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
+      HyperstructureStarted: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            hyperstructure_entity_id: RecsType.Number,
+            creator_address_name: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s0_eternum",
+              name: "HyperstructureStarted",
+              types: ["u32", "u32", "felt252", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
       HyperstructureFinished: (() => {
         return defineComponent(
           world,
@@ -1972,13 +1991,14 @@ const eventsComponents = (world: World) => {
             id: RecsType.Number,
             hyperstructure_entity_id: RecsType.Number,
             contributor_entity_id: RecsType.Number,
+            hyperstructure_owner_name: RecsType.BigInt,
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "s0_eternum",
               name: "HyperstructureFinished",
-              types: ["u32", "u32", "u32", "u64"],
+              types: ["u32", "u32", "u32", "felt252", "u64"],
               customTypes: [],
             },
           },

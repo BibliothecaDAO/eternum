@@ -75,7 +75,7 @@ export class LeaderboardManager {
   }
 
   public processHyperstructureFinishedEventData(
-    event: ClientComponents["events"]["HyperstructureFinished"]["schema"],
+    event: ComponentValue<ClientComponents["events"]["HyperstructureFinished"]["schema"]>,
     getContributions: (
       hyperstructureEntityId: ID,
     ) => (ComponentValue<ClientComponents["Contribution"]["schema"]> | undefined)[],
