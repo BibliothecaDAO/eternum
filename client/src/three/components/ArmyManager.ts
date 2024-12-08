@@ -487,18 +487,26 @@ export class ArmyManager {
 
   private async addEntityIdLabel(army: ArmyData, position: THREE.Vector3) {
     const labelDiv = document.createElement("div");
-    labelDiv.classList.add("rounded-md", "bg-brown/50", "text-gold", "p-1", "-translate-x-1/2", "text-xs", "flex");
-    console.log("ARMY", army);
+    labelDiv.classList.add(
+      "rounded-md",
+      "bg-brown/50",
+      "text-gold",
+      "p-1",
+      "-translate-x-1/2",
+      "text-xs",
+      "flex",
+      "items-center",
+    );
+    const orderName = army.order.toLowerCase();
     const img = document.createElement("img");
-    img.src =
-      "https://imgproxy.arkproject.dev/_/rs:fit:1000:1000/plain/https://media.arkproject.dev/17356e0140461498a0b31e43231bb79455ea4df9c1e51c1fe5fb5876efda84e9.svg";
-    img.classList.add("w-[32px]", "h-[32px]", "inline-block", "mr-2");
+    img.src = `/images/orders/${orderName}.png`;
+    img.classList.add("w-[24px]", "h-[24px]", "inline-block", "mr-2", "object-contain");
     labelDiv.appendChild(img);
 
     const textContainer = document.createElement("div");
     textContainer.classList.add("flex", "flex-col");
 
-    const line1 = document.createTextNode(`${army.owner.ownerName}`);
+    const line1 = document.createTextNode(`${army.owner.ownerName} ${army.owner.guildName ? `(${army.order})` : ""}`);
     const line2 = document.createElement("strong");
     line2.textContent = `${army.owner.guildName ? army.owner.guildName : army.order}`;
 

@@ -100,15 +100,19 @@ export class SystemManager {
 
             const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
 
-            const guild = getComponentValue(this.setup.components.GuildMember, update.entity);
-
-            const guilEntitydName = getComponentValue(
-              this.setup.components.EntityName,
-              getEntityIdFromKeys([BigInt(guild?.guild_entity_id || 0)]),
+            const guild = getComponentValue(
+              this.setup.components.GuildMember,
+              getEntityIdFromKeys([owner?.address || 0n]),
             );
-            const guildName = guilEntitydName ? shortString.decodeShortString(guilEntitydName.name.toString()) : "";
 
-            console.log({ ownerName, guildName });
+            let guildName = "";
+            if (guild?.guild_entity_id) {
+              const guildEntityName = getComponentValue(
+                this.setup.components.EntityName,
+                getEntityIdFromKeys([BigInt(guild.guild_entity_id)]),
+              );
+              guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
+            }
 
             callback({
               entityId: army.entity_id,

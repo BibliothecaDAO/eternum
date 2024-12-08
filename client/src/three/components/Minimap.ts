@@ -42,6 +42,7 @@ const MINIMAP_CONFIG = {
     },
   },
   SIZES: {
+    BATTLE: 15,
     STRUCTURE: 10,
     ARMY: 10,
     CAMERA: {
@@ -77,6 +78,7 @@ class Minimap {
   private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT;
   private structureSize!: { width: number; height: number };
   private armySize!: { width: number; height: number };
+  private battleSize!: { width: number; height: number };
   private cameraSize!: {
     topSideWidth: number;
     bottomSideWidth: number;
@@ -177,6 +179,10 @@ class Minimap {
     this.armySize = {
       width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX,
       height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX,
+    };
+    this.battleSize = {
+      width: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX,
+      height: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX,
     };
     this.cameraSize = {
       topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,
@@ -292,10 +298,10 @@ class Minimap {
 
         this.context.drawImage(
           labelImg,
-          scaledCol - this.armySize.width * (row % 2 !== 0 ? 1 : 0.5),
-          scaledRow - this.armySize.height / 2,
-          this.armySize.width,
-          this.armySize.height,
+          scaledCol - this.battleSize.width * (row % 2 !== 0 ? 1 : 0.5),
+          scaledRow - this.battleSize.height / 2,
+          this.battleSize.width,
+          this.battleSize.height,
         );
       }
     });
