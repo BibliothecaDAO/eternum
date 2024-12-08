@@ -67,6 +67,9 @@ export class ArmyManager {
                 address: createArmyParams.isMine
                   ? ContractAddress(useAccountStore.getState().account?.address || "0")
                   : 0n,
+                // TODO: Add owner name and guild name
+                ownerName: "Neutral",
+                guildName: "None",
               },
               1,
             );
