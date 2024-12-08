@@ -191,7 +191,7 @@ export const buildVrfCalls = async ({
   const requestRandomCall: Call = {
     contractAddress: vrfProviderAddress,
     entrypoint: "request_random",
-    calldata: [addressToCall, 0, call.contractAddress],
+    calldata: [addressToCall, 0, account.address],
   };
 
   let calls = [];
@@ -948,11 +948,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const requestTwoCall: Call = {
       contractAddress: this.VRF_PROVIDER_ADDRESS!,
       entrypoint: "request_random",
-      calldata: [
-        getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
-        0,
-        getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
-      ],
+      calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_systems`), 0, signer.address],
     };
 
     const requestRandomCall: Call = {
@@ -2086,7 +2082,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       call: {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
         entrypoint: "create",
-        calldata: [creator_entity_id, coords],
+        calldata: [creator_entity_id, coords.x, coords.y],
       },
       vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
       addressToCall: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
