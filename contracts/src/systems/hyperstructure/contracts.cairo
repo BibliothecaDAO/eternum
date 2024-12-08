@@ -57,7 +57,8 @@ mod hyperstructure_systems {
             owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait}, season::{Leaderboard},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
             resources::{Resource, ResourceImpl, ResourceCost},
-            structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember}
+            structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember},
+            name::{AddressName}
         },
         systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
     };
@@ -70,12 +71,23 @@ mod hyperstructure_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
+    struct HyperstructureStarted {
+        #[key]
+        id: ID,
+        hyperstructure_entity_id: ID,
+        creator_address_name: felt252,
+        timestamp: u64,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
     struct HyperstructureFinished {
         #[key]
         id: ID,
         #[key]
         hyperstructure_entity_id: ID,
         contributor_entity_id: ID,
+        hyperstructure_owner_name: felt252,
         timestamp: u64,
     }
 
@@ -185,6 +197,18 @@ mod hyperstructure_systems {
                     },
                 );
 
+            let id = world.dispatcher.uuid();
+            let creator_address_name: AddressName = world.read_model(starknet::get_caller_address());
+            world
+                .emit_event(
+                    @HyperstructureStarted {
+                        id,
+                        hyperstructure_entity_id: new_uuid,
+                        creator_address_name: creator_address_name.name,
+                        timestamp: current_time
+                    }
+                );
+
             // [Achievement] Hyperstructure Creation
             let player_id: felt252 = creator_owner.address.into();
             let task_id: felt252 = Task::Builder.identifier();
@@ -250,10 +274,17 @@ mod hyperstructure_systems {
                 hyperstructure.completed = true;
                 world.write_model(@hyperstructure);
 
+                let hyperstructure_owner: Owner = world.read_model(hyperstructure_entity_id);
+                let hyperstructure_owner_name: AddressName = world.read_model(hyperstructure_owner.address);
+
                 world
                     .emit_event(
                         @HyperstructureFinished {
-                            hyperstructure_entity_id, contributor_entity_id, timestamp, id: world.dispatcher.uuid()
+                            hyperstructure_entity_id,
+                            contributor_entity_id,
+                            hyperstructure_owner_name: hyperstructure_owner_name.name,
+                            timestamp,
+                            id: world.dispatcher.uuid()
                         }
                     );
             }
