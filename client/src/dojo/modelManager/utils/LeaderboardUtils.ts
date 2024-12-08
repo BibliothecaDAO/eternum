@@ -31,6 +31,9 @@ export const calculateCompletionPoints = (
   const configManager = ClientConfigManager.instance();
   const pointsOnCompletion = configManager.getHyperstructureConfig().pointsOnCompletion;
 
+  if (contributions.length === 0) {
+    return 0;
+  }
   const hyperstructureId = contributions[0].hyperstructure_entity_id;
 
   const formattedContributions = contributions.map((contribution) => {
