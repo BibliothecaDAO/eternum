@@ -90,8 +90,8 @@ const setupConfig: Config =
           hyperstructurePointsForWin: 500_000,
           hyperstructureTotalCosts: EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
             resource_tier: cost.resource_tier,
-            min_amount: 1,
-            max_amount: 1,
+            min_amount: Math.floor(Math.random() * 10) + 1,
+            max_amount: Math.floor(Math.random() * 10) + 1,
           })),
         },
       }
