@@ -105,6 +105,16 @@ const setupConfig: Config =
               min_amount: 3,
               max_amount: 3,
             },
+            {
+              resource_tier: ResourceTier.Food,
+              min_amount: 0,
+              max_amount: 0,
+            },
+            {
+              resource_tier: ResourceTier.Military,
+              min_amount: 0,
+              max_amount: 0,
+            },
           ],
         },
       }
