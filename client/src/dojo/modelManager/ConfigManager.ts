@@ -5,7 +5,7 @@ import {
   BuildingType,
   CapacityConfigCategory,
   EternumGlobalConfig,
-  GET_RESOURCES_PER_TIER,
+  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
   HYPERSTRUCTURE_CONFIG_ID,
   POPULATION_CONFIG_ID,
   ResourcesIds,
@@ -492,7 +492,7 @@ export class ClientConfigManager {
       if (isNaN(Number(tier))) continue; // Skip non-numeric enum values
 
       const resourceTierNumber = Number(tier) as ResourceTier;
-      const resourcesInTier = GET_RESOURCES_PER_TIER(resourceTierNumber, true);
+      const resourcesInTier = GET_HYPERSTRUCTURE_RESOURCES_PER_TIER(resourceTierNumber, true);
       const amountForTier = this.getHyperstructureRequiredAmountPerTier(resourceTierNumber, randomness);
 
       // Add entry for each resource in this tier

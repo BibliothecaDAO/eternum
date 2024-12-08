@@ -1,22 +1,27 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { getTotalPointsPercentage } from "@/dojo/modelManager/utils/LeaderboardUtils";
+import { configManager } from "@/dojo/setup";
+import { divideByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, ID, Resource } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback } from "react";
 import { useDojo } from "../context/DojoContext";
 
-export const useContributions = () => {
+export const useContributions = ({ componentName }: { componentName: string }) => {
   const {
     setup: {
       components: { Contribution },
     },
   } = useDojo();
 
+  console.log("rerendering useContributions", componentName);
+
   const getContributions = (hyperstructureEntityId: ID) => {
     const contributionsToHyperstructure = Array.from(
       runQuery([HasValue(Contribution, { hyperstructure_entity_id: hyperstructureEntityId })]),
     ).map((id) => getComponentValue(Contribution, id));
+
+    console.log("calculating contributions becuase of ", componentName);
 
     return contributionsToHyperstructure as ComponentValue<ClientComponents["Contribution"]["schema"]>[];
   };
@@ -32,9 +37,15 @@ export const useContributions = () => {
   };
 
   const getContributionsTotalPercentage = (hyperstructureId: number, contributions: Resource[]) => {
-    return contributions.reduce((acc, { resourceId, amount }) => {
-      return acc + getTotalPointsPercentage(hyperstructureId, resourceId, BigInt(amount));
-    }, 0);
+    const totalPlayerContribution = divideByPrecision(
+      contributions.reduce((acc, { amount, resourceId }) => {
+        return acc + amount * configManager.getResourceRarity(resourceId);
+      }, 0),
+    );
+
+    const totalHyperstructureContribution = configManager.getHyperstructureTotalContributableAmount(hyperstructureId);
+
+    return totalPlayerContribution / totalHyperstructureContribution;
   };
 
   return {
