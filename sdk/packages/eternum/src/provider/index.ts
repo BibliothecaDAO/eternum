@@ -245,7 +245,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     if (isMultipleTransactions) {
       // For multiple calls, use the first call's entrypoint
       console.log({ entrypoint: transactionDetails[0].entrypoint });
-      txType = TransactionType[transactionDetails[0].entrypoint.toUpperCase() as keyof typeof TransactionType];
+      txType =
+        TransactionType[
+          transactionDetails
+            // remove VRF provider call from the list to define the transaction type
+            .filter((detail) => detail.contractAddress !== this.VRF_PROVIDER_ADDRESS)[0]
+            ?.entrypoint.toUpperCase() as keyof typeof TransactionType
+        ];
     } else {
       txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
