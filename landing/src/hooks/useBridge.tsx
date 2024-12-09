@@ -9,21 +9,24 @@ export const useBridgeAsset = () => {
   // todo; use starknet-react
   const {
     setup: {
-      systemCalls: { bridge_resource_into_realm, bridge_start_withdraw_from_realm, bridge_finish_withdraw_from_realm },
+      systemCalls: { bridge_resources_into_realm, bridge_start_withdraw_from_realm, bridge_finish_withdraw_from_realm },
     },
   } = useDojo();
 
   const { account } = useAccount();
 
   const _bridgeIntoRealm = useCallback(
-    async (tokenAddress: string, throughBankId: bigint, recipientRealmEntityId: bigint, amount: bigint) => {
+    async (
+      resources: { tokenAddress: string; amount: bigint }[],
+      throughBankId: bigint,
+      recipientRealmEntityId: bigint,
+    ) => {
       if (account) {
-        await bridge_resource_into_realm({
+        await bridge_resources_into_realm({
           signer: account,
-          token: tokenAddress,
+          resources: resources,
           through_bank_id: throughBankId,
           recipient_realm_entity_id: recipientRealmEntityId,
-          amount,
           client_fee_recipient: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
         })
           .then(() => {
@@ -34,7 +37,7 @@ export const useBridgeAsset = () => {
           });
       }
     },
-    [account, bridge_resource_into_realm, realmsAddress],
+    [account, bridge_resources_into_realm],
   );
 
   const _bridgeStartWithdrawFromRealm = useCallback(

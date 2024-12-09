@@ -6,11 +6,13 @@ interface SystemSigner {
   signer: AccountInterface | Account;
 }
 
-export interface BridgeResourceIntoRealmProps extends SystemSigner {
-  token: num.BigNumberish;
+export interface BridgeResourcesIntoRealmProps extends SystemSigner {
+  resources: {
+    tokenAddress: num.BigNumberish;
+    amount: num.BigNumberish;
+  }[];
   through_bank_id: num.BigNumberish;
   recipient_realm_entity_id: num.BigNumberish;
-  amount: num.BigNumberish;
   client_fee_recipient: num.BigNumberish;
 }
 
