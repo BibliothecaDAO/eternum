@@ -7,6 +7,8 @@ import {
   EternumConfig,
   EternumGlobalConfig,
   EternumProvider,
+  getContractByName,
+  NAMESPACE,
   ResourceTier,
 } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
@@ -89,7 +91,7 @@ const setupConfig: Config =
         bridge: {
           ...EternumGlobalConfig.bridge,
           velords_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
-          season_pool_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
+          season_pool_fee_recipient: BigInt(getContractByName(manifest, `${NAMESPACE}-season_systems`)), // Season System holds the Lords...
         },
 
         // make it easier to build hyperstructures in dev mode

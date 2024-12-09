@@ -12,7 +12,7 @@ use s0_eternum::{
 };
 use starknet::ContractAddress;
 
-const LEADERBOARD_REGISTRATION_PERIOD: u64 = 604800; // one week
+const LEADERBOARD_REGISTRATION_PERIOD: u64 = 3600; // one week
 
 #[starknet::interface]
 trait IHyperstructureSystems<T> {
@@ -440,7 +440,6 @@ mod hyperstructure_systems {
             hyperstructure_shareholder_epochs: Span<(ID, u16)>
         ) -> (u128, u128, u128, u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
 
             let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
             let contribution_points = InternalHyperstructureSystemsImpl::compute_total_contribution_points(

@@ -58,10 +58,7 @@ export default function ResourceTable() {
               <td className="py-2 border-b">
                 <div className="flex flex-col gap-4">
                   {resource.cost.map((cost) => (
-                    <div
-                      key={cost.resource}
-                      className="p-3 rounded-lg border border-gray-800 dark:bg-gray-400 bg-white/5"
-                    >
+                    <div key={cost.resource} className="p-3 rounded-lg border border-gray-800 bg-gray-800">
                       <div className="flex items-center gap-2">
                         <ResourceIcon size="lg" id={cost.resource} name={cost.name || ""} />
                         <div>

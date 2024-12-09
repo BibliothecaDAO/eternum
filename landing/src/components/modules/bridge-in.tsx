@@ -1,9 +1,10 @@
 import { configManager } from "@/dojo/setup";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
-import { displayAddress } from "@/lib/utils";
+import { displayAddress, multiplyByPrecision } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
@@ -12,7 +13,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { Loader, Plus } from "lucide-react";
+import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TypeP } from "../typography/type-p";
@@ -21,6 +22,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/colla
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
 
 function formatFee(fee: number) {
@@ -133,7 +135,7 @@ export const BridgeIn = () => {
       const totalWeight = getTotalResourceWeight(
         validSelections.map((selection) => ({
           resourceId: ResourcesIds[selection.contract as keyof typeof ResourcesIds],
-          amount: Number(selection.amount),
+          amount: multiplyByPrecision(Number(selection.amount)),
         })),
       );
       return totalWeight;
@@ -149,6 +151,14 @@ export const BridgeIn = () => {
       return 0;
     }
   }, [orderWeight]);
+  const { getBalance } = getResourceBalance();
+  const donkeyBalance = useMemo(() => {
+    if (realmEntityId) {
+      return getBalance(Number(realmEntityId), ResourcesIds.Donkey);
+    } else {
+      return { balance: 0 };
+    }
+  }, [getBalance, realmEntityId]);
 
   const { bridgeIntoRealm } = useBridgeAsset();
 
@@ -243,8 +253,23 @@ export const BridgeIn = () => {
           <div>{travelTimeInHoursAndMinutes(travelTime ?? 0)}</div>
         </div>
         <div className="flex justify-between">
-          <div>Donkeys Needed</div>
-          <div>{donkeysNeeded}</div>
+          <div>
+            Donkeys Burnt
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <InfoIcon className="ml-2 w-4 h-4" />
+                </TooltipTrigger>
+                <TooltipContent className="bg-background border rounded p-2 max-w-64 text-gold">
+                  Donkeys are required on your Realmto transport the resources to the bank. Finish the starting quests
+                  in game for free donkeys
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="flex items-center gap-2">
+            {donkeysNeeded} / {donkeyBalance.balance} <ResourceIcon withTooltip={false} resource={"Donkey"} size="md" />
+          </div>
         </div>
         <hr />
         <Collapsible>
@@ -306,7 +331,9 @@ export const BridgeIn = () => {
 
             return (
               <div key={index} className="flex justify-between text-sm font-normal">
-                <div>{selection.contract}</div>
+                <div className="flex items-center gap-2">
+                  <ResourceIcon resource={selection.contract} size="md" /> {selection.contract}
+                </div>
                 <div>{formatFee(Number(selection.amount) - totalFees)}</div>
               </div>
             );
