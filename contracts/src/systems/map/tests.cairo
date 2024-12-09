@@ -149,7 +149,9 @@ fn map_test_map_explore__mine_mercenaries_protector() {
 
     let seed = 'I AM SEED FOR THE DEV BANK'.into() - starknet::get_block_timestamp().into();
 
-    let mercenary_entity_id = InternalMapGenerationSystemsImpl::add_mercenaries_to_structure(ref world, seed, mine_entity_id);
+    let mercenary_entity_id = InternalMapGenerationSystemsImpl::add_mercenaries_to_structure(
+        ref world, seed, mine_entity_id
+    );
 
     let battle_entity_id = battle_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
     let battle: Battle = world.read_model(battle_entity_id);
