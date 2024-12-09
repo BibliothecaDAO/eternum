@@ -1549,6 +1549,18 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call);
   }
 
+  public async battle_resolve(props: SystemProps.BattleResolveProps) {
+    const { battle_id, army_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
+      entrypoint: "battle_resolve",
+      calldata: [battle_id, army_id],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
   public async battle_force_start(props: SystemProps.BattleForceStartProps) {
     const { battle_id, defending_army_id, signer } = props;
 

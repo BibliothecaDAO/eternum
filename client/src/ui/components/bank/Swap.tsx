@@ -3,7 +3,7 @@ import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
+import { useIsResourcesLocked, useStructures } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
@@ -40,6 +40,12 @@ export const ResourceSwap = ({
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
+  const { getStructureByEntityId } = useStructures();
+
+  const bankProtector = useMemo(() => {
+    const structure = getStructureByEntityId(bankEntityId);
+    return structure?.protector;
+  }, [bankEntityId]);
 
   const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
@@ -86,19 +92,39 @@ export const ResourceSwap = ({
     setIsLoading(true);
     const operation = isBuyResource ? setup.systemCalls.buy_resources : setup.systemCalls.sell_resources;
 
-    operation({
-      signer: account,
-      bank_entity_id: bankEntityId,
-      entity_id: entityId,
-      resource_type: resourceId,
-      // todo: rounding error in contracts
-      amount: multiplyByPrecision(Number(resourceAmount.toFixed(2))),
-    }).finally(() => {
-      playLordsSound();
-      setIsLoading(false);
-      setOpenConfirmation(false);
-    });
-  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount]);
+    const performSwap = () => {
+      return operation({
+        signer: account,
+        bank_entity_id: bankEntityId,
+        entity_id: entityId,
+        resource_type: resourceId,
+        amount: multiplyByPrecision(Number(resourceAmount.toFixed(2))),
+      });
+    };
+
+    if (bankProtector?.battle_id) {
+      // If there's a bank protector in battle, resolve battle first then perform swap
+      setup.systemCalls
+        .battle_resolve({
+          signer: account,
+          battle_id: bankProtector.battle_id,
+          army_id: bankProtector.entity_id,
+        })
+        .then(performSwap)
+        .finally(() => {
+          playLordsSound();
+          setIsLoading(false);
+          setOpenConfirmation(false);
+        });
+    } else {
+      // If no bank protector, just perform swap
+      performSwap().finally(() => {
+        playLordsSound();
+        setIsLoading(false);
+        setOpenConfirmation(false);
+      });
+    }
+  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, bankProtector]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
