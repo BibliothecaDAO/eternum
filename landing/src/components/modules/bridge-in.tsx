@@ -63,41 +63,46 @@ export const BridgeIn = () => {
 
   const bridgeConfig = EternumGlobalConfig.bridge;
 
-  const calculateBridgeFee = (percent: number) => {
-    return (percent * Number(resourceSelections[0].amount)) / BRIDGE_FEE_DENOMINATOR;
+  const calculateBridgeFee = (percent: number, amount: string) => {
+    return (percent * Number(amount)) / BRIDGE_FEE_DENOMINATOR;
   };
 
   const calculateBridgeFeeDisplayPercent = (percent: number) => {
     return (percent * 100) / BRIDGE_FEE_DENOMINATOR;
   };
 
-  const velordsFeeOnDeposit = useMemo(
-    () => formatFee(calculateBridgeFee(bridgeConfig.velords_fee_on_dpt_percent)),
-    [resourceSelections],
-  );
-  const seasonPoolFeeOnDeposit = useMemo(
-    () => formatFee(calculateBridgeFee(bridgeConfig.season_pool_fee_on_dpt_percent)),
-    [resourceSelections],
-  );
-  const clientFeeOnDeposit = useMemo(
-    () => formatFee(calculateBridgeFee(bridgeConfig.client_fee_on_dpt_percent)),
-    [resourceSelections],
-  );
-  const bankFeeOnDeposit = useMemo(
-    () => formatFee(calculateBridgeFee(bridgeConfig.max_bank_fee_dpt_percent)),
-    [resourceSelections],
-  );
+  const calculateTotalFeesForAllResources = useMemo(() => {
+    return resourceSelections
+      .filter(selection => selection.amount && selection.contract)
+      .map(selection => ({
+        velordsFee: formatFee(calculateBridgeFee(bridgeConfig.velords_fee_on_dpt_percent, selection.amount)),
+        seasonPoolFee: formatFee(calculateBridgeFee(bridgeConfig.season_pool_fee_on_dpt_percent, selection.amount)),
+        clientFee: formatFee(calculateBridgeFee(bridgeConfig.client_fee_on_dpt_percent, selection.amount)),
+        bankFee: formatFee(calculateBridgeFee(bridgeConfig.max_bank_fee_dpt_percent, selection.amount)),
+      }));
+  }, [resourceSelections]);
 
-  const totalFeeOnDeposit = useMemo(
-    () =>
-      formatFee(
-        Number(velordsFeeOnDeposit) +
-          Number(seasonPoolFeeOnDeposit) +
-          Number(clientFeeOnDeposit) +
-          Number(bankFeeOnDeposit),
+  const totalFeesDisplay = useMemo(() => {
+    const totals = calculateTotalFeesForAllResources.reduce(
+      (acc, fees) => ({
+        velordsFee: acc.velordsFee + Number(fees.velordsFee),
+        seasonPoolFee: acc.seasonPoolFee + Number(fees.seasonPoolFee),
+        clientFee: acc.clientFee + Number(fees.clientFee),
+        bankFee: acc.bankFee + Number(fees.bankFee),
+      }),
+      { velordsFee: 0, seasonPoolFee: 0, clientFee: 0, bankFee: 0 }
+    );
+
+    return {
+      velordsFeeOnDeposit: formatFee(totals.velordsFee),
+      seasonPoolFeeOnDeposit: formatFee(totals.seasonPoolFee),
+      clientFeeOnDeposit: formatFee(totals.clientFee),
+      bankFeeOnDeposit: formatFee(totals.bankFee),
+      totalFeeOnDeposit: formatFee(
+        totals.velordsFee + totals.seasonPoolFee + totals.clientFee + totals.bankFee
       ),
-    [velordsFeeOnDeposit, seasonPoolFeeOnDeposit, clientFeeOnDeposit, bankFeeOnDeposit],
-  );
+    };
+  }, [calculateTotalFeesForAllResources]);
 
   const { playerRealms } = useEntities();
   const playerRealmsIdAndName = useMemo(() => {
@@ -131,7 +136,6 @@ export const BridgeIn = () => {
     const validSelections = resourceSelections.filter(
       selection => selection.contract && selection.amount
     );
-    console.log(ResourcesIds[validSelections[0]?.contract as keyof typeof ResourcesIds])
     if (validSelections.length > 0) {
       const totalWeight = getTotalResourceWeight(
         validSelections.map(selection => ({
@@ -195,7 +199,6 @@ export const BridgeIn = () => {
     <div className="w-96 flex flex-col gap-3">
       <div className="flex justify-between">
         <div>From Wallet</div>
-
         <div>{displayAddress(address || "")}</div>
       </div>
       <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
@@ -250,33 +253,56 @@ export const BridgeIn = () => {
                 <Plus className="mr-4" />
                 Total Transfer Fee
               </div>
-              <div>{totalFeeOnDeposit}</div>
+              <div>{totalFeesDisplay.totalFeeOnDeposit}</div>
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="flex flex-col gap-2">
-            <div className="flex justify-between text-xs">
-              <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_dpt_percent)}%)</div>
-              <div>{bankFeeOnDeposit}</div>
-            </div>
-            <div className="flex justify-between text-xs">
-              <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_dpt_percent)}%)</div>
-              <div>{velordsFeeOnDeposit}</div>
-            </div>
-            <div className="flex justify-between text-xs">
-              <div>
-                Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_dpt_percent)}%)
-              </div>
-              <div>{seasonPoolFeeOnDeposit}</div>
-            </div>
-            <div className="flex justify-between text-xs">
-              <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_dpt_percent)}%)</div>
-              <div>{clientFeeOnDeposit}</div>
-            </div>
+          <CollapsibleContent className="flex flex-col gap-4">
+            {calculateTotalFeesForAllResources.map((fees, index) => {
+              const resource = resourceSelections[index];
+              if (!resource.contract || !resource.amount) return null;
+              
+              return (
+                <div key={index} className="flex flex-col gap-2">
+                  <div className="font-semibold text-sm">{resource.contract} - {resource.amount}</div>
+                  <div className="flex justify-between text-xs">
+                    <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_dpt_percent)}%)</div>
+                    <div>{fees.bankFee}</div>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_dpt_percent)}%)</div>
+                    <div>{fees.velordsFee}</div>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <div>Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_dpt_percent)}%)</div>
+                    <div>{fees.seasonPoolFee}</div>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_dpt_percent)}%)</div>
+                    <div>{fees.clientFee}</div>
+                  </div>
+                  {index < calculateTotalFeesForAllResources.length - 1 && <hr className="my-2" />}
+                </div>
+              );
+            })}
           </CollapsibleContent>
         </Collapsible>
-        <div className="flex justify-between font-bold mt-5 mb-5">
-          <div>Total Amount Received</div>
-          <div>{formatFee(Number(resourceSelections[0].amount) - Number(totalFeeOnDeposit))}</div>
+        <div className="flex flex-col gap-2 font-bold mt-5 mb-5">
+          <div className="flex justify-between">
+            <div>Total Amount Received</div>
+          </div>
+          {resourceSelections.map((selection, index) => {
+            if (!selection.amount || !selection.contract) return null;
+            const fees = calculateTotalFeesForAllResources[index];
+            const totalFees = Number(fees.bankFee) + Number(fees.velordsFee) + 
+                             Number(fees.seasonPoolFee) + Number(fees.clientFee);
+            
+            return (
+              <div key={index} className="flex justify-between text-sm font-normal">
+                <div>{selection.contract}</div>
+                <div>{formatFee(Number(selection.amount) - totalFees)}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
       <Button
