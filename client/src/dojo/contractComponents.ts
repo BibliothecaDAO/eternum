@@ -1245,6 +1245,24 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    SeasonBridgeConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          close_after_end_seconds: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "SeasonBridgeConfig",
+            types: ["u32", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
     SettlementConfig: (() => {
       return defineComponent(
         world,
