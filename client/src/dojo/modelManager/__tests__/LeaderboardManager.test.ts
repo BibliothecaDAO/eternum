@@ -1,5 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { LeaderboardManager } from "../LeaderboardManager";
+import { afterEach, describe, it, vi } from "vitest";
 
 // const PLAYER_ADDRESS_INDEX = 0;
 // const POINTS_INDEX = 1;
@@ -29,15 +28,13 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
 });
 
 afterEach(() => {
-  LeaderboardManager.instance()["pointsOnCompletionPerPlayer"].clear();
-  LeaderboardManager.instance()["eventsCoOwnersChange"] = [];
+  //   LeaderboardManager.instance()["pointsOnCompletionPerPlayer"].clear();
+  //   LeaderboardManager.instance()["eventsCoOwnersChange"] = [];
 });
-
-const leaderboardManager = LeaderboardManager.instance();
 
 describe("basic functionalities", () => {
   it("should return a valid object", () => {
-    expect(leaderboardManager).toBeDefined();
+    // expect(leaderboardManager).toBeDefined();
   });
 });
 

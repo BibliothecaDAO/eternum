@@ -1,5 +1,4 @@
-import { Player } from "@/types";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { Player, ResourcesIds } from "@bibliothecadao/eternum";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
@@ -161,7 +160,7 @@ export const PlayerLeaderboardPanel = ({
             <div className="text-right w-20 tabular-nums">{player.mines}</div>
             <div className="text-right w-20 tabular-nums">{player.hyperstructures}</div>
             <div className="text-right w-36 tabular-nums">
-              {player.points.toLocaleString()} {pointsSuffix}
+              {Math.floor(player.points).toLocaleString()} {pointsSuffix}
             </div>
             <div className="text-right w-20 tabular-nums">{player.percentage.toFixed(2)}%</div>
             <div className="text-right w-32 tabular-nums flex items-center justify-end gap-1">

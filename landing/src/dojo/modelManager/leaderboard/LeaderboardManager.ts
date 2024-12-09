@@ -1,207 +1,190 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { ContractAddress, GuildInfo, ID, TickIds } from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
+import { configManager } from "@/dojo/setup";
+import { DojoResult } from "@/hooks/context/DojoContext";
+import {
+  ContractAddress,
+  GuildInfo,
+  ID,
+  RESOURCE_RARITY,
+  ResourcesIds,
+  TickIds,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/eternum";
+import { Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientConfigManager } from "../ConfigManager";
-import { computeInitialContributionPoints } from "./LeaderboardUtils";
 
 export interface HyperstructureFinishedEvent {
   hyperstructureEntityId: ID;
   timestamp: number;
 }
 
-interface HyperstructureCoOwnersChange {
-  hyperstructureEntityId: ID;
-  coOwners: { address: ContractAddress; percentage: number }[];
-  timestamp: number;
-}
-
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;
 
-  private eventsCoOwnersChange: HyperstructureCoOwnersChange[] = [];
+  private constructor(private dojoResult: DojoResult) {}
 
-  private pointsOnCompletionPerPlayer: Map<ContractAddress, Map<ID, number>>;
-
-  private gameEndedTimestamp: number | undefined;
-
-  private constructor() {
-    this.pointsOnCompletionPerPlayer = new Map<ContractAddress, Map<ID, number>>();
-  }
-
-  public static instance() {
+  public static instance(dojoResult: DojoResult) {
     if (!LeaderboardManager._instance) {
-      LeaderboardManager._instance = new LeaderboardManager();
+      LeaderboardManager._instance = new LeaderboardManager(dojoResult);
     }
     return LeaderboardManager._instance;
   }
 
   public getCurrentCoOwners(hyperstructureEntityId: ID) {
-    return this.eventsCoOwnersChange.findLast((event) => event.hyperstructureEntityId === hyperstructureEntityId);
+    const hyperstructure = getComponentValue(
+      this.dojoResult.setup.components.Hyperstructure,
+      getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
+    );
+    if (!hyperstructure) return;
+    const currentEpoch = getComponentValue(
+      this.dojoResult.setup.components.Epoch,
+      getEntityIdFromKeys([BigInt(hyperstructureEntityId), BigInt(hyperstructure.current_epoch)]),
+    );
+    if (!currentEpoch) return;
+
+    const coOwners = (currentEpoch.owners as any).map((owner: any) => {
+      let [owner_address, percentage] = owner.value.map((value: any) => value.value);
+      return { address: owner_address, percentage: Number(percentage) / 10_000 };
+    });
+
+    return { coOwners, timestamp: Number(currentEpoch.start_timestamp) };
   }
 
   public getGuildsByRank(
     currentTimestamp: number,
     getGuildFromPlayerAddress: (playerAddress: ContractAddress) => GuildInfo | undefined,
-  ) {
+  ): [ID, number][] {
     const pointsPerGuild = new Map<ID, number>();
 
-    this.setPointsGeneratedByCompletion(pointsPerGuild, undefined, getGuildFromPlayerAddress);
+    const season = getComponentValue(this.dojoResult.setup.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    if (!season) return [];
+    const finishedHyperstructuresEntityIds = runQuery([
+      HasValue(this.dojoResult.setup.components.Hyperstructure, { completed: true }),
+    ]);
 
-    this.setPointsGeneratedByShares(currentTimestamp, pointsPerGuild, undefined, getGuildFromPlayerAddress);
-
+    this.getPoints(
+      Array.from(finishedHyperstructuresEntityIds),
+      currentTimestamp,
+      (address) => getGuildFromPlayerAddress(address)?.entityId,
+      pointsPerGuild,
+    );
     return Array.from(pointsPerGuild).sort(([_A, guildA], [_B, guildB]) => guildB - guildA);
   }
 
-  public getPlayersByRank(currentTimestamp: number, hyperstructureEntityId?: ID) {
-    if (this.pointsOnCompletionPerPlayer.size === 0) return [];
+  public getPlayersByRank(currentTimestamp: number, hyperstructureEntityId?: ID): [ContractAddress, number][] {
+    const pointsPerPlayer = new Map<ContractAddress, number>();
 
-    const pointsPerPlayer: Map<ContractAddress, number> = new Map();
+    const finishedHyperstructuresEntityIds = hyperstructureEntityId
+      ? [getEntityIdFromKeys([BigInt(hyperstructureEntityId)])]
+      : Array.from(runQuery([HasValue(this.dojoResult.setup.components.Hyperstructure, { completed: true })]));
 
-    this.setPointsGeneratedByCompletion(pointsPerPlayer, hyperstructureEntityId);
-
-    this.setPointsGeneratedByShares(currentTimestamp, pointsPerPlayer, hyperstructureEntityId);
+    this.getPoints(finishedHyperstructuresEntityIds, currentTimestamp, (address) => address, pointsPerPlayer);
 
     return Array.from(pointsPerPlayer).sort(([_A, playerA], [_B, playerB]) => playerB - playerA);
   }
 
-  public getAddressShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {
-    const lastChangeEvent = this.eventsCoOwnersChange.findLast(
-      (event) => event.hyperstructureEntityId === hyperstructureEntityId,
-    );
-
-    if (!lastChangeEvent) return;
-
-    return (lastChangeEvent.coOwners.find((coOwner) => coOwner.address === playerAddress)?.percentage || 0) / 10_000;
-  }
-
-  public processHyperstructureFinishedEventData(
-    event: ClientComponents["events"]["HyperstructureFinished"]["schema"],
-    getContributions: (
-      hyperstructureEntityId: ID,
-    ) => (ComponentValue<ClientComponents["Contribution"]["schema"]> | undefined)[],
-  ): HyperstructureFinishedEvent {
-    const parsedEvent = {
-      hyperstructureEntityId: event.hyperstructure_entity_id,
-      timestamp: event.timestamp,
-    };
-
-    // format contributions
-    const contributions = getContributions(parsedEvent.hyperstructureEntityId)
-      .filter((x): x is ComponentValue<ClientComponents["Contribution"]["schema"]> => x !== undefined)
-      .map((contribution) => ({
-        playerAddress: contribution.player_address,
-        resourceId: contribution.resource_type,
-        amount: Number(contribution.amount),
-      }));
-
-    const pointsOnCompletion = ClientConfigManager.instance().getHyperstructureConfig().pointsOnCompletion;
-
-    const points = contributions
-      ? computeInitialContributionPoints(parsedEvent.hyperstructureEntityId, contributions, pointsOnCompletion)
-      : 0;
-
-    const playerAddress = contributions[0]?.playerAddress || 0n;
-
-    const playerPointsForEachHyperstructure =
-      this.pointsOnCompletionPerPlayer.get(playerAddress) || new Map<ID, number>();
-
-    playerPointsForEachHyperstructure.set(parsedEvent.hyperstructureEntityId, points);
-
-    this.pointsOnCompletionPerPlayer.set(playerAddress, playerPointsForEachHyperstructure);
-
-    return parsedEvent;
-  }
-
-  public processHyperstructureCoOwnersChangeEvent(
-    event: ComponentValue<ClientComponents["events"]["HyperstructureCoOwnersChange"]["schema"]>,
-  ) {
-    const parsedEvent = this.parseCoOwnersChangeEvent(event);
-    this.eventsCoOwnersChange.push(parsedEvent);
-
-    // ascending order
-    this.eventsCoOwnersChange.sort((a, b) => a.timestamp - b.timestamp);
-
-    return parsedEvent;
-  }
-
-  public processGameEndedEvent(event: ComponentValue<ClientComponents["events"]["GameEnded"]["schema"]>) {
-    this.gameEndedTimestamp = event.timestamp;
-  }
-
-  private parseCoOwnersChangeEvent(
-    event: ComponentValue<ClientComponents["events"]["HyperstructureCoOwnersChange"]["schema"]>,
-  ): HyperstructureCoOwnersChange {
-    return {
-      hyperstructureEntityId: event.hyperstructure_entity_id,
-      timestamp: event.timestamp,
-      coOwners: event.co_owners.map((owner: any) => {
-        const address = owner[0].value;
-        const percentage = owner[1].value;
-        return {
-          address: ContractAddress(address),
-          percentage: percentage,
-        };
-      }),
-    };
-  }
-
-  private setPointsGeneratedByCompletion(
-    pointsPerEntity: Map<ContractAddress | ID, number>,
-    hyperstructureEntityId?: ID,
-    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildInfo | undefined,
-  ) {
-    this.pointsOnCompletionPerPlayer.forEach((playerPointsForEachHyperstructure, playerAddress) => {
-      const pointsOnCompletion = hyperstructureEntityId
-        ? playerPointsForEachHyperstructure.get(hyperstructureEntityId) || 0
-        : Array.from(playerPointsForEachHyperstructure.values()).reduce((acc, points) => acc + points, 0);
-
-      const key = getGuildFromPlayerAddress ? getGuildFromPlayerAddress(playerAddress)?.entityId || 0 : playerAddress;
-
-      const previousPoints = pointsPerEntity.get(key);
-      const newPoints = (previousPoints || 0) + pointsOnCompletion;
-      pointsPerEntity.set(key, newPoints);
-    });
-  }
-
-  private setPointsGeneratedByShares(
+  public getPoints(
+    hyperstructuresEntityIds: Entity[],
     currentTimestamp: number,
-    pointsPerEntity: Map<ContractAddress | ID, number>,
-    hyperstructureEntityId?: ID,
-    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildInfo | undefined,
-  ) {
-    const coOwnersChangeEvents = hyperstructureEntityId
-      ? this.eventsCoOwnersChange.filter((event) => event.hyperstructureEntityId === hyperstructureEntityId)
-      : this.eventsCoOwnersChange;
+    getKey: (identifier: any) => any,
+    keyPointsMap: Map<any, number>,
+  ): boolean {
+    const season = getComponentValue(this.dojoResult.setup.components.Season, getEntityIdFromKeys([999999999n]));
+    console.log(this.dojoResult.setup.components.Season);
+    if (!season) return false;
 
-    coOwnersChangeEvents.sort((a, b) => a.timestamp - b.timestamp);
+    const pointsOnCompletion = configManager.getHyperstructureConfig().pointsOnCompletion;
 
-    coOwnersChangeEvents.forEach((event) => {
-      const nextChange = coOwnersChangeEvents.find(
-        (nextEvent) =>
-          nextEvent.hyperstructureEntityId === event.hyperstructureEntityId && nextEvent.timestamp > event.timestamp,
+    hyperstructuresEntityIds.forEach((entityId) => {
+      const hyperstructure = getComponentValue(this.dojoResult.setup.components.Hyperstructure, entityId);
+      if (!hyperstructure || hyperstructure.completed === false) return;
+
+      const totalContributableAmount = configManager.getHyperstructureTotalContributableAmount(
+        hyperstructure.entity_id,
       );
 
-      if (!nextChange && this.gameEndedTimestamp) {
-        return;
-      }
+      const contributions = runQuery([
+        HasValue(this.dojoResult.setup.components.Contribution, {
+          hyperstructure_entity_id: hyperstructure.entity_id,
+        }),
+      ]);
 
-      const timePeriod = nextChange ? nextChange.timestamp - event.timestamp : currentTimestamp - event.timestamp;
+      contributions.forEach((contributionEntityId) => {
+        const contribution = getComponentValue(this.dojoResult.setup.components.Contribution, contributionEntityId);
+        if (!contribution) return;
 
-      const nbOfCycles = timePeriod / ClientConfigManager.instance().getTick(TickIds.Default);
+        const effectiveContribution =
+          (Number(contribution.amount) * RESOURCE_RARITY[contribution.resource_type as ResourcesIds]!) /
+          configManager.getResourcePrecision();
 
-      const totalPoints = nbOfCycles * ClientConfigManager.instance().getHyperstructureConfig().pointsPerCycle;
+        const percentage = effectiveContribution / totalContributableAmount;
 
-      event.coOwners.forEach((coOwner) => {
-        const key = getGuildFromPlayerAddress
-          ? getGuildFromPlayerAddress(coOwner.address)?.entityId || 0
-          : coOwner.address;
+        const points = pointsOnCompletion * percentage;
+        const currentPoints = keyPointsMap.get(getKey(contribution.player_address)) || 0;
 
-        const previousPoints = pointsPerEntity.get(key) || 0;
+        const newPoints = currentPoints + points;
 
-        const newPoints = previousPoints + totalPoints * (coOwner.percentage / 10_000);
-
-        pointsPerEntity.set(key, newPoints);
+        keyPointsMap.set(getKey(contribution.player_address), newPoints);
       });
+
+      for (let i = 0; i < hyperstructure.current_epoch; i++) {
+        const epoch = getComponentValue(
+          this.dojoResult.setup.components.Epoch,
+          getEntityIdFromKeys([BigInt(hyperstructure.entity_id), BigInt(i)]),
+        );
+        if (!epoch) return false;
+
+        const nextEpoch = getComponentValue(
+          this.dojoResult.setup.components.Epoch,
+          getEntityIdFromKeys([BigInt(hyperstructure.entity_id), BigInt(i + 1)]),
+        );
+
+        const epochEndTimestamp =
+          nextEpoch?.start_timestamp ?? season.is_over ? season.ended_at : BigInt(currentTimestamp);
+        const epochDuration = epochEndTimestamp - epoch.start_timestamp;
+
+        const nbOfCycles = Number(epochDuration) / ClientConfigManager.instance().getTick(TickIds.Default);
+
+        const totalPoints = nbOfCycles * ClientConfigManager.instance().getHyperstructureConfig().pointsPerCycle;
+
+        epoch.owners.forEach((owner) => {
+          let [owner_address, percentage] = (owner as any).value.map((value: any) => value.value);
+
+          owner_address = ContractAddress(owner_address);
+          percentage = Number(percentage) / 10_000;
+
+          const previousPoints = keyPointsMap.get(getKey(owner_address)) || 0;
+          const userShare = totalPoints * percentage;
+          const newPointsForPlayer = previousPoints + userShare;
+
+          keyPointsMap.set(getKey(owner_address), newPointsForPlayer);
+        });
+      }
     });
+    return true;
+  }
+
+  public getAddressShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {
+    const hyperstructure = getComponentValue(
+      this.dojoResult.setup.components.Hyperstructure,
+      getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
+    );
+    if (!hyperstructure) return 0;
+    const currentEpoch = getComponentValue(
+      this.dojoResult.setup.components.Epoch,
+      getEntityIdFromKeys([BigInt(hyperstructureEntityId), BigInt(hyperstructure.current_epoch)]),
+    );
+    if (!currentEpoch) return 0;
+
+    for (let i = 0; i < currentEpoch.owners.length; i += 2) {
+      const owner_address = currentEpoch.owners[i];
+      const percentage = Number(currentEpoch.owners[i + 1]) / 10_000;
+
+      if (owner_address === playerAddress) {
+        return percentage;
+      }
+    }
+
+    return 0;
   }
 }

@@ -18,21 +18,21 @@ export const Leaderboard = ({
   hyperstructureEntityId: ID;
   setSelectedTab: (tab: number) => void;
 }) => {
+  const dojo = useDojo();
   const {
     account: { account },
     setup: {
       components: { Owner },
     },
-  } = useDojo();
+  } = dojo;
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
   const { getAddressName } = useRealm();
 
   const playerPointsLeaderboard = useMemo(() => {
-    return LeaderboardManager.instance()
-      .getPlayersByRank(nextBlockTimestamp || 0, hyperstructureEntityId)
-      .filter(([_, points]) => points > 0);
-  }, [nextBlockTimestamp, hyperstructureEntityId]);
+    return LeaderboardManager.instance(dojo).getPlayersByRank(nextBlockTimestamp || 0, hyperstructureEntityId);
+  }, [hyperstructureEntityId, nextBlockTimestamp]);
 
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);
 
