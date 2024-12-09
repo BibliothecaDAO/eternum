@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
-import { env } from "process";
 import { useEffect, useState } from "react";
-import { useDojo } from "../../../../landing/src/hooks/context/DojoContext";
+import { env } from "../../../env";
+import { useDojo } from "../context/DojoContext";
 
 export const usePrizePool = () => {
   const [prizePool, setPrizePool] = useState<bigint>(0n);
