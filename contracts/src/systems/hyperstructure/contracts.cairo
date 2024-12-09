@@ -590,8 +590,16 @@ mod hyperstructure_systems {
                 end_point_generation_at = season.ended_at;
             }
 
+            let mut points_already_added: Felt252Dict<bool> = Default::default();
+
             while (i < hyperstructure_shareholder_epochs.len()) {
                 let (hyperstructure_entity_id, index) = *hyperstructure_shareholder_epochs.at(i);
+
+                // ensure we don't double count points for the same hyperstructure
+                if points_already_added.get(hyperstructure_entity_id.into()) {
+                    panic!("points already added for hyperstructure {}", hyperstructure_entity_id);
+                };
+                points_already_added.insert(hyperstructure_entity_id.into(), true);
 
                 let epoch: Epoch = world.read_model((hyperstructure_entity_id, index));
                 let next_epoch: Epoch = world.read_model((hyperstructure_entity_id, index + 1));
@@ -637,6 +645,7 @@ mod hyperstructure_systems {
 
             let hyperstructure_config: HyperstructureConfig = world.read_model(HYPERSTRUCTURE_CONFIG_ID);
 
+            let mut points_already_added: Felt252Dict<bool> = Default::default();
             let mut total_points = 0;
 
             let mut i = 0;
@@ -650,9 +659,18 @@ mod hyperstructure_systems {
                 let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
 
                 if (hyperstructure.completed) {
+                    // ensure we don't double count points for the same hyperstructure
+                    if points_already_added.get(hyperstructure_entity_id.into()) {
+                        panic!("points already added for hyperstructure {}", hyperstructure_entity_id);
+                    };
+                    points_already_added.insert(hyperstructure_entity_id.into(), true);
+
+                    // calculate the total contributable amount for the hyperstructure
                     let total_contributable_amount = calculate_total_contributable_amount(
                         world, hyperstructure.randomness, hyperstructure_resource_configs
                     );
+
+                    // calculate the total points for the hyperstructure
                     total_points +=
                         Self::compute_contributions_for_hyperstructure(
                             world,
