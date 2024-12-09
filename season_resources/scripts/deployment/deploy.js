@@ -1,7 +1,4 @@
-import {
-  // deployAllSeasonResourceContract,
-  grantMinterRoleToAllSeasonResourceContracts,
-} from "./libs/commands.js";
+import { grantMinterRoleToAllSeasonResourceContracts } from "./libs/commands.js";
 
 console.log(`   ____          _         `.red);
 console.log(`  |    \\ ___ ___| |___ _ _ `.red);

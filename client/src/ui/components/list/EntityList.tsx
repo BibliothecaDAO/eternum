@@ -76,12 +76,12 @@ export const EntityList = ({
             className="w-full p-2 mb-2 bg-gold/10 border border-gold/20 rounded text-gold placeholder-gold/50 focus:outline-none focus:border-gold/40"
           />
           <ul>
-            {filteredList.map((entity, index) => (
+            {filteredList.map((entity) => (
               <li
                 className={clsx("py-2 px-2 bg-gold/20 hover:bg-crimson/40 my-1 rounded border border-gold/10", {
                   "animate-pulse pointer-events-none": questing || entity.id === Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
                 })}
-                key={index}
+                key={entity.id}
                 onClick={() => setSelectedEntity(entity)}
               >
                 <div className="flex flex-col space-y-2">

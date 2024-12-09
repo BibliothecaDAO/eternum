@@ -1,11 +1,12 @@
-import { PRIZE_POOL_PLAYERS } from "@/constants";
 import { LeaderboardManager } from "@/dojo/modelManager/leaderboard/LeaderboardManager";
 import { calculateLordsShare, calculatePlayerSharePercentage } from "@/utils/leaderboard";
 import { Player, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
+import { formatEther } from "viem";
 import { useDojo } from "./context/DojoContext";
 import { useEntitiesUtils } from "./use-entities-utils";
+import { usePrizePool } from "./use-rewards";
 
 export const useGetAllPlayers = () => {
   const {
@@ -16,6 +17,8 @@ export const useGetAllPlayers = () => {
   const nextBlockTimestamp = Math.floor(Date.now() / 1000);
 
   const { getEntityName } = useEntitiesUtils();
+
+  const prizePool = usePrizePool();
 
   const playerEntities = runQuery([Has(AddressName)]);
   const playersByRank = LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0);
@@ -56,7 +59,7 @@ export const useGetAllPlayers = () => {
         points,
         rank: rankIndex === -1 ? Number.MAX_SAFE_INTEGER : rankIndex + 1,
         percentage: calculatePlayerSharePercentage(points, totalPoints),
-        lords: calculateLordsShare(points, totalPoints, PRIZE_POOL_PLAYERS),
+        lords: calculateLordsShare(points, totalPoints, Number(formatEther(prizePool))),
         realms: runQuery([Has(Realm), HasValue(Owner, { address: player.address })]).size,
         mines: runQuery([
           HasValue(Structure, { category: StructureType[StructureType.FragmentMine] }),

@@ -46,6 +46,8 @@ use s0_eternum::models::resources::{m_ResourceCost};
 use s0_eternum::models::resources::{m_Resource};
 use s0_eternum::models::season::m_Leaderboard;
 use s0_eternum::models::season::m_LeaderboardEntry;
+use s0_eternum::models::season::m_LeaderboardRegisterContribution;
+use s0_eternum::models::season::m_LeaderboardRegisterShare;
 use s0_eternum::models::season::m_LeaderboardRegistered;
 use s0_eternum::models::season::m_LeaderboardRewardClaimed;
 use s0_eternum::models::season::m_Season;
@@ -174,6 +176,8 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_Leaderboard::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_LeaderboardEntry::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_LeaderboardRegistered::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_LeaderboardRegisterContribution::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_LeaderboardRegisterShare::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_LeaderboardRewardClaimed::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(liquidity_systems::e_LiquidityEvent::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(swap_systems::e_SwapEvent::TEST_CLASS_HASH.try_into().unwrap()),

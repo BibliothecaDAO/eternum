@@ -63,6 +63,28 @@ pub struct LeaderboardRegistered {
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
+pub struct LeaderboardRegisterContribution {
+    #[key]
+    address: starknet::ContractAddress,
+    #[key]
+    hyperstructure_entity_id: ID,
+    registered: bool
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct LeaderboardRegisterShare {
+    #[key]
+    address: starknet::ContractAddress,
+    #[key]
+    hyperstructure_entity_id: ID,
+    #[key]
+    epoch: u16,
+    registered: bool
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
 pub struct LeaderboardRewardClaimed {
     #[key]
     address: starknet::ContractAddress,
@@ -87,10 +109,10 @@ pub impl LeaderboardEntryImpl of LeaderboardEntryTrait {
     fn register(ref self: Leaderboard, ref world: WorldStorage, address: starknet::ContractAddress, points: u128) {
         // allow single registration per address to prevent `self.total_points` inflation
         let mut leaderboard_registered: LeaderboardRegistered = world.read_model(address);
-        assert!(leaderboard_registered.registered == false, "Address already registered points");
-
-        leaderboard_registered.registered = true;
-        world.write_model(@leaderboard_registered);
+        if !leaderboard_registered.registered {
+            leaderboard_registered.registered = true;
+            world.write_model(@leaderboard_registered);
+        }
 
         let mut leaderboard_entry = LeaderboardEntry { address, points };
         world.write_model(@leaderboard_entry);
