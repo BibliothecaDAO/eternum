@@ -354,7 +354,7 @@ export const WEIGHTS_GRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Knight]: 5000,
   [ResourcesIds.Crossbowman]: 3000,
   [ResourcesIds.Paladin]: 5000,
-  [ResourcesIds.Lords]: 1,
+  [ResourcesIds.Lords]: 0,
   [ResourcesIds.Wheat]: 100,
   [ResourcesIds.Fish]: 100,
 };
