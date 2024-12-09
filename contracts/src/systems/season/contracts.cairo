@@ -43,7 +43,6 @@ mod season_systems {
 
     #[abi(embed_v0)]
     impl SeasonSystemsImpl of super::ISeasonSystems<ContractState> {
-        /// Note: This function can only be called once per address
         fn register_to_leaderboard(
             ref self: ContractState,
             hyperstructures_contributed_to: Span<ID>,
