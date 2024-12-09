@@ -348,7 +348,6 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private clearEntitySelection() {
-    // this.state.setSelectedHex(null);
     this.highlightHexManager.highlightHexes([]);
     this.state.updateTravelPaths(new Map());
     this.structurePreview?.clearPreviewStructure();
@@ -368,11 +367,8 @@ export default class WorldmapScene extends HexagonScene {
       this.minimap.showMinimap();
     }
 
-    // Set the currently selected building hex as the default world map selection
-    if (this.state.selectedBuildingHex) {
-      const { outerCol, outerRow } = this.state.selectedBuildingHex;
-      this.state.setSelectedHex({ col: outerCol, row: outerRow });
-    }
+    // Close left navigation on world map load
+    useUIStore.getState().setLeftNavigationView(LeftView.None);
 
     this.armyManager.addLabelsToScene();
   }

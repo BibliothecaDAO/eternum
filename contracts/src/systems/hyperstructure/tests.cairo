@@ -265,7 +265,9 @@ fn hyperstructure_test_finish_hyperstructure() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
+#[should_panic(
+    expected: ("Not enough points to end the game. You have 1999980 points, but need 3000000", 'ENTRYPOINT_FAILED')
+)]
 fn hyperstructure_test_end_game_failure() {
     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
@@ -323,7 +325,9 @@ fn hyperstructure_test_end_game_success_completion_and_shares() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
+#[should_panic(
+    expected: ("Not enough points to end the game. You have 2999980 points, but need 3000000", 'ENTRYPOINT_FAILED')
+)]
 fn hyperstructure_test_end_game_failure_completion_and_shares() {
     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
@@ -345,7 +349,9 @@ fn hyperstructure_test_end_game_failure_completion_and_shares() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
+#[should_panic(
+    expected: ("Not enough points to end the game. You have 0 points, but need 3000000", 'ENTRYPOINT_FAILED')
+)]
 fn hyperstructure_test_end_game_failure_other_account() {
     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 

@@ -6,87 +6,105 @@ import { toast } from "sonner";
 const getTxMessage = (type: TransactionType) => {
   switch (type) {
     case TransactionType.EXPLORE:
-      return "🗺️ Sending scouts to explore new lands";
+      return "🗺️ Scouts sent to explore new lands";
     case TransactionType.TRAVEL_HEX:
-      return "🐎 Journeying to distant lands";
+      return "🐎 Journeyed to distant lands";
     case TransactionType.OPEN_ACCOUNT:
-      return "📜 Opening ledger with the royal bank";
+      return "📜 Opened ledger with the royal bank";
     case TransactionType.CHANGE_OWNER_AMM_FEE:
-      return "💰 Adjusting merchant guild fees";
+      return "💰 Adjusted bank fees";
     case TransactionType.CHANGE_OWNER_BRIDGE_FEE:
-      return "💰 Adjusting bridge toll fees";
+      return "💰 Adjusted bridge fees";
     case TransactionType.BUY:
-      return "💰 Purchasing wares from the market";
+      return "💰 Purchased from the market";
     case TransactionType.SELL:
-      return "💰 Selling wares at the market";
-    case TransactionType.ADD_LIQUIDITY:
-      return "💰 Depositing gold to merchant's guild";
-    case TransactionType.REMOVE_LIQUIDITY:
-      return "💰 Withdrawing gold from merchant's guild";
+      return "💰 Sold on the market";
+    case TransactionType.ADD:
+      return "💰 Added liquidity";
+    case TransactionType.REMOVE:
+      return "💰 Withdrew liquidity";
     case TransactionType.ARMY_CREATE:
-      return "⚔️ Raising a new army";
+      return "⚔️ Raised a new army";
     case TransactionType.ARMY_DELETE:
-      return "📜 Disbanding troops";
+      return "📜 Disbanded troops";
     case TransactionType.ARMY_BUY_TROOPS:
-      return "⚔️ Recruiting soldiers";
+      return "⚔️ Recruited soldiers";
     case TransactionType.ARMY_MERGE_TROOPS:
-      return "⚔️ Combining battalions";
+      return "⚔️ Combined battalions";
     case TransactionType.BATTLE_START:
-      return "⚔️ Commencing siege";
+      return "⚔️ Commenced battle";
     case TransactionType.BATTLE_FORCE_START:
-      return "⚔️ Forcing battle to commence";
+      return "⚔️ Forced battle to commence";
     case TransactionType.BATTLE_JOIN:
-      return "⚔️ Joining the fray";
+      return "⚔️ Joined the fray";
     case TransactionType.BATTLE_LEAVE:
-      return "🏃 Retreating from battle";
+      return "🏃 Retreated from battle";
     case TransactionType.BATTLE_CLAIM:
-      return "🏆 Claiming spoils of war";
-    case TransactionType.SEND_RESOURCES:
-      return "🐎 Dispatching caravan with resources";
-    case TransactionType.APPROVE_RESOURCES:
-      return "📜 Authorizing resource transfer";
-    case TransactionType.PICKUP_RESOURCES:
-      return "📦 Collecting resources from caravan";
+      return "🏆 Claimed spoils of war";
+    case TransactionType.SEND:
+      return "🐎 Collected resources";
+    case TransactionType.PICKUP:
+      return "Collected resources";
     case TransactionType.CREATE_ORDER:
-      return "📜 Posting trade decree";
+      return "📜 Posted trade decree";
     case TransactionType.ACCEPT_ORDER:
-      return "📜 Accepting trade decree";
+      return "📜 Accepted trade decree";
     case TransactionType.ACCEPT_PARTIAL_ORDER:
-      return "📜 Accepting portion of trade decree";
+      return "📜 Accepted portion of trade decree";
     case TransactionType.REMOVE_GUILD_MEMBER:
-      return "📜 Expelling member from guild";
+      return "📜 Expelled member from guild";
     case TransactionType.ATTACH_LORDS:
-      return "👑 Pledging LORDS tokens";
+      return "👑 Pledged LORDS tokens";
     case TransactionType.APPROVE:
-      return "📜 Approving royal decree";
+      return "📜 Authorized resource transfer";
     case TransactionType.CREATE_BANK:
-      return "🏰 Establishing new royal bank";
+      return "🏰 Established new royal bank";
     case TransactionType.CREATE_ADMIN_BANK:
-      return "🏰 Establishing royal treasury";
-    case TransactionType.SET_SETTLEMENT_CONFIG:
-      return "📜 Adjusting settlement laws";
-    case TransactionType.SET_SEASON_CONFIG:
-      return "📜 Adjusting seasonal decrees";
-    case TransactionType.SET_RESOURCE_BRIDGE_WHITELIST_CONFIG:
-      return "📜 Adjusting bridge passage rights";
-    case TransactionType.SET_CAPACITY_CONFIG:
-      return "📜 Adjusting storage capacity laws";
-    case TransactionType.SET_SPEED_CONFIG:
-      return "📜 Adjusting travel speed laws";
-    case TransactionType.SET_TICK_CONFIG:
-      return "⏳ Adjusting hourglass measures";
-    case TransactionType.SET_BANK_CONFIG:
-      return "📜 Adjusting royal bank laws";
-    case TransactionType.SET_TROOP_CONFIG:
-      return "📜 Adjusting military doctrine";
-    case TransactionType.SET_BATTLE_CONFIG:
-      return "📜 Adjusting rules of engagement";
-    case TransactionType.SET_QUEST_REWARD_CONFIG:
-      return "📜 Adjusting quest bounties";
-    case TransactionType.SET_REALM_LEVEL_CONFIG:
-      return "📜 Adjusting realm advancement laws";
+      return "🏰 Established royal treasury";
+    case TransactionType.SET_CO_OWNERS:
+      return "📜 Updated co-owners";
+    case TransactionType.CLAIM_LEADERBOARD_REWARDS:
+      return "🏆 Claimed leaderboard rewards";
+    case TransactionType.REGISTER_TO_LEADERBOARD:
+      return "📜 Registered for leaderboard";
+    case TransactionType.END_GAME:
+      return "🏁 Game has ended";
+    case TransactionType.SET_ACCESS:
+      return "🔑 Access rights updated";
+    case TransactionType.CONTRIBUTE_TO_CONSTRUCTION:
+      return "🏗️ Contributed to construction";
+    case TransactionType.CREATE:
+      return "✨ Created new building or structure";
+    case TransactionType.REMOVE_PLAYER_FROM_WHITELIST:
+      return "📜 Removed player from whitelist";
+    case TransactionType.TRANSFER_GUILD_OWNERSHIP:
+      return "👑 Transferred guild ownership";
+    case TransactionType.WHITELIST_PLAYER:
+      return "📜 Added player to whitelist";
+    case TransactionType.CREATE_GUILD:
+      return "⚔️ Created new guild";
+    case TransactionType.JOIN_GUILD:
+      return "⚔️ Joined guild";
+    case TransactionType.MINT_STARTING_RESOURCES:
+      return "✨ Received starting resources";
+    case TransactionType.RESUME_PRODUCTION:
+      return "⚒️ Resumed production";
+    case TransactionType.PAUSE_PRODUCTION:
+      return "⏸️ Paused production";
+    case TransactionType.DESTROY:
+      return "💥 Destroyed building";
+    case TransactionType.SET_ENTITY_NAME:
+      return "✍️ Named entity";
+    case TransactionType.SET_ADDRESS_NAME:
+      return "✍️ Set address name";
+    case TransactionType.UPGRADE_LEVEL:
+      return "⬆️ Upgraded level";
+    case TransactionType.QUEST_CLAIM:
+      return "🏆 Claimed quest rewards";
+    case TransactionType.CANCEL_ORDER:
+      return "❌ Cancelled order";
     default:
-      return "📜 Royal decree executed";
+      return "📜 Royal decree has been executed";
   }
 };
 

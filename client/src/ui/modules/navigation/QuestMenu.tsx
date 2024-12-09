@@ -152,8 +152,8 @@ export const QuestsMenu = () => {
             </Button>
           </div>
         ) : (
-          <Button variant="primary" className="text-sm font-semibold capitalize" onClick={() => setSkipQuest(true)}>
-            Skip Quest ?
+          <Button variant="primary" className="text-sm font-semibold capitalize w-6" onClick={() => setSkipQuest(true)}>
+            Skip
           </Button>
         )}
       </div>

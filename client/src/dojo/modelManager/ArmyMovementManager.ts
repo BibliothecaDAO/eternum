@@ -121,7 +121,11 @@ export class ArmyMovementManager {
 
   private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
-    const maxStaminaSteps = Math.floor((stamina.amount || 0) / configManager.getTravelStaminaCost());
+    const travelStaminaCost = configManager.getTravelStaminaCost();
+
+    const maxStaminaSteps = travelStaminaCost
+      ? Math.floor((stamina.amount || 0) / configManager.getTravelStaminaCost())
+      : 999;
 
     const entityArmy = getComponentValue(this.setup.components.Army, this.entity);
     const travelFoodCosts = computeTravelFoodCosts(entityArmy?.troops);
