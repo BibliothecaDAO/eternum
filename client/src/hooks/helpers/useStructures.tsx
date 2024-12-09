@@ -2,7 +2,7 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { configManager } from "@/dojo/setup";
 import { currentTickCount } from "@/ui/utils/utils";
-import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, Position, StructureType, TickIds } from "@bibliothecadao/eternum";
 import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
@@ -209,14 +209,38 @@ export const useStructures = () => {
   return { getStructureByEntityId };
 };
 
-export const useIsStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
+export const useIsStructureImmune = (
+  structure: { category: string; created_at: bigint } | undefined,
+  currentTimestamp: number,
+): boolean => {
+  const structureType = StructureType[(structure?.category as keyof typeof StructureType) || 0];
+
   const tickCount = currentTickCount(currentTimestamp);
-  const allowAttackTick = currentTickCount(created_at) + configManager.getBattleGraceTickCount();
+  const allowAttackTick =
+    currentTickCount(Number(structure?.created_at || 0)) + configManager.getBattleGraceTickCount(structureType);
 
   if (tickCount < allowAttackTick) {
     return true;
   }
   return false;
+};
+
+export const useStructureImmunityTimer = (structure: Structure | undefined, nextBlockTimestamp: number) => {
+  const structureType = StructureType[(structure?.category as keyof typeof StructureType) || 0];
+
+  const immunityEndTimestamp = useMemo(() => {
+    return (
+      Number(structure?.created_at || 0) +
+      (structure ? configManager.getBattleGraceTickCount(structureType) * configManager.getTick(TickIds.Armies) : 0)
+    );
+  }, [structure?.created_at, structure?.category]);
+
+  const timer = useMemo(() => {
+    if (!nextBlockTimestamp) return 0;
+    return immunityEndTimestamp - nextBlockTimestamp!;
+  }, [immunityEndTimestamp, nextBlockTimestamp]);
+
+  return timer;
 };
 
 export const useIsResourcesLocked = (structureEntityId: ID) => {

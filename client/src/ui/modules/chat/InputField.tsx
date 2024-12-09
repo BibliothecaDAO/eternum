@@ -4,10 +4,19 @@ import { toHexString, toValidAscii } from "@/ui/utils/utils";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useRef } from "react";
 import { Signature } from "starknet";
+import { scrollToElement } from "./Chat";
 import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
 import { Tab } from "./types";
 
-export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint }) => {
+export const InputField = ({
+  currentTab,
+  salt,
+  bottomChatRef,
+}: {
+  currentTab: Tab;
+  salt: bigint;
+  bottomChatRef: React.RefObject<HTMLDivElement>;
+}) => {
   const {
     account: { account },
     setup: {
@@ -21,23 +30,24 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
   const handleKeyPress = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key !== "Enter" || inputRef.current.length === 0) return;
-      publish(inputRef.current, salt);
+      publish(inputRef.current, salt, currentTab);
       inputRef.current = "";
+      scrollToElement(bottomChatRef);
     },
-    [salt],
+    [salt, bottomChatRef, currentTab],
   );
 
   const publish = useCallback(
-    async (message: string, salt: bigint) => {
+    async (message: string, salt: bigint, tab: Tab) => {
       const recipientEntities = Array.from(
         runQuery([Has(AddressName), HasValue(AddressName, { name: BigInt("0x0") })]),
       );
 
       const recipientAddress = recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
-        : currentTab.name === GLOBAL_CHANNEL_KEY
+        : tab.name === GLOBAL_CHANNEL_KEY
           ? undefined
-          : BigInt(currentTab.address);
+          : BigInt(tab.address);
 
       const channel = recipientAddress !== undefined ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
 

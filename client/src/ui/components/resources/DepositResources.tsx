@@ -2,6 +2,7 @@ import { ResourceInventoryManager } from "@/dojo/modelManager/ResourceInventoryM
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useOwnedEntitiesOnPosition, useResourcesUtils } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { EntityState, ID, determineEntityState } from "@bibliothecadao/eternum";
@@ -25,6 +26,9 @@ export const DepositResources = ({
 }: DepositResourcesProps) => {
   const { setup } = useDojo();
   const [isLoading, setIsLoading] = useState(false);
+
+  // stone as proxy for depoisiting resources
+  const { play: playDeposit } = useUiSounds(soundSelector.addStone);
 
   const { getResourcesFromBalance } = useResourcesUtils();
 
@@ -71,6 +75,7 @@ export const DepositResources = ({
 
   const onOffload = async (receiverEntityId: ID) => {
     if (entityId && inventoryResources.length > 0) {
+      playDeposit();
       setIsLoading(true);
       await depositManager.onOffloadAll(receiverEntityId, inventoryResources).then(() => {
         setIsLoading(false);

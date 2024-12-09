@@ -57,7 +57,8 @@ mod hyperstructure_systems {
             owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait}, season::{Leaderboard},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
             resources::{Resource, ResourceImpl, ResourceCost},
-            structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember}
+            structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember},
+            name::{AddressName}
         },
         systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
     };
@@ -70,6 +71,16 @@ mod hyperstructure_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
+    struct HyperstructureStarted {
+        #[key]
+        id: ID,
+        hyperstructure_entity_id: ID,
+        creator_address_name: felt252,
+        timestamp: u64,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
     struct HyperstructureFinished {
         #[key]
         id: ID,
@@ -77,6 +88,7 @@ mod hyperstructure_systems {
         hyperstructure_entity_id: ID,
         contributor_entity_id: ID,
         timestamp: u64,
+        hyperstructure_owner_name: felt252,
     }
 
     #[derive(Copy, Drop, Serde)]
@@ -185,6 +197,18 @@ mod hyperstructure_systems {
                     },
                 );
 
+            let id = world.dispatcher.uuid();
+            let creator_address_name: AddressName = world.read_model(starknet::get_caller_address());
+            world
+                .emit_event(
+                    @HyperstructureStarted {
+                        id,
+                        hyperstructure_entity_id: new_uuid,
+                        creator_address_name: creator_address_name.name,
+                        timestamp: current_time
+                    }
+                );
+
             // [Achievement] Hyperstructure Creation
             let player_id: felt252 = creator_owner.address.into();
             let task_id: felt252 = Task::Builder.identifier();
@@ -250,10 +274,17 @@ mod hyperstructure_systems {
                 hyperstructure.completed = true;
                 world.write_model(@hyperstructure);
 
+                let hyperstructure_owner: Owner = world.read_model(hyperstructure_entity_id);
+                let hyperstructure_owner_name: AddressName = world.read_model(hyperstructure_owner.address);
+
                 world
                     .emit_event(
                         @HyperstructureFinished {
-                            hyperstructure_entity_id, contributor_entity_id, timestamp, id: world.dispatcher.uuid()
+                            hyperstructure_entity_id,
+                            contributor_entity_id,
+                            hyperstructure_owner_name: hyperstructure_owner_name.name,
+                            timestamp,
+                            id: world.dispatcher.uuid()
                         }
                     );
             }
@@ -368,7 +399,12 @@ mod hyperstructure_systems {
 
             // ensure the total points are enough to end the game
             let hyperstructure_config: HyperstructureConfig = world.read_model(HYPERSTRUCTURE_CONFIG_ID);
-            assert!(total_points >= hyperstructure_config.points_for_win, "Not enough points to end the game");
+            assert!(
+                total_points >= hyperstructure_config.points_for_win,
+                "Not enough points to end the game. You have {} points, but need {}",
+                total_points,
+                hyperstructure_config.points_for_win
+            );
 
             SeasonImpl::end_season(ref world);
 

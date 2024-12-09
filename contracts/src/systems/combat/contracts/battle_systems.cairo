@@ -235,6 +235,9 @@ trait IBattleContract<T> {
     /// # Returns:
     /// * None
     fn battle_claim(ref self: T, army_id: ID, structure_id: ID);
+
+    /// Resolve any battle that has ended
+    fn battle_resolve(ref self: T, battle_id: ID, army_id: ID);
 }
 
 
@@ -626,6 +629,23 @@ mod battle_systems {
         }
 
 
+        fn battle_resolve(ref self: ContractState, battle_id: ID, army_id: ID) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            // ensure battle exists and matches army
+            let mut army: Army = world.read_model(army_id);
+            assert!(army.battle_id == battle_id, "wrong battle id");
+            assert!(army.battle_side != BattleSide::None, "wrong battle side");
+
+            // leave battle if it has ended
+            let mut battle = BattleImpl::get(world, battle_id);
+            let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
+            let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
+            battle_utils_systems.leave_battle_if_ended(battle, army);
+        }
+
+
         fn battle_leave(ref self: ContractState, battle_id: ID, army_id: ID) {
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -637,9 +657,7 @@ mod battle_systems {
             // ensure caller is in the correct battle
             let mut caller_army: Army = world.read_model(army_id);
             assert!(caller_army.battle_id == battle_id, "wrong battle id");
-            assert!(caller_army.battle_side != BattleSide::None, "choose correct battle side");
-
-            let caller_army_side = caller_army.battle_side;
+            assert!(caller_army.battle_side != BattleSide::None, "wrong battle side");
 
             // get battle
             let mut battle = BattleImpl::get(world, battle_id);
@@ -681,26 +699,6 @@ mod battle_systems {
                 world.write_model(@army_health);
                 world.write_model(@army_quantity);
             }
-
-            // emit battle leave event
-            let battle_position: Position = world.read_model(battle_id);
-            let leaver_name: AddressName = world.read_model(starknet::get_caller_address());
-            world
-                .emit_event(
-                    @BattleLeaveData {
-                        id: world.dispatcher.uuid(),
-                        event_id: EventType::BattleLeave,
-                        battle_entity_id: battle_id,
-                        leaver: leaver,
-                        leaver_name: leaver_name.name,
-                        leaver_army_entity_id: army_id,
-                        leaver_side: caller_army_side,
-                        duration_left: battle.duration_left,
-                        x: battle_position.x,
-                        y: battle_position.y,
-                        timestamp: starknet::get_block_timestamp(),
-                    }
-                );
         }
 
 
@@ -1325,9 +1323,11 @@ mod battle_utils_systems {
         fn leave_battle(ref world: WorldStorage, mut battle: Battle, mut original_army: Army) -> (Battle, Army) {
             // save battle end status for achievement
             let battle_has_ended = battle.has_ended();
+            let battle_id = battle.entity_id;
 
             // make caller army mobile again
             let army_id = original_army.entity_id;
+            let original_army_side = original_army.battle_side;
             let mut army_protectee: Protectee = world.read_model(army_id);
             let mut army_movable: Movable = world.read_model(army_id);
             if army_protectee.is_none() {
@@ -1388,6 +1388,36 @@ mod battle_utils_systems {
                 store.progress(player_id, task_id, 1, time);
             }
 
+            // emit battle leave event
+            let army_entity_owner: EntityOwner = world.read_model(army_id);
+            let army_owner: Owner = world.read_model(army_entity_owner.entity_owner_id);
+            let army_owner_address: starknet::ContractAddress = army_owner.address;
+            let army_owner_name: AddressName = world.read_model(army_owner_address);
+
+            let battle_position: Position = world.read_model(battle_id);
+            let duration_left = if battle_has_ended {
+                0
+            } else {
+                battle.duration_left
+            };
+            world
+                .emit_event(
+                    @BattleLeaveData {
+                        id: world.dispatcher.uuid(),
+                        event_id: EventType::BattleLeave,
+                        battle_entity_id: battle_id,
+                        leaver: army_owner_address,
+                        leaver_name: army_owner_name.name,
+                        leaver_army_entity_id: army_id,
+                        leaver_side: original_army_side,
+                        duration_left,
+                        x: battle_position.x,
+                        y: battle_position.y,
+                        timestamp: starknet::get_block_timestamp(),
+                    }
+                );
+
+            // return updated battle and army
             (battle, original_army)
         }
     }

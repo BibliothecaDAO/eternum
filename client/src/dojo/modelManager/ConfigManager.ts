@@ -309,10 +309,17 @@ export class ClientConfigManager {
     );
   }
 
-  getBattleGraceTickCount() {
+  getBattleGraceTickCount(category: StructureType) {
     return this.getValueOrDefault(() => {
       const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-      return Number(battleConfig?.regular_immunity_ticks ?? 0);
+      switch (category) {
+        case StructureType.Hyperstructure:
+          return Number(battleConfig?.hyperstructure_immunity_ticks ?? 0);
+        case StructureType.FragmentMine:
+          return 0;
+        default:
+          return Number(battleConfig?.regular_immunity_ticks ?? 0);
+      }
     }, 0);
   }
 
@@ -606,5 +613,40 @@ export class ClientConfigManager {
       );
       return buildingGeneralConfig?.base_cost_percent_increase ?? 0;
     }, 0);
+  }
+
+  getSeasonBridgeConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const seasonBridgeConfig = getComponentValue(
+          this.components.SeasonBridgeConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        );
+        return {
+          closeAfterEndSeconds: seasonBridgeConfig?.close_after_end_seconds ?? 0n,
+        };
+      },
+      {
+        closeAfterEndSeconds: 0n,
+      },
+    );
+  }
+
+  getSeasonConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const season = getComponentValue(this.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        return {
+          startAt: season?.start_at,
+          isOver: season?.is_over,
+          endedAt: season?.ended_at,
+        };
+      },
+      {
+        startAt: 0n,
+        isOver: true,
+        endedAt: 0n,
+      },
+    );
   }
 }

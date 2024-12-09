@@ -79,7 +79,7 @@ export const Rewards = () => {
         }
 
         const difference = endTime - currentTime;
-        setTimeRemaining(formatTime(difference, undefined, false));
+        setTimeRemaining(formatTime(difference, undefined));
       };
 
       calculateTimeRemaining();

@@ -54,9 +54,7 @@ export const StepOne = () => {
 
   return (
     <div className="flex flex-row justify-center space-x-8 items-center">
-      <OnboardingButton onClick={onSpectatorModeClick}>
-        <Eye className="w-4 fill-current mr-2" /> <div>Spectate</div>
-      </OnboardingButton>
+      <SpectateButton onClick={onSpectatorModeClick} />
       <OnboardingButton
         disabled={realms.length <= 0}
         className={`!bg-gold border-none ${
@@ -67,6 +65,14 @@ export const StepOne = () => {
         <Sword className="w-6 fill-current mr-2" /> <div className="text-black">Play</div>
       </OnboardingButton>
     </div>
+  );
+};
+
+export const SpectateButton = ({ onClick }: { onClick: () => void }) => {
+  return (
+    <OnboardingButton onClick={onClick} className="hover:!bg-gold/20">
+      <Eye className="w-4 fill-current mr-2" /> <div>Spectate</div>
+    </OnboardingButton>
   );
 };
 
@@ -191,17 +197,21 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
             {seasonPassElements}
           </div>
           <Button
-            disabled={selectedRealms.length === 0}
+            disabled={selectedRealms.length === 0 || loading}
             onClick={() => settleRealms(selectedRealms)}
             className={`absolute bottom-0 w-full lg:h-10 h-12 !text-black !normal-case rounded-md ${
-              selectedRealms.length <= 0
+              selectedRealms.length <= 0 || loading
                 ? "opacity-50 !bg-gold/50 hover:scale-100 hover:translate-y-0 cursor-not-allowed"
                 : "!bg-gold hover:!bg-gold/80"
             }`}
           >
-            <div className="text-lg !font-normal">{`Settle ${
-              selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""
-            }`}</div>
+            {loading ? (
+              <img src="/images/eternum-logo_animated.png" className="w-7" />
+            ) : (
+              <div className="text-lg !font-normal">{`Settle ${
+                selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""
+              }`}</div>
+            )}
           </Button>
         </div>
       </div>

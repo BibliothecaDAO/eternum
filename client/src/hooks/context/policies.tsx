@@ -37,6 +37,10 @@ export const policies = [
   },
   {
     target: "0x18658254d1d1602ad1e1672819d8736d0e691af97c215294c57e2efa6ea5c58",
+    method: "battle_resolve",
+  },
+  {
+    target: "0x18658254d1d1602ad1e1672819d8736d0e691af97c215294c57e2efa6ea5c58",
     method: "battle_force_start",
   },
   {
