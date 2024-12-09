@@ -12,3 +12,7 @@ contracts = [
     "erc721:0x3205f47bd6f0b5e9cd5c79fcae19e12523a024709776d0a9e8b375adf63468d",
     "erc20:0x1802f8c2c742e6114291b0c4ff1c707c6e220ce0557b94a3036fa24ccb1b234",
 ]
+
+[events]
+raw = true
+historical = ["s0_eternum-TrophyCreation", "s0_eternum-TrophyProgression"]

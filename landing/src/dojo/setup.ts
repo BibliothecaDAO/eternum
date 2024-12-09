@@ -38,6 +38,8 @@ export async function setup({ ...config }: DojoConfig) {
     "Structure",
     // todo: these are needed only for the bridge: how to improve this?
     "Position",
+    "WeightConfig",
+    "CapacityConfig",
     "EntityOwner",
     "ArrivalTime",
     "OwnedResourcesTracker",

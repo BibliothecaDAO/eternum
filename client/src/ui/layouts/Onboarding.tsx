@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "../components/cityview/realm/SettleRealmComponent";
+import { ResourceIcon } from "../elements/ResourceIcon";
 import { Controller } from "../modules/controller/Controller";
 import { SettleRealm, StepOne } from "../modules/onboarding/Steps";
 import { formatTime } from "../utils/utils";
@@ -107,7 +108,7 @@ export const StepContainer = ({
               <BackArrow className="w-6 h-6 mr-2 fill-current" />
               <div className="w-14 text-base font-normal normal-case inline">Back</div>
             </Button>
-            <div className="w-full h-full pb-4 mt-2">
+            <div className="w-full h-full py-1">
               <TermsOfService />
             </div>
           </div>
@@ -130,7 +131,7 @@ export const StepContainer = ({
       {tos && (
         <div className="mt-4">
           <div className={`relative ${width}`}>
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center backdrop-filter backdrop-blur-[24px] bg-black/20 rounded-lg p-2">
               <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
               <p className="text-xs text-center align-bottom my-auto" onClick={() => setDisplayTermsOfService(true)}>
                 By continuing you are agreeing to Eternum's <span className="inline underline">Terms of Service</span>
@@ -234,24 +235,43 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
       )}
     </Button>
   ) : (
-    <a
-      className="text-black cursor-pointer text-lg"
-      href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <Button
-        onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
-        className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
-          realms.length === 0 ? "animate-pulse" : ""
-        }`}
+    <div className="flex gap-2 justify-between w-full">
+      <a
+        className="text-brown cursor-pointer text-lg w-full"
+        href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
+        target="_blank"
+        rel="noopener noreferrer"
       >
-        <div className="flex items-center">
-          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-black text-black" />
-          Get Season Pass
-        </div>
-      </Button>
-    </a>
+        <Button
+          onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
+          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+            realms.length === 0 ? "animate-pulse" : ""
+          }`}
+        >
+          <div className="flex items-center">
+            <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
+            Get Season Pass
+          </div>
+        </Button>
+      </a>
+      <a
+        className="text-brown cursor-pointer text-lg w-full"
+        href={`https://empire.realms.world/trade`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Button
+          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+            realms.length === 0 ? "animate-pulse" : ""
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <ResourceIcon resource="Lords" size="xs" />
+            Bridge in Lords
+          </div>
+        </Button>
+      </a>
+    </div>
   );
 };
 

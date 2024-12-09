@@ -604,6 +604,11 @@ export interface SetAccessProps extends SystemSigner {
   access: num.BigNumberish;
 }
 
+export interface GetPointsProps extends SystemSigner {
+  player_address: num.BigNumberish;
+  hyperstructure_contributed_to: number[];
+  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
+}
 export interface EndGameProps extends SystemSigner {
   hyperstructure_contributed_to: number[];
   hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];

@@ -1,9 +1,10 @@
 import { configManager } from "@/dojo/setup";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
-import { displayAddress } from "@/lib/utils";
+import { displayAddress, multiplyByPrecision } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
@@ -12,13 +13,16 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { Loader, Plus } from "lucide-react";
+import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
 
 function formatFee(fee: number) {
@@ -131,7 +135,7 @@ export const BridgeIn = () => {
       const totalWeight = getTotalResourceWeight(
         validSelections.map((selection) => ({
           resourceId: ResourcesIds[selection.contract as keyof typeof ResourcesIds],
-          amount: Number(selection.amount),
+          amount: multiplyByPrecision(Number(selection.amount)),
         })),
       );
       return totalWeight;
@@ -147,6 +151,14 @@ export const BridgeIn = () => {
       return 0;
     }
   }, [orderWeight]);
+  const { getBalance } = getResourceBalance();
+  const donkeyBalance = useMemo(() => {
+    if (realmEntityId) {
+      return getBalance(Number(realmEntityId), ResourcesIds.Donkey);
+    } else {
+      return { balance: 0 };
+    }
+  }, [getBalance, realmEntityId]);
 
   const { bridgeIntoRealm } = useBridgeAsset();
 
@@ -182,27 +194,42 @@ export const BridgeIn = () => {
   };
 
   return (
-    <div className="w-96 flex flex-col gap-3">
+    <div className="max-w-md flex flex-col gap-3">
+      <TypeP>
+        Bridge resources and lords from your Starknet wallet into the Eternum game. You will have to complete the claim
+        on your Realm in the{" "}
+        <a href="https://eternum.realms.world/" target="_blank" className="text-gold underline">
+          game
+        </a>
+        .
+      </TypeP>
+      <hr />
       <div className="flex justify-between">
-        <div>From Wallet</div>
-        <div>{displayAddress(address || "")}</div>
+        <div className="flex flex-col ">
+          <div className="text-xs uppercase mb-1 ">From Wallet</div>
+          <div>{displayAddress(address || "")}</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase mb-1">To Realm</div>
+
+          <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
+            <SelectTrigger className="w-full border-gold/15">
+              <SelectValue placeholder="Select Realm To Transfer" />
+            </SelectTrigger>
+            <SelectContent>
+              {playerRealmsIdAndName.length
+                ? playerRealmsIdAndName.map((realm) => {
+                    return (
+                      <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
+                        #{realm.realmId} - {realm.name}
+                      </SelectItem>
+                    );
+                  })
+                : "No Realms settled in Eternum"}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
-        <SelectTrigger className="w-full border-gold/15">
-          <SelectValue placeholder="Select Realm To Transfer" />
-        </SelectTrigger>
-        <SelectContent>
-          {playerRealmsIdAndName.length
-            ? playerRealmsIdAndName.map((realm) => {
-                return (
-                  <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                    #{realm.realmId} - {realm.name}
-                  </SelectItem>
-                );
-              })
-            : "No Realms settled in Eternum"}
-        </SelectContent>
-      </Select>
 
       {resourceSelections.map((selection) => (
         <SelectResourceToBridge
@@ -212,6 +239,7 @@ export const BridgeIn = () => {
           setselectedResourceContract={(value) => handleResourceChange(selection.id, "contract", value)}
           onRemove={() => handleResourceRemove(selection.id)}
           showRemove={resourceSelections.length > 1}
+          resourceSelections={resourceSelections}
         />
       ))}
 
@@ -225,8 +253,23 @@ export const BridgeIn = () => {
           <div>{travelTimeInHoursAndMinutes(travelTime ?? 0)}</div>
         </div>
         <div className="flex justify-between">
-          <div>Donkeys Needed</div>
-          <div>{donkeysNeeded}</div>
+          <div>
+            Donkeys Burnt
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <InfoIcon className="ml-2 w-4 h-4" />
+                </TooltipTrigger>
+                <TooltipContent className="bg-background border rounded p-2 max-w-64 text-gold">
+                  Donkeys are required on your Realmto transport the resources to the bank. Finish the starting quests
+                  in game for free donkeys
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="flex items-center gap-2">
+            {donkeysNeeded} / {donkeyBalance.balance} <ResourceIcon withTooltip={false} resource={"Donkey"} size="md" />
+          </div>
         </div>
         <hr />
         <Collapsible>
@@ -288,7 +331,9 @@ export const BridgeIn = () => {
 
             return (
               <div key={index} className="flex justify-between text-sm font-normal">
-                <div>{selection.contract}</div>
+                <div className="flex items-center gap-2">
+                  <ResourceIcon resource={selection.contract} size="md" /> {selection.contract}
+                </div>
                 <div>{formatFee(Number(selection.amount) - totalFees)}</div>
               </div>
             );
@@ -300,7 +345,7 @@ export const BridgeIn = () => {
         onClick={() => onBridgeIntoRealm()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
-        {isLoading ? "Transferring..." : "Initiate Transfer"}
+        {isLoading ? "Transferring..." : !realmEntityId ? "Select a Realm" : "Initiate Transfer"}
       </Button>
     </div>
   );
@@ -312,12 +357,14 @@ export const SelectResourceToBridge = ({
   setselectedResourceContract,
   onRemove,
   showRemove,
+  resourceSelections,
 }: {
   selectedResourceAmount: string;
   setselectedResourceAmount: (value: string) => void;
   setselectedResourceContract: (value: string) => void;
   onRemove: () => void;
   showRemove: boolean;
+  resourceSelections: ResourceSelection[];
 }) => {
   return (
     <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
@@ -337,8 +384,15 @@ export const SelectResourceToBridge = ({
           {Object.values(ResourcesIds)
             .filter((resource) => isNaN(Number(resource)))
             .map((resource) => (
-              <SelectItem key={resource} value={resource.toString()}>
-                {resource}
+              <SelectItem
+                key={resource}
+                disabled={resourceSelections.some((selection) => selection.contract === resource)}
+                value={resource.toString()}
+              >
+                <div className="flex items-center gap-2">
+                  <ResourceIcon resource={resource as string} size="md" />
+                  {resource}
+                </div>
               </SelectItem>
             ))}
         </SelectContent>
