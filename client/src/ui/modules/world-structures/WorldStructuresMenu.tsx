@@ -78,6 +78,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
               panel={({ entity }) => <HyperstructurePanel entity={entity} />}
               entityContent={hyperstructureExtraContent}
               list={hyperstructures
+                .filter((hyperstructure) => hyperstructure.created_at)
                 .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
                 .map((hyperstructure) => ({
                   id: hyperstructure.entity_id,
