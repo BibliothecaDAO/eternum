@@ -250,11 +250,16 @@ const HyperStructureExtraContent = ({
 
   const progress = useHyperstructureProgress(hyperstructureEntityId);
 
+  const latestChangeEvent = LeaderboardManager.instance().getCurrentCoOwners(hyperstructureEntityId);
+
+  const needTosetCoOwners = !latestChangeEvent && progress.percentage === 100;
+
   return (
     <BaseStructureExtraContent x={x} y={y} entityId={hyperstructureEntityId}>
       <div className="flex items-center gap-2">
         <span className="text-gold/80">Progress:</span>
         <span className="font-medium">{`${progress.percentage}%`}</span>
+        {needTosetCoOwners && <div className="text-xs text-red animate-pulse">Co-owners not set</div>}
       </div>
       <div className="flex items-center gap-2">
         <span className="text-gold/80">Shares:</span>
