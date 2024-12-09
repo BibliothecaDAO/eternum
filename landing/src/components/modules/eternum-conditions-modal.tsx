@@ -48,7 +48,7 @@ export function EternumConditionsModal({ open, onOpenChange }: EternumConditions
           <section>
             <TypeH3>Disclaimer and Risk Acknowledgment</TypeH3>
             <TypeP>
-              Important Disclaimer – Please Read Carefully <br />
+              <strong className="text-2xl">Important Disclaimer – Please Read Carefully</strong> <br />
               By participating in Eternum, you fully acknowledge and accept the following terms and conditions.
             </TypeP>
           </section>
@@ -67,7 +67,7 @@ export function EternumConditionsModal({ open, onOpenChange }: EternumConditions
             <p>
               All transactions and gameplay actions in Eternum are <strong>final</strong> and ALL $LORDS tokens and
               in-game resources are
-              <strong>permanently</strong> locked within the game. There are no mechanisms for refunds, reversals, or
+              <strong> permanently</strong> locked within the game. There are no mechanisms for refunds, reversals, or
               compensation. You acknowledge the <strong>risk of loss of funds</strong> and accept that you bear sole
               responsibility for any financial impact incurred.
             </p>
@@ -78,7 +78,8 @@ export function EternumConditionsModal({ open, onOpenChange }: EternumConditions
             </p>
             <ul className="list-disc pl-6 mt-2">
               <li>
-                ALL $LORDS tokens and in-game resources are <strong>permanently</strong> locked within the game.
+                There is a 48hr withdraw period allowing withdrawl of $LORDS tokens and in-game resources. After this
+                point all resources and lords are permanently locked within the game. (burnt forever)
               </li>
             </ul>
             <p className="mt-4">

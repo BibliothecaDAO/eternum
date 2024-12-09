@@ -107,15 +107,18 @@ pub impl LeaderboardEntryImpl of LeaderboardEntryTrait {
     }
 
     fn register(ref self: Leaderboard, ref world: WorldStorage, address: starknet::ContractAddress, points: u128) {
-        // allow single registration per address to prevent `self.total_points` inflation
         let mut leaderboard_registered: LeaderboardRegistered = world.read_model(address);
         if !leaderboard_registered.registered {
             leaderboard_registered.registered = true;
             world.write_model(@leaderboard_registered);
         }
 
-        let mut leaderboard_entry = LeaderboardEntry { address, points };
+        // update leaderboard entry points
+        let mut leaderboard_entry: LeaderboardEntry = world.read_model(address);
+        leaderboard_entry.points += points;
         world.write_model(@leaderboard_entry);
+
+        // update leaderboard total points
         self.total_points += points;
         world.write_model(@self);
     }

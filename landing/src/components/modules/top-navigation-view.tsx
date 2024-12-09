@@ -2,6 +2,7 @@ import { displayAddress } from "@/lib/utils";
 import ControllerConnector from "@cartridge/connector/controller";
 import { ExitIcon } from "@radix-ui/react-icons";
 import { useAccount } from "@starknet-react/core";
+import { PlayIcon } from "lucide-react";
 import { Uint256, uint256 } from "starknet";
 import { formatEther } from "viem";
 import { env } from "../../../env";
@@ -48,6 +49,18 @@ export const TopNavigationView = ({
             Mint Test Lords
           </Button>
         ) : null}
+
+        <Button
+          disabled={!address}
+          variant="cta"
+          onClick={() => {
+            window.open("https://eternum.realms.world", "_blank");
+          }}
+          className="gap-2"
+        >
+          <PlayIcon className="!w-4 h-2" />
+          Play Eternum
+        </Button>
       </div>
       <SeasonStartTimer />
       <div className="flex gap-2 justify-between">
