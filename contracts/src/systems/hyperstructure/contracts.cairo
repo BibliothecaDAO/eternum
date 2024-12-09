@@ -12,7 +12,7 @@ use s0_eternum::{
 };
 use starknet::ContractAddress;
 
-const LEADERBOARD_REGISTRATION_PERIOD: u64 = 3600; // one week
+const LEADERBOARD_REGISTRATION_PERIOD: u64 = 60 * 60 * 24 * 7; // one week
 
 #[starknet::interface]
 trait IHyperstructureSystems<T> {
