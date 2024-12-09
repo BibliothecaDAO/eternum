@@ -13,6 +13,7 @@ export enum TransactionType {
   ARMY_BUY_TROOPS = "army_buy_troops",
   ARMY_MERGE_TROOPS = "army_merge_troops",
   BATTLE_START = "battle_start",
+  BATTLE_RESOLVE = "battle_resolve",
   BATTLE_FORCE_START = "battle_force_start",
   BATTLE_JOIN = "battle_join",
   BATTLE_LEAVE = "battle_leave",
