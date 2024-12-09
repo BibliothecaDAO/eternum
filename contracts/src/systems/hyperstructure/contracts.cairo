@@ -38,7 +38,7 @@ mod hyperstructure_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use s0_eternum::constants::DEFAULT_NS;
-    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::season::{Season, SeasonImpl};
     use s0_eternum::utils::random::VRFImpl;
     use s0_eternum::utils::tasks::index::{Task, TaskTrait};
     use s0_eternum::{
@@ -548,8 +548,11 @@ mod hyperstructure_systems {
         ) -> u128 {
             let mut points = 0;
             let mut i = 0;
-
-            let timestamp = starknet::get_block_timestamp();
+            let mut end_point_generation_at = starknet::get_block_timestamp();
+            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
+            if season.ended_at.is_non_zero() {
+                end_point_generation_at = season.ended_at;
+            }
 
             let player_address = starknet::get_caller_address();
             while (i < hyperstructure_shareholder_epochs.len()) {
@@ -559,7 +562,7 @@ mod hyperstructure_systems {
                 let next_epoch: Epoch = world.read_model((hyperstructure_entity_id, index + 1));
 
                 let next_epoch_start_timestamp = if (next_epoch.owners.len() == 0) {
-                    timestamp
+                    end_point_generation_at
                 } else {
                     next_epoch.start_timestamp
                 };
