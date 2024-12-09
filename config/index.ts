@@ -81,7 +81,8 @@ const setupConfig: Config =
         // bridge close after 2 hours in dev mode
         season: {
           ...EternumGlobalConfig.season,
-          bridgeCloseAfterEndSeconds: 60 * 60 * 2, // 2 hours
+          startAfterSeconds: 60 * 10, // 10 minutes
+          bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 2 hours
         },
 
         // bridge fees to multi in dev mode
@@ -99,7 +100,7 @@ const setupConfig: Config =
           //   min_amount: 1,
           //   max_amount: 1,
           // })),
-          hyperstructurePointsForWin: 500_000,
+          hyperstructurePointsForWin: 100_000,
           hyperstructureTotalCosts: [
             ...EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
               resource_tier: cost.resource_tier,
