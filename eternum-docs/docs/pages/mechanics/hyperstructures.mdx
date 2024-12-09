@@ -3,7 +3,8 @@ import { formatNumberWithSpaces } from "../../../src/utils/formatting";
 
 # 🏛️ Hyperstructures
 
-Hyperstructures are massive social engineering projects that can be constructucted in the Eternum world.
+Hyperstructures are massive social engineering projects that can be constructucted in the Eternum world. View and manage
+Hyperstructures in the World Map under World Structures.
 
 <img
   src="/buildings/hyperstructure.png"
@@ -16,7 +17,7 @@ Hyperstructures are massive social engineering projects that can be constructuct
 
 Initiating a Hyperstructure requires Ancient Fragments, precious artifacts that can only be obtained from Fragment
 mines. Once you have the necessary Fragments, you can begin construction at any discovered location on the map. Once
-constructed: {/* TODO: Dynamic Tick */}
+constructed:
 
 - **No battle siege period**
 - **One Eternum cycle immunity period** begins where it cannot be attacked
@@ -31,13 +32,13 @@ constructed: {/* TODO: Dynamic Tick */}
 
 Construction of a Hyperstructure demands careful resource management and coordination:
 
-- Requires contributions of all 22 resource types
+- Requires contributions of 22 resource types
 - Multiple players can participate in the construction
 - Structure becomes operational once all requirements are met
 
 Hyperstructures will require a random amount of resources based on resource tiers. This means that a Hyperstructure may
 be cheaper to complete compared to other Hyperstructures. These are based on random values and will only be discovered
-once a Hypersturcture is created.
+once a Hyperstructure is created.
 
 ## Victory Points System
 
@@ -68,9 +69,12 @@ generated. If you don't set co-owners, NO POINTS WILL BE ACCRUED, even if the Hy
 Once co-owners are set, points are generated as follows:
 
 - {EternumGlobalConfig.hyperstructures.hyperstructurePointsPerCycle} points are generated each Eternum cycle
+
+- Distribution follows a share-based system
 - Points are automatically distributed according to share percentages
-- The structure owner controls share allocations
-- Share modifications have a 48-hour cooldown period
+- The structure owner can control and set share allocations
+- Set Shares to your Hyperstructure from the World Structure menu
+- Share modifications have a 48 hour cooldown period
 
 ## Strategic Considerations
 
