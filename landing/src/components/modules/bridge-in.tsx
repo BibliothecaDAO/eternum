@@ -39,26 +39,21 @@ export const BridgeIn = () => {
   const { getRealmNameById } = useRealm();
   const [isLoading, setIsLoading] = useState(false);
   const [resourceSelections, setResourceSelections] = useState<ResourceSelection[]>([
-    { id: 0, amount: "", contract: "" }
+    { id: 0, amount: "", contract: "" },
   ]);
 
-  const handleResourceChange = (id: number, field: 'amount' | 'contract', value: string) => {
-    setResourceSelections(prev => 
-      prev.map(selection => 
-        selection.id === id ? { ...selection, [field]: value } : selection
-      )
+  const handleResourceChange = (id: number, field: "amount" | "contract", value: string) => {
+    setResourceSelections((prev) =>
+      prev.map((selection) => (selection.id === id ? { ...selection, [field]: value } : selection)),
     );
   };
 
   const handleResourceRemove = (id: number) => {
-    setResourceSelections(prev => prev.filter(selection => selection.id !== id));
+    setResourceSelections((prev) => prev.filter((selection) => selection.id !== id));
   };
 
   const addResourceSelection = () => {
-    setResourceSelections(prev => [
-      ...prev, 
-      { id: prev.length, amount: "", contract: "" }
-    ]);
+    setResourceSelections((prev) => [...prev, { id: prev.length, amount: "", contract: "" }]);
   };
 
   const bridgeConfig = EternumGlobalConfig.bridge;
@@ -73,8 +68,8 @@ export const BridgeIn = () => {
 
   const calculateTotalFeesForAllResources = useMemo(() => {
     return resourceSelections
-      .filter(selection => selection.amount && selection.contract)
-      .map(selection => ({
+      .filter((selection) => selection.amount && selection.contract)
+      .map((selection) => ({
         velordsFee: formatFee(calculateBridgeFee(bridgeConfig.velords_fee_on_dpt_percent, selection.amount)),
         seasonPoolFee: formatFee(calculateBridgeFee(bridgeConfig.season_pool_fee_on_dpt_percent, selection.amount)),
         clientFee: formatFee(calculateBridgeFee(bridgeConfig.client_fee_on_dpt_percent, selection.amount)),
@@ -90,7 +85,7 @@ export const BridgeIn = () => {
         clientFee: acc.clientFee + Number(fees.clientFee),
         bankFee: acc.bankFee + Number(fees.bankFee),
       }),
-      { velordsFee: 0, seasonPoolFee: 0, clientFee: 0, bankFee: 0 }
+      { velordsFee: 0, seasonPoolFee: 0, clientFee: 0, bankFee: 0 },
     );
 
     return {
@@ -98,9 +93,7 @@ export const BridgeIn = () => {
       seasonPoolFeeOnDeposit: formatFee(totals.seasonPoolFee),
       clientFeeOnDeposit: formatFee(totals.clientFee),
       bankFeeOnDeposit: formatFee(totals.bankFee),
-      totalFeeOnDeposit: formatFee(
-        totals.velordsFee + totals.seasonPoolFee + totals.clientFee + totals.bankFee
-      ),
+      totalFeeOnDeposit: formatFee(totals.velordsFee + totals.seasonPoolFee + totals.clientFee + totals.bankFee),
     };
   }, [calculateTotalFeesForAllResources]);
 
@@ -133,17 +126,14 @@ export const BridgeIn = () => {
   };
 
   const orderWeight = useMemo(() => {
-    const validSelections = resourceSelections.filter(
-      selection => selection.contract && selection.amount
-    );
+    const validSelections = resourceSelections.filter((selection) => selection.contract && selection.amount);
     if (validSelections.length > 0) {
       const totalWeight = getTotalResourceWeight(
-        validSelections.map(selection => ({
+        validSelections.map((selection) => ({
           resourceId: ResourcesIds[selection.contract as keyof typeof ResourcesIds],
           amount: Number(selection.amount),
-        }))
+        })),
       );
-      console.log(totalWeight)
       return totalWeight;
     } else {
       return 0;
@@ -163,30 +153,26 @@ export const BridgeIn = () => {
   const onBridgeIntoRealm = async () => {
     try {
       setIsLoading(true);
-      
-      // Filter out invalid selections and map to required format
+
+      const resourceAddresses = await getSeasonAddresses();
       const validResources = await Promise.all(
         resourceSelections
-          .filter(selection => selection.contract && selection.amount)
-          .map(async selection => {
-            const resourceAddresses = await getSeasonAddresses();
-            const tokenAddress = resourceAddresses[selection.contract.toLocaleUpperCase() as keyof typeof resourceAddresses][1];
+          .filter((selection) => selection.contract && selection.amount)
+          .map(async (selection) => {
+            const tokenAddress =
+              resourceAddresses[selection.contract.toLocaleUpperCase() as keyof typeof resourceAddresses][1];
             return {
               tokenAddress: tokenAddress as string,
               amount: BigInt((selection.amount as unknown as number) * 10 ** 18),
             };
-          })
+          }),
       );
 
       if (validResources.length === 0) {
         throw new Error("No valid resources selected");
       }
 
-      await bridgeIntoRealm(
-        validResources,
-        ADMIN_BANK_ENTITY_ID,
-        BigInt(realmEntityId!),
-      );
+      await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
     } catch (error) {
       console.error("Bridge into realm error:", error);
       toast.error("Failed to transfer resources");
@@ -206,13 +192,15 @@ export const BridgeIn = () => {
           <SelectValue placeholder="Select Realm To Transfer" />
         </SelectTrigger>
         <SelectContent>
-          {playerRealmsIdAndName.length ? playerRealmsIdAndName.map((realm) => {
-            return (
-              <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                #{realm.realmId} - {realm.name}
-              </SelectItem>
-            );
-          }) : "No Realms settled in Eternum"}
+          {playerRealmsIdAndName.length
+            ? playerRealmsIdAndName.map((realm) => {
+                return (
+                  <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
+                    #{realm.realmId} - {realm.name}
+                  </SelectItem>
+                );
+              })
+            : "No Realms settled in Eternum"}
         </SelectContent>
       </Select>
 
@@ -220,19 +208,14 @@ export const BridgeIn = () => {
         <SelectResourceToBridge
           key={selection.id}
           selectedResourceAmount={selection.amount}
-          setselectedResourceAmount={(value) => handleResourceChange(selection.id, 'amount', value ?? 0)}
-          setselectedResourceContract={(value) => handleResourceChange(selection.id, 'contract', value)}
+          setselectedResourceAmount={(value) => handleResourceChange(selection.id, "amount", value ?? 0)}
+          setselectedResourceContract={(value) => handleResourceChange(selection.id, "contract", value)}
           onRemove={() => handleResourceRemove(selection.id)}
           showRemove={resourceSelections.length > 1}
         />
       ))}
 
-      <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={addResourceSelection}
-        className="mb-2"
-      >
+      <Button variant="outline" size="sm" onClick={addResourceSelection} className="mb-2">
         <Plus className="h-4 w-4 mr-2" /> Add Resource
       </Button>
 
@@ -260,20 +243,27 @@ export const BridgeIn = () => {
             {calculateTotalFeesForAllResources.map((fees, index) => {
               const resource = resourceSelections[index];
               if (!resource.contract || !resource.amount) return null;
-              
+
               return (
                 <div key={index} className="flex flex-col gap-2">
-                  <div className="font-semibold text-sm">{resource.contract} - {resource.amount}</div>
+                  <div className="font-semibold text-sm">
+                    {resource.contract} - {resource.amount}
+                  </div>
                   <div className="flex justify-between text-xs">
                     <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_dpt_percent)}%)</div>
                     <div>{fees.bankFee}</div>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_dpt_percent)}%)</div>
+                    <div>
+                      Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_dpt_percent)}%)
+                    </div>
                     <div>{fees.velordsFee}</div>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <div>Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_dpt_percent)}%)</div>
+                    <div>
+                      Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_dpt_percent)}
+                      %)
+                    </div>
                     <div>{fees.seasonPoolFee}</div>
                   </div>
                   <div className="flex justify-between text-xs">
@@ -293,9 +283,9 @@ export const BridgeIn = () => {
           {resourceSelections.map((selection, index) => {
             if (!selection.amount || !selection.contract) return null;
             const fees = calculateTotalFeesForAllResources[index];
-            const totalFees = Number(fees.bankFee) + Number(fees.velordsFee) + 
-                             Number(fees.seasonPoolFee) + Number(fees.clientFee);
-            
+            const totalFees =
+              Number(fees.bankFee) + Number(fees.velordsFee) + Number(fees.seasonPoolFee) + Number(fees.clientFee);
+
             return (
               <div key={index} className="flex justify-between text-sm font-normal">
                 <div>{selection.contract}</div>
@@ -306,7 +296,7 @@ export const BridgeIn = () => {
         </div>
       </div>
       <Button
-        disabled={(resourceSelections[0].amount === "" || !resourceSelections[0].contract) || isLoading || !realmEntityId}
+        disabled={resourceSelections[0].amount === "" || !resourceSelections[0].contract || isLoading || !realmEntityId}
         onClick={() => onBridgeIntoRealm()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
@@ -353,14 +343,9 @@ export const SelectResourceToBridge = ({
             ))}
         </SelectContent>
       </Select>
-      
+
       {showRemove && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onRemove}
-          className="h-8 w-8 text-red-500 hover:text-red-600"
-        >
+        <Button variant="ghost" size="icon" onClick={onRemove} className="h-8 w-8 text-red-500 hover:text-red-600">
           ×
         </Button>
       )}

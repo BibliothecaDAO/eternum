@@ -16,7 +16,11 @@ export const useBridgeAsset = () => {
   const { account } = useAccount();
 
   const _bridgeIntoRealm = useCallback(
-    async (resources: {tokenAddress: string, amount: bigint}[], throughBankId: bigint, recipientRealmEntityId: bigint) => {
+    async (
+      resources: { tokenAddress: string; amount: bigint }[],
+      throughBankId: bigint,
+      recipientRealmEntityId: bigint,
+    ) => {
       if (account) {
         await bridge_resources_into_realm({
           signer: account,

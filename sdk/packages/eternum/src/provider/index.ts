@@ -331,13 +331,9 @@ export class EternumProvider extends EnhancedDojoProvider {
         resource.amount,
         0, // u128, u128
         client_fee_recipient,
-      ],    }));
-      console.log([
-        ...approvalCalls, ...depositCalls
-      ])
-    return await this.executeAndCheckTransaction(signer, [
-      ...approvalCalls, ...depositCalls
-    ]);
+      ],
+    }));
+    return await this.executeAndCheckTransaction(signer, [...approvalCalls, ...depositCalls]);
   }
 
   /**

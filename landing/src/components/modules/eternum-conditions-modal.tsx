@@ -15,11 +15,11 @@ export function EternumConditionsModal({ open, onOpenChange }: EternumConditions
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
 
   useEffect(() => {
-    setHasAcceptedTerms(!!localStorage.getItem('eternum-terms-accepted'));
+    setHasAcceptedTerms(!!localStorage.getItem("eternum-terms-accepted"));
   }, []);
 
   const handleAcceptTerms = () => {
-    localStorage.setItem('eternum-terms-accepted', 'true');
+    localStorage.setItem("eternum-terms-accepted", "true");
     setHasAcceptedTerms(true);
     onOpenChange(false);
   };
