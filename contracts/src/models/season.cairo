@@ -114,8 +114,12 @@ pub impl LeaderboardEntryImpl of LeaderboardEntryTrait {
             world.write_model(@leaderboard_registered);
         }
 
+        // update leaderboard entry points
         let mut leaderboard_entry: LeaderboardEntry = world.read_model(address);
+        leaderboard_entry.points += points;
         world.write_model(@leaderboard_entry);
+
+        // update leaderboard total points
         self.total_points += points;
         world.write_model(@self);
     }
