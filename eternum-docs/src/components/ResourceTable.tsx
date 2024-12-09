@@ -31,7 +31,7 @@ export default function ResourceTable() {
   }, []);
 
   return (
-    <div className="p-6 mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5">
+    <div className="px-6 pt-6 mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5">
       <h4 className="text-xl font-bold mb-4">Resource Table</h4>
       <table className="w-full border-separate border-spacing-y-5">
         <thead>
@@ -46,8 +46,8 @@ export default function ResourceTable() {
             <tr key={resource.resource_type}>
               <td className="border-b py-4">
                 <div className="flex items-center gap-4">
-                  <ResourceIcon size={80} id={resource.resource?.id || 0} name={resource.resource?.trait || ""} />
-                  <div className="text-lg text-gray-800 dark:text-gray-300 font-medium">
+                  <ResourceIcon size="xl" id={resource.resource?.id || 0} name={resource.resource?.trait || ""} />
+                  <div className="text-lg text-gray-400 dark:text-gray-300 font-medium">
                     {resource.resource?.trait || "Unknown Resource"}
                   </div>
                 </div>
@@ -60,10 +60,10 @@ export default function ResourceTable() {
                   {resource.cost.map((cost) => (
                     <div
                       key={cost.resource}
-                      className="p-3 rounded-lg border border-gray-800 dark:bg-gray-800 bg-white/5"
+                      className="p-3 rounded-lg border border-gray-800 dark:bg-gray-400 bg-white/5"
                     >
                       <div className="flex items-center gap-2">
-                        <ResourceIcon size={30} id={cost.resource} name={cost.name || ""} />
+                        <ResourceIcon size="lg" id={cost.resource} name={cost.name || ""} />
                         <div>
                           <span className="text-md">{cost.amount}</span>
                           <div className="font-bold">{cost.name}</div>

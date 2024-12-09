@@ -1,4 +1,4 @@
-import { BuildingType } from "@bibliothecadao/eternum";
+import { BUILDING_CAPACITY, BuildingType } from "@bibliothecadao/eternum";
 import BuildingCosts from "./BuildingCosts";
 import { BUILDING_POPULATION } from "@bibliothecadao/eternum";
 
@@ -17,6 +17,7 @@ interface BuildingCardProps {
 
 export default function BuildingCard({ title, image, buildingType, description, multipleImages }: BuildingCardProps) {
   const population = BUILDING_POPULATION[buildingType] || 0;
+  const populationCapacity = BUILDING_CAPACITY[buildingType] || 0;
 
   return (
     <div className="p-6 mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5">
@@ -29,12 +30,19 @@ export default function BuildingCard({ title, image, buildingType, description, 
           ))}
         </div>
       ) : (
-        <img src={typeof image === "string" ? image : ""} alt={title} width="300" className="float-right" />
+        <img src={typeof image === "string" ? image : ""} alt={title} width="250" className="float-right" />
       )}
 
-      <div className="mt-2 text-lg text-gray-700 dark:text-gray-300">
-        <strong>Population:</strong> +{population}
-      </div>
+      {population !== 0 && (
+        <div className="mt-2 text-lg text-gray-500 dark:text-gray-300">
+          <strong>Population:</strong> +{population}
+        </div>
+      )}
+      {populationCapacity !== 0 && (
+        <div className="mt-2 text-lg text-gray-500 dark:text-gray-300">
+          <strong>Population Capacity:</strong> +{populationCapacity}
+        </div>
+      )}
 
       <BuildingCosts buildingType={buildingType} />
 

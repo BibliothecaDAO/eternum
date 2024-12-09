@@ -1,7 +1,4 @@
----
-title: Units
-description: Military and combat mechanics in Eternum
----
+import { STAMINA_REFILL_PER_TICK } from "@bibliothecadao/eternum";
 
 ## Military Units
 
@@ -34,7 +31,7 @@ description: Military and combat mechanics in Eternum
 
 - Army maximum stamina is determined by its composition
 - The unit with the **lowest** stamina pool sets the army limit
-- Stamina regenerates at a fixed rate for all unit types every Eternum cycle
+- Regenerates {STAMINA_REFILL_PER_TICK} ⚡️ stamina every Eternum day.
 - Stamina is consumed when moving across tiles
 
 🏃 **Movement Mechanics**

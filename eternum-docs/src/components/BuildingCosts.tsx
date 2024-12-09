@@ -27,8 +27,11 @@ export default function BuildingCosts({ buildingType }: Props) {
             const resource = findResourceById(cost.resource);
             return (
               <div key={cost.resource} className="flex items-center gap-1 px-2 py-1.5 rounded-md">
-                <ResourceIcon size={24} id={cost.resource} name={resource?.trait || ""} />
-                <span className="font-medium">{formatAmount(cost.amount)}</span>
+                <ResourceIcon size="xl" id={cost.resource} name={resource?.trait || ""} />
+                <div className="flex flex-col">
+                  <span className="font-medium">{resource?.trait}</span>
+                  <span className="font-medium">{formatAmount(cost.amount)}</span>
+                </div>
               </div>
             );
           })}
@@ -37,8 +40,11 @@ export default function BuildingCosts({ buildingType }: Props) {
             const resource = findResourceById(cost.resource);
             return (
               <div key={cost.resource} className="flex items-center gap-1 px-2 py-1.5 rounded-md">
-                <ResourceIcon size={24} id={cost.resource} name={resource?.trait || ""} />
-                <span className="font-medium">{formatAmount(cost.amount)}</span>
+                <ResourceIcon size="xl" id={cost.resource} name={resource?.trait || ""} />
+                <div className="flex flex-col">
+                  <span className="font-medium">{resource?.trait}</span>
+                  <span className="font-medium">{formatAmount(cost.amount)}</span>
+                </div>
               </div>
             );
           })}
@@ -52,13 +58,16 @@ export default function BuildingCosts({ buildingType }: Props) {
   return (
     <div className="my-4 p-3">
       <div className="font-bold mb-2">Building costs:</div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {costs.map((cost) => {
           const resource = findResourceById(cost.resource);
           return (
             <div key={cost.resource} className="flex items-center gap-1 px-2 py-1.5 rounded-md">
-              <ResourceIcon size={24} id={cost.resource} name={resource?.trait || ""} />
-              <span className="font-medium">{formatAmount(cost.amount)}</span>
+              <ResourceIcon size="xl" id={cost.resource} name={resource?.trait || ""} />
+              <div className="flex flex-col">
+                <span className="font-medium">{resource?.trait}</span>
+                <span className="font-medium">{formatAmount(cost.amount)}</span>
+              </div>
             </div>
           );
         })}
