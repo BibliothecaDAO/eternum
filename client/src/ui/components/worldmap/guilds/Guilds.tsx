@@ -1,4 +1,5 @@
 import { useGuilds } from "@/hooks/helpers/useGuilds";
+import { PRIZE_POOL_GUILDS } from "@/ui/constants";
 import Button from "@/ui/elements/Button";
 import { SortInterface } from "@/ui/elements/SortButton";
 import TextInput from "@/ui/elements/TextInput";
@@ -49,7 +50,6 @@ export const Guilds = ({
       string,
       {
         totalPoints: number;
-        totalLords: number;
         totalRealms: number;
         totalMines: number;
         totalHypers: number;
@@ -62,7 +62,6 @@ export const Guilds = ({
       if (guild) {
         const stats = guildStats.get(guild.entityId.toString()) || {
           totalPoints: 0,
-          totalLords: 0,
           totalRealms: 0,
           totalMines: 0,
           totalHypers: 0,
@@ -70,7 +69,6 @@ export const Guilds = ({
         };
 
         stats.totalPoints += player.points || 0;
-        stats.totalLords += player.lords || 0;
         stats.totalRealms += player.realms || 0;
         stats.totalMines += player.mines || 0;
         stats.totalHypers += player.hyperstructures || 0;
@@ -84,7 +82,6 @@ export const Guilds = ({
       .map((guild) => {
         const stats = guildStats.get(guild.entityId.toString()) || {
           totalPoints: 0,
-          totalLords: 0,
           totalRealms: 0,
           totalMines: 0,
           totalHypers: 0,
@@ -93,7 +90,6 @@ export const Guilds = ({
         return {
           ...guild,
           points: stats.totalPoints,
-          lords: stats.totalLords,
           realms: stats.totalRealms,
           mines: stats.totalMines,
           hyperstructures: stats.totalHypers,
@@ -106,7 +102,7 @@ export const Guilds = ({
         return {
           ...guild,
           rank,
-          lords: calculateGuildLordsPrize(rank, guild.lords),
+          lords: calculateGuildLordsPrize(rank, PRIZE_POOL_GUILDS),
         };
       });
   }, [guilds, players]);

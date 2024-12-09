@@ -261,7 +261,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
         ) : (
           <div className="">
             {resourceElements}
-            <div className="flex justify-end w-full">
+            <div className="flex justify-end w-full mt-2">
               <div
                 onMouseEnter={() => {
                   if (!canContribute) {
