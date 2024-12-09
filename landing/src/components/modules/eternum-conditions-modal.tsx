@@ -73,7 +73,7 @@ export function EternumConditionsModal({ open, onOpenChange }: EternumConditions
             </p>
             <p className="mt-4">
               A season of Eternum concludes when a single player achieves the required
-              <strong>{HYPERSTRUCTURE_POINTS_FOR_WIN.toLocaleString()}</strong> Victory Points and clicks the "End
+              <strong> {HYPERSTRUCTURE_POINTS_FOR_WIN.toLocaleString()}</strong> Victory Points and clicks the "End
               Season" button. At this point:
             </p>
             <ul className="list-disc pl-6 mt-2">
