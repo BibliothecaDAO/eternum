@@ -1,3 +1,4 @@
+import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum_words_logo.svg";
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
@@ -12,6 +13,8 @@ import { env } from "../../../env";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "../components/cityview/realm/SettleRealmComponent";
 import { Controller } from "../modules/controller/Controller";
 import { SettleRealm, StepOne } from "../modules/onboarding/Steps";
+import { formatTime } from "../utils/utils";
+import { TermsOfService } from "./TermsOfService";
 
 interface OnboardingOverlayProps {
   controller?: boolean;
@@ -78,6 +81,8 @@ export const StepContainer = ({
   const height = "max-h-[316px] h-[44vh] lg:h-[36vh] 2xl:h-[33vh]";
   const size = `${width} ${height}`;
 
+  const [displayTermsOfService, setDisplayTermsOfService] = useState(false);
+
   const motionProps = transition
     ? {
         initial: { opacity: 0 },
@@ -92,16 +97,34 @@ export const StepContainer = ({
       <div
         className={`bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-6 lg:p-10 xl:p-8 2xl:p-12 text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${size} shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
       >
-        <div className="w-full text-center">
-          <div className="mx-auto flex mb-4 sm:mb-4 lg:mb-8 xl:mb-8 2xl:mb-10">
-            {loading ? (
-              <img src="/images/eternumloader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
-            ) : (
-              <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-64 xl:w-64 stroke-current mx-auto" />
-            )}
+        {displayTermsOfService ? (
+          <div className="flex flex-col h-full max-h-full pb-4">
+            <Button
+              className="!h-12 !w-24 !bg-gold/10 !border-none hover:scale-105 hover:-translate-y-1 !px-3 !shadow-none hover:text-gold"
+              variant="primary"
+              onClick={() => setDisplayTermsOfService(false)}
+            >
+              <BackArrow className="w-6 h-6 mr-2 fill-current" />
+              <div className="w-14 text-base font-normal normal-case inline">Back</div>
+            </Button>
+            <div className="w-full mt-2 h-full pb-4">
+              <TermsOfService />
+            </div>
           </div>
-        </div>
-        {children}
+        ) : (
+          <>
+            <div className="w-full text-center">
+              <div className="mx-auto flex mb-4 sm:mb-4 lg:mb-8 xl:mb-8 2xl:mb-10">
+                {loading ? (
+                  <img src="/images/eternumloader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
+                ) : (
+                  <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-64 xl:w-64 stroke-current mx-auto" />
+                )}
+              </div>
+            </div>
+            {children}
+          </>
+        )}
       </div>
 
       {tos && (
@@ -109,7 +132,7 @@ export const StepContainer = ({
           <div className={`relative ${width}`}>
             <div className="w-full flex justify-center">
               <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
-              <p className="text-xs text-center align-bottom my-auto">
+              <p className="text-xs text-center align-bottom my-auto" onClick={() => setDisplayTermsOfService(true)}>
                 By continuing you are agreeing to Eternum's <span className="inline underline">Terms of Service</span>
               </p>
             </div>
@@ -234,7 +257,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
 
 const SeasonStartTimer = () => {
   const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0n;
-  const seasonStart = (configManager.getSeasonConfig().startAt || 0n);
+  const seasonStart = configManager.getSeasonConfig().startAt || 0n;
 
   const [countdown, setCountdown] = useState(() => {
     return BigInt(seasonStart) - BigInt(nextBlockTimestamp);
@@ -250,16 +273,10 @@ const SeasonStartTimer = () => {
 
   if (countdown < 0 || nextBlockTimestamp === 0n || seasonStart === 0n) return null;
 
-  const hours = Math.floor(Number(countdown) / 3600);
-  const minutes = Math.floor((Number(countdown) % 3600) / 60);
-  const seconds = Number(countdown) % 60;
-
   return (
     <div className="fixed top-40 left-1/2 -translate-x-1/2 z-50">
       <div className="text-4xl bg-black/20 border-[0.5px] border-gradient rounded-lg px-6 py-3 text-gold backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex gap-2">
-        <p className="font-semibold">
-          {String(hours).padStart(2, "0")}:{String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-        </p>
+        <p className="font-semibold">{formatTime(Number(countdown))}</p>
       </div>
     </div>
   );
