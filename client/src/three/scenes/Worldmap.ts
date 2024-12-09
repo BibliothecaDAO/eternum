@@ -300,7 +300,6 @@ export default class WorldmapScene extends HexagonScene {
     if (contractHexPosition.x !== this.state.selectedHex?.col || contractHexPosition.y !== this.state.selectedHex.row) {
       playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
       this.selectedHexManager.setPosition(position.x, position.z);
-      console.log("set selected hex from handlehexselection", contractHexPosition.x, contractHexPosition.y);
       this.state.setSelectedHex({
         col: contractHexPosition.x,
         row: contractHexPosition.y,
