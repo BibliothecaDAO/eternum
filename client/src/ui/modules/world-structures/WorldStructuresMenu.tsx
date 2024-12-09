@@ -244,13 +244,14 @@ const HyperStructureExtraContent = ({
   x: number;
   y: number;
 }) => {
+  const dojo = useDojo();
   const {
     account: { account },
-  } = useDojo();
+  } = dojo;
 
   const progress = useHyperstructureProgress(hyperstructureEntityId);
 
-  const latestChangeEvent = LeaderboardManager.instance().getCurrentCoOwners(hyperstructureEntityId);
+  const latestChangeEvent = LeaderboardManager.instance(dojo).getCurrentCoOwners(hyperstructureEntityId);
 
   const needTosetCoOwners = !latestChangeEvent && progress.percentage === 100;
 
@@ -265,8 +266,10 @@ const HyperStructureExtraContent = ({
         <span className="text-gold/80">Shares:</span>
         <span className="font-medium">
           {currencyIntlFormat(
-            (LeaderboardManager.instance().getAddressShares(ContractAddress(account.address), hyperstructureEntityId) ||
-              0) * 100,
+            (LeaderboardManager.instance(dojo).getAddressShares(
+              ContractAddress(account.address),
+              hyperstructureEntityId,
+            ) || 0) * 100,
             0,
           )}
           %

@@ -63,7 +63,7 @@ const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
       </a>
       {controller && (
         <Controller
-          className="!text-black !h-10 w-24 normal-case font-normal !bg-[#FCB843] hover:!bg-[#FCB843]/80"
+          className="!text-black !h-10 w-24 normal-case font-normal !bg-[#FCB843] hover:!opacity-80"
           iconClassName="!fill-black"
         />
       )}
@@ -124,31 +124,22 @@ export const StepContainer = ({
               </div>
             </div>
             {children}
+            <div className="absolute bottom-0.5 left-0 w-full flex justify-center rounded-lg p-2">
+              <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
+              <p
+                className="text-[0.6rem] text-center align-bottom my-auto"
+                onClick={() => setDisplayTermsOfService(true)}
+              >
+                By continuing you are agreeing to Eternum's <span className="inline underline">Terms of Service</span>
+              </p>
+            </div>
           </>
         )}
       </div>
 
       {tos && (
         <div className="mt-4">
-          <div className={`relative ${width}`}>
-            <div className="w-full flex justify-center backdrop-filter backdrop-blur-[24px] bg-black/20 rounded-lg p-2">
-              <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
-              <p className="text-xs text-center align-bottom my-auto" onClick={() => setDisplayTermsOfService(true)}>
-                By continuing you are agreeing to Eternum's <span className="inline underline">Terms of Service</span>
-              </p>
-            </div>
-            {bottomChildren}
-            <div className="w-full text-center mt-4">
-              <a
-                href="https://eternum-docs.realms.world/overview/entry#season-access"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gold/80 hover:text-gold underline"
-              >
-                Learn more about Season Access
-              </a>
-            </div>
-          </div>
+          <div className={`relative ${width}`}>{bottomChildren}</div>
         </div>
       )}
     </motion.div>

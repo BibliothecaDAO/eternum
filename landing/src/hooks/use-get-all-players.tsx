@@ -9,11 +9,13 @@ import { useEntitiesUtils } from "./use-entities-utils";
 import { usePrizePool } from "./use-rewards";
 
 export const useGetAllPlayers = () => {
+  const dojo = useDojo();
   const {
     setup: {
       components: { Realm, Owner, GuildMember, AddressName, Hyperstructure, Structure },
     },
-  } = useDojo();
+  } = dojo;
+
   const nextBlockTimestamp = Math.floor(Date.now() / 1000);
 
   const { getEntityName } = useEntitiesUtils();
@@ -21,7 +23,7 @@ export const useGetAllPlayers = () => {
   const prizePool = usePrizePool();
 
   const playerEntities = runQuery([Has(AddressName)]);
-  const playersByRank = LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0);
+  const playersByRank = LeaderboardManager.instance(dojo).getPlayersByRank(nextBlockTimestamp || 0);
 
   const totalPoints = playersByRank.reduce((sum, [, points]) => sum + points, 0);
 
