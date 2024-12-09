@@ -17,7 +17,7 @@ export type EntityReadyForDeposit = {
 };
 
 export const AllResourceArrivals = ({ arrivals, className }: { arrivals: ArrivalInfo[]; className?: string }) => {
-  const { account, setup } = useDojo();
+  const { setup } = useDojo();
 
   const [entitiesReadyForDeposit, setEntitiesReadyForDeposit] = useState<EntityReadyForDeposit[]>([]);
 
@@ -54,7 +54,7 @@ export const AllResourceArrivals = ({ arrivals, className }: { arrivals: Arrival
         isLoading={isLoading}
         onClick={onOffload}
         variant="primary"
-        disabled={isLoading || entitiesReadyForDeposit.length === 0}
+        disabled={isLoading || !entitiesReadyForDeposit.length || !arrivals.length}
       >
         {isLoading ? "Offloading..." : "Deposit All"}
       </Button>
