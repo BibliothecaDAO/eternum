@@ -1,5 +1,5 @@
-import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { usePrizePool } from "@/hooks/helpers/use-rewards";
 import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -34,10 +34,9 @@ export const Rewards = () => {
   } = useDojo();
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
-
   const [isLoading, setIsLoading] = useState(false);
 
-  const [prizePool, setPrizePool] = useState<BigInt>(0n);
+  const prizePool = usePrizePool();
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(rewards));
 
@@ -96,51 +95,6 @@ export const Rewards = () => {
     }
   }, [gameEnded]);
 
-  const getBalance = async (address: string) => {
-    const balance = await account.callContract({
-      contractAddress: env.VITE_LORDS_ADDRESS!,
-      entrypoint: "balance_of",
-      calldata: [address],
-    });
-
-    return balance;
-  };
-
-  useEffect(() => {
-    const getPrizePool = async () => {
-      try {
-        // Get the fee recipient address from config
-        const season_pool_fee_recipient = configManager?.getResourceBridgeFeeSplitConfig()?.season_pool_fee_recipient;
-
-        if (!season_pool_fee_recipient) {
-          console.error("Failed to get season pool fee recipient from config");
-          return;
-        }
-
-        // Convert address to hex string with 0x prefix
-        const recipientAddress = "0x" + season_pool_fee_recipient.toString(16);
-
-        // Get balance from contract
-        const balance = await getBalance(recipientAddress);
-
-        if (balance && balance[0]) {
-          setPrizePool(BigInt(balance[0]));
-        }
-      } catch (err) {
-        console.error("Error getting prize pool:", err);
-      }
-    };
-
-    // Use leaderboard total if available, otherwise fetch from contract
-
-    getPrizePool();
-
-    // Refresh prize pool periodically
-    const interval = setInterval(getPrizePool, 60000); // Every minute
-
-    return () => clearInterval(interval);
-  }, []);
-
   const registeredPlayers = useMemo(() => {
     const registeredPlayers = runQuery([Has(LeaderboardRegistered)]);
     return registeredPlayers.size;
@@ -178,7 +132,7 @@ export const Rewards = () => {
               <div className="text-center text-lg font-semibold self-center w-full">
                 <div className="text-sm font-bold uppercase">Total prize pool</div>
 
-                <div className="text-lg">{Number(formatEther(BigInt(prizePool.toString()))).toFixed(2)} $LORDS</div>
+                <div className="text-lg">{Number(formatEther(prizePool)).toFixed(2)} $LORDS</div>
               </div>
             </Compartment>
             <Compartment>
