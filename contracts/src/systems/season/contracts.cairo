@@ -55,13 +55,16 @@ mod season_systems {
 
             let mut total_points: u128 = 0;
             let hyperstructure_tier_configs = HyperstructureResourceConfigTrait::get_all(world);
+            let player_address = starknet::get_caller_address();
             total_points +=
                 InternalHyperstructureSystemsImpl::compute_total_contribution_points(
-                    ref world, hyperstructures_contributed_to, hyperstructure_tier_configs
+                    ref world, hyperstructures_contributed_to, hyperstructure_tier_configs, player_address
                 );
 
             total_points +=
-                InternalHyperstructureSystemsImpl::compute_total_share_points(world, hyperstructure_shareholder_epochs);
+                InternalHyperstructureSystemsImpl::compute_total_share_points(
+                    world, hyperstructure_shareholder_epochs, player_address
+                );
 
             leaderboard.register(ref world, starknet::get_caller_address(), total_points);
         }

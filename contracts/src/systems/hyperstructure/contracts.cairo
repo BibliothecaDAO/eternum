@@ -16,6 +16,13 @@ const LEADERBOARD_REGISTRATION_PERIOD: u64 = 604800; // one week
 
 #[starknet::interface]
 trait IHyperstructureSystems<T> {
+    fn get_points(
+        ref self: T,
+        player_address: ContractAddress,
+        hyperstructures_contributed_to: Span<ID>,
+        hyperstructure_shareholder_epochs: Span<(ID, u16)>
+    ) -> (u128, u128, u128, u128);
+
     fn create(ref self: T, creator_entity_id: ID, coord: Coord) -> ID;
     fn contribute_to_construction(
         ref self: T, hyperstructure_entity_id: ID, contributor_entity_id: ID, contributions: Span<(u8, u128)>
@@ -387,15 +394,18 @@ mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
+            let player_address = starknet::get_caller_address();
             let mut total_points: u128 = 0;
             let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
             total_points +=
                 InternalHyperstructureSystemsImpl::compute_total_contribution_points(
-                    ref world, hyperstructures_contributed_to, hyperstructure_resource_configs
+                    ref world, hyperstructures_contributed_to, hyperstructure_resource_configs, player_address
                 );
 
             total_points +=
-                InternalHyperstructureSystemsImpl::compute_total_share_points(world, hyperstructure_shareholder_epochs);
+                InternalHyperstructureSystemsImpl::compute_total_share_points(
+                    world, hyperstructure_shareholder_epochs, player_address
+                );
 
             // ensure the total points are enough to end the game
             let hyperstructure_config: HyperstructureConfig = world.read_model(HYPERSTRUCTURE_CONFIG_ID);
@@ -420,6 +430,33 @@ mod hyperstructure_systems {
             let task_id: felt252 = Task::Warlord.identifier();
             let store = StoreTrait::new(world);
             store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp(),);
+        }
+
+
+        fn get_points(
+            ref self: ContractState,
+            player_address: ContractAddress,
+            hyperstructures_contributed_to: Span<ID>,
+            hyperstructure_shareholder_epochs: Span<(ID, u16)>
+        ) -> (u128, u128, u128, u128) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
+            let contribution_points = InternalHyperstructureSystemsImpl::compute_total_contribution_points(
+                ref world, hyperstructures_contributed_to, hyperstructure_resource_configs, player_address
+            );
+
+            let share_points = InternalHyperstructureSystemsImpl::compute_total_share_points(
+                world, hyperstructure_shareholder_epochs, player_address
+            );
+
+            let total_points = contribution_points + share_points;
+            // ensure the total points are enough to end the game
+            let hyperstructure_config: HyperstructureConfig = world.read_model(HYPERSTRUCTURE_CONFIG_ID);
+            let points_for_win = hyperstructure_config.points_for_win;
+
+            (contribution_points, share_points, total_points, points_for_win)
         }
     }
 
@@ -544,7 +581,7 @@ mod hyperstructure_systems {
         }
 
         fn compute_total_share_points(
-            world: WorldStorage, hyperstructure_shareholder_epochs: Span<(ID, u16)>,
+            world: WorldStorage, hyperstructure_shareholder_epochs: Span<(ID, u16)>, player_address: ContractAddress
         ) -> u128 {
             let mut points = 0;
             let mut i = 0;
@@ -554,7 +591,6 @@ mod hyperstructure_systems {
                 end_point_generation_at = season.ended_at;
             }
 
-            let player_address = starknet::get_caller_address();
             while (i < hyperstructure_shareholder_epochs.len()) {
                 let (hyperstructure_entity_id, index) = *hyperstructure_shareholder_epochs.at(i);
 
@@ -595,7 +631,8 @@ mod hyperstructure_systems {
         fn compute_total_contribution_points(
             ref world: WorldStorage,
             hyperstructures_contributed_to: Span<ID>,
-            hyperstructure_resource_configs: Span<HyperstructureResourceConfig>
+            hyperstructure_resource_configs: Span<HyperstructureResourceConfig>,
+            player_address: ContractAddress
         ) -> u128 {
             let resources_with_rarity = get_contributable_resources_with_rarity();
 
@@ -625,7 +662,8 @@ mod hyperstructure_systems {
                         total_contributable_amount,
                         hyperstructure_entity_id,
                         resources_with_rarity,
-                        hyperstructure_config.points_on_completion
+                        hyperstructure_config.points_on_completion,
+                        player_address
                     );
 
                 i += 1;
@@ -639,10 +677,9 @@ mod hyperstructure_systems {
             total_contributable_amount: u128,
             hyperstructure_entity_id: ID,
             resources_with_rarity: Span<(u8, u128)>,
-            points_on_completion: u128
+            points_on_completion: u128,
+            player_address: ContractAddress
         ) -> u128 {
-            let player_address = starknet::get_caller_address();
-
             let mut total_points = 0;
             let mut i = 0;
             while (i < resources_with_rarity.len()) {
