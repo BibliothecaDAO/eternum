@@ -24,9 +24,9 @@ export default function BuildingCard({ title, image, buildingType, description, 
       <div className="text-xl font-bold mb-4">{title}</div>
 
       {multipleImages ? (
-        <div className="flex mb-4">
+        <div className="grid grid-cols-2 mb-4">
           {(image as ImageType[]).map((img, index) => (
-            <img key={index} src={img.src} alt={img.alt} width="200" />
+            <img key={index} src={img.src} alt={img.alt} width="250" />
           ))}
         </div>
       ) : (
