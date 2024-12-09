@@ -86,7 +86,7 @@ export const SelectAddress: React.FC<SelectAddressProps> = ({
           {filteredPlayers.map((player) => (
             <SelectItem key={player.address} value={player.address.toString()}>
               <div className="flex items-center">
-                <h5 className="text-[1rem]">{`${player.name} (${displayAddress(toHexString(player.address))})`}</h5>
+                <span className="text-[1rem]">{`${player.name} (${displayAddress(toHexString(player.address))})`}</span>
               </div>
             </SelectItem>
           ))}

@@ -1,5 +1,4 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
 import { useRealm } from "@/hooks/helpers/useRealm";
@@ -10,26 +9,23 @@ import { NumberInput } from "@/ui/elements/NumberInput";
 import { SelectAddress } from "@/ui/elements/SelectAddress";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
-import { displayAddress, formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { displayAddress, formatTime } from "@/ui/utils/utils";
 import { ContractAddress, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CoOwnersWithTimestamp } from "./types";
 
-export const CoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID }) => {
+export const CoOwners = ({
+  hyperstructureEntityId,
+  coOwnersWithTimestamp,
+}: {
+  hyperstructureEntityId: ID;
+  coOwnersWithTimestamp: CoOwnersWithTimestamp | undefined;
+}) => {
   const [isChangingCoOwners, setIsChangingCoOwners] = useState(false);
-
-  const coOwnersWithTimestamp = useMemo(() => {
-    const latestChangeEvent = LeaderboardManager.instance().getCurrentCoOwners(hyperstructureEntityId);
-    if (!latestChangeEvent) return undefined;
-
-    const coOwners = latestChangeEvent.coOwners;
-    const timestamp = latestChangeEvent.timestamp;
-
-    return { coOwners, timestamp };
-  }, [hyperstructureEntityId]);
 
   return (
     <>
@@ -155,6 +151,7 @@ const CoOwnersRows = ({
             onClick={() => {
               setIsChangingCoOwners(true);
             }}
+            variant="primary"
             disabled={!canUpdate}
             className="w-full mt-4 bg-gold/20"
           >
@@ -246,6 +243,10 @@ const ChangeCoOwners = ({
   return (
     <div className="h-full flex flex-col justify-between">
       <div>
+        <div className="text-red text-center p-4 bg-red/10 mb-4">
+          ⚠️ Important: You must set co-owners to start earning points. No points will be earned until co-owners are
+          set!
+        </div>
         {newCoOwners.map((coOwner) => {
           const coOwnersExceptForThis = newCoOwners.filter((co) => co.id !== coOwner.id);
           const maxValue = 100 - coOwnersExceptForThis.reduce((acc, curr) => acc + curr.percentage, 0);
@@ -307,7 +308,7 @@ const ChangeCoOwners = ({
             ? "You must include yourself as a co-owner"
             : totalPercentage !== 100
               ? "Total percentage must be 100%"
-              : "Set co-owners"}
+              : "Set co-owners (Required to earn points)"}
       </Button>
     </div>
   );

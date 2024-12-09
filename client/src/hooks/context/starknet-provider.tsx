@@ -10,7 +10,7 @@ import { signingPolicy } from "./signing-policy";
 
 const theme: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
-const namespace: string = "eternum";
+const namespace: string = "s0_eternum";
 const colorMode: ColorMode = "dark";
 
 const vrfPolicy = {
