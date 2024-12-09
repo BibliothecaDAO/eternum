@@ -8,6 +8,7 @@ import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, ru
 import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
+import { useEntitiesUtils } from "./useEntities";
 
 export type ProgressWithPercentage = {
   percentage: number;
@@ -25,6 +26,8 @@ export const useHyperstructures = () => {
     },
   } = useDojo();
 
+  const { getAddressNameFromEntity } = useEntitiesUtils();
+
   const hyperstructures = useEntityQuery([Has(Structure), HasValue(Structure, { category: "Hyperstructure" })]).map(
     (hyperstructureEntityId) => {
       const hyperstructure = getComponentValue(Structure, hyperstructureEntityId);
@@ -38,12 +41,15 @@ export const useHyperstructures = () => {
       const owner = toHexString(ownerComponent?.address || 0n);
       const isOwner = ContractAddress(ownerComponent?.address ?? 0n) === ContractAddress(account.address);
       const entityName = getComponentValue(EntityName, hyperstructureEntityId);
+      const ownerName = getAddressNameFromEntity(hyperstructure?.entity_id!);
+
       return {
         ...hyperstructure,
         ...position,
         ...contributions,
         owner,
         isOwner,
+        ownerName,
         entityIdPoseidon: hyperstructureEntityId,
         name: entityName
           ? shortString.decodeShortString(entityName.name.toString())

@@ -1,26 +1,23 @@
-import { useDojo } from "@/hooks/context/DojoContext";
-import { EntityList } from "@/ui/components/list/EntityList";
-import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { useMemo, useState } from "react";
-import { Tabs } from "../../elements/tab";
-
-import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
-import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
-
-import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
-import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { getArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
+import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
 import { HintSection } from "@/ui/components/hints/HintModal";
+import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
+import { EntityList } from "@/ui/components/list/EntityList";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { BattleSide, ContractAddress, findResourceById, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { useMemo, useState } from "react";
+import { Tabs } from "../../elements/tab";
 
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   const {
