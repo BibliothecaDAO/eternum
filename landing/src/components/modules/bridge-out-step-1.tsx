@@ -160,7 +160,7 @@ export const BridgeOutStep1 = () => {
       <hr />
       <div className="flex justify-between">
         <div className="flex flex-col min-w-40">
-          <div className="text-xs uppercase mb-1 ">From</div>
+          <div className="text-xs uppercase mb-1 ">From Realm</div>
           <Select onValueChange={(value) => setRealmEntityId(value)}>
             <SelectTrigger className="w-full border-gold/15">
               <SelectValue placeholder="Select Settled Realm" />
@@ -177,7 +177,7 @@ export const BridgeOutStep1 = () => {
           </Select>
         </div>
         <div>
-          <div className="text-xs uppercase mb-1">To</div>
+          <div className="text-xs uppercase mb-1">To Wallet</div>
           <div>{displayAddress(address || "")}</div>
         </div>
       </div>
@@ -242,7 +242,7 @@ export const BridgeOutStep1 = () => {
         onClick={() => onSendToBank()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
-        {isLoading ? "Sending to Bank..." : "Send to Bank (Step 1)"}
+        {isLoading ? "Sending to Bank..." : (!realmEntityId ? "Select a Realm" : "Send to Bank (Step 1)")}
       </Button>
     </div>
   );

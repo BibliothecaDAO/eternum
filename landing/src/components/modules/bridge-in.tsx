@@ -196,11 +196,11 @@ export const BridgeIn = () => {
       <hr />
       <div className="flex justify-between">
         <div className="flex flex-col ">
-          <div className="text-xs uppercase mb-1 ">From</div>
+          <div className="text-xs uppercase mb-1 ">From Wallet</div>
           <div>{displayAddress(address || "")}</div>
         </div>
         <div>
-          <div className="text-xs uppercase mb-1">To</div>
+          <div className="text-xs uppercase mb-1">To Realm</div>
 
           <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
             <SelectTrigger className="w-full border-gold/15">
@@ -229,6 +229,7 @@ export const BridgeIn = () => {
           setselectedResourceContract={(value) => handleResourceChange(selection.id, "contract", value)}
           onRemove={() => handleResourceRemove(selection.id)}
           showRemove={resourceSelections.length > 1}
+          resourceSelections={resourceSelections}
         />
       ))}
 
@@ -317,7 +318,7 @@ export const BridgeIn = () => {
         onClick={() => onBridgeIntoRealm()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
-        {isLoading ? "Transferring..." : "Initiate Transfer"}
+        {isLoading ? "Transferring..." : !realmEntityId ? "Select a Realm" : "Initiate Transfer"}
       </Button>
     </div>
   );
@@ -329,12 +330,14 @@ export const SelectResourceToBridge = ({
   setselectedResourceContract,
   onRemove,
   showRemove,
+  resourceSelections
 }: {
   selectedResourceAmount: string;
   setselectedResourceAmount: (value: string) => void;
   setselectedResourceContract: (value: string) => void;
   onRemove: () => void;
   showRemove: boolean;
+  resourceSelections: ResourceSelection[];
 }) => {
   return (
     <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
@@ -352,9 +355,10 @@ export const SelectResourceToBridge = ({
         </SelectTrigger>
         <SelectContent>
           {Object.values(ResourcesIds)
-            .filter((resource) => isNaN(Number(resource)))
+            .filter((resource) => isNaN(Number(resource))
+          )
             .map((resource) => (
-              <SelectItem key={resource} value={resource.toString()}>
+              <SelectItem key={resource} disabled={resourceSelections.some(selection => selection.contract === resource)} value={resource.toString()}>
                 <div className="flex items-center gap-2">
                 <ResourceIcon resource={resource as string} size="md" />
                 {resource}</div>
