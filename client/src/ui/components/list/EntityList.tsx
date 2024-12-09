@@ -93,9 +93,9 @@ export const EntityList = ({
                   <div className="flex flex-row justify-between items-center">
                     <div className="flex flex-row space-x-5 items-center">
                       <h5>{entity.name}</h5>
-                      <div className="flex flex-row space-x-1">
+                      <div className="flex flex-row ">
                         {entity?.position && <ViewOnMapIcon className={"my-auto"} position={entity.position} />}
-                        {entity?.position && <NavigateToPositionIcon position={entity?.position} />}
+                        {entity?.position && <NavigateToPositionIcon className="h-6 w-6" position={entity?.position} />}
                       </div>
                     </div>
                     <ArrowRight className="w-2 fill-current" />
