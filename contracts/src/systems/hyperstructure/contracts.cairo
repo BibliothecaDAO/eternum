@@ -650,21 +650,20 @@ mod hyperstructure_systems {
 
                 let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
 
-                if (!hyperstructure.completed) {
-                    continue;
-                }
-                let total_contributable_amount = calculate_total_contributable_amount(
-                    world, hyperstructure.randomness, hyperstructure_resource_configs
-                );
-                total_points +=
-                    Self::compute_contributions_for_hyperstructure(
-                        world,
-                        total_contributable_amount,
-                        hyperstructure_entity_id,
-                        resources_with_rarity,
-                        hyperstructure_config.points_on_completion,
-                        player_address
+                if (hyperstructure.completed) {
+                    let total_contributable_amount = calculate_total_contributable_amount(
+                        world, hyperstructure.randomness, hyperstructure_resource_configs
                     );
+                    total_points +=
+                        Self::compute_contributions_for_hyperstructure(
+                            world,
+                            total_contributable_amount,
+                            hyperstructure_entity_id,
+                            resources_with_rarity,
+                            hyperstructure_config.points_on_completion,
+                            player_address
+                        );
+                }
 
                 i += 1;
             };
