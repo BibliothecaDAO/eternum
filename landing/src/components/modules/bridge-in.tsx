@@ -184,9 +184,13 @@ export const BridgeIn = () => {
   return (
     <div className="w-96 flex flex-col gap-3">
       <div className="flex justify-between">
-        <div>From Wallet</div>
+      <div className="flex flex-col">
+        <div className="text-xs uppercase mb-1">From</div>
         <div>{displayAddress(address || "")}</div>
       </div>
+      <div>
+      <div className="text-xs uppercase mb-1">To</div>
+
       <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
         <SelectTrigger className="w-full border-gold/15">
           <SelectValue placeholder="Select Realm To Transfer" />
@@ -203,6 +207,9 @@ export const BridgeIn = () => {
             : "No Realms settled in Eternum"}
         </SelectContent>
       </Select>
+      </div>
+      </div>
+      
 
       {resourceSelections.map((selection) => (
         <SelectResourceToBridge

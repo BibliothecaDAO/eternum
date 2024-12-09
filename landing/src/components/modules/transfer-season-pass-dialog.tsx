@@ -48,7 +48,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
 
   const { address: cartridgeAddress, fetchAddress, loading: cartridgeLoading } = useCartridgeAddress();
 
-  const { send, error } = useSendTransaction({
+  const { sendAsync, error } = useSendTransaction({
     calls:
       contract && address && transferTo
         ? selectedRealms.map((tokenId) =>
@@ -57,12 +57,16 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
         : undefined,
   });
 
-  const handleTransfer = () => {
+  const handleTransfer = async () => {
     if (!transferTo || selectedRealms.length === 0) return;
-
     setIsOpen(false);
-
-    send();
+    const tx = await sendAsync();
+    console.log(tx);
+    if (tx) {
+      setInput("");
+      setSelectedRealms([]);
+      setTransferTo(null);
+    }
   };
 
   useEffect(() => {
