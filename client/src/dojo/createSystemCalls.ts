@@ -162,6 +162,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.set_co_owners(props);
   };
 
+  const get_points = async (props: SystemProps.GetPointsProps) => {
+    return await provider.get_points(props);
+  };
+
   const create_guild = async (props: SystemProps.CreateGuildProps) => {
     await provider.create_guild(props);
   };
@@ -271,6 +275,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     contribute_to_construction,
     set_access,
     set_co_owners,
+    get_points,
     end_game,
     register_to_leaderboard,
     claim_leaderboard_rewards,
