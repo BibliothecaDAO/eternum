@@ -242,7 +242,7 @@ export const BridgeOutStep1 = () => {
         onClick={() => onSendToBank()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
-        {isLoading ? "Sending to Bank..." : (!realmEntityId ? "Select a Realm" : "Send to Bank (Step 1)")}
+        {isLoading ? "Sending to Bank..." : !realmEntityId ? "Select a Realm" : "Send to Bank (Step 1)"}
       </Button>
     </div>
   );

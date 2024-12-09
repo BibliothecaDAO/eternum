@@ -330,7 +330,7 @@ export const SelectResourceToBridge = ({
   setselectedResourceContract,
   onRemove,
   showRemove,
-  resourceSelections
+  resourceSelections,
 }: {
   selectedResourceAmount: string;
   setselectedResourceAmount: (value: string) => void;
@@ -355,13 +355,17 @@ export const SelectResourceToBridge = ({
         </SelectTrigger>
         <SelectContent>
           {Object.values(ResourcesIds)
-            .filter((resource) => isNaN(Number(resource))
-          )
+            .filter((resource) => isNaN(Number(resource)))
             .map((resource) => (
-              <SelectItem key={resource} disabled={resourceSelections.some(selection => selection.contract === resource)} value={resource.toString()}>
+              <SelectItem
+                key={resource}
+                disabled={resourceSelections.some((selection) => selection.contract === resource)}
+                value={resource.toString()}
+              >
                 <div className="flex items-center gap-2">
-                <ResourceIcon resource={resource as string} size="md" />
-                {resource}</div>
+                  <ResourceIcon resource={resource as string} size="md" />
+                  {resource}
+                </div>
               </SelectItem>
             ))}
         </SelectContent>

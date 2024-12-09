@@ -105,7 +105,10 @@ export const BridgeOutStep2 = () => {
 
   return (
     <div className="max-w-md flex flex-col gap-3">
-      <TypeP>Finalise the withdrawal of resources from your Realm in Eternum to your Starknet wallet. The bridge will close and you will be unable to withdraw 1 hour after the Season is won</TypeP>
+      <TypeP>
+        Finalise the withdrawal of resources from your Realm in Eternum to your Starknet wallet. The bridge will close
+        and you will be unable to withdraw 1 hour after the Season is won
+      </TypeP>
       <hr />
       <div className="flex justify-between">
         <div className="flex flex-col min-w-40">
