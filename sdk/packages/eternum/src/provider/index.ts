@@ -2149,34 +2149,45 @@ export class EternumProvider extends EnhancedDojoProvider {
       addressToCall: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
     });
 
-    return await this.executeAndCheckTransaction(signer, vrfCalls);
+    const call = this.createProviderCall(signer, vrfCalls);
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
     const { hyperstructure_entity_id, contributor_entity_id, contributions, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "contribute_to_construction",
       calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async set_access(props: SystemProps.SetAccessProps) {
     const { hyperstructure_entity_id, access, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "set_access",
       calldata: [hyperstructure_entity_id, access],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async end_game(props: SystemProps.EndGameProps) {
     const { signer, hyperstructure_contributed_to, hyperstructure_shareholder_epochs } = props;
-    return await this.executeAndCheckTransaction(signer, {
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "end_game",
       calldata: [hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async register_to_leaderboard(props: SystemProps.RegisterToLeaderboardProps) {
@@ -2199,11 +2210,14 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async set_co_owners(props: SystemProps.SetCoOwnersProps) {
     const { hyperstructure_entity_id, co_owners, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "set_co_owners",
       calldata: [hyperstructure_entity_id, co_owners],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {
