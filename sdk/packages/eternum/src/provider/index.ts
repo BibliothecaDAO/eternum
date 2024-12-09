@@ -4,7 +4,7 @@
  * @param katana - The katana manifest containing contract addresses and ABIs
  * @param url - Optional RPC URL for the provider
  */
-import { DojoProvider } from "@dojoengine/core";
+import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
 import * as SystemProps from "../types/provider";
@@ -263,6 +263,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     return transactionResult;
+  }
+
+  async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call) {
+    if (typeof window !== "undefined") {
+      console.log({ signer, transactionDetails });
+    }
+    const tx = await this.call(NAMESPACE, transactionDetails);
+    return tx;
   }
 
   /**
@@ -2218,6 +2226,18 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     return await this.promiseQueue.enqueue(call);
+  }
+
+  public async get_points(props: SystemProps.GetPointsProps) {
+    const { player_address, hyperstructure_contributed_to, hyperstructure_shareholder_epochs, signer } = props;
+
+    const call = await this.callAndReturnResult(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+      entrypoint: "get_points",
+      calldata: [player_address, hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
+    });
+
+    return call;
   }
 
   public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {

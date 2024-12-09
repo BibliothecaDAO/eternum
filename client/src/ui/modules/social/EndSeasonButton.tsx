@@ -58,6 +58,26 @@ export const EndSeasonButton = () => {
     });
   }, [hasReachedFinalPoints, getContributions]);
 
+  const logPoints = useCallback(async () => {
+    const contributions = Array.from(getContributions());
+    const epochs = getEpochs();
+    console.log({ contributions, epochs });
+
+    const points = (await setup.systemCalls.get_points({
+      signer: account,
+      player_address: account.address,
+      hyperstructure_contributed_to: contributions,
+      hyperstructure_shareholder_epochs: epochs,
+    })) as [string, string, string, string];
+
+    console.log({
+      contribution_points: BigInt(points[0]).toLocaleString(),
+      share_points: BigInt(points[1]).toLocaleString(),
+      total_points: BigInt(points[2]).toLocaleString(),
+      points_for_win: BigInt(points[3]).toLocaleString(),
+    });
+  }, [hasReachedFinalPoints, getContributions]);
+
   return (
     <Button
       variant="outline"
@@ -81,6 +101,7 @@ export const EndSeasonButton = () => {
       }}
       style={{ background: gradient }}
       onClick={endGame}
+      // onClick={logPoints}
     >
       End season
     </Button>
