@@ -51,15 +51,15 @@ const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
 
   return (
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
-      <Button
-        className="!h-8 !w-40 normal-case font-normal flex items-center rounded-md !text-md !px-3 !text-black shadow-[0px_4px_4px_0px_#00000040] border border-[0.5px] !border-[#F5C2971F] backdrop-blur-xs bg-white/5 hover:scale-105 hover:-translate-y-1 hover:!bg-gold/20"
-        variant="default"
-      >
-        <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
-        <a className="text-gold cursor-pointer" href={mintUrl} target="_blank" rel="noopener noreferrer">
+      <a className="cursor-pointer" href={mintUrl} target="_blank" rel="noopener noreferrer">
+        <Button
+          className="!h-8 !w-40 normal-case font-normal flex items-center rounded-md !text-md !px-3 !text-black shadow-[0px_4px_4px_0px_#00000040] border border-[0.5px] !border-[#F5C2971F] backdrop-blur-xs bg-white/5 hover:scale-105 hover:-translate-y-1 hover:!bg-gold/20 !text-gold "
+          variant="default"
+        >
+          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
           Mint Season Pass
-        </a>
-      </Button>
+        </Button>
+      </a>
       {controller && (
         <Controller
           className="!text-black !h-10 w-24 normal-case font-normal !bg-[#FCB843] hover:!bg-[#FCB843]/80"
@@ -256,27 +256,31 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
 };
 
 const SeasonStartTimer = () => {
-  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0n;
-  const seasonStart = configManager.getSeasonConfig().startAt || 0n;
+  const nextBlockTimestamp = BigInt(useUIStore.getState().nextBlockTimestamp || 0);
+  const seasonStart = BigInt(configManager.getSeasonConfig().startAt || 0);
 
-  const [countdown, setCountdown] = useState(() => {
-    return BigInt(seasonStart) - BigInt(nextBlockTimestamp);
-  });
-
+  const [countdown, setCountdown] = useState<bigint>(0n);
   useEffect(() => {
+    if (nextBlockTimestamp === 0n || seasonStart === 0n) return;
+
+    const initialCountdown = seasonStart - nextBlockTimestamp;
+    setCountdown(initialCountdown);
+
     const timer = setInterval(() => {
       setCountdown((prev) => prev - 1n);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [nextBlockTimestamp, seasonStart]);
 
-  if (countdown < 0 || nextBlockTimestamp === 0n || seasonStart === 0n) return null;
+  if (countdown <= 0n) {
+    return null;
+  }
 
   return (
     <div className="fixed top-40 left-1/2 -translate-x-1/2 z-50">
-      <div className="text-4xl bg-black/20 border-[0.5px] border-gradient rounded-lg px-6 py-3 text-gold backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex gap-2">
-        <p className="font-semibold">{formatTime(Number(countdown))}</p>
+      <div className="text-2xl bg-black/20 border-[0.5px] border-gradient rounded-lg px-6 py-3 text-gold backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex gap-2">
+        <p className="font-semibold">{formatTime(Number(countdown), undefined, false, true)}</p>
       </div>
     </div>
   );
