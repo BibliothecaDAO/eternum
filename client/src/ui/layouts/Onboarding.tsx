@@ -1,6 +1,7 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum_words_logo.svg";
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
+import { ReactComponent as LordsIcon } from "@/assets/icons/resources/LordsSimple.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -11,7 +12,6 @@ import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "../components/cityview/realm/SettleRealmComponent";
-import { ResourceIcon } from "../elements/ResourceIcon";
 import { Controller } from "../modules/controller/Controller";
 import { SettleRealm, StepOne } from "../modules/onboarding/Steps";
 import { formatTime } from "../utils/utils";
@@ -266,7 +266,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           }`}
         >
           <div className="flex items-center gap-2">
-            <ResourceIcon resource="Lords" size="xs" />
+            <LordsIcon className="!w-4 !h-4 fill-brown text-brown mb-1" />
             Bridge in Lords
           </div>
         </Button>
