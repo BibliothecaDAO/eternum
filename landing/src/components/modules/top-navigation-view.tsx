@@ -4,6 +4,7 @@ import { ExitIcon } from "@radix-ui/react-icons";
 import { useAccount } from "@starknet-react/core";
 import { Uint256, uint256 } from "starknet";
 import { formatEther } from "viem";
+import { env } from "../../../env";
 import { Button } from "../ui/button";
 import { SidebarTrigger } from "../ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
@@ -40,7 +41,7 @@ export const TopNavigationView = ({
           </div>
         ) : null}
 
-        {import.meta.env.VITE_PUBLIC_DEV === "true" ? (
+        {env.VITE_PUBLIC_CHAIN !== "mainnet" ? (
           <Button disabled={!address} onClick={onMintTestLords}>
             Mint Test Lords
           </Button>

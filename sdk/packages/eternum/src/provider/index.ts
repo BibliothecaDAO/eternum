@@ -314,32 +314,32 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
-  public async bridge_resource_into_realm(props: SystemProps.BridgeResourceIntoRealmProps) {
-    const { token, through_bank_id, recipient_realm_entity_id, amount, client_fee_recipient, signer } = props;
+  public async bridge_resources_into_realm(props: SystemProps.BridgeResourcesIntoRealmProps) {
+    const { resources, through_bank_id, recipient_realm_entity_id, client_fee_recipient, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: token as string,
-        entrypoint: "approve",
-        calldata: [
-          getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
-          amount,
-          0, // u128, u128
-        ],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
-        entrypoint: "deposit",
-        calldata: [
-          token,
-          through_bank_id,
-          recipient_realm_entity_id,
-          amount,
-          0, // u128, u128
-          client_fee_recipient,
-        ],
-      },
-    ]);
+    const approvalCalls = resources.map((resource) => ({
+      contractAddress: resource.tokenAddress as string,
+      entrypoint: "approve",
+      calldata: [
+        getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+        resource.amount,
+        0, // u128, u128
+      ],
+    }));
+
+    const depositCalls = resources.map((resource) => ({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+      entrypoint: "deposit",
+      calldata: [
+        resource.tokenAddress,
+        through_bank_id,
+        recipient_realm_entity_id,
+        resource.amount,
+        0, // u128, u128
+        client_fee_recipient,
+      ],
+    }));
+    return await this.executeAndCheckTransaction(signer, [...approvalCalls, ...depositCalls]);
   }
 
   /**
