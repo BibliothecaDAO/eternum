@@ -266,7 +266,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           }`}
         >
           <div className="flex items-center gap-2">
-            <LordsIcon className="!w-4 !h-4 fill-brown text-brown" />
+            <LordsIcon className="!w-4 !h-4 fill-brown text-brown mb-1" />
             Bridge in Lords
           </div>
         </Button>
