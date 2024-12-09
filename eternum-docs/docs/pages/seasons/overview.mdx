@@ -8,7 +8,7 @@ architecture to enable dynamic gameplay experiences.
 Seasons in Eternum are distinct gameplay periods that operate under specific rules and logic while maintaining certain
 persistent elements (such as resources) across different seasons.
 
-This system allows for regular refreshes of the game meta and introduces new mechanics without completely resetting
+This system allows for regular refreshes of the game meta and introduction of new mechanics without completely resetting
 player progress.
 
 ## Season Structure
@@ -18,6 +18,21 @@ player progress.
 - Each season runs with predefined rules and victory conditions
 - Concludes with a specific end state
 - Once concluded, no further actions can be taken in that season
+
+### Resource bridge
+
+During an active season, and **UP TO 48 hours** after season end, resources and **$LORDS** from your Realms can be
+bridged out of the game as ERC20 tokens. This allows these resources to be used in future seasons as well.
+
+Bridging resources into and out of the game is done via the Central Bank, positioned in the center of the map. When
+bridging, distance and transport time calculations are computed for you.
+
+Bridging resources incurs fees that are distributed to:
+
+- **Central Bank**: Fees are added to the Bank's treasury and can be claimed by the Bank's owner
+- **Velords**: Fees are contributed to the [Lordship Protocol](https://realms.world/blogs/the-lordship-protocol)
+- **Season Pool**: Fees are added to the current Season's Prize Pool
+- **Client**: Fees are allocated to the game client being used
 
 ### Between Seasons
 
