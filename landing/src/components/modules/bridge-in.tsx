@@ -15,8 +15,10 @@ import { useAccount } from "@starknet-react/core";
 import { Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
@@ -182,27 +184,42 @@ export const BridgeIn = () => {
   };
 
   return (
-    <div className="w-96 flex flex-col gap-3">
+    <div className="max-w-md flex flex-col gap-3">
+      <TypeP>
+        Bridge resources and lords from your Starknet wallet into the Eternum game. You will have to complete the claim
+        on your Realm in the{" "}
+        <a href="https://eternum.realms.world/" target="_blank" className="text-gold underline">
+          game
+        </a>
+        .
+      </TypeP>
+      <hr />
       <div className="flex justify-between">
-        <div>From Wallet</div>
-        <div>{displayAddress(address || "")}</div>
+        <div className="flex flex-col ">
+          <div className="text-xs uppercase mb-1 ">From Wallet</div>
+          <div>{displayAddress(address || "")}</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase mb-1">To Realm</div>
+
+          <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
+            <SelectTrigger className="w-full border-gold/15">
+              <SelectValue placeholder="Select Realm To Transfer" />
+            </SelectTrigger>
+            <SelectContent>
+              {playerRealmsIdAndName.length
+                ? playerRealmsIdAndName.map((realm) => {
+                    return (
+                      <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
+                        #{realm.realmId} - {realm.name}
+                      </SelectItem>
+                    );
+                  })
+                : "No Realms settled in Eternum"}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
-        <SelectTrigger className="w-full border-gold/15">
-          <SelectValue placeholder="Select Realm To Transfer" />
-        </SelectTrigger>
-        <SelectContent>
-          {playerRealmsIdAndName.length
-            ? playerRealmsIdAndName.map((realm) => {
-                return (
-                  <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                    #{realm.realmId} - {realm.name}
-                  </SelectItem>
-                );
-              })
-            : "No Realms settled in Eternum"}
-        </SelectContent>
-      </Select>
 
       {resourceSelections.map((selection) => (
         <SelectResourceToBridge
@@ -212,6 +229,7 @@ export const BridgeIn = () => {
           setselectedResourceContract={(value) => handleResourceChange(selection.id, "contract", value)}
           onRemove={() => handleResourceRemove(selection.id)}
           showRemove={resourceSelections.length > 1}
+          resourceSelections={resourceSelections}
         />
       ))}
 
@@ -300,7 +318,7 @@ export const BridgeIn = () => {
         onClick={() => onBridgeIntoRealm()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
-        {isLoading ? "Transferring..." : "Initiate Transfer"}
+        {isLoading ? "Transferring..." : !realmEntityId ? "Select a Realm" : "Initiate Transfer"}
       </Button>
     </div>
   );
@@ -312,12 +330,14 @@ export const SelectResourceToBridge = ({
   setselectedResourceContract,
   onRemove,
   showRemove,
+  resourceSelections,
 }: {
   selectedResourceAmount: string;
   setselectedResourceAmount: (value: string) => void;
   setselectedResourceContract: (value: string) => void;
   onRemove: () => void;
   showRemove: boolean;
+  resourceSelections: ResourceSelection[];
 }) => {
   return (
     <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
@@ -337,8 +357,15 @@ export const SelectResourceToBridge = ({
           {Object.values(ResourcesIds)
             .filter((resource) => isNaN(Number(resource)))
             .map((resource) => (
-              <SelectItem key={resource} value={resource.toString()}>
-                {resource}
+              <SelectItem
+                key={resource}
+                disabled={resourceSelections.some((selection) => selection.contract === resource)}
+                value={resource.toString()}
+              >
+                <div className="flex items-center gap-2">
+                  <ResourceIcon resource={resource as string} size="md" />
+                  {resource}
+                </div>
               </SelectItem>
             ))}
         </SelectContent>
