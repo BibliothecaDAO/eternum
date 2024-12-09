@@ -17,7 +17,7 @@ export default function TroopsTable() {
           const foodConsumption = TROOPS_FOOD_CONSUMPTION[troopId as TroopId];
 
           return (
-            <div key={troopId} className="border border-gray-700 p-4 rounded-lg">
+            <div key={troopId} className="border border-gray-700 p-4 rounded-lg bg-white/5">
               <div className="flex items-center gap-3 mb-3">
                 <ResourceIcon size={48} id={troopId} name={resource?.trait || ""} />
                 <span className="text-lg font-semibold truncate w-full max-w-[150px]">
