@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { useAccount } from "@starknet-react/core";
-import { env } from "process";
 import { useEffect, useState } from "react";
+import { env } from "../../env";
 
 export const usePrizePool = () => {
   const [prizePool, setPrizePool] = useState<bigint>(0n);
