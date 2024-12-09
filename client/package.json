@@ -62,6 +62,7 @@
     "three-csg-ts": "^3.1.14",
     "three-stdlib": "^2.29.5",
     "use-sound": "^4.0.1",
+    "viem": "^2.21.45",
     "vite-plugin-mkcert": "^1.17.6",
     "vite-plugin-pwa": "^0.20.5",
     "vitest-canvas-mock": "^0.3.3",
