@@ -35,6 +35,8 @@ export const Rewards = () => {
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const [prizePool, setPrizePool] = useState<BigInt>(0n);
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(rewards));
@@ -51,6 +53,7 @@ export const Rewards = () => {
   const leaderboard = useComponentValue(Leaderboard, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
   const registerToLeaderboard = useCallback(async () => {
+    setIsLoading(true);
     const contributions = Array.from(getContributions());
     const epochs = getEpochs();
 
@@ -59,13 +62,16 @@ export const Rewards = () => {
       hyperstructure_contributed_to: contributions,
       hyperstructure_shareholder_epochs: epochs,
     });
+    setIsLoading(false);
   }, [getContributions, getEpochs]);
 
   const claimRewards = useCallback(async () => {
+    setIsLoading(true);
     await claim_leaderboard_rewards({
       signer: account,
       token: env.VITE_LORDS_ADDRESS!,
     });
+    setIsLoading(false);
   }, [account]);
 
   useEffect(() => {
@@ -208,6 +214,7 @@ export const Rewards = () => {
           {/* Action button */}
           <Button
             variant="primary"
+            isLoading={isLoading}
             disabled={!registrationClosed && registrationStatus === "registered"}
             onClick={registrationClosed ? claimRewards : registerToLeaderboard}
           >
