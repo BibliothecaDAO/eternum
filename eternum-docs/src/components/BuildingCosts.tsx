@@ -1,5 +1,6 @@
 import { BuildingType, EternumGlobalConfig, findResourceById, ResourcesIds } from "@bibliothecadao/eternum";
 import ResourceIcon from "./ResourceIcon";
+import { formatAmount } from "../utils/formatting";
 
 type Props = {
   buildingType: BuildingType;
@@ -10,14 +11,6 @@ export default function BuildingCosts({ buildingType }: Props) {
   const resourceCostsWheat = EternumGlobalConfig.resources.resourceBuildingCosts[ResourcesIds.Wood] || [];
   const resourceCostsFish = EternumGlobalConfig.resources.resourceBuildingCosts[ResourcesIds.Stone] || [];
 
-  const formatAmount = (amount: number) => {
-    if (amount < 1000) {
-      return `${amount}K`;
-    } else {
-      return `${Math.floor(amount / 1000)}M`;
-    }
-  };
-
   if (buildingType === BuildingType.Resource) {
     return (
       <div className="my-4 p-3">
@@ -26,11 +19,11 @@ export default function BuildingCosts({ buildingType }: Props) {
           {resourceCostsWheat.map((cost) => {
             const resource = findResourceById(cost.resource);
             return (
-              <div key={cost.resource} className="flex items-center gap-1 px-2 py-1.5 rounded-md">
-                <ResourceIcon size="xl" id={cost.resource} name={resource?.trait || ""} />
+              <div key={cost.resource} className="flex items-center px-2 py-2 rounded-md">
+                <ResourceIcon size="lg" id={cost.resource} name={resource?.trait || ""} />
                 <div className="flex flex-col">
-                  <span className="font-medium">{resource?.trait}</span>
-                  <span className="font-medium">{formatAmount(cost.amount)}</span>
+                  <span>{resource?.trait}</span>
+                  <span>{formatAmount(cost.amount)}</span>
                 </div>
               </div>
             );
@@ -40,10 +33,10 @@ export default function BuildingCosts({ buildingType }: Props) {
             const resource = findResourceById(cost.resource);
             return (
               <div key={cost.resource} className="flex items-center gap-1 px-2 py-1.5 rounded-md">
-                <ResourceIcon size="xl" id={cost.resource} name={resource?.trait || ""} />
+                <ResourceIcon size="lg" id={cost.resource} name={resource?.trait || ""} />
                 <div className="flex flex-col">
-                  <span className="font-medium">{resource?.trait}</span>
-                  <span className="font-medium">{formatAmount(cost.amount)}</span>
+                  <span>{resource?.trait}</span>
+                  <span>{formatAmount(cost.amount)}</span>
                 </div>
               </div>
             );
@@ -63,7 +56,7 @@ export default function BuildingCosts({ buildingType }: Props) {
           const resource = findResourceById(cost.resource);
           return (
             <div key={cost.resource} className="flex items-center gap-1 px-2 py-1.5 rounded-md">
-              <ResourceIcon size="xl" id={cost.resource} name={resource?.trait || ""} />
+              <ResourceIcon size="lg" id={cost.resource} name={resource?.trait || ""} />
               <div className="flex flex-col">
                 <span className="font-medium">{resource?.trait}</span>
                 <span className="font-medium">{formatAmount(cost.amount)}</span>

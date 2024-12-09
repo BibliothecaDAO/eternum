@@ -20,8 +20,8 @@ export default function BuildingCard({ title, image, buildingType, description, 
   const populationCapacity = BUILDING_CAPACITY[buildingType] || 0;
 
   return (
-    <div className="p-6 mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5">
-      <h4 className="text-xl font-bold mb-4">{title}</h4>
+    <div className="p-6 mb-6 rounded-lg border border-gray-700 bg-white/5">
+      <div className="text-xl font-bold mb-4">{title}</div>
 
       {multipleImages ? (
         <div className="flex mb-4">
@@ -33,20 +33,24 @@ export default function BuildingCard({ title, image, buildingType, description, 
         <img src={typeof image === "string" ? image : ""} alt={title} width="250" className="float-right" />
       )}
 
-      {population !== 0 && (
-        <div className="mt-2 text-lg text-gray-500 dark:text-gray-300">
-          <strong>Population:</strong> +{population}
-        </div>
-      )}
-      {populationCapacity !== 0 && (
-        <div className="mt-2 text-lg text-gray-500 dark:text-gray-300">
-          <strong>Population Capacity:</strong> +{populationCapacity}
+      {(population !== 0 || populationCapacity !== 0) && (
+        <div className="mt-2 text-md text-gray-300">
+          {population !== 0 && (
+            <div>
+              <strong>Population:</strong> +{population}
+            </div>
+          )}
+          {populationCapacity !== 0 && (
+            <div>
+              <strong>Population Capacity:</strong> +{populationCapacity}
+            </div>
+          )}
         </div>
       )}
 
       <BuildingCosts buildingType={buildingType} />
 
-      <ul className="list-disc ml-4 mt-2">
+      <ul className="list-disc ml-4">
         {description.map((desc, index) => (
           <li key={index}>{desc}</li>
         ))}
