@@ -123,9 +123,10 @@ export const BridgeOutStep1 = () => {
 
   const orderWeight = useMemo(() => {
     if (selectedResourceIds.length > 0) {
-      const totalWeight = getTotalResourceWeight([{ resourceId: selectedResourceId, amount: multiplyByPrecision(selectedResourceAmount) }]);
-      return totalWeight; 
-
+      const totalWeight = getTotalResourceWeight([
+        { resourceId: selectedResourceId, amount: multiplyByPrecision(selectedResourceAmount) },
+      ]);
+      return totalWeight;
     } else {
       return 0;
     }
@@ -211,8 +212,8 @@ export const BridgeOutStep1 = () => {
         </div>
         <div className="flex justify-between">
           <div>
-          Donkeys Burnt
-          <TooltipProvider>
+            Donkeys Burnt
+            <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
                   <InfoIcon className="ml-2 w-4 h-4" />
