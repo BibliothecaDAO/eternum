@@ -15,6 +15,7 @@ import {
 import { useAccount } from "@starknet-react/core";
 import { Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -26,7 +27,7 @@ function formatFee(fee: number) {
 }
 
 export const BridgeOutStep1 = () => {
-  const { account } = useAccount();
+  const { address } = useAccount();
 
   const { getRealmNameById } = useRealm();
   const { computeTravelTime } = useTravel();
@@ -151,26 +152,35 @@ export const BridgeOutStep1 = () => {
   };
 
   return (
-    <div className="w-96 flex flex-col gap-3">
+    <div className="max-w-md flex flex-col gap-3">
+      <TypeP>
+        Bridge resources from your Realms balance in game to tradeable ERC20 assets in your Starknet wallet. This will
+        require a second step to send the resources to your wallet once the donkeys have arrived at the bank.
+      </TypeP>
+      <hr />
       <div className="flex justify-between">
-        <div>From Wallet</div>
-
-        <div>{displayAddress(account?.address || "")}</div>
+        <div className="flex flex-col min-w-40">
+          <div className="text-xs uppercase mb-1 ">From Realm</div>
+          <Select onValueChange={(value) => setRealmEntityId(value)}>
+            <SelectTrigger className="w-full border-gold/15">
+              <SelectValue placeholder="Select Settled Realm" />
+            </SelectTrigger>
+            <SelectContent>
+              {playerRealmsIdAndName.map((realm) => {
+                return (
+                  <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
+                    #{realm.realmId} - {realm.name}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <div className="text-xs uppercase mb-1">To Wallet</div>
+          <div>{displayAddress(address || "")}</div>
+        </div>
       </div>
-      <Select onValueChange={(value) => setRealmEntityId(value)}>
-        <SelectTrigger className="w-full border-gold/15">
-          <SelectValue placeholder="Select Realm" />
-        </SelectTrigger>
-        <SelectContent>
-          {playerRealmsIdAndName.map((realm) => {
-            return (
-              <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                #{realm.realmId} - {realm.name}
-              </SelectItem>
-            );
-          })}
-        </SelectContent>
-      </Select>
 
       {Boolean(realmEntityId) && (
         <SelectResourceRow
@@ -232,7 +242,7 @@ export const BridgeOutStep1 = () => {
         onClick={() => onSendToBank()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
-        {isLoading ? "Sending to Bank..." : "Send to Bank (Step 1)"}
+        {isLoading ? "Sending to Bank..." : !realmEntityId ? "Select a Realm" : "Send to Bank (Step 1)"}
       </Button>
     </div>
   );
@@ -252,7 +262,7 @@ export const SelectResourceRow = ({
   setSelectedResourceAmounts: (value: { [key: string]: number }) => void;
 }) => {
   return (
-    <div className="grid grid-cols-0 gap-8 px-8 h-full">
+    <div className="grid grid-cols-0 gap-8 h-full">
       <div className=" bg-gold/10  h-auto border border-gold/40">
         <SelectSingleResource
           selectedResourceIds={selectedResourceIds}

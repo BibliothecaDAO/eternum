@@ -1,15 +1,15 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
-import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { Position } from "@/types/Position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/Onboarding";
 import { OnboardingButton } from "@/ui/layouts/OnboardingButton";
 import { LoadingScreen } from "@/ui/modules/LoadingScreen";
-import { ACCOUNT_CHANGE_EVENT } from "@/ui/modules/onboarding/Steps";
+import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/Steps";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import ControllerConnector from "@cartridge/connector/controller";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { HasValue, runQuery } from "@dojoengine/recs";
+import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
@@ -208,9 +208,10 @@ const DojoContextProvider = ({
       const username = await (connector as ControllerConnector)?.username();
       if (!username) return;
 
+      const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
       value.systemCalls.set_address_name({
         signer: controllerAccount!,
-        name: username,
+        name: usernameFelt,
       });
       setAddressName(username);
     };
@@ -256,8 +257,6 @@ const DojoContextProvider = ({
     }
   }, [isDev, controllerAccount, burnerAccount, retries]);
 
-  const bg = `/images/covers/${getRandomBackgroundImage()}.png`;
-
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
@@ -278,11 +277,11 @@ const DojoContextProvider = ({
             <div className="flex justify-center space-x-8 mt-2 md:mt-4">
               {!isConnected && (
                 <>
-                  <OnboardingButton onClick={onSpectatorModeClick}>
-                    <Eye className="w-5 h-5 fill-current mr-2" />
-                    <div>Spectate</div>
-                  </OnboardingButton>
-                  <OnboardingButton onClick={connectWallet} className="!bg-[#FCB843] !text-black border-none">
+                  <SpectateButton onClick={onSpectatorModeClick} />
+                  <OnboardingButton
+                    onClick={connectWallet}
+                    className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80"
+                  >
                     <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
                     Log In
                   </OnboardingButton>

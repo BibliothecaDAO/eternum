@@ -13,6 +13,7 @@ import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
+import { formatEther } from "viem";
 import { env } from "../../../../env";
 
 const REGISTRATION_DELAY = 60 * 60 * 24 * 7; // 1 week
@@ -79,7 +80,7 @@ export const Rewards = () => {
         }
 
         const difference = endTime - currentTime;
-        setTimeRemaining(formatTime(difference, undefined, false));
+        setTimeRemaining(formatTime(difference, undefined));
       };
 
       calculateTimeRemaining();
@@ -89,22 +90,50 @@ export const Rewards = () => {
     }
   }, [gameEnded]);
 
+  const getBalance = async (address: string) => {
+    const balance = await account.callContract({
+      contractAddress: env.VITE_LORDS_ADDRESS!,
+      entrypoint: "balance_of",
+      calldata: [address],
+    });
+
+    return balance;
+  };
+
   useEffect(() => {
     const getPrizePool = async () => {
-      const season_pool_fee_recipient = configManager?.getResourceBridgeFeeSplitConfig().season_pool_fee_recipient;
-      const prizePool = await provider.provider.callContract({
-        contractAddress: env.VITE_LORDS_ADDRESS!,
-        entrypoint: "balance_of",
-        calldata: ["0x" + season_pool_fee_recipient.toString(16)],
-      });
-      setPrizePool(BigInt(prizePool[0]));
+      try {
+        // Get the fee recipient address from config
+        const season_pool_fee_recipient = configManager?.getResourceBridgeFeeSplitConfig()?.season_pool_fee_recipient;
+
+        if (!season_pool_fee_recipient) {
+          console.error("Failed to get season pool fee recipient from config");
+          return;
+        }
+
+        // Convert address to hex string with 0x prefix
+        const recipientAddress = "0x" + season_pool_fee_recipient.toString(16);
+
+        // Get balance from contract
+        const balance = await getBalance(recipientAddress);
+
+        if (balance && balance[0]) {
+          setPrizePool(BigInt(balance[0]));
+        }
+      } catch (err) {
+        console.error("Error getting prize pool:", err);
+      }
     };
-    if (leaderboard && leaderboard.total_price_pool !== null) {
-      setPrizePool(leaderboard.total_price_pool!);
-    } else {
-      getPrizePool();
-    }
-  }, [leaderboard]);
+
+    // Use leaderboard total if available, otherwise fetch from contract
+
+    getPrizePool();
+
+    // Refresh prize pool periodically
+    const interval = setInterval(getPrizePool, 60000); // Every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   const registeredPlayers = useMemo(() => {
     const registeredPlayers = runQuery([Has(LeaderboardRegistered)]);
@@ -129,7 +158,7 @@ export const Rewards = () => {
 
   return (
     <OSWindow
-      width="400px"
+      width="600px"
       onClick={() => togglePopup(rewards)}
       show={isOpen}
       title={rewards}
@@ -137,37 +166,50 @@ export const Rewards = () => {
     >
       <div className="p-4">
         <div className="flex flex-col gap-4">
+          {/* Prize pool and registration time */}
           <div className="grid grid-cols-2 gap-4">
             <Compartment>
-              <div className="text-center text-lg font-semibold self-center w-full my-auto">
-                {prizePool.toString()} $LORDS total prize pool
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-sm font-bold uppercase">Total prize pool</div>
+
+                <div className="text-lg">{Number(formatEther(BigInt(prizePool.toString()))).toFixed(2)} $LORDS</div>
               </div>
             </Compartment>
             <Compartment>
               <div className="text-center text-lg font-semibold self-center w-full">
-                {timeRemaining} left to register
+                <div className="text-sm font-bold uppercase">Time left to register</div>
+                <div className="text-lg">{timeRemaining}</div>
               </div>
-            </Compartment>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <Compartment>
-              <div className="text-center text-lg font-semibold self-center w-full my-auto">
-                {registeredPlayers} player(s) registered
-              </div>
-            </Compartment>
-            <Compartment>
-              <div className="text-center text-lg font-semibold self-center w-full">Season winner: {seasonWinner}</div>
-            </Compartment>
-            <Compartment>
-              <div className="text-center text-lg font-semibold self-center w-full">You are {registrationStatus}</div>
             </Compartment>
           </div>
 
+          {/* Player stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <Compartment>
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-sm font-bold uppercase">Registered players</div>
+                <div className="text-lg">{registeredPlayers}</div>
+              </div>
+            </Compartment>
+            <Compartment>
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-sm font-bold uppercase">Season winner</div>
+                <div className="text-lg">{seasonWinner}</div>
+              </div>
+            </Compartment>
+          </div>
+
+          <Compartment>
+            <div className="text-center text-lg font-semibold self-center w-full">
+              You are {registrationStatus}! You will be able to claim your rewards after the registration period ends.
+            </div>
+          </Compartment>
+
+          {/* Action button */}
           <Button
-            variant="secondary"
+            variant="primary"
             disabled={!registrationClosed && registrationStatus === "registered"}
             onClick={registrationClosed ? claimRewards : registerToLeaderboard}
-            size="xs"
           >
             {registrationClosed
               ? "Claim Rewards"

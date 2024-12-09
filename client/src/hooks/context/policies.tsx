@@ -1,566 +1,574 @@
 export const policies = [
   {
-    target: "0x71be7be1318bf763497230ffc9e470d505ac008f6bd1821601b562932383811",
-    method: "dojo_name",
+    "target": "0x621d3ffd6fb9604345fdaa6ea207c361435cb933385ee4d483df3362ed973a",
+    "method": "dojo_name"
   },
   {
-    target: "0x71be7be1318bf763497230ffc9e470d505ac008f6bd1821601b562932383811",
-    method: "change_owner_amm_fee",
+    "target": "0x621d3ffd6fb9604345fdaa6ea207c361435cb933385ee4d483df3362ed973a",
+    "method": "change_owner_amm_fee"
   },
   {
-    target: "0x71be7be1318bf763497230ffc9e470d505ac008f6bd1821601b562932383811",
-    method: "change_owner_bridge_fee",
+    "target": "0x621d3ffd6fb9604345fdaa6ea207c361435cb933385ee4d483df3362ed973a",
+    "method": "change_owner_bridge_fee"
   },
   {
-    target: "0x71be7be1318bf763497230ffc9e470d505ac008f6bd1821601b562932383811",
-    method: "world_dispatcher",
+    "target": "0x621d3ffd6fb9604345fdaa6ea207c361435cb933385ee4d483df3362ed973a",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x7ca67320c099dcde36faaf726fc0c3bc563a06f5abea67de2f754d020c9e669",
-    method: "dojo_name",
+    "target": "0x980f1695266fdf368ae92af502fa0bd61313ee08380c26008cc33c54495cd6",
+    "method": "dojo_name"
   },
   {
-    target: "0x7ca67320c099dcde36faaf726fc0c3bc563a06f5abea67de2f754d020c9e669",
-    method: "battle_pillage",
+    "target": "0x980f1695266fdf368ae92af502fa0bd61313ee08380c26008cc33c54495cd6",
+    "method": "battle_pillage"
   },
   {
-    target: "0x7ca67320c099dcde36faaf726fc0c3bc563a06f5abea67de2f754d020c9e669",
-    method: "world_dispatcher",
+    "target": "0x980f1695266fdf368ae92af502fa0bd61313ee08380c26008cc33c54495cd6",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x18658254d1d1602ad1e1672819d8736d0e691af97c215294c57e2efa6ea5c58",
-    method: "dojo_name",
+    "target": "0x49a5d804cdbe72943e0ddf7216d396779b5ed5bd0b62b2f67cd7e32b5dd824c",
+    "method": "dojo_name"
   },
   {
-    target: "0x18658254d1d1602ad1e1672819d8736d0e691af97c215294c57e2efa6ea5c58",
-    method: "battle_start",
+    "target": "0x49a5d804cdbe72943e0ddf7216d396779b5ed5bd0b62b2f67cd7e32b5dd824c",
+    "method": "battle_start"
   },
   {
-    target: "0x18658254d1d1602ad1e1672819d8736d0e691af97c215294c57e2efa6ea5c58",
-    method: "battle_force_start",
+    "target": "0x49a5d804cdbe72943e0ddf7216d396779b5ed5bd0b62b2f67cd7e32b5dd824c",
+    "method": "battle_force_start"
   },
   {
-    target: "0x18658254d1d1602ad1e1672819d8736d0e691af97c215294c57e2efa6ea5c58",
-    method: "battle_join",
+    "target": "0x49a5d804cdbe72943e0ddf7216d396779b5ed5bd0b62b2f67cd7e32b5dd824c",
+    "method": "battle_join"
   },
   {
-    target: "0x18658254d1d1602ad1e1672819d8736d0e691af97c215294c57e2efa6ea5c58",
-    method: "battle_leave",
+    "target": "0x49a5d804cdbe72943e0ddf7216d396779b5ed5bd0b62b2f67cd7e32b5dd824c",
+    "method": "battle_leave"
   },
   {
-    target: "0x18658254d1d1602ad1e1672819d8736d0e691af97c215294c57e2efa6ea5c58",
-    method: "battle_claim",
+    "target": "0x49a5d804cdbe72943e0ddf7216d396779b5ed5bd0b62b2f67cd7e32b5dd824c",
+    "method": "battle_claim"
   },
   {
-    target: "0x18658254d1d1602ad1e1672819d8736d0e691af97c215294c57e2efa6ea5c58",
-    method: "world_dispatcher",
+    "target": "0x49a5d804cdbe72943e0ddf7216d396779b5ed5bd0b62b2f67cd7e32b5dd824c",
+    "method": "battle_resolve"
   },
   {
-    target: "0x745a9c2ad0ff7ff6dc9f78dcefe22e4ff2498c2214060721ff5279223ed4802",
-    method: "dojo_name",
+    "target": "0x49a5d804cdbe72943e0ddf7216d396779b5ed5bd0b62b2f67cd7e32b5dd824c",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x745a9c2ad0ff7ff6dc9f78dcefe22e4ff2498c2214060721ff5279223ed4802",
-    method: "leave_battle",
+    "target": "0x6253588e7d4f52d5bc12aafb8754c13147320ba34a01fffbc7fc04532a52f5d",
+    "method": "dojo_name"
   },
   {
-    target: "0x745a9c2ad0ff7ff6dc9f78dcefe22e4ff2498c2214060721ff5279223ed4802",
-    method: "leave_battle_if_ended",
+    "target": "0x6253588e7d4f52d5bc12aafb8754c13147320ba34a01fffbc7fc04532a52f5d",
+    "method": "leave_battle"
   },
   {
-    target: "0x745a9c2ad0ff7ff6dc9f78dcefe22e4ff2498c2214060721ff5279223ed4802",
-    method: "world_dispatcher",
+    "target": "0x6253588e7d4f52d5bc12aafb8754c13147320ba34a01fffbc7fc04532a52f5d",
+    "method": "leave_battle_if_ended"
   },
   {
-    target: "0x58006d1350cd2fd615e880527b1e90ca0a40ee37a68f78aca1d0df2ce399790",
-    method: "dojo_name",
+    "target": "0x6253588e7d4f52d5bc12aafb8754c13147320ba34a01fffbc7fc04532a52f5d",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x58006d1350cd2fd615e880527b1e90ca0a40ee37a68f78aca1d0df2ce399790",
-    method: "create",
+    "target": "0x7f0728d815bdda49e551737648872299283fe51904a6f46c0a65b0eb5a117ea",
+    "method": "dojo_name"
   },
   {
-    target: "0x58006d1350cd2fd615e880527b1e90ca0a40ee37a68f78aca1d0df2ce399790",
-    method: "pause_production",
+    "target": "0x7f0728d815bdda49e551737648872299283fe51904a6f46c0a65b0eb5a117ea",
+    "method": "create"
   },
   {
-    target: "0x58006d1350cd2fd615e880527b1e90ca0a40ee37a68f78aca1d0df2ce399790",
-    method: "resume_production",
+    "target": "0x7f0728d815bdda49e551737648872299283fe51904a6f46c0a65b0eb5a117ea",
+    "method": "pause_production"
   },
   {
-    target: "0x58006d1350cd2fd615e880527b1e90ca0a40ee37a68f78aca1d0df2ce399790",
-    method: "destroy",
+    "target": "0x7f0728d815bdda49e551737648872299283fe51904a6f46c0a65b0eb5a117ea",
+    "method": "resume_production"
   },
   {
-    target: "0x58006d1350cd2fd615e880527b1e90ca0a40ee37a68f78aca1d0df2ce399790",
-    method: "world_dispatcher",
+    "target": "0x7f0728d815bdda49e551737648872299283fe51904a6f46c0a65b0eb5a117ea",
+    "method": "destroy"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "dojo_name",
+    "target": "0x7f0728d815bdda49e551737648872299283fe51904a6f46c0a65b0eb5a117ea",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_world_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "dojo_name"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_season_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_world_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_season_bridge_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_season_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_vrf_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_season_bridge_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_quest_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_vrf_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_quest_reward_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_quest_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_map_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_quest_reward_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_capacity_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_map_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_travel_stamina_cost_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_capacity_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_weight_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_travel_stamina_cost_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_battle_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_weight_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_tick_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_battle_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_stamina_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_tick_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_travel_food_cost_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_stamina_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_stamina_refill_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_travel_food_cost_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_leveling_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_stamina_refill_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_production_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_leveling_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_speed_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_production_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_hyperstructure_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_speed_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_bank_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_hyperstructure_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_troop_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_bank_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_building_category_pop_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_troop_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_population_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_building_category_pop_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_building_general_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_population_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_building_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_building_general_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_mercenaries_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_building_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_resource_bridge_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_mercenaries_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_resource_bridge_fee_split_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_resource_bridge_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_resource_bridge_whitelist_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_resource_bridge_fee_split_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_realm_max_level_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_resource_bridge_whitelist_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_realm_level_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_realm_max_level_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "set_settlement_config",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_realm_level_config"
   },
   {
-    target: "0x3315f8d2d254f625d692295405008077ccf3f0262e3f498ef50a1e62936acd3",
-    method: "world_dispatcher",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "set_settlement_config"
   },
   {
-    target: "0x7f94a67cd3fbfef3d11844c216483c63ca712adaa5f21c7cb62dd36de0f004b",
-    method: "dojo_name",
+    "target": "0x6d9dad40c099cafbf4559212fc7b8202bb911be33eb643a0cd210f88b5507bf",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x7f94a67cd3fbfef3d11844c216483c63ca712adaa5f21c7cb62dd36de0f004b",
-    method: "create_admin_bank",
+    "target": "0x4f2fd94e041313986d22bbcef8ee79cff75dc54ed2739fb31ff378539578704",
+    "method": "dojo_name"
   },
   {
-    target: "0x7f94a67cd3fbfef3d11844c216483c63ca712adaa5f21c7cb62dd36de0f004b",
-    method: "world_dispatcher",
+    "target": "0x4f2fd94e041313986d22bbcef8ee79cff75dc54ed2739fb31ff378539578704",
+    "method": "create_admin_bank"
   },
   {
-    target: "0x7e554450d80bb4a9e220c54684e9c25a3f81c602392013d1a3131ea8f14d8da",
-    method: "dojo_name",
+    "target": "0x4f2fd94e041313986d22bbcef8ee79cff75dc54ed2739fb31ff378539578704",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x7e554450d80bb4a9e220c54684e9c25a3f81c602392013d1a3131ea8f14d8da",
-    method: "create",
+    "target": "0x3c1e7fa613cc70827d7880c63cd7acd0931bd93b8c8a5ee4d734e625e5f6d95",
+    "method": "dojo_name"
   },
   {
-    target: "0x7e554450d80bb4a9e220c54684e9c25a3f81c602392013d1a3131ea8f14d8da",
-    method: "world_dispatcher",
+    "target": "0x3c1e7fa613cc70827d7880c63cd7acd0931bd93b8c8a5ee4d734e625e5f6d95",
+    "method": "create"
   },
   {
-    target: "0x601cfb40dd24cf64074a2b48c218a42bed87e2dc5f072ea09aa88c3da3a1e29",
-    method: "dojo_name",
+    "target": "0x3c1e7fa613cc70827d7880c63cd7acd0931bd93b8c8a5ee4d734e625e5f6d95",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x601cfb40dd24cf64074a2b48c218a42bed87e2dc5f072ea09aa88c3da3a1e29",
-    method: "mint",
+    "target": "0x6663bb5654805d10e680cc50cc5055f81dc744788ae2662f65d7a6fc63397db",
+    "method": "dojo_name"
   },
   {
-    target: "0x601cfb40dd24cf64074a2b48c218a42bed87e2dc5f072ea09aa88c3da3a1e29",
-    method: "world_dispatcher",
+    "target": "0x6663bb5654805d10e680cc50cc5055f81dc744788ae2662f65d7a6fc63397db",
+    "method": "mint"
   },
   {
-    target: "0x3c8a494ea9f366bc6ac4f3baf81c7535d5ffbbc6ae5593c0a9dd3695ea0946e",
-    method: "dojo_name",
+    "target": "0x6663bb5654805d10e680cc50cc5055f81dc744788ae2662f65d7a6fc63397db",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x3c8a494ea9f366bc6ac4f3baf81c7535d5ffbbc6ae5593c0a9dd3695ea0946e",
-    method: "world_dispatcher",
+    "target": "0x450d039e7942314e881b4b80138ca3cf659b2217e55584c3ecbc6019384d534",
+    "method": "dojo_name"
   },
   {
-    target: "0x6208b9db71c379ea50f5210dbe2e4bd759ea249ebc284ae8a41516bd0999a91",
-    method: "dojo_name",
+    "target": "0x450d039e7942314e881b4b80138ca3cf659b2217e55584c3ecbc6019384d534",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x6208b9db71c379ea50f5210dbe2e4bd759ea249ebc284ae8a41516bd0999a91",
-    method: "create_guild",
+    "target": "0x6d6da95ca6fa7272baf84f841e64fafa445064a60930b735234c90ad49448e1",
+    "method": "dojo_name"
   },
   {
-    target: "0x6208b9db71c379ea50f5210dbe2e4bd759ea249ebc284ae8a41516bd0999a91",
-    method: "join_guild",
+    "target": "0x6d6da95ca6fa7272baf84f841e64fafa445064a60930b735234c90ad49448e1",
+    "method": "create_guild"
   },
   {
-    target: "0x6208b9db71c379ea50f5210dbe2e4bd759ea249ebc284ae8a41516bd0999a91",
-    method: "whitelist_player",
+    "target": "0x6d6da95ca6fa7272baf84f841e64fafa445064a60930b735234c90ad49448e1",
+    "method": "join_guild"
   },
   {
-    target: "0x6208b9db71c379ea50f5210dbe2e4bd759ea249ebc284ae8a41516bd0999a91",
-    method: "transfer_guild_ownership",
+    "target": "0x6d6da95ca6fa7272baf84f841e64fafa445064a60930b735234c90ad49448e1",
+    "method": "whitelist_player"
   },
   {
-    target: "0x6208b9db71c379ea50f5210dbe2e4bd759ea249ebc284ae8a41516bd0999a91",
-    method: "remove_guild_member",
+    "target": "0x6d6da95ca6fa7272baf84f841e64fafa445064a60930b735234c90ad49448e1",
+    "method": "transfer_guild_ownership"
   },
   {
-    target: "0x6208b9db71c379ea50f5210dbe2e4bd759ea249ebc284ae8a41516bd0999a91",
-    method: "remove_player_from_whitelist",
+    "target": "0x6d6da95ca6fa7272baf84f841e64fafa445064a60930b735234c90ad49448e1",
+    "method": "remove_guild_member"
   },
   {
-    target: "0x6208b9db71c379ea50f5210dbe2e4bd759ea249ebc284ae8a41516bd0999a91",
-    method: "world_dispatcher",
+    "target": "0x6d6da95ca6fa7272baf84f841e64fafa445064a60930b735234c90ad49448e1",
+    "method": "remove_player_from_whitelist"
   },
   {
-    target: "0x46a7a2fefd1af563027bfd43a19d4fd26d2654cbb99b2ba43481d35384daad",
-    method: "dojo_name",
+    "target": "0x6d6da95ca6fa7272baf84f841e64fafa445064a60930b735234c90ad49448e1",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x46a7a2fefd1af563027bfd43a19d4fd26d2654cbb99b2ba43481d35384daad",
-    method: "create",
+    "target": "0xcf1de56aad4ce5389234d9d1fee81ed342de0c39a1d1561212d9676e6bc0b6",
+    "method": "dojo_name"
   },
   {
-    target: "0x46a7a2fefd1af563027bfd43a19d4fd26d2654cbb99b2ba43481d35384daad",
-    method: "contribute_to_construction",
+    "target": "0xcf1de56aad4ce5389234d9d1fee81ed342de0c39a1d1561212d9676e6bc0b6",
+    "method": "get_points"
   },
   {
-    target: "0x46a7a2fefd1af563027bfd43a19d4fd26d2654cbb99b2ba43481d35384daad",
-    method: "set_co_owners",
+    "target": "0xcf1de56aad4ce5389234d9d1fee81ed342de0c39a1d1561212d9676e6bc0b6",
+    "method": "create"
   },
   {
-    target: "0x46a7a2fefd1af563027bfd43a19d4fd26d2654cbb99b2ba43481d35384daad",
-    method: "end_game",
+    "target": "0xcf1de56aad4ce5389234d9d1fee81ed342de0c39a1d1561212d9676e6bc0b6",
+    "method": "contribute_to_construction"
   },
   {
-    target: "0x46a7a2fefd1af563027bfd43a19d4fd26d2654cbb99b2ba43481d35384daad",
-    method: "set_access",
+    "target": "0xcf1de56aad4ce5389234d9d1fee81ed342de0c39a1d1561212d9676e6bc0b6",
+    "method": "set_co_owners"
   },
   {
-    target: "0x46a7a2fefd1af563027bfd43a19d4fd26d2654cbb99b2ba43481d35384daad",
-    method: "world_dispatcher",
+    "target": "0xcf1de56aad4ce5389234d9d1fee81ed342de0c39a1d1561212d9676e6bc0b6",
+    "method": "end_game"
   },
   {
-    target: "0x5fd60cd8cb7d37bc4b07c77f5df436dbea20b35c602d9e7fcf5aed0975db4fb",
-    method: "dojo_name",
+    "target": "0xcf1de56aad4ce5389234d9d1fee81ed342de0c39a1d1561212d9676e6bc0b6",
+    "method": "set_access"
   },
   {
-    target: "0x5fd60cd8cb7d37bc4b07c77f5df436dbea20b35c602d9e7fcf5aed0975db4fb",
-    method: "add",
+    "target": "0xcf1de56aad4ce5389234d9d1fee81ed342de0c39a1d1561212d9676e6bc0b6",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x5fd60cd8cb7d37bc4b07c77f5df436dbea20b35c602d9e7fcf5aed0975db4fb",
-    method: "remove",
+    "target": "0x60616bf868020ef13dfef6435ef545ea36fdb1a24b2eeb581cb34348148f6d",
+    "method": "dojo_name"
   },
   {
-    target: "0x5fd60cd8cb7d37bc4b07c77f5df436dbea20b35c602d9e7fcf5aed0975db4fb",
-    method: "world_dispatcher",
+    "target": "0x60616bf868020ef13dfef6435ef545ea36fdb1a24b2eeb581cb34348148f6d",
+    "method": "add"
   },
   {
-    target: "0x37accaa792a097a6f63381cc2be1afc64d22952cf6b8295fa98632ead7a1d37",
-    method: "dojo_name",
+    "target": "0x60616bf868020ef13dfef6435ef545ea36fdb1a24b2eeb581cb34348148f6d",
+    "method": "remove"
   },
   {
-    target: "0x37accaa792a097a6f63381cc2be1afc64d22952cf6b8295fa98632ead7a1d37",
-    method: "discover_shards_mine",
+    "target": "0x60616bf868020ef13dfef6435ef545ea36fdb1a24b2eeb581cb34348148f6d",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x37accaa792a097a6f63381cc2be1afc64d22952cf6b8295fa98632ead7a1d37",
-    method: "add_mercenaries_to_structure",
+    "target": "0x4ccaed68b057a61af361c70f11709aa32bd9107dc7e7ed56ae68c67b59985a6",
+    "method": "dojo_name"
   },
   {
-    target: "0x37accaa792a097a6f63381cc2be1afc64d22952cf6b8295fa98632ead7a1d37",
-    method: "world_dispatcher",
+    "target": "0x4ccaed68b057a61af361c70f11709aa32bd9107dc7e7ed56ae68c67b59985a6",
+    "method": "discover_shards_mine"
   },
   {
-    target: "0x5571c9d9effc874722bc398460f5af55865d4f612d32d794f39693b88bd8a0a",
-    method: "dojo_name",
+    "target": "0x4ccaed68b057a61af361c70f11709aa32bd9107dc7e7ed56ae68c67b59985a6",
+    "method": "add_mercenaries_to_structure"
   },
   {
-    target: "0x5571c9d9effc874722bc398460f5af55865d4f612d32d794f39693b88bd8a0a",
-    method: "explore",
+    "target": "0x4ccaed68b057a61af361c70f11709aa32bd9107dc7e7ed56ae68c67b59985a6",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x5571c9d9effc874722bc398460f5af55865d4f612d32d794f39693b88bd8a0a",
-    method: "world_dispatcher",
+    "target": "0x137a7a1d62d8ff45b4d75e228727dae51264ec65be25646e5f21b6ac56250a1",
+    "method": "dojo_name"
   },
   {
-    target: "0xee4505c119ba361ba8051933a556cada9db8f74ae11f760204e259071ca33c",
-    method: "dojo_name",
+    "target": "0x137a7a1d62d8ff45b4d75e228727dae51264ec65be25646e5f21b6ac56250a1",
+    "method": "explore"
   },
   {
-    target: "0xee4505c119ba361ba8051933a556cada9db8f74ae11f760204e259071ca33c",
-    method: "set_address_name",
+    "target": "0x137a7a1d62d8ff45b4d75e228727dae51264ec65be25646e5f21b6ac56250a1",
+    "method": "world_dispatcher"
   },
   {
-    target: "0xee4505c119ba361ba8051933a556cada9db8f74ae11f760204e259071ca33c",
-    method: "set_entity_name",
+    "target": "0x2de5192204cf1836235225fee999f27afb2a9ca7299c05fb814e1bdcf71ce51",
+    "method": "dojo_name"
   },
   {
-    target: "0xee4505c119ba361ba8051933a556cada9db8f74ae11f760204e259071ca33c",
-    method: "world_dispatcher",
+    "target": "0x2de5192204cf1836235225fee999f27afb2a9ca7299c05fb814e1bdcf71ce51",
+    "method": "set_address_name"
   },
   {
-    target: "0x6c4d502744e13d03195512928f201dc27ab301d9fff0b9500a1ac934a33c4d3",
-    method: "dojo_name",
+    "target": "0x2de5192204cf1836235225fee999f27afb2a9ca7299c05fb814e1bdcf71ce51",
+    "method": "set_entity_name"
   },
   {
-    target: "0x6c4d502744e13d03195512928f201dc27ab301d9fff0b9500a1ac934a33c4d3",
-    method: "transfer_ownership",
+    "target": "0x2de5192204cf1836235225fee999f27afb2a9ca7299c05fb814e1bdcf71ce51",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x6c4d502744e13d03195512928f201dc27ab301d9fff0b9500a1ac934a33c4d3",
-    method: "world_dispatcher",
+    "target": "0x46eb5517ac9d04f6c4815900266cb49af026126fdbdcb78d18b60687223b528",
+    "method": "dojo_name"
   },
   {
-    target: "0x34f09f4a8bd56ad5d480ce807f30d32150eef4f109e0075ca7538cb5cd1aa47",
-    method: "dojo_name",
+    "target": "0x46eb5517ac9d04f6c4815900266cb49af026126fdbdcb78d18b60687223b528",
+    "method": "transfer_ownership"
   },
   {
-    target: "0x34f09f4a8bd56ad5d480ce807f30d32150eef4f109e0075ca7538cb5cd1aa47",
-    method: "create",
+    "target": "0x46eb5517ac9d04f6c4815900266cb49af026126fdbdcb78d18b60687223b528",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x34f09f4a8bd56ad5d480ce807f30d32150eef4f109e0075ca7538cb5cd1aa47",
-    method: "upgrade_level",
+    "target": "0x4d915513346f01a19ec6c664c6932ef52f11dbb787cc3b376196044458cfee",
+    "method": "dojo_name"
   },
   {
-    target: "0x34f09f4a8bd56ad5d480ce807f30d32150eef4f109e0075ca7538cb5cd1aa47",
-    method: "quest_claim",
+    "target": "0x4d915513346f01a19ec6c664c6932ef52f11dbb787cc3b376196044458cfee",
+    "method": "create"
   },
   {
-    target: "0x34f09f4a8bd56ad5d480ce807f30d32150eef4f109e0075ca7538cb5cd1aa47",
-    method: "world_dispatcher",
+    "target": "0x4d915513346f01a19ec6c664c6932ef52f11dbb787cc3b376196044458cfee",
+    "method": "upgrade_level"
   },
   {
-    target: "0x1a771297023f104fed0d1e7bd555800ad3257eb6606c8d5ffb6b5b4d6da649",
-    method: "dojo_name",
+    "target": "0x4d915513346f01a19ec6c664c6932ef52f11dbb787cc3b376196044458cfee",
+    "method": "quest_claim"
   },
   {
-    target: "0x1a771297023f104fed0d1e7bd555800ad3257eb6606c8d5ffb6b5b4d6da649",
-    method: "deposit_initial",
+    "target": "0x4d915513346f01a19ec6c664c6932ef52f11dbb787cc3b376196044458cfee",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x1a771297023f104fed0d1e7bd555800ad3257eb6606c8d5ffb6b5b4d6da649",
-    method: "deposit",
+    "target": "0x1d5849ccbe0c32550a565d10823e2fd166cb21caf42db542c9040dd75271d5f",
+    "method": "dojo_name"
   },
   {
-    target: "0x1a771297023f104fed0d1e7bd555800ad3257eb6606c8d5ffb6b5b4d6da649",
-    method: "start_withdraw",
+    "target": "0x1d5849ccbe0c32550a565d10823e2fd166cb21caf42db542c9040dd75271d5f",
+    "method": "deposit_initial"
   },
   {
-    target: "0x1a771297023f104fed0d1e7bd555800ad3257eb6606c8d5ffb6b5b4d6da649",
-    method: "finish_withdraw",
+    "target": "0x1d5849ccbe0c32550a565d10823e2fd166cb21caf42db542c9040dd75271d5f",
+    "method": "deposit"
   },
   {
-    target: "0x1a771297023f104fed0d1e7bd555800ad3257eb6606c8d5ffb6b5b4d6da649",
-    method: "world_dispatcher",
+    "target": "0x1d5849ccbe0c32550a565d10823e2fd166cb21caf42db542c9040dd75271d5f",
+    "method": "start_withdraw"
   },
   {
-    target: "0x62de95a866d70f083f54b87d1a64e444af0db8a078b22174805f9b93f3b6513",
-    method: "dojo_name",
+    "target": "0x1d5849ccbe0c32550a565d10823e2fd166cb21caf42db542c9040dd75271d5f",
+    "method": "finish_withdraw"
   },
   {
-    target: "0x62de95a866d70f083f54b87d1a64e444af0db8a078b22174805f9b93f3b6513",
-    method: "approve",
+    "target": "0x1d5849ccbe0c32550a565d10823e2fd166cb21caf42db542c9040dd75271d5f",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x62de95a866d70f083f54b87d1a64e444af0db8a078b22174805f9b93f3b6513",
-    method: "send",
+    "target": "0x1e0f651b65a36811e5a520a77676095dc8e91852d47d6b5e5cf120bc6cef9da",
+    "method": "dojo_name"
   },
   {
-    target: "0x62de95a866d70f083f54b87d1a64e444af0db8a078b22174805f9b93f3b6513",
-    method: "pickup",
+    "target": "0x1e0f651b65a36811e5a520a77676095dc8e91852d47d6b5e5cf120bc6cef9da",
+    "method": "approve"
   },
   {
-    target: "0x62de95a866d70f083f54b87d1a64e444af0db8a078b22174805f9b93f3b6513",
-    method: "world_dispatcher",
+    "target": "0x1e0f651b65a36811e5a520a77676095dc8e91852d47d6b5e5cf120bc6cef9da",
+    "method": "send"
   },
   {
-    target: "0x190f8f54124ef80e2726ed44dee08dbb6929ab4faf4dc17245ee6b31c900f07",
-    method: "dojo_name",
+    "target": "0x1e0f651b65a36811e5a520a77676095dc8e91852d47d6b5e5cf120bc6cef9da",
+    "method": "pickup"
   },
   {
-    target: "0x190f8f54124ef80e2726ed44dee08dbb6929ab4faf4dc17245ee6b31c900f07",
-    method: "register_to_leaderboard",
+    "target": "0x1e0f651b65a36811e5a520a77676095dc8e91852d47d6b5e5cf120bc6cef9da",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x190f8f54124ef80e2726ed44dee08dbb6929ab4faf4dc17245ee6b31c900f07",
-    method: "claim_leaderboard_rewards",
+    "target": "0x16867f11f743c74df8c0c8c6becb7599b6c233938123a8b2d91cb7241728420",
+    "method": "dojo_name"
   },
   {
-    target: "0x190f8f54124ef80e2726ed44dee08dbb6929ab4faf4dc17245ee6b31c900f07",
-    method: "world_dispatcher",
+    "target": "0x16867f11f743c74df8c0c8c6becb7599b6c233938123a8b2d91cb7241728420",
+    "method": "register_to_leaderboard"
   },
   {
-    target: "0x6ac2f9e9b8169bf46976e225892480bcdc1ee4a0e62f472617cc3866dec772",
-    method: "dojo_name",
+    "target": "0x16867f11f743c74df8c0c8c6becb7599b6c233938123a8b2d91cb7241728420",
+    "method": "claim_leaderboard_rewards"
   },
   {
-    target: "0x6ac2f9e9b8169bf46976e225892480bcdc1ee4a0e62f472617cc3866dec772",
-    method: "buy",
+    "target": "0x16867f11f743c74df8c0c8c6becb7599b6c233938123a8b2d91cb7241728420",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x6ac2f9e9b8169bf46976e225892480bcdc1ee4a0e62f472617cc3866dec772",
-    method: "sell",
+    "target": "0x4521086cf33618a76595822d63053e948a7981b2cec535f9ca833a805006941",
+    "method": "dojo_name"
   },
   {
-    target: "0x6ac2f9e9b8169bf46976e225892480bcdc1ee4a0e62f472617cc3866dec772",
-    method: "world_dispatcher",
+    "target": "0x4521086cf33618a76595822d63053e948a7981b2cec535f9ca833a805006941",
+    "method": "buy"
   },
   {
-    target: "0x24e11516a2bb9299689895434078eb7e1623f1d726c4d3c5b7f6ac52a647b2e",
-    method: "dojo_name",
+    "target": "0x4521086cf33618a76595822d63053e948a7981b2cec535f9ca833a805006941",
+    "method": "sell"
   },
   {
-    target: "0x24e11516a2bb9299689895434078eb7e1623f1d726c4d3c5b7f6ac52a647b2e",
-    method: "create_order",
+    "target": "0x4521086cf33618a76595822d63053e948a7981b2cec535f9ca833a805006941",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x24e11516a2bb9299689895434078eb7e1623f1d726c4d3c5b7f6ac52a647b2e",
-    method: "accept_order",
+    "target": "0x981e6d09b58e4243f88b157b396f36869a36242d2abe77f3ef0a81ee81a7a3",
+    "method": "dojo_name"
   },
   {
-    target: "0x24e11516a2bb9299689895434078eb7e1623f1d726c4d3c5b7f6ac52a647b2e",
-    method: "accept_partial_order",
+    "target": "0x981e6d09b58e4243f88b157b396f36869a36242d2abe77f3ef0a81ee81a7a3",
+    "method": "create_order"
   },
   {
-    target: "0x24e11516a2bb9299689895434078eb7e1623f1d726c4d3c5b7f6ac52a647b2e",
-    method: "cancel_order",
+    "target": "0x981e6d09b58e4243f88b157b396f36869a36242d2abe77f3ef0a81ee81a7a3",
+    "method": "accept_order"
   },
   {
-    target: "0x24e11516a2bb9299689895434078eb7e1623f1d726c4d3c5b7f6ac52a647b2e",
-    method: "world_dispatcher",
+    "target": "0x981e6d09b58e4243f88b157b396f36869a36242d2abe77f3ef0a81ee81a7a3",
+    "method": "accept_partial_order"
   },
   {
-    target: "0x464d4069d657eaa6e5285d2e43b2c13bbde2a7a521aa154269c488a0b04a57b",
-    method: "dojo_name",
+    "target": "0x981e6d09b58e4243f88b157b396f36869a36242d2abe77f3ef0a81ee81a7a3",
+    "method": "cancel_order"
   },
   {
-    target: "0x464d4069d657eaa6e5285d2e43b2c13bbde2a7a521aa154269c488a0b04a57b",
-    method: "travel_hex",
+    "target": "0x981e6d09b58e4243f88b157b396f36869a36242d2abe77f3ef0a81ee81a7a3",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x464d4069d657eaa6e5285d2e43b2c13bbde2a7a521aa154269c488a0b04a57b",
-    method: "world_dispatcher",
+    "target": "0x31599c4ebf257b8a7ca92f23fdb5e5f341ae775bcf21142bf722bade1808c9a",
+    "method": "dojo_name"
   },
   {
-    target: "0x219b429ca8a040c02f02149efe84f5015a2b8502abcfe208561c77d7bdab95f",
-    method: "dojo_name",
+    "target": "0x31599c4ebf257b8a7ca92f23fdb5e5f341ae775bcf21142bf722bade1808c9a",
+    "method": "travel_hex"
   },
   {
-    target: "0x219b429ca8a040c02f02149efe84f5015a2b8502abcfe208561c77d7bdab95f",
-    method: "army_create",
+    "target": "0x31599c4ebf257b8a7ca92f23fdb5e5f341ae775bcf21142bf722bade1808c9a",
+    "method": "world_dispatcher"
   },
   {
-    target: "0x219b429ca8a040c02f02149efe84f5015a2b8502abcfe208561c77d7bdab95f",
-    method: "army_delete",
+    "target": "0x3a44c15165598a642deac3aa386d28aee40e1c5f312988c6f4338a065b17ecc",
+    "method": "dojo_name"
   },
   {
-    target: "0x219b429ca8a040c02f02149efe84f5015a2b8502abcfe208561c77d7bdab95f",
-    method: "army_buy_troops",
+    "target": "0x3a44c15165598a642deac3aa386d28aee40e1c5f312988c6f4338a065b17ecc",
+    "method": "army_create"
   },
   {
-    target: "0x219b429ca8a040c02f02149efe84f5015a2b8502abcfe208561c77d7bdab95f",
-    method: "army_merge_troops",
+    "target": "0x3a44c15165598a642deac3aa386d28aee40e1c5f312988c6f4338a065b17ecc",
+    "method": "army_delete"
   },
   {
-    target: "0x219b429ca8a040c02f02149efe84f5015a2b8502abcfe208561c77d7bdab95f",
-    method: "world_dispatcher",
+    "target": "0x3a44c15165598a642deac3aa386d28aee40e1c5f312988c6f4338a065b17ecc",
+    "method": "army_buy_troops"
   },
+  {
+    "target": "0x3a44c15165598a642deac3aa386d28aee40e1c5f312988c6f4338a065b17ecc",
+    "method": "army_merge_troops"
+  },
+  {
+    "target": "0x3a44c15165598a642deac3aa386d28aee40e1c5f312988c6f4338a065b17ecc",
+    "method": "world_dispatcher"
+  }
 ];

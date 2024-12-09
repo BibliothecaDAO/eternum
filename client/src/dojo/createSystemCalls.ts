@@ -194,6 +194,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.battle_start(props);
   };
 
+  const battle_resolve = async (props: SystemProps.BattleResolveProps) => {
+    await provider.battle_resolve(props);
+  };
+
   const battle_force_start = async (props: SystemProps.BattleForceStartProps) => {
     await provider.battle_force_start(props);
   };
@@ -287,6 +291,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
     battle_start,
     battle_force_start,
+    battle_resolve,
     battle_leave,
     battle_join,
     battle_claim,

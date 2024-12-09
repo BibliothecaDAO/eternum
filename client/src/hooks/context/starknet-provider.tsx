@@ -9,7 +9,7 @@ import { policies } from "./policies";
 import { signingPolicy } from "./signing-policy";
 
 const theme: string = "eternum";
-const slot: string = "eternum-rc1-1";
+const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "eternum";
 const colorMode: ColorMode = "dark";
 
@@ -25,6 +25,9 @@ const controller = new ControllerConnector({
   slot,
   policies: [...policies, ...signingPolicy, vrfPolicy],
   theme,
+  tokens: {
+    erc20: ["0x0342ad5cc14002c005a5cedcfce2bd3af98d5e7fb79e9bf949b3a91cf145d72e"],
+  },
   colorMode,
 });
 

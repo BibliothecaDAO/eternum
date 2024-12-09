@@ -228,7 +228,8 @@ export enum TimeFormat {
 export const formatTime = (
   seconds: number,
   format: TimeFormat = TimeFormat.D | TimeFormat.H | TimeFormat.M | TimeFormat.S,
-  abbreviate: boolean = false,
+  abbreviate: boolean = true,
+  clock: boolean = false,
 ): string => {
   const days = Math.floor(seconds / (3600 * 24));
   const hours = Math.floor((seconds % (3600 * 24)) / 3600);
@@ -236,13 +237,19 @@ export const formatTime = (
   const remainingSeconds = Math.floor(seconds % 60);
 
   const parts = [];
-  if (days > 0 && format & TimeFormat.D) parts.push(`${days}d`);
-  if (hours > 0 && format & TimeFormat.H) parts.push(`${hours}h`);
-  if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}m`);
-  if (remainingSeconds > 0 && format & TimeFormat.S) parts.push(`${remainingSeconds}s`);
 
-  if (abbreviate) {
-    return parts[0] || "0s";
+  if (days > 0 && format & TimeFormat.D) parts.push(`${days}${abbreviate ? "d" : " day(s)"}`);
+
+  if (clock) {
+    const formattedHours = hours.toString().padStart(2, "0");
+    const formattedMinutes = minutes.toString().padStart(2, "0");
+    const formattedSeconds = remainingSeconds.toString().padStart(2, "0");
+    parts.push(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`);
+  } else {
+    if (hours > 0 && format & TimeFormat.H) parts.push(`${hours} ${abbreviate ? "h" : "hour(s)"}`);
+    if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes} ${abbreviate ? "m" : "minute(s)"}`);
+    if (remainingSeconds > 0 && format & TimeFormat.S)
+      parts.push(`${remainingSeconds} ${abbreviate ? "s" : "second(s)"}`);
   }
 
   return parts.join(" ");

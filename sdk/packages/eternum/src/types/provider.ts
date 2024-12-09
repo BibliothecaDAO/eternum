@@ -6,11 +6,13 @@ interface SystemSigner {
   signer: AccountInterface | Account;
 }
 
-export interface BridgeResourceIntoRealmProps extends SystemSigner {
-  token: num.BigNumberish;
+export interface BridgeResourcesIntoRealmProps extends SystemSigner {
+  resources: {
+    tokenAddress: num.BigNumberish;
+    amount: num.BigNumberish;
+  }[];
   through_bank_id: num.BigNumberish;
   recipient_realm_entity_id: num.BigNumberish;
-  amount: num.BigNumberish;
   client_fee_recipient: num.BigNumberish;
 }
 
@@ -339,6 +341,11 @@ export interface BattleStartProps extends SystemSigner {
 export interface BattleForceStartProps extends SystemSigner {
   battle_id: num.BigNumberish;
   defending_army_id: num.BigNumberish;
+}
+
+export interface BattleResolveProps extends SystemSigner {
+  battle_id: num.BigNumberish;
+  army_id: num.BigNumberish;
 }
 
 export interface BattleJoinProps extends SystemSigner {

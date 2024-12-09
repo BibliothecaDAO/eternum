@@ -1,6 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
+import { shortString } from "starknet";
 
 export const HYPERSTRUCTURE_ENTITY_ID = 1;
 export const TIMESTAMP = 1;
@@ -22,6 +23,7 @@ export const generateMockHyperstructureFinishedEvent = (
     hyperstructure_entity_id: hyperstructureEntityId,
     contributor_entity_id: 1,
     timestamp: TIMESTAMP,
+    hyperstructure_owner_name: BigInt(shortString.encodeShortString("TEST_PLAYER")),
     id: 1,
   };
 };

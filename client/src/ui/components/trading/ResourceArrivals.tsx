@@ -1,6 +1,7 @@
 import { ResourceInventoryManager } from "@/dojo/modelManager/ResourceInventoryManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -17,7 +18,9 @@ export type EntityReadyForDeposit = {
 };
 
 export const AllResourceArrivals = ({ arrivals, className }: { arrivals: ArrivalInfo[]; className?: string }) => {
-  const { account, setup } = useDojo();
+  const { setup } = useDojo();
+  // stone as proxy for depoisiting resources
+  const { play: playDeposit } = useUiSounds(soundSelector.addStone);
 
   const [entitiesReadyForDeposit, setEntitiesReadyForDeposit] = useState<EntityReadyForDeposit[]>([]);
 
@@ -27,6 +30,7 @@ export const AllResourceArrivals = ({ arrivals, className }: { arrivals: Arrival
 
   const onOffload = async () => {
     setIsLoading(true);
+    playDeposit();
     await inventoryManager
       .onOffloadAllMultiple(
         entitiesReadyForDeposit
@@ -54,7 +58,7 @@ export const AllResourceArrivals = ({ arrivals, className }: { arrivals: Arrival
         isLoading={isLoading}
         onClick={onOffload}
         variant="primary"
-        disabled={isLoading || entitiesReadyForDeposit.length === 0}
+        disabled={isLoading || !entitiesReadyForDeposit.length || !arrivals.length}
       >
         {isLoading ? "Offloading..." : "Deposit All"}
       </Button>

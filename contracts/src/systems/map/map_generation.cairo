@@ -5,7 +5,7 @@ use s0_eternum::models::position::{Coord, CoordTrait, Direction, Position};
 #[starknet::interface]
 trait IMapGenerationSystems<T> {
     fn discover_shards_mine(ref self: T, unit_entity_owner: EntityOwner, coord: Coord) -> bool;
-    fn add_mercenaries_to_structure(ref self: T, structure_entity_id: ID) -> ID;
+    fn add_mercenaries_to_structure(ref self: T, randomness: u256, structure_entity_id: ID) -> ID;
 }
 
 
@@ -94,10 +94,10 @@ mod map_generation_systems {
         }
 
 
-        fn add_mercenaries_to_structure(ref self: ContractState, structure_entity_id: ID) -> ID {
+        fn add_mercenaries_to_structure(ref self: ContractState, randomness: u256, structure_entity_id: ID) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             InternalMapGenerationSystemsImpl::assert_caller_authorized(ref world);
-            InternalMapGenerationSystemsImpl::add_mercenaries_to_structure(ref world, structure_entity_id)
+            InternalMapGenerationSystemsImpl::add_mercenaries_to_structure(ref world, randomness, structure_entity_id)
         }
     }
 
@@ -113,23 +113,12 @@ mod map_generation_systems {
             }
         }
 
-        fn add_mercenaries_to_structure(ref world: WorldStorage, structure_entity_id: ID) -> ID {
+        fn add_mercenaries_to_structure(ref world: WorldStorage, randomness: u256, structure_entity_id: ID) -> ID {
             let mercenaries_config: MercenariesConfig = world.read_model(WORLD_CONFIG_ID);
 
             let army_entity_id = InternalTroopImpl::create_defensive_army(ref world, structure_entity_id);
 
-            let caller_address = starknet::get_caller_address();
-            let mut seed: u256 = 0;
-            let (dev_bank_systems_address, _) = world.dns(@"dev_bank_systems").unwrap();
-            if caller_address != dev_bank_systems_address {
-                let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
-                seed = VRFImpl::seed(caller_address, vrf_provider);
-            } else {
-                // hack to bypass vrf for the dev bank
-                // because it will be created from the cli
-                // and vrf can't be called from the cli
-                seed = 'I AM SEED FOR THE DEV BANK'.into() - starknet::get_block_timestamp().into();
-            }
+            let mut seed: u256 = randomness;
 
             let random_knights_amount: u64 = random::random(
                 seed, 1, mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
@@ -209,7 +198,7 @@ mod map_generation_systems {
             if is_shards_mine {
                 let mine_structure_entity_id = Self::create_shard_mine_structure(ref world, coord);
 
-                Self::add_mercenaries_to_structure(ref world, mine_structure_entity_id);
+                Self::add_mercenaries_to_structure(ref world, vrf_seed, mine_structure_entity_id);
 
                 let mercenaries_config: MercenariesConfig = world.read_model(WORLD_CONFIG_ID);
                 InternalResourceSystemsImpl::transfer(
