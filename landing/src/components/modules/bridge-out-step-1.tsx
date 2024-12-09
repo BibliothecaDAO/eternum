@@ -1,9 +1,10 @@
 import { configManager } from "@/dojo/setup";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
-import { displayAddress } from "@/lib/utils";
+import { displayAddress, multiplyByPrecision } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
@@ -12,14 +13,17 @@ import {
   RESOURCE_PRECISION,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
+import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { useAccount } from "@starknet-react/core";
-import { Loader, Plus } from "lucide-react";
+import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { SelectSingleResource } from "../ui/SelectResources";
+import { Tooltip, TooltipProvider } from "../ui/tooltip";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
 
 function formatFee(fee: number) {
@@ -80,6 +84,14 @@ export const BridgeOutStep1 = () => {
       ),
     [velordsFeeOnWithdrawal, seasonPoolFeeOnWithdrawal, clientFeeOnWithdrawal, bankFeeOnWithdrawal],
   );
+  const { getBalance } = getResourceBalance();
+  const donkeyBalance = useMemo(() => {
+    if (realmEntityId) {
+      return getBalance(Number(realmEntityId), ResourcesIds.Donkey);
+    } else {
+      return { balance: 0 };
+    }
+  }, [getBalance, realmEntityId]);
 
   const { playerRealms } = useEntities();
   const playerRealmsIdAndName = useMemo(() => {
@@ -111,8 +123,9 @@ export const BridgeOutStep1 = () => {
 
   const orderWeight = useMemo(() => {
     if (selectedResourceIds.length > 0) {
-      const totalWeight = getTotalResourceWeight([{ resourceId: selectedResourceId, amount: selectedResourceAmount }]);
-      return totalWeight;
+      const totalWeight = getTotalResourceWeight([{ resourceId: selectedResourceId, amount: multiplyByPrecision(selectedResourceAmount) }]);
+      return totalWeight; 
+
     } else {
       return 0;
     }
@@ -197,8 +210,22 @@ export const BridgeOutStep1 = () => {
           <div>{travelTimeInHoursAndMinutes(travelTime ?? 0)}</div>
         </div>
         <div className="flex justify-between">
-          <div>Donkeys Needed</div>
-          <div>{donkeysNeeded}</div>
+          <div>
+          Donkeys Burnt
+          <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <InfoIcon className="ml-2 w-4 h-4" />
+                </TooltipTrigger>
+                <TooltipContent className="bg-background border rounded p-2 max-w-56">
+                  Donkeys are required to transport the resources to the bank
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="flex items-center gap-2">
+            {donkeysNeeded} / {donkeyBalance.balance} <ResourceIcon resource={"Donkey"} size="md" />
+          </div>
         </div>
         <hr />
         <Collapsible>
