@@ -4,7 +4,7 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute("/trade")({
   component: () => (
-    <div className="flex justify-center items-center h-full top-0">
+    <div className="flex justify-center items-center h-full top-0 px-2">
       <SwapPanel />
       <EternumConditionsModal open={true} onOpenChange={() => {}} />
     </div>
