@@ -4,11 +4,11 @@ export const calculateGuildLordsPrize = (rank: number, prizePoolAmount: number):
     2: 20,
     3: 13,
     4: 9,
-    5: 7,
-    6: 5,
-    7: 4,
-    8: 3,
-    9: 2,
+    5: 8,
+    6: 7,
+    7: 5,
+    8: 4,
+    9: 3,
     10: 1,
   };
 
