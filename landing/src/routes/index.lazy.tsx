@@ -1,15 +1,17 @@
 import { AnimatedGrid } from "@/components/modules/animated-grid";
 import { DataCard, DataCardProps } from "@/components/modules/data-card";
 import { Leaderboard } from "@/components/modules/leaderboard";
-import { PRIZE_POOL_GUILDS, PRIZE_POOL_PLAYERS } from "@/constants";
+import { PRIZE_POOL_ACHIEVEMENTS, PRIZE_POOL_CONTENT_CREATORS, PRIZE_POOL_GUILDS } from "@/constants";
 import { useDonkeysBurned } from "@/hooks/use-donkeys-burned";
 import { useLordsBridgeBalance } from "@/hooks/use-lords-bridged";
 import { usePlayerCount } from "@/hooks/use-player-count";
+import { usePrizePool } from "@/hooks/use-rewards";
 import { useStructuresNumber } from "@/hooks/use-structures";
 import { currencyFormat, formatNumber } from "@/lib/utils";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Castle, Coins, CoinsIcon, Flame, Pickaxe, Sparkles, UsersIcon } from "lucide-react";
 import React, { useMemo } from "react";
+import { formatEther } from "viem";
 
 export const Route = createLazyFileRoute("/")({
   component: Index,
@@ -29,6 +31,8 @@ function Index() {
   const playerCount = usePlayerCount();
   const { realmsCount, hyperstructuresCount, fragmentMinesCount } = useStructuresNumber();
   const lordsBalance = useLordsBridgeBalance();
+
+  const prizePoolPlayers = usePrizePool();
 
   const dataCards: GridItemType[] = useMemo(
     () => [
@@ -73,7 +77,13 @@ function Index() {
         colSpan: { sm: 2, md: 4, lg: 4 },
         data: {
           title: "lords prize pool",
-          value: formatNumber(PRIZE_POOL_GUILDS + PRIZE_POOL_PLAYERS, 0),
+          value: formatNumber(
+            PRIZE_POOL_GUILDS +
+              Number(formatEther(prizePoolPlayers)) +
+              PRIZE_POOL_ACHIEVEMENTS +
+              PRIZE_POOL_CONTENT_CREATORS,
+            0,
+          ),
           icon: <Coins />,
           backgroundImage: "/images/avatars/Hidden.png",
         },
