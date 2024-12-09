@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Castle, Gamepad2, Home, PlayCircle, Scale, Ship } from "lucide-react";
+import { Castle, Gamepad2, Home, PlayCircle, Scale, Sheet, Ship } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
@@ -53,7 +53,7 @@ const items = [
   {
     title: "Documentation",
     url: "https://eternum-docs.realms.world/",
-    icon: Gamepad2,
+    icon: Sheet,
   },
 ];
 
