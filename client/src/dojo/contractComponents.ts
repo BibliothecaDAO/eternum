@@ -624,6 +624,44 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
+    LeaderboardRegisterContribution: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          hyperstructure_entity_id: RecsType.Number,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardRegisterContribution",
+            types: ["contractaddress", "u32", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    LeaderboardRegisterShare: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          hyperstructure_entity_id: RecsType.Number,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardRegisterShare",
+            types: ["contractaddress", "u32", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
     Liquidity: (() => {
       return defineComponent(
         world,

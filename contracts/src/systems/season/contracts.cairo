@@ -26,7 +26,10 @@ mod season_systems {
                 HyperstructureConfig, HyperstructureResourceConfigTrait, ResourceBridgeFeeSplitConfig,
                 ResourceBridgeWhitelistConfig
             },
-            season::{Leaderboard, LeaderboardEntryImpl, LeaderboardEntry, LeaderboardRewardClaimed}
+            season::{
+                Leaderboard, LeaderboardEntryImpl, LeaderboardEntry, LeaderboardRewardClaimed,
+                LeaderboardRegisterContribution, LeaderboardRegisterShare
+            }
         },
         systems::{
             hyperstructure::contracts::hyperstructure_systems::InternalHyperstructureSystemsImpl,
@@ -46,16 +49,59 @@ mod season_systems {
             hyperstructures_contributed_to: Span<ID>,
             hyperstructure_shareholder_epochs: Span<(ID, u16)>
         ) {
+            let player_address = starknet::get_caller_address();
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
-
             assert!(
                 leaderboard.registration_end_timestamp > starknet::get_block_timestamp(), "Registration period is over"
             );
 
+            // ensure contribution is not already registered
+            let hyperstructure_contribution_count: u32 = hyperstructures_contributed_to.len();
+            let mut i = 0;
+            loop {
+                if i >= hyperstructure_contribution_count {
+                    break;
+                }
+
+                // ensure contribution is not already registered
+                let hyperstructure_entity_id = *hyperstructures_contributed_to.at(i);
+                let mut leaderboard_register_contribution: LeaderboardRegisterContribution = world
+                    .read_model((player_address, hyperstructure_entity_id));
+                if leaderboard_register_contribution.registered {
+                    panic!("contribution already registered for hyperstructure {}", hyperstructure_entity_id);
+                }
+
+                // register contribution
+                leaderboard_register_contribution.registered = true;
+                world.write_model(@leaderboard_register_contribution);
+
+                i += 1;
+            };
+
+            // ensure share is not already registered
+            let hyperstructure_shareholder_epochs_count: u32 = hyperstructure_shareholder_epochs.len();
+            let mut i = 0;
+            loop {
+                if i >= hyperstructure_shareholder_epochs_count {
+                    break;
+                }
+
+                let (hyperstructure_entity_id, epoch) = *hyperstructure_shareholder_epochs.at(i);
+                let mut leaderboard_register_share: LeaderboardRegisterShare = world
+                    .read_model((player_address, hyperstructure_entity_id, epoch));
+                if leaderboard_register_share.registered {
+                    panic!("share already registered for hyperstructure {}", hyperstructure_entity_id);
+                }
+
+                // register share
+                leaderboard_register_share.registered = true;
+                world.write_model(@leaderboard_register_share);
+                i += 1;
+            };
+
             let mut total_points: u128 = 0;
             let hyperstructure_tier_configs = HyperstructureResourceConfigTrait::get_all(world);
-            let player_address = starknet::get_caller_address();
             total_points +=
                 InternalHyperstructureSystemsImpl::compute_total_contribution_points(
                     ref world, hyperstructures_contributed_to, hyperstructure_tier_configs, player_address
