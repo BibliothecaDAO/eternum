@@ -257,8 +257,6 @@ const DojoContextProvider = ({
     }
   }, [isDev, controllerAccount, burnerAccount, retries]);
 
-  const bg = `/images/covers/${getRandomBackgroundImage()}.png`;
-
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
