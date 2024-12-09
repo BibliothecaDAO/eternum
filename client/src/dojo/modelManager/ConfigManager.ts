@@ -615,6 +615,23 @@ export class ClientConfigManager {
     }, 0);
   }
 
+  getSeasonBridgeConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const seasonBridgeConfig = getComponentValue(
+          this.components.SeasonBridgeConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        );
+        return {
+          closeAfterEndSeconds: seasonBridgeConfig?.close_after_end_seconds ?? 0n,
+        };
+      },
+      {
+        closeAfterEndSeconds: 0n,
+      },
+    );
+  }
+
   getSeasonConfig() {
     return this.getValueOrDefault(
       () => {

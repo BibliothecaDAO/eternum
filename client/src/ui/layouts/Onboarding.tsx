@@ -107,7 +107,7 @@ export const StepContainer = ({
               <BackArrow className="w-6 h-6 mr-2 fill-current" />
               <div className="w-14 text-base font-normal normal-case inline">Back</div>
             </Button>
-            <div className="w-full mt-2 h-full pb-4">
+            <div className="w-full h-full pb-4 mt-2">
               <TermsOfService />
             </div>
           </div>

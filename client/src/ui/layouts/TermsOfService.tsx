@@ -1,5 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { currencyIntlFormat } from "../utils/utils";
+import { currencyIntlFormat, formatTime } from "../utils/utils";
 
 export const TermsOfService = () => {
   return (
@@ -113,7 +113,10 @@ export const TermsOfService = () => {
             "End Season" button. At this point:
           </p>
           <ul className="list-disc pl-5 mb-4">
-            <li>ALL $LORDS tokens and in-game resources are permanently locked within the game.</li>
+            <li>
+              ALL $LORDS tokens and in-game resources are permanently locked within the game after a period of{" "}
+              {formatTime(Number(configManager.getSeasonBridgeConfig().closeAfterEndSeconds), undefined, false)}.
+            </li>
             <li>
               Players are encouraged to review{" "}
               <a
