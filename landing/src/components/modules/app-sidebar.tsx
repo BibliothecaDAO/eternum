@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Castle, Gamepad2, Home, Scale } from "lucide-react";
+import { Castle, Gamepad2, Home, PlayCircle, Scale, Ship } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
@@ -20,11 +20,11 @@ const items = [
     url: "/",
     icon: Home,
   },
-  // {
-  //   title: "Trade",
-  //   url: "/trade",
-  //   icon: LoopIcon,
-  // },
+  {
+    title: "Bridge",
+    url: "/trade",
+    icon: Ship,
+  },
   // {
   //   title: "Bridge",
   //   url: "/bridge",
@@ -39,6 +39,11 @@ const items = [
     title: "Season Passes",
     url: "/season-passes",
     icon: Gamepad2,
+  },
+  {
+    title: "Play",
+    url: "https://eternum.realms.world/",
+    icon: PlayCircle,
   },
   {
     title: "Marketplace",
