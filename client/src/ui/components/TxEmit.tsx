@@ -52,7 +52,7 @@ const getTxMessage = (type: TransactionType) => {
     case TransactionType.ACCEPT_PARTIAL_ORDER:
       return "📜 Accepted portion of trade decree";
     case TransactionType.REMOVE_GUILD_MEMBER:
-      return "📜 Expelled member from guild";
+      return "📜 Expelled member from tribe";
     case TransactionType.ATTACH_LORDS:
       return "👑 Pledged LORDS tokens";
     case TransactionType.APPROVE:
@@ -78,13 +78,13 @@ const getTxMessage = (type: TransactionType) => {
     case TransactionType.REMOVE_PLAYER_FROM_WHITELIST:
       return "📜 Removed player from whitelist";
     case TransactionType.TRANSFER_GUILD_OWNERSHIP:
-      return "👑 Transferred guild ownership";
+      return "👑 Transferred tribe ownership";
     case TransactionType.WHITELIST_PLAYER:
       return "📜 Added player to whitelist";
     case TransactionType.CREATE_GUILD:
-      return "⚔️ Created new guild";
+      return "⚔️ Created new tribe";
     case TransactionType.JOIN_GUILD:
-      return "⚔️ Joined guild";
+      return "⚔️ Joined tribe";
     case TransactionType.MINT_STARTING_RESOURCES:
       return "✨ Received starting resources";
     case TransactionType.RESUME_PRODUCTION:
