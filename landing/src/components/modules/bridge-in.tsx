@@ -128,13 +128,18 @@ export const BridgeIn = () => {
   };
 
   const orderWeight = useMemo(() => {
-    if (resourceSelections[0].contract && resourceSelections[0].amount) {
-      const totalWeight = getTotalResourceWeight([
-        {
-          resourceId: ResourcesIds[resourceSelections[0].contract as keyof typeof ResourcesIds],
-          amount: Number(resourceSelections[0].amount),
-        },
-      ]);
+    const validSelections = resourceSelections.filter(
+      selection => selection.contract && selection.amount
+    );
+    console.log(ResourcesIds[validSelections[0]?.contract as keyof typeof ResourcesIds])
+    if (validSelections.length > 0) {
+      const totalWeight = getTotalResourceWeight(
+        validSelections.map(selection => ({
+          resourceId: ResourcesIds[selection.contract as keyof typeof ResourcesIds],
+          amount: Number(selection.amount),
+        }))
+      );
+      console.log(totalWeight)
       return totalWeight;
     } else {
       return 0;
