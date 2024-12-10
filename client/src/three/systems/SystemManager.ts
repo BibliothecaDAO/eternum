@@ -41,8 +41,13 @@ export class SystemManager {
     retryDelay: number = 500,
   ) {
     const handleUpdate = (update: any) => {
-      let retries = 0;
+      const value = getUpdate(update);
+      if (value) {
+        callback(value);
+        return;
+      }
 
+      let retries = 0;
       const tryGetUpdate = () => {
         const value = getUpdate(update);
         if (value) {
@@ -51,7 +56,6 @@ export class SystemManager {
         }
 
         retries++;
-
         if (retries < maxRetries) {
           setTimeout(tryGetUpdate, retryDelay);
         }
