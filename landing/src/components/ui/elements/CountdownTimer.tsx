@@ -1,42 +1,15 @@
 import { TypeH1 } from "@/components/typography/type-h1";
-import { useEffect, useState } from "react";
+import { useSeasonStart } from "@/hooks/use-season-start";
 
-interface CountdownTimerProps {
-  targetDate: Date;
-}
+export function CountdownTimer() {
+const {seasonStart, countdown,nextBlockTimestamp} = useSeasonStart();
 
-export function CountdownTimer({ targetDate }: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-  });
-  const [isOpen, setIsOpen] = useState(true);
+  const days = Math.floor(Number(countdown) / (3600 * 24))
+  const hours = Math.floor((Number(countdown) % (3600 * 24)) / 3600);
+  const minutes = Math.floor((Number(countdown) % 3600) / 60);
+  const seconds = Number(countdown) % 60;
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = targetDate.getTime() - now;
-
-      if (distance < 0) {
-        clearInterval(timer);
-        setIsOpen(false);
-        return;
-      }
-
-      setTimeLeft({
-        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((distance % (1000 * 60)) / 1000),
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [targetDate]);
-
-  if (!isOpen) return null;
+  if (countdown < 0 || nextBlockTimestamp === 0n || seasonStart === 0n) return null;
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center">
@@ -49,10 +22,10 @@ export function CountdownTimer({ targetDate }: CountdownTimerProps) {
 
         <TypeH1 className="tracking-wider">Eternum is Launching in</TypeH1>
         <div className="flex gap-4 text-center mt-4 mx-auto">
-          <TimeUnit value={timeLeft.days} label="Days" />
-          <TimeUnit value={timeLeft.hours} label="Hours" />
-          <TimeUnit value={timeLeft.minutes} label="Minutes" />
-          <TimeUnit value={timeLeft.seconds} label="Seconds" />
+          <TimeUnit value={days} label="Days" />
+          <TimeUnit value={hours} label="Hours" />
+          <TimeUnit value={minutes} label="Minutes" />
+          <TimeUnit value={seconds} label="Seconds" />
         </div>
       </div>
     </div>
