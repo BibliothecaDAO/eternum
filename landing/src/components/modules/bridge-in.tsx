@@ -19,7 +19,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
-
 export const BridgeIn = () => {
   const { address } = useAccount();
   const [realmEntityId, setRealmEntityId] = useState<number>();
@@ -248,9 +247,7 @@ export const BridgeIn = () => {
         </div>
       </div>
       <Button
-        disabled={
-          isLoading || !realmEntityId || donkeyBalance.balance <= donkeysNeeded
-        }
+        disabled={isLoading || !realmEntityId || donkeyBalance.balance <= donkeysNeeded}
         onClick={() => onBridgeIntoRealm()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
@@ -266,7 +263,7 @@ export const SelectResourceToBridge = ({
   selectedResourceIds,
   setSelectedResourceIds,
   unselectedResources,
-  addResourceGive
+  addResourceGive,
 }: {
   selectedResourceAmounts: { [key: string]: number };
   setSelectedResourceAmounts: (value: { [key: string]: number }) => void;
@@ -275,7 +272,6 @@ export const SelectResourceToBridge = ({
   unselectedResources: Resources[];
   addResourceGive: () => void;
 }) => {
-
   useEffect(() => {
     if (selectedResourceIds.length === 0) {
       addResourceGive();

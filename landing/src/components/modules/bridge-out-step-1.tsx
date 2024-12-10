@@ -147,11 +147,7 @@ export const BridgeOutStep1 = () => {
             }),
         );
         console.log(validResources);
-        await bridgeStartWithdrawFromRealm(
-          validResources,
-          ADMIN_BANK_ENTITY_ID,
-          BigInt(realmEntityId!),
-        );
+        await bridgeStartWithdrawFromRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
 
         setSelectedResourceIds([]);
         setSelectedResourceAmounts({});

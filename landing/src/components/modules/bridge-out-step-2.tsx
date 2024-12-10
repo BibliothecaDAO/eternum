@@ -2,11 +2,7 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { donkeyArrivals } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { displayAddress } from "@/lib/utils";
-import {
-  ADMIN_BANK_ENTITY_ID,
-  RESOURCE_PRECISION,
-  ResourcesIds
-} from "@bibliothecadao/eternum";
+import { ADMIN_BANK_ENTITY_ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -38,15 +34,15 @@ export const BridgeOutStep2 = () => {
   );
 
   const [resourceFees, setResourceFees] = useState<
-  {
-    id: string;
-    velordsFee: string;
-    seasonPoolFee: string;
-    clientFee: string;
-    bankFee: string;
-    totalFee?: string;
-  }[]
->([]);
+    {
+      id: string;
+      velordsFee: string;
+      seasonPoolFee: string;
+      clientFee: string;
+      bankFee: string;
+      totalFee?: string;
+    }[]
+  >([]);
 
   const { playerRealms } = useEntities();
   const realmEntityIds = useMemo(() => {
@@ -98,7 +94,9 @@ export const BridgeOutStep2 = () => {
               }
               const currentDonkeyInfo = donkeyInfos?.find((donkey) => donkey.donkeyEntityId?.toString() === value);
               setDonkeyEntityId(BigInt(value));
-              setSelectedResourceIds((currentDonkeyInfo!.donkeyResources.map((resource) => resource.resourceId as never)) ?? 0);
+              setSelectedResourceIds(
+                currentDonkeyInfo!.donkeyResources.map((resource) => resource.resourceId as never) ?? 0,
+              );
               setSelectedResourceAmounts({
                 [currentDonkeyInfo!.donkeyResources[0].resourceId ?? 0]:
                   currentDonkeyInfo!.donkeyResources[0].amount / RESOURCE_PRECISION,
@@ -147,7 +145,7 @@ export const BridgeOutStep2 = () => {
           setResourceFees={setResourceFees}
           type="withdrawal"
         />
-       <div className="flex justify-between font-bold mt-3">
+        <div className="flex justify-between font-bold mt-3">
           <div>Total Amount Received</div>
         </div>
         {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
