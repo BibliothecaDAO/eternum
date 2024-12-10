@@ -52,7 +52,7 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
   );
 };
 
-export function CountdownTimer() {
+export function CountdownTimer({ backgroundImage }: { backgroundImage: string }) {
   const { seasonStart, countdown, nextBlockTimestamp } = useSeasonStart();
 
   const days = Math.floor(Number(countdown) / (3600 * 24));
@@ -63,16 +63,25 @@ export function CountdownTimer() {
   if (countdown < 0 || nextBlockTimestamp === 0n || seasonStart === 0n) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-xl" />
-      <div className="relative flex flex-col items-center">
-        <img src="/images/eternumloader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
-        <h1 className="tracking-wider">Eternum is Launching in</h1>
-        <div className="flex gap-4 text-center mt-4 mx-auto">
-          <TimeUnit value={days} label="Days" />
-          <TimeUnit value={hours} label="Hours" />
-          <TimeUnit value={minutes} label="Minutes" />
-          <TimeUnit value={seconds} label="Seconds" />
+    <div className="relative min-h-screen w-full pointer-events-auto">
+      <img
+        className="absolute h-screen w-screen object-cover"
+        src={`/images/covers/${backgroundImage}.png`}
+        alt="Cover"
+      />
+      <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
+        <div className="absolute inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-xl" />
+          <div className="relative flex flex-col items-center">
+            <img src="/images/eternumloader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
+            <h1 className="tracking-wider">Eternum is Launching in</h1>
+            <div className="flex gap-4 text-center mt-4 mx-auto">
+              <TimeUnit value={days} label="Days" />
+              <TimeUnit value={hours} label="Hours" />
+              <TimeUnit value={minutes} label="Minutes" />
+              <TimeUnit value={seconds} label="Seconds" />
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -65,7 +65,7 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
     </>
   ) : (
     <Button
-      className={`flex items-center hover:scale-105 hover:-translate-y-1 shadow-[0px_4px_4px_0px_#00000040] rounded-md !h-8 bg-black text-gold !text-md !px-3 ${className}`}
+      className={`flex items-center hover:scale-105 hover:-translate-y-1 shadow-[0px_4px_4px_0px_#00000040] rounded-md !h-8 !bg-[#FCB843] !text-black !text-md !px-3 ${className}`}
       variant="default"
       size="md"
       onClick={handleConnect}
