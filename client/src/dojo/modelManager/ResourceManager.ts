@@ -195,7 +195,20 @@ export class ResourceManager {
   private _netRate(resourceId: ResourcesIds): [boolean, number] {
     const production = this._getProduction(resourceId);
     if (!production) return [false, 0];
-    const difference = Number(production.production_rate) - Number(production.consumption_rate);
+
+    let consumptionRate = Number(production.consumption_rate);
+  
+    // Check if this is a Wonder producing Lords
+    const isWonder = getComponentValue(
+      this.setup.components.Realm,
+      getEntityIdFromKeys([BigInt(this.entityId)])
+    )?.has_wonder || false;
+      
+    if (isWonder && resourceId === ResourcesIds.Lords) {
+      consumptionRate = consumptionRate * 0.1; // 10% of normal production rate for Wonders
+    }
+
+    const difference = Number(production.production_rate) - consumptionRate;
     return [difference > 0, difference];
   }
 
