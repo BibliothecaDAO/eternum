@@ -17,7 +17,7 @@ export default defineConfig({
       },
     },
   },
-  vite:{
+  vite: {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./docs"),
