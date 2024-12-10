@@ -701,7 +701,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [realmSystemsContractAddress, false],
     };
 
-
     return await this.executeAndCheckTransaction(signer, [approvalForAllCall, ...createCalls, approvalCloseForAllCall]);
   }
 

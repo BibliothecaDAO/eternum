@@ -1,0 +1,132 @@
+import BuildingCard from "@/components/BuildingCard";
+import BuildingCosts from "@/components/BuildingCosts";
+import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
+
+# Buildings
+
+Buildings are essential structures in your realm that provide various benefits. Each construction increases the cost of
+subsequent buildings of the same type exponentially.
+
+## Building Types
+
+### Basic Infrastructure
+
+<BuildingCard
+  title="Worker Hut"
+  image="/buildings/workers_hut.png"
+  buildingType={BuildingType.WorkersHut}
+  description={["Basic population housing", "Provides population capacity"]}
+/>
+
+<BuildingCard
+  title="Storehouse"
+  image="/buildings/storehouse.png"
+  buildingType={BuildingType.Storehouse}
+  description={[
+    "Increases resource storage capacity",
+    "Essential for resource management",
+    "Prevents production waste",
+    "Consider building more when storage is frequently full",
+  ]}
+/>
+
+### Production Buildings
+
+<BuildingCard
+  title="Farm"
+  image="/buildings/farm.png"
+  buildingType={BuildingType.Farm}
+  description={[
+    "Produces Wheat",
+    "No input resources required",
+    "Provides 10% production bonus to adjacent buildings",
+    "Strategic placement is key for optimization",
+  ]}
+/>
+
+<BuildingCard
+  title="Fishing Village"
+  image="/buildings/fishing_village.png"
+  buildingType={BuildingType.FishingVillage}
+  description={["Produces Fish", "No input resources required"]}
+/>
+
+<BuildingCard
+  title="Market"
+  image="/buildings/market.png"
+  buildingType={BuildingType.Market}
+  description={["Produces Donkeys", "Consumes $LORDS", "Essential for trading"]}
+/>
+
+<BuildingCard
+  title="Resource Facility"
+  multipleImages={true}
+  image={[
+    { src: "/buildings/forge.png", alt: "Forge" },
+    { src: "/buildings/dragonhide.png", alt: "Dragonhide" },
+    { src: "/buildings/mine.png", alt: "Mine" },
+    { src: "/buildings/lumber_mill.png", alt: "Lumber Mill" },
+  ]}
+  buildingType={BuildingType.Resource}
+  description={["Produces specified resource", "Consumes other resources"]}
+/>
+
+### Military Buildings
+
+<BuildingCard
+  title="Barracks"
+  image="/buildings/barracks.png"
+  buildingType={BuildingType.Barracks}
+  description={["Produces Knights", "Increases max army count by 1"]}
+/>
+
+<BuildingCard
+  title="Stables"
+  image="/buildings/stable.png"
+  buildingType={BuildingType.Stable}
+  description={[
+    "Produces Paladins",
+    "Increases max army count by 1",
+    "Requires higher resource investment than Barracks",
+  ]}
+/>
+
+<BuildingCard
+  title="Archery Range"
+  image="/buildings/archery.png"
+  buildingType={BuildingType.ArcheryRange}
+  description={["Produces Crossbowmen", "Increases max army count by 1", "Provides ranged combat capabilities"]}
+
+/>
+
+### Production Management
+
+> ⚙️ **Production Controls**
+>
+> Buildings can be paused/resumed:
+>
+> Pausing stops:
+>
+> - Resource consumption
+> - Resource production
+>
+> Use pausing to:
+>
+> - Prevent resource waste
+> - Manage storage capacity
+
+### Construction Management
+
+> 💡 **Cost Scaling**
+>
+> Each subsequent building costs double:
+>
+> - First building: Base cost
+> - Second building: 2x base cost
+> - Third building: 4x base cost
+
+> 🧱 **Building Tips**
+>
+> - Prioritize buildings based on your realm's needs
+> - Consider population increase and capacity
+> - Monitor resource production and storage capacity
