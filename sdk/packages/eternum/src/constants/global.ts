@@ -131,8 +131,8 @@ export const VELORDS_FEE_ON_DEPOSIT = 400; // 4%
 export const VELORDS_FEE_ON_WITHDRAWAL = 400; // 4%
 export const SEASON_POOL_FEE_ON_DEPOSIT = 400; // 4%
 export const SEASON_POOL_FEE_ON_WITHDRAWAL = 400; // 4%
-export const CLIENT_FEE_ON_DEPOSIT = 2; // 2%
-export const CLIENT_FEE_ON_WITHDRAWAL = 2; // 2%
+export const CLIENT_FEE_ON_DEPOSIT = 200; // 2%
+export const CLIENT_FEE_ON_WITHDRAWAL = 200; // 2%
 export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
 export const SEASON_POOL_FEE_RECIPIENT = "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b";
 export const MAX_BANK_FEE_ON_DEPOSIT = 0; // 10%
@@ -188,7 +188,7 @@ export const EternumGlobalConfig: Config = {
   carryCapacityGram: {
     [CapacityConfigCategory.None]: 0,
     [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
-    [CapacityConfigCategory.Donkey]: 400_000,
+    [CapacityConfigCategory.Donkey]: 4_000_000,
     [CapacityConfigCategory.Army]: 10_000,
     [CapacityConfigCategory.Storehouse]: 300_000_000,
   },
