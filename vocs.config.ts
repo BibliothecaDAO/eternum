@@ -93,7 +93,6 @@ export default defineConfig({
         { text: "Client", link: "/development/client" },
         { text: "Contracts", link: "/development/contracts" },
         { text: "SDK", link: "/development/sdk" },
-        { text: "Common issues", link: "/development/common-issues" },
         { text: "Collaborators", link: "/development/collaborators" },
       ],
     },
