@@ -33,6 +33,7 @@ export interface StructureInfo {
   isMine: boolean;
   owner: { address: bigint };
   structureType: StructureType;
+  hasWonder: boolean;
 }
 
 export interface ArmyData {

@@ -1,5 +1,5 @@
 import { type ClientComponents } from "@/dojo/createClientComponents";
-import { getRealmNameById } from "@/ui/utils/realms";
+import { getRealmName, getRealmNameById } from "@/ui/utils/realms";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   CAPACITY_CONFIG_CATEGORY_STRING_MAP,
@@ -9,7 +9,7 @@ import {
   type ID,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, getComponentValue, type Component, type ComponentValue, type Entity } from "@dojoengine/recs";
+import { Has, getComponentValue, type ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
@@ -111,11 +111,8 @@ export const useEntities = () => {
 
         const structureName = getEntityName(structure.entity_id);
 
-        const name = realm
-          ? getRealmNameById(realm.realm_id)
-          : structureName
-            ? `${structureName}`
-            : structure.category || "";
+        const name = realm ? getRealmName(realm) : structureName || structure.category || "";
+
         return { ...structure, position: position!, name, owner: getComponentValue(Owner, id) };
       })
       .filter((structure): structure is PlayerStructure => structure !== undefined)
@@ -256,20 +253,26 @@ export const useEntitiesUtils = () => {
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(entityId)]));
 
-    if (structure?.category === StructureType[StructureType.Realm]) {
-      return getRealmNameById(realm?.realm_id || 0);
-    } else if (entityName) {
+    if (structure?.category === StructureType[StructureType.Realm] && realm) {
+      return getRealmName(realm);
+    }
+
+    if (entityName) {
       return shortString.decodeShortString(entityName.name.toString());
-    } else {
-      if (abbreviate) {
-        if (structure?.category === StructureType[StructureType.FragmentMine]) {
-          return `FM ${structure.entity_id}`;
-        } else if (structure?.category === StructureType[StructureType.Hyperstructure]) {
-          return `HS ${structure.entity_id}`;
-        } else if (structure?.category === StructureType[StructureType.Bank]) {
-          return `BK ${structure.entity_id}`;
-        }
+    }
+
+    if (abbreviate && structure) {
+      const abbreviations: Record<string, string> = {
+        [StructureType[StructureType.FragmentMine]]: "FM",
+        [StructureType[StructureType.Hyperstructure]]: "HS",
+        [StructureType[StructureType.Bank]]: "BK",
+      };
+
+      const abbr = abbreviations[structure.category];
+      if (abbr) {
+        return `${abbr} ${structure.entity_id}`;
       }
+
       return `${structure?.category} ${structure?.entity_id}`;
     }
   };
