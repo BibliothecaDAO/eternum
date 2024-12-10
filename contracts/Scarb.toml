@@ -8,16 +8,16 @@ sierra-replace-ids = true
 
 [dependencies]
 starknet = "2.8.4"
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.3" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.5" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
-achievement = { git = "https://github.com/cartridge-gg/arcade", tag = "v1.0.3" }
-cartridge_vrf = { git = "https://github.com/cartridge-gg/vrf", rev="efbc9db32d6357f9df2cad0dceca5cabe04a1bf3" }
+achievement = { git = "https://github.com/cartridge-gg/arcade", tag = "v1.0.5" }
+cartridge_vrf = { git = "https://github.com/cartridge-gg/vrf", rev = "efbc9db32d6357f9df2cad0dceca5cabe04a1bf3" }
 cubit = { git = "https://github.com/dojoengine/cubit", branch = "cairo_2.7" }
 
 
 [dev-dependencies]
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.0.3" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.0.5" }
 
 [[target.starknet-contract]]
 casm = true
@@ -32,3 +32,5 @@ sort-module-level-items = true
 max-line-length = 120
 
 [profile.prod]
+
+[profile.mainnet]
