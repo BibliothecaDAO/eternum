@@ -18,6 +18,7 @@ import { Tabs } from "@/ui/elements/tab";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import {
+  adjustWonderLordsCost,
   divideByPrecision,
   getEntityIdFromKeys,
   gramToKg,
@@ -400,7 +401,7 @@ export const ResourceInfo = ({
 
   const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
   if (resourceId == ResourcesIds.Donkey && realm?.has_wonder) {
-    cost = cost.map((cost) => (cost.resource === ResourcesIds.Lords ? { ...cost, amount: cost.amount * 0.1 } : cost));
+    cost = adjustWonderLordsCost(cost);
   }
 
   const buildingCost = getResourceBuildingCosts(entityId ?? 0, dojo, resourceId) ?? [];
@@ -536,10 +537,9 @@ export const BuildingInfo = ({
   let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
 
   const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
+
   if (buildingId == BuildingType.Market && realm?.has_wonder && ongoingCost.length > 0) {
-    ongoingCost = ongoingCost.map((cost) =>
-      cost.resource === ResourcesIds.Lords ? { ...cost, amount: cost.amount * 0.1 } : cost,
-    );
+    ongoingCost = adjustWonderLordsCost(ongoingCost);
   }
 
   const perTick =
