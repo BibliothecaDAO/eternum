@@ -124,19 +124,18 @@ const setupConfig: Config = EternumGlobalConfig;
 setupConfig.vrf.vrfProviderAddress = VITE_VRF_PROVIDER_ADDRESS!;
 
 // Bridge
-setupConfig.bridge = {
+(setupConfig.bridge = {
   ...EternumGlobalConfig.bridge,
-  velords_fee_recipient: BigInt('0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5'), // burner
+  velords_fee_recipient: BigInt("0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5"), // burner
   season_pool_fee_recipient: BigInt(getContractByName(manifest, `${NAMESPACE}-season_systems`)),
-},
-
-// Season Pass
-setupConfig.season = {
-  ...EternumGlobalConfig.season, 
-  seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
-  realmsAddress: process.env.VITE_REALMS_ADDRESS!,
-  lordsAddress: process.env.VITE_LORDS_ADDRESS!,
-};
+}),
+  // Season Pass
+  (setupConfig.season = {
+    ...EternumGlobalConfig.season,
+    seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
+    realmsAddress: process.env.VITE_REALMS_ADDRESS!,
+    lordsAddress: process.env.VITE_LORDS_ADDRESS!,
+  });
 
 export const config = new EternumConfig(setupConfig);
 

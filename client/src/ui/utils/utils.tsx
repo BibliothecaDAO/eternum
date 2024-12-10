@@ -9,6 +9,7 @@ import {
   type ID,
   type Position,
   type Resource,
+  ResourceCost,
   ResourcesIds,
   TickIds,
 } from "@bibliothecadao/eternum";
@@ -246,10 +247,10 @@ export const formatTime = (
     const formattedSeconds = remainingSeconds.toString().padStart(2, "0");
     parts.push(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`);
   } else {
-    if (hours > 0 && format & TimeFormat.H) parts.push(`${hours} ${abbreviate ? "h" : "hour(s)"}`);
-    if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes} ${abbreviate ? "m" : "minute(s)"}`);
+    if (hours > 0 && format & TimeFormat.H) parts.push(`${hours}${abbreviate ? "h" : " hour(s)"}`);
+    if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}${abbreviate ? "m" : " minute(s)"}`);
     if (remainingSeconds > 0 && format & TimeFormat.S)
-      parts.push(`${remainingSeconds} ${abbreviate ? "s" : "second(s)"}`);
+      parts.push(`${remainingSeconds}${abbreviate ? "s" : " second(s)"}`);
   }
 
   return parts.join(" ");
@@ -493,4 +494,8 @@ export const getRandomBackgroundImage = () => {
   const imageNumber = (timestamp % 7) + 1;
   const paddedNumber = imageNumber.toString().padStart(2, "0");
   return paddedNumber;
+};
+
+export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
+  return cost.map((item) => (item.resource === ResourcesIds.Lords ? { ...item, amount: item.amount * 0.1 } : item));
 };

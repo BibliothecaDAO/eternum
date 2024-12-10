@@ -9,7 +9,7 @@ export const Route = createLazyFileRoute("/trade")({
     <div className="flex justify-center items-center h-full top-0 px-2 relative">
       <SwapPanel />
       <EternumConditionsModal open={true} onOpenChange={() => {}} />
-      {env.VITE_PUBLIC_CHAIN == 'mainnet' && <CountdownTimer targetDate={new Date("2024-12-11T12:00:00Z")} onComplete={() => console.log("Countdown complete!")} />}
+      {env.VITE_PUBLIC_CHAIN == "mainnet" && <CountdownTimer targetDate={new Date("2024-12-11T12:00:00Z")} />}
     </div>
   ),
 });
