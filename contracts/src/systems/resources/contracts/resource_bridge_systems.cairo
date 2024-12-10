@@ -381,7 +381,7 @@ mod resource_bridge_systems {
             client_fee_recipient: ContractAddress
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonBridgeConfigImpl::assert_bridge_is_open(world);
+            // SeasonBridgeConfigImpl::assert_bridge_is_open(world);
 
             // ensure caller is owner of from_entity_id
             let entity_owner: EntityOwner = world.read_model(from_entity_id);

@@ -83,7 +83,7 @@ mod building_systems {
 
         fn pause_production(ref self: ContractState, entity_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            // SeasonImpl::assert_season_is_not_over(world);
 
             BuildingImpl::pause_production(ref world, entity_id, building_coord);
         }
@@ -97,7 +97,7 @@ mod building_systems {
 
         fn destroy(ref self: ContractState, entity_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            // SeasonImpl::assert_season_is_not_over(world);
 
             BuildingImpl::destroy(ref world, entity_id, building_coord);
         }
