@@ -1,3 +1,5 @@
+import { env } from "../../../env";
+
 export const signingPolicy = [
   {
     types: {
@@ -19,7 +21,7 @@ export const signingPolicy = [
     domain: {
       name: "Eternum",
       version: "1",
-      chainId: "SN_SEPOLIA",
+      chainId: env.VITE_PUBLIC_CHAIN == "mainnet" ? "SN_MAIN" : "SN_SEPOLIA",
       revision: "1",
     },
   },
