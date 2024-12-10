@@ -54,19 +54,14 @@ const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
       <a className="cursor-pointer" href={mintUrl} target="_blank" rel="noopener noreferrer">
         <Button
-          className="!h-8 !w-40 normal-case font-normal flex items-center rounded-md !text-md !px-3 !text-black shadow-[0px_4px_4px_0px_#00000040] border border-[0.5px] !border-[#F5C2971F] backdrop-blur-xs bg-white/5 hover:scale-105 hover:-translate-y-1 hover:!bg-gold/20 !text-gold "
+          className="!h-8 !w-40 normal-case font-normal flex items-center rounded-md !text-md !px-3 !text-black shadow-[0px_4px_4px_0px_#00000040] border border-[0.5px] !border-[#F5C2971F] backdrop-blur-xs !text-gold !bg-[#0000007A] hover:scale-105 hover:-translate-y-1 hover:!opacity-80"
           variant="default"
         >
           <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
           Mint Season Pass
         </Button>
       </a>
-      {controller && (
-        <Controller
-          className="!text-black !h-10 w-24 normal-case font-normal !bg-[#FCB843] hover:!opacity-80"
-          iconClassName="!fill-black"
-        />
-      )}
+      {controller && <Controller className="!h-10 w-24 normal-case font-normal" iconClassName="!fill-black" />}
     </div>
   );
 };
@@ -82,7 +77,8 @@ export const StepContainer = ({
   const height = "max-h-[316px] h-[44vh] lg:h-[36vh] 2xl:h-[33vh]";
   const size = `${width} ${height}`;
 
-  const [displayTermsOfService, setDisplayTermsOfService] = useState(false);
+  const showToS = useUIStore((state) => state.showToS);
+  const setShowToS = useUIStore((state) => state.setShowToS);
 
   const motionProps = transition
     ? {
@@ -98,12 +94,12 @@ export const StepContainer = ({
       <div
         className={`bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-6 lg:p-10 xl:p-8 2xl:p-12 text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${size} shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
       >
-        {displayTermsOfService ? (
+        {showToS ? (
           <div className="flex flex-col h-full max-h-full pb-4">
             <Button
               className="!h-12 !w-24 !bg-gold/10 !border-none hover:scale-105 hover:-translate-y-1 !px-3 !shadow-none hover:text-gold"
               variant="primary"
-              onClick={() => setDisplayTermsOfService(false)}
+              onClick={() => setShowToS(false)}
             >
               <BackArrow className="w-6 h-6 mr-2 fill-current" />
               <div className="w-14 text-base font-normal normal-case inline">Back</div>
@@ -124,21 +120,18 @@ export const StepContainer = ({
               </div>
             </div>
             {children}
-            <div className="absolute bottom-0.5 left-0 w-full flex justify-center rounded-lg p-2">
-              <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
-              <p
-                className="text-[0.6rem] text-center align-bottom my-auto"
-                onClick={() => setDisplayTermsOfService(true)}
-              >
-                By continuing you are agreeing to Eternum's <span className="inline underline">Terms of Service</span>
-              </p>
-            </div>
           </>
         )}
       </div>
 
       {tos && (
         <div className="mt-4">
+          <div className="w-full flex justify-center rounded-lg p-2">
+            <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
+            <p className="text-[0.6rem] text-center align-bottom my-auto" onClick={() => setShowToS(true)}>
+              By continuing you are agreeing to Eternum's <span className="inline underline">Terms of Service</span>
+            </p>
+          </div>
           <div className={`relative ${width}`}>{bottomChildren}</div>
         </div>
       )}
@@ -189,6 +182,9 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
       systemCalls: { create_multiple_realms_dev },
     },
   } = useDojo();
+
+  const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
+
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
   const realms = usePlayerRealms();
 
@@ -207,62 +203,65 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
 
   const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
 
-  return seasonPassRealms.length > 0 ? (
-    <Button
-      onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
-      className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
-        realms.length === 0 ? "animate-pulse" : ""
-      }`}
-    >
-      {env.VITE_PUBLIC_DEV ? (
-        "Create Random Realm"
-      ) : (
-        <div className="flex items-center">
-          <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
-            {seasonPassRealms.length}
-          </div>
-          Redeem Season Pass
-        </div>
-      )}
-    </Button>
-  ) : (
-    <div className="flex gap-2 justify-between w-full">
-      <a
-        className="text-brown cursor-pointer text-lg w-full"
-        href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
-        target="_blank"
-        rel="noopener noreferrer"
+  return (
+    hasAcceptedToS &&
+    (seasonPassRealms.length > 0 ? (
+      <Button
+        onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
+        className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+          realms.length === 0 ? "animate-pulse" : ""
+        }`}
       >
-        <Button
-          onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
-          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
-            realms.length === 0 ? "animate-pulse" : ""
-          }`}
-        >
+        {env.VITE_PUBLIC_DEV ? (
+          "Create Random Realm"
+        ) : (
           <div className="flex items-center">
-            <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
-            Get Season Pass
+            <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
+              {seasonPassRealms.length}
+            </div>
+            Redeem Season Pass
           </div>
-        </Button>
-      </a>
-      <a
-        className="text-brown cursor-pointer text-lg w-full"
-        href={`https://empire.realms.world/trade`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Button
-          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
-            realms.length === 0 ? "animate-pulse" : ""
-          }`}
+        )}
+      </Button>
+    ) : (
+      <div className="flex gap-2 justify-between w-full">
+        <a
+          className="text-brown cursor-pointer text-lg w-full"
+          href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          <div className="flex items-center gap-2">
-            <LordsIcon className="!w-4 !h-4 fill-brown text-brown mb-1" />
-            Bridge in Lords
-          </div>
-        </Button>
-      </a>
-    </div>
+          <Button
+            onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
+            className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+              realms.length === 0 ? "animate-pulse" : ""
+            }`}
+          >
+            <div className="flex items-center">
+              <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
+              Get Season Pass
+            </div>
+          </Button>
+        </a>
+        <a
+          className="text-brown cursor-pointer text-lg w-full"
+          href={`https://empire.realms.world/trade`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Button
+            className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+              realms.length === 0 ? "animate-pulse" : ""
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <LordsIcon className="!w-4 !h-4 fill-brown text-brown mb-1" />
+              Bridge in Lords
+            </div>
+          </Button>
+        </a>
+      </div>
+    ))
   );
 };
 

@@ -14,11 +14,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { configManager } from "../setup";
 import { ClientConfigManager } from "./ConfigManager";
 
-export interface HyperstructureFinishedEvent {
-  hyperstructureEntityId: ID;
-  timestamp: number;
-}
-
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;
 
