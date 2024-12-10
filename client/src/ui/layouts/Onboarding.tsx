@@ -148,7 +148,6 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
     />
     <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
       <OnboardingOverlay controller={controller} />
-      <SeasonStartTimer />
       {children}
     </div>
   </div>
@@ -265,33 +264,3 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   );
 };
 
-const SeasonStartTimer = () => {
-  const nextBlockTimestamp = BigInt(useUIStore.getState().nextBlockTimestamp || 0);
-  const seasonStart = BigInt(configManager.getSeasonConfig().startAt || 0);
-
-  const [countdown, setCountdown] = useState<bigint>(0n);
-  useEffect(() => {
-    if (nextBlockTimestamp === 0n || seasonStart === 0n) return;
-
-    const initialCountdown = seasonStart - nextBlockTimestamp;
-    setCountdown(initialCountdown);
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => prev - 1n);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [nextBlockTimestamp, seasonStart]);
-
-  if (countdown <= 0n) {
-    return null;
-  }
-
-  return (
-    <div className="fixed top-40 left-1/2 -translate-x-1/2 z-50">
-      <div className="text-2xl bg-black/20 border-[0.5px] border-gradient rounded-lg px-6 py-3 text-gold backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex gap-2">
-        <p className="font-semibold">{formatTime(Number(countdown), undefined, false, true)}</p>
-      </div>
-    </div>
-  );
-};
