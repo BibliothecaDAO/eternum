@@ -1,23 +1,8 @@
-import { configManager } from "@/dojo/setup";
-import { useEffect, useState } from "react";
+import { useSeasonStart } from "@/hooks/use-season-start";
 
 export const SeasonStartTimer = () => {
-  const timestamp = Math.floor(Date.now() / 1000);
-  const seasonStart = configManager.getSeasonConfig().startAt || 0n;
-
-  const [countdown, setCountdown] = useState(() => {
-    return BigInt(seasonStart) - BigInt(timestamp);
-  });
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => prev - 1n);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  if (countdown < 0 || timestamp === 0 || seasonStart === 0n) return null;
+  const {seasonStart, countdown, nextBlockTimestamp} = useSeasonStart();
+  if (countdown < 0 || nextBlockTimestamp === 0n || seasonStart === 0n) return null;
 
   const hours = Math.floor(Number(countdown) / 3600);
   const minutes = Math.floor((Number(countdown) % 3600) / 60);

@@ -22,15 +22,16 @@ export const useBridgeAsset = () => {
       recipientRealmEntityId: bigint,
     ) => {
       if (account) {
-        await bridge_resources_into_realm({
+       return await bridge_resources_into_realm({
           signer: account,
           resources: resources,
           through_bank_id: throughBankId,
           recipient_realm_entity_id: recipientRealmEntityId,
           client_fee_recipient: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
         })
-          .then(() => {
+          .then((resp) => {
             toast(`Transfer initiated successfully`);
+            return resp;
           })
           .catch((e) => {
             console.error(`Bridge into realm error:`, e);
@@ -41,14 +42,13 @@ export const useBridgeAsset = () => {
   );
 
   const _bridgeStartWithdrawFromRealm = useCallback(
-    async (tokenAddress: string, throughBankId: bigint, fromRealmEntityId: bigint, amount: bigint) => {
+    async (resources: { tokenAddress: string; amount: bigint }[], throughBankId: bigint, fromRealmEntityId: bigint) => {
       if (account) {
         await bridge_start_withdraw_from_realm({
           signer: account,
-          token: tokenAddress,
+          resources: resources,
           through_bank_id: throughBankId,
           from_realm_entity_id: fromRealmEntityId,
-          amount,
         })
           .then(() => {
             toast(`Withdrawal initiated successfully. Resources are on their way to the bank.`);
@@ -66,7 +66,7 @@ export const useBridgeAsset = () => {
       if (account) {
         await bridge_finish_withdraw_from_realm({
           signer: account,
-          token: tokenAddress,
+          tokenAddress: tokenAddress,
           through_bank_id: throughBankId,
           from_entity_id: fromDonkeyEntityId,
           recipient_address: account.address,

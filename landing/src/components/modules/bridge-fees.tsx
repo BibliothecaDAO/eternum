@@ -10,6 +10,7 @@ interface FeesCollapsibleProps {
   onOpenChange: (open: boolean) => void;
   setResourceFees: (
     totalFees: {
+      id: string;
       velordsFee: string;
       seasonPoolFee: string;
       clientFee: string;
@@ -43,7 +44,7 @@ export const BridgeFees = ({
   };
 
   const feesForAllResources = useMemo(() => {
-    const resourceFees = Object.entries(resourceSelections).map(([contract, amount]) => {
+    const resourceFees = Object.entries(resourceSelections).map(([id, amount]) => {
       const velordsFee = calculateBridgeFee(
         type === "deposit" ? bridgeConfig.velords_fee_on_dpt_percent : bridgeConfig.velords_fee_on_wtdr_percent,
         amount.toString(),
@@ -62,7 +63,7 @@ export const BridgeFees = ({
       );
 
       return {
-        contract,
+        id,
         velordsFee: formatFee(velordsFee),
         seasonPoolFee: formatFee(seasonPoolFee),
         clientFee: formatFee(clientFee),
@@ -87,9 +88,9 @@ export const BridgeFees = ({
       </CollapsibleTrigger>
       <CollapsibleContent className="flex flex-col gap-4 pt-4">
         {feesForAllResources.map((fees) => {
-          const resourceName = ResourcesIds[fees.contract as keyof typeof ResourcesIds];
+          const resourceName = ResourcesIds[fees.id as keyof typeof ResourcesIds];
           return (
-            <div key={fees.contract} className="flex flex-col gap-2">
+            <div key={fees.id} className="flex flex-col gap-2">
               <div className="font-semibold text-sm">
                 <div className="flex justify-between w-full">
                   <span>{resourceName} </span>

@@ -49,6 +49,7 @@ export const BridgeOutStep1 = () => {
 
   const [resourceFees, setResourceFees] = useState<
     {
+      id: string;
       velordsFee: string;
       seasonPoolFee: string;
       clientFee: string;
@@ -105,15 +106,19 @@ export const BridgeOutStep1 = () => {
   };
 
   const orderWeight = useMemo(() => {
-    if (selectedResourceIds.length > 0) {
-      const totalWeight = getTotalResourceWeight([
-        { resourceId: selectedResourceId, amount: multiplyByPrecision(selectedResourceAmount) },
-      ]);
+    const validSelections = Object.entries(selectedResourceAmounts).filter(([id, amount]) => amount > 0 && id != "NaN");
+    if (validSelections.length > 0) {
+      const totalWeight = getTotalResourceWeight(
+        validSelections.map(([id, amount]) => ({
+          resourceId: id as unknown as ResourcesIds,
+          amount: multiplyByPrecision(amount),
+        })),
+      );
       return totalWeight;
     } else {
       return 0;
     }
-  }, [selectedResourceIds, selectedResourceAmounts]);
+  }, [selectedResourceAmounts]);
 
   const donkeysNeeded = useMemo(() => {
     if (orderWeight) {
@@ -125,17 +130,27 @@ export const BridgeOutStep1 = () => {
 
   const onSendToBank = async () => {
     if (realmEntityId) {
-      const resourceAddresses = await getSeasonAddresses();
-      const selectedResourceName = ResourcesIds[selectedResourceId];
-
-      const tokenAddress = resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
+
+        const resourceAddresses = await getSeasonAddresses();
+        const validResources = await Promise.all(
+          Object.entries(selectedResourceAmounts)
+            .filter(([id, amount]) => amount > 0)
+            .map(async ([id, amount]) => {
+              const tokenAddress =
+                resourceAddresses[ResourcesIds[id].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
+              return {
+                tokenAddress: tokenAddress as string,
+                amount: BigInt(amount * RESOURCE_PRECISION),
+              };
+            }),
+        );
+        console.log(validResources);
         await bridgeStartWithdrawFromRealm(
-          tokenAddress as string,
+          validResources,
           ADMIN_BANK_ENTITY_ID,
           BigInt(realmEntityId!),
-          BigInt(selectedResourceAmount * RESOURCE_PRECISION),
         );
 
         setSelectedResourceIds([]);
@@ -218,10 +233,21 @@ export const BridgeOutStep1 = () => {
           setResourceFees={setResourceFees}
           type="withdrawal"
         />
-        <div className="flex justify-between font-bold mt-5 mb-5">
+        <div className="flex justify-between font-bold mt-3">
           <div>Total Amount Received</div>
-          <div>{formatFee(Number(selectedResourceAmount) /*- Number(totalFeeOnWithdrawal))*/)}</div>
         </div>
+        {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
+          if (amount === 0) return null;
+          const resourceName = ResourcesIds[id as keyof typeof ResourcesIds];
+          return (
+            <div key={id} className="flex justify-between text-sm font-normal">
+              <div className="flex items-center gap-2">
+                <ResourceIcon resource={resourceName} size="md" /> {resourceName}
+              </div>
+              <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
+            </div>
+          );
+        })}
       </div>
       <Button
         disabled={(!selectedResourceAmount && !selectedResourceId && !realmEntityId) || isLoading}
