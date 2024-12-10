@@ -38,14 +38,13 @@ export class SystemManager {
     getUpdate: (update: any) => T | undefined,
     runOnInit: boolean = true,
     maxRetries: number = 10,
-    retryDelay: number = 500, // 500ms delay between attempts
+    retryDelay: number = 500,
   ) {
     const handleUpdate = (update: any) => {
       let retries = 0;
       let lastTryTime = 0;
 
       const tryGetUpdate = (timestamp: number) => {
-        // Only try if enough time has passed
         if (timestamp - lastTryTime >= retryDelay) {
           const value = getUpdate(update);
           if (value) {
