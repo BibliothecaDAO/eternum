@@ -3,7 +3,6 @@ import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum_words
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
 import { ReactComponent as LordsIcon } from "@/assets/icons/resources/LordsSimple.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
-import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { usePlayerRealms } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -11,10 +10,9 @@ import Button from "@/ui/elements/Button";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
-import { getUnusedSeasonPasses, SeasonPassRealm } from "../components/cityview/realm/SettleRealmComponent";
+import { SeasonPassRealm, getUnusedSeasonPasses } from "../components/cityview/realm/SettleRealmComponent";
 import { Controller } from "../modules/controller/Controller";
 import { SettleRealm, StepOne } from "../modules/onboarding/Steps";
-import { formatTime } from "../utils/utils";
 import { TermsOfService } from "./TermsOfService";
 
 interface OnboardingOverlayProps {
@@ -128,7 +126,7 @@ export const StepContainer = ({
         <div className="mt-4">
           <div className="w-full flex justify-center rounded-lg p-2">
             <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
-            <p className="text-[0.6rem] text-center align-bottom my-auto" onClick={() => setShowToS(true)}>
+            <p className="text-xs text-center align-bottom my-auto" onClick={() => setShowToS(true)}>
               By continuing you are agreeing to Eternum's <span className="inline underline">Terms of Service</span>
             </p>
           </div>
@@ -263,4 +261,3 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
     ))
   );
 };
-
