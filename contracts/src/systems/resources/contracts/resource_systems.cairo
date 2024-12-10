@@ -72,7 +72,7 @@ mod resource_systems {
         ///
         fn approve(ref self: ContractState, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            // SeasonImpl::assert_season_is_not_over(world);
 
             assert(entity_id != recipient_entity_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
@@ -118,7 +118,7 @@ mod resource_systems {
         ///
         fn send(ref self: ContractState, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            // SeasonImpl::assert_season_is_not_over(world);
 
             assert(sender_entity_id != recipient_entity_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
@@ -146,7 +146,7 @@ mod resource_systems {
         ///
         fn pickup(ref self: ContractState, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            // SeasonImpl::assert_season_is_not_over(world);
 
             assert(owner_entity_id != recipient_entity_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');

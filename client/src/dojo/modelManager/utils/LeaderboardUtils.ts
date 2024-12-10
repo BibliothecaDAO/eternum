@@ -5,7 +5,7 @@ import { Resource } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { ClientConfigManager } from "../ConfigManager";
 
-export function computeInitialContributionPoints(
+function computeInitialContributionPoints(
   hyperstructureId: number,
   contributions: Resource[],
   totalPoints: number,

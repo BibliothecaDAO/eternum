@@ -480,7 +480,7 @@ export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Adamantine]: 50,
   [ResourcesIds.Mithral]: 50,
   [ResourcesIds.Dragonhide]: 50,
-  [ResourcesIds.Donkey]: 0.1,
+  [ResourcesIds.Donkey]: 0.01,
   [ResourcesIds.Knight]: 0.04,
   [ResourcesIds.Crossbowman]: 0.04,
   [ResourcesIds.Paladin]: 0.04,
@@ -603,7 +603,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   ],
   [ResourcesIds.Donkey]: [
     { resource: ResourcesIds.Wheat, amount: 0.025 },
-    { resource: ResourcesIds.Lords, amount: 0.000001 }, // TODO: Check this
+    { resource: ResourcesIds.Lords, amount: 0.00001 },
   ],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 0.05 },

@@ -42,7 +42,7 @@ export const QUEST_RESOURCES: { [key in QuestType]: ResourceCost[] } = {
     { resource: ResourcesIds.Mithral, amount: 5 },
     { resource: ResourcesIds.Dragonhide, amount: 5 },
   ],
-  [QuestType.BuildResource]: [{ resource: ResourcesIds.Donkey, amount: 0.25 }],
+  [QuestType.BuildResource]: [{ resource: ResourcesIds.Donkey, amount: 0.025 }],
   [QuestType.PauseProduction]: [
     { resource: ResourcesIds.Knight, amount: 0.5 },
     { resource: ResourcesIds.Crossbowman, amount: 0.5 },
@@ -53,13 +53,13 @@ export const QUEST_RESOURCES: { [key in QuestType]: ResourceCost[] } = {
     { resource: ResourcesIds.Paladin, amount: 0.5 },
     { resource: ResourcesIds.Crossbowman, amount: 0.5 },
   ],
-  [QuestType.CreateDefenseArmy]: [{ resource: ResourcesIds.Donkey, amount: 1.25 }],
-  [QuestType.Travel]: [{ resource: ResourcesIds.Donkey, amount: 0.25 }],
+  [QuestType.CreateDefenseArmy]: [{ resource: ResourcesIds.Donkey, amount: 0.125 }],
+  [QuestType.Travel]: [{ resource: ResourcesIds.Donkey, amount: 0.025 }],
   [QuestType.CreateTrade]: [
-    { resource: ResourcesIds.Donkey, amount: 0.25 },
+    { resource: ResourcesIds.Donkey, amount: 0.025 },
     { resource: ResourcesIds.Paladin, amount: 1 },
     { resource: ResourcesIds.Knight, amount: 1 },
     { resource: ResourcesIds.Crossbowman, amount: 1 },
-    { resource: ResourcesIds.AncientFragment, amount: 0.5 },
+    { resource: ResourcesIds.AncientFragment, amount: 0.1 },
   ],
 };

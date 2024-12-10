@@ -23,6 +23,8 @@ export const StepOne = () => {
   const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
+  const setShowToS = useUIStore((state) => state.setShowToS);
 
   const { handleUrlChange } = useQuery();
 
@@ -55,15 +57,21 @@ export const StepOne = () => {
   return (
     <div className="flex flex-row justify-center space-x-8 items-center">
       <SpectateButton onClick={onSpectatorModeClick} />
-      <OnboardingButton
-        disabled={realms.length <= 0}
-        className={`!bg-gold border-none ${
-          realms.length <= 0 ? "opacity-40 hover:none disabled:pointer-events-none" : ""
-        }`}
-        onClick={onPlayModeClick}
-      >
-        <Sword className="w-6 fill-current mr-2" /> <div className="text-black">Play</div>
-      </OnboardingButton>
+      {hasAcceptedToS ? (
+        <OnboardingButton
+          disabled={realms.length <= 0}
+          className={`!bg-gold border-none ${
+            realms.length <= 0 ? "opacity-40 hover:none disabled:pointer-events-none" : ""
+          }`}
+          onClick={onPlayModeClick}
+        >
+          <Sword className="w-6 fill-current mr-2" /> <div className="text-black">Play</div>
+        </OnboardingButton>
+      ) : (
+        <OnboardingButton className="!bg-gold border-none" onClick={() => setShowToS(true)}>
+          <div className="text-black">Accept ToS</div>
+        </OnboardingButton>
+      )}
     </div>
   );
 };
@@ -100,6 +108,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         season_pass_address: env.VITE_SEASON_PASS_ADDRESS,
       });
       setSelectedRealms([]);
+      onPrevious();
     } catch (error) {
       console.error("Error settling realms:", error);
       setLoading(false);

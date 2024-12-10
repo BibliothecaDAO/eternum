@@ -1,15 +1,7 @@
+import { configManager } from "@/dojo/setup";
 import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import {
-  Entity,
-  Has,
-  HasValue,
-  NotValue,
-  defineQuery,
-  getComponentValue,
-  isComponentUpdate,
-  runQuery,
-} from "@dojoengine/recs";
+import { Entity, Has, HasValue, defineQuery, getComponentValue, isComponentUpdate, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDojo } from "../context/DojoContext";
@@ -28,9 +20,13 @@ const usePlayerArrivals = () => {
   const {
     account: { account },
     setup: {
-      components: { Position, Owner, EntityOwner, ArrivalTime, Weight, Structure },
+      components: { Position, Owner, EntityOwner, ArrivalTime, Weight, Resource, Structure },
     },
   } = useDojo();
+
+  const weightLessResources = useMemo(() => {
+    return configManager.getWeightLessResources();
+  }, []);
 
   // needed to query without playerStructures() from useEntities because of circular dependency
   const playerStructures = useEntityQuery([
@@ -54,13 +50,7 @@ const usePlayerArrivals = () => {
 
   const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
     return positions.flatMap((position) => {
-      return Array.from(
-        runQuery([
-          HasValue(Position, { x: position.x, y: position.y }),
-          NotValue(Weight, { value: 0n }),
-          ...queryFragments,
-        ]),
-      );
+      return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...queryFragments]));
     });
   }, []);
 
@@ -70,7 +60,15 @@ const usePlayerArrivals = () => {
       const entityOwner = getComponentValue(EntityOwner, id);
       const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
       const position = getComponentValue(Position, id);
-      const hasResources = getComponentValue(Weight, id)?.value !== 0n || false;
+
+      const hasWeightlessResources = weightLessResources.some(
+        (resourceId) =>
+          (getComponentValue(Resource, getEntityIdFromKeys([BigInt(position!.entity_id), BigInt(resourceId)]))
+            ?.balance ?? 0n) > 0n,
+      );
+
+      const hasResources = hasWeightlessResources || getComponentValue(Weight, id)?.value !== 0n || false;
+
       const isHome = playerStructurePositions.some(
         (structurePosition) => structurePosition.x === position?.x && structurePosition.y === position?.y,
       );
@@ -95,7 +93,8 @@ const usePlayerArrivals = () => {
   useEffect(() => {
     const arrivals = getArrivalsWithResourceOnPosition(playerStructurePositions)
       .map(createArrivalInfo)
-      .filter((arrival: any): arrival is ArrivalInfo => arrival !== undefined);
+      .filter((arrival: any): arrival is ArrivalInfo => arrival !== undefined)
+      .filter((arrival) => arrival.hasResources);
     setEntitiesWithInventory(arrivals);
   }, [playerStructurePositions, getArrivalsWithResourceOnPosition, createArrivalInfo]);
 

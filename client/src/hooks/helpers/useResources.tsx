@@ -1,3 +1,4 @@
+import { configManager } from "@/dojo/setup";
 import {
   CapacityConfigCategory,
   ContractAddress,
@@ -18,8 +19,12 @@ import useUIStore from "../store/useUIStore";
 export function useResourcesUtils() {
   const { setup } = useDojo();
   const {
-    components: { Weight, ResourceCost, Realm, CapacityCategory },
+    components: { Weight, Resource, ResourceCost, Realm, CapacityCategory },
   } = setup;
+
+  const weightLessResources = useMemo(() => {
+    return configManager.getWeightLessResources();
+  }, []);
 
   const useResourcesFromBalance = (entityId: ID) => {
     const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
@@ -44,7 +49,11 @@ export function useResourcesUtils() {
     const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
     const weight = getComponentValue(Weight, getEntityIdFromKeys([BigInt(entityId)]));
-    if (!weight || weight.value === 0n) return [];
+    const hasWeightlessResources = weightLessResources.some(
+      (resourceId) =>
+        (getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)]))?.balance ?? 0n) > 0n,
+    );
+    if (!weight?.value && !hasWeightlessResources) return [];
     const resourceIds = resources.map((r) => r.id);
     return resourceIds
       .map((id) => {

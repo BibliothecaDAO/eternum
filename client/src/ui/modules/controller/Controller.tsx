@@ -50,14 +50,14 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
   return account ? (
     <>
       <Button
-        className={`flex items-center hover:scale-105 hover:-translate-y-1 shadow-[0px_4px_4px_0px_#00000040] rounded-md !h-8 !w-28 !text-gold !text-md !px-3 normal-case font-normal border !border-[#F5C2971F] backdrop-blur-xs !bg-white/5 ${className}`}
+        className={`flex items-center hover:scale-105 hover:-translate-y-1 shadow-[0px_4px_4px_0px_#00000040] rounded-md !h-8 !w-28 !text-gold !text-md !px-3 normal-case font-normal border !border-[#F5C2971F] backdrop-blur-xs  !text-gold !bg-[#0000007A] hover:!opacity-80 ${className}`}
         onClick={handleConnected}
       >
         <CartridgeSmall className={`w-6 md:w-6 mr-1 md:mr-1 !fill-current text-gold self-center ${iconClassName}`} />
         <div className="align-center">{userName}</div>
       </Button>
       <Button
-        className={`flex items-center hover:scale-105 hover:-translate-y-1 shadow-[0px_4px_4px_0px_#00000040] rounded-md !h-8 !w-12 border !border-[#F5C2971F] backdrop-blur-xs !bg-white/5  !text-md !px-3 ${className}`}
+        className={`flex items-center hover:scale-105 hover:-translate-y-1 shadow-[0px_4px_4px_0px_#00000040] rounded-md !h-8 !w-12 border !border-[#F5C2971F] backdrop-blur-xs !text-gold !bg-[#0000007A] hover:!opacity-80  !text-md !px-3 ${className}`}
         onClick={handleDisconnect}
       >
         <Disconnect className={`self-center !w-8 !h-8 !fill-current !text-gold`} />

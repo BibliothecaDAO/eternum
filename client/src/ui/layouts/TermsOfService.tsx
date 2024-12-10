@@ -1,10 +1,16 @@
 import { configManager } from "@/dojo/setup";
+import useUIStore from "@/hooks/store/useUIStore";
+import Button from "../elements/Button";
 import { currencyIntlFormat, formatTime } from "../utils/utils";
 
 export const TermsOfService = () => {
+  const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
+  const setHasAcceptedToS = useUIStore((state) => state.setHasAcceptedToS);
+  const setShowToS = useUIStore((state) => state.setShowToS);
+
   return (
     <div className="h-full overflow-y-auto">
-      <div>
+      <div className="w-full">
         <div className="text-2xl font-bold mb-4">Important Disclaimer - Please Read Carefully</div>
         <p className="mb-4">By playing Eternum, you acknowledge and accept that:</p>
 
@@ -147,6 +153,19 @@ export const TermsOfService = () => {
             conditions outlined in the game's documentation.
           </p>
         </section>
+        {!hasAcceptedToS && (
+          <div className="w-full flex justify-center">
+            <Button
+              className="!bg-gold border-none my-2"
+              onClick={() => {
+                setHasAcceptedToS(true);
+                setShowToS(false);
+              }}
+            >
+              <div className="text-black">Accept</div>
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
