@@ -60,6 +60,6 @@ export const QUEST_RESOURCES: { [key in QuestType]: ResourceCost[] } = {
     { resource: ResourcesIds.Paladin, amount: 1 },
     { resource: ResourcesIds.Knight, amount: 1 },
     { resource: ResourcesIds.Crossbowman, amount: 1 },
-    { resource: ResourcesIds.AncientFragment, amount: 0.5 },
+    { resource: ResourcesIds.AncientFragment, amount: 0.1 },
   ],
 };
