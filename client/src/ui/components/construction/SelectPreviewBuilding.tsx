@@ -396,7 +396,12 @@ export const ResourceInfo = ({
   hintModal?: boolean;
 }) => {
   const dojo = useDojo();
-  const cost = configManager.resourceInputs[resourceId];
+  let cost = configManager.resourceInputs[resourceId];
+
+  const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  if (resourceId == ResourcesIds.Donkey && realm?.has_wonder) {
+    cost = cost.map((cost) => (cost.resource === ResourcesIds.Lords ? { ...cost, amount: cost.amount * 0.1 } : cost));
+  }
 
   const buildingCost = getResourceBuildingCosts(entityId ?? 0, dojo, resourceId) ?? [];
 
@@ -528,7 +533,14 @@ export const BuildingInfo = ({
     buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfigCategory.Storehouse) : 0;
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
-  const ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || 0 : 0;
+  let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
+
+  const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  if (buildingId == BuildingType.Market && realm?.has_wonder && ongoingCost.length > 0) {
+    ongoingCost = ongoingCost.map((cost) =>
+      cost.resource === ResourcesIds.Lords ? { ...cost, amount: cost.amount * 0.1 } : cost,
+    );
+  }
 
   const perTick =
     resourceProduced !== undefined ? divideByPrecision(configManager.getResourceOutputs(resourceProduced)) || 0 : 0;
@@ -587,12 +599,11 @@ export const BuildingInfo = ({
         )}
       </div>
 
-      {ongoingCost && ongoingCost.length ? (
+      {ongoingCost.length > 0 ? (
         <>
           <div className="font-bold uppercase">consumed per/s</div>
           <div className="grid grid-cols-2 gap-2">
             {resourceProduced !== 0 &&
-              ongoingCost &&
               Object.keys(ongoingCost).map((resourceId, index) => {
                 const balance = getBalance(entityId || 0, ongoingCost[Number(resourceId)].resource);
                 return (
