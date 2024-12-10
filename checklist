@@ -1,0 +1,29 @@
+1. build the contracts and migrate to prod as it is.
+    - what was newly added?
+        a. the ability to return the season passes used and break the game
+            using realm_systems.kill
+        b. a check in realm_systems.create to ensure season has started.
+            before we can settle realm
+
+        
+2. Go to https://starkscan.co/contract/0x01b480f620ea35431ab43dba634795b14f547ef3e77370db6f0a31f2fdc21d86
+    - call the kill function using the deployer account with 
+        tokenIds =  [535, 7497]
+        address = "0x03c8d4497ba9c5787834c6cad06e5de00a8bb2d5daa758022d4fdb103e3673dc"
+
+        assuming no one else has joined the game
+
+3. Revoke the minter role of given to the the current resource bridge systems
+    using revokeMinterRoleFromAllSeasonResourceContracts
+
+4. Remove the kill function from the realm_systems
+
+5. Redeploy Eternum USING A NEW SEED
+6. change sdk values
+    `let startAt = now + config.config.season.startAfterSeconds;`
+    to 
+    `let startAt = 1733921925;`
+
+7. call set config
+
+8. grant minter role to the new resource bridge systems
