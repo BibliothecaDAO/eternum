@@ -1,4 +1,5 @@
-import { ContractAddress, ID, Position, ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager } from "@/dojo/setup";
+import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, defineQuery, getComponentValue, isComponentUpdate, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -22,6 +23,10 @@ const usePlayerArrivals = () => {
       components: { Position, Owner, EntityOwner, ArrivalTime, Weight, Resource, Structure },
     },
   } = useDojo();
+
+  const weightLessResources = useMemo(() => {
+    return configManager.getWeightLessResources();
+  }, []);
 
   // needed to query without playerStructures() from useEntities because of circular dependency
   const playerStructures = useEntityQuery([
@@ -55,10 +60,15 @@ const usePlayerArrivals = () => {
       const entityOwner = getComponentValue(EntityOwner, id);
       const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
       const position = getComponentValue(Position, id);
-      const hasLords =
-        (getComponentValue(Resource, getEntityIdFromKeys([BigInt(id), BigInt(ResourcesIds.Lords)]))?.balance ?? 0n) >
-        0n;
-      const hasResources = hasLords || getComponentValue(Weight, id)?.value !== 0n || false;
+
+      const hasWeightlessResources = weightLessResources.some(
+        (resourceId) =>
+          (getComponentValue(Resource, getEntityIdFromKeys([BigInt(position!.entity_id), BigInt(resourceId)]))
+            ?.balance ?? 0n) > 0n,
+      );
+
+      const hasResources = hasWeightlessResources || getComponentValue(Weight, id)?.value !== 0n || false;
+
       const isHome = playerStructurePositions.some(
         (structurePosition) => structurePosition.x === position?.x && structurePosition.y === position?.y,
       );
@@ -84,7 +94,7 @@ const usePlayerArrivals = () => {
     const arrivals = getArrivalsWithResourceOnPosition(playerStructurePositions)
       .map(createArrivalInfo)
       .filter((arrival: any): arrival is ArrivalInfo => arrival !== undefined)
-      .filter((arrival) => !arrival.hasResources);
+      .filter((arrival) => arrival.hasResources);
     setEntitiesWithInventory(arrivals);
   }, [playerStructurePositions, getArrivalsWithResourceOnPosition, createArrivalInfo]);
 

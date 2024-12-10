@@ -45,12 +45,27 @@ subsequent buildings of the same type exponentially.
 />
 
 <BuildingCard
+  title="Fishing Village"
+  image="/buildings/fishing_village.png"
+  buildingType={BuildingType.FishingVillage}
+  description={["Produces Fish", "No input resources required"]}
+/>
+
+<BuildingCard
+  title="Market"
+  image="/buildings/market.png"
+  buildingType={BuildingType.Market}
+  description={["Produces Donkeys", "Consumes $LORDS", "Essential for trading"]}
+/>
+
+<BuildingCard
   title="Resource Facility"
   multipleImages={true}
   image={[
     { src: "/buildings/forge.png", alt: "Forge" },
-    { src: "/buildings/lumber_mill.png", alt: "Lumber Mill" },
+    { src: "/buildings/dragonhide.png", alt: "Dragonhide" },
     { src: "/buildings/mine.png", alt: "Mine" },
+    { src: "/buildings/lumber_mill.png", alt: "Lumber Mill" },
   ]}
   buildingType={BuildingType.Resource}
   description={["Produces specified resource", "Consumes other resources"]}
@@ -115,4 +130,3 @@ subsequent buildings of the same type exponentially.
 > - Prioritize buildings based on your realm's needs
 > - Consider population increase and capacity
 > - Monitor resource production and storage capacity
-> - See Production Management section for resource conservation strategies

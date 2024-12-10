@@ -24,12 +24,18 @@ export default defineConfig({
     {
       text: "Overview",
       items: [
-        // { text: "Welcome", link: "/overview/welcome" },
         { text: "Introduction", link: "/overview/introduction" },
         { text: "Game Entry", link: "/overview/entry" },
         { text: "Cartridge Controller", link: "/overview/controller" },
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
+      ],
+    },
+    {
+      text: "Seasons",
+      items: [
+        { text: "Overview", link: "/seasons/overview" },
+        { text: "Rewards", link: "/seasons/rewards" },
       ],
     },
     {
@@ -70,14 +76,6 @@ export default defineConfig({
         { text: "Tribes", link: "/mechanics/tribes" },
       ],
     },
-    {
-      text: "Seasons",
-      items: [
-        { text: "Overview", link: "/seasons/overview" },
-        { text: "Rewards", link: "/seasons/rewards" },
-      ],
-    },
-
     {
       text: "Development",
       link: "/development",
