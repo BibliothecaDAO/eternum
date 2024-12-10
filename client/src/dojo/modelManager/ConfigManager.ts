@@ -649,4 +649,16 @@ export class ClientConfigManager {
       },
     );
   }
+
+  getWeightLessResources() {
+    return this.getValueOrDefault(() => {
+      const weightlessResources: ResourcesIds[] = [];
+      for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
+        if (this.getResourceWeight(Number(resourceId)) === 0) {
+          weightlessResources.push(Number(resourceId));
+        }
+      }
+      return weightlessResources;
+    }, []);
+  }
 }
