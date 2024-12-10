@@ -695,7 +695,14 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [owner, realm_id, frontend],
     }));
 
-    return await this.executeAndCheckTransaction(signer, [approvalForAllCall, ...createCalls]);
+    const approvalCloseForAllCall = {
+      contractAddress: season_pass_address,
+      entrypoint: "set_approval_for_all",
+      calldata: [realmSystemsContractAddress, false],
+    };
+
+
+    return await this.executeAndCheckTransaction(signer, [approvalForAllCall, ...createCalls, approvalCloseForAllCall]);
   }
 
   /**

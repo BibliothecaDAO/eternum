@@ -43,7 +43,6 @@ mod season_systems {
 
     #[abi(embed_v0)]
     impl SeasonSystemsImpl of super::ISeasonSystems<ContractState> {
-        /// Note: This function can only be called once per address
         fn register_to_leaderboard(
             ref self: ContractState,
             hyperstructures_contributed_to: Span<ID>,
@@ -159,13 +158,22 @@ mod season_systems {
                 / leaderboard.total_points.into();
             let resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig = world.read_model(WORLD_CONFIG_ID);
 
-            assert!(
-                ERC20ABIDispatcher { contract_address: token }
-                    .transfer_from(
-                        resource_bridge_fee_split_config.season_pool_fee_recipient, caller_address, player_reward
-                    ),
-                "Failed to transfer reward"
-            );
+            let sender = resource_bridge_fee_split_config.season_pool_fee_recipient;
+            let self = starknet::get_contract_address();
+            if sender == self {
+                assert!(
+                    ERC20ABIDispatcher { contract_address: token }.transfer(caller_address, player_reward),
+                    "Failed to transfer reward"
+                );
+            } else {
+                assert!(
+                    ERC20ABIDispatcher { contract_address: token }
+                        .transfer_from(
+                            resource_bridge_fee_split_config.season_pool_fee_recipient, caller_address, player_reward
+                        ),
+                    "Failed to transfer reward"
+                );
+            }
 
             // set claimed to true
             leaderboard_reward_claimed.claimed = true;

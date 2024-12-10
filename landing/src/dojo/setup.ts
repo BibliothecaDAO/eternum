@@ -26,8 +26,10 @@ export async function setup({ ...config }: DojoConfig) {
     "AddressName",
     "Realm",
     "Owner",
-    "Hyperstructure",
     // points
+    "Hyperstructure",
+    "Epoch",
+    "Season",
     "Contribution",
     "HyperstructureResourceConfig",
     "HyperstructureConfig",

@@ -1,8 +1,8 @@
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
+import { useLeaderBoardStore } from "@/hooks/store/useLeaderBoardStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { ContractAddress } from "@bibliothecadao/eternum";
@@ -10,10 +10,13 @@ import clsx from "clsx";
 import { useCallback, useMemo } from "react";
 
 export const EndSeasonButton = () => {
+  const dojo = useDojo();
   const {
     setup,
     account: { account },
-  } = useDojo();
+  } = dojo;
+
+  const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -25,7 +28,6 @@ export const EndSeasonButton = () => {
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 
   const { playerPoints, percentageOfPoints } = useMemo(() => {
-    const playersByRank = LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp);
     const player = playersByRank.find(([player, _]) => ContractAddress(player) === ContractAddress(account.address));
     const playerPoints = player?.[1] ?? 0;
 

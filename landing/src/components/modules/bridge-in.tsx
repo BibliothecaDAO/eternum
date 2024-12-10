@@ -261,8 +261,8 @@ export const BridgeIn = () => {
                   <InfoIcon className="ml-2 w-4 h-4" />
                 </TooltipTrigger>
                 <TooltipContent className="bg-background border rounded p-2 max-w-64 text-gold">
-                  Donkeys are required on your Realmto transport the resources to the bank. Finish the starting quests
-                  in game for free donkeys
+                  Donkeys are required on your Realm to transport the resources to the bank. Finish the starting quests
+                  in game for free donkeys.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
