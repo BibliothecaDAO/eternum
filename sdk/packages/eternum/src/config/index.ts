@@ -3,7 +3,7 @@ import { ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, QuestType, 
 import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
 import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
-import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
+import { scaleResourceCostMinMax, scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
 import { EternumGlobalConfig as DefaultConfig, FELT_CENTER } from "../constants/global";
 
@@ -26,6 +26,7 @@ export class EternumConfig {
     await setQuestConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
+    await setVRFConfig(config);
     await setResourceBridgeFeesConfig(config);
     await setBuildingCategoryPopConfig(config);
     await setPopulationConfig(config);
@@ -467,6 +468,21 @@ export const setSeasonConfig = async (config: Config) => {
 
   console.log(`Configuring season ${tx.statusReceipt}`);
   console.log(`Season starts at ${new Date(startAt * 1000).toISOString()}`);
+
+  const txBridge = await config.provider.set_season_bridge_config({
+    signer: config.account,
+    close_after_end_seconds: config.config.season.bridgeCloseAfterEndSeconds,
+  });
+  console.log(`Configuring season bridge ${txBridge.statusReceipt}`);
+};
+
+export const setVRFConfig = async (config: Config) => {
+  const tx = await config.provider.set_vrf_config({
+    signer: config.account,
+    vrf_provider_address: config.config.vrf.vrfProviderAddress,
+  });
+
+  console.log(`Configuring VRF ${tx.statusReceipt}`);
 };
 
 export const setResourceBridgeLordsWhitlelistConfig = async (config: Config) => {
@@ -542,12 +558,14 @@ export const setHyperstructureConfig = async (config: Config) => {
 
   const tx = await config.provider.set_hyperstructure_config({
     signer: config.account,
-    resources_for_completion: scaleResources(hyperstructureTotalCosts, config.config.resources.resourceMultiplier).map(
-      (resource) => ({
-        ...resource,
-        amount: resource.amount * config.config.resources.resourcePrecision,
-      }),
-    ),
+    resources_for_completion: scaleResourceCostMinMax(
+      hyperstructureTotalCosts,
+      config.config.resources.resourceMultiplier,
+    ).map((resource) => ({
+      ...resource,
+      min_amount: resource.min_amount * config.config.resources.resourcePrecision,
+      max_amount: resource.max_amount * config.config.resources.resourcePrecision,
+    })),
     time_between_shares_change: hyperstructureTimeBetweenSharesChangeSeconds,
     points_per_cycle: hyperstructurePointsPerCycle,
     points_for_win: hyperstructurePointsForWin,
@@ -621,7 +639,7 @@ export const setSettlementConfig = async (config: Config) => {
 };
 
 export const createAdminBank = async (config: Config) => {
-  const tx = await config.provider.create_admin_bank({
+  await config.provider.create_admin_bank({
     signer: config.account,
     name: config.config.banks.name,
     coord: { x: FELT_CENTER, y: FELT_CENTER },
@@ -630,7 +648,7 @@ export const createAdminBank = async (config: Config) => {
     owner_bridge_fee_dpt_percent: config.config.banks.ownerBridgeFeeOnDepositPercent,
     owner_bridge_fee_wtdr_percent: config.config.banks.ownerBridgeFeeOnWithdrawalPercent,
   });
-  console.log(`Creating admin bank ${tx.statusReceipt}...`);
+  console.log(`Creating admin bank ...`);
 };
 
 export const mintResources = async (config: Config) => {

@@ -62,4 +62,58 @@ export class ResourceInventoryManager {
         });
     }
   };
+
+  public onOffloadAllMultiple = async (
+    transfers: {
+      senderEntityId: ID;
+      recipientEntityId: ID;
+      resources: Resource[];
+    }[],
+  ) => {
+    const overrideId = uuid();
+
+    // Apply optimistic updates for each transfer
+    transfers.forEach((transfer) => {
+      transfer.resources.forEach((resource) => {
+        const recipientEntity = getEntityIdFromKeys([BigInt(transfer.recipientEntityId), BigInt(resource.resourceId)]);
+        const recipientBalance = getComponentValue(this.setup.components.Resource, recipientEntity)?.balance || 0n;
+
+        this.setup.components.Resource.addOverride(overrideId, {
+          entity: recipientEntity,
+          value: {
+            resource_type: resource.resourceId,
+            balance: recipientBalance + BigInt(resource.amount),
+          },
+        });
+      });
+
+      // Reset weight for sender
+      const senderEntity = getEntityIdFromKeys([BigInt(transfer.senderEntityId)]);
+      this.setup.components.Weight.addOverride(overrideId, {
+        entity: senderEntity,
+        value: {
+          value: 0n,
+        },
+      });
+    });
+
+    try {
+      await this.setup.systemCalls.send_resources_multiple({
+        calls: transfers.map((transfer) => ({
+          sender_entity_id: transfer.senderEntityId,
+          recipient_entity_id: transfer.recipientEntityId,
+          resources: transformResources(transfer.resources),
+        })),
+        signer: useAccountStore.getState().account!,
+      });
+    } finally {
+      // Clean up overrides
+      this.setup.components.Resource.removeOverride(overrideId);
+      this.setup.components.Weight.removeOverride(overrideId);
+    }
+  };
 }
+
+const transformResources = (resources: Resource[]) => {
+  return resources.flatMap((resource) => [resource.resourceId, resource.amount]);
+};

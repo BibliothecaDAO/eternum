@@ -201,7 +201,7 @@ export const BattleProgress = ({
           {currentTimestamp && (
             <DurationLeft battleManager={battleManager} currentTimestamp={currentTimestamp} structure={structure} />
           )}
-          {battleStatus}
+          <div className="font-bold text-center">{battleStatus}</div>
         </div>
         <div className="text-right">
           <p>{defenderName}</p>

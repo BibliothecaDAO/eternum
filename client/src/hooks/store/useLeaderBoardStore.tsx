@@ -1,93 +1,42 @@
-import { HyperstructureFinishedEvent, LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
-import { useEntityQuery } from "@dojoengine/react";
-import { defineQuery, getComponentValue, Has, isComponentUpdate } from "@dojoengine/recs";
-import { useEffect, useState } from "react";
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { useEffect } from "react";
 import { create } from "zustand";
 import { useDojo } from "../context/DojoContext";
-import { useContributions } from "../helpers/useContributions";
+import { useGuilds } from "../helpers/useGuilds";
+import useUIStore from "./useUIStore";
 
 interface LeaderboardStore {
-  finishedHyperstructures: HyperstructureFinishedEvent[];
-  setFinishedHyperstructures: (val: HyperstructureFinishedEvent[]) => void;
+  playersByRank: [ContractAddress, number][];
+  setPlayersByRank: (val: [ContractAddress, number][]) => void;
+  guildsByRank: [ID, number][];
+  setGuildsByRank: (val: [ID, number][]) => void;
 }
 
-const useLeaderBoardStore = create<LeaderboardStore>((set) => {
+export const useLeaderBoardStore = create<LeaderboardStore>((set) => {
   return {
-    finishedHyperstructures: [],
-    setFinishedHyperstructures: (val: HyperstructureFinishedEvent[]) => set({ finishedHyperstructures: val }),
+    playersByRank: [],
+    setPlayersByRank: (val: [ContractAddress, number][]) => set({ playersByRank: val }),
+    guildsByRank: [],
+    setGuildsByRank: (val: [ID, number][]) => set({ guildsByRank: val }),
   };
 });
 
-export const useSubscriptionToHyperstructureEvents = () => {
-  const [newFinishedHs, setNewFinishedHs] = useState<HyperstructureFinishedEvent | null>(null);
-  const {
-    setup: {
-      components: {
-        events: { HyperstructureCoOwnersChange, HyperstructureFinished, GameEnded },
-      },
-    },
-  } = useDojo();
+export const useHyperstructureData = () => {
+  const dojo = useDojo();
 
-  const { getContributions } = useContributions();
+  const { getGuildFromPlayerAddress } = useGuilds();
 
-  const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
-  const setFinishedHyperstructures = useLeaderBoardStore((state) => state.setFinishedHyperstructures);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const setPlayersByRank = useLeaderBoardStore((state) => state.setPlayersByRank);
+  const setGuildsByRank = useLeaderBoardStore((state) => state.setGuildsByRank);
 
   useEffect(() => {
-    if (newFinishedHs === null) return;
-    setFinishedHyperstructures([...finishedHyperstructures, newFinishedHs]);
-  }, [newFinishedHs]);
-
-  useEffect(() => {
-    const query = defineQuery([Has(HyperstructureFinished)], {
-      runOnInit: true,
-    });
-
-    const events: HyperstructureFinishedEvent[] = [];
-
-    const subscription = query.update$.subscribe((update) => {
-      if (isComponentUpdate(update, HyperstructureFinished)) {
-        const event = getComponentValue(HyperstructureFinished, update.entity);
-        if (!event) return;
-        const parsedEvent = LeaderboardManager.instance().processHyperstructureFinishedEventData(
-          event,
-          getContributions,
-        );
-        setNewFinishedHs(parsedEvent);
-        events.push(parsedEvent);
-      }
-    });
-
-    setFinishedHyperstructures(events);
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const query = defineQuery([Has(HyperstructureCoOwnersChange)], {
-      runOnInit: true,
-    });
-
-    const subscription = query.update$.subscribe((update) => {
-      if (isComponentUpdate(update, HyperstructureCoOwnersChange)) {
-        const event = getComponentValue(HyperstructureCoOwnersChange, update.entity);
-        if (!event) return;
-        LeaderboardManager.instance().processHyperstructureCoOwnersChangeEvent(event);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const gameEndedEntityId = useEntityQuery([Has(GameEnded)]);
-  useEffect(() => {
-    if (gameEndedEntityId.length === 0) {
-      return;
-    }
-
-    const gameEnded = getComponentValue(GameEnded, gameEndedEntityId[0]);
-    if (!gameEnded) return;
-
-    LeaderboardManager.instance().processGameEndedEvent(gameEnded);
-  }, [gameEndedEntityId]);
+    const leaderboardManager = LeaderboardManager.instance(dojo);
+    const playersByRank = leaderboardManager.getPlayersByRank(nextBlockTimestamp || 0);
+    const guildsByRank = leaderboardManager.getGuildsByRank(nextBlockTimestamp || 0, getGuildFromPlayerAddress);
+    setPlayersByRank(playersByRank);
+    setGuildsByRank(guildsByRank);
+  }, [nextBlockTimestamp]);
 };

@@ -1,0 +1,1 @@
+import{b as r}from"./index-D1VnJ4UU.js";function s(e){return e.replace(/([A-Z])/g," $1").trim()}function t(e){return e.toString().replace(/\B(?=(\d{3})+(?!\d))/g," ")}const c=e=>e<1?`${e*1e3}`:e<1e3?`${e.toFixed(e%1===0?0:e%1%.1===0?1:2)}K`:`${(e/1e3).toFixed(e%1e3===0?0:e%1e3%10===0?1:2)}M`;function f(e){return e/r.resources.resourcePrecision}export{c as a,s as b,f as d,t as f};

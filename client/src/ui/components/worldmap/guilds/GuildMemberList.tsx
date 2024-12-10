@@ -6,7 +6,6 @@ import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { ListHeaderProps } from "./GuildList";
 
 interface GuildMemberListProps {
   guildMembers: GuildMemberInfo[];
@@ -55,28 +54,34 @@ export const GuildMemberList = ({
   );
 };
 
-const GuildMemberListHeader = ({ activeSort, setActiveSort }: ListHeaderProps) => {
+const GuildMemberListHeader = ({
+  activeSort,
+  setActiveSort,
+}: {
+  activeSort: SortInterface;
+  setActiveSort: (sort: SortInterface) => void;
+}) => {
   const sortingParams = useMemo(() => {
     return [
-      { label: "Rank", sortKey: "rank", className: "" },
-      { label: "Name", sortKey: "name", className: "col-span-2" },
-      { label: "Pts", sortKey: "points", className: "" },
-      { label: "Age", sortKey: "age", className: "" },
+      { label: "Rank", sortKey: "rank", className: "col-span-1 text-center px-1" },
+      { label: "Name", sortKey: "name", className: "col-span-2 px-1" },
+      { label: "Points", sortKey: "points", className: "col-span-2 text-center px-1" },
+      { label: "Age", sortKey: "age", className: "col-span-1 text-center px-1" },
     ];
   }, []);
 
-  const textStyle = "text-gray-gold font-bold";
+  const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
 
   return (
-    <SortPanel className="grid grid-cols-6 mb-1 font-bold">
+    <SortPanel className="grid grid-cols-6 pb-3 border-b border-gold/20">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
-          className={className + " " + textStyle}
-          classNameCaret="w-2"
           key={sortKey}
           label={label}
           sortKey={sortKey}
           activeSort={activeSort}
+          className={`${className} ${textStyle}`}
+          classNameCaret="w-2.5 h-2.5 ml-1"
           onChange={(_sortKey, _sort) => {
             setActiveSort({
               sortKey: _sortKey,
@@ -100,36 +105,40 @@ const GuildMemberRow = ({
 
   return (
     <div
-      className={clsx("flex grid grid-cols-6 rounded", {
-        "bg-blueish/20": guildMember.isUser,
-      })}
+      className={clsx(
+        "grid grid-cols-6 w-full py-1 cursor-pointer items-center hover:bg-gold/5 rounded-lg transition-colors duration-200 mb-1",
+        {
+          "bg-blueish/20 hover:bg-blueish/30": guildMember.isUser,
+        },
+      )}
     >
       <div
-        className="col-span-5 grid grid-cols-5 gap-1 text-md hover:opacity-70 p-1"
+        className="col-span-6 grid grid-cols-6 items-center"
         onClick={() => {
           viewPlayerInfo(ContractAddress(guildMember.address));
         }}
       >
-        <p className="italic">{guildMember.rank === Number.MAX_SAFE_INTEGER ? `☠️` : `#${guildMember.rank}`}</p>
-        <p className="col-span-2 flex flex-row">
-          <span>{guildMember.isGuildMaster && <Crown className="w-6 fill-gold" />}</span>
-          <span className="truncate font-bold h6">{guildMember.name}</span>
+        <p className="col-span-1 text-center font-medium italic px-1">
+          {guildMember.rank === Number.MAX_SAFE_INTEGER ? `☠️` : `#${guildMember.rank}`}
         </p>
-        <p className="text-center">{currencyIntlFormat(guildMember.points)}</p>
-        <p className="text-center text-sm">{guildMember.age}</p>
+        <p className="col-span-2 flex flex-row items-center truncate font-semibold text-gold/90 px-1">
+          {guildMember.isGuildMaster && <Crown className="w-6 fill-gold" />}
+          <span className="truncate">{guildMember.name}</span>
+        </p>
+        <p className="col-span-2 font-medium text-amber-200/90 px-1">{currencyIntlFormat(guildMember.points)}</p>
+        <p className="col-span-1 font-medium px-1">{guildMember.age}</p>
       </div>
 
-      {kickButtonEnabled && (
-        <Trash
-          onClick={() => removeGuildMember(guildMember.address)}
-          className={clsx(
-            "m-auto self-center w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all",
-            {
+      <div className="flex justify-center">
+        {kickButtonEnabled && (
+          <Trash
+            onClick={() => removeGuildMember(guildMember.address)}
+            className={clsx("w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all", {
               "pointer-events-none": isLoading,
-            },
-          )}
-        />
-      )}
+            })}
+          />
+        )}
+      </div>
     </div>
   );
 };

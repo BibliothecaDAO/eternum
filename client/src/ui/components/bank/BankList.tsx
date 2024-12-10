@@ -64,7 +64,7 @@ export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }:
   }, [bankEntityId, structureEntityId]);
 
   return (
-    <div className="m-4">
+    <div className="amm-selector m-4">
       <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
         <Tabs.List>
           {tabs.map((tab, index) => (

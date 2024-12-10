@@ -60,7 +60,6 @@ mod SeasonResourceERC20 {
     fn constructor(
         ref self: ContractState,
         default_admin: ContractAddress,
-        minter: ContractAddress,
         upgrader: ContractAddress,
         name: ByteArray,
         symbol: ByteArray,
@@ -69,7 +68,6 @@ mod SeasonResourceERC20 {
         self.accesscontrol.initializer();
 
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, default_admin);
-        self.accesscontrol._grant_role(MINTER_ROLE, minter);
         self.accesscontrol._grant_role(UPGRADER_ROLE, upgrader);
     }
 

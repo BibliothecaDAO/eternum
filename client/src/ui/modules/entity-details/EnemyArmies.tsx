@@ -33,7 +33,7 @@ export const EnemyArmies = ({
     return ownArmySelected ? entityInfo : undefined;
   }, [ownArmySelected, entityInfo]);
 
-  const structureImmune = useIsStructureImmune(Number(ownArmystructure?.created_at), nextBlockTimestamp!);
+  const structureImmune = useIsStructureImmune(ownArmystructure, nextBlockTimestamp!);
 
   const ownArmyIsImmune = useMemo(() => {
     return ownArmystructure ? structureImmune : false;
@@ -42,7 +42,7 @@ export const EnemyArmies = ({
   const getArmyChip = useCallback(
     (army: ArmyInfo, index: number) => {
       const structure = getEntityInfo(army.entityOwner.entity_owner_id).structure;
-      const isImmune = useIsStructureImmune(Number(structure?.created_at), nextBlockTimestamp!) || ownArmyIsImmune;
+      const isImmune = useIsStructureImmune(structure, nextBlockTimestamp!) || ownArmyIsImmune;
 
       const button = ownArmySelected && (
         <Swords

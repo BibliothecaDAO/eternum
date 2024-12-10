@@ -1,8 +1,14 @@
 import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { formatTime } from "@/ui/utils/utils";
-import { findResourceById, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import {
+  findResourceById,
+  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
 import { tableOfContents } from "./utils";
@@ -15,7 +21,7 @@ export const WorldStructures = () => {
         content: (
           <>
             <HyperstructureCreationTable />
-            <HyperstructureConstructionTable />
+            <HyperstructureCompletionTable />
           </>
         ),
       },
@@ -53,11 +59,9 @@ export const WorldStructures = () => {
 const HyperstructureCreationTable = () => {
   const structureId = StructureType["Hyperstructure"];
 
-  const creationCost = configManager.structureCosts[structureId]
-    .filter((cost) => cost.resource === ResourcesIds["AncientFragment"])
-    .map((cost) => ({
-      ...cost,
-    }));
+  const creationCost = configManager.structureCosts[structureId].map((cost) => ({
+    ...cost,
+  }));
 
   return (
     <>
@@ -104,39 +108,50 @@ const HyperstructureCreationTable = () => {
     </>
   );
 };
-
-const HyperstructureConstructionTable = () => {
-  const constructionCost = configManager.structureCosts[StructureType.Hyperstructure]
-    .filter((cost) => cost.resource !== ResourcesIds["AncientFragment"])
-    .map((cost) => ({ ...cost }));
+const HyperstructureCompletionTable = () => {
+  const completionCosts = Object.keys(configManager.hyperstructureTotalCosts)
+    .map(
+      (key) =>
+        configManager.hyperstructureTotalCosts[Number(key) as keyof typeof configManager.hyperstructureTotalCosts],
+    )
+    .filter((tier) => tier.max_amount !== 0);
 
   return (
     <table className="not-prose w-full p-2 border-gold/10 mt-5">
       <thead>
         <tr>
-          <th colSpan={2}>Contruction Costs</th>
+          <th colSpan={2}>Completion Costs</th>
           <th colSpan={6}></th>
         </tr>
       </thead>
 
       <tbody>
         <tr className="border border-gold/10">
-          {[0, 1, 2, 3, 4].map((colIndex) => (
-            <td key={colIndex} className="p-2">
-              {constructionCost.slice(colIndex * 6, (colIndex + 1) * 6).map((cost, index) => (
-                <div key={index}>
-                  <ResourceCost className="truncate mb-1" resourceId={cost.resource} amount={cost.amount} size="lg" />
+          <div className="flex flex-col">
+            {completionCosts.map(({ resource, min_amount, max_amount }) => {
+              return (
+                <div className="flex px-2">
+                  {GET_HYPERSTRUCTURE_RESOURCES_PER_TIER(resource, true).map((resourceId) => {
+                    return (
+                      <td key={resourceId} className="p-2">
+                        <ResourceIcon size="md" resource={ResourcesIds[resourceId]} />
+                      </td>
+                    );
+                  })}
+                  <div className="ml-auto">
+                    {min_amount} - {max_amount}
+                  </div>
                 </div>
-              ))}
-            </td>
-          ))}
+              );
+            })}
+          </div>
         </tr>
       </tbody>
       <tfoot className="border border-gold/10">
         <tr>
           <td colSpan={6} className="p-2">
-            Contributing to the construction of a Hyperstructure can be done from the 'World Structures' menu. Donkeys
-            will be required to transfer the resources to the construction site.
+            Once constructed, the amount of resources needed to complete it is randomly assigned for each resource tier
+            Contributing to the construction of a Hyperstructure can be done from the 'World Structures' menu.
           </td>
         </tr>
       </tfoot>

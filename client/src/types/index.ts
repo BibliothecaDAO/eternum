@@ -1,4 +1,4 @@
-import { ID } from "@bibliothecadao/eternum";
+import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { Position } from "./Position";
 export type HexPosition = { col: number; row: number };
@@ -19,6 +19,12 @@ export enum ResourceMiningTypes {
   Dragonhide = "dragonhide",
 }
 
+export enum HyperstructureTypesNames {
+  STAGE_1 = "hyperstructure_stage0",
+  STAGE_2 = "hyperstructure_stage1",
+  STAGE_3 = "hyperstructure_stage2",
+}
+
 export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };
@@ -26,6 +32,8 @@ export interface StructureInfo {
   level: number;
   isMine: boolean;
   owner: { address: bigint };
+  structureType: StructureType;
+  hasWonder: boolean;
 }
 
 export interface ArmyData {
@@ -33,7 +41,8 @@ export interface ArmyData {
   matrixIndex: number;
   hexCoords: Position;
   isMine: boolean;
-  owner: { address: bigint };
+  owner: { address: bigint; ownerName: string; guildName: string };
+  order: string;
   color: string;
 }
 

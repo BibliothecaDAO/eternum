@@ -4,7 +4,7 @@
  * @param katana - The katana manifest containing contract addresses and ABIs
  * @param url - Optional RPC URL for the provider
  */
-import { DojoProvider } from "@dojoengine/core";
+import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
 import * as SystemProps from "../types/provider";
@@ -68,21 +68,22 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
 }
 const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
 class PromiseQueue {
-  private readonly queue: Array<{
+  private queue: Array<{
     providerCall: () => Promise<any>;
     resolve: (value: any) => void;
     reject: (reason?: any) => void;
+    batchId?: string; // Added batchId to group related calls
   }> = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
-  private readonly BATCH_DELAY = 3000; // ms to wait for batching
-  private readonly MAX_BATCH_SIZE = 4; // Maximum number of calls to batch together
+  private readonly BATCH_DELAY = 2000; // ms to wait for batching
+  private readonly MAX_BATCH_SIZE = 3; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
 
-  async enqueue<T>(providerCall: () => Promise<T>): Promise<T> {
+  async enqueue<T>(providerCall: () => Promise<T>, batchId?: string): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      this.queue.push({ providerCall, resolve, reject });
+      this.queue.push({ providerCall, resolve, reject, batchId });
 
       // Only set timeout if we're not already processing
       if (!this.processing) {
@@ -103,46 +104,67 @@ class PromiseQueue {
 
     try {
       while (this.queue.length > 0) {
-        // Get up to MAX_BATCH_SIZE calls for batching
-        const batch = this.queue.splice(0, Math.min(this.queue.length, this.MAX_BATCH_SIZE));
-        console.log("Processing batch of size:", batch.length); // Debug log
+        // Group calls by batchId
+        const batchGroups = new Map<string | undefined, typeof this.queue>();
+        this.queue.forEach((item) => {
+          const group = batchGroups.get(item.batchId) || [];
+          group.push(item);
+          batchGroups.set(item.batchId, group);
+        });
 
-        if (batch.length === 1) {
-          const { providerCall, resolve, reject } = batch[0];
-          try {
-            const result = await providerCall();
-            resolve(result);
-          } catch (error) {
-            reject(error);
+        // Process each batch group
+        for (const [batchId, group] of batchGroups) {
+          // Clear processed items from queue
+          this.queue = this.queue.filter((item) => item.batchId !== batchId);
+
+          // Split into chunks if needed while keeping batched items together
+          const chunks = [];
+          for (let i = 0; i < group.length; i += this.MAX_BATCH_SIZE) {
+            chunks.push(group.slice(i, i + this.MAX_BATCH_SIZE));
           }
-        } else {
-          try {
-            // Extract the actual calls from the providerCalls
-            const allCalls = await Promise.all(
-              batch.map(async ({ providerCall }) => {
-                // Access the internal call object
-                const fn = providerCall as any;
-                const calls = fn._transactionDetails;
-                // Handle both single calls and arrays of calls
-                return Array.isArray(calls) ? calls : [calls];
-              }),
-            );
 
-            // Flatten all calls into a single array
-            const flattenedCalls = allCalls.flat();
-            console.log("Batched calls:", flattenedCalls); // Debug log
+          // Process each chunk
+          for (const batch of chunks) {
+            console.log("Processing batch of size:", batch.length); // Debug log
 
-            // Get signer from first call
-            const signer = (batch[0].providerCall as any)._signer;
+            if (batch.length === 1) {
+              const { providerCall, resolve, reject } = batch[0];
+              try {
+                const result = await providerCall();
+                resolve(result);
+              } catch (error) {
+                reject(error);
+              }
+            } else {
+              try {
+                // Extract the actual calls from the providerCalls
+                const allCalls = await Promise.all(
+                  batch.map(async ({ providerCall }) => {
+                    // Access the internal call object
+                    const fn = providerCall as any;
+                    const calls = fn._transactionDetails;
+                    // Handle both single calls and arrays of calls
+                    return Array.isArray(calls) ? calls : [calls];
+                  }),
+                );
 
-            // Execute the batched transaction
-            const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
+                // Flatten all calls into a single array
+                const flattenedCalls = allCalls.flat();
+                console.log("Batched calls:", flattenedCalls); // Debug log
 
-            // Resolve all promises with the result
-            batch.forEach((item) => item.resolve(result));
-          } catch (error) {
-            console.error("Batch processing error:", error); // Debug log
-            batch.forEach((item) => item.reject(error));
+                // Get signer from first call
+                const signer = (batch[0].providerCall as any)._signer;
+
+                // Execute the batched transaction
+                const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
+
+                // Resolve all promises with the result
+                batch.forEach((item) => item.resolve(result));
+              } catch (error) {
+                console.error("Batch processing error:", error); // Debug log
+                batch.forEach((item) => item.reject(error));
+              }
+            }
           }
         }
       }
@@ -152,6 +174,33 @@ class PromiseQueue {
   }
 }
 
+export const buildVrfCalls = async ({
+  account,
+  call,
+  vrfProviderAddress,
+  addressToCall,
+}: {
+  account: AccountInterface;
+  call: Call;
+  vrfProviderAddress: string | undefined;
+  addressToCall: string;
+}): Promise<Call[]> => {
+  if (!account) return [];
+  if (!vrfProviderAddress) throw new Error("VRF provider address is not defined");
+
+  const requestRandomCall: Call = {
+    contractAddress: vrfProviderAddress,
+    entrypoint: "request_random",
+    calldata: [addressToCall, 0, account.address],
+  };
+
+  let calls = [];
+  calls.push(requestRandomCall);
+  calls.push(call);
+
+  return calls;
+};
+
 export class EternumProvider extends EnhancedDojoProvider {
   promiseQueue: PromiseQueue;
   /**
@@ -160,7 +209,11 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param katana - The katana manifest containing contract info
    * @param url - Optional RPC URL
    */
-  constructor(katana: any, url?: string) {
+  constructor(
+    katana: any,
+    url?: string,
+    private VRF_PROVIDER_ADDRESS?: string,
+  ) {
     super(katana, url);
     this.manifest = katana;
 
@@ -192,7 +245,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     if (isMultipleTransactions) {
       // For multiple calls, use the first call's entrypoint
       console.log({ entrypoint: transactionDetails[0].entrypoint });
-      txType = TransactionType[transactionDetails[0].entrypoint.toUpperCase() as keyof typeof TransactionType];
+      txType =
+        TransactionType[
+          transactionDetails
+            // remove VRF provider call from the list to define the transaction type
+            .filter((detail) => detail.contractAddress !== this.VRF_PROVIDER_ADDRESS)[0]
+            ?.entrypoint.toUpperCase() as keyof typeof TransactionType
+        ];
     } else {
       txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
@@ -204,6 +263,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     return transactionResult;
+  }
+
+  async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call) {
+    if (typeof window !== "undefined") {
+      console.log({ signer, transactionDetails });
+    }
+    const tx = await this.call(NAMESPACE, transactionDetails);
+    return tx;
   }
 
   /**
@@ -255,32 +322,32 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
-  public async bridge_resource_into_realm(props: SystemProps.BridgeResourceIntoRealmProps) {
-    const { token, through_bank_id, recipient_realm_entity_id, amount, client_fee_recipient, signer } = props;
+  public async bridge_resources_into_realm(props: SystemProps.BridgeResourcesIntoRealmProps) {
+    const { resources, through_bank_id, recipient_realm_entity_id, client_fee_recipient, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: token as string,
-        entrypoint: "approve",
-        calldata: [
-          getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
-          amount,
-          0, // u128, u128
-        ],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
-        entrypoint: "deposit",
-        calldata: [
-          token,
-          through_bank_id,
-          recipient_realm_entity_id,
-          amount,
-          0, // u128, u128
-          client_fee_recipient,
-        ],
-      },
-    ]);
+    const approvalCalls = resources.map((resource) => ({
+      contractAddress: resource.tokenAddress as string,
+      entrypoint: "approve",
+      calldata: [
+        getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+        resource.amount,
+        0, // u128, u128
+      ],
+    }));
+
+    const depositCalls = resources.map((resource) => ({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+      entrypoint: "deposit",
+      calldata: [
+        resource.tokenAddress,
+        through_bank_id,
+        recipient_realm_entity_id,
+        resource.amount,
+        0, // u128, u128
+        client_fee_recipient,
+      ],
+    }));
+    return await this.executeAndCheckTransaction(signer, [...approvalCalls, ...depositCalls]);
   }
 
   /**
@@ -318,21 +385,21 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_order(props: SystemProps.CreateOrderProps) {
     const { maker_id, maker_gives_resources, taker_id, taker_gives_resources, signer, expires_at } = props;
 
-    return await this.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
-        entrypoint: "create_order",
-        calldata: [
-          maker_id,
-          maker_gives_resources.length / 2,
-          ...maker_gives_resources,
-          taker_id,
-          taker_gives_resources.length / 2,
-          ...taker_gives_resources,
-          expires_at,
-        ],
-      },
-    ]);
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
+      entrypoint: "create_order",
+      calldata: [
+        maker_id,
+        maker_gives_resources.length / 2,
+        ...maker_gives_resources,
+        taker_id,
+        taker_gives_resources.length / 2,
+        ...taker_gives_resources,
+        expires_at,
+      ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -367,20 +434,20 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async accept_order(props: SystemProps.AcceptOrderProps) {
     const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
-        entrypoint: "accept_order",
-        calldata: [
-          taker_id,
-          trade_id,
-          maker_gives_resources.length / 2,
-          ...maker_gives_resources,
-          taker_gives_resources.length / 2,
-          ...taker_gives_resources,
-        ],
-      },
-    ]);
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
+      entrypoint: "accept_order",
+      calldata: [
+        taker_id,
+        trade_id,
+        maker_gives_resources.length / 2,
+        ...maker_gives_resources,
+        taker_gives_resources.length / 2,
+        ...taker_gives_resources,
+      ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -418,21 +485,21 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, taker_gives_actual_amount, signer } =
       props;
 
-    return await this.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
-        entrypoint: "accept_partial_order",
-        calldata: [
-          taker_id,
-          trade_id,
-          maker_gives_resources.length / 2,
-          ...maker_gives_resources,
-          taker_gives_resources.length / 2,
-          ...taker_gives_resources,
-          taker_gives_actual_amount,
-        ],
-      },
-    ]);
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
+      entrypoint: "accept_partial_order",
+      calldata: [
+        taker_id,
+        trade_id,
+        maker_gives_resources.length / 2,
+        ...maker_gives_resources,
+        taker_gives_resources.length / 2,
+        ...taker_gives_resources,
+        taker_gives_actual_amount,
+      ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -461,11 +528,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async cancel_order(props: SystemProps.CancelOrderProps) {
     const { trade_id, return_resources, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
       entrypoint: "cancel_order",
       calldata: [trade_id, return_resources.length / 2, ...return_resources],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -531,40 +600,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Create a new realm
-   *
-   * @param props - Properties for creating realm
-   * @param props.realm_id - ID for the new realm
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Create realm with ID 123
-   * {
-   *   realm_id: 123,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async create_realm(props: SystemProps.CreateRealmProps) {
-    const { realm_id, signer } = props;
-
-    const tx = await this.execute(
-      signer,
-      [
-        {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
-          entrypoint: "create",
-          calldata: [realm_id, "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"],
-        },
-      ],
-      NAMESPACE,
-    );
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  /**
    * Upgrade a realm's level
    *
    * @param props - Properties for upgrading realm
@@ -584,11 +619,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async upgrade_realm(props: SystemProps.UpgradeRealmProps) {
     const { realm_entity_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
       entrypoint: "upgrade_level",
       calldata: [realm_entity_id],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -608,7 +645,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
+  public async create_multiple_realms_dev(props: SystemProps.CreateMultipleRealmsDevProps) {
     let { realm_ids, signer } = props;
 
     let calldata = realm_ids.flatMap((realm_id) => {
@@ -623,6 +660,48 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     return await this.executeAndCheckTransaction(signer, calldata);
+  }
+  /**
+   * Create multiple realms at once
+   *
+   * @param props - Properties for creating realms
+   * @param props.realm_ids - Array of realm IDs to create
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Create realms with IDs 123, 456, 789
+   * {
+   *   realm_ids: [123, 456, 789],
+   *   signer: account
+   * }
+   * ```
+   */
+  public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
+    let { realm_ids, owner, frontend, signer, season_pass_address } = props;
+
+    const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
+
+    const approvalForAllCall = {
+      contractAddress: season_pass_address,
+      entrypoint: "set_approval_for_all",
+      calldata: [realmSystemsContractAddress, true],
+    };
+
+    const createCalls = realm_ids.map((realm_id) => ({
+      contractAddress: realmSystemsContractAddress,
+      entrypoint: "create",
+      calldata: [owner, realm_id, frontend],
+    }));
+
+    const approvalCloseForAllCall = {
+      contractAddress: season_pass_address,
+      entrypoint: "set_approval_for_all",
+      calldata: [realmSystemsContractAddress, false],
+    };
+
+    return await this.executeAndCheckTransaction(signer, [approvalForAllCall, ...createCalls, approvalCloseForAllCall]);
   }
 
   /**
@@ -649,11 +728,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async transfer_resources(props: SystemProps.TransferResourcesProps) {
     const { sending_entity_id, receiving_entity_id, resources, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
       entrypoint: "transfer",
       calldata: [sending_entity_id, receiving_entity_id, resources.length / 2, ...resources],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -680,11 +761,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async send_resources(props: SystemProps.SendResourcesProps) {
     const { sender_entity_id, recipient_entity_id, resources, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
       entrypoint: "send",
       calldata: [sender_entity_id, recipient_entity_id, resources.length / 2, ...resources],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -721,7 +804,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async send_resources_multiple(props: SystemProps.SendResourcesMultipleProps) {
     const { calls, signer } = props;
 
-    return await this.executeAndCheckTransaction(
+    const call = this.createProviderCall(
       signer,
       calls.map((call) => ({
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
@@ -729,6 +812,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: [call.sender_entity_id, call.recipient_entity_id, call.resources.length / 2, ...call.resources],
       })),
     );
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -755,18 +840,21 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async pickup_resources(props: SystemProps.PickupResourcesProps) {
     const { recipient_entity_id, owner_entity_id, resources, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
-        entrypoint: "approve",
-        calldata: [owner_entity_id, recipient_entity_id, resources.length / 2, ...resources],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
-        entrypoint: "pickup",
-        calldata: [recipient_entity_id, owner_entity_id, resources.length / 2, ...resources],
-      },
-    ]);
+    const approvalCall = {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+      entrypoint: "approve",
+      calldata: [owner_entity_id, recipient_entity_id, resources.length / 2, ...resources],
+    };
+
+    const pickupCall = {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+      entrypoint: "pickup",
+      calldata: [recipient_entity_id, owner_entity_id, resources.length / 2, ...resources],
+    };
+
+    const call = this.createProviderCall(signer, [approvalCall, pickupCall]);
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -849,11 +937,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_entity_name(props: SystemProps.SetEntityNameProps) {
     const { entity_id, name, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-name_systems`),
       entrypoint: "set_entity_name",
       calldata: [entity_id, name],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   private createProviderCall(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
@@ -890,17 +980,25 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
-    // return await this.executeAndCheckTransaction(signer, {
-    //   contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
-    //   entrypoint: "explore",
-    //   calldata: [unit_id, direction],
-    // });
+    const requestTwoCall: Call = {
+      contractAddress: this.VRF_PROVIDER_ADDRESS!,
+      entrypoint: "request_random",
+      calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_systems`), 0, signer.address],
+    };
 
-    const call = this.createProviderCall(signer, {
+    const requestRandomCall: Call = {
+      contractAddress: this.VRF_PROVIDER_ADDRESS!,
+      entrypoint: "request_random",
+      calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_generation_systems`), 0, signer.address],
+    };
+
+    const exploreCall: Call = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
       entrypoint: "explore",
       calldata: [unit_id, direction],
-    });
+    };
+
+    const call = this.createProviderCall(signer, [requestTwoCall, requestRandomCall, exploreCall]);
 
     return await this.promiseQueue.enqueue(call);
   }
@@ -935,11 +1033,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, directions, building_category, produce_resource_type, signer } = props;
     ["62", "1", "0", "4", "1"];
 
-    return this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "create",
       calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -970,11 +1070,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async destroy_building(props: SystemProps.DestroyBuildingProps) {
     const { entity_id, building_coord, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "destroy",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -1001,11 +1103,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async pause_production(props: SystemProps.PauseProductionProps) {
     const { entity_id, building_coord, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "pause_production",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -1032,11 +1136,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async resume_production(props: SystemProps.ResumeProductionProps) {
     const { entity_id, building_coord, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "resume_production",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -1260,11 +1366,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async buy_resources(props: SystemProps.BuyResourcesProps) {
     const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
       entrypoint: "buy",
       calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -1293,11 +1401,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async sell_resources(props: SystemProps.SellResourcesProps) {
     const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
       entrypoint: "sell",
       calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -1396,70 +1506,96 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_army(props: SystemProps.ArmyCreateProps) {
     const { army_owner_id, is_defensive_army, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_create",
       calldata: [army_owner_id, is_defensive_army],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async delete_army(props: SystemProps.ArmyDeleteProps) {
     const { army_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_delete",
       calldata: [army_id],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async army_buy_troops(props: SystemProps.ArmyBuyTroopsProps) {
     const { army_id, payer_id, troops, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_buy_troops",
       calldata: [army_id, payer_id, troops.knight_count, troops.paladin_count, troops.crossbowman_count],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async army_merge_troops(props: SystemProps.ArmyMergeTroopsProps) {
     const { from_army_id, to_army_id, troops, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_merge_troops",
       calldata: [from_army_id, to_army_id, troops],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async battle_start(props: SystemProps.BattleStartProps) {
     const { attacking_army_id, defending_army_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_start",
       calldata: [attacking_army_id, defending_army_id],
     });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  public async battle_resolve(props: SystemProps.BattleResolveProps) {
+    const { battle_id, army_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
+      entrypoint: "battle_resolve",
+      calldata: [battle_id, army_id],
+    });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async battle_force_start(props: SystemProps.BattleForceStartProps) {
     const { battle_id, defending_army_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_force_start",
       calldata: [battle_id, defending_army_id],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
   public async battle_join(props: SystemProps.BattleJoinProps) {
     const { battle_id, battle_side, army_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_join",
       calldata: [battle_id, battle_side, army_id],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async battle_leave(props: SystemProps.BattleLeaveProps) {
@@ -1478,21 +1614,30 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async battle_pillage(props: SystemProps.BattlePillageProps) {
     const { army_id, structure_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
-      entrypoint: "battle_pillage",
-      calldata: [army_id, structure_id],
+    const calls = await buildVrfCalls({
+      account: signer,
+      call: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
+        entrypoint: "battle_pillage",
+        calldata: [army_id, structure_id],
+      },
+      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+      addressToCall: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
     });
+
+    return await this.executeAndCheckTransaction(signer, calls);
   }
 
   public async battle_claim(props: SystemProps.BattleClaimProps) {
     const { army_id, structure_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_claim",
       calldata: [army_id, structure_id],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async battle_claim_and_leave(props: SystemProps.BattleClaimAndLeaveProps) {
@@ -1545,31 +1690,37 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_guild(props: SystemProps.CreateGuildProps) {
     const { is_public, guild_name, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "create_guild",
       calldata: [is_public, guild_name],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async join_guild(props: SystemProps.JoinGuildProps) {
     const { guild_entity_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "join_guild",
       calldata: [guild_entity_id],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async whitelist_player(props: SystemProps.WhitelistPlayerProps) {
     const { player_address_to_whitelist, guild_entity_id, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "whitelist_player",
       calldata: [player_address_to_whitelist, guild_entity_id],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async transfer_guild_ownership(props: SystemProps.TransferGuildOwnership) {
@@ -1696,6 +1847,26 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_season_config",
       calldata: [season_pass_address, realms_address, lords_address, start_at],
+    });
+  }
+
+  public async set_vrf_config(props: SystemProps.SetVRFConfigProps) {
+    const { vrf_provider_address, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_vrf_config",
+      calldata: [vrf_provider_address],
+    });
+  }
+
+  public async set_season_bridge_config(props: SystemProps.SetSeasonBridgeConfigProps) {
+    const { close_after_end_seconds, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_season_bridge_config",
+      calldata: [close_after_end_seconds],
     });
   }
 
@@ -1980,38 +2151,57 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async create_hyperstructure(props: SystemProps.CreateHyperstructureProps) {
     const { creator_entity_id, coords, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "create",
-      calldata: [creator_entity_id, coords],
+
+    const vrfCalls = await buildVrfCalls({
+      account: signer,
+      call: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+        entrypoint: "create",
+        calldata: [creator_entity_id, coords.x, coords.y],
+      },
+      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+      addressToCall: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
     });
+
+    const call = this.createProviderCall(signer, vrfCalls);
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
     const { hyperstructure_entity_id, contributor_entity_id, contributions, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "contribute_to_construction",
       calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async set_access(props: SystemProps.SetAccessProps) {
     const { hyperstructure_entity_id, access, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "set_access",
       calldata: [hyperstructure_entity_id, access],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async end_game(props: SystemProps.EndGameProps) {
     const { signer, hyperstructure_contributed_to, hyperstructure_shareholder_epochs } = props;
-    return await this.executeAndCheckTransaction(signer, {
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "end_game",
       calldata: [hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
     });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async register_to_leaderboard(props: SystemProps.RegisterToLeaderboardProps) {
@@ -2034,11 +2224,26 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async set_co_owners(props: SystemProps.SetCoOwnersProps) {
     const { hyperstructure_entity_id, co_owners, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "set_co_owners",
       calldata: [hyperstructure_entity_id, co_owners],
     });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  public async get_points(props: SystemProps.GetPointsProps) {
+    const { player_address, hyperstructure_contributed_to, hyperstructure_shareholder_epochs, signer } = props;
+
+    const call = await this.callAndReturnResult(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+      entrypoint: "get_points",
+      calldata: [player_address, hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
+    });
+
+    return call;
   }
 
   public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {

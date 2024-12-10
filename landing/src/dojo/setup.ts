@@ -26,8 +26,10 @@ export async function setup({ ...config }: DojoConfig) {
     "AddressName",
     "Realm",
     "Owner",
-    "Hyperstructure",
     // points
+    "Hyperstructure",
+    "Epoch",
+    "Season",
     "Contribution",
     "HyperstructureResourceConfig",
     "HyperstructureConfig",
@@ -38,10 +40,13 @@ export async function setup({ ...config }: DojoConfig) {
     "Structure",
     // todo: these are needed only for the bridge: how to improve this?
     "Position",
+    "WeightConfig",
+    "CapacityConfig",
     "EntityOwner",
     "ArrivalTime",
     "OwnedResourcesTracker",
     "Weight",
+    "Resource",
   ]) as any;
 
   const filteredEvents = getFilteredEvents([

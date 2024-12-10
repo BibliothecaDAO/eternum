@@ -112,7 +112,7 @@ export const MarketOrderPanel = ({
   const isResourcesLocked = useIsResourcesLocked(entityId);
 
   return (
-    <div className="grid grid-cols-2 gap-4 p-4 h-full">
+    <div className="order-book-selector grid grid-cols-2 gap-4 p-4 h-full">
       <MarketOrders
         offers={selectedResourceAskOffers}
         resourceId={resourceId}
@@ -151,7 +151,7 @@ const MarketOrders = ({
   }, [offers]);
 
   return (
-    <div className=" h-full flex flex-col gap-4">
+    <div className="h-full flex flex-col gap-4">
       {/* Market Price */}
       <div
         className={`text-2xl flex  font-bold  justify-between py-4 px-8 border-gold/10 border rounded-xl ${
@@ -172,7 +172,11 @@ const MarketOrders = ({
         </div>
       </div>
 
-      <div className="p-1 bg-brown  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto rounded-xl">
+      <div
+        className={`p-1 bg-brown  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto rounded-xl ${
+          isBuy ? "order-buy-selector" : "order-sell-selector"
+        }`}
+      >
         <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
         <div
@@ -243,11 +247,14 @@ const OrderRow = ({
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
   const lordsManager = new ResourceManager(dojo.setup, entityId, ResourcesIds.Lords);
-  const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [updateBalance]);
+  const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [entityId, updateBalance]);
 
   const resourceManager = useResourceManager(entityId, offer.makerGets[0].resourceId);
 
-  const resourceBalance = useMemo(() => Number(resourceManager.getResource()?.balance || 0n), [updateBalance]);
+  const resourceBalance = useMemo(
+    () => Number(resourceManager.getResource()?.balance || 0n),
+    [entityId, updateBalance],
+  );
 
   const { getRealmAddressName } = useRealm();
 
@@ -435,6 +442,7 @@ const OrderRow = ({
         <ConfirmationPopup
           title="Confirm Trade"
           onConfirm={onAccept}
+          disabled={donkeysNeeded > donkeyBalance || donkeyBalance === 0}
           onCancel={() => {
             setConfirmOrderModal(false);
           }}
@@ -591,7 +599,11 @@ const OrderCreation = ({
   }, [donkeyBalance, donkeysNeeded, resourceId]);
 
   return (
-    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto  bg-gold/5 border-gold/10 border rounded-xl">
+    <div
+      className={`flex justify-between p-4 text-xl flex-wrap mt-auto  bg-gold/5 border-gold/10 border rounded-xl ${
+        isBuy ? "order-create-buy-selector" : "order-create-sell-selector"
+      }`}
+    >
       <div className="flex w-full gap-8">
         <div className="w-1/3 gap-1 flex flex-col">
           <div className="uppercase text-sm flex gap-2 font-bold">
@@ -646,7 +658,7 @@ const OrderCreation = ({
       </div>
       <div className="mt-8 ml-auto text-right w-auto font-bold text-lg">
         <div>
-          <div className="flex justify-between gap-8">
+          <div className="donkeys-used-selector flex justify-between gap-8">
             <div>Donkeys Used</div>
             <div className="flex gap-2">
               {donkeysNeeded.toLocaleString()}{" "}

@@ -3,7 +3,7 @@ import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
+import { useIsResourcesLocked, useStructures } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
@@ -40,6 +40,12 @@ export const ResourceSwap = ({
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
+  const { getStructureByEntityId } = useStructures();
+
+  const bankProtector = useMemo(() => {
+    const structure = getStructureByEntityId(bankEntityId);
+    return structure?.protector;
+  }, [bankEntityId]);
 
   const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
@@ -86,19 +92,39 @@ export const ResourceSwap = ({
     setIsLoading(true);
     const operation = isBuyResource ? setup.systemCalls.buy_resources : setup.systemCalls.sell_resources;
 
-    operation({
-      signer: account,
-      bank_entity_id: bankEntityId,
-      entity_id: entityId,
-      resource_type: resourceId,
-      // todo: rounding error in contracts
-      amount: multiplyByPrecision(Number(resourceAmount.toFixed(2))),
-    }).finally(() => {
-      playLordsSound();
-      setIsLoading(false);
-      setOpenConfirmation(false);
-    });
-  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount]);
+    const performSwap = () => {
+      return operation({
+        signer: account,
+        bank_entity_id: bankEntityId,
+        entity_id: entityId,
+        resource_type: resourceId,
+        amount: multiplyByPrecision(Number(resourceAmount.toFixed(2))),
+      });
+    };
+
+    if (bankProtector?.battle_id) {
+      // If there's a bank protector in battle, resolve battle first then perform swap
+      setup.systemCalls
+        .battle_resolve({
+          signer: account,
+          battle_id: bankProtector.battle_id,
+          army_id: bankProtector.entity_id,
+        })
+        .then(performSwap)
+        .finally(() => {
+          playLordsSound();
+          setIsLoading(false);
+          setOpenConfirmation(false);
+        });
+    } else {
+      // If no bank protector, just perform swap
+      performSwap().finally(() => {
+        playLordsSound();
+        setIsLoading(false);
+        setOpenConfirmation(false);
+      });
+    }
+  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, bankProtector]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
@@ -200,19 +226,19 @@ export const ResourceSwap = ({
         onConfirm={onSwap}
         onCancel={() => setOpenConfirmation(false)}
       >
-        <div>
-          <div className="flex items-center justify-center space-x-2">
+        <div className="amm-swap-fee-selector">
+          <div className=" flex items-center justify-center space-x-2">
             <div className="flex justify-center items-center text-danger">
-              -{negativeAmount}
+              -{negativeAmount.toLocaleString()}
               <ResourceIcon resource={negativeResource} size="md" />
             </div>
             <span>→</span>
             <div className="flex items-center text-green">
-              +{positiveAmount}
+              +{positiveAmount.toLocaleString()}
               <ResourceIcon resource={positiveResource} size="md" />
             </div>
           </div>
-          <div className="bg-gold/10 p-2 rounded-lg h-auto">
+          <div className="amm-swap-donkey-selector bg-gold/10 p-2 rounded-lg h-auto">
             <div className="flex flex-col p-2 items-center">
               <TravelInfo
                 entityId={entityId}
@@ -249,7 +275,7 @@ export const ResourceSwap = ({
 
   return (
     <div>
-      <div className="mx-auto bg-gold/10 px-3 py-1">
+      <div className="amm-swap-selector mx-auto bg-gold/10 px-3 py-1">
         <div className="relative my-2 space-y-1">
           {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
           <div className="absolute left-1/2 top-[94px]">
@@ -306,7 +332,7 @@ export const ResourceSwap = ({
           </div>
           <div className="w-full flex flex-col justify-center mt-4">
             <Button
-              className="text-brown"
+              className="swap-button-selector text-brown"
               isLoading={false}
               disabled={!canSwap}
               onClick={() => setOpenConfirmation(true)}

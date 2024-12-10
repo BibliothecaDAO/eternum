@@ -1,4 +1,3 @@
-import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
@@ -30,38 +29,31 @@ declare module "@tanstack/react-router" {
 const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
-  const setupResult = await setup(dojoConfig);
-  /*const config = {
-    starknetNetwork: networks.mainnet,
-    arkchainNetwork: networks.mainnet,
-  };*/
 
-  if (!setupResult) {
-    root.render(
-      <div className="flex-grow flex items-center justify-center text-gold h-screen">
-        <div className="flex flex-col items-center animate-pulse">
-          <EternumLogo className="w-24 h-24 fill-gold mx-auto pt-8" />
-          <TypeH1 className="text-center mt-4 text-ellipsis">Loading...</TypeH1>
-        </div>
-      </div>,
-    );
-  } else {
-    root.render(
-      <StrictMode>
-        <NuqsAdapter>
-          <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-            <StarknetProvider>
-              <DojoProvider value={setupResult}>
-                {/*<ArkProvider config={config}>*/}
-                <DojoEventListener>
-                  <RouterProvider router={router} />
-                </DojoEventListener>
-                {/*</ArkProvider>*/}
-              </DojoProvider>
-            </StarknetProvider>
-          </ThemeProvider>
-        </NuqsAdapter>
-      </StrictMode>,
-    );
-  }
+  root.render(
+    <div className="flex-grow flex items-center justify-center text-gold h-screen bg-brown w-screen">
+      <div className="flex flex-col items-center animate-pulse">
+        <img src="/images/eternumloader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
+        <TypeH1 className="text-center mt-4 text-ellipsis">Loading...</TypeH1>
+      </div>
+    </div>,
+  );
+
+  const setupResult = await setup(dojoConfig);
+
+  root.render(
+    <StrictMode>
+      <NuqsAdapter>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <StarknetProvider>
+            <DojoProvider value={setupResult}>
+              <DojoEventListener>
+                <RouterProvider router={router} />
+              </DojoEventListener>
+            </DojoProvider>
+          </StarknetProvider>
+        </ThemeProvider>
+      </NuqsAdapter>
+    </StrictMode>,
+  );
 }

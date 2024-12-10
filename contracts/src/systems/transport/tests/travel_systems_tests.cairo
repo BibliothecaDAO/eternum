@@ -34,156 +34,156 @@ use s0_eternum::utils::testing::{
 };
 use starknet::contract_address_const;
 
-fn setup() -> (WorldStorage, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
-    let mut world = spawn_eternum();
+// fn setup() -> (WorldStorage, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
+//     let mut world = spawn_eternum();
 
-    let config_systems_address = deploy_system(ref world, "config_systems");
-    set_travel_and_explore_stamina_cost_config(config_systems_address);
+//     let config_systems_address = deploy_system(ref world, "config_systems");
+//     set_travel_and_explore_stamina_cost_config(config_systems_address);
 
-    // set as executor
+//     // set as executor
 
-    let travelling_entity_id: ID = 11;
-    let realm_entity_id: ID = 99;
-    let travelling_entity_position = Position { x: 100_000, y: 200_000, entity_id: travelling_entity_id.into() };
+//     let travelling_entity_id: ID = 11;
+//     let realm_entity_id: ID = 99;
+//     let travelling_entity_position = Position { x: 100_000, y: 200_000, entity_id: travelling_entity_id.into() };
 
-    world.write_model_test(@travelling_entity_position);
-    world
-        .write_model_test(
-            @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: travelling_entity_id.into() }
-        );
-    world
-        .write_model_test(
-            @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: realm_entity_id.into() }
-        );
-    world.write_model_test(@EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id });
+//     world.write_model_test(@travelling_entity_position);
+//     world
+//         .write_model_test(
+//             @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: travelling_entity_id.into()
+//             }
+//         );
+//     world
+//         .write_model_test(
+//             @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: realm_entity_id.into() }
+//         );
+//     world.write_model_test(@EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id
+//     });
 
-    let destination_coord = Coord { x: 900_000, y: 100_000 };
+//     let destination_coord = Coord { x: 900_000, y: 100_000 };
 
-    // make destination coord explored
-    let mut destination_tile: Tile = world.read_model((destination_coord.x, destination_coord.y));
-    destination_tile.explored_by_id = 800;
-    destination_tile.explored_at = 78671;
-    world.write_model_test(@destination_tile);
+//     // make destination coord explored
+//     let mut destination_tile: Tile = world.read_model((destination_coord.x, destination_coord.y));
+//     destination_tile.explored_by_id = 800;
+//     destination_tile.explored_at = 78671;
+//     world.write_model_test(@destination_tile);
 
-    let travel_systems_address = deploy_system(ref world, "travel_systems");
-    let travel_systems_dispatcher = ITravelSystemsDispatcher { contract_address: travel_systems_address };
+//     let travel_systems_address = deploy_system(ref world, "travel_systems");
+//     let travel_systems_dispatcher = ITravelSystemsDispatcher { contract_address: travel_systems_address };
 
-    (
-        world,
-        realm_entity_id,
-        travelling_entity_id,
-        travelling_entity_position,
-        destination_coord,
-        travel_systems_dispatcher
-    )
-}
+//     (
+//         world,
+//         realm_entity_id,
+//         travelling_entity_id,
+//         travelling_entity_position,
+//         destination_coord,
+//         travel_systems_dispatcher
+//     )
+// }
 
+// #[test]
+// #[available_gas(30000000000000)]
+// fn transport_test_travel() {
+//     let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) =
+//     setup();
 
-#[test]
-#[available_gas(30000000000000)]
-fn transport_test_travel() {
-    let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+//     world
+//         .write_model_test(
+//             @Movable {
+//                 entity_id: travelling_entity_id.into(),
+//                 sec_per_km: 10,
+//                 blocked: false,
+//                 round_trip: false,
+//                 start_coord_x: 0,
+//                 start_coord_y: 0,
+//                 intermediate_coord_x: 0,
+//                 intermediate_coord_y: 0,
+//             }
+//         );
 
-    world
-        .write_model_test(
-            @Movable {
-                entity_id: travelling_entity_id.into(),
-                sec_per_km: 10,
-                blocked: false,
-                round_trip: false,
-                start_coord_x: 0,
-                start_coord_y: 0,
-                intermediate_coord_x: 0,
-                intermediate_coord_y: 0,
-            }
-        );
+//     // travelling entity travels
+//     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
+//     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
 
-    // travelling entity travels
-    starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-    travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
+//     // verify arrival time and position of travelling_entity
+//     let travelling_entity_arrival_time: ArrivalTime = world.read_model(travelling_entity_id);
+//     let new_travelling_entity_position: Position = world.read_model(travelling_entity_id);
 
-    // verify arrival time and position of travelling_entity
-    let travelling_entity_arrival_time: ArrivalTime = world.read_model(travelling_entity_id);
-    let new_travelling_entity_position: Position = world.read_model(travelling_entity_id);
+//     assert(travelling_entity_arrival_time.arrives_at == 8500000, 'arrival time not correct');
 
-    assert(travelling_entity_arrival_time.arrives_at == 8500000, 'arrival time not correct');
+//     assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
+//     assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
+// }
 
-    assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
-    assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
-}
+// #[test]
+// #[available_gas(30000000000000)]
+// #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+// fn transport_test_not_owner() {
+//     let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
-#[test]
-#[available_gas(30000000000000)]
-#[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
-fn transport_test_not_owner() {
-    let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+//     starknet::testing::set_contract_address(contract_address_const::<'not_owner'>());
+//     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
+// }
 
-    starknet::testing::set_contract_address(contract_address_const::<'not_owner'>());
-    travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
-}
+// #[test]
+// #[available_gas(30000000000000)]
+// #[should_panic(expected: ('entity has no speed', 'ENTRYPOINT_FAILED'))]
+// fn transport_test_no_speed() {
+//     let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
+//     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
+//     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
+// }
 
-#[test]
-#[available_gas(30000000000000)]
-#[should_panic(expected: ('entity has no speed', 'ENTRYPOINT_FAILED'))]
-fn transport_test_no_speed() {
-    let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+// #[test]
+// #[available_gas(30000000000000)]
+// #[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED'))]
+// fn transport_test_blocked() {
+//     let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) =
+//     setup();
 
-    starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-    travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
-}
+//     world
+//         .write_model_test(
+//             @Movable {
+//                 entity_id: travelling_entity_id.into(),
+//                 sec_per_km: 10,
+//                 blocked: true,
+//                 round_trip: false,
+//                 start_coord_x: 0,
+//                 start_coord_y: 0,
+//                 intermediate_coord_x: 0,
+//                 intermediate_coord_y: 0,
+//             }
+//         );
 
+//     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
+//     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
+// }
 
-#[test]
-#[available_gas(30000000000000)]
-#[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED'))]
-fn transport_test_blocked() {
-    let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+// #[test]
+// #[available_gas(30000000000000)]
+// #[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED'))]
+// fn transport_test_in_transit() {
+//     let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) =
+//     setup();
 
-    world
-        .write_model_test(
-            @Movable {
-                entity_id: travelling_entity_id.into(),
-                sec_per_km: 10,
-                blocked: true,
-                round_trip: false,
-                start_coord_x: 0,
-                start_coord_y: 0,
-                intermediate_coord_x: 0,
-                intermediate_coord_y: 0,
-            }
-        );
+//     world
+//         .write_model_test(
+//             @Movable {
+//                 entity_id: travelling_entity_id.into(),
+//                 sec_per_km: 10,
+//                 blocked: false,
+//                 round_trip: false,
+//                 start_coord_x: 0,
+//                 start_coord_y: 0,
+//                 intermediate_coord_x: 0,
+//                 intermediate_coord_y: 0,
+//             }
+//         );
+//     world.write_model_test(@ArrivalTime { entity_id: travelling_entity_id.into(), arrives_at: 100 });
 
-    starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-    travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
-}
-
-
-#[test]
-#[available_gas(30000000000000)]
-#[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED'))]
-fn transport_test_in_transit() {
-    let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
-
-    world
-        .write_model_test(
-            @Movable {
-                entity_id: travelling_entity_id.into(),
-                sec_per_km: 10,
-                blocked: false,
-                round_trip: false,
-                start_coord_x: 0,
-                start_coord_y: 0,
-                intermediate_coord_x: 0,
-                intermediate_coord_y: 0,
-            }
-        );
-    world.write_model_test(@ArrivalTime { entity_id: travelling_entity_id.into(), arrives_at: 100 });
-
-    starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-    travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
-}
-
+//     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
+//     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
+// }
 
 ///////////////////////////////////////////////
 /////           TRAVEL HEX

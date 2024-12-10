@@ -1,5 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
+import { DUMMY_HYPERSTRUCTURE_ENTITY_ID } from "@/three/scenes/constants";
 import { divideByPrecision, toHexString, toInteger } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
@@ -7,6 +8,7 @@ import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, ru
 import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
+import { useEntitiesUtils } from "./useEntities";
 
 export type ProgressWithPercentage = {
   percentage: number;
@@ -24,6 +26,8 @@ export const useHyperstructures = () => {
     },
   } = useDojo();
 
+  const { getAddressNameFromEntity } = useEntitiesUtils();
+
   const hyperstructures = useEntityQuery([Has(Structure), HasValue(Structure, { category: "Hyperstructure" })]).map(
     (hyperstructureEntityId) => {
       const hyperstructure = getComponentValue(Structure, hyperstructureEntityId);
@@ -37,16 +41,21 @@ export const useHyperstructures = () => {
       const owner = toHexString(ownerComponent?.address || 0n);
       const isOwner = ContractAddress(ownerComponent?.address ?? 0n) === ContractAddress(account.address);
       const entityName = getComponentValue(EntityName, hyperstructureEntityId);
+      const ownerName = getAddressNameFromEntity(hyperstructure?.entity_id!);
+
       return {
         ...hyperstructure,
         ...position,
         ...contributions,
         owner,
         isOwner,
+        ownerName,
         entityIdPoseidon: hyperstructureEntityId,
         name: entityName
           ? shortString.decodeShortString(entityName.name.toString())
-          : `Hyperstructure ${hyperstructure?.entity_id}`,
+          : `Hyperstructure ${
+              hyperstructure?.entity_id === Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID) ? "" : hyperstructure?.entity_id
+            }`,
       };
     },
   );
@@ -172,8 +181,9 @@ const getAllProgressesAndTotalPercentage = (
   hyperstructureEntityId: ID,
 ) => {
   let percentage = 0;
-  const allProgresses = Object.values(configManager.hyperstructureTotalCosts).map(
-    ({ resource, amount: resourceCost }) => {
+  const allProgresses = configManager
+    .getHyperstructureRequiredAmounts(hyperstructureEntityId)
+    .map(({ resource, amount: resourceCost }) => {
       let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
       const resourcePercentage = !foundProgress
         ? 0
@@ -187,8 +197,7 @@ const getAllProgressesAndTotalPercentage = (
       };
       percentage += resourcePercentage;
       return progress;
-    },
-  );
+    });
   const totalPercentage = percentage / allProgresses.length;
   return { allProgresses, percentage: totalPercentage };
 };

@@ -498,12 +498,13 @@ export function defineContractComponents(world: World) {
           last_updated_by: RecsType.BigInt,
           last_updated_timestamp: RecsType.Number,
           access: RecsType.String,
+          randomness: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "Hyperstructure",
-            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum"],
+            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum", "felt252"],
             customTypes: ["Access"],
           },
         },
@@ -532,12 +533,17 @@ export function defineContractComponents(world: World) {
     HyperstructureResourceConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, resource_type: RecsType.Number, amount_for_completion: RecsType.BigInt },
+        {
+          config_id: RecsType.Number,
+          resource_tier: RecsType.Number,
+          min_amount: RecsType.BigInt,
+          max_amount: RecsType.BigInt,
+        },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "HyperstructureResourceConfig",
-            types: ["u32", "u8", "u128"],
+            types: ["u32", "u8", "u128", "u128"],
             customTypes: [],
           },
         },
@@ -612,6 +618,44 @@ export function defineContractComponents(world: World) {
             namespace: "s0_eternum",
             name: "LeaderboardRegistered",
             types: ["contractaddress", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    LeaderboardRegisterContribution: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          hyperstructure_entity_id: RecsType.Number,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardRegisterContribution",
+            types: ["contractaddress", "u32", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    LeaderboardRegisterShare: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          hyperstructure_entity_id: RecsType.Number,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardRegisterShare",
+            types: ["contractaddress", "u32", "bool"],
             customTypes: [],
           },
         },
@@ -1201,6 +1245,25 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Season: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          start_at: RecsType.BigInt,
+          is_over: RecsType.Boolean,
+          ended_at: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "Season",
+            types: ["u32", "u64", "bool", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     SeasonAddressesConfig: (() => {
       return defineComponent(
         world,
@@ -1220,6 +1283,24 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    SeasonBridgeConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          close_after_end_seconds: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "SeasonBridgeConfig",
+            types: ["u32", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
     SettlementConfig: (() => {
       return defineComponent(
         world,
@@ -1959,6 +2040,25 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
+      HyperstructureStarted: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            hyperstructure_entity_id: RecsType.Number,
+            creator_address_name: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s0_eternum",
+              name: "HyperstructureStarted",
+              types: ["u32", "u32", "felt252", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
       HyperstructureFinished: (() => {
         return defineComponent(
           world,
@@ -1967,12 +2067,13 @@ const eventsComponents = (world: World) => {
             hyperstructure_entity_id: RecsType.Number,
             contributor_entity_id: RecsType.Number,
             timestamp: RecsType.Number,
+            hyperstructure_owner_name: RecsType.BigInt,
           },
           {
             metadata: {
               namespace: "s0_eternum",
               name: "HyperstructureFinished",
-              types: ["u32", "u32", "u32", "u64"],
+              types: ["u32", "u32", "u32", "felt252", "u64"],
               customTypes: [],
             },
           },

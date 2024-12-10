@@ -149,7 +149,7 @@ export const TransferBetweenEntities = ({
   }, [entitiesList]);
 
   return (
-    <div className="p-2 h-full">
+    <div className="transfer-selector p-2 h-full">
       <Headline className="text-center capitalize my-5">{currentStep?.title}</Headline>
 
       <div className="flex justify-center gap-4 mb-8 text-xl">

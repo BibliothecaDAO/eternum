@@ -1,0 +1,90 @@
+import RarityResourceTable from "@/components/RarityResourceTable";
+import ResourceIcon from "@/components/ResourceIcon";
+import TroopsTable from "@/components/TroopsTable";
+
+# Resources
+
+Resources are the foundation of **Eternum**'s economy. Each of the 22 resources plays a vital role in the game's
+ecosystem, from basic production to advanced military operations. All in-game resources can be traded freely and bridged
+out as ERC20 tokens through the central bank.
+
+## Resource Categories
+
+---
+
+### Basic Resources
+
+#### Food
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Wheat" id={254} />
+  <ResourceIcon name="Fish" id={255} />
+</div>
+
+Food is the cornerstone of your realm's economy:
+
+- Produced without additional resource inputs
+- Required for most production chains
+- Essential for maintaining troops and construction
+
+---
+
+#### Resource Tiers
+
+Resources are distributed across the 8,000 Realms based on rarity, creating natural scarcity and trade opportunities.
+
+<RarityResourceTable />
+
+---
+
+### Strategic Resources
+
+#### Military
+
+<TroopsTable />
+
+Military units have unique properties:
+
+- They can be traded as resources
+- Cannot be converted back to tradeable form once assigned to an army
+- Become permanent once assigned to armies but are transferable to other armies on the same hex
+
+#### Transport
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Donkeys" id={249} />
+</div>
+
+Essential for logistics:
+
+- Required for moving resources
+- Consumed during transport
+- Critical for trade and supply chains
+
+---
+
+### Special Resources
+
+#### **$LORDS** Currency
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Lords" id={253} />
+</div>
+
+**$LORDS** is Eternum's economic backbone:
+
+- Used for all market transactions
+- Bridgeable to external networks
+- Required for game fees and operations
+
+#### Ancient Fragments
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Ancient Fragments" id={29} />
+</div>
+
+Strategic end-game resource:
+
+- Only found in world map Fragment Mines
+- Required for Hyperstructures
+- Cannot be produced by Realms

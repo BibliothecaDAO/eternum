@@ -9,6 +9,7 @@ type TemplateVariables = {
   addressName: string;
   // 300 diamonds, 100 donkeys, 2000 gold
   resources: string;
+  tribeName: string;
 };
 
 export const formatSocialText = (template: string, variables: Partial<TemplateVariables>): string => {
@@ -19,9 +20,11 @@ export const formatSocialText = (template: string, variables: Partial<TemplateVa
 };
 
 export const twitterTemplates = {
-  battling: `⚔️ My army is battling another army in Eternum! ⚔️\n\nI am battling against {enemyName} with {attackerTroops} troops on my side against {defenderTroops} troops on their side.\n\nJoin the battle at {url} 🛡️`,
-  underSiege: `🏰 My realm is under siege in Eternum! 🏰\n\n{enemyName} is attacking with {attackerTroops} troops ⚔️ while I'm defending with {defenderTroops} troops 🛡️.\n\nHelp me keep my realm at {url} 👑`,
-  attacking: `🔥 I'm attacking {enemyName}'s realm in Eternum! 🔥\n\nI have {attackerTroops} troops 🗡️ against their {defenderTroops} troops.\n\nHelp me conquer their realm at {url} 🏰`,
-  settle: `I've joined the Eternum battle for glory.\nWars will be fought, tears will be shed.\n\n{realmName} has been settled. ⚔️\n\nSettle your realm at {url} and compete for 1 Million $LORDS in prizes! 🏆`,
-  pillage: `I, Ser {addressName}, have just raided {enemyName} from {resources} in @RealmsEternum.💰💰💰\n\nJoin the battle for victory at {url}`,
+  battling: `⚔️ CLASH OF ARMIES IN ETERNUM! ⚔️\n\nMy mighty force of {attackerTroops} troops engages {enemyName}'s {defenderTroops} troops in an epic battle for supremacy!\n\nWatch the carnage at {url} 🗡️`,
+  underSiege: `🚨 REALM UNDER SIEGE! 🚨\n\n{enemyName}'s army of {attackerTroops} troops lays siege to my {defenderTroops} brave defenders in @RealmsEternum!\n\nRally to my defense at {url} ⚔️\n\nThe fate of my realm hangs in the balance! 🏰`,
+  attacking: `⚔️ LAUNCHING AN ASSAULT! ⚔️\n\nLeading {attackerTroops} valiant warriors to conquer {enemyName}'s realm in @RealmsEternum!\n\nTheir {defenderTroops} defenders stand in our way...\n\nJoin the siege at {url} and claim glory! 🏰🔥`,
+  settle: `I've joined the Eternum battle for glory.\nWars will be fought, tears will be shed.\n\n{realmName} has been settled. ⚔️\n\nSettle your realm at {url} and join the conquest! 🏰`,
+  pillage: `🏰 SUCCESSFUL RAID! 🏰\n\nI, {addressName}, have plundered {enemyName}'s realm in @RealmsEternum!\n\nSpoils of war: {resources} 💰\n\nJoin the conquest at {url} and claim your share of glory! ⚔️`,
+  joinedTribe: `⚔️ NEW ALLIANCE FORGED! ⚔️\n\nI, {addressName}, have pledged allegiance to the mighty {tribeName} tribe in @RealmsEternum!\n\nUnited we stand, ready to forge our legacy across the lands!\n\nJoin our ranks at {url}! 🏰✨`,
+  createdTribe: `⚔️ A NEW POWER RISES! ⚔️\n\nI, {addressName}, have founded the {tribeName} tribe in @RealmsEternum!\n\nOur banners now fly over these lands as we forge our destiny!\n\nJoin our ranks at {url}! 🏰👑`,
 };

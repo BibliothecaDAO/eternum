@@ -37,7 +37,7 @@ export const BattleInfoLabel = () => {
                 battleEntityId={battle.entity_id}
                 dojo={dojo}
                 currentTimestamp={currentTimestamp}
-                structure={structure}
+                structure={structure as Structure}
               />
             ))}
           </div>

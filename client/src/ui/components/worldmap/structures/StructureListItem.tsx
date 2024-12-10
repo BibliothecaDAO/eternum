@@ -60,7 +60,7 @@ export const StructureListItem = ({
 
   const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0);
 
-  const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
+  const isImmune = useIsStructureImmune(structure, nextBlockTimestamp!);
 
   const battleButtons = useMemo(() => {
     if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");

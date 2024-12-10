@@ -2,7 +2,7 @@ import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattleManager } from "@/hooks/helpers/battles/useBattles";
 import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
-import { useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/useStructures";
+import { Structure, useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BattleSide } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
@@ -144,7 +144,7 @@ export const BattleView = () => {
       defenderHealth={defenderHealth}
       defenderTroops={defenderTroops}
       userArmiesInBattle={armies.userArmiesInBattle}
-      structure={structure}
+      structure={structure as Structure}
     />
   );
 };

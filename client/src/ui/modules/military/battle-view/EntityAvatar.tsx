@@ -1,4 +1,8 @@
+import { useDojo } from "@/hooks/context/DojoContext";
 import { Structure } from "@/hooks/helpers/useStructures";
+import { ID, RealmLevels } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 
 export const EntityAvatar = ({
@@ -24,7 +28,7 @@ export const EntityAvatar = ({
   if (isMercenary) {
     imgSource = "./images/avatars/mercenary.png";
   } else if (isRealm) {
-    imgSource = "./images/buildings/thumb/castle.png";
+    imgSource = getRealmImgFromEntityId(structure?.entity_id);
   } else if (isHyperstructure) {
     imgSource = "./images/buildings/thumb/hyperstructure.png";
   } else if (isFragmentMine) {
@@ -50,4 +54,26 @@ export const EntityAvatar = ({
       )}
     </div>
   );
+};
+
+const getRealmImgFromEntityId = (realmEntityId: ID | undefined) => {
+  const {
+    setup: {
+      components: { Realm },
+    },
+  } = useDojo();
+
+  if (realmEntityId) {
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+
+    switch (realm?.level) {
+      case RealmLevels.City - 1:
+        return "./images/buildings/thumb/castleOne.png";
+      case RealmLevels.Kingdom - 1:
+        return "./images/buildings/thumb/castleTwo.png";
+      case RealmLevels.Empire - 1:
+        return "./images/buildings/thumb/castleThree.png";
+    }
+  }
+  return "./images/buildings/thumb/castleZero.png";
 };

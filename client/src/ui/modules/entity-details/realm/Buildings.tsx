@@ -58,11 +58,11 @@ export const Buildings = ({ structure }: { structure: any }) => {
   };
 
   return (
-    <div className="w-full text-sm p-3">
+    <div className="buildings-selector w-full text-sm p-3">
       {/* Economy Section */}
       <div className="mb-4">
         <div
-          className={clsx("flex items-center cursor-pointer mb-2", {
+          className={clsx("economy-building-selector flex items-center cursor-pointer mb-2", {
             "pointer-events-none opacity-50": !economyBuildings.length,
           })}
           onClick={() => setShowEconomy(!showEconomy)}
@@ -179,6 +179,7 @@ const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction
             }
             variant="outline"
             withoutSound
+            className="pause-building-button-selector"
           >
             {building.paused ? "Resume Production" : "Pause Production"}
           </Button>

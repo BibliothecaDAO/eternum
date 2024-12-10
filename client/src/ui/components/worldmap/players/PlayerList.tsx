@@ -1,21 +1,17 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import useUIStore from "@/hooks/store/useUIStore";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
-import { ContractAddress, GuildInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, GuildInfo, Player, ResourcesIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { ListHeaderProps } from "../guilds/GuildList";
 
-export interface PlayerCustom {
-  name: string;
-  address: ContractAddress;
+export interface PlayerCustom extends Player {
   structures: string[];
   isUser: boolean;
-  rank: number;
-  points: number;
   isInvited: boolean;
   guild: GuildInfo | undefined;
 }
@@ -43,16 +39,14 @@ export const PlayerList = ({
   });
 
   return (
-    <div className="flex flex-col p-2 border rounded-xl h-full ">
+    <div className="flex flex-col h-full p-2 bg-brown-900/50 border border-gold/30 rounded-xl backdrop-blur-sm">
       <PlayerListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
-      <div className="space-y-2 overflow-y-auto">
+      <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
         {sortItems(players, activeSort, { sortKey: "rank", sort: "asc" }).map((player) => (
           <PlayerRow
             key={player.address}
             player={player}
-            onClick={() => {
-              viewPlayerInfo(ContractAddress(player.address));
-            }}
+            onClick={() => viewPlayerInfo(ContractAddress(player.address))}
             isGuildMaster={isGuildMaster}
             whitelistPlayer={whitelistPlayer}
             removePlayerFromWhitelist={removePlayerFromWhitelist}
@@ -64,29 +58,47 @@ export const PlayerList = ({
   );
 };
 
-const PlayerListHeader = ({ activeSort, setActiveSort }: ListHeaderProps) => {
+const PlayerListHeader = ({
+  activeSort,
+  setActiveSort,
+}: {
+  activeSort: SortInterface;
+  setActiveSort: (sort: SortInterface) => void;
+}) => {
   const sortingParams = useMemo(() => {
     return [
-      { label: "Rank", sortKey: "rank", className: "" },
-      { label: "Name", sortKey: "name", className: "col-span-2" },
-      { label: "Tribe", sortKey: "guild.name", className: "col-span-2" },
-      { label: "Pts", sortKey: "points", className: "" },
-      { label: "Structs", sortKey: "structures.length", className: "" },
+      { label: "Rank", sortKey: "rank", className: "col-span-1 text-center px-1" },
+      { label: "Name", sortKey: "name", className: "col-span-2 px-1" },
+      { label: "Tribe", sortKey: "guild.name", className: "col-span-2 px-1" },
+      { label: "Realms", sortKey: "realms", className: "col-span-1 text-center px-1" },
+      { label: "Mines", sortKey: "mines", className: "col-span-1 text-center px-1" },
+      { label: "Hypers", sortKey: "hyperstructures", className: "col-span-1 text-center px-1" },
+      { label: "Points", sortKey: "points", className: "col-span-2 text-center px-1" },
+      {
+        label: (
+          <div className="flex flex-row w-full gap-1 items-center">
+            LORDS
+            <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" />
+          </div>
+        ),
+        sortKey: "lords",
+        className: "col-span-2 text-center px-1",
+      },
     ];
   }, []);
 
-  const textStyle = "text-gray-gold font-bold";
+  const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
 
   return (
-    <SortPanel className="grid grid-cols-8 mb-1 font-bold">
+    <SortPanel className="grid grid-cols-12 pb-3 border-b border-gold/20">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
-          className={className + " " + textStyle}
-          classNameCaret="w-2"
           key={sortKey}
           label={label}
           sortKey={sortKey}
           activeSort={activeSort}
+          className={`${className} ${textStyle}`}
+          classNameCaret="w-2.5 h-2.5 ml-1"
           onChange={(_sortKey, _sort) => {
             setActiveSort({
               sortKey: _sortKey,
@@ -120,16 +132,25 @@ const PlayerRow = ({
 
   return (
     <div
-      className={clsx("flex grid grid-cols-8 rounded", {
-        "bg-blueish/20": player.isUser,
+      className={clsx("flex w-full rounded-lg transition-colors duration-200 mb-1", {
+        "bg-blueish/20 hover:bg-blueish/30": player.isUser,
+        "hover:bg-gold/5": !player.isUser,
       })}
     >
-      <div className="col-span-7 grid grid-cols-7 text-md hover:opacity-70 p-1" onClick={onClick}>
-        <p className="italic">{player.rank === Number.MAX_SAFE_INTEGER ? `☠️` : `#${player.rank}`}</p>
-        <p className="col-span-2 truncate h6">{player.name}</p>
-        <p className="col-span-2 truncate h6">{player.guild && `<${player.guild.name}>`}</p>
-        <p className="text-center">{currencyIntlFormat(player.points)}</p>
-        <p className="text-center">{player.structures.length}</p>
+      <div className="grid grid-cols-12 w-full py-1 cursor-pointer items-center" onClick={onClick}>
+        <p className="col-span-1 text-center font-medium italic px-1">
+          {player.rank === Number.MAX_SAFE_INTEGER ? "☠️" : `#${player.rank}`}
+        </p>
+        <p className="col-span-2 truncate font-semibold text-gold/90 px-1">{player.name}</p>
+        <p className="col-span-2 truncate text-emerald-300/90 px-1">{player.guild && `${player.guild.name}`}</p>
+        <p className="col-span-1 text-center font-medium px-1">{player.realms}</p>
+        <p className="col-span-1 text-center font-medium px-1">{player.mines}</p>
+        <p className="col-span-1 text-center font-medium px-1">{player.hyperstructures}</p>
+        <p className="col-span-2 font-medium text-amber-200/90 px-1">{currencyIntlFormat(player.points)}</p>
+        <div className="col-span-2 font-medium text-gold/90 px-1 flex items-center gap-1">
+          {currencyIntlFormat(player.lords)}
+          <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" />
+        </div>
       </div>
 
       {isGuildMaster &&
@@ -140,13 +161,13 @@ const PlayerRow = ({
               removePlayerFromWhitelist(player.address);
               setTooltip(null);
             }}
-            className={clsx("m-auto self-center w-4 fill-red/70 hover:fill-red/40 duration-100 transition-all", {
-              "animate-pulse ": isLoading,
-              "pointer-events-none": isLoading,
+            className={clsx("w-5 h-5 m-auto fill-red-400/90 hover:fill-red-500/90 transition-all duration-200", {
+              "animate-pulse opacity-50 pointer-events-none": isLoading,
+              "cursor-pointer": !isLoading,
             })}
             onMouseEnter={() =>
               setTooltip({
-                content: <div>Revoke tribe invitation</div>,
+                content: <div className="text-red-400">Revoke tribe invitation</div>,
                 position: "top",
               })
             }
@@ -158,13 +179,13 @@ const PlayerRow = ({
               whitelistPlayer(player.address);
               setTooltip(null);
             }}
-            className={clsx("m-auto self-center w-4 fill-gold/70 hover:fill-gold/40 duration-100 transition-all", {
-              "animate-pulse ": isLoading,
-              "pointer-events-none": isLoading,
+            className={clsx("w-5 h-5 m-auto fill-gold hover:fill-amber-400 transition-all duration-200", {
+              "animate-pulse opacity-50 pointer-events-none": isLoading,
+              "cursor-pointer": !isLoading,
             })}
             onMouseEnter={() =>
               setTooltip({
-                content: <div>Invite to tribe</div>,
+                content: <div className="text-gold">Invite to tribe</div>,
                 position: "top",
               })
             }

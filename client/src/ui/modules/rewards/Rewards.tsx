@@ -1,5 +1,5 @@
-import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { usePrizePool } from "@/hooks/helpers/use-rewards";
 import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -13,9 +13,10 @@ import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
+import { formatEther } from "viem";
 import { env } from "../../../../env";
 
-const REGISTRATION_DELAY = 60 * 60 * 24 * 7; // 1 week
+const REGISTRATION_DELAY = 1800; // 1 week
 
 export const Rewards = () => {
   const {
@@ -33,8 +34,9 @@ export const Rewards = () => {
   } = useDojo();
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [prizePool, setPrizePool] = useState<BigInt>(0n);
+  const prizePool = usePrizePool();
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(rewards));
 
@@ -50,6 +52,7 @@ export const Rewards = () => {
   const leaderboard = useComponentValue(Leaderboard, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
   const registerToLeaderboard = useCallback(async () => {
+    setIsLoading(true);
     const contributions = Array.from(getContributions());
     const epochs = getEpochs();
 
@@ -58,13 +61,16 @@ export const Rewards = () => {
       hyperstructure_contributed_to: contributions,
       hyperstructure_shareholder_epochs: epochs,
     });
+    setIsLoading(false);
   }, [getContributions, getEpochs]);
 
   const claimRewards = useCallback(async () => {
+    setIsLoading(true);
     await claim_leaderboard_rewards({
       signer: account,
       token: env.VITE_LORDS_ADDRESS!,
     });
+    setIsLoading(false);
   }, [account]);
 
   useEffect(() => {
@@ -79,7 +85,7 @@ export const Rewards = () => {
         }
 
         const difference = endTime - currentTime;
-        setTimeRemaining(formatTime(difference, undefined, false));
+        setTimeRemaining(formatTime(difference, undefined));
       };
 
       calculateTimeRemaining();
@@ -88,24 +94,6 @@ export const Rewards = () => {
       return () => clearInterval(timer);
     }
   }, [gameEnded]);
-
-  useEffect(() => {
-    const getPrizePool = async () => {
-      const season_pool_fee_recipient = configManager?.getResourceBridgeFeeSplitConfig().season_pool_fee_recipient;
-      const prizePool = await provider.provider.callContract({
-        contractAddress: env.VITE_LORDS_ADDRESS!,
-        entrypoint: "balance_of",
-        calldata: ["0x" + season_pool_fee_recipient.toString()],
-      });
-      prizePool;
-      setPrizePool(BigInt(prizePool[0]));
-    };
-    if (leaderboard && leaderboard.total_price_pool !== null) {
-      setPrizePool(leaderboard.total_price_pool!);
-    } else {
-      getPrizePool();
-    }
-  }, [leaderboard]);
 
   const registeredPlayers = useMemo(() => {
     const registeredPlayers = runQuery([Has(LeaderboardRegistered)]);
@@ -130,7 +118,7 @@ export const Rewards = () => {
 
   return (
     <OSWindow
-      width="400px"
+      width="600px"
       onClick={() => togglePopup(rewards)}
       show={isOpen}
       title={rewards}
@@ -138,37 +126,51 @@ export const Rewards = () => {
     >
       <div className="p-4">
         <div className="flex flex-col gap-4">
+          {/* Prize pool and registration time */}
           <div className="grid grid-cols-2 gap-4">
             <Compartment>
-              <div className="text-center text-lg font-semibold self-center w-full my-auto">
-                {prizePool.toString()} $LORDS total prize pool
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-sm font-bold uppercase">Total prize pool</div>
+
+                <div className="text-lg">{Number(formatEther(prizePool)).toFixed(2)} $LORDS</div>
               </div>
             </Compartment>
             <Compartment>
               <div className="text-center text-lg font-semibold self-center w-full">
-                {timeRemaining} left to register
+                <div className="text-sm font-bold uppercase">Time left to register</div>
+                <div className="text-lg">{timeRemaining}</div>
               </div>
-            </Compartment>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <Compartment>
-              <div className="text-center text-lg font-semibold self-center w-full my-auto">
-                {registeredPlayers} player(s) registered
-              </div>
-            </Compartment>
-            <Compartment>
-              <div className="text-center text-lg font-semibold self-center w-full">Season winner: {seasonWinner}</div>
-            </Compartment>
-            <Compartment>
-              <div className="text-center text-lg font-semibold self-center w-full">You are {registrationStatus}</div>
             </Compartment>
           </div>
 
+          {/* Player stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <Compartment>
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-sm font-bold uppercase">Registered players</div>
+                <div className="text-lg">{registeredPlayers}</div>
+              </div>
+            </Compartment>
+            <Compartment>
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-sm font-bold uppercase">Season winner</div>
+                <div className="text-lg">{seasonWinner}</div>
+              </div>
+            </Compartment>
+          </div>
+
+          <Compartment>
+            <div className="text-center text-lg font-semibold self-center w-full">
+              You are {registrationStatus}! You will be able to claim your rewards after the registration period ends.
+            </div>
+          </Compartment>
+
+          {/* Action button */}
           <Button
-            variant="secondary"
+            variant="primary"
+            isLoading={isLoading}
             disabled={!registrationClosed && registrationStatus === "registered"}
             onClick={registrationClosed ? claimRewards : registerToLeaderboard}
-            size="xs"
           >
             {registrationClosed
               ? "Claim Rewards"

@@ -3,7 +3,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use s0_eternum::alias::ID;
-use s0_eternum::constants::{ResourceTypes, get_resources_without_earthenshards};
+use s0_eternum::constants::{ResourceTypes, get_hyperstructure_construction_resources};
 use s0_eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure};
 use s0_eternum::models::owner::Owner;
 use s0_eternum::models::position::{Position, Coord};
@@ -58,13 +58,13 @@ fn setup() -> (WorldStorage, ID, IHyperstructureSystemsDispatcher) {
             }
         );
 
-    let resources_without_earthenshards = get_resources_without_earthenshards();
+    let hyperstructure_construction_resources = get_hyperstructure_construction_resources();
     let mut i = 0;
-    let mut resources_for_completion = array![(ResourceTypes::EARTHEN_SHARD, TEST_AMOUNT)];
-    while (i < resources_without_earthenshards.len()) {
-        let resource_type = *resources_without_earthenshards.at(i);
+    let mut resources_for_completion = array![(ResourceTypes::EARTHEN_SHARD, TEST_AMOUNT, TEST_AMOUNT)];
+    while (i < hyperstructure_construction_resources.len()) {
+        let resource_type = *hyperstructure_construction_resources.at(i);
 
-        resources_for_completion.append((resource_type, TEST_AMOUNT));
+        resources_for_completion.append((resource_type, TEST_AMOUNT, TEST_AMOUNT));
 
         world.write_model_test(@Resource { entity_id: realm_entity_id, resource_type, balance: TEST_AMOUNT * 10, });
 
@@ -247,11 +247,11 @@ fn hyperstructure_test_finish_hyperstructure() {
         ref world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord()
     );
 
-    let resources_without_earthenshards = get_resources_without_earthenshards();
+    let hyperstructure_construction_resources = get_hyperstructure_construction_resources();
     let mut i = 0;
     let mut contributions = array![];
-    while (i < resources_without_earthenshards.len()) {
-        let resource_type = *resources_without_earthenshards.at(i);
+    while (i < hyperstructure_construction_resources.len()) {
+        let resource_type = *hyperstructure_construction_resources.at(i);
         contributions.append((resource_type, TEST_AMOUNT));
         i += 1;
     };
@@ -265,7 +265,9 @@ fn hyperstructure_test_finish_hyperstructure() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
+#[should_panic(
+    expected: ("Not enough points to end the game. You have 1999980 points, but need 3000000", 'ENTRYPOINT_FAILED')
+)]
 fn hyperstructure_test_end_game_failure() {
     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
@@ -323,7 +325,9 @@ fn hyperstructure_test_end_game_success_completion_and_shares() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
+#[should_panic(
+    expected: ("Not enough points to end the game. You have 2999980 points, but need 3000000", 'ENTRYPOINT_FAILED')
+)]
 fn hyperstructure_test_end_game_failure_completion_and_shares() {
     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
@@ -345,7 +349,9 @@ fn hyperstructure_test_end_game_failure_completion_and_shares() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
+#[should_panic(
+    expected: ("Not enough points to end the game. You have 0 points, but need 3000000", 'ENTRYPOINT_FAILED')
+)]
 fn hyperstructure_test_end_game_failure_other_account() {
     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
@@ -376,11 +382,11 @@ fn spawn_and_finish_hyperstructure(
         ref world, hyperstructure_systems_dispatcher, realm_entity_id, coord
     );
 
-    let resources_without_earthenshards = get_resources_without_earthenshards();
+    let hyperstructure_construction_resources = get_hyperstructure_construction_resources();
     let mut i = 0;
     let mut contributions = array![];
-    while (i < resources_without_earthenshards.len()) {
-        let resource_type = *resources_without_earthenshards.at(i);
+    while (i < hyperstructure_construction_resources.len()) {
+        let resource_type = *hyperstructure_construction_resources.at(i);
         contributions.append((resource_type, TEST_AMOUNT));
         i += 1;
     };

@@ -1,13 +1,14 @@
 import { type ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
 import {
-  type ContractAddress,
+  ContractAddress,
   type ID,
   getOrderName,
   getQuestResources as getStartingResources,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { type ComponentValue, type Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { useMemo } from "react";
 import { shortString } from "starknet";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
@@ -16,7 +17,7 @@ import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 
-interface RealmInfo {
+export interface RealmInfo {
   realmId: ID;
   entityId: ID;
   name: string;
@@ -28,6 +29,7 @@ interface RealmInfo {
   hasCapacity: boolean;
   owner: ContractAddress;
   ownerName: string;
+  hasWonder: boolean;
 }
 
 export function useRealm() {
@@ -236,6 +238,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
           hasCapacity:
             !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
           owner: address,
+          hasWonder: realm.has_wonder,
         };
       }
     }
@@ -285,7 +288,57 @@ export function getRealms(): RealmInfo[] {
           !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
         owner: address,
         ownerName,
+        hasWonder: realm.has_wonder,
       };
     })
     .filter((realm) => realm !== undefined);
+}
+
+export function usePlayerRealms(): RealmInfo[] {
+  const {
+    account: { account },
+    setup: {
+      components: { Realm, Position, Owner, Population, AddressName, Structure },
+    },
+  } = useDojo();
+
+  const realmEntities = useEntityQuery([Has(Realm), HasValue(Owner, { address: ContractAddress(account.address) })]);
+
+  const realms = useMemo((): RealmInfo[] => {
+    return Array.from(realmEntities)
+      .map((entity) => {
+        const realm = getComponentValue(Realm, entity);
+        const owner = getComponentValue(Owner, entity);
+        const position = getComponentValue(Position, entity);
+        const population = getComponentValue(Population, entity);
+
+        if (!realm || !owner || !position) return;
+
+        const { realm_id, entity_id, produced_resources, order } = realm;
+
+        const name = getRealmNameById(realm_id);
+
+        const { address } = owner;
+
+        const addressName = getComponentValue(AddressName, getEntityIdFromKeys([address]));
+        const ownerName = shortString.decodeShortString(addressName?.name.toString() ?? "0x0");
+
+        return {
+          realmId: realm_id,
+          entityId: entity_id,
+          name,
+          resourceTypesPacked: produced_resources,
+          order,
+          position,
+          ...population,
+          hasCapacity:
+            !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
+          owner: address,
+          ownerName,
+          hasWonder: realm.has_wonder,
+        };
+      })
+      .filter((realm) => realm !== undefined);
+  }, [realmEntities]);
+  return realms;
 }

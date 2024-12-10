@@ -12,6 +12,7 @@ import {
   currencyFormat,
   divideByPrecision,
   formatNumber,
+  formatStringNumber,
   getEntityIdFromKeys,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
@@ -245,7 +246,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
           {!isDefendingArmy && (
             <div className="text-xs text-yellow-500 mb-2">
-              ⚠️ Maximum troops per attacking army is {formatNumber(maxTroopCountPerArmy, 0)}
+              ⚠️ Maximum troops per attacking army is {formatStringNumber(formatNumber(maxTroopCountPerArmy, 0))}
             </div>
           )}
 

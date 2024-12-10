@@ -171,7 +171,7 @@ export const PlayerId = ({
 
             return (
               <div key={structure.entity_id} className="flex flex-col gap-2 border-2 border-gold/10 p-2 rounded-md">
-                <div className="flex flex-col justify-between text-xs font-bold truncate">
+                <div className="flex flex-col justify-between text-xs font-bold break-words">
                   {structure.structureName}
                   <div className="flex flex-row items-center">
                     <NavigateToPositionIcon className="!w-5 !h-5" position={structure.position.getNormalized()} />

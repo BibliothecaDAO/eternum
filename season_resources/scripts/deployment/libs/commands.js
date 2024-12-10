@@ -5,7 +5,13 @@ import { shortString } from "starknet";
 import { fileURLToPath } from "url";
 import devManifest from "../../../../contracts/manifest_dev.json";
 import productionManifest from "../../../../contracts/manifest_prod.json";
-import { declare, getContractPath, saveResourceAddressesToFile, saveResourceAddressesToLanding } from "./common.js";
+import {
+  declare,
+  getContractPath,
+  getResourceAddressesFromFile,
+  saveResourceAddressesToFile,
+  saveResourceAddressesToLanding,
+} from "./common.js";
 import { getAccount, getNetwork } from "./network.js";
 import resourceNames from "./resources.json";
 
@@ -50,9 +56,9 @@ export const getContractByName = (name) => {
 const NAMESPACE = "s0_eternum";
 const RESOURCE_BRIDGE_SYSTEMS_CONTRACT = getContractByName(`${NAMESPACE}-resource_bridge_systems`);
 const RESOURCE_NAMES = resourceNames;
+const LORDS_RESOURCE_ID = 253;
 
 export const deployAllSeasonResourceContract = async () => {
-  const seasonAddresses = getSeasonAddresses();
   ///////////////////////////////////////////
   ////////   Season Pass Contract  //////////
   ///////////////////////////////////////////
@@ -66,22 +72,31 @@ export const deployAllSeasonResourceContract = async () => {
 
   // deploy contract
   let SEASON_RESOURCE_DEFAULT_ADMIN = BigInt(process.env.SEASON_RESOURCE_ADMIN);
-  let SEASON_RESOURCE_MINTER_CONTRACT = BigInt(RESOURCE_BRIDGE_SYSTEMS_CONTRACT);
   let SEASON_RESOURCE_UPGRADER_CONTRACT = BigInt(process.env.SEASON_RESOURCE_ADMIN);
 
   const ADDRESSES = {};
   const payload = [];
+
   for (const resource of Object.values(RESOURCE_NAMES)) {
+    const resourceName = resource.name;
+    if (resourceName.length > 31) {
+      throw new Error("Resource name must be less than or equal to 32 characters");
+    }
+    const resourceSymbol = resource.symbol;
+    if (resourceSymbol.length > 31) {
+      throw new Error("Resource symbol must be less than or equal to 32 characters");
+    }
+    console.log({ resourceName, resourceSymbol });
+
     let constructorCalldata = [
       SEASON_RESOURCE_DEFAULT_ADMIN,
-      SEASON_RESOURCE_MINTER_CONTRACT,
       SEASON_RESOURCE_UPGRADER_CONTRACT,
       0,
-      resource.name,
-      resource.name.length,
+      resourceName,
+      resourceName.length,
       0,
-      resource.symbol,
-      resource.symbol.length,
+      resourceSymbol,
+      resourceSymbol.length,
     ];
     payload.push({
       classHash: class_hash,
@@ -110,11 +125,50 @@ export const deployAllSeasonResourceContract = async () => {
     }
   }
 
-  ADDRESSES["LORDS"] = [253, getSeasonAddresses().lords];
+  ADDRESSES["LORDS"] = [LORDS_RESOURCE_ID, getSeasonAddresses().lords];
 
   console.log(ADDRESSES);
 
   await saveResourceAddressesToFile(ADDRESSES);
   await saveResourceAddressesToLanding(ADDRESSES, process.env.STARKNET_NETWORK.toLowerCase());
   return ADDRESSES;
+};
+
+export const grantMinterRoleToAllSeasonResourceContracts = async () => {
+  ////// GRANT MINTER ROLE TO ALL SEASON RESOURCE CONTRACTS //////
+  console.log(`\n Granting minter role to all season resource contracts ... \n\n`.green);
+
+  let resourceAddresses = await getResourceAddressesFromFile();
+  let resourceAddressesArray = Object.values(resourceAddresses)
+    .filter(([resourceId, resourceAddress]) => resourceId !== LORDS_RESOURCE_ID)
+    .map(([resourceId, resourceAddress]) => resourceAddress);
+
+  console.log(resourceAddressesArray);
+
+  if (!Array.isArray(resourceAddressesArray)) {
+    throw new Error("resourceAddressesArray must be an array");
+  }
+
+  const account = getAccount();
+
+  //selector!("MINTER_ROLE")
+  const MINTER_ROLE = "0x032df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6";
+
+  const executionArray = [];
+  for (const resourceAddress of resourceAddressesArray) {
+    executionArray.push({
+      contractAddress: resourceAddress,
+      entrypoint: "grant_role",
+      calldata: [MINTER_ROLE, RESOURCE_BRIDGE_SYSTEMS_CONTRACT],
+    });
+  }
+
+  const contract = await account.execute(executionArray);
+
+  // Wait for transaction
+  let network = getNetwork(process.env.STARKNET_NETWORK);
+  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  await account.waitForTransaction(contract.transaction_hash);
+
+  console.log(`Successfully granted minter role to all season resource contracts`.green, "\n\n");
 };

@@ -38,7 +38,7 @@ mod donkey_systems {
 
     #[generate_trait]
     pub impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
-        fn burn_donkey(ref world: WorldStorage, payer_id: ID, weight: u128) {
+        fn burn_donkey(ref world: WorldStorage, payer_id: ID, weight: u128, include_achievement: bool) {
             // get number of donkeys needed
             let donkey_amount = Self::get_donkey_needed(ref world, weight);
 
@@ -60,15 +60,22 @@ mod donkey_systems {
                 );
 
             // [Achievement] Consume donkeys
+            if include_achievement {
+                let payer_id_owner: Owner = world.read_model(payer_id);
+                let player_address: ContractAddress = payer_id_owner.address;
+                Self::give_breeder_achievement(ref world, donkey_amount, player_address);
+            }
+        }
+
+        fn give_breeder_achievement(ref world: WorldStorage, donkey_amount: u128, player_address: ContractAddress) {
             if donkey_amount != 0 {
                 let count = ((donkey_amount / RESOURCE_PRECISION) % core::integer::BoundedU32::max().into())
                     .try_into()
                     .unwrap();
-                let player_id: felt252 = starknet::get_caller_address().into();
+                let player_id: felt252 = player_address.into();
                 let task_id = Task::Breeder.identifier();
-                // Raw version of emitting trophy progress when ContractState is not available
                 let mut store = StoreTrait::new(world);
-                store.progress(player_id, task_id, count, time);
+                store.progress(player_id, task_id, count, time: starknet::get_block_timestamp());
             }
         }
 

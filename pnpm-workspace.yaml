@@ -1,11 +1,9 @@
 packages:
   - "sdk/packages/*"
   - "client"
-  - "eternum-docs"
   - "config"
   - "bot"
   - "balancing"
   - "landing"
   - "season_pass/scripts/deployment"
   - "season_resources/scripts/deployment"
-  # - "eliza/packages/*"

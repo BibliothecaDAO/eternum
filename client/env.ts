@@ -10,6 +10,8 @@ const envSchema = z.object({
   VITE_PUBLIC_ACCOUNT_CLASS_HASH: z.string().startsWith("0x"),
   VITE_PUBLIC_FEE_TOKEN_ADDRESS: z.string().startsWith("0x"),
 
+  VITE_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
+
   // External Contracts
   VITE_SEASON_PASS_ADDRESS: z.string().startsWith("0x"),
   VITE_REALMS_ADDRESS: z.string().startsWith("0x"),
@@ -31,11 +33,16 @@ const envSchema = z.object({
   VITE_PUBLIC_CONSTRUCTION_FLAG: z.string().transform((v) => v === "true"),
   VITE_PUBLIC_HIDE_THREEJS_MENU: z.string().transform((v) => v === "true"),
 
+  // VRF
+  VITE_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x"),
+
   // Ark Marketplace API
   VITE_PUBLIC_ARK_MARKETPLACE_API: z.string().url(),
   VITE_PUBLIC_IMAGE_CDN_URL: z.string().url(),
   VITE_PUBLIC_IMAGE_PROXY_URL: z.string().url(),
   VITE_PUBLIC_IPFS_GATEWAY: z.string().url(),
+
+  VITE_PUBLIC_SLOT: z.string(),
 });
 
 let env: z.infer<typeof envSchema>;

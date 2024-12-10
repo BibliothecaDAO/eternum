@@ -1,32 +1,36 @@
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { getArmiesByPosition } from "@/hooks/helpers/useArmies";
+import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
+import { useGuilds } from "@/hooks/helpers/useGuilds";
+import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
+import { HintSection } from "@/ui/components/hints/HintModal";
+import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
 import { EntityList } from "@/ui/components/list/EntityList";
-import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
-import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { Checkbox } from "@/ui/elements/Checkbox";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { BattleSide, ContractAddress, findResourceById, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 
-import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
-import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
-
-import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
-import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { QuestId } from "@/ui/components/quest/questDetails";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ContractAddress, findResourceById, ID, ResourcesIds } from "@bibliothecadao/eternum";
-
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
-  const [selectedTab, setSelectedTab] = useState(0);
+  const {
+    account: { account },
+  } = useDojo();
 
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const { hyperstructures } = useHyperstructures();
   const { fragmentMines } = useFragmentMines();
+
+  const myHyperstructures = useGetHyperstructuresWithContributionsFromPlayer();
 
   const hyperstructureExtraContent = (entityId: any) => {
     const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === entityId);
@@ -59,16 +63,28 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
           </div>
         ),
         component: (
-          <EntityList
-            questing={selectedQuest?.id === QuestId.Contribution}
-            title="Hyperstructures"
-            panel={({ entity }) => <HyperstructurePanel entity={entity} />}
-            entityContent={hyperstructureExtraContent}
-            list={hyperstructures.map((hyperstructure) => ({
-              id: hyperstructure.entity_id,
-              ...hyperstructure,
-            }))}
-          />
+          <>
+            <div className="px-2 pb-2">
+              <label className="flex items-center space-x-1 text-xs">
+                <Checkbox enabled={showOnlyMine} onClick={() => setShowOnlyMine(!showOnlyMine)} />
+                <span>Show only mine</span>
+              </label>
+            </div>
+            <EntityList
+              title="Hyperstructures"
+              panel={({ entity }) => <HyperstructurePanel entity={entity} />}
+              entityContent={hyperstructureExtraContent}
+              list={hyperstructures
+                .filter((hyperstructure) => hyperstructure.created_at)
+                .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
+                .map((hyperstructure) => ({
+                  id: hyperstructure.entity_id,
+                  position: { x: hyperstructure.x, y: hyperstructure.y },
+                  ...hyperstructure,
+                }))}
+              filterEntityIds={showOnlyMine ? Array.from(myHyperstructures()) : undefined}
+            />
+          </>
         ),
       },
       {
@@ -79,15 +95,33 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
           </div>
         ),
         component: (
-          <EntityList
-            title="FragmentMines"
-            panel={({ entity }) => <FragmentMinePanel entity={entity} />}
-            entityContent={fragmentMineExtraContent}
-            list={fragmentMines.map((fragmentMine) => ({
-              id: fragmentMine.entity_id,
-              ...fragmentMine,
-            }))}
-          />
+          <>
+            <div className="px-2 pb-2">
+              <label className="flex items-center space-x-1 text-xs">
+                <Checkbox enabled={showOnlyMine} onClick={() => setShowOnlyMine(!showOnlyMine)} />
+                <span>Show only mine</span>
+              </label>
+            </div>
+            <EntityList
+              title="FragmentMines"
+              panel={({ entity }) => <FragmentMinePanel entity={entity} />}
+              entityContent={fragmentMineExtraContent}
+              list={fragmentMines
+                .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
+                .map((fragmentMine) => ({
+                  id: fragmentMine.entity_id,
+                  position: { x: fragmentMine.x, y: fragmentMine.y },
+                  ...fragmentMine,
+                }))}
+              filterEntityIds={
+                fragmentMines
+                  .filter((mine) => {
+                    mine.owner === account.address;
+                  })
+                  .map((mine) => mine.entity_id) as ID[]
+              }
+            />
+          </>
         ),
       },
     ],
@@ -118,6 +152,87 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   );
 };
 
+const BaseStructureExtraContent = ({
+  x,
+  y,
+  entityId,
+  children,
+}: {
+  x: number;
+  y: number;
+  entityId: ID;
+  children: React.ReactNode;
+}) => {
+  const { getGuildFromPlayerAddress } = useGuilds();
+  const { getAddressNameFromEntity, getPlayerAddressFromEntity } = useEntitiesUtils();
+  const getArmies = getArmiesByPosition();
+
+  const armies = useMemo(() => getArmies({ x, y }), [x, y]);
+
+  const structureOwner = useMemo(() => {
+    const ownerName = getAddressNameFromEntity(entityId);
+    const address = getPlayerAddressFromEntity(entityId);
+    const guildName = getGuildFromPlayerAddress(address || 0n)?.name;
+    return {
+      name: ownerName,
+      guildName,
+    };
+  }, []);
+
+  const defensiveArmy = useMemo(() => {
+    const army = armies.find((army) => army.protectee?.protectee_id);
+    const ownerName = getAddressNameFromEntity(army?.entity_id || 0);
+    const guildName = getGuildFromPlayerAddress(army?.owner?.address || 0n)?.name;
+    return {
+      totalTroops:
+        (army?.troops?.knight_count || 0n) +
+        (army?.troops?.paladin_count || 0n) +
+        (army?.troops?.crossbowman_count || 0n),
+      army,
+      name: ownerName,
+      guildName,
+    };
+  }, [armies]);
+
+  const attackingArmy = useMemo(() => {
+    const army = armies.find(
+      (army) => army.battle_side === BattleSide[BattleSide.Attack] && army.battle_id === defensiveArmy.army?.battle_id,
+    );
+    if (!army) return;
+    const ownerName = getAddressNameFromEntity(army?.entity_id || 0);
+    const guildName = getGuildFromPlayerAddress(army?.owner?.address || 0n)?.name;
+    return {
+      totalTroops:
+        (army?.troops?.knight_count || 0n) +
+        (army?.troops?.paladin_count || 0n) +
+        (army?.troops?.crossbowman_count || 0n),
+      army,
+      name: ownerName,
+      guildName,
+    };
+  }, [armies]);
+
+  return (
+    <div className="grid grid-cols-2 gap-4 text-xs">
+      <div className="flex items-center gap-2">
+        <span className="text-gold/80">Owner:</span>
+        <span className="font-medium">{structureOwner?.guildName || structureOwner?.name || "Mercenaries"}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-gold/80">Defense:</span>
+        <span className="font-medium">{currencyFormat(Number(defensiveArmy.totalTroops), 0)}</span>
+      </div>
+      <div className="flex items-center gap-2 col-span-2">
+        <span className="text-gold/80">Battle:</span>
+        <span className="font-medium">
+          {attackingArmy ? `${attackingArmy?.guildName || attackingArmy?.name || "Mercenaries"}⚔` : "None"}
+        </span>
+      </div>
+      {children}
+    </div>
+  );
+};
+
 const HyperStructureExtraContent = ({
   hyperstructureEntityId,
   x,
@@ -127,58 +242,58 @@ const HyperStructureExtraContent = ({
   x: number;
   y: number;
 }) => {
+  const dojo = useDojo();
   const {
     account: { account },
-  } = useDojo();
+  } = dojo;
 
   const progress = useHyperstructureProgress(hyperstructureEntityId);
 
+  const latestChangeEvent = LeaderboardManager.instance(dojo).getCurrentCoOwners(hyperstructureEntityId);
+
+  const needTosetCoOwners = !latestChangeEvent && progress.percentage === 100;
+
   return (
-    <div className="flex items-center gap-4 p-2 bg-gold/10 rounded-lg hover:bg-gold/20 transition-colors">
-      <ViewOnMapIcon className="hover:scale-125 transition-transform cursor-pointer" position={{ x, y }} />
-      <div className="flex flex-col text-sm font-medium">
-        <div className="flex items-center gap-2">
-          <span className="text-gold/80">Progress:</span>
-          <span className="text-gold">{`${progress.percentage}%`}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gold/80">Shares:</span>
-          <span className="text-gold">
-            {currencyIntlFormat(
-              (LeaderboardManager.instance().getAddressShares(
-                ContractAddress(account.address),
-                hyperstructureEntityId,
-              ) || 0) * 100,
-              0,
-            )}
-            %
-          </span>
-        </div>
+    <BaseStructureExtraContent x={x} y={y} entityId={hyperstructureEntityId}>
+      <div className="flex items-center gap-2">
+        <span className="text-gold/80">Progress:</span>
+        <span className="font-medium">{`${progress.percentage}%`}</span>
+        {needTosetCoOwners && <div className="text-xs text-red animate-pulse">Co-owners not set</div>}
       </div>
-    </div>
+      <div className="flex items-center gap-2">
+        <span className="text-gold/80">Shares:</span>
+        <span className="font-medium">
+          {currencyIntlFormat(
+            (LeaderboardManager.instance(dojo).getAddressShares(
+              ContractAddress(account.address),
+              hyperstructureEntityId,
+            ) || 0) * 100,
+            0,
+          )}
+          %
+        </span>
+      </div>
+    </BaseStructureExtraContent>
   );
 };
 
 const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
   const { getBalance } = useResourceBalance();
   const dynamicResources = getBalance(entityId, ResourcesIds.AncientFragment);
-
   const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);
 
   return (
-    <div className="flex space-x-5 items-center text-xs">
-      <ViewOnMapIcon className={"my-auto  hover:scale-125 hover:grow"} position={{ x, y }} />
-      <ResourceIcon
-        className="self-center justify-center"
-        isLabor={false}
-        withTooltip={false}
-        resource={trait || ""}
-        size={"xs"}
-      />{" "}
-      {Intl.NumberFormat("en-US", {
-        notation: "compact",
-        maximumFractionDigits: 1,
-      }).format(divideByPrecision(dynamicResources.balance || 0))}{" "}
-    </div>
+    <BaseStructureExtraContent x={x} y={y} entityId={entityId}>
+      <div className="flex items-center gap-2">
+        <span className="text-gold/80">Balance:</span>
+        <span className="font-medium flex items-center">
+          {Intl.NumberFormat("en-US", {
+            notation: "compact",
+            maximumFractionDigits: 1,
+          }).format(divideByPrecision(dynamicResources.balance || 0))}
+          <ResourceIcon className="ml-1" isLabor={false} withTooltip={false} resource={trait || ""} size={"xs"} />
+        </span>
+      </div>
+    </BaseStructureExtraContent>
   );
 };

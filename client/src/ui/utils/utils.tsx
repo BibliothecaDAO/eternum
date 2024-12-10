@@ -25,6 +25,10 @@ export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
 };
 
+export const formatStringNumber = (str: string): string => {
+  return Number(str).toLocaleString();
+};
+
 export const formatNumber = (num: number, decimals: number): string => {
   // Convert to string with max decimals
   let str = num.toFixed(decimals);
@@ -38,7 +42,8 @@ export const formatNumber = (num: number, decimals: number): string => {
 };
 
 export const currencyFormat = (num: number, decimals: number): string => {
-  return formatNumber(divideByPrecision(num), decimals);
+  const formattedDecimals = formatNumber(divideByPrecision(num), decimals);
+  return Number(formattedDecimals).toLocaleString();
 };
 
 export function currencyIntlFormat(num: number, decimals: number = 2): string {
@@ -59,6 +64,10 @@ export function multiplyByPrecision(value: number): number {
 
 export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
+}
+
+export function divideByPrecisionFormatted(value: number): string {
+  return divideByPrecision(value).toLocaleString("en-US");
 }
 
 export function roundDownToPrecision(value: bigint, precision: number) {
@@ -219,7 +228,8 @@ export enum TimeFormat {
 export const formatTime = (
   seconds: number,
   format: TimeFormat = TimeFormat.D | TimeFormat.H | TimeFormat.M | TimeFormat.S,
-  abbreviate: boolean = false,
+  abbreviate: boolean = true,
+  clock: boolean = false,
 ): string => {
   const days = Math.floor(seconds / (3600 * 24));
   const hours = Math.floor((seconds % (3600 * 24)) / 3600);
@@ -227,13 +237,19 @@ export const formatTime = (
   const remainingSeconds = Math.floor(seconds % 60);
 
   const parts = [];
-  if (days > 0 && format & TimeFormat.D) parts.push(`${days}d`);
-  if (hours > 0 && format & TimeFormat.H) parts.push(`${hours}h`);
-  if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}m`);
-  if (remainingSeconds > 0 && format & TimeFormat.S) parts.push(`${remainingSeconds}s`);
 
-  if (abbreviate) {
-    return parts[0] || "0s";
+  if (days > 0 && format & TimeFormat.D) parts.push(`${days}${abbreviate ? "d" : " day(s)"}`);
+
+  if (clock) {
+    const formattedHours = hours.toString().padStart(2, "0");
+    const formattedMinutes = minutes.toString().padStart(2, "0");
+    const formattedSeconds = remainingSeconds.toString().padStart(2, "0");
+    parts.push(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`);
+  } else {
+    if (hours > 0 && format & TimeFormat.H) parts.push(`${hours} ${abbreviate ? "h" : "hour(s)"}`);
+    if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes} ${abbreviate ? "m" : "minute(s)"}`);
+    if (remainingSeconds > 0 && format & TimeFormat.S)
+      parts.push(`${remainingSeconds} ${abbreviate ? "s" : "second(s)"}`);
   }
 
   return parts.join(" ");
@@ -250,7 +266,7 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     });
 };
 
-export const isRealmSelected = (structureEntityId: ID, structures: any) => {
+const isRealmSelected = (structureEntityId: ID, structures: any) => {
   const selectedStructure = structures?.find((structure: any) => structure?.entity_id === structureEntityId);
   return selectedStructure?.category === "Realm";
 };

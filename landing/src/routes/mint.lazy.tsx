@@ -31,7 +31,7 @@ function Mint() {
 
   const [controllerAddress] = useState<string>();
 
-  const { data, isLoading: isRealmsLoading } = useSuspenseQuery({
+  const { data, isLoading: isPending } = useSuspenseQuery({
     queryKey: ["erc721Balance", address],
     queryFn: () => (address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: address }) : null),
     refetchInterval: 10_000,
@@ -77,7 +77,7 @@ function Mint() {
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
     useNftSelection({ userAddress: address as `0x${string}` });
 
-  const loading = isRealmsLoading; /*|| isSeasonPassMintsLoading*/
+  const loading = isPending; /*|| isSeasonPassMintsLoading*/
 
   const [seasonPassStatus, setSeasonPassStatus] = useState<Record<string, boolean>>({});
 

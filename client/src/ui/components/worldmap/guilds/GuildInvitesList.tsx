@@ -6,7 +6,6 @@ import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildWhitelistInfo } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { ListHeaderProps } from "./GuildList";
 
 interface GuildInviteListProps {
   invitedPlayers: GuildWhitelistInfo[];
@@ -51,6 +50,11 @@ export const GuildInviteList = ({
     </div>
   );
 };
+
+interface ListHeaderProps {
+  activeSort: SortInterface;
+  setActiveSort: (sort: SortInterface) => void;
+}
 
 const GuildInviteListHeader = ({ activeSort, setActiveSort }: ListHeaderProps) => {
   const sortingParams = useMemo(() => {

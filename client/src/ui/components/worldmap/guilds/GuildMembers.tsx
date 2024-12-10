@@ -2,6 +2,8 @@ import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
+import TwitterShareButton from "@/ui/elements/TwitterShareButton";
+import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
@@ -33,6 +35,8 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   const userWhitelist = usePlayerWhitelist(ContractAddress(account.address));
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
   const selectedGuild = getGuildFromEntityId(selectedGuildEntityId, ContractAddress(account.address));
+
+  const playerName = players.find((player) => player.address === ContractAddress(account?.address))?.name;
 
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
@@ -82,6 +86,15 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
     }).finally(() => setIsLoading(false));
   };
 
+  const socialsText =
+    userGuild?.entityId === selectedGuildEntityId
+      ? formatSocialText(userGuild?.isOwner ? twitterTemplates.createdTribe : twitterTemplates.joinedTribe, {
+          tribeName: selectedGuild?.name,
+          addressName: playerName,
+          url: window.location.origin,
+        })
+      : undefined;
+
   return (
     <div className="flex flex-col min-h-72 h-full w-full p-2 overflow-hidden">
       {editName ? (
@@ -119,6 +132,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
               onClick={() => setEditName(!editName)}
             />
           )}
+          {socialsText && <TwitterShareButton text={socialsText} />}
         </div>
       )}
 

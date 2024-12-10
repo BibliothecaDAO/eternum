@@ -4,6 +4,7 @@ import { Position } from "@/types/Position";
 import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
 import * as THREE from "three";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { GUIManager } from "../helpers/GUIManager";
 import { findShortestPath } from "../helpers/pathfinding";
 import { isAddressEqualToAccount } from "../helpers/utils";
@@ -31,6 +32,7 @@ export class ArmyManager {
   private biome: Biome;
   private armyPaths: Map<ID, Position[]> = new Map();
   private exploredTiles: Map<number, Set<number>>;
+  private entityIdLabels: Map<ID, CSS2DObject> = new Map();
 
   constructor(
     scene: THREE.Scene,
@@ -65,6 +67,9 @@ export class ArmyManager {
                 address: createArmyParams.isMine
                   ? ContractAddress(useAccountStore.getState().account?.address || "0")
                   : 0n,
+                // TODO: Add owner name and guild name
+                ownerName: "Neutral",
+                guildName: "None",
               },
               1,
             );
@@ -179,7 +184,6 @@ export class ArmyManager {
       // Determine model type based on order or other criteria
       const { x, y } = army.hexCoords.getContract();
       const biome = this.biome.getBiome(x, y);
-      console.log(biome, army.entityId);
       if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
         this.armyModel.assignModelToEntity(army.entityId, "boat");
       } else {
@@ -201,6 +205,22 @@ export class ArmyManager {
       // Increment count and update all meshes
       currentCount++;
       this.armyModel.setVisibleCount(currentCount);
+
+      // Add or update entity ID label
+      if (this.entityIdLabels.has(army.entityId)) {
+        const label = this.entityIdLabels.get(army.entityId)!;
+        label.position.copy(position);
+        label.position.y += 1.5;
+      } else {
+        this.addEntityIdLabel(army, position);
+      }
+    });
+
+    // Remove labels for armies that are no longer visible
+    this.entityIdLabels.forEach((label, entityId) => {
+      if (!this.visibleArmies.find((army) => army.entityId === entityId)) {
+        this.removeEntityIdLabel(entityId);
+      }
     });
 
     // Update all model instances
@@ -235,6 +255,7 @@ export class ArmyManager {
         color: army.color,
         matrixIndex: index,
         owner: army.owner,
+        order: army.order,
       }));
 
     return visibleArmies;
@@ -249,11 +270,16 @@ export class ArmyManager {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
       const label = this.labelManager.createLabel(position, army.isMine ? myColor : neutralColor);
       this.labels.set(army.entityId, label);
-      this.scene.add(label);
+      //this.scene.add(label);
     });
   }
 
-  public addArmy(entityId: ID, hexCoords: Position, owner: { address: bigint }, order: number) {
+  public addArmy(
+    entityId: ID,
+    hexCoords: Position,
+    owner: { address: bigint; ownerName: string; guildName: string },
+    order: number,
+  ) {
     if (this.armies.has(entityId)) return;
 
     // Determine model type based on order or other criteria
@@ -265,14 +291,15 @@ export class ArmyManager {
       this.armyModel.assignModelToEntity(entityId, "knight");
     }
 
-    const orderColor = orders.find((_order) => _order.orderId === order)?.color || "#000000";
+    const orderData = orders.find((_order) => _order.orderId === order);
     this.armies.set(entityId, {
       entityId,
       matrixIndex: this.armies.size - 1,
       hexCoords,
       isMine: isAddressEqualToAccount(owner.address),
       owner,
-      color: orderColor,
+      color: orderData?.color || "#000000",
+      order: orderData?.orderName || "",
     });
     this.renderVisibleArmies(this.currentChunkKey!);
   }
@@ -330,6 +357,7 @@ export class ArmyManager {
   public removeArmy(entityId: ID) {
     if (!this.armies.delete(entityId)) return;
 
+    this.removeEntityIdLabel(entityId);
     this.renderVisibleArmies(this.currentChunkKey!);
 
     const label = this.labels.get(entityId);
@@ -399,6 +427,13 @@ export class ArmyManager {
       this.armyModel.dummyObject.rotation.set(0, angle + (Math.PI * 3) / 6, 0);
 
       this.armyModel.updateInstance(entityId, matrixIndex, position, this.scale);
+
+      // Update label position
+      const label = this.entityIdLabels.get(entityId);
+      if (label) {
+        label.position.copy(position);
+        label.position.y += 1.5;
+      }
     });
 
     if (this.movingArmies.size > 0) {
@@ -451,5 +486,63 @@ export class ArmyManager {
     this.armies.forEach((army) => {
       army.isMine = isAddressEqualToAccount(army.owner.address);
     });
+  }
+
+  private async addEntityIdLabel(army: ArmyData, position: THREE.Vector3) {
+    const labelDiv = document.createElement("div");
+    labelDiv.classList.add(
+      "rounded-md",
+      "bg-brown/50",
+      "text-gold",
+      "p-1",
+      "-translate-x-1/2",
+      "text-xs",
+      "flex",
+      "items-center",
+    );
+    const orderName = army.order.toLowerCase();
+    const img = document.createElement("img");
+    img.src = `/images/orders/${orderName}.png`;
+    img.classList.add("w-[24px]", "h-[24px]", "inline-block", "mr-2", "object-contain");
+    labelDiv.appendChild(img);
+
+    const textContainer = document.createElement("div");
+    textContainer.classList.add("flex", "flex-col");
+
+    const line1 = document.createTextNode(`${army.owner.ownerName} ${army.owner.guildName ? `(${army.order})` : ""}`);
+    const line2 = document.createElement("strong");
+    line2.textContent = `${army.owner.guildName ? army.owner.guildName : army.order}`;
+
+    textContainer.appendChild(line1);
+    textContainer.appendChild(line2);
+
+    labelDiv.appendChild(textContainer);
+
+    const label = new CSS2DObject(labelDiv);
+    label.position.copy(position);
+    label.position.y += 1.5; // Position above the army
+
+    this.scene.add(label);
+    this.entityIdLabels.set(army.entityId, label);
+  }
+
+  removeLabelsFromScene() {
+    this.entityIdLabels.forEach((label) => this.scene.remove(label));
+  }
+
+  addLabelsToScene() {
+    this.entityIdLabels.forEach((label) => {
+      if (!this.scene.children.includes(label)) {
+        this.scene.add(label);
+      }
+    });
+  }
+
+  private removeEntityIdLabel(entityId: ID) {
+    const label = this.entityIdLabels.get(entityId);
+    if (label) {
+      this.scene.remove(label);
+      this.entityIdLabels.delete(entityId);
+    }
   }
 }

@@ -8,11 +8,11 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Castle, Gamepad2, Home, Scale } from "lucide-react";
+import { Castle, Gamepad2, Home, PlayCircle, Scale, Sheet, Ship, Twitter } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
+import { ReactComponent as Discord } from "@/assets/icons/discord.svg";
 import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
-
 // Menu items.
 const items = [
   {
@@ -20,16 +20,12 @@ const items = [
     url: "/",
     icon: Home,
   },
-  // {
-  //   title: "Trade",
-  //   url: "/trade",
-  //   icon: LoopIcon,
-  // },
-  // {
-  //   title: "Bridge",
-  //   url: "/bridge",
-  //   icon: Ship,
-  // },
+  {
+    title: "Bridge",
+    url: "/trade",
+    icon: Ship,
+  },
+
   {
     title: "Realms",
     url: "/mint",
@@ -41,6 +37,11 @@ const items = [
     icon: Gamepad2,
   },
   {
+    title: "Play",
+    url: "https://eternum.realms.world/",
+    icon: PlayCircle,
+  },
+  {
     title: "Marketplace",
     url: "https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
     icon: Scale,
@@ -48,7 +49,7 @@ const items = [
   {
     title: "Documentation",
     url: "https://eternum-docs.realms.world/",
-    icon: Gamepad2,
+    icon: Sheet,
   },
 ];
 
@@ -71,7 +72,7 @@ export function AppSidebar() {
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-secondary font-heading text-xl"
+                        className="flex items-center gap-2 py-2 rounded-md hover:bg-secondary font-heading text-xl"
                       >
                         <item.icon />
                         <span>{item.title}</span>
@@ -86,6 +87,15 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+            {/* social links */}
+            <div className="flex items-center gap-2 mt-8 justify-center">
+              <a href="https://twitter.com/lootrealms" target="_blank" rel="noopener noreferrer">
+                <Twitter />
+              </a>
+              <a href="https://discord.gg/realmsworld" target="_blank" rel="noopener noreferrer">
+                <Discord className="w-6 h-6 fill-gold" />
+              </a>
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
