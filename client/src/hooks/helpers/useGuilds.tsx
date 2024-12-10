@@ -186,7 +186,7 @@ export const useGuilds = () => {
         guilds,
         nextBlockTimestamp,
         account.address,
-        getEntityName,
+        (entityId: number) => getEntityName(entityId) || 'Unknown',
         Guild,
         Owner,
         GuildMember,
@@ -202,7 +202,7 @@ export const useGuilds = () => {
       [getEntityIdFromKeys([BigInt(entityId)])],
       nextBlockTimestamp,
       account.address,
-      getEntityName,
+      (entityId: number) => getEntityName(entityId) || 'Unknown',
       Guild,
       Owner,
       GuildMember,
@@ -222,7 +222,7 @@ export const useGuilds = () => {
     const guild = getComponentValue(Guild, getEntityIdFromKeys([BigInt(guildMember.guild_entity_id)]));
     const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(guildMember.guild_entity_id)]));
 
-    const name = guildMember.guild_entity_id ? getEntityName(guildMember.guild_entity_id) : "Unknown";
+    const name = guildMember.guild_entity_id ? getEntityName(guildMember.guild_entity_id) || 'Unknown' : "Unknown";
 
     return {
       entityId: guildMember?.guild_entity_id,
@@ -254,13 +254,13 @@ export const useGuilds = () => {
       HasValue(GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: true }),
     ]);
 
-    return formatGuildWhitelist(whitelist, players, GuildWhitelist, getAddressName, getEntityName);
+    return formatGuildWhitelist(whitelist, players, GuildWhitelist, getAddressName, (entityId: number) => getEntityName(entityId) || 'Unknown');
   };
 
   const usePlayerWhitelist = (address: ContractAddress) => {
     const whitelist = useEntityQuery([HasValue(GuildWhitelist, { address, is_whitelisted: true })]);
 
-    return formatPlayerWhitelist(whitelist, GuildWhitelist, getEntityName);
+    return formatPlayerWhitelist(whitelist, GuildWhitelist, (entityId: number) => getEntityName(entityId) || 'Unknown');
   };
 
   const getPlayersInPlayersGuild = useCallback((accountAddress: ContractAddress) => {
