@@ -28,6 +28,10 @@ export const formatNumber = (num: number, decimals: number): string => {
   return str;
 };
 
+export function formatNumberWithCommas(number: number): string {
+  return number.toLocaleString("en-US");
+}
+
 export const currencyFormat = (num: number, decimals: number): string => {
   return formatNumber(num / EternumGlobalConfig.resources.resourcePrecision, decimals);
 };
