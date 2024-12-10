@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { Account } from "starknet";
 import devManifest from "../../../../contracts/manifest_dev.json";
-import productionManifest from "../../../../contracts/manifest_mainnet.json";
+import productionManifest from "../../../../contracts/manifest_prod.json";
 import { EternumProvider, ResourceWhitelistConfig } from "./provider";
 
 const getResourceAddresses = () => {
