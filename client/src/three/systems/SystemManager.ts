@@ -37,10 +37,32 @@ export class SystemManager {
     callback: (value: T) => void,
     getUpdate: (update: any) => T | undefined,
     runOnInit: boolean = true,
+    maxRetries: number = 10,
+    retryDelay: number = 500, // 500ms delay between attempts
   ) {
     const handleUpdate = (update: any) => {
-      const value = getUpdate(update);
-      if (value) callback(value);
+      let retries = 0;
+      let lastTryTime = 0;
+
+      const tryGetUpdate = (timestamp: number) => {
+        // Only try if enough time has passed
+        if (timestamp - lastTryTime >= retryDelay) {
+          const value = getUpdate(update);
+          if (value) {
+            callback(value);
+            return;
+          }
+
+          retries++;
+          lastTryTime = timestamp;
+        }
+
+        if (retries < maxRetries) {
+          requestAnimationFrame(tryGetUpdate);
+        }
+      };
+
+      requestAnimationFrame(tryGetUpdate);
     };
 
     defineComponentSystem(this.setup.network.world, component, handleUpdate, { runOnInit });
