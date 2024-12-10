@@ -2,7 +2,7 @@ import path from "path";
 import { defineConfig } from "vocs";
 
 export default defineConfig({
-  description: "Eternum Documentation",
+  description: "Your Complete Guide to Mastering Eternum",
   iconUrl: "/eternum_new_logo.svg",
   logoUrl: "/eternum_new_logo.svg",
   ogImageUrl: "/eternum_documentation.png",
