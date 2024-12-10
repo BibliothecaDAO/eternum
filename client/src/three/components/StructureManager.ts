@@ -90,7 +90,7 @@ export class StructureManager {
 
   async onUpdate(update: StructureSystemUpdate) {
     await Promise.all(this.modelLoadPromises);
-    const { entityId, hexCoords, structureType, stage, level, owner } = update;
+    const { entityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
 
@@ -106,7 +106,7 @@ export class StructureManager {
 
     const key = structureType;
     // Add the structure to the structures map
-    this.structures.addStructure(entityId, key, normalizedCoord, stage, level, owner);
+    this.structures.addStructure(entityId, key, normalizedCoord, stage, level, owner, hasWonder);
 
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
@@ -227,6 +227,7 @@ class Structures {
     stage: number = 0,
     level: number = 0,
     owner: { address: bigint },
+    hasWonder: boolean,
   ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
@@ -239,6 +240,7 @@ class Structures {
       isMine: isAddressEqualToAccount(owner.address),
       owner,
       structureType,
+      hasWonder,
     });
   }
 

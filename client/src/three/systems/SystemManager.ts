@@ -164,9 +164,11 @@ export class SystemManager {
           const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
 
           let level = 0;
+          let hasWonder = false;
           if (StructureType[categoryKey] === StructureType.Realm) {
             const realm = getComponentValue(this.setup.components.Realm, update.entity);
             level = realm?.level || RealmLevels.Settlement;
+            hasWonder = realm?.has_wonder || false;
           }
 
           return {
@@ -176,6 +178,7 @@ export class SystemManager {
             stage,
             level,
             owner: { address: owner?.address || 0n },
+            hasWonder,
           };
         });
       },

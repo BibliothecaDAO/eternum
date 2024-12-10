@@ -15,6 +15,8 @@ const LABELS = {
   MY_ARMY: "/textures/my_army_label.png",
   MY_REALM: "/textures/my_realm_label.png",
   BATTLE: "/textures/battle_label.png",
+  MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
+  REALM_WONDER: "/textures/realm_wonder_label.png",
   STRUCTURES: {
     [StructureType.Realm]: "/textures/realm_label.png",
     [StructureType.Hyperstructure]: "/textures/hyper_label.png",
@@ -249,9 +251,13 @@ class Minimap {
 
       structures.forEach((structure) => {
         if (structureType === StructureType.Realm) {
-          labelImg = structure.isMine
-            ? this.labelImages.get("MY_REALM")
-            : this.labelImages.get(`STRUCTURE_${structureType}`);
+          if (structure.isMine) {
+            labelImg = structure.hasWonder ? this.labelImages.get("MY_REALM_WONDER") : this.labelImages.get("MY_REALM");
+          } else {
+            labelImg = structure.hasWonder
+              ? this.labelImages.get("REALM_WONDER")
+              : this.labelImages.get(`STRUCTURE_${structureType}`);
+          }
         }
         if (!labelImg) return;
         const { col, row } = structure.hexCoords;
@@ -455,6 +461,8 @@ class Minimap {
     this.loadImage("MY_ARMY", LABELS.MY_ARMY);
     this.loadImage("BATTLE", LABELS.BATTLE);
     this.loadImage("MY_REALM", LABELS.MY_REALM);
+    this.loadImage("MY_REALM_WONDER", LABELS.MY_REALM_WONDER);
+    this.loadImage("REALM_WONDER", LABELS.REALM_WONDER);
 
     // Load structure labels
     Object.entries(LABELS.STRUCTURES).forEach(([type, path]) => {

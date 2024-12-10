@@ -1,6 +1,11 @@
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/useStructures";
+import {
+  Structure,
+  useIsStructureImmune,
+  useStructureImmunityTimer,
+  useStructures,
+} from "@/hooks/helpers/useStructures";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
@@ -47,7 +52,7 @@ export const StructureInfoLabel = () => {
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
-  const timer = useStructureImmunityTimer(structure, nextBlockTimestamp || 0);
+  const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);
 
   return (
     <>
@@ -65,7 +70,7 @@ export const StructureInfoLabel = () => {
               )}
             </Headline>
             <StructureListItem
-              structure={structure}
+              structure={structure as Structure}
               ownArmySelected={undefined}
               setShowMergeTroopsPopup={() => {}}
               maxInventory={3}

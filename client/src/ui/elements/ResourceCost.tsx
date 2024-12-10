@@ -58,7 +58,7 @@ export const ResourceCost = ({
           {" "}
           {Intl.NumberFormat("en-US", {
             notation: "compact",
-            maximumFractionDigits: 1,
+            maximumFractionDigits: 6,
           }).format(props.amount || 0)}{" "}
           <span className={clsx(balanceColor, "font-normal")}>
             {!isNaN(balance) && `(${currencyFormat(balance, 0)})`}{" "}

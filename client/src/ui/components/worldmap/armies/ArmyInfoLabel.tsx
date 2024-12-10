@@ -3,7 +3,12 @@ import { currencyFormat } from "../../../utils/utils";
 
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/useStructures";
+import {
+  Structure,
+  useIsStructureImmune,
+  useStructureImmunityTimer,
+  useStructures,
+} from "@/hooks/helpers/useStructures";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
@@ -55,7 +60,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
-  const timer = useStructureImmunityTimer(structure, nextBlockTimestamp || 0);
+  const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);
 
   return (
     <BaseThreeTooltip

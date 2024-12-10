@@ -49,7 +49,7 @@ export const useStructureAtPosition = ({ x, y }: Position): Structure | undefine
     const protectorArmy = getComponentValue(Protector, structureEntityId);
     const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
 
-    const name = getEntityName(structure.entity_id);
+    const name = getEntityName(structure.entity_id) || "";
 
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
     const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";

@@ -1,4 +1,9 @@
-import { useIsStructureImmune, useStructureByEntityId, useStructureImmunityTimer } from "@/hooks/helpers/useStructures";
+import {
+  Structure,
+  useIsStructureImmune,
+  useStructureByEntityId,
+  useStructureImmunityTimer,
+} from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -42,7 +47,7 @@ export const RealmDetails = () => {
   );
 
   const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
-  const timer = useStructureImmunityTimer(structure, nextBlockTimestamp || 0);
+  const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);
 
   return (
     structure && (

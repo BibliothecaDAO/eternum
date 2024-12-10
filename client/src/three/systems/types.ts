@@ -20,6 +20,7 @@ export type StructureSystemUpdate = {
   stage: StructureProgress;
   level: number;
   owner: { address: bigint };
+  hasWonder: boolean;
 };
 
 export type TileSystemUpdate = {
