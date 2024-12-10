@@ -1,12 +1,12 @@
 import {
-  TROOPS_STAMINAS,
-  TROOPS_FOOD_CONSUMPTION,
-  ResourcesIds,
-  findResourceById,
   EternumGlobalConfig,
+  ResourcesIds,
+  TROOPS_FOOD_CONSUMPTION,
+  TROOPS_STAMINAS,
+  findResourceById,
 } from "@bibliothecadao/eternum";
+import { formatAmount, formatNumberWithSpaces } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
-import { formatNumberWithSpaces } from "../utils/formatting";
 
 type TroopId = keyof typeof TROOPS_STAMINAS;
 
@@ -38,18 +38,24 @@ export default function TroopsTable() {
                 <div className="text-left">
                   <div>Travel</div>
                   <div className="text-gray-400">
-                    {formatNumberWithSpaces(foodConsumption.travel_wheat_burn_amount)}
+                    {formatNumberWithSpaces(Number(formatAmount(foodConsumption.travel_wheat_burn_amount)))}
                   </div>
-                  <div className="text-gray-400">{formatNumberWithSpaces(foodConsumption.travel_fish_burn_amount)}</div>
+                  <div className="text-gray-400">
+                    {formatNumberWithSpaces(Number(formatAmount(foodConsumption.travel_fish_burn_amount)))}
+                  </div>
                 </div>
 
                 <div className="text-left">
                   <div>Explore</div>
                   <div className="text-gray-400">
-                    {formatNumberWithSpaces(foodConsumption.explore_wheat_burn_amount)}
+                    {formatNumberWithSpaces(
+                      Number(formatAmount(foodConsumption.explore_wheat_burn_amount))
+                    )}
                   </div>
                   <div className="text-gray-400">
-                    {formatNumberWithSpaces(foodConsumption.explore_fish_burn_amount)}
+                    {formatNumberWithSpaces(
+                      Number(formatAmount(foodConsumption.explore_fish_burn_amount))
+                    )}
                   </div>
                 </div>
 
@@ -65,7 +71,9 @@ export default function TroopsTable() {
               <div className="grid grid-cols-3 gap-2">
                 <div className="text-left">
                   <div>Travel</div>
-                  <div className="text-gray-400">{formatNumberWithSpaces(EternumGlobalConfig.stamina.travelCost)}</div>
+                  <div className="text-gray-400">
+                    {formatNumberWithSpaces(EternumGlobalConfig.stamina.travelCost)}
+                  </div>
                 </div>
 
                 <div className="text-left">
