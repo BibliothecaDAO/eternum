@@ -5,7 +5,13 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress, multiplyByPrecision } from "@/lib/utils";
-import { ADMIN_BANK_ENTITY_ID, DONKEY_ENTITY_TYPE, RESOURCE_PRECISION, resources, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  ADMIN_BANK_ENTITY_ID,
+  DONKEY_ENTITY_TYPE,
+  RESOURCE_PRECISION,
+  resources,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { useAccount } from "@starknet-react/core";
 import { InfoIcon, Loader, Plus } from "lucide-react";

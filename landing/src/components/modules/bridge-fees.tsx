@@ -49,9 +49,7 @@ export const BridgeFees = ({
         amount.toString(),
       );
       const seasonPoolFee = calculateBridgeFee(
-        type === "deposit"
-          ? bridgeConfig.season_pool_fee_on_dpt_percent
-          : bridgeConfig.season_pool_fee_on_wtdr_percent,
+        type === "deposit" ? bridgeConfig.season_pool_fee_on_dpt_percent : bridgeConfig.season_pool_fee_on_wtdr_percent,
         amount.toString(),
       );
       const clientFee = calculateBridgeFee(
@@ -89,7 +87,7 @@ export const BridgeFees = ({
       </CollapsibleTrigger>
       <CollapsibleContent className="flex flex-col gap-4 pt-4">
         {feesForAllResources.map((fees) => {
-            const resourceName = ResourcesIds[fees.contract as keyof typeof ResourcesIds];
+          const resourceName = ResourcesIds[fees.contract as keyof typeof ResourcesIds];
           return (
             <div key={fees.contract} className="flex flex-col gap-2">
               <div className="font-semibold text-sm">

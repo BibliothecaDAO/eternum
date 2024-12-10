@@ -48,14 +48,10 @@ export default function TroopsTable() {
                 <div className="text-left">
                   <div>Explore</div>
                   <div className="text-gray-400">
-                    {formatNumberWithSpaces(
-                      Number(formatAmount(foodConsumption.explore_wheat_burn_amount))
-                    )}
+                    {formatNumberWithSpaces(Number(formatAmount(foodConsumption.explore_wheat_burn_amount)))}
                   </div>
                   <div className="text-gray-400">
-                    {formatNumberWithSpaces(
-                      Number(formatAmount(foodConsumption.explore_fish_burn_amount))
-                    )}
+                    {formatNumberWithSpaces(Number(formatAmount(foodConsumption.explore_fish_burn_amount)))}
                   </div>
                 </div>
 
@@ -71,9 +67,7 @@ export default function TroopsTable() {
               <div className="grid grid-cols-3 gap-2">
                 <div className="text-left">
                   <div>Travel</div>
-                  <div className="text-gray-400">
-                    {formatNumberWithSpaces(EternumGlobalConfig.stamina.travelCost)}
-                  </div>
+                  <div className="text-gray-400">{formatNumberWithSpaces(EternumGlobalConfig.stamina.travelCost)}</div>
                 </div>
 
                 <div className="text-left">
