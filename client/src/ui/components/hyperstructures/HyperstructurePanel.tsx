@@ -36,6 +36,8 @@ enum Loading {
 }
 
 export const HyperstructurePanel = ({ entity }: any) => {
+  const dojo = useDojo();
+
   const {
     account: { account },
     network: { provider },
@@ -43,7 +45,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
       systemCalls: { contribute_to_construction, set_access },
       components: { Hyperstructure },
     },
-  } = useDojo();
+  } = dojo;
 
   const { getGuildFromPlayerAddress } = useGuilds();
 
@@ -135,7 +137,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   }, [myContributions, updates]);
 
   const myShares = useMemo(() => {
-    return LeaderboardManager.instance().getAddressShares(ContractAddress(account.address), entity.entity_id);
+    return LeaderboardManager.instance(dojo).getAddressShares(ContractAddress(account.address), entity.entity_id);
   }, [myContributions, updates]);
 
   const setAccess = async (access: bigint) => {

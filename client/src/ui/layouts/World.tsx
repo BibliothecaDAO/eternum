@@ -5,7 +5,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
-import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
+import { useHyperstructureData } from "@/hooks/store/useLeaderBoardStore";
 import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
@@ -91,7 +91,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   // Setup hooks
   useFetchBlockchainData();
-  useSubscriptionToHyperstructureEvents();
+  useHyperstructureData();
   useStructureEntityId();
   useStartingTutorial();
 

@@ -18,7 +18,7 @@ import useUIStore from "../store/useUIStore";
 export function useResourcesUtils() {
   const { setup } = useDojo();
   const {
-    components: { Weight, ResourceCost, Realm, CapacityCategory },
+    components: { Weight, Resource, ResourceCost, Realm, CapacityCategory },
   } = setup;
 
   const useResourcesFromBalance = (entityId: ID) => {
@@ -44,7 +44,10 @@ export function useResourcesUtils() {
     const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
     const weight = getComponentValue(Weight, getEntityIdFromKeys([BigInt(entityId)]));
-    if (!weight || weight.value === 0n) return [];
+    const hasLords =
+      (getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(ResourcesIds.Lords)]))?.balance ??
+        0n) > 0n;
+    if (!weight?.value && !hasLords) return [];
     const resourceIds = resources.map((r) => r.id);
     return resourceIds
       .map((id) => {

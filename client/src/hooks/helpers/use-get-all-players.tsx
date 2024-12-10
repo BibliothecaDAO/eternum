@@ -1,4 +1,3 @@
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { Player } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
@@ -8,22 +7,23 @@ import { useEntitiesUtils } from "./useEntities";
 import { calculateLordsShare, calculatePlayerSharePercentage } from "@/ui/utils/leaderboard";
 import { StructureType } from "@bibliothecadao/eternum";
 import { formatEther } from "viem";
+import { useLeaderBoardStore } from "../store/useLeaderBoardStore";
 import { usePrizePool } from "./use-rewards";
 
 export const useGetAllPlayers = () => {
+  const dojo = useDojo();
+
   const {
     setup: {
       components: { Realm, Owner, GuildMember, AddressName, Hyperstructure, Structure },
     },
-  } = useDojo();
-  const nextBlockTimestamp = Math.floor(Date.now() / 1000);
-
+  } = dojo;
   const { getEntityName } = useEntitiesUtils();
+  const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
 
   const prizePool = usePrizePool();
 
   const playerEntities = runQuery([Has(AddressName)]);
-  const playersByRank = LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0);
 
   const totalPoints = playersByRank.reduce((sum, [, points]) => sum + points, 0);
 
