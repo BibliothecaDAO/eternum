@@ -74,7 +74,7 @@ export const ARMIES_TICK_INTERVAL_SECONDS = 3600;
 
 // ----- Speed ----- //
 // @dev: Seconds per km
-export const DONKEY_SPEED = 24;
+export const DONKEY_SPEED = 14;
 
 // @TODO: Deprecate this constant everywhere
 export const ARMY_SPEED = 1;
