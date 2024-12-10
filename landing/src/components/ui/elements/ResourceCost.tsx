@@ -35,7 +35,7 @@ export const ResourceCost = ({
   return (
     <div
       className={clsx(
-        "relative flex items-center p-2 bg-gold/10  gap-1 border border-gold/10",
+        "relative flex items-center p-2 bg-gold/10 w-full mr-3 gap-1 border border-gold/10",
         type === "horizontal" ? "flex-row" : "flex-col justify-center",
         className,
       )}
