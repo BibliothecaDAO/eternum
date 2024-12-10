@@ -59,7 +59,6 @@ const usePlayerArrivals = () => {
         (getComponentValue(Resource, getEntityIdFromKeys([BigInt(id), BigInt(ResourcesIds.Lords)]))?.balance ?? 0n) >
         0n;
       const hasResources = hasLords || getComponentValue(Weight, id)?.value !== 0n || false;
-      console.log({ hasLords, hasResources });
       const isHome = playerStructurePositions.some(
         (structurePosition) => structurePosition.x === position?.x && structurePosition.y === position?.y,
       );
@@ -99,7 +98,6 @@ const usePlayerArrivals = () => {
     const query = defineQuery([Has(Position), ...queryFragments], { runOnInit: false });
 
     const handleArrivalUpdate = (arrivals: ArrivalInfo[], newArrival: ArrivalInfo | undefined) => {
-      console.log({ newArrival });
       if (!newArrival) return arrivals;
 
       if (!newArrival.hasResources || !newArrival.isHome) {
@@ -139,8 +137,6 @@ export const usePlayerArrivalsNotificationLength = () => {
   const [notificationLength, setNotificationLength] = useState(0);
 
   const arrivals = usePlayerArrivals();
-
-  console.log({ arrivals });
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
