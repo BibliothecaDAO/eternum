@@ -19,6 +19,7 @@ import { displayAddress } from "../../ui/utils/utils";
 import { useQuery } from "../helpers/useQuery";
 import { useAddressStore } from "../store/useAddressStore";
 import useUIStore from "../store/useUIStore";
+import { useSeasonStart } from "../useSeasonStart";
 import { useAccountStore } from "./accountStore";
 
 interface DojoAccount {
@@ -154,6 +155,8 @@ const DojoContextProvider = ({
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setAddressName = useAddressStore((state) => state.setAddressName);
 
+  const { countdown } = useSeasonStart();
+
   const { handleUrlChange } = useQuery();
 
   const currentValue = useContext(DojoContext);
@@ -242,10 +245,7 @@ const DojoContextProvider = ({
         console.log("ControllerAccount is null in production or not connected.");
         setTimeout(() => {
           setRetries((prevRetries) => {
-            // Explicitly set a maximum number of renders/retries
             if (prevRetries < 10) {
-              // Change 10 to your desired number of renders
-              // Force a re-render by updating state
               return prevRetries + 1;
             } else {
               setAccountsInitialized(true);
@@ -256,6 +256,8 @@ const DojoContextProvider = ({
       }
     }
   }, [isDev, controllerAccount, burnerAccount, retries]);
+
+  if (countdown > 0) return <CountdownTimer backgroundImage={backgroundImage} />;
 
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
@@ -272,8 +274,6 @@ const DojoContextProvider = ({
     if (!isConnected && !isConnecting && !controllerAccount && !isSpectatorMode) {
       return (
         <>
-          <CountdownTimer />
-
           <OnboardingContainer backgroundImage={backgroundImage}>
             <StepContainer>
               <div className="flex justify-center space-x-8 mt-2 md:mt-4">
