@@ -61,12 +61,6 @@ export class TileManager {
     return (realm?.level || RealmLevels.Settlement) as RealmLevels;
   };
 
-  getWonder = () => {
-    const realmEntityId = useUIStore.getState().structureEntityId;
-    const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
-    return realm?.has_wonder || false;
-  };
-
   existingBuildings = () => {
     const builtBuildings = Array.from(
       runQuery([
