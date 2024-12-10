@@ -1,6 +1,6 @@
 import type { Config } from "@bibliothecadao/eternum";
 import devManifest from "../contracts/manifest_dev.json";
-import productionManifest from "../contracts/manifest_prod.json";
+import productionManifest from "../contracts/manifest_mainnet.json";
 
 import {
   EternumConfig,
@@ -28,8 +28,6 @@ const {
   VITE_VRF_PROVIDER_ADDRESS,
 } = process.env;
 
-console.log("VRF_PROVIDER_ADDRESS", VITE_VRF_PROVIDER_ADDRESS);
-
 const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 
 // Bug in bun we have to use http://127.0.0.1:5050/
@@ -51,85 +49,93 @@ const provider = new EternumProvider(manifest, nodeUrl, VITE_VRF_PROVIDER_ADDRES
 console.log("Account set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
-const setupConfig: Config =
-  VITE_PUBLIC_DEV === "true" || VITE_PUBLIC_CHAIN === "sepolia"
-    ? {
-        ...EternumGlobalConfig,
-        // questResources: MAX_QUEST_RESOURCES as typeof EternumGlobalConfig.questResources,
-        // stamina: {
-        //   ...EternumGlobalConfig.stamina,
-        //   travelCost: 0,
-        //   exploreCost: 0,
-        // },
-        // carryCapacityGram: {
-        //   ...EternumGlobalConfig.carryCapacityGram,
-        //   [CapacityConfigCategory.Storehouse]: 300_000_000_000,
-        // },
-        battle: {
-          graceTickCount: 0,
-          graceTickCountHyp: 0,
-          delaySeconds: 0,
-        },
+// const setupConfig: Config =
+//   VITE_PUBLIC_DEV === "true" || VITE_PUBLIC_CHAIN === "sepolia"
+//     ? {
+//         ...EternumGlobalConfig,
+//         // questResources: MAX_QUEST_RESOURCES as typeof EternumGlobalConfig.questResources,
+//         // stamina: {
+//         //   ...EternumGlobalConfig.stamina,
+//         //   travelCost: 0,
+//         //   exploreCost: 0,
+//         // },
+//         // carryCapacityGram: {
+//         //   ...EternumGlobalConfig.carryCapacityGram,
+//         //   [CapacityConfigCategory.Storehouse]: 300_000_000_000,
+//         // },
+//         battle: {
+//           graceTickCount: 0,
+//           graceTickCountHyp: 0,
+//           delaySeconds: 0,
+//         },
 
-        // increase the probability of failure for shards mines
-        exploration: {
-          ...EternumGlobalConfig.exploration,
-          shardsMinesFailProbability: 10000,
-        },
+//         // increase the probability of failure for shards mines
+//         exploration: {
+//           ...EternumGlobalConfig.exploration,
+//           shardsMinesFailProbability: 10000,
+//         },
 
-        // bridge close after 2 hours in dev mode
-        season: {
-          ...EternumGlobalConfig.season,
-          startAfterSeconds: 60 * 10, // 10 minutes
-          bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 2 hours
-        },
+//         // bridge close after 2 hours in dev mode
+//         season: {
+//           ...EternumGlobalConfig.season,
+//           startAfterSeconds: 60 * 10, // 10 minutes
+//           bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 2 hours
+//         },
 
-        // bridge fees to multi in dev mode
-        bridge: {
-          ...EternumGlobalConfig.bridge,
-          velords_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
-          season_pool_fee_recipient: BigInt(getContractByName(manifest, `${NAMESPACE}-season_systems`)), // Season System holds the Lords...
-        },
+//         // bridge fees to multi in dev mode
+//         bridge: {
+//           ...EternumGlobalConfig.bridge,
+//           velords_fee_recipient: BigInt(VITE_PUBLIC_MASTER_ADDRESS),
+//           season_pool_fee_recipient: BigInt(getContractByName(manifest, `${NAMESPACE}-season_systems`)), // Season System holds the Lords...
+//         },
 
-        // make it easier to build hyperstructures in dev mode
-        hyperstructures: {
-          ...EternumGlobalConfig.hyperstructures,
-          hyperstructurePointsForWin: 100_000,
-          // hyperstructureTotalCosts: [
-          //   ...EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
-          //     resource_tier: cost.resource_tier,
-          //     min_amount: Math.floor(Math.random() * 4) + 1,
-          //     max_amount: Math.floor(Math.random() * 10) + 5,
-          //   })),
-          //   {
-          //     resource_tier: ResourceTier.Lords,
-          //     min_amount: 3,
-          //     max_amount: 3,
-          //   },
-          //   {
-          //     resource_tier: ResourceTier.Food,
-          //     min_amount: 0,
-          //     max_amount: 0,
-          //   },
-          //   {
-          //     resource_tier: ResourceTier.Military,
-          //     min_amount: 0,
-          //     max_amount: 0,
-          //   },
-          // ],
-        },
-      }
-    : EternumGlobalConfig;
+//         // make it easier to build hyperstructures in dev mode
+//         hyperstructures: {
+//           ...EternumGlobalConfig.hyperstructures,
+//           hyperstructurePointsForWin: 100_000,
+//           // hyperstructureTotalCosts: [
+//           //   ...EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
+//           //     resource_tier: cost.resource_tier,
+//           //     min_amount: Math.floor(Math.random() * 4) + 1,
+//           //     max_amount: Math.floor(Math.random() * 10) + 5,
+//           //   })),
+//           //   {
+//           //     resource_tier: ResourceTier.Lords,
+//           //     min_amount: 3,
+//           //     max_amount: 3,
+//           //   },
+//           //   {
+//           //     resource_tier: ResourceTier.Food,
+//           //     min_amount: 0,
+//           //     max_amount: 0,
+//           //   },
+//           //   {
+//           //     resource_tier: ResourceTier.Military,
+//           //     min_amount: 0,
+//           //     max_amount: 0,
+//           //   },
+//           // ],
+//         },
+//       }
+//     : EternumGlobalConfig;
+
+const setupConfig: Config = EternumGlobalConfig;
 
 setupConfig.vrf.vrfProviderAddress = VITE_VRF_PROVIDER_ADDRESS!;
 
-// probably should be refactored
+// Bridge
+setupConfig.bridge = {
+  ...EternumGlobalConfig.bridge,
+  velords_fee_recipient: BigInt('0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5'), // burner
+  season_pool_fee_recipient: BigInt(getContractByName(manifest, `${NAMESPACE}-season_systems`)),
+},
+
+// Season Pass
 setupConfig.season = {
+  ...EternumGlobalConfig.season, 
   seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
   realmsAddress: process.env.VITE_REALMS_ADDRESS!,
   lordsAddress: process.env.VITE_LORDS_ADDRESS!,
-  startAfterSeconds: 60 * 5, // 5 minutes
-  bridgeCloseAfterEndSeconds: 60 * 60 * 2, // 2 hours
 };
 
 export const config = new EternumConfig(setupConfig);
@@ -142,5 +148,4 @@ console.log("Waiting for 20 seconds before setting up the bank...");
 await new Promise((resolve) => setTimeout(resolve, 20000));
 
 console.log("Setting up bank...");
-
 await config.setupBank(account, provider);
