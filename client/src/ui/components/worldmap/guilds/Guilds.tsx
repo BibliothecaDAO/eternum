@@ -1,14 +1,23 @@
 import { useGuilds } from "@/hooks/helpers/useGuilds";
+import { PRIZE_POOL_GUILDS } from "@/ui/constants";
 import Button from "@/ui/elements/Button";
+import { SortInterface } from "@/ui/elements/SortButton";
 import TextInput from "@/ui/elements/TextInput";
-import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { sortItems } from "@/ui/utils/utils";
+import { calculateGuildLordsPrize, ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { CreateGuildButton } from "./CreateGuildButton";
-import { GuildList } from "./GuildList";
+import { GuildListHeader, GuildRow } from "./GuildList";
 
-export const Guilds = ({ viewGuildMembers }: { viewGuildMembers: (guildEntityId: ID) => void }) => {
+export const Guilds = ({
+  viewGuildMembers,
+  players,
+}: {
+  viewGuildMembers: (guildEntityId: ID) => void;
+  players: Player[];
+}) => {
   const {
     setup: {
       systemCalls: { create_guild },
@@ -30,17 +39,88 @@ export const Guilds = ({ viewGuildMembers }: { viewGuildMembers: (guildEntityId:
   const [guildSearchTerm, setGuildSearchTerm] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [guildName, setGuildName] = useState("");
+  const [activeSort, setActiveSort] = useState<SortInterface>({
+    sortKey: "rank",
+    sort: "asc",
+  });
+
+  // Aggregate player data per guild
+  const guildsWithStats = useMemo(() => {
+    const guildStats = new Map<
+      string,
+      {
+        totalPoints: number;
+        totalRealms: number;
+        totalMines: number;
+        totalHypers: number;
+        memberCount: number;
+      }
+    >();
+
+    players.forEach((player) => {
+      const guild = getGuildFromPlayerAddress(player.address);
+      if (guild) {
+        const stats = guildStats.get(guild.entityId.toString()) || {
+          totalPoints: 0,
+          totalRealms: 0,
+          totalMines: 0,
+          totalHypers: 0,
+          memberCount: 0,
+        };
+
+        stats.totalPoints += player.points || 0;
+        stats.totalRealms += player.realms || 0;
+        stats.totalMines += player.mines || 0;
+        stats.totalHypers += player.hyperstructures || 0;
+        stats.memberCount++;
+
+        guildStats.set(guild.entityId.toString(), stats);
+      }
+    });
+
+    return guilds
+      .map((guild) => {
+        const stats = guildStats.get(guild.entityId.toString()) || {
+          totalPoints: 0,
+          totalRealms: 0,
+          totalMines: 0,
+          totalHypers: 0,
+          memberCount: 0,
+        };
+        return {
+          ...guild,
+          points: stats.totalPoints,
+          realms: stats.totalRealms,
+          mines: stats.totalMines,
+          hyperstructures: stats.totalHypers,
+          memberCount: stats.memberCount,
+        };
+      })
+      .sort((a, b) => b.points - a.points)
+      .map((guild, index) => {
+        const rank = index + 1;
+        return {
+          ...guild,
+          rank,
+          lords: calculateGuildLordsPrize(rank, PRIZE_POOL_GUILDS),
+        };
+      });
+  }, [guilds, players]);
 
   const filteredGuilds = useMemo(
     () =>
-      guilds.filter((guild) => {
-        const nameMatch = guild.name.toLowerCase().startsWith(guildSearchTerm.toLowerCase());
-        if (viewGuildInvites) {
-          return nameMatch && guildInvites.some((invite) => invite.guildEntityId === guild.entityId);
-        }
-        return nameMatch;
-      }),
-    [guilds, guildSearchTerm, guildInvites, viewGuildInvites],
+      sortItems(
+        guildsWithStats.filter((guild) => {
+          const nameMatch = guild.name.toLowerCase().startsWith(guildSearchTerm.toLowerCase());
+          if (viewGuildInvites) {
+            return nameMatch && guildInvites.some((invite) => invite.guildEntityId === guild.entityId);
+          }
+          return nameMatch;
+        }),
+        activeSort,
+        { sortKey: "rank", sort: "asc" },
+      ),
+    [guildsWithStats, guildSearchTerm, guildInvites, viewGuildInvites, activeSort],
   );
 
   const handleCreateGuild = (guildName: string, isPublic: boolean) => {
@@ -102,7 +182,17 @@ export const Guilds = ({ viewGuildMembers }: { viewGuildMembers: (guildEntityId:
       </div>
 
       <div className="flex-1 min-h-0">
-        <GuildList guilds={filteredGuilds} viewGuildInvites={viewGuildInvites} viewGuildMembers={viewGuildMembers} />
+        <div className="flex flex-col h-full p-2 bg-brown-900/50 border border-gold/30 rounded-xl backdrop-blur-sm">
+          <GuildListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
+          <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+            {filteredGuilds.map((guild) => (
+              <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
+            ))}
+            {!filteredGuilds.length && viewGuildInvites && (
+              <p className="text-center italic">No Tribe Invites Received</p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

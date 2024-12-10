@@ -257,7 +257,6 @@ export const isRealmSelected = (structureEntityId: ID, structures: any) => {
 
 export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
   const configManager = ClientConfigManager.instance();
-
   return resources.reduce(
     (total, resource) =>
       total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),

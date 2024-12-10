@@ -1,5 +1,6 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { ID, resources } from "@bibliothecadao/eternum";
+import { XIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { divideByPrecision } from "../ui/utils/utils";
 import Button from "./elements/Button";
@@ -28,8 +29,6 @@ export const SelectResources = ({
   );
 
   const addResourceGive = () => {
-    console.log([...selectedResourceIds]);
-    console.log([unselectedResources[0].id]);
     setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
     setSelectedResourceAmounts({
       ...selectedResourceAmounts,
@@ -121,9 +120,6 @@ export const SelectSingleResource = ({
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
     [selectedResourceIds],
   );
-  console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu");
-  console.log(typeof entity_id);
-  console.log({ unselectedResources, resources, selectedResourceIds });
 
   useEffect(() => {
     if (selectedResourceIds.length === 0) {
@@ -132,8 +128,6 @@ export const SelectSingleResource = ({
   }, [selectedResourceIds]);
 
   const addResourceGive = () => {
-    console.log([...selectedResourceIds]);
-    console.log([unselectedResources[0].id]);
     setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
     setSelectedResourceAmounts({
       ...selectedResourceAmounts,
@@ -153,48 +147,52 @@ export const SelectSingleResource = ({
         }));
 
         return (
-          <div key={id} className="flex items-center gap-4">
-            {selectedResourceIds.length > 1 && (
-              <Button
-                variant="red"
-                onClick={() => {
-                  const updatedResourceIds = selectedResourceIds.filter((_: any, i: any) => i !== index);
+          <>
+            <div key={id} className="flex items-center gap-4">
+              <ListSelect
+                className="overflow-hidden"
+                options={options}
+                value={selectedResourceIds[index]}
+                onChange={(value) => {
+                  const updatedResourceIds = [...selectedResourceIds];
+                  updatedResourceIds[index] = value;
                   setSelectedResourceIds(updatedResourceIds);
-                  const { [id]: _, ...updatedAmounts } = selectedResourceAmounts;
-                  setSelectedResourceAmounts(updatedAmounts);
+                  setSelectedResourceAmounts({
+                    ...selectedResourceAmounts,
+                    [value]: 1,
+                  });
+                  // playResourceSound(value);
                 }}
-              >
-                Remove
-              </Button>
-            )}
-            <ListSelect
-              className="overflow-hidden"
-              options={options}
-              value={selectedResourceIds[index]}
-              onChange={(value) => {
-                const updatedResourceIds = [...selectedResourceIds];
-                updatedResourceIds[index] = value;
-                setSelectedResourceIds(updatedResourceIds);
-                setSelectedResourceAmounts({
-                  ...selectedResourceAmounts,
-                  [value]: 1,
-                });
-                // playResourceSound(value);
-              }}
-            />
-            <NumberInput
-              className="h-14 "
-              max={divideByPrecision(resource?.balance || 0)}
-              min={1}
-              value={selectedResourceAmounts[id]}
-              onChange={(value) => {
-                setSelectedResourceAmounts({
-                  ...selectedResourceAmounts,
-                  [id]: Math.min(divideByPrecision(resource?.balance || 0), value),
-                });
-              }}
-            />
-          </div>
+              />
+              <NumberInput
+                className="h-14"
+                max={divideByPrecision(resource?.balance || 0)}
+                min={1}
+                value={selectedResourceAmounts[id]}
+                onChange={(value) => {
+                  setSelectedResourceAmounts({
+                    ...selectedResourceAmounts,
+                    [id]: Math.min(divideByPrecision(resource?.balance || 0), value),
+                  });
+                }}
+              />
+              {selectedResourceIds.length > 1 && (
+                <Button
+                  variant="red"
+                  className="px-0"
+                  onClick={() => {
+                    const updatedResourceIds = selectedResourceIds.filter((_: any, i: any) => i !== index);
+                    setSelectedResourceIds(updatedResourceIds);
+                    const { [id]: _, ...updatedAmounts } = selectedResourceAmounts;
+                    setSelectedResourceAmounts(updatedAmounts);
+                  }}
+                  size="xs"
+                >
+                  <XIcon className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          </>
         );
       })}
     </div>
@@ -228,8 +226,6 @@ export const ShowSingleResource = ({
   }, [selectedResourceIds]);
 
   const addResourceGive = () => {
-    console.log([...selectedResourceIds]);
-    console.log([unselectedResources[0].id]);
     setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
     setSelectedResourceAmounts({
       ...selectedResourceAmounts,

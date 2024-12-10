@@ -1,11 +1,15 @@
-import { configManager } from "@/dojo/setup";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
+import {
+  Structure,
+  useIsStructureImmune,
+  useStructureImmunityTimer,
+  useStructures,
+} from "@/hooks/helpers/useStructures";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
-import { ContractAddress, TickIds } from "@bibliothecadao/eternum";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { StructureListItem } from "./StructureListItem";
@@ -47,19 +51,8 @@ export const StructureInfoLabel = () => {
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
-  const isImmune = useIsStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
-
-  const immunityEndTimestamp = useMemo(() => {
-    return (
-      Number(structure?.created_at || 0) +
-      configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
-    );
-  }, [structure?.created_at]);
-
-  const timer = useMemo(() => {
-    if (!nextBlockTimestamp) return 0;
-    return immunityEndTimestamp - nextBlockTimestamp!;
-  }, [immunityEndTimestamp, nextBlockTimestamp]);
+  const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
+  const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);
 
   return (
     <>
@@ -77,7 +70,7 @@ export const StructureInfoLabel = () => {
               )}
             </Headline>
             <StructureListItem
-              structure={structure}
+              structure={structure as Structure}
               ownArmySelected={undefined}
               setShowMergeTroopsPopup={() => {}}
               maxInventory={3}

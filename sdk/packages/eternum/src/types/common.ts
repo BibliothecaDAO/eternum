@@ -4,6 +4,7 @@ import {
   QuestType,
   RealmLevels,
   ResourcesIds,
+  ResourceTier,
   TroopFoodConsumption,
 } from "../constants";
 
@@ -181,6 +182,7 @@ export interface RealmInterface {
   resourceTypesPacked: bigint;
   order: number;
   owner?: ContractAddress;
+  imageUrl: string;
 }
 
 /// LABOR
@@ -237,6 +239,11 @@ export function ContractAddress(address: string | bigint): ContractAddress {
 export interface ResourceCost {
   resource: ResourcesIds;
   amount: number;
+}
+export interface ResourceCostMinMax {
+  resource_tier: ResourceTier;
+  min_amount: number;
+  max_amount: number;
 }
 
 export interface ResourceInputs {
@@ -356,6 +363,7 @@ export interface Config {
     realmsAddress: string;
     lordsAddress: string;
     startAfterSeconds: number;
+    bridgeCloseAfterEndSeconds: number;
   };
   bridge: {
     velords_fee_on_dpt_percent: number;
@@ -369,6 +377,9 @@ export interface Config {
     max_bank_fee_dpt_percent: number;
     max_bank_fee_wtdr_percent: number;
   };
+  vrf: {
+    vrfProviderAddress: string;
+  };
   buildings: {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
@@ -378,9 +389,9 @@ export interface Config {
   };
 
   hyperstructures: {
-    hyperstructureCreationCosts: ResourceCost[];
-    hyperstructureConstructionCosts: ResourceCost[];
-    hyperstructureTotalCosts: ResourceCost[];
+    hyperstructureCreationCosts: ResourceCostMinMax[];
+    hyperstructureConstructionCosts: ResourceCostMinMax[];
+    hyperstructureTotalCosts: ResourceCostMinMax[];
     hyperstructurePointsPerCycle: number;
     hyperstructurePointsOnCompletion: number;
     hyperstructureTimeBetweenSharesChangeSeconds: number;
@@ -392,11 +403,17 @@ export interface Config {
 }
 
 export interface Player {
-  address: ContractAddress;
-  addressName: string;
-  rank?: number;
-  points?: number;
-  isAlive?: boolean;
+  rank: number;
+  address: bigint;
+  name: string;
+  points: number;
+  percentage: number;
+  lords: number;
+  realms: number;
+  mines: number;
+  hyperstructures: number;
+  isAlive: boolean;
+  guildName: string;
 }
 
 export type GuildInfo = {

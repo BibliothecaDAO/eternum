@@ -8,7 +8,8 @@ pub struct Season {
     #[key]
     config_id: ID,
     start_at: u64,
-    is_over: bool
+    is_over: bool,
+    ended_at: u64
 }
 
 #[generate_trait]
@@ -17,6 +18,7 @@ pub impl SeasonImpl of SeasonTrait {
         // world.read_model(
         let mut season: Season = world.read_model(WORLD_CONFIG_ID);
         season.is_over = true;
+        season.ended_at = starknet::get_block_timestamp();
         world.write_model(@season);
     }
 
@@ -61,6 +63,28 @@ pub struct LeaderboardRegistered {
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
+pub struct LeaderboardRegisterContribution {
+    #[key]
+    address: starknet::ContractAddress,
+    #[key]
+    hyperstructure_entity_id: ID,
+    registered: bool
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct LeaderboardRegisterShare {
+    #[key]
+    address: starknet::ContractAddress,
+    #[key]
+    hyperstructure_entity_id: ID,
+    #[key]
+    epoch: u16,
+    registered: bool
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
 pub struct LeaderboardRewardClaimed {
     #[key]
     address: starknet::ContractAddress,
@@ -83,15 +107,18 @@ pub impl LeaderboardEntryImpl of LeaderboardEntryTrait {
     }
 
     fn register(ref self: Leaderboard, ref world: WorldStorage, address: starknet::ContractAddress, points: u128) {
-        // allow single registration per address to prevent `self.total_points` inflation
         let mut leaderboard_registered: LeaderboardRegistered = world.read_model(address);
-        assert!(leaderboard_registered.registered == false, "Address already registered points");
+        if !leaderboard_registered.registered {
+            leaderboard_registered.registered = true;
+            world.write_model(@leaderboard_registered);
+        }
 
-        leaderboard_registered.registered = true;
-        world.write_model(@leaderboard_registered);
-
-        let mut leaderboard_entry = LeaderboardEntry { address, points };
+        // update leaderboard entry points
+        let mut leaderboard_entry: LeaderboardEntry = world.read_model(address);
+        leaderboard_entry.points += points;
         world.write_model(@leaderboard_entry);
+
+        // update leaderboard total points
         self.total_points += points;
         world.write_model(@self);
     }

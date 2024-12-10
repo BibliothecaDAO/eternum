@@ -1,20 +1,18 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
-import { SetupResult } from "@/dojo/setup";
-import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
-import { BuildingType, ContractAddress, ID, QuestType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { questDetails } from "@/ui/components/quest/questDetails";
+import { BuildingType, ContractAddress, ID, QuestType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { HasValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useCallback, useMemo } from "react";
-import { Account, AccountInterface } from "starknet";
+import { useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
-import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
-import { useEntities, useEntitiesUtils } from "./useEntities";
+import { ArmyInfo, useArmiesByEntityOwnerWithPositionAndQuantity } from "./useArmies";
+import { useEntitiesUtils } from "./useEntities";
 import { useGetMyOffers } from "./useTrade";
 
 export interface Quest {
-  id: QuestId;
+  id: QuestType;
   view: string;
   name: string;
   description: string | React.ReactNode;
@@ -36,59 +34,56 @@ export enum QuestStatus {
 }
 
 export const useQuests = () => {
-  const { setup, account } = useDojo();
+  const questDependencies = useQuestDependencies();
 
-  const questDependencies = useQuestDependencies(setup, account.account);
-
-  const createQuest = (questId: QuestId) => {
-    const dependency = questDependencies[questId];
+  const createQuest = (QuestType: QuestType) => {
+    const dependency = questDependencies[QuestType];
     return useMemo(
       () => ({
-        id: questId,
-        ...questDetails.get(questId)!,
+        id: QuestType,
+        ...questDetails.get(QuestType)!,
         status: dependency.status,
       }),
-      [questDependencies[questId]],
+      [questDependencies[QuestType]],
     );
   };
 
   const quests = [
-    createQuest(QuestId.Settle),
-    createQuest(QuestId.BuildFood),
-    createQuest(QuestId.BuildResource),
-    createQuest(QuestId.PauseProduction),
-    createQuest(QuestId.CreateTrade),
-    createQuest(QuestId.CreateDefenseArmy),
-    createQuest(QuestId.CreateAttackArmy),
-    createQuest(QuestId.Travel),
-    createQuest(QuestId.BuildWorkersHut),
-    createQuest(QuestId.Market),
-    createQuest(QuestId.Pillage),
-    createQuest(QuestId.Mine),
-    createQuest(QuestId.Contribution),
-    createQuest(QuestId.Hyperstructure),
+    createQuest(QuestType.Settle),
+    createQuest(QuestType.BuildFood),
+    createQuest(QuestType.BuildResource),
+    createQuest(QuestType.PauseProduction),
+    createQuest(QuestType.CreateDefenseArmy),
+    createQuest(QuestType.CreateAttackArmy),
+    createQuest(QuestType.Travel),
+    createQuest(QuestType.CreateTrade),
   ];
 
   return { quests };
 };
 
-const useQuestDependencies = (setup: SetupResult, account: Account | AccountInterface) => {
+const useQuestDependencies = () => {
+  const {
+    setup,
+    account: { account },
+  } = useDojo();
+
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const entityUpdate = useEntityQuery([
     HasValue(setup.components.EntityOwner, { entity_owner_id: structureEntityId || 0 }),
   ]);
-  const playerPillages = useEntityQuery([
-    HasValue(setup.components.events.BattlePillageData, { pillager: BigInt(account.address) }),
-  ]);
   const buildingQuantities = useBuildingQuantities(structureEntityId);
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId || 0 });
+  const { entityArmies } = useArmiesByEntityOwnerWithPositionAndQuantity({
+    entity_owner_entity_id: structureEntityId || 0,
+  });
   const orders = useGetMyOffers();
-  const { playerStructures } = useEntities();
-  const structures = playerStructures();
   const { getEntityInfo } = useEntitiesUtils();
 
-  const structurePosition = getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 };
+  const structurePosition = useMemo(
+    () => getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 },
+    [structureEntityId, getEntityInfo],
+  );
 
   const tileManager = new TileManager(setup, {
     col: structurePosition.x,
@@ -115,145 +110,71 @@ const useQuestDependencies = (setup: SetupResult, account: Account | AccountInte
     [entityArmies, structurePosition],
   );
 
-  const countStructuresByCategory = useCallback(
-    (category: string) => {
-      return structures.filter((structure) => structure.category === category).length;
-    },
-    [structures],
-  );
-
-  const fragmentMines = useMemo(
-    () => countStructuresByCategory(StructureType[StructureType.FragmentMine]),
-    [structureEntityId, structures],
-  );
-
-  const hyperstructures = useMemo(
-    () => countStructuresByCategory(StructureType[StructureType.Hyperstructure]),
-    [structureEntityId, structures],
-  );
-
-  const hyperstructureContributions = useMemo(
-    () =>
-      runQuery([
-        HasValue(setup.components.Contribution, { player_address: ContractAddress(account.address) }),
-        NotValue(setup.components.Contribution, { resource_type: ResourcesIds["AncientFragment"] }),
-      ]).size,
-    [structureEntityId],
-  );
-
   const { questClaimStatus } = useQuestClaimStatus();
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
 
   return useMemo(
     () => ({
-      [QuestId.Settle]: {
+      [QuestType.Settle]: {
         value: true,
-        status: questClaimStatus[QuestId.Settle] ? QuestStatus.Claimed : QuestStatus.Completed,
+        status: questClaimStatus[QuestType.Settle] ? QuestStatus.Claimed : QuestStatus.Completed,
       },
-      [QuestId.BuildFood]: {
-        value: questClaimStatus[QuestId.BuildFood] ? null : buildingQuantities.food,
-        status: questClaimStatus[QuestId.BuildFood]
+      [QuestType.BuildFood]: {
+        value: questClaimStatus[QuestType.BuildFood] ? null : buildingQuantities.food,
+        status: questClaimStatus[QuestType.BuildFood]
           ? QuestStatus.Claimed
           : buildingQuantities.food > 0
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
-      [QuestId.BuildResource]: {
-        value: questClaimStatus[QuestId.BuildResource] ? null : buildingQuantities.resource,
-        status: questClaimStatus[QuestId.BuildResource]
+      [QuestType.BuildResource]: {
+        value: questClaimStatus[QuestType.BuildResource] ? null : buildingQuantities.resource,
+        status: questClaimStatus[QuestType.BuildResource]
           ? QuestStatus.Claimed
           : buildingQuantities.resource > 0
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
 
-      [QuestId.PauseProduction]: {
-        value: questClaimStatus[QuestId.PauseProduction] ? null : hasAnyPausedBuilding,
-        status: questClaimStatus[QuestId.PauseProduction]
+      [QuestType.PauseProduction]: {
+        value: questClaimStatus[QuestType.PauseProduction] ? null : hasAnyPausedBuilding,
+        status: questClaimStatus[QuestType.PauseProduction]
           ? QuestStatus.Claimed
           : hasAnyPausedBuilding
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
 
-      [QuestId.CreateTrade]: {
-        value: questClaimStatus[QuestId.CreateTrade] ? null : orders.length,
-        status: questClaimStatus[QuestId.CreateTrade]
-          ? QuestStatus.Claimed
-          : orders.length > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-
-      [QuestId.CreateDefenseArmy]: {
-        value: questClaimStatus[QuestId.CreateDefenseArmy] ? null : hasDefensiveArmy,
-        status: questClaimStatus[QuestId.CreateDefenseArmy]
+      [QuestType.CreateDefenseArmy]: {
+        value: questClaimStatus[QuestType.CreateDefenseArmy] ? null : hasDefensiveArmy,
+        status: questClaimStatus[QuestType.CreateDefenseArmy]
           ? QuestStatus.Claimed
           : hasDefensiveArmy
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
-      [QuestId.CreateAttackArmy]: {
-        value: questClaimStatus[QuestId.CreateAttackArmy] ? null : hasAttackingArmy,
-        status: questClaimStatus[QuestId.CreateAttackArmy]
+      [QuestType.CreateAttackArmy]: {
+        value: questClaimStatus[QuestType.CreateAttackArmy] ? null : hasAttackingArmy,
+        status: questClaimStatus[QuestType.CreateAttackArmy]
           ? QuestStatus.Claimed
           : hasAttackingArmy
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
-      [QuestId.Travel]: {
-        value: questClaimStatus[QuestId.Travel] ? null : hasTraveled,
-        status: questClaimStatus[QuestId.Travel]
+      [QuestType.Travel]: {
+        value: questClaimStatus[QuestType.Travel] ? null : hasTraveled,
+        status: questClaimStatus[QuestType.Travel]
           ? QuestStatus.Claimed
           : hasTraveled
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
-      [QuestId.BuildWorkersHut]: {
-        value: questClaimStatus[QuestId.BuildWorkersHut] ? null : buildingQuantities.workersHut,
-        status: questClaimStatus[QuestId.BuildWorkersHut]
+
+      [QuestType.CreateTrade]: {
+        value: questClaimStatus[QuestType.CreateTrade] ? null : orders.length,
+        status: questClaimStatus[QuestType.CreateTrade]
           ? QuestStatus.Claimed
-          : buildingQuantities.workersHut > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-      [QuestId.Market]: {
-        value: questClaimStatus[QuestId.Market] ? null : buildingQuantities.markets,
-        status: questClaimStatus[QuestId.Market]
-          ? QuestStatus.Claimed
-          : buildingQuantities.markets > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-      [QuestId.Pillage]: {
-        value: questClaimStatus[QuestId.Pillage] ? null : playerPillages.length,
-        status: questClaimStatus[QuestId.Pillage]
-          ? QuestStatus.Claimed
-          : playerPillages.length > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-      [QuestId.Mine]: {
-        value: questClaimStatus[QuestId.Mine] ? null : fragmentMines,
-        status: questClaimStatus[QuestId.Mine]
-          ? QuestStatus.Claimed
-          : fragmentMines > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-      [QuestId.Contribution]: {
-        value: questClaimStatus[QuestId.Contribution] ? null : hyperstructureContributions,
-        status: questClaimStatus[QuestId.Contribution]
-          ? QuestStatus.Claimed
-          : hyperstructureContributions > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-      [QuestId.Hyperstructure]: {
-        value: questClaimStatus[QuestId.Hyperstructure] ? null : hyperstructures,
-        status: questClaimStatus[QuestId.Hyperstructure]
-          ? QuestStatus.Claimed
-          : hyperstructures > 0
+          : orders.length > 0
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
@@ -294,7 +215,7 @@ export const useQuestClaimStatus = () => {
         ...acc,
         [questName]: isNotSettler || checkPrizesClaimed(questDetails.get(questName)?.prizes || []),
       }),
-      {} as Record<QuestId, boolean>,
+      {} as Record<QuestType, boolean>,
     );
   }, [prizeUpdate]);
 

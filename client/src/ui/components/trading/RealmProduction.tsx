@@ -16,7 +16,7 @@ export const RealmProduction = () => {
   const [filterConsumed, setFilterConsumed] = useState<number | null>(null);
 
   return (
-    <>
+    <div className="realm-production-selector">
       <div className="flex flex-row justify-evenly my-2 ">
         <div>
           <p>Search produced resource</p>
@@ -68,6 +68,6 @@ export const RealmProduction = () => {
             );
           })}
       </div>
-    </>
+    </div>
   );
 };

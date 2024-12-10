@@ -7,7 +7,7 @@ use dojo::world::WorldStorage;
 use s0_eternum::alias::ID;
 use s0_eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
-    split_resources_and_probs, ResourceTypes
+    split_resources_and_probs, ResourceTypes, ResourceTiers
 };
 use s0_eternum::models::buildings::BuildingCategory;
 use s0_eternum::models::capacity::{CapacityCategory, CapacityCategoryImpl, CapacityCategoryTrait};
@@ -17,11 +17,12 @@ use s0_eternum::models::position::{Coord};
 use s0_eternum::models::quantity::Quantity;
 
 use s0_eternum::models::resources::{ResourceFoodImpl};
+use s0_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
 use s0_eternum::models::weight::Weight;
 use s0_eternum::utils::map::constants::fixed_constants as fc;
 use s0_eternum::utils::math::{max, min};
+use s0_eternum::utils::random::VRFImpl;
 use s0_eternum::utils::random;
-
 use starknet::ContractAddress;
 
 //
@@ -47,6 +48,32 @@ pub struct SeasonAddressesConfig {
     lords_address: ContractAddress,
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct SeasonBridgeConfig {
+    #[key]
+    config_id: ID,
+    // the number of seconds after the season ends
+    // that the bridge will be closed
+    close_after_end_seconds: u64,
+}
+
+#[generate_trait]
+impl SeasonBridgeConfigImpl of SeasonBridgeConfigTrait {
+    fn assert_bridge_is_open(world: WorldStorage) {
+        // ensure season has started
+        let season: Season = world.read_model(WORLD_CONFIG_ID);
+        SeasonImpl::assert_has_started(world);
+
+        // check if season is over
+        if season.ended_at.is_non_zero() {
+            // close bridge after grace period has elapsed
+            let season_bridge_config: SeasonBridgeConfig = world.read_model(WORLD_CONFIG_ID);
+            let now = starknet::get_block_timestamp();
+            assert!(now <= season.ended_at + season_bridge_config.close_after_end_seconds, "Bridge is closed");
+        }
+    }
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -54,8 +81,9 @@ pub struct HyperstructureResourceConfig {
     #[key]
     config_id: ID,
     #[key]
-    resource_type: u8,
-    amount_for_completion: u128,
+    resource_tier: u8,
+    min_amount: u128,
+    max_amount: u128,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -257,7 +285,13 @@ impl SettlementConfigImpl of SettlementConfigTrait {
 impl MapConfigImpl of MapConfigTrait {
     fn random_reward(ref world: WorldStorage) -> Span<(u8, u128)> {
         let (resource_types, resources_probs) = split_resources_and_probs();
-        let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true).at(0);
+
+        let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+        let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
+        let reward_resource_id: u8 = *random::choices(
+            resource_types, resources_probs, array![].span(), 1, true, vrf_seed
+        )
+            .at(0);
 
         let explore_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
@@ -502,6 +536,23 @@ pub struct ProductionConfig {
     output_count: u128
 }
 
+// vrf
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct VRFConfig {
+    #[key]
+    config_id: ID,
+    vrf_provider_address: ContractAddress,
+}
+
+#[generate_trait]
+impl VRFConfigImpl of VRFConfigTrait {
+    fn get_provider_address(ref world: WorldStorage) -> ContractAddress {
+        let vrf_config: VRFConfig = world.read_model(WORLD_CONFIG_ID);
+        return vrf_config.vrf_provider_address;
+    }
+}
+
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -642,8 +693,27 @@ impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
 
 #[generate_trait]
 impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
-    fn get(world: WorldStorage, resource_id: u8) -> HyperstructureResourceConfig {
-        world.read_model((HYPERSTRUCTURE_CONFIG_ID, resource_id))
+    fn get_all(world: WorldStorage) -> Span<HyperstructureResourceConfig> {
+        let mut all_tier_configs: Array<HyperstructureResourceConfig> = array![];
+        let mut tier = ResourceTiers::LORDS; // lords is the first tier == 1
+        while (tier <= ResourceTiers::MYTHIC) { // mythic is the last tier == 9
+            let hyperstructure_resource_config: HyperstructureResourceConfig = world
+                .read_model((HYPERSTRUCTURE_CONFIG_ID, tier));
+            all_tier_configs.append(hyperstructure_resource_config);
+            tier += 1;
+        };
+        return all_tier_configs.span();
+    }
+
+
+    fn get_required_amount(self: @HyperstructureResourceConfig, randomness: u256) -> u128 {
+        if *self.min_amount == *self.max_amount {
+            return *self.min_amount;
+        }
+        let min_amount: u256 = (*self.min_amount).into();
+        let max_amount: u256 = (*self.max_amount).into();
+        let additional_amount = randomness % (max_amount - min_amount);
+        return (min_amount + additional_amount).try_into().unwrap();
     }
 }
 

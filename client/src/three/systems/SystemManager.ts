@@ -16,6 +16,7 @@ import {
   runQuery,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
 import {
   ArmySystemUpdate,
@@ -92,6 +93,27 @@ export class SystemManager {
               getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
             );
 
+            const addressName = getComponentValue(
+              this.setup.components.AddressName,
+              getEntityIdFromKeys([BigInt(owner?.address || 0)]),
+            );
+
+            const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
+
+            const guild = getComponentValue(
+              this.setup.components.GuildMember,
+              getEntityIdFromKeys([owner?.address || 0n]),
+            );
+
+            let guildName = "";
+            if (guild?.guild_entity_id) {
+              const guildEntityName = getComponentValue(
+                this.setup.components.EntityName,
+                getEntityIdFromKeys([BigInt(guild.guild_entity_id)]),
+              );
+              guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
+            }
+
             callback({
               entityId: army.entity_id,
               hexCoords: { col: position.x, row: position.y },
@@ -99,7 +121,7 @@ export class SystemManager {
               defender: Boolean(protectee),
               currentHealth: health.current / healthMultiplier,
               order: realm.order,
-              owner: { address: owner?.address || 0n },
+              owner: { address: owner?.address || 0n, ownerName, guildName },
             });
           }
         });
@@ -109,29 +131,54 @@ export class SystemManager {
 
   public get Structure() {
     return {
-      onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Position, callback, (update: any) => {
-          const structure = getComponentValue(this.setup.components.Structure, update.entity);
-          if (!structure) return;
+      onContribution: (callback: (value: { entityId: ID; structureType: StructureType; stage: number }) => void) => {
+        this.setupSystem(this.setup.components.Progress, callback, (update: any) => {
+          const structure = getComponentValue(
+            this.setup.components.Structure,
+            getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_entity_id)]),
+          );
 
-          const owner = getComponentValue(this.setup.components.Owner, update.entity);
+          if (!structure) return;
 
           const categoryKey = structure.category as keyof typeof StructureType;
 
           const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+
+          return {
+            entityId: structure.entity_id,
+            structureType: StructureType[categoryKey],
+            stage,
+          };
+        });
+      },
+      onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
+        this.setupSystem(this.setup.components.Structure, callback, (update: any) => {
+          const structure = getComponentValue(this.setup.components.Structure, update.entity);
+          if (!structure) return;
+
+          const position = getComponentValue(this.setup.components.Position, update.entity);
+          if (!position) return;
+
+          const owner = getComponentValue(this.setup.components.Owner, update.entity);
+          const categoryKey = structure.category as keyof typeof StructureType;
+          const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+
           let level = 0;
+          let hasWonder = false;
           if (StructureType[categoryKey] === StructureType.Realm) {
             const realm = getComponentValue(this.setup.components.Realm, update.entity);
             level = realm?.level || RealmLevels.Settlement;
+            hasWonder = realm?.has_wonder || false;
           }
 
           return {
             entityId: structure.entity_id,
-            hexCoords: this.getHexCoords(update.value),
+            hexCoords: { col: position.x, row: position.y },
             structureType: StructureType[categoryKey],
             stage,
             level,
             owner: { address: owner?.address || 0n },
+            hasWonder,
           };
         });
       },
@@ -167,6 +214,7 @@ export class SystemManager {
               isEmpty: false,
               deleted: true,
               isSiege: false,
+              isOngoing: false,
             };
           }
 
@@ -179,6 +227,10 @@ export class SystemManager {
             battle.defence_army_health.current < healthMultiplier;
 
           const isSiege = battle.start_at > Date.now() / 1000;
+          const currentTimestamp = Math.floor(Date.now() / 1000);
+          const isOngoing =
+            battle.duration_left !== 0n &&
+            currentTimestamp - Number(battle.last_updated) < Number(battle.duration_left);
 
           return {
             entityId: battle.entity_id,
@@ -186,6 +238,7 @@ export class SystemManager {
             isEmpty,
             deleted: false,
             isSiege,
+            isOngoing,
           };
         });
       },
@@ -245,7 +298,7 @@ export class SystemManager {
     return { col: value[0]?.x || 0, row: value[0]?.y || 0 };
   }
 
-  private getStructureStage(structureType: StructureType, entityId: ID): number {
+  public getStructureStage(structureType: StructureType, entityId: ID): number {
     if (structureType === StructureType.Hyperstructure) {
       const progressQueryResult = Array.from(
         runQuery([
@@ -259,11 +312,10 @@ export class SystemManager {
       });
 
       const { percentage } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
-
       if (percentage < PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_1;
       }
-      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage > PROGRESS_HALF_THRESHOLD) {
+      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage >= PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_2;
       }
       return StructureProgress.STAGE_3;
@@ -276,33 +328,25 @@ export class SystemManager {
     progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
     hyperstructureEntityId: ID,
   ) => {
-    const totalContributableAmount = configManager.getHyperstructureTotalContributableAmount();
     let percentage = 0;
-    const epsilon = 1e-10; // Small value to account for floating-point precision errors
-
-    const allProgresses = Object.values(configManager.hyperstructureTotalCosts).map(
-      ({ resource, amount: resourceCost }) => {
+    const allProgresses = configManager
+      .getHyperstructureRequiredAmounts(hyperstructureEntityId)
+      .map(({ resource, amount: resourceCost }) => {
         let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+        const resourcePercentage = !foundProgress
+          ? 0
+          : Math.floor((divideByPrecision(Number(foundProgress.amount)) / resourceCost!) * 100);
         let progress = {
           hyperstructure_entity_id: hyperstructureEntityId,
           resource_type: resource,
           amount: !foundProgress ? 0 : divideByPrecision(Number(foundProgress.amount)),
-          percentage: !foundProgress
-            ? 0
-            : Math.floor((divideByPrecision(Number(foundProgress.amount)) / resourceCost!) * 100),
+          percentage: resourcePercentage,
           costNeeded: resourceCost,
         };
-        percentage +=
-          (progress.amount * configManager.getResourceRarity(progress.resource_type)) / totalContributableAmount;
+        percentage += resourcePercentage;
         return progress;
-      },
-    );
-
-    // Adjust percentage to account for floating-point precision issues
-    if (Math.abs(percentage - 1.0) < epsilon) {
-      percentage = 1.0;
-    }
-
-    return { allProgresses, percentage };
+      });
+    const totalPercentage = percentage / allProgresses.length;
+    return { allProgresses, percentage: totalPercentage };
   };
 }

@@ -7,7 +7,7 @@ import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { BattleSimulation } from "@/ui/modules/simulation/BattleSimulation";
 import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
-import { divideByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { HintSection } from "../hints/HintModal";
 import { battleSimulation, pillageSimulation } from "../navigation/Config";
@@ -81,15 +81,15 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
         <div className="flex items-center justify-center gap-4 w-full">
           <div className="flex items-center gap-2">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="sm" className="self-center" />
-            {divideByPrecision(totalTroops.crossbowmen)}
+            {divideByPrecisionFormatted(totalTroops.crossbowmen)}
           </div>
           <div className="flex items-center gap-2">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="sm" className="self-center" />
-            {divideByPrecision(totalTroops.knights)}
+            {divideByPrecisionFormatted(totalTroops.knights)}
           </div>
           <div className="flex items-center gap-2">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="sm" className="self-center" />
-            {divideByPrecision(totalTroops.paladins)}
+            {divideByPrecisionFormatted(totalTroops.paladins)}
           </div>
         </div>
       </div>

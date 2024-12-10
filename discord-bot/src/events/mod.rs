@@ -3,6 +3,9 @@ pub mod battle_join;
 pub mod battle_leave;
 pub mod battle_pillage;
 pub mod battle_start;
+pub mod game_ended;
+pub mod hyperstructure_finished;
+pub mod hyperstructure_started;
 pub mod settle_realm;
 
 use std::time::Duration;

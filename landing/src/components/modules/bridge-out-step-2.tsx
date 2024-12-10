@@ -1,7 +1,5 @@
-import { execute } from "@/hooks/gql/execute";
-import { useRealm } from "@/hooks/helpers/useRealms";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { donkeyArrivals } from "@/hooks/helpers/useResources";
-import { GET_ERC_MINTS } from "@/hooks/query/realms";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { displayAddress } from "@/lib/utils";
 import {
@@ -12,10 +10,9 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
-import { env } from "../../../env";
+import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { ShowSingleResource } from "../ui/SelectResources";
@@ -26,9 +23,8 @@ function formatFee(fee: number) {
 }
 
 export const BridgeOutStep2 = () => {
-  const { account } = useAccount();
+  const { address } = useAccount();
 
-  const { getRealmEntityIdFromRealmId } = useRealm();
   const { getOwnerArrivalsAtBank, getDonkeyInfo } = donkeyArrivals();
   const [donkeyEntityId, setDonkeyEntityId] = useState(0n);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,38 +74,11 @@ export const BridgeOutStep2 = () => {
     [velordsFeeOnWithdrawal, seasonPoolFeeOnWithdrawal, clientFeeOnWithdrawal, bankFeeOnWithdrawal],
   );
 
-  const { data: seasonPassMints } = useSuspenseQuery({
-    queryKey: ["ERCMints"],
-    queryFn: () => execute(GET_ERC_MINTS),
-    refetchInterval: 10_000,
-  });
+  const { playerRealms } = useEntities();
+  const realmEntityIds = useMemo(() => {
+    return playerRealms.map((realm) => realm!.entity_id);
+  }, [playerRealms]);
 
-  const seasonPassTokensInGame = useMemo(
-    () =>
-      seasonPassMints?.tokenTransfers?.edges
-        ?.filter((token) => {
-          const metadata = token?.node?.tokenMetadata;
-          return metadata?.__typename === "ERC721__Token" && metadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS;
-        })
-        .map((token) => {
-          const metadata = token?.node?.tokenMetadata;
-          if (metadata?.__typename === "ERC721__Token") {
-            return {
-              id: Number(metadata.tokenId),
-              name_: JSON.parse(metadata.metadata).name,
-            };
-          }
-          return undefined;
-        })
-        .filter((id): id is { id: number; name_: string } => id !== undefined)
-        .filter((token) => Boolean(getRealmEntityIdFromRealmId(token.id))),
-    [seasonPassMints],
-  );
-
-  const realmEntityIds = useMemo(
-    () => seasonPassTokensInGame?.map((token) => getRealmEntityIdFromRealmId(token.id)),
-    [seasonPassTokensInGame],
-  );
   const donkeysArrivals = useMemo(() => getOwnerArrivalsAtBank(realmEntityIds as number[]), [realmEntityIds]);
   const donkeyInfos = useMemo(() => {
     return donkeysArrivals.map((donkey) => getDonkeyInfo(donkey));
@@ -121,51 +90,72 @@ export const BridgeOutStep2 = () => {
     if (selectedResourceId) {
       const resourceAddresses = await getSeasonAddresses();
       const selectedResourceName = ResourcesIds[selectedResourceId];
-      let tokenAddress = resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddresses][1];
+      const tokenAddress = resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
         await bridgeFinishWithdrawFromRealm(tokenAddress as string, ADMIN_BANK_ENTITY_ID, donkeyEntityId);
       } finally {
+        setDonkeyEntityId(0n);
+        setSelectedResourceIds([]);
+        setSelectedResourceAmounts({});
         setIsLoading(false);
       }
     }
   };
 
   return (
-    <div className="w-96 flex flex-col gap-3">
+    <div className="max-w-md flex flex-col gap-3">
+      <TypeP>
+        Finalise the withdrawal of resources from your Realm in Eternum to your Starknet wallet. The bridge will close
+        and you will be unable to withdraw 1 hour after the Season is won
+      </TypeP>
+      <hr />
       <div className="flex justify-between">
-        <div>From Wallet</div>
-
-        <div>{displayAddress(account?.address || "")}</div>
+        <div className="flex flex-col min-w-40">
+          <div className="text-xs uppercase mb-1 ">Select Donkey</div>
+          <Select
+            onValueChange={(value) => {
+              if (value === null) {
+                setDonkeyEntityId(0n);
+                setSelectedResourceIds([]);
+                setSelectedResourceAmounts({});
+                return;
+              }
+              const currentDonkeyInfo = donkeyInfos?.find((donkey) => donkey.donkeyEntityId?.toString() === value);
+              setDonkeyEntityId(BigInt(value));
+              setSelectedResourceIds([(currentDonkeyInfo!.donkeyResources[0].resourceId as never) ?? 0]);
+              setSelectedResourceAmounts({
+                [currentDonkeyInfo!.donkeyResources[0].resourceId ?? 0]:
+                  currentDonkeyInfo!.donkeyResources[0].amount / RESOURCE_PRECISION,
+              });
+            }}
+          >
+            <SelectTrigger className="w-full border-gold/15">
+              <SelectValue placeholder="Select Donkey At Bank" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem key={"choose"} value={null}>
+                Choose a donkey
+              </SelectItem>
+              {donkeyInfos?.map((donkey) => (
+                <SelectItem key={donkey.donkeyEntityId} value={donkey.donkeyEntityId?.toString() ?? ""}>
+                  Donkey Drove {donkey.donkeyEntityId}{" "}
+                  {Number(donkey.donkeyArrivalTime) * 1000 <= Date.now()
+                    ? "(Arrived!)"
+                    : `(Arrives in ${Math.floor(
+                        (Number(donkey.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60 * 60),
+                      )}h ${Math.floor(((Number(donkey.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60)) % 60)}m)`}
+                </SelectItem>
+              ))}
+              {!donkeyInfos?.length && <div>No donkeys found at the bank</div>}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <div className="text-xs uppercase mb-1">To</div>
+          <div>{displayAddress(address || "")}</div>
+        </div>
       </div>
-      <Select
-        onValueChange={(value) => {
-          const currentDonkeyInfo = donkeyInfos?.find((donkey) => donkey.donkeyEntityId?.toString() === value);
-          setDonkeyEntityId(BigInt(value));
-          setSelectedResourceIds([(currentDonkeyInfo!.donkeyResources[0].resourceId as never) ?? 0]);
-          setSelectedResourceAmounts({
-            [currentDonkeyInfo!.donkeyResources[0].resourceId ?? 0]:
-              currentDonkeyInfo!.donkeyResources[0].amount / RESOURCE_PRECISION ?? 0,
-          });
-        }}
-      >
-        <SelectTrigger className="w-full border-gold/15">
-          <SelectValue placeholder="Select Donkey At Bank" />
-        </SelectTrigger>
-        <SelectContent>
-          {donkeyInfos?.map((donkey) => (
-            <SelectItem key={donkey.donkeyEntityId} value={donkey.donkeyEntityId?.toString() ?? ""}>
-              Donkey {donkey.donkeyEntityId}{" "}
-              {Number(donkey.donkeyArrivalTime) * 1000 <= Date.now()
-                ? "(Arrived!)"
-                : `(Arrives in ${Math.floor(
-                    (Number(donkey.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60 * 60),
-                  )}h ${Math.floor(((Number(donkey.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60)) % 60)}m)`}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
       {selectedResourceIds.length > 0 && (
         <SelectResourceRow
           selectedResourceIds={selectedResourceIds}

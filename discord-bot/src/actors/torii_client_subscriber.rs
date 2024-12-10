@@ -10,21 +10,27 @@ use torii_grpc::types::schema::Entity;
 
 use torii_grpc::types::{EntityKeysClause, KeysClause, PatternMatching};
 
+use crate::events::hyperstructure_finished::HyperstructureFinished;
+use crate::events::hyperstructure_started::HyperstructureStarted;
 use crate::{
     events::{
         battle_claim::BattleClaim, battle_join::BattleJoin, battle_leave::BattleLeave,
-        battle_pillage::BattlePillage, battle_start::BattleStart, settle_realm::SettleRealm,
+        battle_pillage::BattlePillage, battle_start::BattleStart, game_ended::GameEnded,
+        settle_realm::SettleRealm,
     },
     types::{Config, Event},
 };
 
-const TORII_SUBSCRIPTION_MODELS: [&str; 6] = [
+const TORII_SUBSCRIPTION_MODELS: [&str; 9] = [
     "s0_eternum-BattleClaimData",
     "s0_eternum-BattleJoinData",
     "s0_eternum-BattleLeaveData",
     "s0_eternum-BattlePillageData",
     "s0_eternum-BattleStartData",
     "s0_eternum-SettleRealmData",
+    "s0_eternum-GameEnded",
+    "s0_eternum-HyperstructureFinished",
+    "s0_eternum-HyperstructureStarted",
 ];
 
 pub struct ToriiClientSubscriber {
@@ -160,6 +166,27 @@ impl ToriiClientSubscriber {
                     Event {
                         event: Box::new(event),
                         identifier: event.owner_address,
+                    }
+                }
+                "s0_eternum-GameEnded" => {
+                    let event = GameEnded::cairo_deserialize(&felts, 0).unwrap();
+                    Event {
+                        event: Box::new(event),
+                        identifier: event.winner_address,
+                    }
+                }
+                "s0_eternum-HyperstructureFinished" => {
+                    let event = HyperstructureFinished::cairo_deserialize(&felts, 0).unwrap();
+                    Event {
+                        event: Box::new(event),
+                        identifier: event.hyperstructure_owner_name,
+                    }
+                }
+                "s0_eternum-HyperstructureStarted" => {
+                    let event = HyperstructureStarted::cairo_deserialize(&felts, 0).unwrap();
+                    Event {
+                        event: Box::new(event),
+                        identifier: event.creator_address_name,
                     }
                 }
                 _ => {

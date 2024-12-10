@@ -1,9 +1,11 @@
+import { ResourceInventoryManager } from "@/dojo/modelManager/ResourceInventoryManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ID } from "@bibliothecadao/eternum";
+import { ID, Resource } from "@bibliothecadao/eternum";
 import { useState } from "react";
 import { Entity } from "../entities/Entity";
 import { HintSection } from "../hints/HintModal";
@@ -12,29 +14,33 @@ export type EntityReadyForDeposit = {
   carrierId: ID;
   senderEntityId: ID;
   recipientEntityId: ID;
-  resources: bigint[];
+  resources: Resource[];
 };
 
 export const AllResourceArrivals = ({ arrivals, className }: { arrivals: ArrivalInfo[]; className?: string }) => {
-  const { account, setup } = useDojo();
+  const { setup } = useDojo();
+  // stone as proxy for depoisiting resources
+  const { play: playDeposit } = useUiSounds(soundSelector.addStone);
 
   const [entitiesReadyForDeposit, setEntitiesReadyForDeposit] = useState<EntityReadyForDeposit[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
 
+  const inventoryManager = new ResourceInventoryManager(setup, 0);
+
   const onOffload = async () => {
     setIsLoading(true);
-    await setup.systemCalls
-      .send_resources_multiple({
-        calls: entitiesReadyForDeposit
+    playDeposit();
+    await inventoryManager
+      .onOffloadAllMultiple(
+        entitiesReadyForDeposit
           .filter((entity) => arrivals.some((arrival) => arrival.entityId === entity.carrierId))
           .map((entity) => ({
-            sender_entity_id: entity.senderEntityId,
-            recipient_entity_id: entity.recipientEntityId,
+            senderEntityId: entity.senderEntityId,
+            recipientEntityId: entity.recipientEntityId,
             resources: entity.resources,
           })),
-        signer: account.account,
-      })
+      )
       .finally(() => setIsLoading(false));
   };
 
@@ -52,7 +58,7 @@ export const AllResourceArrivals = ({ arrivals, className }: { arrivals: Arrival
         isLoading={isLoading}
         onClick={onOffload}
         variant="primary"
-        disabled={isLoading || entitiesReadyForDeposit.length === 0}
+        disabled={isLoading || !entitiesReadyForDeposit.length || !arrivals.length}
       >
         {isLoading ? "Offloading..." : "Deposit All"}
       </Button>

@@ -6,11 +6,13 @@ interface SystemSigner {
   signer: AccountInterface | Account;
 }
 
-export interface BridgeResourceIntoRealmProps extends SystemSigner {
-  token: num.BigNumberish;
+export interface BridgeResourcesIntoRealmProps extends SystemSigner {
+  resources: {
+    tokenAddress: num.BigNumberish;
+    amount: num.BigNumberish;
+  }[];
   through_bank_id: num.BigNumberish;
   recipient_realm_entity_id: num.BigNumberish;
-  amount: num.BigNumberish;
   client_fee_recipient: num.BigNumberish;
 }
 
@@ -165,11 +167,22 @@ export interface ClaimQuestProps extends SystemSigner {
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
+  owner: num.BigNumberish;
   realm_ids: num.BigNumberish[];
+  frontend: num.BigNumberish;
+  season_pass_address: string;
 }
 
-export interface CreateRealmProps extends SystemSigner {
+export interface CreateMultipleRealmsDevProps extends SystemSigner {
+  realm_ids: num.BigNumberish[];
+}
+export interface CreateRealmDevProps extends SystemSigner {
   realm_id: num.BigNumberish;
+}
+export interface CreateRealmProps extends SystemSigner {
+  owner: num.BigNumberish;
+  realm_id: num.BigNumberish;
+  frontend: num.BigNumberish;
 }
 
 export interface UpgradeRealmProps extends SystemSigner {
@@ -328,6 +341,11 @@ export interface BattleStartProps extends SystemSigner {
 export interface BattleForceStartProps extends SystemSigner {
   battle_id: num.BigNumberish;
   defending_army_id: num.BigNumberish;
+}
+
+export interface BattleResolveProps extends SystemSigner {
+  battle_id: num.BigNumberish;
+  army_id: num.BigNumberish;
 }
 
 export interface BattleJoinProps extends SystemSigner {
@@ -532,6 +550,14 @@ export interface SetSeasonConfigProps extends SystemSigner {
   start_at: num.BigNumberish;
 }
 
+export interface SetVRFConfigProps extends SystemSigner {
+  vrf_provider_address: num.BigNumberish;
+}
+
+export interface SetSeasonBridgeConfigProps extends SystemSigner {
+  close_after_end_seconds: num.BigNumberish;
+}
+
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
   token: num.BigNumberish;
   resource_type: num.BigNumberish;
@@ -551,7 +577,11 @@ export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
 }
 
 export interface SetHyperstructureConfig extends SystemSigner {
-  resources_for_completion: { resource: number; amount: number }[];
+  resources_for_completion: {
+    resource_tier: number;
+    min_amount: number;
+    max_amount: number;
+  }[];
   time_between_shares_change: num.BigNumberish;
   points_per_cycle: num.BigNumberish;
   points_for_win: num.BigNumberish;
@@ -574,6 +604,11 @@ export interface SetAccessProps extends SystemSigner {
   access: num.BigNumberish;
 }
 
+export interface GetPointsProps extends SystemSigner {
+  player_address: num.BigNumberish;
+  hyperstructure_contributed_to: number[];
+  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
+}
 export interface EndGameProps extends SystemSigner {
   hyperstructure_contributed_to: number[];
   hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];

@@ -22,12 +22,12 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.cancel_order(props);
   };
 
-  const create_realm = async (props: SystemProps.CreateRealmProps) => {
-    await provider.create_realm(props);
-  };
-
   const upgrade_realm = async (props: SystemProps.UpgradeRealmProps) => {
     await provider.upgrade_realm(props);
+  };
+
+  const create_multiple_realms_dev = async (props: SystemProps.CreateMultipleRealmsDevProps) => {
+    await provider.create_multiple_realms_dev(props);
   };
 
   const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
@@ -162,6 +162,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.set_co_owners(props);
   };
 
+  const get_points = async (props: SystemProps.GetPointsProps) => {
+    return await provider.get_points(props);
+  };
+
   const create_guild = async (props: SystemProps.CreateGuildProps) => {
     await provider.create_guild(props);
   };
@@ -192,6 +196,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const battle_start = async (props: SystemProps.BattleStartProps) => {
     await provider.battle_start(props);
+  };
+
+  const battle_resolve = async (props: SystemProps.BattleResolveProps) => {
+    await provider.battle_resolve(props);
   };
 
   const battle_force_start = async (props: SystemProps.BattleForceStartProps) => {
@@ -250,9 +258,9 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     accept_order,
     cancel_order,
     accept_partial_order,
-    create_realm,
     upgrade_realm,
     create_multiple_realms,
+    create_multiple_realms_dev,
     transfer_resources,
     travel_hex,
     destroy_building,
@@ -267,6 +275,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     contribute_to_construction,
     set_access,
     set_co_owners,
+    get_points,
     end_game,
     register_to_leaderboard,
     claim_leaderboard_rewards,
@@ -287,6 +296,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
     battle_start,
     battle_force_start,
+    battle_resolve,
     battle_leave,
     battle_join,
     battle_claim,

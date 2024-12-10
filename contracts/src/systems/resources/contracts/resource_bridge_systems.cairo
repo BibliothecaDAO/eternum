@@ -194,11 +194,11 @@ mod resource_bridge_systems {
     use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
     use s0_eternum::models::bank::bank::Bank;
     use s0_eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
+    use s0_eternum::models::config::{SeasonBridgeConfig, SeasonBridgeConfigImpl};
     use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeImpl};
     use s0_eternum::models::owner::{EntityOwner, Owner, EntityOwnerTrait};
     use s0_eternum::models::position::{Position, Coord};
     use s0_eternum::models::resources::{Resource, ResourceImpl, RESOURCE_PRECISION};
-    use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use s0_eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl, min};
@@ -224,8 +224,7 @@ mod resource_bridge_systems {
             client_fee_recipient: ContractAddress
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_has_started(world);
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonBridgeConfigImpl::assert_bridge_is_open(world);
 
             // ensure this system can only be called by realms systems contract
             let caller = get_caller_address();
@@ -282,8 +281,7 @@ mod resource_bridge_systems {
             client_fee_recipient: ContractAddress
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_has_started(world);
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonBridgeConfigImpl::assert_bridge_is_open(world);
 
             // ensure through bank is a bank
             let through_bank: Structure = world.read_model(through_bank_id);
@@ -343,6 +341,8 @@ mod resource_bridge_systems {
             ref self: ContractState, through_bank_id: ID, from_realm_id: ID, token: ContractAddress, amount: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonBridgeConfigImpl::assert_bridge_is_open(world);
+
             // ensure caller is owner of from_realm_id
             let entity_owner: EntityOwner = world.read_model(from_realm_id);
             entity_owner.assert_caller_owner(world);
@@ -381,6 +381,8 @@ mod resource_bridge_systems {
             client_fee_recipient: ContractAddress
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            // SeasonBridgeConfigImpl::assert_bridge_is_open(world);
+
             // ensure caller is owner of from_entity_id
             let entity_owner: EntityOwner = world.read_model(from_entity_id);
             entity_owner.assert_caller_owner(world);

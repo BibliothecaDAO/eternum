@@ -1,8 +1,8 @@
-import { useMemo } from "react";
 import { findResourceById } from "@bibliothecadao/eternum";
-import { ResourceIcon } from "./ResourceIcon";
 import clsx from "clsx";
-import { divideByPrecision, formatNumber } from "../utils/utils";
+import { useMemo } from "react";
+import { currencyFormat, divideByPrecision } from "../utils/utils";
+import { ResourceIcon } from "./ResourceIcon";
 
 type ResourceCostProps = {
   isLabor?: boolean;
@@ -15,7 +15,7 @@ type ResourceCostProps = {
   onClick?: (e: any) => void;
   balance?: number;
   size?: "xs" | "sm" | "md" | "lg";
-  textSize?: "xxs" | "xs" | "sm" | "md" | "lg"; // Added text size option
+  textSize?: "xxs" | "xs" | "sm" | "md" | "lg";
 };
 
 export const ResourceCost = ({
@@ -25,12 +25,13 @@ export const ResourceCost = ({
   withTooltip = false,
   onClick,
   size = "md",
-  textSize = "xs", // Added text size option
+  textSize = "xs",
   ...props
 }: ResourceCostProps) => {
-  const balance = divideByPrecision(props.balance!);
+  const balance = props.balance!;
   const trait = useMemo(() => findResourceById(props.resourceId)?.trait, [props.resourceId]);
-  const balanceColor = balance !== undefined && balance < props.amount ? "text-red/90" : "text-green/90";
+  const balanceColor =
+    balance !== undefined && divideByPrecision(balance) < props.amount ? "text-red/90" : "text-green/90";
 
   return (
     <div
@@ -57,10 +58,10 @@ export const ResourceCost = ({
           {" "}
           {Intl.NumberFormat("en-US", {
             notation: "compact",
-            maximumFractionDigits: 1,
+            maximumFractionDigits: 6,
           }).format(props.amount || 0)}{" "}
           <span className={clsx(balanceColor, "font-normal")}>
-            {!isNaN(balance) && `(${formatNumber(balance, 0)})`}{" "}
+            {!isNaN(balance) && `(${currencyFormat(balance, 0)})`}{" "}
           </span>
         </div>
         {type === "horizontal" && (

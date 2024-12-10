@@ -100,7 +100,7 @@ mod liquidity_systems {
 
         fn remove(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            // SeasonImpl::assert_season_is_not_over(world);
 
             let player = starknet::get_caller_address();
             let owner: Owner = world.read_model(entity_id);

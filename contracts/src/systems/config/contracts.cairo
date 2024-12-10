@@ -25,7 +25,16 @@ trait ISeasonConfig<T> {
         lords_address: starknet::ContractAddress,
         start_at: u64
     );
+
+    fn set_season_bridge_config(ref self: T, close_after_end_seconds: u64);
 }
+
+
+#[starknet::interface]
+trait IVRFConfig<T> {
+    fn set_vrf_config(ref self: T, vrf_provider_address: starknet::ContractAddress);
+}
+
 
 #[starknet::interface]
 trait IQuestConfig<T> {
@@ -83,7 +92,7 @@ trait ITransportConfig<T> {
 trait IHyperstructureConfig<T> {
     fn set_hyperstructure_config(
         ref self: T,
-        resources_for_completion: Span<(u8, u128)>,
+        resources_for_completion: Span<(u8, u128, u128)>,
         time_between_shares_change: u64,
         points_per_cycle: u128,
         points_for_win: u128,
@@ -221,7 +230,7 @@ mod config_systems {
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig
     };
 
     use s0_eternum::models::position::{Position, PositionTrait, Coord};
@@ -329,6 +338,24 @@ mod config_systems {
                 season.start_at = start_at;
                 world.write_model(@season);
             }
+        }
+
+
+        fn set_season_bridge_config(ref self: ContractState, close_after_end_seconds: u64) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            world.write_model(@SeasonBridgeConfig { config_id: WORLD_CONFIG_ID, close_after_end_seconds });
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl VRFConfigImpl of super::IVRFConfig<ContractState> {
+        fn set_vrf_config(ref self: ContractState, vrf_provider_address: starknet::ContractAddress) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            world.write_model(@VRFConfig { config_id: WORLD_CONFIG_ID, vrf_provider_address });
         }
     }
 
@@ -650,7 +677,7 @@ mod config_systems {
     impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
             ref self: ContractState,
-            resources_for_completion: Span<(u8, u128)>,
+            resources_for_completion: Span<(u8, u128, u128)>,
             time_between_shares_change: u64,
             points_per_cycle: u128,
             points_for_win: u128,
@@ -661,12 +688,12 @@ mod config_systems {
 
             let mut i = 0;
             while (i < resources_for_completion.len()) {
-                let (resource_type, amount_for_completion) = *resources_for_completion.at(i);
+                let (tier, min_amount, max_amount) = *resources_for_completion.at(i);
 
                 world
                     .write_model(
                         @HyperstructureResourceConfig {
-                            config_id: HYPERSTRUCTURE_CONFIG_ID, resource_type, amount_for_completion
+                            config_id: HYPERSTRUCTURE_CONFIG_ID, resource_tier: tier, min_amount, max_amount
                         }
                     );
                 i += 1;

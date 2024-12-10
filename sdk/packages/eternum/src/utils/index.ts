@@ -13,8 +13,9 @@ import {
   STRUCTURE_COSTS,
 } from "../constants";
 
-import { ResourceInputs, ResourceOutputs } from "../types";
+import { ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
 export * from "./battleSimulation";
+export * from "./leaderboard";
 
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
   let multipliedCosts: ResourceOutputs = {};
@@ -86,6 +87,17 @@ export const scaleResources = (resources: any[], multiplier: number): any[] => {
   return resources.map((resource) => ({
     ...resource,
     amount: resource.amount * multiplier,
+  }));
+};
+
+export const scaleResourceCostMinMax = (
+  resourceCost: ResourceCostMinMax[],
+  multiplier: number,
+): ResourceCostMinMax[] => {
+  return resourceCost.map((resource) => ({
+    ...resource,
+    min_amount: resource.min_amount * multiplier,
+    max_amount: resource.max_amount * multiplier,
   }));
 };
 

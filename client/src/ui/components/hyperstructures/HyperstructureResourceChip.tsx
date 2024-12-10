@@ -3,6 +3,7 @@ import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum
 import { ProgressWithPercentage } from "@/hooks/helpers/useHyperstructures";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
+import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { useEffect, useState } from "react";
@@ -102,12 +103,14 @@ export const HyperstructureResourceChip = ({
         onChange={setInputValue}
         max={maxContributableAmount}
       />
-      <div
+      <Button
+        variant="default"
+        size="xs"
         className="ml-1 flex items-center text-xs cursor-pointer"
         onClick={() => setInputValue(maxContributableAmount)}
       >
         MAX
-      </div>
+      </Button>
     </div>
   );
 };

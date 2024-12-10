@@ -1,14 +1,22 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import TextInput from "@/ui/elements/TextInput";
 import { toHexString, toValidAscii } from "@/ui/utils/utils";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { Signature } from "starknet";
+import { scrollToElement } from "./Chat";
 import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
 import { Tab } from "./types";
 
-export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint }) => {
+export const InputField = ({
+  currentTab,
+  salt,
+  bottomChatRef,
+}: {
+  currentTab: Tab;
+  salt: bigint;
+  bottomChatRef: React.RefObject<HTMLDivElement>;
+}) => {
   const {
     account: { account },
     setup: {
@@ -17,62 +25,41 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
     network: { toriiClient },
   } = useDojo();
 
-  const getPlayers = useGetOtherPlayers();
-  const players = useMemo(() => getPlayers(), [getPlayers]);
-
   const inputRef = useRef<string>("");
 
   const handleKeyPress = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key !== "Enter" || inputRef.current.length === 0) return;
-
-      // const contentParser = new ContentParser();
-      // if (contentParser.isWhisper(inputRef.current)) {
-      //   const whisperDestination = contentParser.getWhisperDest(inputRef.current);
-      //   const player = players.find((player) => player.addressName === whisperDestination);
-      //   if (player) {
-      //     const newTab = {
-      //       name: player.addressName!,
-      //       address: toHexString(player.address),
-      //       displayed: true,
-      //     };
-      //     // TODO: Implement addNewTab functionality
-      //     // addNewTab(newTab);
-      //   }
-      // } else {
-      //   publish(inputRef.current);
-      // }
-      publish(inputRef.current);
+      publish(inputRef.current, salt, currentTab);
       inputRef.current = "";
+      scrollToElement(bottomChatRef);
     },
-    [players],
+    [salt, bottomChatRef, currentTab],
   );
 
   const publish = useCallback(
-    async (message: string) => {
+    async (message: string, salt: bigint, tab: Tab) => {
       const recipientEntities = Array.from(
         runQuery([Has(AddressName), HasValue(AddressName, { name: BigInt("0x0") })]),
       );
 
       const recipientAddress = recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
-        : currentTab.name === GLOBAL_CHANNEL_KEY
+        : tab.name === GLOBAL_CHANNEL_KEY
           ? undefined
-          : BigInt(currentTab.address);
+          : BigInt(tab.address);
 
       const channel = recipientAddress !== undefined ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
 
       const messageInValidAscii = toValidAscii(message);
+
       const data = generateMessageTypedData(account.address, channel, messageInValidAscii, toHexString(salt));
 
-      console.log("data", data);
       const signature: Signature = await account.signMessage(data);
-
-      console.log("data", signature);
 
       await toriiClient.publishMessage(JSON.stringify(data), signature as string[], false);
     },
-    [account, salt, toriiClient, currentTab],
+    [inputRef],
   );
 
   return (

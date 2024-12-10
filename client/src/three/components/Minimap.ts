@@ -15,6 +15,8 @@ const LABELS = {
   MY_ARMY: "/textures/my_army_label.png",
   MY_REALM: "/textures/my_realm_label.png",
   BATTLE: "/textures/battle_label.png",
+  MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
+  REALM_WONDER: "/textures/realm_wonder_label.png",
   STRUCTURES: {
     [StructureType.Realm]: "/textures/realm_label.png",
     [StructureType.Hyperstructure]: "/textures/hyper_label.png",
@@ -29,6 +31,7 @@ const MINIMAP_CONFIG = {
   MAX_ZOOM_RANGE: 300,
   MAP_COLS_WIDTH: 200,
   MAP_ROWS_HEIGHT: 100,
+  EXPANDED_MODIFIER: 0.5,
   COLORS: {
     ARMY: "#FF0000",
     MY_ARMY: "#00FF00",
@@ -42,8 +45,9 @@ const MINIMAP_CONFIG = {
     },
   },
   SIZES: {
-    STRUCTURE: 2,
-    ARMY: 2,
+    BATTLE: 12,
+    STRUCTURE: 10,
+    ARMY: 10,
     CAMERA: {
       TOP_SIDE_WIDTH_FACTOR: 105,
       BOTTOM_SIDE_WIDTH_FACTOR: 170,
@@ -77,6 +81,7 @@ class Minimap {
   private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT;
   private structureSize!: { width: number; height: number };
   private armySize!: { width: number; height: number };
+  private battleSize!: { width: number; height: number };
   private cameraSize!: {
     topSideWidth: number;
     bottomSideWidth: number;
@@ -151,6 +156,7 @@ class Minimap {
   }
 
   private recomputeScales() {
+    if (!this.canvas || !this.mapSize) return;
     this.scaleX = this.canvas.width / this.mapSize.width;
     this.scaleY = this.canvas.height / this.mapSize.height;
     this.scaledCoords.clear();
@@ -168,14 +174,22 @@ class Minimap {
     }
 
     this.dragSpeed = this.mapSize.width / MINIMAP_CONFIG.MAX_ZOOM_RANGE;
+    let modifier = 1;
+    if (this.canvas.width > 300) {
+      modifier = MINIMAP_CONFIG.EXPANDED_MODIFIER;
+    }
     // Precompute sizes
     this.structureSize = {
-      width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX,
-      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX,
+      width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier,
+      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier,
     };
     this.armySize = {
-      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX,
-      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX,
+      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
+      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
+    };
+    this.battleSize = {
+      width: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX * modifier,
+      height: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX * modifier,
     };
     this.cameraSize = {
       topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,
@@ -237,9 +251,13 @@ class Minimap {
 
       structures.forEach((structure) => {
         if (structureType === StructureType.Realm) {
-          labelImg = structure.isMine
-            ? this.labelImages.get("MY_REALM")
-            : this.labelImages.get(`STRUCTURE_${structureType}`);
+          if (structure.isMine) {
+            labelImg = structure.hasWonder ? this.labelImages.get("MY_REALM_WONDER") : this.labelImages.get("MY_REALM");
+          } else {
+            labelImg = structure.hasWonder
+              ? this.labelImages.get("REALM_WONDER")
+              : this.labelImages.get(`STRUCTURE_${structureType}`);
+          }
         }
         if (!labelImg) return;
         const { col, row } = structure.hexCoords;
@@ -291,10 +309,10 @@ class Minimap {
 
         this.context.drawImage(
           labelImg,
-          scaledCol - this.armySize.width * (row % 2 !== 0 ? 1 : 0.5),
-          scaledRow - this.armySize.height / 2,
-          this.armySize.width,
-          this.armySize.height,
+          scaledCol - this.battleSize.width * (row % 2 !== 0 ? 1 : 0.5),
+          scaledRow - this.battleSize.height / 2,
+          this.battleSize.width,
+          this.battleSize.height,
         );
       }
     });
@@ -326,6 +344,7 @@ class Minimap {
   }
 
   showMinimap() {
+    if (!this.canvas) return;
     this.canvas.style.display = "block";
     useUIStore.getState().setShowMinimap(true);
   }
@@ -442,6 +461,8 @@ class Minimap {
     this.loadImage("MY_ARMY", LABELS.MY_ARMY);
     this.loadImage("BATTLE", LABELS.BATTLE);
     this.loadImage("MY_REALM", LABELS.MY_REALM);
+    this.loadImage("MY_REALM_WONDER", LABELS.MY_REALM_WONDER);
+    this.loadImage("REALM_WONDER", LABELS.REALM_WONDER);
 
     // Load structure labels
     Object.entries(LABELS.STRUCTURES).forEach(([type, path]) => {

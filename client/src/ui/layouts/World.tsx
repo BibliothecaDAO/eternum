@@ -5,7 +5,8 @@ import useUIStore from "../../hooks/store/useUIStore";
 
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
-import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
+import { useHyperstructureData } from "@/hooks/store/useLeaderBoardStore";
+import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
 import { LoadingScreen } from "../modules/LoadingScreen";
@@ -90,8 +91,9 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   // Setup hooks
   useFetchBlockchainData();
-  useSubscriptionToHyperstructureEvents();
+  useHyperstructureData();
   useStructureEntityId();
+  useStartingTutorial();
 
   return (
     <div
@@ -105,7 +107,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         e.stopPropagation();
       }}
       id="world"
-      className="fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
+      className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
     >
       <div className="vignette" />
 

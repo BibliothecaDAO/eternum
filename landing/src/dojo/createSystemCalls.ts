@@ -130,8 +130,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.mint_test_lords(props);
   };
 
-  const bridge_resource_into_realm = async (props: SystemProps.BridgeResourceIntoRealmProps) => {
-    await provider.bridge_resource_into_realm(props);
+  const bridge_resources_into_realm = async (props: SystemProps.BridgeResourcesIntoRealmProps) => {
+    await provider.bridge_resources_into_realm(props);
   };
 
   const bridge_start_withdraw_from_realm = async (props: SystemProps.BridgeStartWithdrawFromRealmProps) => {
@@ -165,7 +165,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     attach_lords: withQueueing(withErrorHandling(attach_lords)),
     detach_lords: withQueueing(withErrorHandling(detach_lords)),
     mint_test_lords: withQueueing(withErrorHandling(mint_test_lords)),
-    bridge_resource_into_realm: withQueueing(withErrorHandling(bridge_resource_into_realm)),
+    bridge_resources_into_realm: withQueueing(withErrorHandling(bridge_resources_into_realm)),
     bridge_start_withdraw_from_realm: withQueueing(withErrorHandling(bridge_start_withdraw_from_realm)),
     bridge_finish_withdraw_from_realm: withQueueing(withErrorHandling(bridge_finish_withdraw_from_realm)),
   };

@@ -354,9 +354,88 @@ export const WEIGHTS_GRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Knight]: 5000,
   [ResourcesIds.Crossbowman]: 3000,
   [ResourcesIds.Paladin]: 5000,
-  [ResourcesIds.Lords]: 1,
+  [ResourcesIds.Lords]: 0,
   [ResourcesIds.Wheat]: 100,
   [ResourcesIds.Fish]: 100,
+};
+
+export enum ResourceTier {
+  Lords = 1,
+  Military,
+  Transport,
+  Food,
+  Common,
+  Uncommon,
+  Rare,
+  Unique,
+  Mythic,
+}
+
+export const GET_HYPERSTRUCTURE_RESOURCES_PER_TIER = (
+  tier: ResourceTier,
+  hyperstructure: boolean = false,
+): ResourcesIds[] => {
+  switch (tier) {
+    case ResourceTier.Lords:
+      return RESOURCE_TIERS.lords.filter((resource) => (hyperstructure ? resource !== ResourcesIds.Lords : true));
+    case ResourceTier.Military:
+      return [];
+    case ResourceTier.Transport:
+      return [];
+    case ResourceTier.Food:
+      return [];
+    case ResourceTier.Common:
+      return RESOURCE_TIERS.common;
+    case ResourceTier.Uncommon:
+      return RESOURCE_TIERS.uncommon;
+    case ResourceTier.Rare:
+      return RESOURCE_TIERS.rare;
+    case ResourceTier.Unique:
+      return RESOURCE_TIERS.unique;
+    case ResourceTier.Mythic:
+      return RESOURCE_TIERS.mythic;
+    default:
+      throw new Error(`Invalid resource tier: ${tier}`);
+  }
+};
+
+export const GET_RESOURCES_PER_TIER = (tier: ResourceTier, hyperstructure: boolean = false): ResourcesIds[] => {
+  switch (tier) {
+    case ResourceTier.Lords:
+      return RESOURCE_TIERS.lords;
+    case ResourceTier.Military:
+      return RESOURCE_TIERS.military;
+    case ResourceTier.Transport:
+      return RESOURCE_TIERS.transport;
+    case ResourceTier.Food:
+      return RESOURCE_TIERS.food;
+    case ResourceTier.Common:
+      return RESOURCE_TIERS.common;
+    case ResourceTier.Uncommon:
+      return RESOURCE_TIERS.uncommon;
+    case ResourceTier.Rare:
+      return RESOURCE_TIERS.rare;
+    case ResourceTier.Unique:
+      return RESOURCE_TIERS.unique;
+    case ResourceTier.Mythic:
+      return RESOURCE_TIERS.mythic;
+    default:
+      throw new Error(`Invalid resource tier: ${tier}`);
+  }
+};
+
+export const GET_RESOURCE_TIER = (resource: ResourcesIds): ResourceTier => {
+  if (RESOURCE_TIERS.lords.includes(resource)) return ResourceTier.Lords;
+  if (RESOURCE_TIERS.military.includes(resource)) return ResourceTier.Military;
+  if (RESOURCE_TIERS.transport.includes(resource)) return ResourceTier.Transport;
+  if (RESOURCE_TIERS.food.includes(resource)) return ResourceTier.Food;
+  if (RESOURCE_TIERS.common.includes(resource)) return ResourceTier.Common;
+  if (RESOURCE_TIERS.uncommon.includes(resource)) return ResourceTier.Uncommon;
+  if (RESOURCE_TIERS.rare.includes(resource)) return ResourceTier.Rare;
+  if (RESOURCE_TIERS.unique.includes(resource)) return ResourceTier.Unique;
+  if (RESOURCE_TIERS.mythic.includes(resource)) return ResourceTier.Mythic;
+
+  throw new Error(`Resource ${resource} not found in any tier`);
 };
 
 export const RESOURCE_TIERS = {
@@ -401,14 +480,14 @@ export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Adamantine]: 50,
   [ResourcesIds.Mithral]: 50,
   [ResourcesIds.Dragonhide]: 50,
-  [ResourcesIds.Donkey]: 0.5,
+  [ResourcesIds.Donkey]: 0.01,
   [ResourcesIds.Knight]: 0.04,
   [ResourcesIds.Crossbowman]: 0.04,
   [ResourcesIds.Paladin]: 0.04,
-  [ResourcesIds.Lords]: 5,
+  [ResourcesIds.Lords]: 0,
   [ResourcesIds.Wheat]: 60,
   [ResourcesIds.Fish]: 60,
-  [ResourcesIds.AncientFragment]: 10,
+  [ResourcesIds.AncientFragment]: 1,
 };
 
 export const RESOURCE_INPUTS: ResourceInputs = {
@@ -523,8 +602,8 @@ export const RESOURCE_INPUTS: ResourceInputs = {
     { resource: ResourcesIds.Fish, amount: 0.004 },
   ],
   [ResourcesIds.Donkey]: [
-    { resource: ResourcesIds.Wheat, amount: 0.025 }, // 25 per/s
-    { resource: ResourcesIds.Lords, amount: 0.000005 }, // TODO: Check this
+    { resource: ResourcesIds.Wheat, amount: 0.025 },
+    { resource: ResourcesIds.Lords, amount: 0.00001 },
   ],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 0.05 },

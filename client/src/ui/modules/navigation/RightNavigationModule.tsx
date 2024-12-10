@@ -1,7 +1,8 @@
-import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
+import Button from "@/ui/elements/Button";
 import CircleButton from "@/ui/elements/CircleButton";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 import { BaseContainer } from "../../containers/BaseContainer";
@@ -20,14 +21,13 @@ export const RightNavigationModule = () => {
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
 
-  const { questClaimStatus } = useQuestClaimStatus();
-
   const navigation = useMemo(
     () => [
       {
         name: MenuEnum.resourceTable,
         button: (
           <CircleButton
+            className="resource-table-selector"
             image={BuildingThumbs.resources}
             size="xl"
             tooltipLocation="top"
@@ -38,14 +38,14 @@ export const RightNavigationModule = () => {
         ),
       },
     ],
-    [view, questClaimStatus, structureEntityId],
+    [view, structureEntityId],
   );
 
   const isOffscreen = view === RightView.None;
 
   return (
     <div
-      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-24 ${
+      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-36 ${
         isOffscreen ? "translate-x-[83%]" : ""
       }`}
     >
@@ -70,7 +70,20 @@ export const RightNavigationModule = () => {
       >
         <Suspense fallback={<div className="p-8">Loading...</div>}>
           {!!structureEntityId && (
-            <div className="p-2 flex flex-col space-y-1 overflow-y-auto">
+            <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+              <a
+                className="text-brown cursor-pointer text-lg w-full"
+                href={`https://empire.realms.world/trade`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="secondary" className="w-full">
+                  <div className="flex items-center gap-2">
+                    <ResourceIcon resource="Lords" size="xs" />
+                    Bridge Lords & Resources
+                  </div>
+                </Button>
+              </a>
               <EntityResourceTable entityId={structureEntityId} />
             </div>
           )}
