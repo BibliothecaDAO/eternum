@@ -138,9 +138,7 @@ export const SEASON_POOL_FEE_RECIPIENT = "0x1a3e37c77be7de91a9177c6b57956faa6da2
 export const MAX_BANK_FEE_ON_DEPOSIT = 0; // 10%
 export const MAX_BANK_FEE_ON_WITHDRAWAL = 0; // 10%
 
-// TODO: CHECKLIST
-// - [ ] Check if this is correct
-export const SEASON_START_AFTER_SECONDS = 60 * 60 * 24 * 7; // 7 days
+export const SEASON_START_AFTER_SECONDS = 60 * 60 * 24; // 1 day
 export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = 48 * 60 * 60; // 2 days
 
 export const EternumGlobalConfig: Config = {
