@@ -1,4 +1,9 @@
-import { Structure, useIsStructureImmune, useStructureByEntityId, useStructureImmunityTimer } from "@/hooks/helpers/useStructures";
+import {
+  Structure,
+  useIsStructureImmune,
+  useStructureByEntityId,
+  useStructureImmunityTimer,
+} from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { HintModalButton } from "@/ui/elements/HintModalButton";

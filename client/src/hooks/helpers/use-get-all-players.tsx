@@ -69,7 +69,7 @@ export const useGetAllPlayers = () => {
         ]).size,
         hyperstructures: runQuery([Has(Hyperstructure), HasValue(Owner, { address: player.address })]).size,
         isAlive: player.isAlive,
-        guildName: player.guildName || "", 
+        guildName: player.guildName || "",
       };
     });
   };
