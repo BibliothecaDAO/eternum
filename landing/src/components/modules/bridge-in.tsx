@@ -19,15 +19,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
-function formatFee(fee: number) {
-  return fee.toFixed(2);
-}
 
 export const BridgeIn = () => {
   const { address } = useAccount();
   const [realmEntityId, setRealmEntityId] = useState<number>();
   const [resourceFees, setResourceFees] = useState<
     {
+      id: string;
       velordsFee: string;
       seasonPoolFee: string;
       clientFee: string;
@@ -137,7 +135,6 @@ export const BridgeIn = () => {
       }
 
       await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
-
       setSelectedResourceIds([]);
       setSelectedResourceAmounts({});
     } catch (error) {
@@ -194,12 +191,7 @@ export const BridgeIn = () => {
         selectedResourceAmounts={selectedResourceAmounts}
         setSelectedResourceAmounts={setSelectedResourceAmounts}
         unselectedResources={unselectedResources}
-        /*selectedResourceAmount={amount.toString()}
-          setselectedResourceAmount={(value) => handleResourceChange(contract, Number(value))}
-          setselectedResourceContract={() => {}*/
-        /*onRemove={() => handleResourceChange(contract, 0)}
-        showRemove={Object.keys(selectedResourceAmounts).length > 1}
-        //resourceSelections={selectedResourceAmounts}*/
+        addResourceGive={addResourceGive}
       />
 
       <Button variant="outline" size="sm" onClick={() => addResourceGive()} className="mb-2">
@@ -237,19 +229,19 @@ export const BridgeIn = () => {
           setResourceFees={setResourceFees}
           type="deposit"
         />
-        <div className="flex flex-col gap-2 font-bold mt-5 mb-5">
+        <div className="flex flex-col gap-2 font-bold mt-3">
           <div className="flex justify-between">
             <div>Total Amount Received</div>
           </div>
-          {Object.entries(selectedResourceAmounts).map(([contract, amount]) => {
+          {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
             if (amount === 0) return null;
-            const resourceName = ResourcesIds[contract as keyof typeof ResourcesIds];
+            const resourceName = ResourcesIds[id as keyof typeof ResourcesIds];
             return (
-              <div key={contract} className="flex justify-between text-sm font-normal">
+              <div key={id} className="flex justify-between text-sm font-normal">
                 <div className="flex items-center gap-2">
                   <ResourceIcon resource={resourceName} size="md" /> {resourceName}
                 </div>
-                <div>{formatFee(amount - Number(resourceFees[resourceName]?.totalFee ?? 0))}</div>
+                <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
               </div>
             );
           })}
@@ -257,7 +249,6 @@ export const BridgeIn = () => {
       </div>
       <Button
         disabled={
-          //Object.values(selectedResourceAmounts).length === 0 ||
           isLoading || !realmEntityId || donkeyBalance.balance <= donkeysNeeded
         }
         onClick={() => onBridgeIntoRealm()}
@@ -275,27 +266,15 @@ export const SelectResourceToBridge = ({
   selectedResourceIds,
   setSelectedResourceIds,
   unselectedResources,
-  /* onRemove,
-  showRemove,*/
-  //resourceSelections,
+  addResourceGive
 }: {
   selectedResourceAmounts: { [key: string]: number };
   setSelectedResourceAmounts: (value: { [key: string]: number }) => void;
   selectedResourceIds: number[];
   setSelectedResourceIds: (value: number[]) => void;
   unselectedResources: Resources[];
-  //setselectedResourceContract: (value: string) => void;
-  /*onRemove: () => void;
-  showRemove: boolean;*/
-  //resourceSelections: { [key: string]: number };
+  addResourceGive: () => void;
 }) => {
-  const addResourceGive = () => {
-    setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
-    setSelectedResourceAmounts({
-      ...selectedResourceAmounts,
-      [unselectedResources[0].id]: 1,
-    });
-  };
 
   useEffect(() => {
     if (selectedResourceIds.length === 0) {

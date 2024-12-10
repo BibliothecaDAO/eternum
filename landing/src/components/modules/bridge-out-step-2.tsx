@@ -4,19 +4,19 @@ import { useBridgeAsset } from "@/hooks/useBridge";
 import { displayAddress } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
-  BRIDGE_FEE_DENOMINATOR,
-  EternumGlobalConfig,
   RESOURCE_PRECISION,
-  ResourcesIds,
+  ResourcesIds
 } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
+import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { ShowSingleResource } from "../ui/SelectResources";
 import { getSeasonAddresses } from "../ui/utils/utils";
+import { BridgeFees } from "./bridge-fees";
 
 function formatFee(fee: number) {
   return fee.toFixed(2);
@@ -37,42 +37,16 @@ export const BridgeOutStep2 = () => {
     [selectedResourceAmounts, selectedResourceId],
   );
 
-  const bridgeConfig = EternumGlobalConfig.bridge;
-  const calculateBridgeFee = (percent: number) => {
-    return (percent * Number(selectedResourceAmount)) / BRIDGE_FEE_DENOMINATOR;
-  };
-
-  const calculateBridgeFeeDisplayPercent = (percent: number) => {
-    return (percent * 100) / BRIDGE_FEE_DENOMINATOR;
-  };
-
-  const velordsFeeOnWithdrawal = useMemo(
-    () => formatFee(calculateBridgeFee(bridgeConfig.velords_fee_on_wtdr_percent)),
-    [selectedResourceAmount],
-  );
-  const seasonPoolFeeOnWithdrawal = useMemo(
-    () => formatFee(calculateBridgeFee(bridgeConfig.season_pool_fee_on_wtdr_percent)),
-    [selectedResourceAmount],
-  );
-  const clientFeeOnWithdrawal = useMemo(
-    () => formatFee(calculateBridgeFee(bridgeConfig.client_fee_on_wtdr_percent)),
-    [selectedResourceAmount],
-  );
-  const bankFeeOnWithdrawal = useMemo(
-    () => formatFee(calculateBridgeFee(bridgeConfig.max_bank_fee_dpt_percent)),
-    [selectedResourceAmount],
-  );
-
-  const totalFeeOnWithdrawal = useMemo(
-    () =>
-      formatFee(
-        Number(velordsFeeOnWithdrawal) +
-          Number(seasonPoolFeeOnWithdrawal) +
-          Number(clientFeeOnWithdrawal) +
-          Number(bankFeeOnWithdrawal),
-      ),
-    [velordsFeeOnWithdrawal, seasonPoolFeeOnWithdrawal, clientFeeOnWithdrawal, bankFeeOnWithdrawal],
-  );
+  const [resourceFees, setResourceFees] = useState<
+  {
+    id: string;
+    velordsFee: string;
+    seasonPoolFee: string;
+    clientFee: string;
+    bankFee: string;
+    totalFee?: string;
+  }[]
+>([]);
 
   const { playerRealms } = useEntities();
   const realmEntityIds = useMemo(() => {
@@ -102,6 +76,7 @@ export const BridgeOutStep2 = () => {
       }
     }
   };
+  const [isFeesOpen, setIsFeesOpen] = useState(false);
 
   return (
     <div className="max-w-md flex flex-col gap-3">
@@ -123,7 +98,7 @@ export const BridgeOutStep2 = () => {
               }
               const currentDonkeyInfo = donkeyInfos?.find((donkey) => donkey.donkeyEntityId?.toString() === value);
               setDonkeyEntityId(BigInt(value));
-              setSelectedResourceIds([(currentDonkeyInfo!.donkeyResources[0].resourceId as never) ?? 0]);
+              setSelectedResourceIds((currentDonkeyInfo!.donkeyResources.map((resource) => resource.resourceId as never)) ?? 0);
               setSelectedResourceAmounts({
                 [currentDonkeyInfo!.donkeyResources[0].resourceId ?? 0]:
                   currentDonkeyInfo!.donkeyResources[0].amount / RESOURCE_PRECISION,
@@ -165,33 +140,28 @@ export const BridgeOutStep2 = () => {
         />
       )}
       <div className="flex flex-col gap-1">
-        <hr />
-        <div className="flex justify-between font-bold">
-          <div>Total Transfer Fee</div>
-          <div>{totalFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_wtdr_percent)}%)</div>
-          <div>{bankFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_wtdr_percent)}%)</div>
-          <div>{velordsFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>
-            Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_wtdr_percent)}%)
-          </div>
-          <div>{seasonPoolFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_wtdr_percent)}%)</div>
-          <div>{clientFeeOnWithdrawal}</div>
-        </div>
-        <div className="flex justify-between font-bold mt-5 mb-5">
+        <BridgeFees
+          isOpen={isFeesOpen}
+          onOpenChange={setIsFeesOpen}
+          resourceSelections={selectedResourceAmounts}
+          setResourceFees={setResourceFees}
+          type="withdrawal"
+        />
+       <div className="flex justify-between font-bold mt-3">
           <div>Total Amount Received</div>
-          <div>{formatFee(Number(selectedResourceAmount) - Number(totalFeeOnWithdrawal))}</div>
         </div>
+        {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
+          if (amount === 0) return null;
+          const resourceName = ResourcesIds[id as keyof typeof ResourcesIds];
+          return (
+            <div key={id} className="flex justify-between text-sm font-normal">
+              <div className="flex items-center gap-2">
+                <ResourceIcon resource={resourceName} size="md" /> {resourceName}
+              </div>
+              <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
+            </div>
+          );
+        })}
       </div>
       <Button
         disabled={(!selectedResourceAmount && !donkeyEntityId && !selectedResourceId) || isLoading}
