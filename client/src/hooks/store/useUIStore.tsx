@@ -131,7 +131,7 @@ const useUIStore = create(
     setHasAcceptedToS: (accepted: boolean) => {
       set({ hasAcceptedToS: accepted });
       localStorage.setItem("hasAcceptedToS", String(accepted));
-	  },
+    },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
     ...createPopupsSlice(set, get),
