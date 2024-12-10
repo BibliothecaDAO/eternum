@@ -137,6 +137,7 @@ export const BridgeIn = () => {
       }
 
       await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
+
       setSelectedResourceIds([]);
       setSelectedResourceAmounts({});
     } catch (error) {
@@ -256,10 +257,8 @@ export const BridgeIn = () => {
       </div>
       <Button
         disabled={
-          Object.values(selectedResourceAmounts).length === 0 ||
-          isLoading ||
-          !realmEntityId ||
-          donkeyBalance.balance <= donkeysNeeded
+          //Object.values(selectedResourceAmounts).length === 0 ||
+          isLoading || !realmEntityId || donkeyBalance.balance <= donkeysNeeded
         }
         onClick={() => onBridgeIntoRealm()}
       >
@@ -306,7 +305,7 @@ export const SelectResourceToBridge = ({
 
   return (
     <>
-      {Object.entries(selectedResourceAmounts).map(([id, amount], index) => (
+      {selectedResourceIds.map((id, index) => (
         <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
           <Input
             type="text"
@@ -325,8 +324,9 @@ export const SelectResourceToBridge = ({
               const updatedResourceIds = [...selectedResourceIds];
               updatedResourceIds[index] = Number(value);
               setSelectedResourceIds(updatedResourceIds);
+              const { [id]: _, ...remainingAmounts } = selectedResourceAmounts;
               setSelectedResourceAmounts({
-                ...selectedResourceAmounts,
+                ...remainingAmounts,
                 [Number(value)]: 1,
               });
             }}
@@ -337,16 +337,20 @@ export const SelectResourceToBridge = ({
             </SelectTrigger>
             <SelectContent>
               {[resources.find((res) => res.id === selectedResourceIds[index]), ...unselectedResources].map((res) => (
-                <SelectItem
-                  key={res?.id}
-                  disabled={Object.keys(selectedResourceAmounts).includes(res?.id.toString() ?? "")}
-                  value={res?.id.toString() ?? ""}
-                >
-                  <div className="flex items-center gap-2">
-                    {res?.trait && <ResourceIcon resource={res?.trait} size="md" />}
-                    {res?.trait ?? ""}
-                  </div>
-                </SelectItem>
+                <>
+                  {res?.id && (
+                    <SelectItem
+                      key={res?.id}
+                      disabled={Object.keys(selectedResourceAmounts).includes(res?.id.toString() ?? "")}
+                      value={res?.id.toString() ?? ""}
+                    >
+                      <div className="flex items-center gap-2">
+                        {res?.trait && <ResourceIcon resource={res?.trait} size="md" />}
+                        {res?.trait ?? ""}
+                      </div>
+                    </SelectItem>
+                  )}
+                </>
               ))}
             </SelectContent>
           </Select>
