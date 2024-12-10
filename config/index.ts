@@ -3,16 +3,13 @@ import devManifest from "../contracts/manifest_dev.json";
 import productionManifest from "../contracts/manifest_prod.json";
 
 import {
-  CapacityConfigCategory,
   EternumConfig,
   EternumGlobalConfig,
   EternumProvider,
   getContractByName,
   NAMESPACE,
-  ResourceTier,
 } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
-import { MAX_QUEST_RESOURCES } from "./speed";
 
 if (
   !process.env.VITE_PUBLIC_MASTER_ADDRESS ||
@@ -58,16 +55,16 @@ const setupConfig: Config =
   VITE_PUBLIC_DEV === "true" || VITE_PUBLIC_CHAIN === "sepolia"
     ? {
         ...EternumGlobalConfig,
-        questResources: MAX_QUEST_RESOURCES as typeof EternumGlobalConfig.questResources,
-        stamina: {
-          ...EternumGlobalConfig.stamina,
-          travelCost: 0,
-          exploreCost: 0,
-        },
-        carryCapacityGram: {
-          ...EternumGlobalConfig.carryCapacityGram,
-          [CapacityConfigCategory.Storehouse]: 300_000_000_000,
-        },
+        // questResources: MAX_QUEST_RESOURCES as typeof EternumGlobalConfig.questResources,
+        // stamina: {
+        //   ...EternumGlobalConfig.stamina,
+        //   travelCost: 0,
+        //   exploreCost: 0,
+        // },
+        // carryCapacityGram: {
+        //   ...EternumGlobalConfig.carryCapacityGram,
+        //   [CapacityConfigCategory.Storehouse]: 300_000_000_000,
+        // },
         battle: {
           graceTickCount: 0,
           graceTickCountHyp: 0,
@@ -97,34 +94,29 @@ const setupConfig: Config =
         // make it easier to build hyperstructures in dev mode
         hyperstructures: {
           ...EternumGlobalConfig.hyperstructures,
-          // hyperstructureCreationCosts: EternumGlobalConfig.hyperstructures.hyperstructureCreationCosts.map((cost) => ({
-          //   resource_tier: cost.resource_tier,
-          //   min_amount: 1,
-          //   max_amount: 1,
-          // })),
           hyperstructurePointsForWin: 100_000,
-          hyperstructureTotalCosts: [
-            ...EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
-              resource_tier: cost.resource_tier,
-              min_amount: Math.floor(Math.random() * 4) + 1,
-              max_amount: Math.floor(Math.random() * 10) + 5,
-            })),
-            {
-              resource_tier: ResourceTier.Lords,
-              min_amount: 3,
-              max_amount: 3,
-            },
-            {
-              resource_tier: ResourceTier.Food,
-              min_amount: 0,
-              max_amount: 0,
-            },
-            {
-              resource_tier: ResourceTier.Military,
-              min_amount: 0,
-              max_amount: 0,
-            },
-          ],
+          // hyperstructureTotalCosts: [
+          //   ...EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
+          //     resource_tier: cost.resource_tier,
+          //     min_amount: Math.floor(Math.random() * 4) + 1,
+          //     max_amount: Math.floor(Math.random() * 10) + 5,
+          //   })),
+          //   {
+          //     resource_tier: ResourceTier.Lords,
+          //     min_amount: 3,
+          //     max_amount: 3,
+          //   },
+          //   {
+          //     resource_tier: ResourceTier.Food,
+          //     min_amount: 0,
+          //     max_amount: 0,
+          //   },
+          //   {
+          //     resource_tier: ResourceTier.Military,
+          //     min_amount: 0,
+          //     max_amount: 0,
+          //   },
+          // ],
         },
       }
     : EternumGlobalConfig;
