@@ -17,8 +17,8 @@
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:^",
-    "@cartridge/connector": "0.5.3",
-    "@cartridge/controller": "0.5.3",
+    "@cartridge/connector": "0.5.4",
+    "@cartridge/controller": "0.5.4",
     "@dojoengine/core": "1.0.1",
     "@dojoengine/create-burner": "1.0.1",
     "@dojoengine/react": "1.0.1",
