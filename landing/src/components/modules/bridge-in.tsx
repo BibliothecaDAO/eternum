@@ -5,101 +5,53 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress, multiplyByPrecision } from "@/lib/utils";
-import {
-  ADMIN_BANK_ENTITY_ID,
-  BRIDGE_FEE_DENOMINATOR,
-  DONKEY_ENTITY_TYPE,
-  EternumGlobalConfig,
-  ResourcesIds,
-} from "@bibliothecadao/eternum";
+import { ADMIN_BANK_ENTITY_ID, DONKEY_ENTITY_TYPE, Resources, resources, ResourcesIds } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { InfoIcon, Loader, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
+import { BridgeFees } from "./bridge-fees";
 
 function formatFee(fee: number) {
   return fee.toFixed(2);
 }
 
-interface ResourceSelection {
-  id: number;
-  amount: string;
-  contract: string;
-}
-
 export const BridgeIn = () => {
   const { address } = useAccount();
   const [realmEntityId, setRealmEntityId] = useState<number>();
-
+  const [resourceFees, setResourceFees] = useState<
+    {
+      velordsFee: string;
+      seasonPoolFee: string;
+      clientFee: string;
+      bankFee: string;
+      totalFee?: string;
+    }[]
+  >([]);
   const { computeTravelTime } = useTravel();
   const { getRealmNameById } = useRealm();
   const [isLoading, setIsLoading] = useState(false);
-  const [resourceSelections, setResourceSelections] = useState<ResourceSelection[]>([
-    { id: 0, amount: "", contract: "" },
-  ]);
+  const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([]);
+  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
 
-  const handleResourceChange = (id: number, field: "amount" | "contract", value: string) => {
-    setResourceSelections((prev) =>
-      prev.map((selection) => (selection.id === id ? { ...selection, [field]: value } : selection)),
-    );
+  const unselectedResources = useMemo(
+    () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
+    [selectedResourceIds],
+  );
+  const addResourceGive = () => {
+    setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
+    setSelectedResourceAmounts({
+      ...selectedResourceAmounts,
+      [unselectedResources[0].id]: 1,
+    });
   };
-
-  const handleResourceRemove = (id: number) => {
-    setResourceSelections((prev) => prev.filter((selection) => selection.id !== id));
-  };
-
-  const addResourceSelection = () => {
-    setResourceSelections((prev) => [...prev, { id: prev.length, amount: "", contract: "" }]);
-  };
-
-  const bridgeConfig = EternumGlobalConfig.bridge;
-
-  const calculateBridgeFee = (percent: number, amount: string) => {
-    return (percent * Number(amount)) / BRIDGE_FEE_DENOMINATOR;
-  };
-
-  const calculateBridgeFeeDisplayPercent = (percent: number) => {
-    return (percent * 100) / BRIDGE_FEE_DENOMINATOR;
-  };
-
-  const calculateTotalFeesForAllResources = useMemo(() => {
-    return resourceSelections
-      .filter((selection) => selection.amount && selection.contract)
-      .map((selection) => ({
-        velordsFee: formatFee(calculateBridgeFee(bridgeConfig.velords_fee_on_dpt_percent, selection.amount)),
-        seasonPoolFee: formatFee(calculateBridgeFee(bridgeConfig.season_pool_fee_on_dpt_percent, selection.amount)),
-        clientFee: formatFee(calculateBridgeFee(bridgeConfig.client_fee_on_dpt_percent, selection.amount)),
-        bankFee: formatFee(calculateBridgeFee(bridgeConfig.max_bank_fee_dpt_percent, selection.amount)),
-      }));
-  }, [resourceSelections]);
-
-  const totalFeesDisplay = useMemo(() => {
-    const totals = calculateTotalFeesForAllResources.reduce(
-      (acc, fees) => ({
-        velordsFee: acc.velordsFee + Number(fees.velordsFee),
-        seasonPoolFee: acc.seasonPoolFee + Number(fees.seasonPoolFee),
-        clientFee: acc.clientFee + Number(fees.clientFee),
-        bankFee: acc.bankFee + Number(fees.bankFee),
-      }),
-      { velordsFee: 0, seasonPoolFee: 0, clientFee: 0, bankFee: 0 },
-    );
-
-    return {
-      velordsFeeOnDeposit: formatFee(totals.velordsFee),
-      seasonPoolFeeOnDeposit: formatFee(totals.seasonPoolFee),
-      clientFeeOnDeposit: formatFee(totals.clientFee),
-      bankFeeOnDeposit: formatFee(totals.bankFee),
-      totalFeeOnDeposit: formatFee(totals.velordsFee + totals.seasonPoolFee + totals.clientFee + totals.bankFee),
-    };
-  }, [calculateTotalFeesForAllResources]);
 
   const { playerRealms } = useEntities();
   const playerRealmsIdAndName = useMemo(() => {
@@ -130,19 +82,19 @@ export const BridgeIn = () => {
   };
 
   const orderWeight = useMemo(() => {
-    const validSelections = resourceSelections.filter((selection) => selection.contract && selection.amount);
+    const validSelections = Object.entries(selectedResourceAmounts).filter(([id, amount]) => amount > 0 && id != "NaN");
     if (validSelections.length > 0) {
       const totalWeight = getTotalResourceWeight(
-        validSelections.map((selection) => ({
-          resourceId: ResourcesIds[selection.contract as keyof typeof ResourcesIds],
-          amount: multiplyByPrecision(Number(selection.amount)),
+        validSelections.map(([id, amount]) => ({
+          resourceId: id as unknown as ResourcesIds,
+          amount: multiplyByPrecision(amount),
         })),
       );
       return totalWeight;
     } else {
       return 0;
     }
-  }, [resourceSelections]);
+  }, [selectedResourceAmounts]);
 
   const donkeysNeeded = useMemo(() => {
     if (orderWeight) {
@@ -168,14 +120,14 @@ export const BridgeIn = () => {
 
       const resourceAddresses = await getSeasonAddresses();
       const validResources = await Promise.all(
-        resourceSelections
-          .filter((selection) => selection.contract && selection.amount)
-          .map(async (selection) => {
+        Object.entries(selectedResourceAmounts)
+          .filter(([id, amount]) => amount > 0)
+          .map(async ([id, amount]) => {
             const tokenAddress =
-              resourceAddresses[selection.contract.toLocaleUpperCase() as keyof typeof resourceAddresses][1];
+              resourceAddresses[ResourcesIds[id].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
             return {
               tokenAddress: tokenAddress as string,
-              amount: BigInt((selection.amount as unknown as number) * 10 ** 18),
+              amount: BigInt(amount * 10 ** 18),
             };
           }),
       );
@@ -185,6 +137,8 @@ export const BridgeIn = () => {
       }
 
       await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
+      setSelectedResourceIds([]);
+      setSelectedResourceAmounts({});
     } catch (error) {
       console.error("Bridge into realm error:", error);
       toast.error("Failed to transfer resources");
@@ -192,6 +146,8 @@ export const BridgeIn = () => {
       setIsLoading(false);
     }
   };
+
+  const [isFeesOpen, setIsFeesOpen] = useState(false);
 
   return (
     <div className="max-w-md flex flex-col gap-3">
@@ -231,19 +187,21 @@ export const BridgeIn = () => {
         </div>
       </div>
 
-      {resourceSelections.map((selection) => (
-        <SelectResourceToBridge
-          key={selection.id}
-          selectedResourceAmount={selection.amount}
-          setselectedResourceAmount={(value) => handleResourceChange(selection.id, "amount", value ?? 0)}
-          setselectedResourceContract={(value) => handleResourceChange(selection.id, "contract", value)}
-          onRemove={() => handleResourceRemove(selection.id)}
-          showRemove={resourceSelections.length > 1}
-          resourceSelections={resourceSelections}
-        />
-      ))}
+      <SelectResourceToBridge
+        selectedResourceIds={selectedResourceIds}
+        setSelectedResourceIds={setSelectedResourceIds}
+        selectedResourceAmounts={selectedResourceAmounts}
+        setSelectedResourceAmounts={setSelectedResourceAmounts}
+        unselectedResources={unselectedResources}
+        /*selectedResourceAmount={amount.toString()}
+          setselectedResourceAmount={(value) => handleResourceChange(contract, Number(value))}
+          setselectedResourceContract={() => {}*/
+        /*onRemove={() => handleResourceChange(contract, 0)}
+        showRemove={Object.keys(selectedResourceAmounts).length > 1}
+        //resourceSelections={selectedResourceAmounts}*/
+      />
 
-      <Button variant="outline" size="sm" onClick={addResourceSelection} className="mb-2">
+      <Button variant="outline" size="sm" onClick={() => addResourceGive()} className="mb-2">
         <Plus className="h-4 w-4 mr-2" /> Add Resource
       </Button>
 
@@ -252,7 +210,7 @@ export const BridgeIn = () => {
           <div>Time to Transfer</div>
           <div>{travelTimeInHoursAndMinutes(travelTime ?? 0)}</div>
         </div>
-        <div className="flex justify-between">
+        <div className={"flex justify-between " + (donkeysNeeded > donkeyBalance.balance ? "text-destructive" : "")}>
           <div>
             Donkeys Burnt
             <TooltipProvider>
@@ -271,77 +229,38 @@ export const BridgeIn = () => {
             {donkeysNeeded} / {donkeyBalance.balance} <ResourceIcon withTooltip={false} resource={"Donkey"} size="md" />
           </div>
         </div>
-        <hr />
-        <Collapsible>
-          <CollapsibleTrigger asChild>
-            <Button className="w-full flex justify-between font-bold px-0" variant={"ghost"}>
-              <div className="flex items-center">
-                <Plus className="mr-4" />
-                Total Transfer Fee
-              </div>
-              <div>{totalFeesDisplay.totalFeeOnDeposit}</div>
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="flex flex-col gap-4">
-            {calculateTotalFeesForAllResources.map((fees, index) => {
-              const resource = resourceSelections[index];
-              if (!resource.contract || !resource.amount) return null;
-
-              return (
-                <div key={index} className="flex flex-col gap-2">
-                  <div className="font-semibold text-sm">
-                    {resource.contract} - {resource.amount}
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_dpt_percent)}%)</div>
-                    <div>{fees.bankFee}</div>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <div>
-                      Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_dpt_percent)}%)
-                    </div>
-                    <div>{fees.velordsFee}</div>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <div>
-                      Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_dpt_percent)}
-                      %)
-                    </div>
-                    <div>{fees.seasonPoolFee}</div>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_dpt_percent)}%)</div>
-                    <div>{fees.clientFee}</div>
-                  </div>
-                  {index < calculateTotalFeesForAllResources.length - 1 && <hr className="my-2" />}
-                </div>
-              );
-            })}
-          </CollapsibleContent>
-        </Collapsible>
+        <BridgeFees
+          isOpen={isFeesOpen}
+          onOpenChange={setIsFeesOpen}
+          resourceSelections={selectedResourceAmounts}
+          setResourceFees={setResourceFees}
+          type="deposit"
+        />
         <div className="flex flex-col gap-2 font-bold mt-5 mb-5">
           <div className="flex justify-between">
             <div>Total Amount Received</div>
           </div>
-          {resourceSelections.map((selection, index) => {
-            if (!selection.amount || !selection.contract) return null;
-            const fees = calculateTotalFeesForAllResources[index];
-            const totalFees =
-              Number(fees.bankFee) + Number(fees.velordsFee) + Number(fees.seasonPoolFee) + Number(fees.clientFee);
-
+          {Object.entries(selectedResourceAmounts).map(([contract, amount]) => {
+            if (amount === 0) return null;
+            const resourceName = ResourcesIds[contract as keyof typeof ResourcesIds];
             return (
-              <div key={index} className="flex justify-between text-sm font-normal">
+              <div key={contract} className="flex justify-between text-sm font-normal">
                 <div className="flex items-center gap-2">
-                  <ResourceIcon resource={selection.contract} size="md" /> {selection.contract}
+                  <ResourceIcon resource={resourceName} size="md" /> {resourceName}
                 </div>
-                <div>{formatFee(Number(selection.amount) - totalFees)}</div>
+                <div>{formatFee(amount - Number(resourceFees[resourceName]?.totalFee ?? 0))}</div>
               </div>
             );
           })}
         </div>
       </div>
       <Button
-        disabled={resourceSelections[0].amount === "" || !resourceSelections[0].contract || isLoading || !realmEntityId}
+        disabled={
+          Object.values(selectedResourceAmounts).length === 0 ||
+          isLoading ||
+          !realmEntityId ||
+          donkeyBalance.balance <= donkeysNeeded
+        }
         onClick={() => onBridgeIntoRealm()}
       >
         {isLoading && <Loader className="animate-spin pr-2" />}
@@ -352,57 +271,103 @@ export const BridgeIn = () => {
 };
 
 export const SelectResourceToBridge = ({
-  selectedResourceAmount,
-  setselectedResourceAmount,
-  setselectedResourceContract,
-  onRemove,
-  showRemove,
-  resourceSelections,
+  selectedResourceAmounts,
+  setSelectedResourceAmounts,
+  selectedResourceIds,
+  setSelectedResourceIds,
+  unselectedResources,
+  /* onRemove,
+  showRemove,*/
+  //resourceSelections,
 }: {
-  selectedResourceAmount: string;
-  setselectedResourceAmount: (value: string) => void;
-  setselectedResourceContract: (value: string) => void;
-  onRemove: () => void;
-  showRemove: boolean;
-  resourceSelections: ResourceSelection[];
+  selectedResourceAmounts: { [key: string]: number };
+  setSelectedResourceAmounts: (value: { [key: string]: number }) => void;
+  selectedResourceIds: number[];
+  setSelectedResourceIds: (value: number[]) => void;
+  unselectedResources: Resources[];
+  //setselectedResourceContract: (value: string) => void;
+  /*onRemove: () => void;
+  showRemove: boolean;*/
+  //resourceSelections: { [key: string]: number };
 }) => {
+  const addResourceGive = () => {
+    setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
+    setSelectedResourceAmounts({
+      ...selectedResourceAmounts,
+      [unselectedResources[0].id]: 1,
+    });
+  };
+
+  useEffect(() => {
+    if (selectedResourceIds.length === 0) {
+      addResourceGive();
+    }
+  }, [selectedResourceIds]);
+
   return (
-    <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
-      <Input
-        type="text"
-        placeholder="0.0"
-        value={selectedResourceAmount}
-        onChange={(e) => setselectedResourceAmount(e.target.value)}
-        className="bg-dark-brown text-2xl w-full outline-none h-10 border-none"
-      />
+    <>
+      {Object.entries(selectedResourceAmounts).map(([id, amount], index) => (
+        <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
+          <Input
+            type="text"
+            placeholder="0.0"
+            value={selectedResourceAmounts[id]}
+            onChange={(e) => {
+              setSelectedResourceAmounts({
+                ...selectedResourceAmounts,
+                [id]: /*Math.min(divideByPrecision(resource?.balance || 0), */ Number(e.target.value),
+              });
+            }}
+            className="bg-dark-brown text-2xl w-full outline-none h-10 border-none"
+          />
+          <Select
+            onValueChange={(value) => {
+              const updatedResourceIds = [...selectedResourceIds];
+              updatedResourceIds[index] = Number(value);
+              setSelectedResourceIds(updatedResourceIds);
+              setSelectedResourceAmounts({
+                ...selectedResourceAmounts,
+                [Number(value)]: 1,
+              });
+            }}
+            value={selectedResourceIds[index]?.toString()}
+          >
+            <SelectTrigger className="w-[180px] border-gold/15">
+              <SelectValue placeholder="Select Resource" />
+            </SelectTrigger>
+            <SelectContent>
+              {[resources.find((res) => res.id === selectedResourceIds[index]), ...unselectedResources].map((res) => (
+                <SelectItem
+                  key={res?.id}
+                  disabled={Object.keys(selectedResourceAmounts).includes(res?.id.toString() ?? "")}
+                  value={res?.id.toString() ?? ""}
+                >
+                  <div className="flex items-center gap-2">
+                    {res?.trait && <ResourceIcon resource={res?.trait} size="md" />}
+                    {res?.trait ?? ""}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-      <Select onValueChange={(value) => setselectedResourceContract(value)}>
-        <SelectTrigger className="w-[180px] border-gold/15">
-          <SelectValue placeholder="Select Resource" />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.values(ResourcesIds)
-            .filter((resource) => isNaN(Number(resource)))
-            .map((resource) => (
-              <SelectItem
-                key={resource}
-                disabled={resourceSelections.some((selection) => selection.contract === resource)}
-                value={resource.toString()}
-              >
-                <div className="flex items-center gap-2">
-                  <ResourceIcon resource={resource as string} size="md" />
-                  {resource}
-                </div>
-              </SelectItem>
-            ))}
-        </SelectContent>
-      </Select>
-
-      {showRemove && (
-        <Button variant="ghost" size="icon" onClick={onRemove} className="h-8 w-8 text-red-500 hover:text-red-600">
-          ×
-        </Button>
-      )}
-    </div>
+          {selectedResourceIds.length > 1 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                const updatedResourceIds = selectedResourceIds.filter((_: any, i: any) => i !== index);
+                setSelectedResourceIds(updatedResourceIds);
+                const { [id]: _, ...updatedAmounts } = selectedResourceAmounts;
+                setSelectedResourceAmounts(updatedAmounts);
+              }}
+              className="h-8 w-8 text-red-500 hover:text-red-600"
+            >
+              ×
+            </Button>
+          )}
+        </div>
+      ))}
+    </>
   );
 };

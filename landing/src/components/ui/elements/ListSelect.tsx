@@ -33,11 +33,11 @@ function ListSelect(props: ListSelectProps) {
           <div className="relative  ">
             <Listbox.Button
               className={clsx(
-                "flex items-center relative  cursor-pointer text-xs py-1 min-h-[32px] z-0 w-full bg-gold/10  hover:bg-gold/20 px-2",
+                "flex items-center relative  cursor-pointer text-xs py-1 min-h-[32px] z-0 w-full bg-gold/10 hover:bg-gold/20 px-2",
               )}
             >
-              {props.title && <span className="truncate flex items-center !text-gold mr-2">{props.title}</span>}
-              <span className="truncate flex items-center">{selectedOption.label}</span>
+              {props.title && <span className="truncate w-full flex items-center !text-gold mr-2">{props.title}</span>}
+              <span className="truncate flex w-full items-center">{selectedOption.label}</span>
               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                 <div className="flex flex-col items-center justify-center ml-1">
                   <CaretDown
@@ -57,10 +57,10 @@ function ListSelect(props: ListSelectProps) {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <div className="fixed z-50 mt-1 w-min text-xs">
+              <div className="fixed z-50 w-min text-xs">
                 <Listbox.Options
                   className={clsx(
-                    "z-50 mt-3 w-full rounded-md py-1 max-h-72 overflow-scroll z-100 border border-gold/10 no-scrollbar",
+                    "z-50 w-full rounded-md py-1 max-h-72 overflow-scroll z-100 border border-gold/10 no-scrollbar",
                     props.style === "black" ? "bg-brown" : " bg-brown",
                   )}
                 >
