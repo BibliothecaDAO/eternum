@@ -3,7 +3,7 @@ import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { Position } from "@/types/Position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/Onboarding";
 import { OnboardingButton } from "@/ui/layouts/OnboardingButton";
-import { CountdownTimer, LoadingScreen } from "@/ui/modules/LoadingScreen";
+import { LoadingScreen } from "@/ui/modules/LoadingScreen";
 import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/Steps";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import ControllerConnector from "@cartridge/connector/controller";
@@ -19,7 +19,6 @@ import { displayAddress } from "../../ui/utils/utils";
 import { useQuery } from "../helpers/useQuery";
 import { useAddressStore } from "../store/useAddressStore";
 import useUIStore from "../store/useUIStore";
-import { useSeasonStart } from "../useSeasonStart";
 import { useAccountStore } from "./accountStore";
 
 interface DojoAccount {
@@ -155,7 +154,7 @@ const DojoContextProvider = ({
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setAddressName = useAddressStore((state) => state.setAddressName);
 
-  const { countdown } = useSeasonStart();
+  // const { countdown } = useSeasonStart();
 
   const { handleUrlChange } = useQuery();
 
@@ -257,7 +256,7 @@ const DojoContextProvider = ({
     }
   }, [isDev, controllerAccount, burnerAccount, retries]);
 
-  if (countdown > 0) return <CountdownTimer backgroundImage={backgroundImage} />;
+  // if (countdown > 0) return <CountdownTimer backgroundImage={backgroundImage} />;
 
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;

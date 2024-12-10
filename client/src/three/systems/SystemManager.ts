@@ -47,21 +47,21 @@ export class SystemManager {
         return;
       }
 
-      let retries = 0;
-      const tryGetUpdate = () => {
-        const value = getUpdate(update);
-        if (value) {
-          callback(value);
-          return;
-        }
+      // let retries = 0;
+      // const tryGetUpdate = () => {
+      //   const value = getUpdate(update);
+      //   if (value) {
+      //     callback(value);
+      //     return;
+      //   }
 
-        retries++;
-        if (retries < maxRetries) {
-          setTimeout(tryGetUpdate, retryDelay);
-        }
-      };
+      //   retries++;
+      //   if (retries < maxRetries) {
+      //     setTimeout(tryGetUpdate, retryDelay);
+      //   }
+      // };
 
-      setTimeout(tryGetUpdate, retryDelay);
+      // setTimeout(tryGetUpdate, retryDelay);
     };
 
     defineComponentSystem(this.setup.network.world, component, handleUpdate, { runOnInit });
