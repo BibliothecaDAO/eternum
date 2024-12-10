@@ -3,7 +3,7 @@ import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { Position } from "@/types/Position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/Onboarding";
 import { OnboardingButton } from "@/ui/layouts/OnboardingButton";
-import { LoadingScreen } from "@/ui/modules/LoadingScreen";
+import { CountdownTimer, LoadingScreen } from "@/ui/modules/LoadingScreen";
 import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/Steps";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import ControllerConnector from "@cartridge/connector/controller";
@@ -15,7 +15,7 @@ import { ReactNode, createContext, useContext, useEffect, useMemo, useState } fr
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
-import { displayAddress, getRandomBackgroundImage } from "../../ui/utils/utils";
+import { displayAddress } from "../../ui/utils/utils";
 import { useQuery } from "../helpers/useQuery";
 import { useAddressStore } from "../store/useAddressStore";
 import useUIStore from "../store/useUIStore";
@@ -261,7 +261,6 @@ const DojoContextProvider = ({
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
 
-  // Handle Loading Screen
   if (isDev) {
     if (!burnerAccount) {
       return <LoadingScreen backgroundImage={backgroundImage} />;
@@ -272,24 +271,28 @@ const DojoContextProvider = ({
     }
     if (!isConnected && !isConnecting && !controllerAccount && !isSpectatorMode) {
       return (
-        <OnboardingContainer backgroundImage={backgroundImage}>
-          <StepContainer>
-            <div className="flex justify-center space-x-8 mt-2 md:mt-4">
-              {!isConnected && (
-                <>
-                  <SpectateButton onClick={onSpectatorModeClick} />
-                  <OnboardingButton
-                    onClick={connectWallet}
-                    className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80"
-                  >
-                    <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
-                    Log In
-                  </OnboardingButton>
-                </>
-              )}
-            </div>
-          </StepContainer>
-        </OnboardingContainer>
+        <>
+          <CountdownTimer />
+
+          <OnboardingContainer backgroundImage={backgroundImage}>
+            <StepContainer>
+              <div className="flex justify-center space-x-8 mt-2 md:mt-4">
+                {!isConnected && (
+                  <>
+                    <SpectateButton onClick={onSpectatorModeClick} />
+                    <OnboardingButton
+                      onClick={connectWallet}
+                      className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80"
+                    >
+                      <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
+                      Log In
+                    </OnboardingButton>
+                  </>
+                )}
+              </div>
+            </StepContainer>
+          </OnboardingContainer>
+        </>
       );
     }
 

@@ -246,10 +246,10 @@ export const formatTime = (
     const formattedSeconds = remainingSeconds.toString().padStart(2, "0");
     parts.push(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`);
   } else {
-    if (hours > 0 && format & TimeFormat.H) parts.push(`${hours} ${abbreviate ? "h" : "hour(s)"}`);
-    if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes} ${abbreviate ? "m" : "minute(s)"}`);
+    if (hours > 0 && format & TimeFormat.H) parts.push(`${hours}${abbreviate ? "h" : " hour(s)"}`);
+    if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}${abbreviate ? "m" : " minute(s)"}`);
     if (remainingSeconds > 0 && format & TimeFormat.S)
-      parts.push(`${remainingSeconds} ${abbreviate ? "s" : "second(s)"}`);
+      parts.push(`${remainingSeconds}${abbreviate ? "s" : " second(s)"}`);
   }
 
   return parts.join(" ");
