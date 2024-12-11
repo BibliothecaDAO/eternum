@@ -18,7 +18,6 @@ import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
-import { InventoryResources } from "../../resources/InventoryResources";
 import { ImmunityTimer } from "../structures/StructureLabel";
 import { ArmyWarning } from "./ArmyWarning";
 
@@ -99,9 +98,9 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
               <div className="text-green text-xs self-center">{currencyFormat(Number(troops.paladin_count), 0)}</div>
             </div>
           </div>
-          <div className="flex flex-row justify-between">
+          {/* <div className="flex flex-row justify-between">
             <InventoryResources max={6} entityId={entity_id} resourcesIconSize="xs" textSize="xxs" />
-          </div>
+          </div> */}
         </div>
         <ImmunityTimer isImmune={isImmune} timer={timer} />
       </div>
