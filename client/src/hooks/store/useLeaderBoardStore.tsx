@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { create } from "zustand";
 import { useDojo } from "../context/DojoContext";
 import { useGuilds } from "../helpers/useGuilds";
-import useUIStore from "./useUIStore";
+import useNextBlockTimestamp from "../useNextBlockTimestamp";
 
 interface LeaderboardStore {
   playersByRank: [ContractAddress, number][];
@@ -27,7 +27,7 @@ export const useHyperstructureData = () => {
 
   const { getGuildFromPlayerAddress } = useGuilds();
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const setPlayersByRank = useLeaderBoardStore((state) => state.setPlayersByRank);
   const setGuildsByRank = useLeaderBoardStore((state) => state.setGuildsByRank);

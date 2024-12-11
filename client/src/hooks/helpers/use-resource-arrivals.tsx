@@ -13,7 +13,7 @@ import {
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDojo } from "../context/DojoContext";
-import useUIStore from "../store/useUIStore";
+import useNextBlockTimestamp from "../useNextBlockTimestamp";
 
 export type ArrivalInfo = {
   entityId: ID;
@@ -168,7 +168,7 @@ export const usePlayerArrivalsNotifications = () => {
 
   const arrivals = usePlayerArrivals();
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   useEffect(() => {
     const arrivedCount = arrivals.filter(

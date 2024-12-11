@@ -15,6 +15,7 @@ import { ResourceManager } from "../../dojo/modelManager/ResourceManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
+import useNextBlockTimestamp from "../useNextBlockTimestamp";
 
 export function useResourcesUtils() {
   const { setup } = useDojo();
@@ -27,7 +28,7 @@ export function useResourcesUtils() {
   }, []);
 
   const useResourcesFromBalance = (entityId: ID) => {
-    const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
+    const { currentDefaultTick } = useNextBlockTimestamp();
     const weight = useComponentValue(Weight, getEntityIdFromKeys([BigInt(entityId)]));
     const capacityCategory = useComponentValue(CapacityCategory, getEntityIdFromKeys([BigInt(entityId)]));
 
