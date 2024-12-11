@@ -1,6 +1,7 @@
 import { createDojoConfig } from "@dojoengine/core";
 import devManifest from "../contracts/manifest_dev.json";
-import productionManifest from "../contracts/manifest_prod.json";
+import productionManifest from "../contracts/manifest_mainnet.json";
+import sepoliaManifest from "../contracts/manifest_prod.json";
 import { env } from "./env";
 
 const {
@@ -15,8 +16,12 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-const isLocal = VITE_PUBLIC_CHAIN === "local" || VITE_PUBLIC_CHAIN === "testnet";
-const manifest = VITE_PUBLIC_DEV === true && isLocal ? devManifest : productionManifest;
+// const isLocal = VITE_PUBLIC_CHAIN === "local" || VITE_PUBLIC_CHAIN === "testnet";
+// const manifest = VITE_PUBLIC_DEV === true && isLocal ? devManifest : productionManifest;
+
+let manifest = VITE_PUBLIC_DEV === true ? devManifest : sepoliaManifest;
+
+manifest = VITE_PUBLIC_CHAIN === "mainnet" ? productionManifest : manifest;
 
 export const getManifest = () => {
   return manifest;
