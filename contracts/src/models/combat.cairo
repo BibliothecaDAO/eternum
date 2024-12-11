@@ -167,6 +167,23 @@ impl TroopsImpl of TroopsTrait {
         return resource_precision_u64;
     }
 
+    fn assert_minimum_for_battle(self: Troops) {
+        assert!(
+            self.knight_count >= (100 * RESOURCE_PRECISION).try_into().unwrap(),
+            "you need to at least have 100 knights to merge or battle"
+        );
+
+        assert!(
+            self.paladin_count >= (100 * RESOURCE_PRECISION).try_into().unwrap(),
+            "you need to at least have 100 paladins to merge or battle"
+        );
+
+        assert!(
+            self.crossbowman_count >= (100 * RESOURCE_PRECISION).try_into().unwrap(),
+            "you need to at least have 100 crossbowmen to merge or battle"
+        );
+    }
+
     fn assert_normalized(self: Troops) {
         assert!(
             self.knight_count % Self::normalization_factor() == 0,
