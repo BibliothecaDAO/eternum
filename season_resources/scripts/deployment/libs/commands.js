@@ -4,7 +4,7 @@ import * as path from "path";
 import { shortString } from "starknet";
 import { fileURLToPath } from "url";
 import devManifest from "../../../../contracts/manifest_dev.json";
-import productionManifest from "../../../../contracts/manifest_mainnet.json";
+import productionManifest from "../../../../contracts/manifest_prod.json";
 import {
   declare,
   getContractPath,
@@ -172,7 +172,6 @@ export const grantMinterRoleToAllSeasonResourceContracts = async () => {
 
   console.log(`Successfully granted minter role to all season resource contracts`.green, "\n\n");
 };
-
 
 export const revokeMinterRoleFromAllSeasonResourceContracts = async () => {
   ////// Revoke MINTER ROLE TO ALL SEASON RESOURCE CONTRACTS //////

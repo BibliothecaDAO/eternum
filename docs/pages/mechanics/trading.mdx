@@ -1,10 +1,5 @@
 import { DONKEY_SPEED } from "@bibliothecadao/eternum";
-
----
-
-title: Trading description: Trading mechanics and marketplace system in Eternum
-
----
+import { CapacityConfigCategory, EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 # 🫏 Trading System
 
@@ -29,9 +24,10 @@ your share and helps maintain a stable trading environment, increasing overall m
 
 ## Transport <img src="/resources/249.png" alt="Donkey" width="200" className="float-right" />
 
-Donkeys are essential for all resource transfers. Each donkey can carry up to 4000kg, and transport time depends on the
-distance to its destination. It's important to consider transport costs in your trade calculations. Ensure your realm
-has the necessary resources for transportation.
+Donkeys are essential for all resource transfers. Each donkey can carry up to
+**{(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey] / 1000).toLocaleString()} kg**, and transport
+time depends on the distance to its destination. It's important to consider transport costs in your trade calculations.
+Ensure your realm has the necessary resources for transportation.
 
 ### Transporting Resources
 
@@ -52,7 +48,7 @@ realm or withdrawing them, everything must pass through the central bank first.
 
 Anyone can claim it for themselves, but be wary, as it is protected by a significant defensive force.
 
-> When the Bank is being attacked, the AMM will be **locked** until the battle has ended.
+> ⚠️ **Note:** When the Bank is being attacked, the AMM will be **locked** until the battle has ended.
 
 **Ownership Benefits:**
 

@@ -1,4 +1,4 @@
-import { divideByPrecision, formatNumberWithSpaces } from "@/utils/formatting";
+import { divideByPrecision, formatNumberWithCommas } from "@/utils/formatting";
 import { CapacityConfigCategory, EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 
 ## Storage System
@@ -24,8 +24,8 @@ Resources in Eternum have different weights that affect storage:
 Expand your storage capacity to support your growing realm:
 
 - **Capacity**: Each storehouse adds
-  {formatNumberWithSpaces(divideByPrecision(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))}kg
-  of storage per resource
+  {formatNumberWithCommas(divideByPrecision(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]
+  ))}kg of storage per resource
 - **Expansion**: Build additional storehouses to increase total storage.
 
 - **When storage is full**:
