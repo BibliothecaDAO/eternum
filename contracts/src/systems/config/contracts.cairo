@@ -608,52 +608,7 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
-            assert!(
-                resource_production_config.amount.is_zero(),
-                "Production config already set for {} resource",
-                resource_type
-            );
-
             resource_production_config.amount = amount;
-
-            loop {
-                match cost.pop_front() {
-                    Option::Some((
-                        input_resource_type, input_resource_amount
-                    )) => {
-                        // update output resource's production input/material
-                        world
-                            .write_model(
-                                @ProductionInput {
-                                    output_resource_type: resource_type,
-                                    index: resource_production_config.input_count.try_into().unwrap(),
-                                    input_resource_type: *input_resource_type,
-                                    input_resource_amount: *input_resource_amount
-                                }
-                            );
-
-                        resource_production_config.input_count += 1;
-
-                        // update input resource's production output
-                        let mut input_resource_production_config: ProductionConfig = world
-                            .read_model(*input_resource_type);
-
-                        world
-                            .write_model(
-                                @ProductionOutput {
-                                    input_resource_type: *input_resource_type,
-                                    index: input_resource_production_config.output_count.try_into().unwrap(),
-                                    output_resource_type: resource_type,
-                                }
-                            );
-
-                        input_resource_production_config.output_count += 1;
-                        world.write_model(@input_resource_production_config);
-                    },
-                    Option::None => { break; }
-                }
-            };
-
             world.write_model(@resource_production_config);
         }
     }

@@ -167,6 +167,14 @@ impl TroopsImpl of TroopsTrait {
         return resource_precision_u64;
     }
 
+    fn assert_minimum_for_battle(self: Troops) {
+        let total = self.knight_count + self.paladin_count + self.crossbowman_count;
+        assert!(
+            total >= (100 * RESOURCE_PRECISION).try_into().unwrap(),
+            "you need to have at least have 100 troops for battle"
+        );
+    }
+
     fn assert_normalized(self: Troops) {
         assert!(
             self.knight_count % Self::normalization_factor() == 0,
