@@ -1,11 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import {
-  CapacityConfigCategory,
-  ID,
-  ResourcesIds,
-  resources,
-  type Resource
-} from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, ID, ResourcesIds, resources, type Resource } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue, runQuery, type Entity } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
