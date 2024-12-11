@@ -86,7 +86,7 @@ export const BridgeFees = ({
           <div>{formatFee(feesForAllResources.reduce((sum, fees) => sum + Number(fees.totalFee), 0))} units</div>
         </Button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="flex flex-col gap-4 pt-4">
+      <CollapsibleContent className="flex flex-col gap-4 py-4">
         {feesForAllResources.map((fees) => {
           const resourceName = ResourcesIds[fees.id as keyof typeof ResourcesIds];
           return (
@@ -114,10 +114,11 @@ export const BridgeFees = ({
                 </div>
                 <div>{fees.seasonPoolFee}</div>
               </div>
-              <div className="flex justify-between text-xs">
+              <div className="flex justify-between text-xs mb-3">
                 <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_dpt_percent)}%)</div>
                 <div>{fees.clientFee}</div>
               </div>
+              <hr />
             </div>
           );
         })}
