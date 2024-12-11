@@ -20,7 +20,7 @@ const entityIcon: Record<EntityType, string> = {
 };
 
 const entityName: Record<EntityType, string> = {
-  [EntityType.DONKEY]: "Trade Caravan",
+  [EntityType.DONKEY]: "Donkeys",
   [EntityType.TROOP]: "Army",
   [EntityType.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
 };
