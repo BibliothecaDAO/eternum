@@ -168,19 +168,10 @@ impl TroopsImpl of TroopsTrait {
     }
 
     fn assert_minimum_for_battle(self: Troops) {
+        let total = self.knight_count + self.paladin_count + self.crossbowman_count;
         assert!(
-            self.knight_count >= (100 * RESOURCE_PRECISION).try_into().unwrap(),
-            "you need to at least have 100 knights to merge or battle"
-        );
-
-        assert!(
-            self.paladin_count >= (100 * RESOURCE_PRECISION).try_into().unwrap(),
-            "you need to at least have 100 paladins to merge or battle"
-        );
-
-        assert!(
-            self.crossbowman_count >= (100 * RESOURCE_PRECISION).try_into().unwrap(),
-            "you need to at least have 100 crossbowmen to merge or battle"
+            total >= (100 * RESOURCE_PRECISION).try_into().unwrap(),
+            "you need to have at least have 100 troops for battle"
         );
     }
 
