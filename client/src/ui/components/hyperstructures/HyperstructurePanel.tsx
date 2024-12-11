@@ -10,6 +10,7 @@ import {
   useHyperstructureProgress,
   useHyperstructureUpdates,
 } from "@/hooks/helpers/useHyperstructures";
+import { useHyperstructureData } from "@/hooks/store/useLeaderBoardStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -48,6 +49,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
   } = dojo;
 
   const { getGuildFromPlayerAddress } = useGuilds();
+
+  const updateLeaderboard = useHyperstructureData();
 
   const [isLoading, setIsLoading] = useState<Loading>(Loading.None);
   const [editName, setEditName] = useState(false);
@@ -159,7 +162,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
     <div className="flex flex-col justify-between h-full">
       <div className="grid grid-cols-5 text-xxs bg-blueish/10 p-1">
         <div className="flex flex-col">
-          <div>Owner:</div>
+          <div>Owner</div>
           <h4>{ownerName}</h4>
         </div>
         <div className="col-span-4">
@@ -193,7 +196,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
             </div>
           ) : (
             <div className="flex justify-between items-center">
-              <h5 className="truncate pr-5">{entity.name}</h5>
+              <h5 className="truncate pr-5">{entity.name} <Button onClick={updateLeaderboard}>Update</Button></h5>
               {account.address === entity.owner && (
                 <div className="flex flex-col gap-2">
                   <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>

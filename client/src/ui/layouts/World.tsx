@@ -89,10 +89,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   // Setup hooks
   useFetchBlockchainData();
-  // useHyperstructureData();
   useStructureEntityId();
   
-
   return (
     <div
       onClick={(e) => {
