@@ -2,14 +2,17 @@ import { configManager } from "@/dojo/setup";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useLords } from "@/hooks/use-lords";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress, multiplyByPrecision } from "@/lib/utils";
-import { ADMIN_BANK_ENTITY_ID, DONKEY_ENTITY_TYPE, Resources, resources, ResourcesIds } from "@bibliothecadao/eternum";
-import { useAccount } from "@starknet-react/core";
+import { ADMIN_BANK_ENTITY_ID, DONKEY_ENTITY_TYPE, Resources, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { useAccount, useBalance } from "@starknet-react/core";
 import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { uint256 } from "starknet";
+import { formatEther } from "viem";
 import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
@@ -37,7 +40,7 @@ export const BridgeIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
-
+  const [resourceAddresses, setResourceAddresses] = useState<{ [key: string]: string }>({});
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
     [selectedResourceIds],
@@ -111,11 +114,18 @@ export const BridgeIn = () => {
 
   const { bridgeIntoRealm } = useBridgeAsset();
 
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      const addresses = await getSeasonAddresses();
+      setResourceAddresses(addresses);
+    };
+    fetchAddresses();
+  }, []);
+
   const onBridgeIntoRealm = async () => {
     try {
       setIsLoading(true);
 
-      const resourceAddresses = await getSeasonAddresses();
       const validResources = await Promise.all(
         Object.entries(selectedResourceAmounts)
           .filter(([id, amount]) => amount > 0)
@@ -191,6 +201,7 @@ export const BridgeIn = () => {
         setSelectedResourceAmounts={setSelectedResourceAmounts}
         unselectedResources={unselectedResources}
         addResourceGive={addResourceGive}
+        resourceAddresses={resourceAddresses}
       />
 
       <Button variant="outline" size="sm" onClick={() => addResourceGive()} className="mb-2">
@@ -257,6 +268,124 @@ export const BridgeIn = () => {
   );
 };
 
+const ResourceInputRow = ({
+  id,
+  index,
+  selectedResourceIds,
+  setSelectedResourceIds,
+  selectedResourceAmounts,
+  setSelectedResourceAmounts,
+  unselectedResources,
+  resourceAddress,
+}: {
+  id: number;
+  index: number;
+  selectedResourceIds: number[];
+  setSelectedResourceIds: (ids: number[]) => void;
+  selectedResourceAmounts: { [key: string]: number };
+  setSelectedResourceAmounts: (amounts: { [key: string]: number }) => void;
+  unselectedResources: Resources[];
+  resourceAddress: string;
+}) => {
+  const { address } = useAccount();
+  const { data: balance } = useBalance({ token: resourceAddress as `0x${string}`, address: address });
+  const { lordsBalance } = useLords({ disabled: id !== ResourcesIds.Lords });
+
+  const fetchedBalance =
+    id !== ResourcesIds.Lords
+      ? balance?.formatted.toString()
+      : lordsBalance
+        ? Number(formatEther(uint256.uint256ToBN(lordsBalance))).toFixed(2)
+        : "0";
+
+  return (
+    <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
+      <div className="relative  w-full">
+        <Input
+          type="text"
+          placeholder="0.0"
+          value={selectedResourceAmounts[id]}
+          onChange={(e) => {
+            setSelectedResourceAmounts({
+              ...selectedResourceAmounts,
+              [id]: Number(e.target.value),
+            });
+          }}
+          className="bg-dark-brown text-2xl  outline-none h-10 border-none"
+        />
+        <div className="flex items-center gap-2 text-xxs absolute right-1 bottom-1">
+          <span className="text-muted-foreground text-xs">{fetchedBalance} </span>
+          <Button
+            className="uppercase px-1.5 text-xxs rounded-full h-6"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedResourceAmounts({
+                ...selectedResourceAmounts,
+                [id]: Number(fetchedBalance),
+              });
+            }}
+          >
+            Max
+          </Button>
+        </div>
+      </div>
+
+      <Select
+        onValueChange={(value) => {
+          const updatedResourceIds = [...selectedResourceIds];
+          updatedResourceIds[index] = Number(value);
+          setSelectedResourceIds(updatedResourceIds);
+          const { [id]: _, ...remainingAmounts } = selectedResourceAmounts;
+          setSelectedResourceAmounts({
+            ...remainingAmounts,
+            [Number(value)]: 1,
+          });
+        }}
+        value={selectedResourceIds[index]?.toString()}
+      >
+        <SelectTrigger className="w-[180px] border-gold/15">
+          <SelectValue placeholder="Select Resource" />
+        </SelectTrigger>
+        <SelectContent>
+          {[resources.find((res) => res.id === selectedResourceIds[index]), ...unselectedResources].map((res) => (
+            <>
+              {res?.id && (
+                <SelectItem
+                  key={res?.id}
+                  disabled={Object.keys(selectedResourceAmounts).includes(res?.id.toString() ?? "")}
+                  value={res?.id.toString() ?? ""}
+                >
+                  <div className="flex items-center gap-2">
+                    {res?.trait && <ResourceIcon resource={res?.trait} size="md" />}
+                    {res?.trait ?? ""}
+                  </div>
+                </SelectItem>
+              )}
+            </>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {selectedResourceIds.length > 1 && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            const updatedResourceIds = selectedResourceIds.filter((_: any, i: any) => i !== index);
+            setSelectedResourceIds(updatedResourceIds);
+            const { [id]: _, ...updatedAmounts } = selectedResourceAmounts;
+            setSelectedResourceAmounts(updatedAmounts);
+          }}
+          className="h-8 w-8 text-red-500 hover:text-red-600"
+        >
+          ×
+        </Button>
+      )}
+    </div>
+  );
+};
+
 export const SelectResourceToBridge = ({
   selectedResourceAmounts,
   setSelectedResourceAmounts,
@@ -264,6 +393,7 @@ export const SelectResourceToBridge = ({
   setSelectedResourceIds,
   unselectedResources,
   addResourceGive,
+  resourceAddresses,
 }: {
   selectedResourceAmounts: { [key: string]: number };
   setSelectedResourceAmounts: (value: { [key: string]: number }) => void;
@@ -271,6 +401,7 @@ export const SelectResourceToBridge = ({
   setSelectedResourceIds: (value: number[]) => void;
   unselectedResources: Resources[];
   addResourceGive: () => void;
+  resourceAddresses: { [key: string]: string };
 }) => {
   useEffect(() => {
     if (selectedResourceIds.length === 0) {
@@ -281,71 +412,19 @@ export const SelectResourceToBridge = ({
   return (
     <>
       {selectedResourceIds.map((id, index) => (
-        <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
-          <Input
-            type="text"
-            placeholder="0.0"
-            value={selectedResourceAmounts[id]}
-            onChange={(e) => {
-              setSelectedResourceAmounts({
-                ...selectedResourceAmounts,
-                [id]: /*Math.min(divideByPrecision(resource?.balance || 0), */ Number(e.target.value),
-              });
-            }}
-            className="bg-dark-brown text-2xl w-full outline-none h-10 border-none"
-          />
-          <Select
-            onValueChange={(value) => {
-              const updatedResourceIds = [...selectedResourceIds];
-              updatedResourceIds[index] = Number(value);
-              setSelectedResourceIds(updatedResourceIds);
-              const { [id]: _, ...remainingAmounts } = selectedResourceAmounts;
-              setSelectedResourceAmounts({
-                ...remainingAmounts,
-                [Number(value)]: 1,
-              });
-            }}
-            value={selectedResourceIds[index]?.toString()}
-          >
-            <SelectTrigger className="w-[180px] border-gold/15">
-              <SelectValue placeholder="Select Resource" />
-            </SelectTrigger>
-            <SelectContent>
-              {[resources.find((res) => res.id === selectedResourceIds[index]), ...unselectedResources].map((res) => (
-                <>
-                  {res?.id && (
-                    <SelectItem
-                      key={res?.id}
-                      disabled={Object.keys(selectedResourceAmounts).includes(res?.id.toString() ?? "")}
-                      value={res?.id.toString() ?? ""}
-                    >
-                      <div className="flex items-center gap-2">
-                        {res?.trait && <ResourceIcon resource={res?.trait} size="md" />}
-                        {res?.trait ?? ""}
-                      </div>
-                    </SelectItem>
-                  )}
-                </>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {selectedResourceIds.length > 1 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                const updatedResourceIds = selectedResourceIds.filter((_: any, i: any) => i !== index);
-                setSelectedResourceIds(updatedResourceIds);
-                const { [id]: _, ...updatedAmounts } = selectedResourceAmounts;
-                setSelectedResourceAmounts(updatedAmounts);
-              }}
-              className="h-8 w-8 text-red-500 hover:text-red-600"
-            >
-              ×
-            </Button>
-          )}
-        </div>
+        <ResourceInputRow
+          key={`${id}-${index}`}
+          id={id}
+          index={index}
+          selectedResourceIds={selectedResourceIds}
+          setSelectedResourceIds={setSelectedResourceIds}
+          selectedResourceAmounts={selectedResourceAmounts}
+          setSelectedResourceAmounts={setSelectedResourceAmounts}
+          unselectedResources={unselectedResources}
+          resourceAddress={
+            resourceAddresses[ResourcesIds[id].toLocaleUpperCase() as keyof typeof resourceAddresses]?.[1]
+          }
+        />
       ))}
     </>
   );
