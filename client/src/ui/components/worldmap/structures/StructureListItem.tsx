@@ -7,6 +7,7 @@ import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures";
 import { Structure, useIsStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
@@ -39,7 +40,8 @@ export const StructureListItem = ({
 }: StructureListItemProps) => {
   const dojo = useDojo();
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setBattleView = useUIStore((state) => state.setBattleView);
 

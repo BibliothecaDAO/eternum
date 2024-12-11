@@ -1,7 +1,7 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { questDetails } from "@/ui/components/quest/questDetails";
 import { BuildingType, ContractAddress, ID, QuestType } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
@@ -63,10 +63,7 @@ export const useQuests = () => {
 };
 
 const useQuestDependencies = () => {
-  const {
-    setup,
-    account: { account },
-  } = useDojo();
+  const { setup } = useDojo();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
@@ -197,19 +194,19 @@ export const useQuestClaimStatus = () => {
   } = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const realmSettler = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]))?.settler_address;
+  const realmSettler = useComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]))?.settler_address;
   const isNotSettler = realmSettler !== ContractAddress(account.address);
 
   const prizeUpdate = useEntityQuery([HasValue(Quest, { entity_id: structureEntityId || 0 })]);
 
-  const checkPrizesClaimed = (prizes: Prize[]) => {
-    return prizes.every((prize) => {
-      const value = getComponentValue(Quest, getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(prize.id)]));
-      return value?.completed;
-    });
-  };
-
   const questClaimStatus = useMemo(() => {
+    const entityBigInt = BigInt(structureEntityId || 0);
+
+    const checkPrizesClaimed = (prizes: Prize[]) =>
+      prizes.every(
+        (prize) => getComponentValue(Quest, getEntityIdFromKeys([entityBigInt, BigInt(prize.id)]))?.completed,
+      );
+
     return Array.from(questDetails.keys()).reduce(
       (acc, questName) => ({
         ...acc,
@@ -217,7 +214,7 @@ export const useQuestClaimStatus = () => {
       }),
       {} as Record<QuestType, boolean>,
     );
-  }, [prizeUpdate]);
+  }, [structureEntityId, isNotSettler, prizeUpdate, Quest]);
 
   return { questClaimStatus };
 };

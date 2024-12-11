@@ -1482,7 +1482,7 @@
     },
     {
       "address": "0x4ed3a7c5f53c6e96186eaf1b670bd2e2a3699c08e070aedf4e5fc6ac246ddc1",
-      "class_hash": "0x201104f5060cf70aada2986e9569d578251884db4208862b88aa48bf491eed1",
+      "class_hash": "0x1d705daa1501a2647e6e051aceaff470486f0d803d528461d8a23c27265072",
       "abi": [
         {
           "type": "impl",
@@ -1686,7 +1686,7 @@
     },
     {
       "address": "0x2620f65aa2fd72d705306ada1ee7410023a3df03da9291f1ccb744fabfebc0",
-      "class_hash": "0x40e7660b0e34f56e08bbdf7573bc55eb94f9d88e580f76890c136f418aa60bd",
+      "class_hash": "0x6212c2b9ed24053620aa93e85707a364870d5ab5696a164233d5f46efd412b6",
       "abi": [
         {
           "type": "impl",
@@ -2775,7 +2775,7 @@
     },
     {
       "address": "0x421446d51cac1e926cb1a2b00ae318b52df71beb737159d5c1d7061030758cf",
-      "class_hash": "0x2a1623aa93f362b754f5c9dc9c592ef42bf820498ba120b256002463aa89292",
+      "class_hash": "0x682236180454ea85548145c9c75a1db98361212b8320a4dad0757066ee4ead6",
       "abi": [
         {
           "type": "impl",

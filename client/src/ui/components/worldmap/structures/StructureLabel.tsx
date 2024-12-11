@@ -6,11 +6,12 @@ import {
   useStructureImmunityTimer,
   useStructures,
 } from "@/hooks/helpers/useStructures";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { StructureListItem } from "./StructureListItem";
 
@@ -33,7 +34,7 @@ export const ImmunityTimer = ({
   );
 };
 
-export const StructureInfoLabel = () => {
+export const StructureInfoLabel = memo(() => {
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
   const { getStructureByEntityId } = useStructures();
@@ -49,7 +50,7 @@ export const StructureInfoLabel = () => {
 
   const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
   const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);
@@ -81,4 +82,6 @@ export const StructureInfoLabel = () => {
       )}
     </>
   );
-};
+});
+
+StructureInfoLabel.displayName = "StructureInfoLabel";

@@ -6,13 +6,13 @@ import { uuid } from "@latticexyz/utils";
 import { type SetupResult } from "../setup";
 
 export class ResourceInventoryManager {
-  entityId: ID;
+  carrierEntityId: ID;
 
   constructor(
     private readonly setup: SetupResult,
-    entityId: ID,
+    carrierEntityId: ID,
   ) {
-    this.entityId = entityId;
+    this.carrierEntityId = carrierEntityId;
   }
 
   private readonly _optimisticOffloadAll = (
@@ -21,25 +21,36 @@ export class ResourceInventoryManager {
     inventoryResources: Resource[],
   ) => {
     inventoryResources.forEach((resource) => {
-      const entity = getEntityIdFromKeys([BigInt(receiverEntityId), BigInt(resource.resourceId)]);
-      const receiverBalance = getComponentValue(this.setup.components.Resource, entity)?.balance || 0n;
+      const receiveResourceEntity = getEntityIdFromKeys([BigInt(receiverEntityId), BigInt(resource.resourceId)]);
+      const receiverBalance = getComponentValue(this.setup.components.Resource, receiveResourceEntity)?.balance || 0n;
 
       // optimistically update the balance of the receiver
       this.setup.components.Resource.addOverride(overrideId, {
-        entity,
+        entity: receiveResourceEntity,
         value: {
+          entity_id: receiverEntityId,
           resource_type: resource.resourceId,
           balance: receiverBalance + BigInt(resource.amount),
         },
       });
     });
 
-    const entity = getEntityIdFromKeys([BigInt(this.entityId)]);
+    const carrierEntity = getEntityIdFromKeys([BigInt(this.carrierEntityId)]);
 
     this.setup.components.Weight.addOverride(overrideId, {
-      entity,
+      entity: carrierEntity,
       value: {
+        entity_id: this.carrierEntityId,
         value: 0n,
+      },
+    });
+
+    // need to update this for the arrivals list to get updated
+    this.setup.components.OwnedResourcesTracker.addOverride(overrideId, {
+      entity: carrierEntity,
+      value: {
+        entity_id: this.carrierEntityId,
+        resource_types: 0n,
       },
     });
   };
@@ -51,7 +62,7 @@ export class ResourceInventoryManager {
     if (inventoryResources.length > 0) {
       await this.setup.systemCalls
         .send_resources({
-          sender_entity_id: this.entityId,
+          sender_entity_id: this.carrierEntityId,
           recipient_entity_id: receiverEntityId,
           resources: inventoryResources.flatMap((resource) => [resource.resourceId, resource.amount]),
           signer: useAccountStore.getState().account!,
@@ -59,61 +70,8 @@ export class ResourceInventoryManager {
         .finally(() => {
           this.setup.components.Resource.removeOverride(overrideId);
           this.setup.components.Weight.removeOverride(overrideId);
+          this.setup.components.OwnedResourcesTracker.removeOverride(overrideId);
         });
-    }
-  };
-
-  public onOffloadAllMultiple = async (
-    transfers: {
-      senderEntityId: ID;
-      recipientEntityId: ID;
-      resources: Resource[];
-    }[],
-  ) => {
-    const overrideId = uuid();
-
-    // Apply optimistic updates for each transfer
-    transfers.forEach((transfer) => {
-      transfer.resources.forEach((resource) => {
-        const recipientEntity = getEntityIdFromKeys([BigInt(transfer.recipientEntityId), BigInt(resource.resourceId)]);
-        const recipientBalance = getComponentValue(this.setup.components.Resource, recipientEntity)?.balance || 0n;
-
-        this.setup.components.Resource.addOverride(overrideId, {
-          entity: recipientEntity,
-          value: {
-            resource_type: resource.resourceId,
-            balance: recipientBalance + BigInt(resource.amount),
-          },
-        });
-      });
-
-      // Reset weight for sender
-      const senderEntity = getEntityIdFromKeys([BigInt(transfer.senderEntityId)]);
-      this.setup.components.Weight.addOverride(overrideId, {
-        entity: senderEntity,
-        value: {
-          value: 0n,
-        },
-      });
-    });
-
-    try {
-      await this.setup.systemCalls.send_resources_multiple({
-        calls: transfers.map((transfer) => ({
-          sender_entity_id: transfer.senderEntityId,
-          recipient_entity_id: transfer.recipientEntityId,
-          resources: transformResources(transfer.resources),
-        })),
-        signer: useAccountStore.getState().account!,
-      });
-    } finally {
-      // Clean up overrides
-      this.setup.components.Resource.removeOverride(overrideId);
-      this.setup.components.Weight.removeOverride(overrideId);
     }
   };
 }
-
-const transformResources = (resources: Resource[]) => {
-  return resources.flatMap((resource) => [resource.resourceId, resource.amount]);
-};

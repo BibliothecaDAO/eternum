@@ -22,7 +22,7 @@ export const useHyperstructures = () => {
   const {
     account: { account },
     setup: {
-      components: { Structure, Contribution, Position, Owner, EntityName },
+      components: { Structure, Contribution, Position, Owner, EntityName, Hyperstructure },
     },
   } = useDojo();
 
@@ -30,7 +30,8 @@ export const useHyperstructures = () => {
 
   const hyperstructures = useEntityQuery([Has(Structure), HasValue(Structure, { category: "Hyperstructure" })]).map(
     (hyperstructureEntityId) => {
-      const hyperstructure = getComponentValue(Structure, hyperstructureEntityId);
+      const hyperstructure = getComponentValue(Hyperstructure, hyperstructureEntityId);
+      const structure = getComponentValue(Structure, hyperstructureEntityId);
       const position = getComponentValue(Position, hyperstructureEntityId);
       const contributions = getContributions(hyperstructure!.entity_id, Contribution);
       const ownerEntityIds = runQuery([Has(Owner), HasValue(Owner, { entity_id: hyperstructure!.entity_id })])
@@ -45,6 +46,7 @@ export const useHyperstructures = () => {
 
       return {
         ...hyperstructure,
+        ...structure,
         ...position,
         ...contributions,
         owner,

@@ -7,6 +7,7 @@ import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 import { ViewOnMapIcon } from "../military/ArmyManagementCard";
@@ -24,7 +25,7 @@ export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }:
 
   const { getAddressNameFromEntity } = useEntitiesUtils();
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const [showInventory, setShowInventory] = useState(false);
 

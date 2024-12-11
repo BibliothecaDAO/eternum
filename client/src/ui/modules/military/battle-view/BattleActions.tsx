@@ -25,6 +25,7 @@ import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
 import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
 import { ReactComponent as Castle } from "@/assets/icons/castle.svg";
 import { ReactComponent as Flag } from "@/assets/icons/flag.svg";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getChancesOfSuccess, getMaxResourceAmountStolen, getTroopLossOnRaid } from "./utils";
@@ -67,8 +68,7 @@ export const BattleActions = ({
   const { getAliveArmy } = getArmyByEntityId();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
+  const { nextBlockTimestamp: currentTimestamp, currentArmiesTick } = useNextBlockTimestamp();
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -248,9 +248,16 @@ export const BattleActions = ({
     ];
 
     if (raidStatus !== RaidStatus.isRaidable) {
-      setTooltip({ content: <div className="">{raidStatus}</div>, position: "top" });
-    } else if (selectedArmy?.battle_id !== 0) {
-      content.push(<div>Raiding will make you leave and lose 25% of your army</div>);
+      setTooltip({ content: <div className="text-center">{raidStatus}</div>, position: "top" });
+      return;
+    }
+
+    if (selectedArmy?.battle_id !== 0) {
+      content.push(
+        <div key="warning" className="text-center text-red mt-2">
+          Raiding will make you leave and lose 25% of your army
+        </div>,
+      );
     }
 
     setTooltip({

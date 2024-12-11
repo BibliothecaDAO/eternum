@@ -90,7 +90,9 @@ export const StepContainer = ({
   return (
     <motion.div className="flex justify-center z-50 px-4 md:px-0 flex-col" {...motionProps}>
       <div
-        className={`bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-6 lg:p-10 xl:p-8 2xl:p-12 text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${size} shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
+        className={`bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-6 lg:p-10 xl:p-8 2xl:p-12 text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${
+          showToS ? "max-w-[800px] w-full xl:w-[60vw] max-h-[80vh] h-[80vh]" : size
+        } shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
       >
         {showToS ? (
           <div className="flex flex-col h-full max-h-full pb-4">

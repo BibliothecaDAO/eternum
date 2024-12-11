@@ -4,6 +4,7 @@ import { toHexString, toValidAscii } from "@/ui/utils/utils";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useRef } from "react";
 import { Signature } from "starknet";
+import { env } from "../../../../env";
 import { scrollToElement } from "./Chat";
 import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
 import { Tab } from "./types";
@@ -117,7 +118,7 @@ function generateMessageTypedData(
     domain: {
       name: "Eternum",
       version: "1",
-      chainId: "SN_SEPOLIA",
+      chainId: env.VITE_PUBLIC_CHAIN == "mainnet" ? "SN_MAIN" : "SN_SEPOLIA",
       revision: "1",
     },
     message: {

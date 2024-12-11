@@ -9,6 +9,7 @@ import {
   useStructureImmunityTimer,
   useStructures,
 } from "@/hooks/helpers/useStructures";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
@@ -18,7 +19,6 @@ import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
-import { InventoryResources } from "../../resources/InventoryResources";
 import { ImmunityTimer } from "../structures/StructureLabel";
 import { ArmyWarning } from "./ArmyWarning";
 
@@ -57,7 +57,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     }
   }, [entityOwner.entity_owner_id]);
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
   const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);
@@ -99,9 +99,9 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
               <div className="text-green text-xs self-center">{currencyFormat(Number(troops.paladin_count), 0)}</div>
             </div>
           </div>
-          <div className="flex flex-row justify-between">
+          {/* <div className="flex flex-row justify-between">
             <InventoryResources max={6} entityId={entity_id} resourcesIconSize="xs" textSize="xxs" />
-          </div>
+          </div> */}
         </div>
         <ImmunityTimer isImmune={isImmune} timer={timer} />
       </div>

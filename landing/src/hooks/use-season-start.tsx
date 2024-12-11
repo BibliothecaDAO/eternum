@@ -6,6 +6,7 @@ export const useSeasonStart = () => {
   const nextBlockTimestamp = BigInt(Math.floor(Date.now() / 1000));
 
   const [countdown, setCountdown] = useState<bigint>(0n);
+
   useEffect(() => {
     if (nextBlockTimestamp === 0n || seasonStart === 0n) return;
 

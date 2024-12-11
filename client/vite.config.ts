@@ -26,9 +26,9 @@ export default defineConfig({
       manifest: {
         name: "Eternum",
         short_name: "Eternum",
-        description: "Rule the Hex",
-        theme_color: "#000000",
-        background_color: "#000000",
+        description: "Glory awaits for those who rule the Hex",
+        theme_color: "#F6C297",
+        background_color: "#F6C297",
         display: "standalone",
         orientation: "landscape",
         scope: "/",

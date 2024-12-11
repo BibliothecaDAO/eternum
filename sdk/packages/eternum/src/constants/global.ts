@@ -14,6 +14,7 @@ import { TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS } from "./troops";
 
 import { ResourcesIds } from ".";
 
+export const MIN_TROOPS_BATTLE = 100_000;
 export const FELT_CENTER = 2147483646;
 export const WORLD_CONFIG_ID = 999999999n;
 export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;
@@ -186,7 +187,7 @@ export const EternumGlobalConfig: Config = {
   carryCapacityGram: {
     [CapacityConfigCategory.None]: 0,
     [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
-    [CapacityConfigCategory.Donkey]: 4_000_000,
+    [CapacityConfigCategory.Donkey]: 500_000,
     [CapacityConfigCategory.Army]: 10_000,
     [CapacityConfigCategory.Storehouse]: 300_000_000,
   },

@@ -8,7 +8,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import useUIStore from "../store/useUIStore";
+import useNextBlockTimestamp from "../useNextBlockTimestamp";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
 import { useEntitiesUtils } from "./useEntities";
 
@@ -245,7 +245,7 @@ export const useStructureImmunityTimer = (structure: Structure | undefined, next
 
 export const useIsResourcesLocked = (structureEntityId: ID) => {
   const dojo = useDojo();
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const { getStructureByEntityId } = useStructures();
   const structure = getStructureByEntityId(structureEntityId);

@@ -1,20 +1,13 @@
 import { configManager } from "@/dojo/setup";
-import {
-  CapacityConfigCategory,
-  ContractAddress,
-  ID,
-  Position,
-  ResourcesIds,
-  resources,
-  type Resource,
-} from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, ID, ResourcesIds, resources, type Resource } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { Has, HasValue, Not, getComponentValue, runQuery, type Entity } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue, runQuery, type Entity } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { ResourceManager } from "../../dojo/modelManager/ResourceManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
+import useNextBlockTimestamp from "../useNextBlockTimestamp";
 
 export function useResourcesUtils() {
   const { setup } = useDojo();
@@ -27,7 +20,7 @@ export function useResourcesUtils() {
   }, []);
 
   const useResourcesFromBalance = (entityId: ID) => {
-    const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
+    const { currentDefaultTick } = useNextBlockTimestamp();
     const weight = useComponentValue(Weight, getEntityIdFromKeys([BigInt(entityId)]));
     const capacityCategory = useComponentValue(CapacityCategory, getEntityIdFromKeys([BigInt(entityId)]));
 
@@ -181,45 +174,3 @@ export const useResourceManager = (entityId: ID, resourceId: ResourcesIds) => {
 
   return resourceManager;
 };
-
-export function useOwnedEntitiesOnPosition() {
-  const {
-    account: { account },
-    setup: {
-      components: { Owner, Position, Movable, Bank, Army },
-    },
-  } = useDojo();
-
-  const getOwnedEntitiesOnPosition = (address: ContractAddress, position: Position) => {
-    const { x, y } = position;
-
-    const entities = runQuery([
-      HasValue(Owner, { address }),
-      Not(Movable),
-      Not(Army),
-      // @note: safer to do like this rather than deconstruct because there's a chance entity_id is also there
-      HasValue(Position, { x, y }),
-    ]);
-
-    return Array.from(entities)
-      .map((entityId) => {
-        const position = getComponentValue(Position, entityId);
-        if (!position) return;
-        return position?.entity_id;
-      })
-      .filter(Boolean) as ID[];
-  };
-
-  const getOwnedEntityOnPosition = (entityId: ID) => {
-    const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)]));
-    const depositEntityIds = position
-      ? getOwnedEntitiesOnPosition(ContractAddress(account.address), { x: Number(position.x), y: Number(position.y) })
-      : [];
-    return depositEntityIds[0];
-  };
-
-  return {
-    getOwnedEntitiesOnPosition,
-    getOwnedEntityOnPosition,
-  };
-}

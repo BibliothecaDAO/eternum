@@ -129,23 +129,21 @@ export const PlayerId = ({
           <ArrowLeft className="w-2 mr-2" /> Back
         </Button>
       )}
-      <div className="p-4 flex flex-row gap-2">
+      <div className="flex flex-row gap-4 p-4">
         <AvatarImage address={toHexString(selectedPlayer!)} />
-        <div className="flex flex-row">
-          <div className="flex flex-col mr-6">
-            <div className="text-2xl font-bold flex flex-row items-center space-x-1 bg-brown/20 p-2 rounded-lg shadow-md">
-              <span className="text-gold h6">{playerName || "No player selected"}</span>
-              {playerName && (
-                <div className="flex items-center justify-center p-1">
-                  <MessageIcon playerName={playerName} selectedPlayer={selectedPlayer} />
-                </div>
-              )}
-            </div>
-            <div className="text-xs italic">
-              {hasBeenPlayingFor ? `Joined ${hasBeenPlayingFor} ago` : "No player selected"}
-            </div>
-            <div className="text-xs">{playerEntityId ? "Player ID: " + playerEntityId : "No player selected"}</div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 bg-brown/20 p-3 rounded-lg shadow-md">
+            <span className="text-2xl font-bold text-gold">{playerName || "No player selected"}</span>
+
+            {playerName && <MessageIcon playerName={playerName} selectedPlayer={selectedPlayer} />}
           </div>
+
+          <div className="text-xs italic">
+            {hasBeenPlayingFor ? `Joined ${hasBeenPlayingFor} ago` : "No player selected"}
+          </div>
+
+          <div className="text-xs">{playerEntityId ? `Player ID: ${playerEntityId}` : "No player selected"}</div>
         </div>
       </div>
 
@@ -193,7 +191,7 @@ const AvatarImage = ({ address }: { address: string }) => {
   let imgSource = `./images/avatars/${randomAvatarIndex}.png`;
 
   return (
-    <div className="w-36 min-w-36 mr-4">
+    <div className="w-36 min-w-36 mr-4 rounded border-gold/10 border-2 bg-brown">
       {<img className="h-36 w-36  object-cover  border-gold/10 border-2 bg-brown" src={imgSource} alt="" />}
     </div>
   );

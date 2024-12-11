@@ -2,7 +2,7 @@ import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useHyperstructureUpdates } from "@/hooks/helpers/useHyperstructures";
 import { useRealm } from "@/hooks/helpers/useRealm";
-import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import Button from "@/ui/elements/Button";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
@@ -26,7 +26,7 @@ export const Leaderboard = ({
     },
   } = dojo;
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const { getAddressName } = useRealm();
 

@@ -1,7 +1,8 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { Prize, QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
+import { Prize, QuestStatus, useQuests } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
+import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -9,7 +10,7 @@ import { QuestType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useState } from "react";
 
-export const QuestsMenu = () => {
+export const QuestsMenu = ({ unclaimedQuestsCount }: { unclaimedQuestsCount: number }) => {
   const {
     account: { account },
     setup: {
@@ -17,8 +18,9 @@ export const QuestsMenu = () => {
     },
   } = useDojo();
 
+  useStartingTutorial();
+
   const { quests } = useQuests();
-  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -95,69 +97,67 @@ export const QuestsMenu = () => {
   };
 
   return (
-    unclaimedQuestsCount > 0 && (
-      <div className="flex gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12 py-2">
-        <Button
-          variant="outline"
-          isLoading={isLoading}
-          className={clsx("claim-selector text-sm !font-bold capitalize", {
-            "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
-              currentQuest?.status === QuestStatus.Completed,
-          })}
-          onClick={handleClaimQuest}
-          onMouseEnter={handleClaimMouseEnter}
-          onMouseLeave={() => setTooltip(null)}
-          disabled={currentQuest?.status !== QuestStatus.Completed}
-        >
-          Claim
-        </Button>
+    <div className="flex gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12 py-2">
+      <Button
+        variant="outline"
+        isLoading={isLoading}
+        className={clsx("claim-selector text-sm !font-bold capitalize", {
+          "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
+            currentQuest?.status === QuestStatus.Completed,
+        })}
+        onClick={handleClaimQuest}
+        onMouseEnter={handleClaimMouseEnter}
+        onMouseLeave={() => setTooltip(null)}
+        disabled={currentQuest?.status !== QuestStatus.Completed}
+      >
+        Claim
+      </Button>
 
-        <div className="h-full flex items-center">
-          <div className="h-[80%] w-px bg-gold/30 mx-2" />
-        </div>
-
-        <Button
-          onClick={() => handleStart()}
-          variant="outline"
-          disabled={currentQuest?.status === QuestStatus.Completed && currentQuest.id !== QuestType.Settle}
-          className={clsx("tutorial-selector relative text-sm capitalize", {
-            "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
-              currentQuest?.status !== QuestStatus.Completed,
-          })}
-        >
-          <span className="font-semibold">{currentQuest?.name}</span>
-          <div
-            className={clsx(
-              "absolute animate-bounce rounded-full border border-green/30 bg-green/90 text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold -top-1 -right-1",
-            )}
-          >
-            {unclaimedQuestsCount}
-          </div>
-        </Button>
-
-        <div className="h-full flex items-center">
-          <div className="h-[70%] w-px bg-gold/30 mx-2" />
-        </div>
-
-        {skipQuest ? (
-          <div className="flex flex-row gap-4">
-            <Button className="text-sm font-semibold capitalize" onClick={handleClaimAllQuests} variant="red">
-              Skip All Quests
-            </Button>
-            <Button className="text-sm font-semibold capitalize" onClick={handleClaimQuest} variant="red">
-              Confirm
-            </Button>
-            <Button variant="primary" className="text-sm font-semibold capitalize" onClick={() => setSkipQuest(false)}>
-              Cancel
-            </Button>
-          </div>
-        ) : (
-          <Button variant="primary" className="text-sm font-semibold capitalize w-6" onClick={() => setSkipQuest(true)}>
-            Skip
-          </Button>
-        )}
+      <div className="h-full flex items-center">
+        <div className="h-[80%] w-px bg-gold/30 mx-2" />
       </div>
-    )
+
+      <Button
+        onClick={() => handleStart()}
+        variant="outline"
+        disabled={currentQuest?.status === QuestStatus.Completed && currentQuest.id !== QuestType.Settle}
+        className={clsx("tutorial-selector relative text-sm capitalize", {
+          "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
+            currentQuest?.status !== QuestStatus.Completed,
+        })}
+      >
+        <span className="font-semibold">{currentQuest?.name}</span>
+        <div
+          className={clsx(
+            "absolute animate-bounce rounded-full border border-green/30 bg-green/90 text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold -top-1 -right-1",
+          )}
+        >
+          {unclaimedQuestsCount}
+        </div>
+      </Button>
+
+      <div className="h-full flex items-center">
+        <div className="h-[70%] w-px bg-gold/30 mx-2" />
+      </div>
+
+      {skipQuest ? (
+        <div className="flex flex-row gap-4">
+          <Button className="text-sm font-semibold capitalize" onClick={handleClaimAllQuests} variant="red">
+            Skip All Quests
+          </Button>
+          <Button className="text-sm font-semibold capitalize" onClick={handleClaimQuest} variant="red">
+            Confirm
+          </Button>
+          <Button variant="primary" className="text-sm font-semibold capitalize" onClick={() => setSkipQuest(false)}>
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <Button variant="primary" className="text-sm font-semibold capitalize w-6" onClick={() => setSkipQuest(true)}>
+          Skip
+        </Button>
+      )}
+    </div>
   );
 };
 

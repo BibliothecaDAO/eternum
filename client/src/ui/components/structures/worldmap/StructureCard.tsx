@@ -5,6 +5,7 @@ import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useIsStructureImmune, useStructureAtPosition, useStructureImmunityTimer } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { Position } from "@/types/Position";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
@@ -35,7 +36,9 @@ export const StructureCard = ({
 }) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const { handleUrlChange } = useQuery();
 
@@ -50,6 +53,7 @@ export const StructureCard = ({
 
   const goToHexView = () => {
     const url = position.toHexLocationUrl();
+    setPreviewBuilding(null);
     handleUrlChange(url);
   };
 
