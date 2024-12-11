@@ -1,0 +1,21 @@
+(season resources scripts have been modified so we dont f this up )
+
+
+Steps: 
+
+1. Copy manifest_mainnet into manifest_dev and manifest_prod for sanity.
+        OR ensure the correct manifest file is used in the 2 places used in season resources
+
+2. Confirm ancient frags name and symbol in scripts/deployment/libs/commands.js
+3. Deploy ancient frags 
+4. Grant role to only ancient frags
+5. Replace the address of earthen shards in
+    season_resources/scripts/deployment/addresses/mainnet/resource_addresses.json
+                AND 
+    landing/public/resource_addresses/mainnet/resource_addresses.json
+
+6. Call season_resources/scripts/deployment/config/index.ts
+7. Revoke role from only earthen shards
+
+8. Dont push. we only need to update landing/public/resource_addresses/mainnet/resource_addresses.json
+    in next branch
