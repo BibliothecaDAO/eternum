@@ -5,6 +5,7 @@ import { ColorMode } from "@cartridge/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
 import { env } from "../../../env";
+import { mainnetPolicies } from "./mainnet-policies";
 import { policies } from "./policies";
 import { signingPolicy } from "./signing-policy";
 
@@ -19,14 +20,16 @@ const vrfPolicy = {
   description: "Allows requesting random numbers from the VRF provider",
 };
 
+const signingPolicies = env.VITE_PUBLIC_CHAIN === "mainnet" ? mainnetPolicies : policies;
+
 const controller = new ControllerConnector({
   rpc: env.VITE_PUBLIC_NODE_URL,
   namespace,
   slot,
-  policies: [...policies, ...signingPolicy, vrfPolicy],
+  policies: [...signingPolicies, ...signingPolicy, vrfPolicy],
   theme,
   tokens: {
-    erc20: ["0x0342ad5cc14002c005a5cedcfce2bd3af98d5e7fb79e9bf949b3a91cf145d72e"],
+    erc20: ["0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49"],
   },
   colorMode,
 });

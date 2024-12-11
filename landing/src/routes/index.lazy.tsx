@@ -1,7 +1,12 @@
 import { AnimatedGrid } from "@/components/modules/animated-grid";
 import { DataCard, DataCardProps } from "@/components/modules/data-card";
 import { Leaderboard } from "@/components/modules/leaderboard";
-import { PRIZE_POOL_ACHIEVEMENTS, PRIZE_POOL_GUILDS, PRIZE_POOL_INDIVIDUAL_LEADERBOARD } from "@/constants";
+import {
+  PRIZE_POOL_ACHIEVEMENTS,
+  PRIZE_POOL_CONTENT_CREATORS,
+  PRIZE_POOL_GUILDS,
+  PRIZE_POOL_INDIVIDUAL_LEADERBOARD,
+} from "@/constants";
 import { useDonkeysBurned } from "@/hooks/use-donkeys-burned";
 import { useLordsBridgeBalance } from "@/hooks/use-lords-bridged";
 import { usePlayerCount } from "@/hooks/use-player-count";
@@ -81,7 +86,8 @@ function Index() {
             PRIZE_POOL_GUILDS +
               Number(formatEther(prizePoolPlayers)) +
               PRIZE_POOL_ACHIEVEMENTS +
-              PRIZE_POOL_INDIVIDUAL_LEADERBOARD,
+              PRIZE_POOL_INDIVIDUAL_LEADERBOARD +
+              PRIZE_POOL_CONTENT_CREATORS,
             0,
           ),
           icon: <Coins />,

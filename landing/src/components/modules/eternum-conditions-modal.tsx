@@ -11,7 +11,7 @@ interface EternumConditionsModalProps {
 }
 
 export function EternumConditionsModal({ open, onOpenChange }: EternumConditionsModalProps) {
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState<boolean | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
 
   useEffect(() => {
@@ -141,7 +141,7 @@ export function EternumConditionsModal({ open, onOpenChange }: EternumConditions
     </>
   );
 
-  if (hasAcceptedTerms) {
+  if (hasAcceptedTerms || hasAcceptedTerms === null) {
     return null;
   }
 
