@@ -9,14 +9,17 @@ import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/u
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
 import { HintSection } from "@/ui/components/hints/HintModal";
-import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
+import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
 import { EntityList } from "@/ui/components/list/EntityList";
+import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { BattleSide, ContractAddress, findResourceById, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { useMemo, useState } from "react";
+import { ArrowRight } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
@@ -31,27 +34,51 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   const { fragmentMines } = useFragmentMines();
 
   const myHyperstructures = useGetHyperstructuresWithContributionsFromPlayer();
+  const hyperstructureExtraContent = useCallback(
+    (entityId: any) => {
+      const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === entityId);
+      if (!hyperstructure) return null;
+      return (
+        <HyperStructureExtraContent
+          hyperstructureEntityId={hyperstructure.entity_id!}
+          x={hyperstructure.x!}
+          y={hyperstructure.y!}
+        />
+      );
+    },
+    [hyperstructures],
+  );
 
-  const hyperstructureExtraContent = (entityId: any) => {
-    const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === entityId);
-    if (!hyperstructure) return null;
-    return (
-      <HyperStructureExtraContent
-        hyperstructureEntityId={hyperstructure.entity_id!}
-        x={hyperstructure.x!}
-        y={hyperstructure.y!}
-      />
-    );
-  };
+  const fragmentMineExtraContent = useCallback(
+    (entityId: any) => {
+      const fragmentMine = fragmentMines.find((fragmentMine) => fragmentMine.entity_id === entityId);
+      if (!fragmentMine) return null;
 
-  const fragmentMineExtraContent = (entityId: any) => {
-    const fragmentMine = fragmentMines.find((fragmentMine) => fragmentMine.entity_id === entityId);
-    if (!fragmentMine) return null;
+      return <FragmentMineExtraContent x={Number(fragmentMine.x!)} y={Number(fragmentMine.y!)} entityId={entityId!} />;
+    },
+    [fragmentMines],
+  );
 
-    fragmentMine.production_rate;
+  const hyperstructureEntityHeader = useCallback(
+    (entityId: any) => {
+      const entity = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === entityId);
 
-    return <FragmentMineExtraContent x={Number(fragmentMine.x!)} y={Number(fragmentMine.y!)} entityId={entityId!} />;
-  };
+      if (!entity) return null;
+
+      return <EntityHeader entity={entity} />;
+    },
+    [hyperstructures],
+  );
+
+  const fragmentMineEntityHeader = useCallback(
+    (entityId: any) => {
+      const entity = fragmentMines.find((fragmentMine) => fragmentMine.entity_id === entityId);
+      if (!entity) return null;
+
+      return <EntityHeader entity={entity} />;
+    },
+    [fragmentMines],
+  );
 
   const tabs = useMemo(
     () => [
@@ -73,6 +100,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
             <EntityList
               title="Hyperstructures"
               panel={({ entity }) => <HyperstructurePanel entity={entity} />}
+              entityHeader={hyperstructureEntityHeader}
               entityContent={hyperstructureExtraContent}
               list={hyperstructures
                 .filter((hyperstructure) => hyperstructure.created_at)
@@ -105,6 +133,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
             <EntityList
               title="FragmentMines"
               panel={({ entity }) => <FragmentMinePanel entity={entity} />}
+              entityHeader={fragmentMineEntityHeader}
               entityContent={fragmentMineExtraContent}
               list={fragmentMines
                 .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
@@ -114,11 +143,13 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
                   ...fragmentMine,
                 }))}
               filterEntityIds={
-                fragmentMines
-                  .filter((mine) => {
-                    mine.owner === account.address;
-                  })
-                  .map((mine) => mine.entity_id) as ID[]
+                showOnlyMine
+                  ? (fragmentMines
+                      .filter((mine) => {
+                        return mine.owner === account.address;
+                      })
+                      .map((mine) => mine.entity_id) as ID[])
+                  : undefined
               }
             />
           </>
@@ -295,5 +326,41 @@ const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; en
         </span>
       </div>
     </BaseStructureExtraContent>
+  );
+};
+
+const EntityHeader = ({ entity }: { entity: any }) => {
+  const position = { x: entity.x, y: entity.y };
+
+  const access = entity?.access ? DisplayedAccess[entity.access as keyof typeof DisplayedAccess] : undefined;
+
+  return (
+    <div className="flex flex-row justify-between items-center">
+      <div className="flex flex-row space-x-5 items-center">
+        <div className="flex flex-row items-center gap-2">
+          <h5 className="font-semibold text-gold">{entity.name}</h5>
+          {access && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                access === "Public"
+                  ? "text-green border border-green"
+                  : access === "Private"
+                    ? "text-red border border-red"
+                    : access === "Tribe Only"
+                      ? "text-gold border border-gold"
+                      : ""
+              }`}
+            >
+              {access}
+            </span>
+          )}
+          <div className="flex flex-row ">
+            <ViewOnMapIcon className={"my-auto"} position={position} />
+            <NavigateToPositionIcon className="h-6 w-6" position={position} />
+          </div>
+        </div>
+      </div>
+      <ArrowRight className="w-2 fill-current" />
+    </div>
   );
 };

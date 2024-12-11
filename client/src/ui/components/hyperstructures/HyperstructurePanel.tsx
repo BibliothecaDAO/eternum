@@ -23,7 +23,7 @@ import { ContributionSummary } from "./ContributionSummary";
 import { HyperstructureDetails } from "./HyperstructureDetails";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
 
-enum DisplayedAccess {
+export enum DisplayedAccess {
   Public = "Public",
   Private = "Private",
   GuildOnly = "Tribe Only",

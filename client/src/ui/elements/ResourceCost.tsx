@@ -57,8 +57,8 @@ export const ResourceCost = ({
         <div onClick={onClick} className={clsx(`relative text-${textSize} font-bold`, props.color)}>
           {" "}
           {Intl.NumberFormat("en-US", {
-            notation: "compact",
-            maximumFractionDigits: 6,
+            notation: props.amount < 0.01 ? "standard" : "compact",
+            maximumFractionDigits: props.amount < 0.01 ? 6 : 2,
           }).format(props.amount || 0)}{" "}
           <span className={clsx(balanceColor, "font-normal")}>
             {!isNaN(balance) && `(${currencyFormat(balance, 0)})`}{" "}
