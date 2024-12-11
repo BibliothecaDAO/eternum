@@ -6,7 +6,7 @@ import { abi } from "@/abi/Lords";
 import { useContract } from "@starknet-react/core";
 import { Abi } from "starknet";
 
-export const useLords = () => {
+export const useLords = ({ disabled }: { disabled?: boolean } = {}) => {
   const { account } = useAccount();
 
   const { data } = useCall({
@@ -16,6 +16,7 @@ export const useLords = () => {
     args: [(account?.address as `0x${string}`) ?? "0"],
     watch: true,
     refetchInterval: 1000,
+    enabled: !!account?.address && !disabled,
   });
 
   const { contract } = useContract({
