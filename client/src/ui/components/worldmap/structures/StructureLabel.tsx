@@ -10,7 +10,7 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { StructureListItem } from "./StructureListItem";
 
@@ -33,7 +33,7 @@ export const ImmunityTimer = ({
   );
 };
 
-export const StructureInfoLabel = () => {
+export const StructureInfoLabel = memo(() => {
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
   const { getStructureByEntityId } = useStructures();
@@ -81,4 +81,6 @@ export const StructureInfoLabel = () => {
       )}
     </>
   );
-};
+});
+
+StructureInfoLabel.displayName = "StructureInfoLabel";  

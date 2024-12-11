@@ -1,7 +1,8 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { Prize, QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
+import { Prize, QuestStatus, useQuests } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
+import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -9,7 +10,7 @@ import { QuestType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useState } from "react";
 
-export const QuestsMenu = () => {
+export const QuestsMenu = ({ unclaimedQuestsCount }: { unclaimedQuestsCount: number }) => {
   const {
     account: { account },
     setup: {
@@ -17,8 +18,10 @@ export const QuestsMenu = () => {
     },
   } = useDojo();
 
+  useStartingTutorial();
+
   const { quests } = useQuests();
-  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
+  
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -95,7 +98,7 @@ export const QuestsMenu = () => {
   };
 
   return (
-    unclaimedQuestsCount > 0 && (
+    
       <div className="flex gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12 py-2">
         <Button
           variant="outline"
@@ -158,7 +161,6 @@ export const QuestsMenu = () => {
         )}
       </div>
     )
-  );
 };
 
 const QuestRewards = ({ prizes }: { prizes: Prize[] | undefined }) => {

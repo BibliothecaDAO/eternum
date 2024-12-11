@@ -9,7 +9,7 @@ import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
 import { motion } from "framer-motion";
-import { Suspense, lazy, useEffect, useMemo } from "react";
+import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { Chat } from "../chat/Chat";
@@ -46,7 +46,7 @@ export enum LeftView {
   ResourceTable,
 }
 
-export const LeftNavigationModule = () => {
+export const LeftNavigationModule = memo(() => {
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -264,7 +264,9 @@ export const LeftNavigationModule = () => {
       )}
     </div>
   );
-};
+});
+
+LeftNavigationModule.displayName = "LeftNavigationModule";
 
 const isOffscreen = (view: LeftView) => {
   return view === LeftView.None;
