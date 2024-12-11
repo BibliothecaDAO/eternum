@@ -83,7 +83,6 @@ export const EndSeasonButton = () => {
   return (
     <Button
       variant="primary"
-      
       className={clsx("self-center")}
       onMouseOver={() => {
         setTooltip({

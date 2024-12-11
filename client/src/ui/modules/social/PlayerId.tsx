@@ -131,34 +131,19 @@ export const PlayerId = ({
       )}
       <div className="flex flex-row gap-4 p-4">
         <AvatarImage address={toHexString(selectedPlayer!)} />
-        
+
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 bg-brown/20 p-3 rounded-lg shadow-md">
-            <span className="text-2xl font-bold text-gold">
-              {playerName || "No player selected"}
-            </span>
-            
-            {playerName && (
-              <MessageIcon 
-                playerName={playerName}
-                selectedPlayer={selectedPlayer}
-              />
-            )}
+            <span className="text-2xl font-bold text-gold">{playerName || "No player selected"}</span>
+
+            {playerName && <MessageIcon playerName={playerName} selectedPlayer={selectedPlayer} />}
           </div>
 
           <div className="text-xs italic">
-            {hasBeenPlayingFor 
-              ? `Joined ${hasBeenPlayingFor} ago` 
-              : "No player selected"
-            }
+            {hasBeenPlayingFor ? `Joined ${hasBeenPlayingFor} ago` : "No player selected"}
           </div>
 
-          <div className="text-xs">
-            {playerEntityId 
-              ? `Player ID: ${playerEntityId}` 
-              : "No player selected"
-            }
-          </div>
+          <div className="text-xs">{playerEntityId ? `Player ID: ${playerEntityId}` : "No player selected"}</div>
         </div>
       </div>
 
