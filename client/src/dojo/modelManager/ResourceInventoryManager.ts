@@ -6,13 +6,13 @@ import { uuid } from "@latticexyz/utils";
 import { type SetupResult } from "../setup";
 
 export class ResourceInventoryManager {
-  entityId: ID;
+  carrierEntityId: ID;
 
   constructor(
     private readonly setup: SetupResult,
-    entityId: ID,
+    carrierEntityId: ID,
   ) {
-    this.entityId = entityId;
+    this.carrierEntityId = carrierEntityId;
   }
 
   private readonly _optimisticOffloadAll = (
@@ -21,32 +21,35 @@ export class ResourceInventoryManager {
     inventoryResources: Resource[],
   ) => {
     inventoryResources.forEach((resource) => {
-      const entity = getEntityIdFromKeys([BigInt(receiverEntityId), BigInt(resource.resourceId)]);
-      const receiverBalance = getComponentValue(this.setup.components.Resource, entity)?.balance || 0n;
+      const receiveResourceEntity = getEntityIdFromKeys([BigInt(receiverEntityId), BigInt(resource.resourceId)]);
+      const receiverBalance = getComponentValue(this.setup.components.Resource, receiveResourceEntity)?.balance || 0n;
 
       // optimistically update the balance of the receiver
       this.setup.components.Resource.addOverride(overrideId, {
-        entity,
+        entity: receiveResourceEntity,
         value: {
+          entity_id: receiverEntityId,
           resource_type: resource.resourceId,
           balance: receiverBalance + BigInt(resource.amount),
         },
       });
     });
 
-    const entity = getEntityIdFromKeys([BigInt(this.entityId)]);
+    const carrierEntity = getEntityIdFromKeys([BigInt(this.carrierEntityId)]);
 
     this.setup.components.Weight.addOverride(overrideId, {
-      entity,
+      entity: carrierEntity,
       value: {
+        entity_id: this.carrierEntityId,
         value: 0n,
       },
     });
 
     // need to update this for the arrivals list to get updated
     this.setup.components.OwnedResourcesTracker.addOverride(overrideId, {
-      entity,
+      entity: carrierEntity,
       value: {
+        entity_id: this.carrierEntityId,
         resource_types: 0n,
       },
     });
@@ -59,7 +62,7 @@ export class ResourceInventoryManager {
     if (inventoryResources.length > 0) {
       await this.setup.systemCalls
         .send_resources({
-          sender_entity_id: this.entityId,
+          sender_entity_id: this.carrierEntityId,
           recipient_entity_id: receiverEntityId,
           resources: inventoryResources.flatMap((resource) => [resource.resourceId, resource.amount]),
           signer: useAccountStore.getState().account!,
