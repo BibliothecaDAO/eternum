@@ -364,6 +364,7 @@ mod battle_systems {
 
             let mut attacking_army: Army = world.read_model(attacking_army_id);
             attacking_army.assert_not_in_battle();
+            attacking_army.troops.assert_minimum_for_battle();
 
             let attacking_army_entity_owner: EntityOwner = world.read_model(attacking_army_id);
             attacking_army_entity_owner.assert_caller_owner(world);
@@ -877,6 +878,7 @@ mod battle_pillage_systems {
             // ensure attacking army is not in a battle
             let mut attacking_army: Army = world.read_model(army_id);
             attacking_army.assert_not_in_battle();
+            attacking_army.troops.assert_minimum_for_battle();
 
             // ensure army is at structure position
             let army_position: Position = world.read_model(army_id);
