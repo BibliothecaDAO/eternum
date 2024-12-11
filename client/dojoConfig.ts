@@ -13,7 +13,7 @@ const {
   VITE_PUBLIC_ACCOUNT_CLASS_HASH,
   VITE_PUBLIC_DEV,
   VITE_PUBLIC_FEE_TOKEN_ADDRESS,
-  VITE_PUBLIC_CHAIN
+  VITE_PUBLIC_CHAIN,
 } = env;
 
 let manifest = VITE_PUBLIC_DEV === true ? devManifest : productionManifest;
