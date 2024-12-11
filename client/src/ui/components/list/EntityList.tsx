@@ -1,11 +1,8 @@
-import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { DUMMY_HYPERSTRUCTURE_ENTITY_ID } from "@/three/scenes/constants";
 import Button from "@/ui/elements/Button";
 import { ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useEffect, useState } from "react";
-import { NavigateToPositionIcon } from "../military/ArmyChip";
-import { ViewOnMapIcon } from "../military/ArmyManagementCard";
 
 interface EntityListProps {
   title: string;
@@ -18,6 +15,7 @@ interface EntityListProps {
   list: any[];
   previous?: any[];
   current?: ID;
+  entityHeader: (props: { id: any }) => React.ReactElement | null;
   entityContent?: (props: { id: any }) => React.ReactElement | null;
   questing?: boolean;
   className?: string;
@@ -31,6 +29,7 @@ export const EntityList = ({
   list,
   headerPanel,
   current,
+  entityHeader,
   entityContent,
   questing,
   className,
@@ -90,16 +89,7 @@ export const EntityList = ({
                 onClick={() => setSelectedEntity(entity)}
               >
                 <div className="flex flex-col space-y-2">
-                  <div className="flex flex-row justify-between items-center">
-                    <div className="flex flex-row space-x-5 items-center">
-                      <h5>{entity.name}</h5>
-                      <div className="flex flex-row ">
-                        {entity?.position && <ViewOnMapIcon className={"my-auto"} position={entity.position} />}
-                        {entity?.position && <NavigateToPositionIcon className="h-6 w-6" position={entity?.position} />}
-                      </div>
-                    </div>
-                    <ArrowRight className="w-2 fill-current" />
-                  </div>
+                  {entityHeader(entity.id)}
 
                   {entity.id !== Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID) && (
                     <div className="border border-gold/20 bg-gold/10 rounded p-2">
