@@ -121,7 +121,7 @@ export const BridgeIn = () => {
     };
     fetchAddresses();
   }, []);
-  
+
   useEffect(() => {
     if (selectedResourceIds.length === 0) {
       addResourceGive();
