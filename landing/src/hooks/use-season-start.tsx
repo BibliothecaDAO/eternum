@@ -1,9 +1,8 @@
+import { configManager } from "@/dojo/setup";
 import { useEffect, useState } from "react";
 
 export const useSeasonStart = () => {
-  const seasonStart = BigInt(new Date("2024-12-11T15:35:00Z").getTime() / 1000);
-    
- /*BigInt(configManager.getSeasonConfig().startAt || 0);*/
+  const seasonStart = BigInt(configManager.getSeasonConfig().startAt || 0);
   const nextBlockTimestamp = BigInt(Math.floor(Date.now() / 1000));
 
   const [countdown, setCountdown] = useState<bigint>(0n);
