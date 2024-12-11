@@ -1,6 +1,6 @@
 import QuestRewards from "@/components/QuestRewards";
 import RealmUpgradeCosts from "@/components/RealmUpgradeCosts";
-import { divideByPrecision, formatNumberWithSpaces } from "@/utils/formatting";
+import { divideByPrecision, formatNumberWithCommas } from "@/utils/formatting";
 import { CapacityConfigCategory, EternumGlobalConfig, RealmLevels } from "@bibliothecadao/eternum";
 
 # Realms
@@ -32,7 +32,7 @@ help you learn the game and reward you with starting resources. Claim your resou
 >   - 3 attacking armies
 >   - 1 defending army
 > - **Resource Storage**:
->   {formatNumberWithSpaces(divideByPrecision(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))}
+>   {formatNumberWithCommas(divideByPrecision(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))}
 >   kg
 >
 > _These are the default values for a newly settled realm before any buildings are constructed._

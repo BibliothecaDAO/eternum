@@ -39,7 +39,6 @@ import {
   HEX_SIZE,
   MinesMaterialsParams,
   StructureProgress,
-  WONDER_REALM,
   buildingModelPaths,
   castleLevelToRealmCastle,
   hyperstructureStageToModel,
@@ -98,7 +97,7 @@ interface Building {
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
   private buildingModels: Map<
-    BuildingType | ResourceMiningTypes | typeof WONDER_REALM,
+    BuildingType | ResourceMiningTypes,
     { model: THREE.Group; animations: THREE.AnimationClip[] }
   > = new Map();
   private buildingInstances: Map<string, THREE.Group> = new Map();
@@ -470,9 +469,6 @@ export default class HexceptionScene extends HexagonScene {
 
           if (parseInt(buildingType) === BuildingType.Castle) {
             buildingType = castleLevelToRealmCastle[this.structureStage];
-            if (this.tileManager.getWonder()) {
-              buildingType = WONDER_REALM;
-            }
           }
           if (building.structureType === StructureType.Hyperstructure) {
             buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];

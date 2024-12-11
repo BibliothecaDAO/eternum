@@ -17,8 +17,8 @@ The combat system features a strategic triangle of unit advantages:
 ### Battle Duration
 
 Combat duration scales dynamically with army sizes. Larger armies naturally result in longer engagements, while highly
-uneven matchups may resolve more quickly as the stronger force overwhelms their opponent. Battles can be simulated to
-determine durations.
+uneven matchups may resolve more quickly as the stronger force overwhelms their opponent. Battles can be simulated using
+the in-game simulator to determine durations.
 
 ### Battle Dynamics
 
@@ -32,18 +32,19 @@ their troops during withdrawal.
 
 🏰 **Siege System**
 
-> When attacking a Realm or the Central Bank, combat begins with an {EternumGlobalConfig.battle.delaySeconds / 3600}
-> hour siege phase. During this time, defenders can:
->
-> - Transfer resources in or out of the realm
-> - Prepare defenses
-> - Launch an early counterattack to break the siege
->
-> After the siege timer expires:
->
-> - Combat automatically begins
-> - The realm enters active attack status
-> - All resource transfers are blocked
+When attacking a Realm or the Central Bank, combat begins with an {EternumGlobalConfig.battle.delaySeconds / 3600} hour
+siege phase. During this time, defenders can:
+
+- Transfer resources in or out of the realm
+- Prepare defenses
+- Launch an early counterattack to break the siege
+
+After the siege timer expires:
+
+- Combat automatically begins
+- The realm enters active attack status
+- All resource transfers are blocked
+- Other armies can join a side
 
 ### Raid & Pillage
 

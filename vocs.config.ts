@@ -37,6 +37,7 @@ export default defineConfig({
         { text: "Cartridge Controller", link: "/overview/controller" },
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
+        { text: "Bridge Closure - MUST READ", link: "/overview/bridging" },
       ],
     },
     {
@@ -93,7 +94,6 @@ export default defineConfig({
         { text: "Client", link: "/development/client" },
         { text: "Contracts", link: "/development/contracts" },
         { text: "SDK", link: "/development/sdk" },
-        { text: "Common issues", link: "/development/common-issues" },
         { text: "Collaborators", link: "/development/collaborators" },
       ],
     },
