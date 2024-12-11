@@ -12,8 +12,16 @@ type CircleButtonProps = {
   label?: string;
   image?: string;
   tooltipLocation?: "top" | "bottom" | "left" | "right";
-  notification?: number;
-  notificationLocation?: "topleft" | "topright" | "bottomleft" | "bottomright";
+  primaryNotification?: {
+    value: number;
+    color?: "green" | "red" | "blue" | "yellow" | "gold" | "orange";
+    location?: "topleft" | "topright" | "bottomleft" | "bottomright";
+  };
+  secondaryNotification?: {
+    value: number;
+    color?: "green" | "red" | "blue" | "yellow" | "gold" | "orange";
+    location?: "topleft" | "topright" | "bottomleft" | "bottomright";
+  };
 } & React.ComponentPropsWithRef<"button">;
 
 const sizes = {
@@ -41,8 +49,8 @@ const CircleButton = ({
   label,
   image,
   tooltipLocation = "bottom",
-  notification,
-  notificationLocation = "topleft",
+  primaryNotification,
+  secondaryNotification,
   ...props
 }: CircleButtonProps) => {
   const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
@@ -90,17 +98,31 @@ const CircleButton = ({
         )}
         {disabled && <div className="absolute inset-0 bg-brown opacity-50 rounded-full"></div>}
       </button>
-      {notification && !disabled ? (
+      {primaryNotification && primaryNotification.value > 0 && !disabled && (
         <div
           className={clsx(
-            "absolute animate-bounce rounded-full border border-green/30 bg-green/90 text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold",
-            notificationPositions[notificationLocation],
+            "absolute animate-bounce rounded-full border",
+            `border-${primaryNotification.color || "green"}`,
+            `bg-${primaryNotification.color || "green"}`,
+            "text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold",
+            notificationPositions[primaryNotification.location || "topleft"],
           )}
         >
-          {notification}
+          {primaryNotification.value}
         </div>
-      ) : (
-        ""
+      )}
+      {secondaryNotification && secondaryNotification.value > 0 && !disabled && (
+        <div
+          className={clsx(
+            "absolute animate-bounce rounded-full border",
+            `border-${secondaryNotification.color || "blue"}`,
+            `bg-${secondaryNotification.color || "blue"}`,
+            "text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold",
+            notificationPositions[secondaryNotification.location || "topright"],
+          )}
+        >
+          {secondaryNotification.value}
+        </div>
       )}
     </div>
   );

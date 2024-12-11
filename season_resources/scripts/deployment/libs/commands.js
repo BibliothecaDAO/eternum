@@ -4,7 +4,7 @@ import * as path from "path";
 import { shortString } from "starknet";
 import { fileURLToPath } from "url";
 import devManifest from "../../../../contracts/manifest_dev.json";
-import productionManifest from "../../../../contracts/manifest_mainnet.json";
+import productionManifest from "../../../../contracts/manifest_prod.json";
 import {
   declare,
   getContractPath,
@@ -171,4 +171,43 @@ export const grantMinterRoleToAllSeasonResourceContracts = async () => {
   await account.waitForTransaction(contract.transaction_hash);
 
   console.log(`Successfully granted minter role to all season resource contracts`.green, "\n\n");
+};
+
+export const revokeMinterRoleFromAllSeasonResourceContracts = async () => {
+  ////// Revoke MINTER ROLE TO ALL SEASON RESOURCE CONTRACTS //////
+  console.log(`\n Revoking minter role from all season resource contracts ... \n\n`.green);
+
+  let resourceAddresses = await getResourceAddressesFromFile();
+  let resourceAddressesArray = Object.values(resourceAddresses)
+    .filter(([resourceId, resourceAddress]) => resourceId !== LORDS_RESOURCE_ID)
+    .map(([resourceId, resourceAddress]) => resourceAddress);
+
+  console.log(resourceAddressesArray);
+
+  if (!Array.isArray(resourceAddressesArray)) {
+    throw new Error("resourceAddressesArray must be an array");
+  }
+
+  const account = getAccount();
+
+  //selector!("MINTER_ROLE")
+  const MINTER_ROLE = "0x032df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6";
+
+  const executionArray = [];
+  for (const resourceAddress of resourceAddressesArray) {
+    executionArray.push({
+      contractAddress: resourceAddress,
+      entrypoint: "revoke_role",
+      calldata: [MINTER_ROLE, RESOURCE_BRIDGE_SYSTEMS_CONTRACT],
+    });
+  }
+
+  const contract = await account.execute(executionArray);
+
+  // Wait for transaction
+  let network = getNetwork(process.env.STARKNET_NETWORK);
+  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  await account.waitForTransaction(contract.transaction_hash);
+
+  console.log(`Successfully revoked minter role from all season resource contracts`.green, "\n\n");
 };

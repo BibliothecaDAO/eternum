@@ -12,6 +12,8 @@
 
     "sdk/packages/eternum/global.d.ts",
     "config/bank/index.ts",
+    "config/speed.ts",
+
     "**/**__test__**/**",
     "**/**__tests__**/**",
 
@@ -23,6 +25,10 @@
     "balancing/**",
     "landing/**",
     "client/pwa-assets.config.ts",
+
+    "docs/components/**",
+    "docs/utils/**",
+    "vocs.config.ts",
 
     "client/src/ui/modules/chat/types.tsx",
     "client/src/ui/modules/chat/constants.tsx",

@@ -87,8 +87,8 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     <div className="military-panel-selector p-2">
       <Headline>
         <div className="flex gap-2">
-          <div className="self-center">{structure.name}</div>
-          <HintModalButton section={HintSection.Buildings} />
+          <div className="self-center text-lg">{structure.name}</div>
+          <HintModalButton section={HintSection.Combat} />
         </div>
       </Headline>
 

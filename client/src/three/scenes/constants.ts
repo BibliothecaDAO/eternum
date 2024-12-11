@@ -38,8 +38,10 @@ export const hyperstructureStageToModel: Record<StructureProgress, string> = {
   [StructureProgress.STAGE_3]: HyperstructureTypesNames.STAGE_3,
 };
 
+export const WONDER_REALM = "Wonder";
+
 export const buildingModelPaths: Record<
-  BuildingType | ResourceMiningTypes | RealmLevelNames | HyperstructureTypesNames,
+  BuildingType | ResourceMiningTypes | RealmLevelNames | HyperstructureTypesNames | typeof WONDER_REALM,
   string
 > = {
   // placeholder for now
@@ -70,6 +72,7 @@ export const buildingModelPaths: Record<
   [HyperstructureTypesNames.STAGE_1]: "/models/buildings-opt/hyperstructure_init.glb",
   [HyperstructureTypesNames.STAGE_2]: "/models/buildings-opt/hyperstructure_half.glb",
   [HyperstructureTypesNames.STAGE_3]: "/models/buildings-opt/hyperstructure.glb",
+  [WONDER_REALM]: "/models/buildings-opt/wonder.glb",
 };
 
 const BASE_PATH = "/models/biomes-opt/";
@@ -102,6 +105,7 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
     "models/buildings-opt/castle1.glb",
     "models/buildings-opt/castle2.glb",
     "models/buildings-opt/castle3.glb",
+    "models/buildings-opt/wonder2.glb",
   ],
   // Order follows StructureProgress
   [StructureType.Hyperstructure]: [

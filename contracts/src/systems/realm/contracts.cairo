@@ -79,6 +79,7 @@ mod realm_systems {
         fn create(ref self: ContractState, owner: ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_has_started(world);
             SeasonImpl::assert_season_is_not_over(world);
 
             // collect season pass

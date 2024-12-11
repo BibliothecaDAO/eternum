@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { TickIds } from "@bibliothecadao/eternum";
-import { useEffect } from "react";
+import { useEffect, useTransition } from "react";
 import useUIStore from "./useUIStore";
 
 export interface BlockchainStore {
@@ -22,9 +22,7 @@ export const createBlockchainStore = (set: any) => ({
 });
 
 export const useFetchBlockchainData = () => {
-  const setNextBlockTimestamp = useUIStore((state) => state.setNextBlockTimestamp);
-  const setCurrentDefaultTick = useUIStore((state) => state.setCurrentDefaultTick);
-  const setCurrentArmiesTick = useUIStore((state) => state.setCurrentArmiesTick);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const tickConfigArmies = configManager.getTick(TickIds.Armies);
@@ -34,9 +32,13 @@ export const useFetchBlockchainData = () => {
       const timestamp = Math.floor(Date.now() / 1000);
 
       if (timestamp) {
-        setNextBlockTimestamp(timestamp);
-        setCurrentDefaultTick(Math.floor(timestamp / Number(tickConfigDefault)));
-        setCurrentArmiesTick(Math.floor(timestamp / Number(tickConfigArmies)));
+        startTransition(() => {
+          useUIStore.setState({
+            nextBlockTimestamp: timestamp,
+            currentDefaultTick: Math.floor(timestamp / Number(tickConfigDefault)),
+            currentArmiesTick: Math.floor(timestamp / Number(tickConfigArmies)),
+          });
+        });
       }
     };
 

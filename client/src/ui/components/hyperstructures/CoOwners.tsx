@@ -4,6 +4,7 @@ import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { SelectAddress } from "@/ui/elements/SelectAddress";
@@ -59,7 +60,7 @@ const CoOwnersRows = ({
   } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const hyperstructureConfig = useMemo(() => {
     return getComponentValue(HyperstructureConfig, getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]));

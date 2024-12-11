@@ -5,7 +5,7 @@ import { useRealm } from "@/hooks/helpers/useRealm";
 import { useResourceManager } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
-import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
@@ -47,7 +47,7 @@ export const MarketResource = ({
   bidPrice: number;
   ammPrice: number;
 }) => {
-  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
+  const { currentDefaultTick } = useNextBlockTimestamp();
   const resourceManager = useResourceManager(entityId, resourceId);
 
   const production = useMemo(() => {
@@ -293,7 +293,7 @@ const OrderRow = ({
     return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
   }, [entityId, offer.makerId, offer.tradeId, offer]);
 
-  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
+  const { currentDefaultTick } = useNextBlockTimestamp();
 
   const resourceBalanceRatio = useMemo(
     () => (resourceBalance < getsDisplayNumber ? resourceBalance / getsDisplayNumber : 1),
@@ -497,7 +497,8 @@ const OrderCreation = ({
   const [resource, setResource] = useState(1000);
   const [lords, setLords] = useState(100);
   const [bid, setBid] = useState(String(lords / resource));
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
   const {
@@ -558,7 +559,8 @@ const OrderCreation = ({
     return calculateDonkeysNeeded(orderWeight);
   }, [orderWeight]);
 
-  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
+  const { currentDefaultTick } = useNextBlockTimestamp();
+
   const donkeyProductionManager = useResourceManager(entityId, ResourcesIds.Donkey);
 
   const donkeyProduction = useMemo(() => {

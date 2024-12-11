@@ -5,6 +5,7 @@ import {
   useStructureImmunityTimer,
 } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Tabs } from "@/ui/elements/tab";
@@ -15,7 +16,8 @@ import { Buildings } from "./Buildings";
 import { Castle } from "./Castle";
 
 export const RealmDetails = () => {
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 

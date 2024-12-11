@@ -303,24 +303,26 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async bridge_start_withdraw_from_realm(props: SystemProps.BridgeStartWithdrawFromRealmProps) {
     const { resources, through_bank_id, from_realm_entity_id, signer } = props;
 
-    console.log({resources});
+    console.log({ resources });
 
-    const calls = resources.map((resource) => (     {
+    const calls = resources.map((resource) => ({
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
       entrypoint: "start_withdraw",
       calldata: [through_bank_id, from_realm_entity_id, resource.tokenAddress, resource.amount],
-    }))
+    }));
     return await this.executeAndCheckTransaction(signer, calls);
   }
 
   public async bridge_finish_withdraw_from_realm(props: SystemProps.BridgeFinishWithdrawFromRealmProps) {
     const { tokenAddress, through_bank_id, from_entity_id, recipient_address, client_fee_recipient, signer } = props;
-    
-    return await this.executeAndCheckTransaction(signer, [{
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
-      entrypoint: "finish_withdraw",
-      calldata: [through_bank_id, from_entity_id, tokenAddress, recipient_address, client_fee_recipient],
-    }]);
+
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+        entrypoint: "finish_withdraw",
+        calldata: [through_bank_id, from_entity_id, tokenAddress, recipient_address, client_fee_recipient],
+      },
+    ]);
   }
 
   public async bridge_resources_into_realm(props: SystemProps.BridgeResourcesIntoRealmProps) {

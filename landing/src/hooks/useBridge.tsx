@@ -22,7 +22,7 @@ export const useBridgeAsset = () => {
       recipientRealmEntityId: bigint,
     ) => {
       if (account) {
-       return await bridge_resources_into_realm({
+        return await bridge_resources_into_realm({
           signer: account,
           resources: resources,
           through_bank_id: throughBankId,

@@ -68,6 +68,9 @@ export default {
         heading: ["Bokor", ...defaultTheme.fontFamily.sans],
         number: ["Anonymous Pro", ...defaultTheme.fontFamily.mono],
       },
+      fontSize: {
+        xxs: ".625rem",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

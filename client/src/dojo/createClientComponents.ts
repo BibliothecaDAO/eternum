@@ -13,8 +13,10 @@ export function createClientComponents({ contractComponents }: SetupNetworkResul
     Population: overridableComponent(contractComponents.Population),
     Resource: overridableComponent(contractComponents.Resource),
     Weight: overridableComponent(contractComponents.Weight),
+    OwnedResourcesTracker: overridableComponent(contractComponents.OwnedResourcesTracker),
     Army: overridableComponent(contractComponents.Army),
     BuildingQuantityv2: overridableComponent(contractComponents.BuildingQuantityv2),
     Structure: overridableComponent(contractComponents.Structure),
+    ArrivalTime: overridableComponent(contractComponents.ArrivalTime),
   };
 }

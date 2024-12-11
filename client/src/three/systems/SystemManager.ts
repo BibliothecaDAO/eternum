@@ -37,10 +37,31 @@ export class SystemManager {
     callback: (value: T) => void,
     getUpdate: (update: any) => T | undefined,
     runOnInit: boolean = true,
+    maxRetries: number = 10,
+    retryDelay: number = 500,
   ) {
     const handleUpdate = (update: any) => {
       const value = getUpdate(update);
-      if (value) callback(value);
+      if (value) {
+        callback(value);
+        return;
+      }
+
+      let retries = 0;
+      const tryGetUpdate = () => {
+        const value = getUpdate(update);
+        if (value) {
+          callback(value);
+          return;
+        }
+
+        retries++;
+        if (retries < maxRetries) {
+          setTimeout(tryGetUpdate, retryDelay);
+        }
+      };
+
+      setTimeout(tryGetUpdate, retryDelay);
     };
 
     defineComponentSystem(this.setup.network.world, component, handleUpdate, { runOnInit });

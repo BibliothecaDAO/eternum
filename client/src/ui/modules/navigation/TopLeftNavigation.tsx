@@ -2,7 +2,9 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
+import { useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { Position } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
@@ -18,9 +20,9 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SecondaryMenuItems } from "./SecondaryMenuItems";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QuestsMenu } from "./QuestMenu";
+import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -91,27 +93,29 @@ const WorkersHutTooltipContent = () => {
   );
 };
 
-export const TopLeftNavigation = () => {
+export const TopLeftNavigation = memo(() => {
   const { setup } = useDojo();
 
+  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
   const { playerStructures } = useEntities();
+  const { getEntityInfo } = useEntitiesUtils();
+  const structures = playerStructures();
 
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
-  const { getEntityInfo } = useEntitiesUtils();
-
-  const structures = playerStructures();
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
     return saved ? JSON.parse(saved) : [];
   });
 
-  const entityInfo = getEntityInfo(structureEntityId);
+  const entityInfo = useMemo(() => getEntityInfo(structureEntityId), [structureEntityId, getEntityInfo]);
+
   const structure = useMemo(() => {
     return { ...entityInfo, isFavorite: favorites.includes(entityInfo.entityId) };
   }, [structureEntityId, getEntityInfo, favorites]);
@@ -157,8 +161,6 @@ export const TopLeftNavigation = () => {
     handleUrlChange(url);
   };
 
-  const setTooltip = useUIStore((state) => state.setTooltip);
-
   const population = useComponentValue(
     setup.components.Population,
     getEntityIdFromKeys([BigInt(structureEntityId || 0)]),
@@ -170,10 +172,7 @@ export const TopLeftNavigation = () => {
         setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
-
     const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
-
-    // Base capacity is storehouseCapacity, then add storehouseCapacity for each additional storehouse
     return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
   }, [structureEntityId, nextBlockTimestamp]);
 
@@ -323,86 +322,76 @@ export const TopLeftNavigation = () => {
       </motion.div>
       <div className="relative">
         <SecondaryMenuItems />
-        <div className="absolute right-0 px-4 top-full mt-2">
-          <QuestsMenu />
-        </div>
+        {unclaimedQuestsCount > 0 && (
+          <div className="absolute right-0 px-4 top-full mt-2">
+            <QuestsMenu unclaimedQuestsCount={unclaimedQuestsCount} />
+          </div>
+        )}
       </div>
     </div>
   );
-};
+});
+
+TopLeftNavigation.displayName = "TopLeftNavigation";
 
 const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
   const cycleTime = configManager.getTick(TickIds.Armies);
   const { play } = useUiSounds(soundSelector.gong);
 
-  const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-
   const lastProgressRef = useRef(0);
 
+  // Calculate progress once and memoize
   const progress = useMemo(() => {
     const elapsedTime = nextBlockTimestamp % cycleTime;
-    const currentProgress = (elapsedTime / cycleTime) * 100;
-
-    return currentProgress;
+    return (elapsedTime / cycleTime) * 100;
   }, [nextBlockTimestamp, cycleTime]);
 
+  // Play sound when progress resets
   useEffect(() => {
     if (lastProgressRef.current > progress) {
       play();
     }
     lastProgressRef.current = progress;
-  }, [progress]);
+  }, [progress, play]);
 
-  const updateTooltip = useCallback(() => {
-    if (!isTooltipOpen) return;
+  // Memoize tooltip content
+  const tooltipContent = useMemo(
+    () => (
+      <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
+        <div>
+          A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+        </div>
+        <div>
+          Time left until next cycle:{" "}
+          <span className="font-bold">{formatTime(cycleTime - (nextBlockTimestamp % cycleTime))}</span>
+        </div>
+      </div>
+    ),
+    [cycleTime, nextBlockTimestamp],
+  );
 
+  // Handle tooltip visibility
+  const handleMouseEnter = useCallback(() => {
+    setIsTooltipOpen(true);
     setTooltip({
       position: "bottom",
-      content: (
-        <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
-          <div>
-            A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
-          </div>
-          <div>
-            Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
-          </div>
-        </div>
-      ),
+      content: tooltipContent,
     });
-  }, [isTooltipOpen, cycleTime, timeUntilNextCycle, setTooltip]);
+  }, [setTooltip, tooltipContent]);
 
-  useEffect(() => {
-    if (!isTooltipOpen) return;
-
-    const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);
-    setTimeUntilNextCycle(initialTime);
-
-    const interval = setInterval(() => {
-      setTimeUntilNextCycle((prevTime) => (prevTime <= 1 ? initialTime : prevTime - 1));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
-
-  useEffect(() => {
-    if (isTooltipOpen) {
-      updateTooltip();
-    }
-  }, [isTooltipOpen, updateTooltip]);
+  const handleMouseLeave = useCallback(() => {
+    setIsTooltipOpen(false);
+    setTooltip(null);
+  }, [setTooltip]);
 
   return (
     <div
-      onMouseEnter={() => {
-        setIsTooltipOpen(true);
-        updateTooltip();
-      }}
-      onMouseLeave={() => {
-        setIsTooltipOpen(false);
-        setTooltip(null);
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className="self-center text-center px-1 py-1 flex gap-1"
     >
       <ResourceIcon withTooltip={false} resource="Timeglass" size="sm" />

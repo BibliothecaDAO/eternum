@@ -3,6 +3,7 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useStaminaManager } from "@/hooks/helpers/useStamina";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -10,7 +11,8 @@ import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const { setup } = useDojo();
-  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
+  const { currentArmiesTick } = useNextBlockTimestamp();
+
   const staminaManager = useStaminaManager(entityId || 0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 

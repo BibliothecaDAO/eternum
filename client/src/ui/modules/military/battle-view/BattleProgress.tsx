@@ -1,7 +1,7 @@
 import { BattleManager, BattleStatus, BattleType } from "@/dojo/modelManager/BattleManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { Health } from "@/types";
 import { motion } from "framer-motion";
@@ -135,7 +135,7 @@ export const BattleProgress = ({
   defenderArmies: (ArmyInfo | undefined)[];
   structure: Structure | undefined;
 }) => {
-  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp: currentTimestamp } = useNextBlockTimestamp();
 
   const playUnitSelectedOne = useUiSounds(soundSelector.unitSelected1).play;
   const playUnitSelectedTwo = useUiSounds(soundSelector.unitSelected2).play;

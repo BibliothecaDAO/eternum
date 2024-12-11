@@ -14,7 +14,7 @@ const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
 
 const MAX_INSTANCES = 1000;
-
+const WONDER_MODEL_INDEX = 4;
 export class StructureManager {
   private scene: THREE.Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
@@ -165,6 +165,9 @@ export class StructureManager {
           let modelType = models[structure.stage];
           if (structureType === StructureType.Realm) {
             modelType = models[structure.level];
+            if (structure.hasWonder) {
+              modelType = models[WONDER_MODEL_INDEX];
+            }
           }
           const currentCount = modelType.getCount();
           modelType.setMatrixAt(currentCount, this.dummy.matrix);

@@ -197,13 +197,11 @@ export class ResourceManager {
     if (!production) return [false, 0];
 
     let consumptionRate = Number(production.consumption_rate);
-  
+
     // Check if this is a Wonder producing Lords
-    const isWonder = getComponentValue(
-      this.setup.components.Realm,
-      getEntityIdFromKeys([BigInt(this.entityId)])
-    )?.has_wonder || false;
-      
+    const isWonder =
+      getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(this.entityId)]))?.has_wonder || false;
+
     if (isWonder && resourceId === ResourcesIds.Lords) {
       consumptionRate = consumptionRate * 0.1; // 10% of normal production rate for Wonders
     }
