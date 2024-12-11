@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useStaminaManager } from "@/hooks/helpers/useStamina";
-import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
@@ -14,8 +14,7 @@ export const StaminaResourceCost = ({
   travelLength: number;
   isExplored: boolean;
 }) => {
-  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
-
+  const { currentArmiesTick } = useNextBlockTimestamp();
   const staminaManager = useStaminaManager(travelingEntityId || 0);
 
   const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);

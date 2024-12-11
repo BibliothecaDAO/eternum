@@ -9,6 +9,7 @@ import {
   useStructureImmunityTimer,
   useStructures,
 } from "@/hooks/helpers/useStructures";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
@@ -56,7 +57,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     }
   }, [entityOwner.entity_owner_id]);
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
   const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);

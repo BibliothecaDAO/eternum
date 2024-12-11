@@ -4,6 +4,7 @@ import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { Position } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
@@ -100,13 +101,12 @@ export const TopLeftNavigation = memo(() => {
   const { playerStructures } = useEntities();
   const { getEntityInfo } = useEntitiesUtils();
   const structures = playerStructures();
-  
-
 
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [favorites, setFavorites] = useState<number[]>(() => {
@@ -336,7 +336,8 @@ TopLeftNavigation.displayName = "TopLeftNavigation";
 
 const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
   const cycleTime = configManager.getTick(TickIds.Armies);
   const { play } = useUiSounds(soundSelector.gong);
 
@@ -358,26 +359,27 @@ const TickProgress = () => {
   }, [progress, play]);
 
   // Memoize tooltip content
-  const tooltipContent = useMemo(() => (
-    <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
-      <div>
-        A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+  const tooltipContent = useMemo(
+    () => (
+      <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
+        <div>
+          A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+        </div>
+        <div>
+          Time left until next cycle:{" "}
+          <span className="font-bold">{formatTime(cycleTime - (nextBlockTimestamp % cycleTime))}</span>
+        </div>
       </div>
-      <div>
-        Time left until next cycle:{" "}
-        <span className="font-bold">
-          {formatTime(cycleTime - (nextBlockTimestamp % cycleTime))}
-        </span>
-      </div>
-    </div>
-  ), [cycleTime, nextBlockTimestamp]);
+    ),
+    [cycleTime, nextBlockTimestamp],
+  );
 
   // Handle tooltip visibility
   const handleMouseEnter = useCallback(() => {
     setIsTooltipOpen(true);
     setTooltip({
       position: "bottom",
-      content: tooltipContent
+      content: tooltipContent,
     });
   }, [setTooltip, tooltipContent]);
 
@@ -389,7 +391,7 @@ const TickProgress = () => {
   return (
     <div
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave} 
+      onMouseLeave={handleMouseLeave}
       className="self-center text-center px-1 py-1 flex gap-1"
     >
       <ResourceIcon withTooltip={false} resource="Timeglass" size="sm" />

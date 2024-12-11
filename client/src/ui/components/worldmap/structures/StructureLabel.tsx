@@ -6,6 +6,7 @@ import {
   useStructureImmunityTimer,
   useStructures,
 } from "@/hooks/helpers/useStructures";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
@@ -49,7 +50,7 @@ export const StructureInfoLabel = memo(() => {
 
   const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
   const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);
@@ -83,4 +84,4 @@ export const StructureInfoLabel = memo(() => {
   );
 });
 
-StructureInfoLabel.displayName = "StructureInfoLabel";  
+StructureInfoLabel.displayName = "StructureInfoLabel";
