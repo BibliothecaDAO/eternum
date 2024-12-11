@@ -22,7 +22,6 @@ export function CountdownTimer() {
 
         <TypeH1 className="tracking-wider">Eternum is Launching in</TypeH1>
         <div className="flex gap-4 text-center mt-4 mx-auto">
-          <span className="text-4xl font-bold">{"<"}</span>
           <TimeUnit value={days} label="Days" />
           <TimeUnit value={hours} label="Hours" />
           <TimeUnit value={minutes} label="Minutes" />
