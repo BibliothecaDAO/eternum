@@ -39,8 +39,6 @@ export const EntityList = ({
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  console.log({ list });
-
   useEffect(() => {
     const entity = list.find((entity) => entity.entity_id === current);
     if (entity) setSelectedEntity(entity || null);

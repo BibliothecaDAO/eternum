@@ -146,7 +146,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
                 showOnlyMine
                   ? (fragmentMines
                       .filter((mine) => {
-                        mine.owner === account.address;
+                        return mine.owner === account.address;
                       })
                       .map((mine) => mine.entity_id) as ID[])
                   : undefined
