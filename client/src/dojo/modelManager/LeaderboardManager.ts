@@ -9,7 +9,7 @@ import {
   TickIds,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
-import { Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { configManager } from "../setup";
 import { ClientConfigManager } from "./ConfigManager";
@@ -33,15 +33,16 @@ export class LeaderboardManager {
     );
     if (!hyperstructure) return;
 
+    const epochIndex = hyperstructure.current_epoch - 1 >= 0 ? hyperstructure.current_epoch - 1 : 0;
     const currentEpoch = getComponentValue(
       this.dojoResult.setup.components.Epoch,
-      getEntityIdFromKeys([BigInt(hyperstructureEntityId), BigInt(hyperstructure.current_epoch)]),
+      getEntityIdFromKeys([BigInt(hyperstructureEntityId), BigInt(epochIndex)]),
     );
     if (!currentEpoch) return;
 
     const coOwners = (currentEpoch.owners as any).map((owner: any) => {
       let [owner_address, percentage] = owner.value.map((value: any) => value.value);
-      return { address: owner_address, percentage: Number(percentage) / 10_000 };
+      return { address: ContractAddress(owner_address), percentage: Number(percentage) };
     });
 
     return { coOwners, timestamp: Number(currentEpoch.start_timestamp) };
