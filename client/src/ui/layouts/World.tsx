@@ -90,7 +90,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   // Setup hooks
   useFetchBlockchainData();
   useStructureEntityId();
-  
+
   return (
     <div
       onClick={(e) => {

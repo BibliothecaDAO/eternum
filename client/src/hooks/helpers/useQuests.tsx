@@ -63,9 +63,7 @@ export const useQuests = () => {
 };
 
 const useQuestDependencies = () => {
-  const {
-    setup,
-  } = useDojo();
+  const { setup } = useDojo();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
@@ -203,10 +201,10 @@ export const useQuestClaimStatus = () => {
 
   const questClaimStatus = useMemo(() => {
     const entityBigInt = BigInt(structureEntityId || 0);
-    
-    const checkPrizesClaimed = (prizes: Prize[]) => 
-      prizes.every((prize) => 
-        getComponentValue(Quest, getEntityIdFromKeys([entityBigInt, BigInt(prize.id)]))?.completed
+
+    const checkPrizesClaimed = (prizes: Prize[]) =>
+      prizes.every(
+        (prize) => getComponentValue(Quest, getEntityIdFromKeys([entityBigInt, BigInt(prize.id)]))?.completed,
       );
 
     return Array.from(questDetails.keys()).reduce(

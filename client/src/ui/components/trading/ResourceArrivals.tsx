@@ -1,16 +1,8 @@
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ID, Resource } from "@bibliothecadao/eternum";
 import { EntityArrival } from "../entities/Entity";
 import { HintSection } from "../hints/HintModal";
-
-export type EntityReadyForDeposit = {
-  carrierId: ID;
-  senderEntityId: ID;
-  recipientEntityId: ID;
-  resources: Resource[];
-};
 
 export const AllResourceArrivals = ({ arrivals, className }: { arrivals: ArrivalInfo[]; className?: string }) => {
   return (

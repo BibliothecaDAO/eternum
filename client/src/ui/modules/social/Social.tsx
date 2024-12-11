@@ -35,7 +35,6 @@ export const Social = ({ players }: { players: Player[] }) => {
 
   const gameEnded = useEntityQuery([Has(GameEnded)]);
 
- 
   const updateLeaderboard = useHyperstructureData();
 
   const viewGuildMembers = (guildEntityId: ID) => {
@@ -111,11 +110,12 @@ export const Social = ({ players }: { players: Player[] }) => {
           ))}
         </Tabs.List>
 
-          <div className="flex justify-center gap-8">
-            {gameEnded.length === 0 && <EndSeasonButton />} 
-            <Button variant="secondary" onClick={updateLeaderboard}>Update Points</Button>
-          </div>
-
+        <div className="flex justify-center gap-8">
+          {gameEnded.length === 0 && <EndSeasonButton />}
+          <Button variant="secondary" onClick={updateLeaderboard}>
+            Update Points
+          </Button>
+        </div>
 
         <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab) => (

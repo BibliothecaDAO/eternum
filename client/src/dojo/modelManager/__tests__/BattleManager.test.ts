@@ -66,14 +66,14 @@ import { describe, it } from "vitest";
 // });
 
 describe("getBattle", () => {
-    it("should return a valid battle for a valid mock", () => {
-  //     const mockBattle = generateMockBatle(true);
-  //     vi.mocked(getComponentValue).mockReturnValueOnce(mockBattle);
-  //     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
-  //     const battle = battleManager.getBattle();
-  //     expect(battle).toBeDefined();
-  //     expect(battle).toBe(mockBattle);
-    });
+  it("should return a valid battle for a valid mock", () => {
+    //     const mockBattle = generateMockBatle(true);
+    //     vi.mocked(getComponentValue).mockReturnValueOnce(mockBattle);
+    //     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+    //     const battle = battleManager.getBattle();
+    //     expect(battle).toBeDefined();
+    //     expect(battle).toBe(mockBattle);
+  });
 });
 
 // describe("isBattle", () => {
