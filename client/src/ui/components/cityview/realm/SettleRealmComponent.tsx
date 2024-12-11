@@ -32,7 +32,7 @@ const SettleRealmComponent = ({ setSettledRealmId }: { setSettledRealmId: (id: n
       const res = await create_multiple_realms({
         realm_ids: realmIds,
         owner: account.address,
-        frontend: env.VITE_CLIENT_FEE_RECIPIENT,
+        frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
         signer: account,
         season_pass_address: env.VITE_SEASON_PASS_ADDRESS,
       });
