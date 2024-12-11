@@ -42,10 +42,10 @@ export const useFetchBlockchainData = () => {
 
     fetchBlockchainTimestamp(); // Initial fetch
 
-    const intervalId = setInterval(fetchBlockchainTimestamp, 10000);
+    // const intervalId = setInterval(fetchBlockchainTimestamp, 10000);
 
-    return () => {
-      clearInterval(intervalId);
-    };
+    // return () => {
+    //   clearInterval(intervalId);
+    // };
   }, []);
 };
