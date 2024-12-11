@@ -248,9 +248,16 @@ export const BattleActions = ({
     ];
 
     if (raidStatus !== RaidStatus.isRaidable) {
-      setTooltip({ content: <div className="">{raidStatus}</div>, position: "top" });
-    } else if (selectedArmy?.battle_id !== 0) {
-      content.push(<div>Raiding will make you leave and lose 25% of your army</div>);
+      setTooltip({ content: <div className="text-center">{raidStatus}</div>, position: "top" });
+      return;
+    }
+
+    if (selectedArmy?.battle_id !== 0) {
+      content.push(
+        <div key="warning" className="text-center text-red mt-2">
+          Raiding will make you leave and lose 25% of your army
+        </div>,
+      );
     }
 
     setTooltip({
