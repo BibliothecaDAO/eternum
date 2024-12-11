@@ -14,6 +14,7 @@ import { TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS } from "./troops";
 
 import { ResourcesIds } from ".";
 
+export const MIN_TROOPS_BATTLE = 100_000;
 export const FELT_CENTER = 2147483646;
 export const WORLD_CONFIG_ID = 999999999n;
 export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;

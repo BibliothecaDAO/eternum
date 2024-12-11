@@ -5,10 +5,10 @@ import { ColorMode } from "@cartridge/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
 import { env } from "../../../env";
-import { mainnetPolicies } from "./mainnet-policies";
 import { policies } from "./policies";
 import { signingPolicy } from "./signing-policy";
 
+const preset: string = "eternum";
 const theme: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s0_eternum";
@@ -20,19 +20,30 @@ const vrfPolicy = {
   description: "Allows requesting random numbers from the VRF provider",
 };
 
-const signingPolicies = env.VITE_PUBLIC_CHAIN === "mainnet" ? mainnetPolicies : policies;
-
-const controller = new ControllerConnector({
-  rpc: env.VITE_PUBLIC_NODE_URL,
-  namespace,
-  slot,
-  policies: [...signingPolicies, ...signingPolicy, vrfPolicy],
-  theme,
-  tokens: {
-    erc20: ["0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49"],
-  },
-  colorMode,
-});
+const controller =
+  env.VITE_PUBLIC_CHAIN === "mainnet"
+    ? new ControllerConnector({
+        rpc: env.VITE_PUBLIC_NODE_URL,
+        namespace,
+        slot,
+        preset,
+        tokens: {
+          erc20: ["0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49"],
+        },
+        colorMode,
+      })
+    : new ControllerConnector({
+        rpc: env.VITE_PUBLIC_NODE_URL,
+        namespace,
+        slot,
+        preset,
+        policies: [...signingPolicy, ...policies, vrfPolicy],
+        theme,
+        tokens: {
+          erc20: ["0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49"],
+        },
+        colorMode,
+      });
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const rpc = useCallback(() => {
