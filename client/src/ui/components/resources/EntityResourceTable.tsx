@@ -1,10 +1,11 @@
+import { addToSubscription } from "@/dojo/queries";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { ResourceChip } from "./ResourceChip";
 
 export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
@@ -22,6 +23,15 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse));
     return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
   }, [quantity, entityId]);
+
+
+  useEffect(() => {
+
+    const fetch = async () => {
+      await addToSubscription(dojo.setup.network.toriiClient, dojo.setup.sync, entityId?.toString() || "0");
+    }
+    fetch();
+  }, [entityId]); 
 
   if (!entityId || entityId === 0) {
     return <div>No Entity Selected</div>;

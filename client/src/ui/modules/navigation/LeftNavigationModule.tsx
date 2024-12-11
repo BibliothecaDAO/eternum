@@ -1,3 +1,5 @@
+import { addToSubscription } from "@/dojo/queries";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { usePlayerArrivalsNotifications } from "@/hooks/helpers/use-resource-arrivals";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -217,6 +219,15 @@ export const LeftNavigationModule = memo(() => {
     hidden: { x: "-100%" },
     visible: { x: "0%", transition: { duration: 0.5 } },
   };
+
+  const dojo = useDojo();
+  useEffect(() => {
+
+    const fetch = async () => {
+      await addToSubscription(dojo.setup.network.toriiClient, dojo.setup.sync, structureEntityId.toString());
+    }
+    fetch();
+  }, [structureEntityId]);
 
   return (
     <div className="flex flex-col">

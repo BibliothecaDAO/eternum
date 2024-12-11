@@ -21,6 +21,8 @@ export const RightNavigationModule = () => {
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
 
+
+
   const navigation = useMemo(
     () => [
       {
