@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 // Path to the manifest.json file
-const manifestPath = path.join(__dirname, "..", "contracts", "manifest_prod.json");
+const manifestPath = path.join(__dirname, "..", "contracts", "manifest_mainnet.json");
 
 // Read and parse the manifest.json
 fs.readFile(manifestPath, "utf8", (err, data) => {
@@ -52,7 +52,7 @@ fs.readFile(manifestPath, "utf8", (err, data) => {
   console.log(output);
 
   // Optionally, write the output to a TypeScript file
-  const outputPath = path.join(__dirname, "..", "client", "src", "hooks", "context", "policies.tsx");
+  const outputPath = path.join(__dirname, "..", "client", "src", "hooks", "context", "mainnet-policies.tsx");
   fs.writeFile(outputPath, `export const policies = ${JSON.stringify(policies, null, 2)};\n`, "utf8", (writeErr) => {
     if (writeErr) {
       console.error("Error writing to connectors.tsx:", writeErr);
