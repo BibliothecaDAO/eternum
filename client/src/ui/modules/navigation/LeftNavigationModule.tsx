@@ -1,4 +1,4 @@
-import { usePlayerArrivalsNotificationLength } from "@/hooks/helpers/use-resource-arrivals";
+import { usePlayerArrivalsNotifications } from "@/hooks/helpers/use-resource-arrivals";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useModalStore } from "@/hooks/store/useModalStore";
@@ -9,7 +9,7 @@ import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
 import { motion } from "framer-motion";
-import { Suspense, lazy, useEffect, useMemo } from "react";
+import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { Chat } from "../chat/Chat";
@@ -46,7 +46,7 @@ export enum LeftView {
   ResourceTable,
 }
 
-export const LeftNavigationModule = () => {
+export const LeftNavigationModule = memo(() => {
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -58,7 +58,7 @@ export const LeftNavigationModule = () => {
   const { toggleModal } = useModalStore();
   const { isMapView } = useQuery();
 
-  const { notificationLength, arrivals } = usePlayerArrivalsNotificationLength();
+  const { arrivedNotificationLength, arrivals } = usePlayerArrivalsNotifications();
 
   const { getEntityInfo } = useEntitiesUtils();
 
@@ -148,8 +148,7 @@ export const LeftNavigationModule = () => {
             active={view === LeftView.ResourceArrivals}
             size={IS_MOBILE ? "lg" : "xl"}
             onClick={() => setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals)}
-            notification={notificationLength}
-            notificationLocation="topleft"
+            primaryNotification={{ value: arrivedNotificationLength, color: "green", location: "topright" }}
           />
         ),
       },
@@ -212,7 +211,7 @@ export const LeftNavigationModule = () => {
     );
 
     return filteredNavigation;
-  }, [view, openedPopups, structureEntityId, isMapView, structureIsMine, isRealm, notificationLength]);
+  }, [view, openedPopups, structureEntityId, isMapView, structureIsMine, isRealm, arrivedNotificationLength]);
 
   const slideLeft = {
     hidden: { x: "-100%" },
@@ -265,7 +264,9 @@ export const LeftNavigationModule = () => {
       )}
     </div>
   );
-};
+});
+
+LeftNavigationModule.displayName = "LeftNavigationModule";
 
 const isOffscreen = (view: LeftView) => {
   return view === LeftView.None;

@@ -4,6 +4,7 @@ import { useBattleManager } from "@/hooks/helpers/battles/useBattles";
 import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { Structure, useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { BattleSide } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { Battle } from "./Battle";
@@ -14,7 +15,7 @@ export const BattleView = () => {
   const armiesByBattleId = getArmiesByBattleId();
   const { getAliveArmy } = getArmyByEntityId();
 
-  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp: currentTimestamp } = useNextBlockTimestamp();
   const battleView = useUIStore((state) => state.battleView);
   const selectedHex = useUIStore((state) => state.selectedHex);
 

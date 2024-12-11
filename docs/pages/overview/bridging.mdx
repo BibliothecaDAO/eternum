@@ -9,7 +9,7 @@ import { Callout } from "vocs/components";
 
 ## Bridging in Eternum
 
-Eternum is a fully on-chain game with immutable smart contracts, meaning the game rules cannot be altered after
+Eternum is a fully onchain game with immutable smart contracts, meaning the game rules cannot be altered after
 deployment. Bridging tokens in and out of the game is a core mechanic, but you must carefully manage this process. The
 game bridge closes **forever** 48 hours after the game ends (victory claimed). Any tokens left in the game at that time
 are **permanently locked** in the contract (effectively **burned**).
@@ -18,7 +18,36 @@ Bridging out of the game is done by sending resources to a bank. This process ta
 part of the gameplay mechanics. Since the contracts are immutable, "code is law." Players must plan accordingly, as the
 developers cannot modify the system after deployment.
 
-<img src="/bridge.png" alt="Bridge" width="800" className="mx-auto" />
+## Bridging in
+
+This is the only way to bridge in Lords to the game. This converts ERC20 Lords into in-game Lords. Only in-game Lords
+can be used to build and trade with.
+
+### Initial Bridge
+
+You need to first initialize the transfer.
+
+<img src="/gifs/bridge-in.gif" alt="Bridge" width="800" className="mx-auto" />
+
+### Final Bridge (Within Game Client)
+
+Once you finish the first step, the Lords/resources will appear in your inventory to be used in the game.
+
+<img src="/gifs/final-bridge-in.gif" alt="Bridge" width="800" className="mx-auto" />
+
+## Bridging out
+
+You can bridge out resources from the game, which will be converted to the ERC20 contracts.
+
+### Step 1: Start the bridge
+
+<img src="/gifs/bridge-out-start.gif" alt="Bridge" width="800" className="mx-auto" />
+
+### Step 2: Finalize the bridge
+
+<img src="/gifs/bridge-out-final.gif" alt="Bridge" width="800" className="mx-auto" />
+
+### Game End
 
 When the game ends, players will have **48 hours** to withdraw all in-game assets including:
 

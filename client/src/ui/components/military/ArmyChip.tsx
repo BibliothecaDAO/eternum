@@ -7,6 +7,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { armyHasTroops } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { Position as PositionInterface } from "@/types/Position";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
@@ -71,7 +72,7 @@ export const ArmyChip = ({
   const [showInventory, setShowInventory] = useState(false);
   const [showTroopSwap, setShowTroopSwap] = useState(false);
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const [editMode, setEditMode] = useState(false);
 

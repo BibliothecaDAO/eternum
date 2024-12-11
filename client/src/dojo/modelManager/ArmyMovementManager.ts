@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { type HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import {
@@ -263,12 +264,23 @@ export class ArmyMovementManager {
     });
   };
 
+  private readonly _optimisticArrivalTimeUpdate = (overrideId: string) => {
+    this.setup.components.ArrivalTime.addOverride(overrideId, {
+      entity: this.entity,
+      value: {
+        entity_id: this.entityId,
+        arrives_at: BigInt(useUIStore.getState().nextBlockTimestamp || 0),
+      },
+    });
+  };
+
   private readonly _optimisticExplore = (col: number, row: number, currentArmiesTick: number) => {
     const overrideId = uuid();
 
     this._optimisticStaminaUpdate(overrideId, configManager.getExploreStaminaCost(), currentArmiesTick);
     this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticPositionUpdate(overrideId, col, row);
+    this._optimisticArrivalTimeUpdate(overrideId);
     this._optimisticCapacityUpdate(
       overrideId,
       // all resources you can find have the same weight as wood
@@ -315,6 +327,7 @@ export class ArmyMovementManager {
 
     this._optimisticStaminaUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, currentArmiesTick);
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
+    this._optimisticArrivalTimeUpdate(overrideId);
 
     this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,
@@ -338,6 +351,7 @@ export class ArmyMovementManager {
     this.setup.components.Stamina.removeOverride(overrideId);
     this.setup.components.Resource.removeOverride(overrideId);
     this.setup.components.Weight.removeOverride(overrideId);
+    this.setup.components.ArrivalTime.removeOverride(overrideId);
   };
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {

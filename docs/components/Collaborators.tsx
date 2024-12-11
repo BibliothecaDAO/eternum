@@ -11,7 +11,7 @@ const sponsorsData = [
     link: "https://dojoengine.com/",
     image: "/logos/Dojo.svg",
     description:
-      "Dojo is a cutting-edge open-source toolchain for creating provable on-chain games and autonomous worlds. It empowers developers to design games with fully on-chain state and logic, ensuring unparalleled transparency and trust.",
+      "Dojo is a cutting-edge open-source toolchain for creating provable onchain games and autonomous worlds. It empowers developers to design games with fully onchain state and logic, ensuring unparalleled transparency and trust.",
   },
   {
     name: "Cartridge",

@@ -9,18 +9,18 @@ import {
   ADMIN_BANK_ENTITY_ID,
   DONKEY_ENTITY_TYPE,
   RESOURCE_PRECISION,
-  resources,
   ResourcesIds,
+  resources,
 } from "@bibliothecadao/eternum";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { useAccount } from "@starknet-react/core";
 import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TypeP } from "../typography/type-p";
+import { SelectSingleResource } from "../ui/SelectResources";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { SelectSingleResource } from "../ui/SelectResources";
 import { Tooltip, TooltipProvider } from "../ui/tooltip";
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
@@ -58,16 +58,6 @@ export const BridgeOutStep1 = () => {
     }[]
   >([]);
 
-  /*const totalFeeOnWithdrawal = useMemo(
-    () =>
-      formatFee(
-        Number(velordsFeeOnWithdrawal) +
-          Number(seasonPoolFeeOnWithdrawal) +
-          Number(clientFeeOnWithdrawal) +
-          Number(bankFeeOnWithdrawal),
-      ),
-    [velordsFeeOnWithdrawal, seasonPoolFeeOnWithdrawal, clientFeeOnWithdrawal, bankFeeOnWithdrawal],
-  );*/
   const { getBalance } = getResourceBalance();
   const donkeyBalance = useMemo(() => {
     if (realmEntityId) {
@@ -147,11 +137,7 @@ export const BridgeOutStep1 = () => {
             }),
         );
         console.log(validResources);
-        await bridgeStartWithdrawFromRealm(
-          validResources,
-          ADMIN_BANK_ENTITY_ID,
-          BigInt(realmEntityId!),
-        );
+        await bridgeStartWithdrawFromRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
 
         setSelectedResourceIds([]);
         setSelectedResourceAmounts({});
@@ -164,99 +150,104 @@ export const BridgeOutStep1 = () => {
   };
 
   return (
-    <div className="max-w-md flex flex-col gap-3">
-      <TypeP>
-        Bridge resources from your Realms balance in game to tradeable ERC20 assets in your Starknet wallet. This will
-        require a second step to send the resources to your wallet once the donkeys have arrived at the bank.
-      </TypeP>
-      <hr />
-      <div className="flex justify-between">
-        <div className="flex flex-col min-w-40">
-          <div className="text-xs uppercase mb-1 ">From Realm</div>
-          <Select onValueChange={(value) => setRealmEntityId(value)}>
-            <SelectTrigger className="w-full border-gold/15">
-              <SelectValue placeholder="Select Settled Realm" />
-            </SelectTrigger>
-            <SelectContent>
-              {playerRealmsIdAndName.map((realm) => {
-                return (
-                  <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                    #{realm.realmId} - {realm.name}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <div className="text-xs uppercase mb-1">To Wallet</div>
-          <div>{displayAddress(address || "")}</div>
-        </div>
-      </div>
-
-      {Boolean(realmEntityId) && (
-        <SelectResourceRow
-          realmEntityId={Number(realmEntityId)}
-          selectedResourceIds={selectedResourceIds}
-          setSelectedResourceIds={(value: number[]) => setSelectedResourceIds(value as unknown as never[])}
-          selectedResourceAmounts={selectedResourceAmounts}
-          setSelectedResourceAmounts={setSelectedResourceAmounts}
-        />
-      )}
-      <div className="flex flex-col gap-1">
+    <>
+      <div className="max-w-md flex flex-col gap-3 max-h-[calc(75vh-100px)] overflow-y-auto p-3">
+        <TypeP>
+          Bridge resources from your Realms balance in game to tradeable ERC20 assets in your Starknet wallet. This will
+          require a second step to send the resources to your wallet once the donkeys have arrived at the bank.
+        </TypeP>
+        <hr />
         <div className="flex justify-between">
-          <div>Arrives in Bank</div>
-          <div>{travelTimeInHoursAndMinutes(travelTime ?? 0)}</div>
-        </div>
-        <div className="flex justify-between">
+          <div className="flex flex-col min-w-40">
+            <div className="text-xs uppercase mb-1 ">From Realm</div>
+            <Select onValueChange={(value) => setRealmEntityId(value)}>
+              <SelectTrigger className="w-full border-gold/15">
+                <SelectValue placeholder="Select Settled Realm" />
+              </SelectTrigger>
+              <SelectContent>
+                {playerRealmsIdAndName.map((realm) => {
+                  return (
+                    <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
+                      #{realm.realmId} - {realm.name}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
-            Donkeys Burnt
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <InfoIcon className="ml-2 w-4 h-4" />
-                </TooltipTrigger>
-                <TooltipContent className="bg-background border rounded p-2 max-w-56">
-                  Donkeys are required to transport the resources to the bank
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="flex items-center gap-2">
-            {donkeysNeeded} / {donkeyBalance.balance} <ResourceIcon resource={"Donkey"} size="md" />
+            <div className="text-xs uppercase mb-1">To Wallet</div>
+            <div>{displayAddress(address || "")}</div>
           </div>
         </div>
-        <BridgeFees
-          isOpen={isFeesOpen}
-          onOpenChange={setIsFeesOpen}
-          resourceSelections={selectedResourceAmounts}
-          setResourceFees={setResourceFees}
-          type="withdrawal"
-        />
-        <div className="flex justify-between font-bold mt-3">
-          <div>Total Amount Received</div>
-        </div>
-        {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
-          if (amount === 0) return null;
-          const resourceName = ResourcesIds[id as keyof typeof ResourcesIds];
-          return (
-            <div key={id} className="flex justify-between text-sm font-normal">
-              <div className="flex items-center gap-2">
-                <ResourceIcon resource={resourceName} size="md" /> {resourceName}
-              </div>
-              <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
+
+        {Boolean(realmEntityId) && (
+          <SelectResourceRow
+            realmEntityId={Number(realmEntityId)}
+            selectedResourceIds={selectedResourceIds}
+            setSelectedResourceIds={(value: number[]) => setSelectedResourceIds(value as unknown as never[])}
+            selectedResourceAmounts={selectedResourceAmounts}
+            setSelectedResourceAmounts={setSelectedResourceAmounts}
+          />
+        )}
+        <div className="flex flex-col gap-1">
+          <div className="flex justify-between">
+            <div>Arrives in Bank</div>
+            <div>{travelTimeInHoursAndMinutes(travelTime ?? 0)}</div>
+          </div>
+          <div className="flex justify-between mb-3">
+            <div>
+              Donkeys Burnt
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoIcon className="ml-2 w-4 h-4" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-background border rounded p-2 max-w-56">
+                    Donkeys are required to transport the resources to the bank
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-          );
-        })}
+            <div className="flex items-center gap-2">
+              {donkeysNeeded} / {donkeyBalance.balance} <ResourceIcon resource={"Donkey"} size="md" />
+            </div>
+          </div>
+          <BridgeFees
+            isOpen={isFeesOpen}
+            onOpenChange={setIsFeesOpen}
+            resourceSelections={selectedResourceAmounts}
+            setResourceFees={setResourceFees}
+            type="withdrawal"
+          />
+          <div className="flex justify-between font-bold mt-3">
+            <div>Total Amount Received</div>
+          </div>
+          {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
+            if (amount === 0) return null;
+            const resourceName = ResourcesIds[id as keyof typeof ResourcesIds];
+            return (
+              <div key={id} className="flex justify-between text-sm font-normal">
+                <div className="flex items-center gap-2">
+                  <ResourceIcon resource={resourceName} size="md" /> {resourceName}
+                </div>
+                <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <Button
-        disabled={(!selectedResourceAmount && !selectedResourceId && !realmEntityId) || isLoading}
-        onClick={() => onSendToBank()}
-      >
-        {isLoading && <Loader className="animate-spin pr-2" />}
-        {isLoading ? "Sending to Bank..." : !realmEntityId ? "Select a Realm" : "Send to Bank (Step 1)"}
-      </Button>
-    </div>
+      <div className="sticky bottom-0 rounded-b-xl bg-background p-4 mt-auto border-t border-gold/15">
+        <Button
+          disabled={(!selectedResourceAmount && !selectedResourceId && !realmEntityId) || isLoading}
+          className="w-full"
+          onClick={() => onSendToBank()}
+        >
+          {isLoading && <Loader className="animate-spin pr-2" />}
+          {isLoading ? "Sending to Bank..." : !realmEntityId ? "Select a Realm" : "Send to Bank (Step 1)"}
+        </Button>
+      </div>
+    </>
   );
 };
 

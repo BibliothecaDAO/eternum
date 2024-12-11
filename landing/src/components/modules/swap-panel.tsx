@@ -5,7 +5,7 @@ import { BridgeOutStep2 } from "./bridge-out-step-2";
 
 export const SwapPanel = () => {
   return (
-    <div className="border-2 rounded-xl p-3 bg-brown border-gold/15 round-tr-none rounded-bl-none max-h-[80vH] overflow-y-auto">
+    <div>
       <Tabs defaultValue="in">
         <TabsList className="w-full">
           <TabsTrigger className="w-full" value="in">
@@ -18,13 +18,13 @@ export const SwapPanel = () => {
             Bridge Out (Finish)
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="in">
+        <TabsContent className="border-2 rounded-xl bg-brown border-gold/15 round-tr-none" value="in">
           <BridgeIn />
         </TabsContent>
-        <TabsContent value="out-start">
+        <TabsContent className="border-2 rounded-xl bg-brown border-gold/15 round-tr-none" value="out-start">
           <BridgeOutStep1 />
         </TabsContent>
-        <TabsContent value="out-finish">
+        <TabsContent className="border-2 rounded-xl bg-brown border-gold/15 round-tr-none" value="out-finish">
           <BridgeOutStep2 />
         </TabsContent>
       </Tabs>

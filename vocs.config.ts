@@ -38,6 +38,7 @@ export default defineConfig({
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
         { text: "Bridge Closure - MUST READ", link: "/overview/bridging" },
+        { text: "Resource Addresses", link: "/overview/resource-addresses" },
       ],
     },
     {

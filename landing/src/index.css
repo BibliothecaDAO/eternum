@@ -51,7 +51,7 @@
     --secondary: 27 30% 10%;
     --secondary-foreground: 0 0% 100%;
     --muted: -11 30% 15%;
-    --muted-foreground: 26 89% 88%;
+    --muted-foreground: 22 35% 41%;
     --accent: -11 30% 15%;
     --accent-foreground: 27 5% 90%;
     --destructive: 0 100% 30%;
@@ -99,7 +99,7 @@
 }
 
 *::-webkit-scrollbar {
-  width: 8px;
+  width: 4px;
   background-color: #1b1b1b;
 }
 

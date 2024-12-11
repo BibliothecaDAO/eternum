@@ -10,6 +10,7 @@ import {
   useHyperstructureProgress,
   useHyperstructureUpdates,
 } from "@/hooks/helpers/useHyperstructures";
+import { useHyperstructureData } from "@/hooks/store/useLeaderBoardStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -48,6 +49,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
   } = dojo;
 
   const { getGuildFromPlayerAddress } = useGuilds();
+
+  const updateLeaderboard = useHyperstructureData();
 
   const [isLoading, setIsLoading] = useState<Loading>(Loading.None);
   const [editName, setEditName] = useState(false);
@@ -155,84 +158,109 @@ export const HyperstructurePanel = ({ entity }: any) => {
     }
   };
 
+  const [selectedAccess, setSelectedAccess] = useState<"Public" | "Private" | "GuildOnly">(
+    hyperstructure
+      ? (DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess] as "Public" | "Private" | "GuildOnly")
+      : "Private",
+  );
+
   return (
     <div className="flex flex-col justify-between h-full">
-      <div className="grid grid-cols-5 text-xxs bg-blueish/10 p-1">
-        <div className="flex flex-col">
-          <div>Owner:</div>
-          <h4>{ownerName}</h4>
-        </div>
-        <div className="col-span-4">
-          {editName ? (
-            <div className="flex space-x-2">
-              <TextInput
-                placeholder="Type Name"
-                className="h-full flex-grow"
-                onChange={(name) => setNaming(name)}
-                maxLength={MAX_NAME_LENGTH}
-              />
-              <Button
-                variant="default"
-                isLoading={isLoading === Loading.ChangeName}
-                disabled={isLoading !== Loading.None}
-                onClick={async () => {
-                  setIsLoading(Loading.ChangeName);
+      <div className="flex flex-col bg-blueish/10 p-2">
+        <div className="flex">
+          {/* Owner Column */}
+          <div className="flex flex-col min-w-[120px] mr-4">
+            <div className="text-xxs uppercase text-gold/80">Owner</div>
+            <h5 className="text-sm truncate">{ownerName}</h5>
+          </div>
 
-                  try {
-                    await provider.set_entity_name({ signer: account, entity_id: entity.entity_id, name: naming });
-                  } catch (e) {
-                    console.error(e);
-                  }
+          {/* Name & Controls Column */}
+          <div className="flex-1">
+            {editName ? (
+              <div className="flex gap-2">
+                <TextInput
+                  placeholder="Type Name"
+                  className="flex-1"
+                  onChange={(name) => setNaming(name)}
+                  maxLength={MAX_NAME_LENGTH}
+                />
+                <Button
+                  variant="default"
+                  isLoading={isLoading === Loading.ChangeName}
+                  disabled={isLoading !== Loading.None}
+                  onClick={async () => {
+                    setIsLoading(Loading.ChangeName);
 
-                  setIsLoading(Loading.None);
-                  setEditName(false);
-                }}
-              >
-                Change Name
-              </Button>
-            </div>
-          ) : (
-            <div className="flex justify-between items-center">
-              <h5 className="truncate pr-5">{entity.name}</h5>
-              {account.address === entity.owner && (
-                <div className="flex flex-col gap-2">
-                  <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
-                    edit name
-                  </Button>
-                  {hyperstructure && entity.isOwner && (
-                    <Select
-                      onValueChange={(access: keyof typeof Access) => {
-                        setAccess(BigInt(Access[access]));
-                      }}
-                    >
-                      <SelectTrigger className="w-[140px] text-gold h-10 text-lg">
-                        <SelectValue
-                          placeholder={DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess]}
-                        />
-                      </SelectTrigger>
-                      <SelectContent className="bg-black/90 text-gold">
-                        {Object.keys(Access)
-                          .filter((access) => {
-                            if (!isNaN(Number(access))) return false;
+                    try {
+                      await provider.set_entity_name({ signer: account, entity_id: entity.entity_id, name: naming });
+                    } catch (e) {
+                      console.error(e);
+                    }
 
-                            if (access === Access[Access.GuildOnly]) {
-                              return playerGuild?.entityId !== undefined && playerGuild.entityId !== 0;
-                            }
-
-                            return access !== hyperstructure!.access;
-                          })
-                          .map((access) => (
-                            <SelectItem key={access} value={access} disabled={!entity.isOwner}>
-                              {separateCamelCase(access)}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                    setIsLoading(Loading.None);
+                    setEditName(false);
+                  }}
+                >
+                  Change Name
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2 justify-between w-full">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col items-center gap-1">
+                    <h4 className="truncate">{entity.name}</h4>
+                    <Button size="xs" onClick={updateLeaderboard}>
+                      Reload
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
+
+                {account.address === entity.owner && (
+                  <div className="flex flex-col gap-2">
+                    {hyperstructure && entity.isOwner && isLoading !== Loading.SetPrivate ? (
+                      <Select
+                        onValueChange={(access: keyof typeof Access) => {
+                          setSelectedAccess(access);
+                          setAccess(BigInt(Access[access]));
+                        }}
+                      >
+                        <SelectTrigger className="w-[140px] text-gold h-8 text-sm border border-gold/20">
+                          <SelectValue
+                            placeholder={DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess]}
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="bg-black/90 text-gold">
+                          {Object.keys(Access)
+                            .filter((access) => {
+                              if (!isNaN(Number(access))) return false;
+
+                              if (access === Access[Access.GuildOnly]) {
+                                return playerGuild?.entityId !== undefined && playerGuild.entityId !== 0;
+                              }
+
+                              return access !== hyperstructure!.access;
+                            })
+                            .map((access) => (
+                              <SelectItem key={access} value={access} disabled={!entity.isOwner}>
+                                {separateCamelCase(access)}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="text-gold text-sm">Loading...</div>
+                    )}
+
+                    {account.address === entity.owner && (
+                      <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
+                        edit name
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

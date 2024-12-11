@@ -1,52 +1,62 @@
-import { configManager } from "@/dojo/setup";
 import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Entity, Has, HasValue, defineQuery, getComponentValue, isComponentUpdate, runQuery } from "@dojoengine/recs";
+import {
+  Entity,
+  Has,
+  HasValue,
+  NotValue,
+  defineQuery,
+  getComponentValue,
+  isComponentUpdate,
+  runQuery,
+} from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDojo } from "../context/DojoContext";
-import useUIStore from "../store/useUIStore";
+import useNextBlockTimestamp from "../useNextBlockTimestamp";
 
 export type ArrivalInfo = {
   entityId: ID;
+  recipientEntityId: ID;
   position: Position;
   arrivesAt: bigint;
   isOwner: boolean;
   hasResources: boolean;
   isHome: boolean;
+  // resources: Resource[];
 };
 
 const usePlayerArrivals = () => {
   const {
     account: { account },
     setup: {
-      components: { Position, Owner, EntityOwner, ArrivalTime, Weight, Resource, Structure },
+      components: { Position, Owner, EntityOwner, OwnedResourcesTracker, ArrivalTime, Weight, Resource, Structure },
     },
   } = useDojo();
 
-  const weightLessResources = useMemo(() => {
-    return configManager.getWeightLessResources();
-  }, []);
-
-  // needed to query without playerStructures() from useEntities because of circular dependency
   const playerStructures = useEntityQuery([
     Has(Structure),
     HasValue(Owner, { address: ContractAddress(account.address) }),
   ]);
 
+  const [playerStructurePositions, setPlayerStructurePositions] = useState<(Position & { entityId: ID })[]>([]);
+
   useEffect(() => {
     const positions = playerStructures.map((entityId) => {
       const position = getComponentValue(Position, entityId);
-      return { x: position?.x ?? 0, y: position?.y ?? 0 };
+      return { x: position?.x ?? 0, y: position?.y ?? 0, entityId: position?.entity_id || 0 };
     });
     setPlayerStructurePositions(positions);
   }, [playerStructures, Position]);
 
-  const [playerStructurePositions, setPlayerStructurePositions] = useState<Position[]>([]);
-
   const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
 
-  const queryFragments = [Has(Weight), Has(ArrivalTime)];
+  const queryFragments = [
+    Has(Weight),
+    Has(ArrivalTime),
+    Has(EntityOwner),
+    NotValue(OwnedResourcesTracker, { resource_types: 0n }),
+  ];
 
   const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
     return positions.flatMap((position) => {
@@ -56,29 +66,33 @@ const usePlayerArrivals = () => {
 
   const createArrivalInfo = useCallback(
     (id: Entity): ArrivalInfo | undefined => {
-      const arrivalTime = getComponentValue(ArrivalTime, id);
-      const entityOwner = getComponentValue(EntityOwner, id);
-      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
       const position = getComponentValue(Position, id);
+      if (!position) return undefined;
 
-      const hasWeightlessResources = weightLessResources.some(
-        (resourceId) =>
-          (getComponentValue(Resource, getEntityIdFromKeys([BigInt(position!.entity_id), BigInt(resourceId)]))
-            ?.balance ?? 0n) > 0n,
-      );
+      const arrivalTime = getComponentValue(ArrivalTime, id);
+      if (!arrivalTime) return undefined;
 
-      const hasResources = hasWeightlessResources || getComponentValue(Weight, id)?.value !== 0n || false;
+      const entityOwner = getComponentValue(EntityOwner, id);
+      const ownerEntityId = getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]);
+      const owner = getComponentValue(Owner, ownerEntityId);
 
-      const isHome = playerStructurePositions.some(
-        (structurePosition) => structurePosition.x === position?.x && structurePosition.y === position?.y,
-      );
-
-      if (!arrivalTime || !position || owner?.address !== ContractAddress(account.address)) {
+      if (owner?.address !== ContractAddress(account.address)) {
         return undefined;
       }
 
+      const ownedResourceTracker = getComponentValue(OwnedResourcesTracker, id);
+
+      const hasResources = ownedResourceTracker?.resource_types !== 0n;
+
+      const playerStructurePosition = playerStructurePositions.find(
+        (structurePosition) => structurePosition.x === position.x && structurePosition.y === position.y,
+      );
+
+      const isHome = !!playerStructurePosition;
+
       return {
         entityId: position.entity_id,
+        recipientEntityId: playerStructurePosition?.entityId || 0,
         arrivesAt: arrivalTime.arrives_at,
         isOwner: true,
         position: { x: position.x, y: position.y },
@@ -93,16 +107,19 @@ const usePlayerArrivals = () => {
   useEffect(() => {
     const arrivals = getArrivalsWithResourceOnPosition(playerStructurePositions)
       .map(createArrivalInfo)
-      .filter((arrival: any): arrival is ArrivalInfo => arrival !== undefined)
+      .filter((arrival): arrival is ArrivalInfo => arrival !== undefined)
       .filter((arrival) => arrival.hasResources);
     setEntitiesWithInventory(arrivals);
   }, [playerStructurePositions, getArrivalsWithResourceOnPosition, createArrivalInfo]);
 
-  const isMine = (entity: Entity) => {
-    const entityOwner = getComponentValue(EntityOwner, entity);
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
-    return owner?.address === ContractAddress(account.address);
-  };
+  const isMine = useCallback(
+    (entity: Entity) => {
+      const entityOwner = getComponentValue(EntityOwner, entity);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
+      return owner?.address === ContractAddress(account.address);
+    },
+    [account.address],
+  );
 
   useEffect(() => {
     const query = defineQuery([Has(Position), ...queryFragments], { runOnInit: false });
@@ -122,8 +139,15 @@ const usePlayerArrivals = () => {
     };
 
     const sub = query.update$.subscribe((update) => {
-      if (isComponentUpdate(update, Position) || isComponentUpdate(update, Weight)) {
+      if (
+        isComponentUpdate(update, Position) ||
+        isComponentUpdate(update, Weight) ||
+        isComponentUpdate(update, EntityOwner) ||
+        isComponentUpdate(update, ArrivalTime) ||
+        isComponentUpdate(update, OwnedResourcesTracker)
+      ) {
         const isThisMine = isMine(update.entity);
+
         isThisMine &&
           setEntitiesWithInventory((arrivals) => handleArrivalUpdate(arrivals, createArrivalInfo(update.entity)));
       }
@@ -132,38 +156,30 @@ const usePlayerArrivals = () => {
     return () => sub.unsubscribe();
   }, [account, playerStructurePositions, createArrivalInfo, isMine]);
 
-  const structurePositions = useMemo(
-    () => new Set(playerStructurePositions.map((position) => `${position.x},${position.y}`)),
-    [playerStructurePositions],
-  );
-
   return useMemo(
     () => entitiesWithInventory.sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
-    [entitiesWithInventory, structurePositions],
+    [entitiesWithInventory],
   );
 };
 
-export const usePlayerArrivalsNotificationLength = () => {
-  const [notificationLength, setNotificationLength] = useState(0);
+export const usePlayerArrivalsNotifications = () => {
+  const [arrivedNotificationLength, setArrivedNotificationLength] = useState(0);
+  const [nonArrivedNotificationLength, setNonArrivedNotificationLength] = useState(0);
 
   const arrivals = usePlayerArrivals();
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   useEffect(() => {
-    const updateNotificationLength = () => {
-      const arrivedCount = arrivals.filter(
-        (arrival) => Number(arrival.arrivesAt) <= (nextBlockTimestamp || 0) && arrival.hasResources,
-      ).length;
-      setNotificationLength(arrivedCount);
-    };
-
-    updateNotificationLength();
-
-    const intervalId = setInterval(updateNotificationLength, 10000);
-
-    return () => clearInterval(intervalId);
+    const arrivedCount = arrivals.filter(
+      (arrival) => Number(arrival.arrivesAt) <= (nextBlockTimestamp || 0) && arrival.hasResources,
+    ).length;
+    const nonArrivedCount = arrivals.filter(
+      (arrival) => Number(arrival.arrivesAt) > (nextBlockTimestamp || 0) && arrival.hasResources,
+    ).length;
+    setArrivedNotificationLength(arrivedCount);
+    setNonArrivedNotificationLength(nonArrivedCount);
   }, [arrivals, nextBlockTimestamp]);
 
-  return { notificationLength, arrivals };
+  return { arrivedNotificationLength, nonArrivedNotificationLength, arrivals };
 };

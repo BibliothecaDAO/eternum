@@ -1,4 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useHyperstructureData } from "@/hooks/store/useLeaderBoardStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { social } from "@/ui/components/navigation/Config";
@@ -6,6 +7,7 @@ import { ExpandableOSWindow } from "@/ui/components/navigation/OSWindow";
 import { GuildMembers } from "@/ui/components/worldmap/guilds/GuildMembers";
 import { Guilds } from "@/ui/components/worldmap/guilds/Guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/PlayersPanel";
+import Button from "@/ui/elements/Button";
 import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
@@ -32,6 +34,8 @@ export const Social = ({ players }: { players: Player[] }) => {
   const isOpen = useUIStore((state) => state.isPopupOpen(social));
 
   const gameEnded = useEntityQuery([Has(GameEnded)]);
+
+  const updateLeaderboard = useHyperstructureData();
 
   const viewGuildMembers = (guildEntityId: ID) => {
     if (selectedGuild === guildEntityId) {
@@ -76,7 +80,7 @@ export const Social = ({ players }: { players: Player[] }) => {
         ),
       },
     ],
-    [selectedTab, isExpanded, selectedGuild, selectedPlayer],
+    [selectedTab, isExpanded, selectedGuild, selectedPlayer, updateLeaderboard],
   );
 
   return (
@@ -106,7 +110,12 @@ export const Social = ({ players }: { players: Player[] }) => {
           ))}
         </Tabs.List>
 
-        {gameEnded.length === 0 && <EndSeasonButton />}
+        <div className="flex justify-center gap-8">
+          {gameEnded.length === 0 && <EndSeasonButton />}
+          <Button variant="secondary" onClick={updateLeaderboard}>
+            Update Points
+          </Button>
+        </div>
 
         <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab) => (
