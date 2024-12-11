@@ -65,7 +65,7 @@ setupConfig.vrf.vrfProviderAddress = VITE_VRF_PROVIDER_ADDRESS!;
   // Season Pass
   (setupConfig.season = {
     ...EternumGlobalConfig.season,
-    // startAfterSeconds: 60 * 60 * 60 * 60, // 60 minutes
+    startAfterSeconds: 60 * 60, // 60 minutes
     // bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 2 hours
     seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
     realmsAddress: process.env.VITE_REALMS_ADDRESS!,
