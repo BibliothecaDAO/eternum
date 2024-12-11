@@ -77,13 +77,6 @@ const setupConfig: Config =
           shardsMinesFailProbability: 10000,
         },
 
-        // bridge close after 2 hours in dev mode
-        season: {
-          ...EternumGlobalConfig.season,
-          startAfterSeconds: 60 * 10, // 10 minutes
-          bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 2 hours
-        },
-
         // bridge fees to multi in dev mode
         bridge: {
           ...EternumGlobalConfig.bridge,
@@ -133,12 +126,16 @@ setupConfig.vrf.vrfProviderAddress = VITE_VRF_PROVIDER_ADDRESS!;
 }),
 
   // Season Pass
-  (setupConfig.season = {
-    ...EternumGlobalConfig.season,
-    seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
-    realmsAddress: process.env.VITE_REALMS_ADDRESS!,
-    lordsAddress: process.env.VITE_LORDS_ADDRESS!,
-  });
+(setupConfig.season = {
+  ...EternumGlobalConfig.season,
+  startAfterSeconds: 60 * 10, // 10 minutes
+  bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 2 hours
+  seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
+  realmsAddress: process.env.VITE_REALMS_ADDRESS!,
+  lordsAddress: process.env.VITE_LORDS_ADDRESS!,
+});
+
+console.log(setupConfig.season)
 
 export const config = new EternumConfig(setupConfig);
 
