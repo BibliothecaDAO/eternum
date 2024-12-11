@@ -23,7 +23,7 @@ import { ContributionSummary } from "./ContributionSummary";
 import { HyperstructureDetails } from "./HyperstructureDetails";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
 
-enum DisplayedAccess {
+export enum DisplayedAccess {
   Public = "Public",
   Private = "Private",
   GuildOnly = "Tribe Only",
@@ -156,11 +156,12 @@ export const HyperstructurePanel = ({ entity }: any) => {
       setNewContributions({});
       setResetContributions(false);
     }
-
   };
 
   const [selectedAccess, setSelectedAccess] = useState<"Public" | "Private" | "GuildOnly">(
-    hyperstructure ? (DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess] as "Public" | "Private" | "GuildOnly") : "Private"
+    hyperstructure
+      ? (DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess] as "Public" | "Private" | "GuildOnly")
+      : "Private",
   );
 
   return (
@@ -207,21 +208,19 @@ export const HyperstructurePanel = ({ entity }: any) => {
               <div className="flex gap-2 justify-between w-full">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col items-center gap-1">
-                    
                     <h4 className="truncate">{entity.name}</h4>
-                    <Button size="xs" onClick={updateLeaderboard}>Reload</Button>
+                    <Button size="xs" onClick={updateLeaderboard}>
+                      Reload
+                    </Button>
                   </div>
-
-
                 </div>
 
                 {account.address === entity.owner && (
                   <div className="flex flex-col gap-2">
-
                     {hyperstructure && entity.isOwner && isLoading !== Loading.SetPrivate ? (
                       <Select
                         onValueChange={(access: keyof typeof Access) => {
-                          setSelectedAccess(access); 
+                          setSelectedAccess(access);
                           setAccess(BigInt(Access[access]));
                         }}
                       >
@@ -248,13 +247,15 @@ export const HyperstructurePanel = ({ entity }: any) => {
                             ))}
                         </SelectContent>
                       </Select>
-                    ) : <div className="text-gold text-sm">Loading...</div>}
+                    ) : (
+                      <div className="text-gold text-sm">Loading...</div>
+                    )}
 
-{account.address === entity.owner && (
-                    <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
-                      edit name
-                    </Button>
-                  )}
+                    {account.address === entity.owner && (
+                      <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
+                        edit name
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
