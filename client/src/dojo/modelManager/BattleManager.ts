@@ -3,7 +3,7 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
+import { BattleSide, EternumGlobalConfig, ID, MIN_TROOPS_BATTLE } from "@bibliothecadao/eternum";
 import {
   ComponentValue,
   Components,
@@ -38,6 +38,7 @@ export enum RaidStatus {
   OwnStructure = "Can't raid your own structure",
   NoArmy = "No army selected",
   ArmyNotInBattle = "Selected army not in this battle",
+  MinTroops = "Minimum 100 troops required",
 }
 
 export enum LeaveStatus {
@@ -48,6 +49,7 @@ export enum LeaveStatus {
 }
 
 export enum BattleStartStatus {
+  MinTroops = "Minimum 100 troops required",
   BattleStart = "Start battle",
   ForceStart = "Force start",
   NothingToAttack = "Nothing to attack",
@@ -312,6 +314,13 @@ export class BattleManager {
 
     if (structure.isMine) return RaidStatus.OwnStructure;
 
+    // Calculate total troops
+    const totalTroops = selectedArmy.troops
+      ? Object.values(selectedArmy.troops).reduce((sum, count) => sum + Number(count), 0)
+      : 0;
+
+    if (totalTroops < MIN_TROOPS_BATTLE) return RaidStatus.MinTroops;
+
     const staminaManager = new StaminaManager(this.dojo.setup, selectedArmy.entity_id);
     if (staminaManager.getStamina(currentArmiesTick).amount === 0) return RaidStatus.NoStamina;
 
@@ -323,6 +332,15 @@ export class BattleManager {
     defender: ArmyInfo | undefined,
     currentTimestamp: number,
   ): BattleStartStatus {
+    if (!selectedArmy) return BattleStartStatus.NothingToAttack;
+
+    // Calculate total troops
+    const totalTroops = selectedArmy.troops
+      ? Object.values(selectedArmy.troops).reduce((sum, count) => sum + Number(count), 0)
+      : 0;
+
+    if (totalTroops < MIN_TROOPS_BATTLE) return BattleStartStatus.MinTroops;
+
     if (!defender) return BattleStartStatus.NothingToAttack;
 
     if (!this.isBattle() && defender.health.current > 0n) return BattleStartStatus.BattleStart;
