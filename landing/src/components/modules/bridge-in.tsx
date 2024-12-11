@@ -314,7 +314,7 @@ const ResourceInputRow = ({
           className="bg-dark-brown text-2xl  outline-none h-10 border-none"
         />
         <div className="flex items-center gap-2 text-xxs absolute right-1 bottom-1">
-          <span className="text-muted-foreground text-xs">{fetchedBalance} </span>
+          <span className="text-muted-foreground hover:text-gold text-xs">{fetchedBalance} </span>
           <Button
             className="uppercase px-1.5 text-xxs rounded-full h-6"
             variant="outline"
