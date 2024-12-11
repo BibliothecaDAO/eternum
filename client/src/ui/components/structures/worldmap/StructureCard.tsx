@@ -36,6 +36,8 @@ export const StructureCard = ({
 }) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
 
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+
   const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const { handleUrlChange } = useQuery();
@@ -51,6 +53,7 @@ export const StructureCard = ({
 
   const goToHexView = () => {
     const url = position.toHexLocationUrl();
+    setPreviewBuilding(null);
     handleUrlChange(url);
   };
 
