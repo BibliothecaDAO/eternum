@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
@@ -10,7 +10,7 @@ import { ResourceChip } from "./ResourceChip";
 export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();
 
-  const tick = useUIStore((state) => state.currentDefaultTick);
+  const { currentDefaultTick: tick } = useNextBlockTimestamp();
 
   const quantity =
     useComponentValue(

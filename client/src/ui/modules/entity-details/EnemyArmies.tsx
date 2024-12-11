@@ -5,6 +5,7 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useIsStructureImmune, useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { Position } from "@/types/Position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import clsx from "clsx";
@@ -23,7 +24,8 @@ export const EnemyArmies = ({
   const { getEntityInfo } = useEntitiesUtils();
   const structureAtPosition = useStructureAtPosition(position.getContract());
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 

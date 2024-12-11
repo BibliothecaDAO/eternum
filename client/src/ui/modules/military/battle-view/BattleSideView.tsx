@@ -4,7 +4,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { Structure } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
+import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import Button from "@/ui/elements/Button";
 import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
@@ -44,7 +44,7 @@ export const BattleSideView = ({
 
   const [confirmLeaveWithAllArmies, setConfirmLeaveWithAllArmies] = useState(false);
 
-  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { nextBlockTimestamp: currentTimestamp } = useNextBlockTimestamp();
 
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
