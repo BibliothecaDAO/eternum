@@ -31,13 +31,13 @@ function formatFee(fee: number) {
 
 export const BridgeOutStep1 = () => {
   const { address } = useAccount();
+  const [realmEntityId, setRealmEntityId] = useState<string>("");
 
   const { getRealmNameById } = useRealm();
   const { computeTravelTime } = useTravel();
   const [isFeesOpen, setIsFeesOpen] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [realmEntityId, setRealmEntityId] = useState<string>("");
   const { bridgeStartWithdrawFromRealm } = useBridgeAsset();
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});

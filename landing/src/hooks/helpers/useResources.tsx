@@ -32,17 +32,18 @@ export function useDonkeyArrivals() {
 
     const arrivals: any[] = [];
     for (const realmEntityId of realmEntityIds) {
-      arrivals.push(
-        ...runQuery([
-          HasValue(Position, { x: bankPosition?.x ?? 0, y: bankPosition?.y ?? 0 }),
-          NotValue(OwnedResourcesTracker, { resource_types: 0n }),
-          Has(OwnedResourcesTracker),
-          Has(Weight),
-          Has(ArrivalTime),
-          HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
-        ]),
-      );
+      const res = runQuery([
+        HasValue(Position, { x: bankPosition?.x ?? 0, y: bankPosition?.y ?? 0 }),
+        NotValue(OwnedResourcesTracker, { resource_types: 0n }),
+        Has(OwnedResourcesTracker),
+        Has(Weight),
+        Has(ArrivalTime),
+        HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+      ]);
+
+      arrivals.push(...res);
     }
+
     return arrivals;
   };
 
