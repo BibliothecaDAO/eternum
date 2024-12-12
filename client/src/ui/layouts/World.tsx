@@ -93,28 +93,28 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   // We could optimise this deeper....
 
-  // const worldLoading = useWorldStore((state) => state.isWorldLoading);
-  // const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
+  //   const worldLoading = useWorldStore((state) => state.isWorldLoading);
+  //   const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
 
-  // const dojo = useDojo();
-  // const structureEntityId = useUIStore((state) => state.structureEntityId);
-  // const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]));
+  //   const dojo = useDojo();
+  //   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  //   const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]));
 
-  // useEffect(() => {
-  //   setWorldLoading(true);
-  //   const fetch = async () => {
-  //     await addToSubscription(
-  //       dojo.setup.network.toriiClient,
-  //       dojo.setup.syncObject as { sync: Subscription; clauses: EntityKeysClause[] },
-  //       dojo.setup.network.contractComponents as any,
-  //       structureEntityId.toString(),
-  //       { x: position?.x || 0, y: position?.y || 0 },
-  //     );
-  //   };
-  //   fetch();
-  //   console.log("world loading", worldLoading);
-  //   setWorldLoading(false);
-  // }, [structureEntityId]);
+  //   useEffect(() => {
+  //     setWorldLoading(true);
+  //     const fetch = async () => {
+  //       await addToSubscription(
+  //         dojo.setup.network.toriiClient,
+  //         dojo.setup.syncObject as { sync: Subscription; clauses: EntityKeysClause[] },
+  //         dojo.setup.network.contractComponents as any,
+  //         structureEntityId.toString(),
+  //         { x: position?.x || 0, y: position?.y || 0 },
+  //       );
+  //     };
+  //     fetch();
+  //     console.log("world loading", worldLoading);
+  //     setWorldLoading(false);
+  //   }, [structureEntityId]);
 
   return (
     <div

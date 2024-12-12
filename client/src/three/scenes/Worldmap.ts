@@ -9,8 +9,7 @@ import { FELT_CENTER, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
-import { getSyncEntities } from "@dojoengine/state";
+import { BiomeType, ID, getNeighborOffsets } from "@bibliothecadao/eternum";
 import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
@@ -510,8 +509,6 @@ export default class WorldmapScene extends HexagonScene {
         const globalRow = startRow + row;
         const globalCol = startCol + col;
 
-
-
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
 
         if (!isExplored) {
@@ -579,8 +576,6 @@ export default class WorldmapScene extends HexagonScene {
     const processBatch = async () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
 
-      
-      
       for (let i = currentIndex; i < endIndex; i++) {
         const row = Math.floor(i / cols) - rows / 2;
         const col = (i % cols) - cols / 2;
@@ -588,7 +583,10 @@ export default class WorldmapScene extends HexagonScene {
         const globalRow = startRow + row;
         const globalCol = startCol + col;
 
-        const hashedTile = torii.poseidonHash([(startCol + col + FELT_CENTER).toString(), (startRow + row + FELT_CENTER).toString()]);
+        const hashedTile = torii.poseidonHash([
+          (startCol + col + FELT_CENTER).toString(),
+          (startRow + row + FELT_CENTER).toString(),
+        ]);
 
         hashedTiles.push(hashedTile);
 
@@ -639,7 +637,6 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
 
-
       currentIndex = endIndex;
       if (currentIndex < rows * cols) {
         requestAnimationFrame(processBatch);
@@ -663,18 +660,15 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async computeTileEntities(hashedTiles: string[]) {
-    if (this.subscription) this.subscription.cancel();
-
-          const sub = await getSyncEntities(this.dojo.network.toriiClient, this.dojo.network.contractComponents as any, undefined, [
-          {
-            HashedKeys: hashedTiles
-          },
-        ]);
-
-        console.log("entities", sub);
-        this.subscription = sub;
+    // if (this.subscription) this.subscription.cancel();
+    //       const sub = await getSyncEntities(this.dojo.network.toriiClient, this.dojo.network.contractComponents as any, undefined, [
+    //       {
+    //         HashedKeys: hashedTiles
+    //       },
+    //     ]);
+    //     console.log("entities", sub);
+    //     this.subscription = sub;
   }
-
 
   private getExploredHexesForCurrentChunk() {
     const chunkKey = this.currentChunk.split(",");

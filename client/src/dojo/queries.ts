@@ -71,19 +71,6 @@ export const addToSubscription = async <S extends Schema>(
 
   await getEntities(client, { ...(entityQueryThreeKey(entityID) as Clause) }, components, 1000, false);
 
-  await getEntities(
-    client,
-    {
-      Keys: {
-        keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
-        pattern_matching: "FixedLen",
-        models: [],
-      },
-    },
-    components,
-    1000,
-    false,
-  );
   const positionClause: EntityKeysClause = {
     Keys: {
       keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
@@ -91,6 +78,8 @@ export const addToSubscription = async <S extends Schema>(
       models: [],
     },
   };
+
+  await getEntities(client, positionClause, components, 1000, false);
 
   const newSubscriptions = [
     { ...entityQueryOneKey(entityID) },
@@ -106,6 +95,7 @@ export const addToSubscription = async <S extends Schema>(
   } catch (error) {
     console.log("error", error);
   }
+  console.log("subscriptions succeeded");
 
   syncObject.clauses = newSubscriptions;
 };
