@@ -81,23 +81,23 @@ export const addToSubscription = async <S extends Schema>(
 
   await getEntities(client, positionClause, components, 1000, false);
 
-  const newSubscriptions = [
-    { ...entityQueryOneKey(entityID) },
-    { ...entityQueryTwoKey(entityID) },
-    { ...entityQueryThreeKey(entityID) },
-    { ...entityQueryFourKey(position?.x || 0, position?.y || 0) },
-    positionClause,
-    ...syncObject.clauses,
-  ];
+  //   const newSubscriptions = [
+  //     { ...entityQueryOneKey(entityID) },
+  //     { ...entityQueryTwoKey(entityID) },
+  //     { ...entityQueryThreeKey(entityID) },
+  //     { ...entityQueryFourKey(position?.x || 0, position?.y || 0) },
+  //     positionClause,
+  //     ...syncObject.clauses,
+  //   ];
 
-  try {
-    await client.updateEntitySubscription(syncObject.sync, newSubscriptions);
-  } catch (error) {
-    console.log("error", error);
-  }
-  console.log("subscriptions succeeded");
+  //   try {
+  //     await client.updateEntitySubscription(syncObject.sync, newSubscriptions);
+  //   } catch (error) {
+  //     console.log("error", error);
+  //   }
+  //   console.log("subscriptions succeeded");
 
-  syncObject.clauses = newSubscriptions;
+  //   syncObject.clauses = newSubscriptions;
 };
 
 const entityQueryOneKey = (entityID: string) => {

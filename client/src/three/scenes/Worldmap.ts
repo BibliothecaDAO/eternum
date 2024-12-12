@@ -10,6 +10,7 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, ID, getNeighborOffsets } from "@bibliothecadao/eternum";
+import { getSyncEntities } from "@dojoengine/state";
 import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
@@ -660,14 +661,19 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async computeTileEntities(hashedTiles: string[]) {
-    // if (this.subscription) this.subscription.cancel();
-    //       const sub = await getSyncEntities(this.dojo.network.toriiClient, this.dojo.network.contractComponents as any, undefined, [
-    //       {
-    //         HashedKeys: hashedTiles
-    //       },
-    //     ]);
-    //     console.log("entities", sub);
-    //     this.subscription = sub;
+    if (this.subscription) this.subscription.cancel();
+    const sub = await getSyncEntities(
+      this.dojo.network.toriiClient,
+      this.dojo.network.contractComponents as any,
+      undefined,
+      [
+        {
+          HashedKeys: hashedTiles,
+        },
+      ],
+    );
+    console.log("entities", sub);
+    this.subscription = sub;
   }
 
   private getExploredHexesForCurrentChunk() {
