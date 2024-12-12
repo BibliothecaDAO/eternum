@@ -102,6 +102,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   const worldLoading = useWorldStore((state) => state.isWorldLoading);
   const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
+  const setMarketLoading = useWorldStore((state) => state.setMarketLoading);
 
   const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -140,13 +141,15 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         setWorldLoading(false);
       }
 
+      console.log("world loading", worldLoading);
+
       try {
         await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
       } catch (error) {
         console.error("Fetch failed", error);
+      } finally {
+        setMarketLoading(false);
       }
-
-      console.log("world loading", worldLoading);
     };
 
     fetch();
