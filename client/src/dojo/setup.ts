@@ -1,6 +1,5 @@
-import { WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getSyncEntities, getSyncEvents } from "@dojoengine/state";
+import { getSyncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
@@ -124,32 +123,67 @@ export async function setup({ ...config }: DojoConfig) {
       Keys: {
         keys: [undefined],
         pattern_matching: "FixedLen",
-        models: [],
+        models: ["s0_eternum-AddressName"],
       },
     },
-    {
-      Keys: {
-        keys: [WORLD_CONFIG_ID.toString(), undefined],
-        pattern_matching: "VariableLen",
-        models: [],
-      },
-    },
-    {
-      Keys: {
-        keys: [WORLD_CONFIG_ID.toString()],
-        pattern_matching: "VariableLen",
-        models: [],
-      },
-    },
+    // {
+    //   Keys: {
+    //     keys: [WORLD_CONFIG_ID.toString(), undefined],
+    //     pattern_matching: "VariableLen",
+    //     models: [],
+    //   },
+    // },
+    // {
+    //   Keys: {
+    //     keys: [WORLD_CONFIG_ID.toString()],
+    //     pattern_matching: "VariableLen",
+    //     models: [],
+    //   },
+    // },
   ];
 
+  network.toriiClient.getEntities({
+    limit: 4000,
+    offset: 0,
+    clause: {
+      Composite: {
+        operator: "Or",
+        clauses: [
+          {
+            Keys: {
+              keys: [undefined],
+              pattern_matching: "FixedLen", 
+              models: ["s0_eternum-AddressName"],
+            },
+          },
+        ],
+      },
+    },
+    dont_include_hashed_keys: false,
+    order_by: []
+  }).then(entities => {
+    console.log(entities);
+  });
   // fetch all existing entities from torii
   const sync = await getSyncEntities(
     network.toriiClient,
     network.contractComponents as any,
-    { Composite: { operator: "Or", clauses: [...clauses] } },
+    {
+      Composite: {
+        operator: "Or",
+        clauses: [
+          {
+            Keys: {
+              keys: [undefined],
+              pattern_matching: "FixedLen",
+              models: ["s0_eternum-AddressName"],
+            },
+          },
+        ],
+      },
+    },
     [],
-    5000,
+    40000,
     true,
   );
 
@@ -158,15 +192,15 @@ export async function setup({ ...config }: DojoConfig) {
     clauses: [...clauses],
   };
 
-  const eventSync = getSyncEvents(
-    network.toriiClient,
-    network.contractComponents.events as any,
-    undefined,
-    [],
-    40_000,
-    false,
-    false,
-  );
+  // const eventSync = getSyncEvents(
+  //   network.toriiClient,
+  //   network.contractComponents.events as any,
+  //   undefined,
+  //   [],
+  //   40_000,
+  //   false,
+  //   false,
+  // );
 
   configManager.setDojo(components);
 
@@ -175,6 +209,7 @@ export async function setup({ ...config }: DojoConfig) {
     components,
     systemCalls,
     syncObject,
-    eventSync,
+    sync
+    // eventSync,
   };
 }

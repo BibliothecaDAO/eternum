@@ -25,6 +25,7 @@ export const getEntities = async <S extends Schema>(
       offset,
       clause,
       dont_include_hashed_keys: false,
+      order_by: [],
     });
 
     console.log("entities", entities);
