@@ -118,6 +118,7 @@ export async function setup({ ...config }: DojoConfig) {
             "s0_eternum-LiquidityEvent",
             "s0_eternum-HyperstructureFinished",
             "s0_eternum-HyperstructureContribution",
+            "s0_eternum-MapExplored",
           ],
         },
       },
