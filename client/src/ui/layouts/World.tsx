@@ -119,16 +119,18 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         );
       } catch (error) {
         console.error("Fetch failed", error);
+      } finally {
+        setWorldLoading(false);
       }
 
-      const currentTime = Date.now();
-      setLastFetchTimestamp((prevEndTime) => {
-        if (prevEndTime === null) return currentTime;
-        if (currentTime - prevEndTime >= 3000) {
-          setWorldLoading(false);
-        }
-        return currentTime;
-      });
+      // const currentTime = Date.now();
+      // setLastFetchTimestamp((prevEndTime) => {
+      //   if (prevEndTime === null) return currentTime;
+      //   if (currentTime - prevEndTime >= 3000) {
+      //     setWorldLoading(false);
+      //   }
+      //   return currentTime;
+      // });
 
       console.log("world loading", worldLoading);
     };
