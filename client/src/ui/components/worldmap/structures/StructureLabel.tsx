@@ -1,5 +1,3 @@
-import { addToSubscription } from "@/dojo/queries";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import {
@@ -37,7 +35,6 @@ export const ImmunityTimer = ({
 };
 
 export const StructureInfoLabel = memo(() => {
-  const { setup } = useDojo();
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
   const { getStructureByEntityId } = useStructures();
@@ -46,25 +43,7 @@ export const StructureInfoLabel = memo(() => {
   const [isLoading, setIsLoading] = useState(false);
 
   const structure = useMemo(() => {
-    if (hoveredStructure) {
-      const structure = getStructureByEntityId(hoveredStructure.entityId);
-
-      const fetch = async () => {
-        setIsLoading(true);
-        await addToSubscription(
-          setup.network.toriiClient,
-          setup.network.contractComponents as any,
-          hoveredStructure.entityId.toString(),
-          { x: 0, y: 0 },
-        );
-        setIsLoading(false);
-      };
-
-      fetch();
-
-      return structure;
-    }
-    return undefined;
+    return getStructureByEntityId(hoveredStructure?.entityId || 0);
   }, [hoveredStructure]);
 
   const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));
@@ -86,21 +65,21 @@ export const StructureInfoLabel = memo(() => {
             <div className="flex flex-col gap-1">
               <Headline className="text-center text-lg">
                 <div>{structure.ownerName}</div>
-              {playerGuild && (
-                <div>
-                  {"< "}
-                  {playerGuild.name}
-                  {" >"}
-                </div>
-              )}
-            </Headline>
-            <StructureListItem
-              structure={structure as Structure}
-              ownArmySelected={undefined}
-              setShowMergeTroopsPopup={() => {}}
-              maxInventory={3}
-            />
-            <ImmunityTimer isImmune={isImmune} timer={timer} />
+                {playerGuild && (
+                  <div>
+                    {"< "}
+                    {playerGuild.name}
+                    {" >"}
+                  </div>
+                )}
+              </Headline>
+              <StructureListItem
+                structure={structure as Structure}
+                ownArmySelected={undefined}
+                setShowMergeTroopsPopup={() => {}}
+                maxInventory={3}
+              />
+              <ImmunityTimer isImmune={isImmune} timer={timer} />
             </div>
           )}
         </BaseThreeTooltip>
