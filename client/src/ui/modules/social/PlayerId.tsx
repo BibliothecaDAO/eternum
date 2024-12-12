@@ -138,10 +138,10 @@ export const PlayerId = ({
           </div>
 
           <div className="text-xs italic">
-            {hasBeenPlayingFor ? `Joined ${hasBeenPlayingFor} ago` : "No player selected"}
+            {hasBeenPlayingFor ? `Joined ${hasBeenPlayingFor} ago` : "Has not settled a realm yet"}
           </div>
 
-          <div className="text-xs">{playerEntityId ? `Player ID: ${playerEntityId}` : "No player selected"}</div>
+          <div className="text-xs">{playerEntityId ? `Player ID: ${playerEntityId}` : ""}</div>
         </div>
       </div>
 
