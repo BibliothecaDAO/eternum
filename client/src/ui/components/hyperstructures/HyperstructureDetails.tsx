@@ -10,15 +10,11 @@ export const HyperstructureDetails = ({ hyperstructureEntityId }: { hyperstructu
   const dojo = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const coOwnersWithTimestamp = useMemo(() => {
-    const latestChangeEvent = LeaderboardManager.instance(dojo).getCurrentCoOwners(hyperstructureEntityId);
-    if (!latestChangeEvent) return undefined;
+  const latestChangeEvent = LeaderboardManager.instance(dojo).getCurrentCoOwners(hyperstructureEntityId);
 
-    const coOwners = latestChangeEvent.coOwners;
-    const timestamp = latestChangeEvent.timestamp;
-
-    return { coOwners, timestamp };
-  }, [hyperstructureEntityId]);
+  const coOwners = latestChangeEvent?.coOwners || [];
+  const timestamp = latestChangeEvent?.timestamp || 0;
+  const coOwnersWithTimestamp = { coOwners, timestamp };
 
   const tabs = useMemo(
     () => [

@@ -9,8 +9,8 @@ import { FELT_CENTER, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
-import { getSyncEntities } from "@dojoengine/state";
+import { BiomeType, ID, getNeighborOffsets } from "@bibliothecadao/eternum";
+import { getEntities } from "@dojoengine/state";
 import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
@@ -510,8 +510,6 @@ export default class WorldmapScene extends HexagonScene {
         const globalRow = startRow + row;
         const globalCol = startCol + col;
 
-
-
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
 
         if (!isExplored) {
@@ -579,8 +577,6 @@ export default class WorldmapScene extends HexagonScene {
     const processBatch = async () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
 
-      
-      
       for (let i = currentIndex; i < endIndex; i++) {
         const row = Math.floor(i / cols) - rows / 2;
         const col = (i % cols) - cols / 2;
@@ -588,9 +584,7 @@ export default class WorldmapScene extends HexagonScene {
         const globalRow = startRow + row;
         const globalCol = startCol + col;
 
-        const hashedTile = torii.poseidonHash([(startCol + col + FELT_CENTER).toString(), (startRow + row + FELT_CENTER).toString()]);
 
-        hashedTiles.push(hashedTile);
 
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
@@ -639,7 +633,6 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
 
-
       currentIndex = endIndex;
       if (currentIndex < rows * cols) {
         requestAnimationFrame(processBatch);
@@ -653,28 +646,75 @@ export default class WorldmapScene extends HexagonScene {
         }
         this.cacheMatricesForChunk(startRow, startCol);
         this.interactiveHexManager.renderHexes();
+
+        await this.computeTileEntities();
       }
     };
 
     Promise.all(this.modelLoadPromises).then(() => {
       requestAnimationFrame(processBatch);
-      this.computeTileEntities(hashedTiles);
     });
   }
 
-  private async computeTileEntities(hashedTiles: string[]) {
-    if (this.subscription) this.subscription.cancel();
+  private async computeTileEntities() {
+    const cameraPosition = new THREE.Vector3();
+    cameraPosition.copy(this.controls.target);
 
-          const sub = await getSyncEntities(this.dojo.network.toriiClient, this.dojo.network.contractComponents as any, undefined, [
-          {
-            HashedKeys: hashedTiles
-          },
-        ]);
+    const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
+    const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;
 
-        console.log("entities", sub);
-        this.subscription = sub;
+    // Parse current chunk coordinates
+    const { chunkX, chunkZ } = this.worldToChunkCoordinates(adjustedX, adjustedZ);
+
+    const startCol = chunkX * this.chunkSize + FELT_CENTER;
+    const startRow = chunkZ * this.chunkSize + FELT_CENTER;
+
+    const range = this.chunkSize + 4;
+
+    const sub = await getEntities(this.dojo.network.toriiClient,       {
+            Composite: {
+              operator: "Or",
+              clauses: [
+                {
+                  Member: {
+                    model: "s0_eternum-Tile",
+                    member: "col",
+                    operator: "Gte",
+                    value: { Primitive: { U32: startCol - range } },
+                  },
+                },
+                {
+                  Member: {
+                    model: "s0_eternum-Tile",
+                    member: "col",
+                    operator: "Lte", 
+                    value: { Primitive: { U32: startCol + range } },
+                  },
+                },
+                {
+                  Member: {
+                    model: "s0_eternum-Tile",
+                    member: "row",
+                    operator: "Gte",
+                    value: { Primitive: { U32: startRow - range } },
+                  },
+                },
+                {
+                  Member: {
+                    model: "s0_eternum-Tile",
+                    member: "row",
+                    operator: "Lte",
+                    value: { Primitive: { U32: startRow + range } },
+                  },
+                },
+              ],
+      },
+    }, this.dojo.network.contractComponents as any, 1000, false);
+
+
+
+    console.log(sub);
   }
-
 
   private getExploredHexesForCurrentChunk() {
     const chunkKey = this.currentChunk.split(",");

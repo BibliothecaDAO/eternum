@@ -61,14 +61,14 @@ echo "Build contracts..."
 sozo build --profile mainnet
 
 echo "Deleting previous indexer and network..."
-# slot deployments delete realms-world-4 torii
+# slot deployments delete eternum-mainnet-2 torii
 # slot deployments delete eternum-40 katana
 
 echo "Migrating world..."
 sozo migrate --profile mainnet --fee eth
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic sepolia-rc-17 torii --version v1.0.5 --world 0x03dc74e8caadbde233bb750a6608e095daba2891d9784ea0fb7fbf9988948c15 --rpc https://api.cartridge.gg/x/starknet/sepolia --indexing.pending true --config ./torii-sepolia.toml
+slot deployments create -t epic eternum-mainnet-5 torii --version preview--91c76d9 --world 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --rpc https://api.cartridge.gg/x/starknet/mainnet --indexing.pending true --config ./torii.toml
 
 echo "Setting up config..."
 
