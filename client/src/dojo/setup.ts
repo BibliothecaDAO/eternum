@@ -122,6 +122,7 @@ export async function setup({ ...config }: DojoConfig) {
   const sync = await getSyncEntities(
     network.toriiClient,
     network.contractComponents as any,
+    
     {
       Composite: {
         operator: "Or",

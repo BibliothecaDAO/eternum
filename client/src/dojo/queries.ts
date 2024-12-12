@@ -80,28 +80,35 @@ export const addToSubscription = async <S extends Schema>(client: ToriiClient, s
         },
     }, components, 1000, false);
 
-    await client.updateEntitySubscription(subscription, [
-        { ...entityQueryOneKey(entityID), Keys: { ...entityQueryOneKey(entityID).Keys, pattern_matching: "FixedLen" } },
-    ]);
+    // await client.updateEntitySubscription(subscription, [
+    //     { ...entityQueryOneKey(entityID), Keys: { ...entityQueryOneKey(entityID).Keys, pattern_matching: "FixedLen" } },
+    // ]);
 
-    await client.updateEntitySubscription(subscription, [
-        { ...entityQueryTwoKey(entityID), Keys: { ...entityQueryTwoKey(entityID).Keys, pattern_matching: "FixedLen" } },
-    ]);
+    // await client.updateEntitySubscription(subscription, [
+    //     { ...entityQueryTwoKey(entityID), Keys: { ...entityQueryTwoKey(entityID).Keys, pattern_matching: "FixedLen" } },
+    // ]);
 
-    await client.updateEntitySubscription(subscription, [
-        { ...entityQueryThreeKey(entityID), Keys: { ...entityQueryThreeKey(entityID).Keys, pattern_matching: "FixedLen" } },
-    ]);
+    // await client.updateEntitySubscription(subscription, [
+    //     { ...entityQueryThreeKey(entityID), Keys: { ...entityQueryThreeKey(entityID).Keys, pattern_matching: "FixedLen" } },
+    // ]);
 
-    await client.updateEntitySubscription(subscription, [
-        {
-            Keys: {
-              keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
-              pattern_matching: 'FixedLen',
-              models: [
-              ],
+    try {
+      await client.updateEntitySubscription(subscription, [
+          { ...entityQueryOneKey(entityID), Keys: { ...entityQueryOneKey(entityID).Keys, pattern_matching: "FixedLen" } },
+          { ...entityQueryTwoKey(entityID), Keys: { ...entityQueryTwoKey(entityID).Keys, pattern_matching: "FixedLen" } },
+          { ...entityQueryThreeKey(entityID), Keys: { ...entityQueryThreeKey(entityID).Keys, pattern_matching: "FixedLen" } },
+          {
+              Keys: {
+                keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
+                pattern_matching: 'FixedLen',
+                models: [
+                ],
+              },
             },
-          },
-    ]); 
+      ]); 
+    } catch (error) {
+      console.error("Error updating entity subscription:", error);
+    }
 }
 
 const entityQueryOneKey = (entityID: string) => {

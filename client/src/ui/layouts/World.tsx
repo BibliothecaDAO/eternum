@@ -108,12 +108,13 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]))
 
   useEffect(() => {
-
-    setWorldLoading(true);
     const fetch = async () => {
       await addToSubscription(dojo.setup.network.toriiClient, dojo.setup.sync, dojo.setup.network.contractComponents as any, structureEntityId.toString(), {x: position?.x || 0, y: position?.y || 0});
     }
+    setWorldLoading(true);
+    console.log("world loading", worldLoading);
     fetch();
+    console.log("world loading", worldLoading);
     setWorldLoading(false);
   }, [structureEntityId]);
 
