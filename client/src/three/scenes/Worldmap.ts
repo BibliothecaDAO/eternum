@@ -667,6 +667,7 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = chunkX * this.chunkSize + FELT_CENTER;
     const startRow = chunkZ * this.chunkSize + FELT_CENTER;
 
+    const range = this.chunkSize + 4;
 
     const sub = await getEntities(this.dojo.network.toriiClient,       {
             Composite: {
@@ -677,7 +678,7 @@ export default class WorldmapScene extends HexagonScene {
                     model: "s0_eternum-Tile",
                     member: "col",
                     operator: "Gte",
-                    value: { Primitive: { U32: startCol - 10 } },
+                    value: { Primitive: { U32: startCol - range } },
                   },
                 },
                 {
@@ -685,7 +686,7 @@ export default class WorldmapScene extends HexagonScene {
                     model: "s0_eternum-Tile",
                     member: "col",
                     operator: "Lte", 
-                    value: { Primitive: { U32: startCol + 10 } },
+                    value: { Primitive: { U32: startCol + range } },
                   },
                 },
                 {
@@ -693,7 +694,7 @@ export default class WorldmapScene extends HexagonScene {
                     model: "s0_eternum-Tile",
                     member: "row",
                     operator: "Gte",
-                    value: { Primitive: { U32: startRow - 10 } },
+                    value: { Primitive: { U32: startRow - range } },
                   },
                 },
                 {
@@ -701,7 +702,7 @@ export default class WorldmapScene extends HexagonScene {
                     model: "s0_eternum-Tile",
                     member: "row",
                     operator: "Lte",
-                    value: { Primitive: { U32: startRow + 10 } },
+                    value: { Primitive: { U32: startRow + range } },
                   },
                 },
               ],
