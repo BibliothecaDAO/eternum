@@ -584,12 +584,7 @@ export default class WorldmapScene extends HexagonScene {
         const globalRow = startRow + row;
         const globalCol = startCol + col;
 
-        const hashedTile = torii.poseidonHash([
-          (startCol + col + FELT_CENTER).toString(),
-          (startRow + row + FELT_CENTER).toString(),
-        ]);
 
-        hashedTiles.push(hashedTile);
 
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
@@ -660,56 +655,56 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async computeTileEntities() {
+    const cameraPosition = new THREE.Vector3();
+    cameraPosition.copy(this.controls.target);
+
+    const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
+    const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;
 
     // Parse current chunk coordinates
-    const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
+    const { chunkX, chunkZ } = this.worldToChunkCoordinates(adjustedX, adjustedZ);
 
-  console.log(chunkRow, chunkCol)
+    const startCol = chunkX * this.chunkSize + FELT_CENTER;
+    const startRow = chunkZ * this.chunkSize + FELT_CENTER;
+
 
     const sub = await getEntities(this.dojo.network.toriiClient,       {
-      Composite: {
-        operator: "And",
-        clauses: [
-          {
             Composite: {
-              operator: "And",
+              operator: "Or",
               clauses: [
                 {
                   Member: {
-                    model: "s0-eternum-Tile",
+                    model: "s0_eternum-Tile",
                     member: "col",
                     operator: "Gte",
-                    value: { Primitive: { U32: chunkCol - 10 } },
+                    value: { Primitive: { U32: startCol - 10 } },
                   },
                 },
                 {
                   Member: {
-                    model: "s0-eternum-Tile",
+                    model: "s0_eternum-Tile",
                     member: "col",
                     operator: "Lte", 
-                    value: { Primitive: { U32: chunkCol + 10 } },
+                    value: { Primitive: { U32: startCol + 10 } },
                   },
                 },
                 {
                   Member: {
-                    model: "s0-eternum-Tile",
+                    model: "s0_eternum-Tile",
                     member: "row",
                     operator: "Gte",
-                    value: { Primitive: { U32: chunkRow - 10 } },
+                    value: { Primitive: { U32: startRow - 10 } },
                   },
                 },
                 {
                   Member: {
-                    model: "s0-eternum-Tile",
+                    model: "s0_eternum-Tile",
                     member: "row",
                     operator: "Lte",
-                    value: { Primitive: { U32: chunkRow + 10 } },
+                    value: { Primitive: { U32: startRow + 10 } },
                   },
                 },
               ],
-            },
-          },
-        ],
       },
     }, this.dojo.network.contractComponents as any, 1000, false);
 
