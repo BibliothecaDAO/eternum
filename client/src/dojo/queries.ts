@@ -62,11 +62,11 @@ export const addToSubscription = async <S extends Schema>(
   entityID: string,
   position?: { x: number; y: number },
 ) => {
-  await getEntities(client, { ...(entityQueryOneKey(entityID) as Clause) }, components, 1000, false);
+  await getEntities(client, { ...(entityQueryOneKey(entityID) as Clause) }, components, 30_000, false);
 
-  await getEntities(client, { ...(entityQueryTwoKey(entityID) as Clause) }, components, 1000, false);
+  await getEntities(client, { ...(entityQueryTwoKey(entityID) as Clause) }, components, 30_000, false);
 
-  await getEntities(client, { ...(entityQueryThreeKey(entityID) as Clause) }, components, 1000, false);
+  await getEntities(client, { ...(entityQueryThreeKey(entityID) as Clause) }, components, 30_000, false);
 
   const positionClause: EntityKeysClause = {
     Keys: {
@@ -76,7 +76,7 @@ export const addToSubscription = async <S extends Schema>(
     },
   };
 
-  await getEntities(client, positionClause, components, 1000, false);
+  await getEntities(client, positionClause, components, 30_000, false);
 
   //   const newSubscriptions = [
   //     { ...entityQueryOneKey(entityID) },
