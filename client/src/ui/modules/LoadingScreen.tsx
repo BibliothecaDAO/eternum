@@ -47,6 +47,7 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
     <OnboardingContainer backgroundImage={backgroundImage} controller={false}>
       <StepContainer tos={false} transition={false} loading={true}>
         <div className="mt-10 relative bottom-1 text-center text-xl">{`${statements[currentStatement]}`}</div>
+        <div className="relative bottom-1 text-center text-xl">{`We are experiencing high loading times. Please be patient.`}</div>
       </StepContainer>
     </OnboardingContainer>
   );

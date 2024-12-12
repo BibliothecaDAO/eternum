@@ -163,7 +163,7 @@ export async function setup({ ...config }: DojoConfig) {
     network.contractComponents.events as any,
     undefined,
     [],
-    20_000,
+    40_000,
     false,
     false,
   );
