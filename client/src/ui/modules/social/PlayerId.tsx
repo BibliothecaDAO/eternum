@@ -68,7 +68,7 @@ export const PlayerId = ({
 
   const { getEntityName } = useEntitiesUtils();
 
-  const { getAddressNameFromEntity } = useEntitiesUtils();
+  const { getAddressName } = useEntitiesUtils();
 
   const playerEntityId = useMemo(() => {
     if (!selectedPlayer) return;
@@ -83,9 +83,7 @@ export const PlayerId = ({
   const playerName = useMemo(() => {
     if (!selectedPlayer) return;
 
-    if (!playerEntityId) return;
-
-    const playerName = getAddressNameFromEntity(playerEntityId);
+    const playerName = getAddressName(selectedPlayer);
     return playerName;
   }, [selectedPlayer, playerEntityId]);
 
