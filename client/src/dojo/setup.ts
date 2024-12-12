@@ -30,13 +30,6 @@ export async function setup({ ...config }: DojoConfig) {
     },
     {
       Keys: {
-        keys: [undefined, undefined],
-        pattern_matching: "FixedLen",
-        models: [`${components.ResourceCost.metadata.namespace}-${components.ResourceCost.metadata.name}`],
-      },
-    },
-    {
-      Keys: {
         keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
         pattern_matching: "FixedLen",
         models: [],
