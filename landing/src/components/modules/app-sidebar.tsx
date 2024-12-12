@@ -57,10 +57,12 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarContent>
-        <div className="flex flex-col items-center">
-          <EternumLogo className="w-24 h-24 fill-gold mx-auto pt-8" />
-          <TypeH2 className="p-3">Eternum</TypeH2>
-        </div>
+        <a href="/">
+          <div className="flex flex-col items-center">
+            <EternumLogo className="w-24 h-24 fill-gold mx-auto pt-8" />
+            <TypeH2 className="p-3">Eternum</TypeH2>
+          </div>
+        </a>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

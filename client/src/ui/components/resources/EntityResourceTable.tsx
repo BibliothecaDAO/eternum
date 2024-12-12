@@ -23,7 +23,6 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
     return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
   }, [quantity, entityId]);
 
-
   if (!entityId || entityId === 0) {
     return <div>No Entity Selected</div>;
   }

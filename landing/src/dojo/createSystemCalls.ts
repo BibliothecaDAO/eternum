@@ -65,7 +65,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(fn: T) => {
     return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
       try {
-        return await fn(...args);
+        const resp = await fn(...args);
+        return resp;
       } catch (error: any) {
         let errorMessage = error.message;
 
@@ -131,15 +132,15 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const bridge_resources_into_realm = async (props: SystemProps.BridgeResourcesIntoRealmProps) => {
-    await provider.bridge_resources_into_realm(props);
+    return await provider.bridge_resources_into_realm(props);
   };
 
   const bridge_start_withdraw_from_realm = async (props: SystemProps.BridgeStartWithdrawFromRealmProps) => {
-    await provider.bridge_start_withdraw_from_realm(props);
+    return await provider.bridge_start_withdraw_from_realm(props);
   };
 
   const bridge_finish_withdraw_from_realm = async (props: SystemProps.BridgeFinishWithdrawFromRealmProps) => {
-    await provider.bridge_finish_withdraw_from_realm(props);
+    return await provider.bridge_finish_withdraw_from_realm(props);
   };
 
   const isLive = async () => {

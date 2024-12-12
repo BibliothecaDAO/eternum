@@ -8,11 +8,11 @@ import {
   BuildingType,
   ContractAddress,
   EternumGlobalConfig,
+  ResourcesIds,
+  TickIds,
   type ID,
   type Position,
   type Resource,
-  ResourcesIds,
-  TickIds,
 } from "@bibliothecadao/eternum";
 import { type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -442,7 +442,6 @@ export const getSeasonAddresses = async () => {
   try {
     const path = getSeasonAddressesPath();
     const data = await getJSONFile(path);
-    console.log({ data });
     return data;
   } catch (error) {
     console.error("Error loading season addresses:", error);

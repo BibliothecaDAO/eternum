@@ -277,6 +277,12 @@ export const useEntitiesUtils = () => {
     }
   };
 
+  const getAddressName = (address: ContractAddress) => {
+    const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
+
+    return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
+  };
+
   const getAddressNameFromEntity = (entityId: ID) => {
     const address = getPlayerAddressFromEntity(entityId);
     if (!address) return;
@@ -293,5 +299,5 @@ export const useEntitiesUtils = () => {
       : undefined;
   };
 
-  return { getEntityName, getEntityInfo, getAddressNameFromEntity, getPlayerAddressFromEntity };
+  return { getEntityName, getEntityInfo, getAddressName, getAddressNameFromEntity, getPlayerAddressFromEntity };
 };

@@ -479,7 +479,6 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   removeCachedMatricesAroundColRow(col: number, row: number) {
-    console.log("removing cache", col, row);
     for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
       for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
         if (i === 0 && j === 0) {
@@ -584,8 +583,6 @@ export default class WorldmapScene extends HexagonScene {
         const globalRow = startRow + row;
         const globalCol = startCol + col;
 
-
-
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
         dummy.position.copy(pos);
@@ -671,47 +668,51 @@ export default class WorldmapScene extends HexagonScene {
 
     const range = this.chunkSize + 4;
 
-    const sub = await getEntities(this.dojo.network.toriiClient,       {
-            Composite: {
-              operator: "Or",
-              clauses: [
-                {
-                  Member: {
-                    model: "s0_eternum-Tile",
-                    member: "col",
-                    operator: "Gte",
-                    value: { Primitive: { U32: startCol - range } },
-                  },
-                },
-                {
-                  Member: {
-                    model: "s0_eternum-Tile",
-                    member: "col",
-                    operator: "Lte", 
-                    value: { Primitive: { U32: startCol + range } },
-                  },
-                },
-                {
-                  Member: {
-                    model: "s0_eternum-Tile",
-                    member: "row",
-                    operator: "Gte",
-                    value: { Primitive: { U32: startRow - range } },
-                  },
-                },
-                {
-                  Member: {
-                    model: "s0_eternum-Tile",
-                    member: "row",
-                    operator: "Lte",
-                    value: { Primitive: { U32: startRow + range } },
-                  },
-                },
-              ],
+    const sub = await getEntities(
+      this.dojo.network.toriiClient,
+      {
+        Composite: {
+          operator: "Or",
+          clauses: [
+            {
+              Member: {
+                model: "s0_eternum-Tile",
+                member: "col",
+                operator: "Gte",
+                value: { Primitive: { U32: startCol - range } },
+              },
+            },
+            {
+              Member: {
+                model: "s0_eternum-Tile",
+                member: "col",
+                operator: "Lte",
+                value: { Primitive: { U32: startCol + range } },
+              },
+            },
+            {
+              Member: {
+                model: "s0_eternum-Tile",
+                member: "row",
+                operator: "Gte",
+                value: { Primitive: { U32: startRow - range } },
+              },
+            },
+            {
+              Member: {
+                model: "s0_eternum-Tile",
+                member: "row",
+                operator: "Lte",
+                value: { Primitive: { U32: startRow + range } },
+              },
+            },
+          ],
+        },
       },
-    }, this.dojo.network.contractComponents as any, 1000, false);
-
-
+      this.dojo.network.contractComponents as any,
+      1000,
+      false,
+    );
 
     console.log(sub);
   }

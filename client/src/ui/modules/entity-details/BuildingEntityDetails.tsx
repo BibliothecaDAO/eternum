@@ -8,7 +8,7 @@ import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { ResourceMiningTypes } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
 import Button from "@/ui/elements/Button";
-import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
+import { ResourceIdToMiningType, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { BuildingType, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -31,6 +31,7 @@ export const BuildingEntityDetails = () => {
   });
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isOwnedByPlayer, setIsOwnedByPlayer] = useState<boolean>(false);
+  const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
 
   const { getEntityInfo } = useEntitiesUtils();
 
@@ -92,6 +93,11 @@ export const BuildingEntityDetails = () => {
   }, [selectedBuildingHex, isPaused]);
 
   const handleDestroyBuilding = useCallback(() => {
+    if (!showDestroyConfirm) {
+      setShowDestroyConfirm(true);
+      return;
+    }
+
     const tileManager = new TileManager(dojo.setup, {
       col: selectedBuildingHex.outerCol,
       row: selectedBuildingHex.outerRow,
@@ -106,8 +112,9 @@ export const BuildingEntityDetails = () => {
     } else {
       playDestroyWooden();
     }
+    setShowDestroyConfirm(false);
     setLeftNavigationView(LeftView.None);
-  }, [selectedBuildingHex, buildingState]);
+  }, [selectedBuildingHex, buildingState, showDestroyConfirm]);
 
   const canDestroyBuilding = useMemo(() => {
     if (buildingState.buildingType !== BuildingType.WorkersHut) return true;
@@ -170,7 +177,7 @@ export const BuildingEntityDetails = () => {
                 variant="danger"
                 withoutSound
               >
-                Destroy
+                {showDestroyConfirm ? "Confirm Destroy" : "Destroy"}
               </Button>
             </div>
           )}

@@ -27,8 +27,10 @@ export interface BridgeStartWithdrawFromRealmProps extends SystemSigner {
 
 export interface BridgeFinishWithdrawFromRealmProps extends SystemSigner {
   through_bank_id: num.BigNumberish;
-  from_entity_id: num.BigNumberish;
-  tokenAddress: num.BigNumberish;
+  donkey_resources: {
+    tokenAddress: num.BigNumberish;
+    from_entity_id: num.BigNumberish;
+  }[];
   recipient_address: num.BigNumberish;
   client_fee_recipient: num.BigNumberish;
 }
