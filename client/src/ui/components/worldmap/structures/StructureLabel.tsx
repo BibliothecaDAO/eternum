@@ -1,3 +1,5 @@
+import { addToSubscription } from "@/dojo/queries";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import {
@@ -35,6 +37,7 @@ export const ImmunityTimer = ({
 };
 
 export const StructureInfoLabel = memo(() => {
+  const { setup } = useDojo();
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
   const { getStructureByEntityId } = useStructures();
@@ -43,6 +46,18 @@ export const StructureInfoLabel = memo(() => {
   const structure = useMemo(() => {
     if (hoveredStructure) {
       const structure = getStructureByEntityId(hoveredStructure.entityId);
+
+      const fetch = async () => {
+          await addToSubscription(
+            setup.network.toriiClient,
+            setup.network.contractComponents as any,
+            hoveredStructure.entityId.toString(),
+            { x: 0, y: 0 },
+          );
+      };
+  
+      fetch();
+
       return structure;
     }
     return undefined;
