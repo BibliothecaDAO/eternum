@@ -70,7 +70,7 @@ export const SelectResources = ({
                 const updatedResourceIds = [...selectedResourceIds];
                 updatedResourceIds[index] = value;
                 setSelectedResourceIds(updatedResourceIds);
-                
+
                 // Remove the old resource amount and set the new one
                 const { [selectedResourceIds[index]]: _, ...remainingAmounts } = selectedResourceAmounts;
                 setSelectedResourceAmounts({
@@ -159,10 +159,10 @@ export const SelectSingleResource = ({
                 onChange={(value) => {
                   const updatedResourceIds = [...selectedResourceIds];
                   console.log(updatedResourceIds);
-                  console.log(index)
+                  console.log(index);
                   updatedResourceIds[index] = value;
                   setSelectedResourceIds(updatedResourceIds);
-                  
+
                   // Remove the old resource amount and set the new one
                   const { [selectedResourceIds[index]]: _, ...remainingAmounts } = selectedResourceAmounts;
                   setSelectedResourceAmounts({

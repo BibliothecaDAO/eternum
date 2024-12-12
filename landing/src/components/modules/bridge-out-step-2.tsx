@@ -51,15 +51,13 @@ export const BridgeOutStep2 = () => {
   const onFinishWithdrawFromBank = async () => {
     if (selectedResourceIds.length) {
       const resourceAddresses = await getSeasonAddresses();
-      const donkeyResources = selectedResourceIds.map((id,index)=>(
-        {
-          tokenAddress: resourceAddresses[ResourcesIds[id].toUpperCase() as keyof typeof resourceAddresses][1],
-          from_entity_id: Array.from(selectedDonkeys)[index]
-        }
-      ))
+      const donkeyResources = selectedResourceIds.map((id, index) => ({
+        tokenAddress: resourceAddresses[ResourcesIds[id].toUpperCase() as keyof typeof resourceAddresses][1],
+        from_entity_id: Array.from(selectedDonkeys)[index],
+      }));
       try {
         setIsLoading(true);
-        const tx = await bridgeFinishWithdrawFromRealm(donkeyResources,ADMIN_BANK_ENTITY_ID);
+        const tx = await bridgeFinishWithdrawFromRealm(donkeyResources, ADMIN_BANK_ENTITY_ID);
         if (tx) {
           setSelectedDonkeys(new Set());
           setSelectedResourceIds([]);
@@ -79,9 +77,7 @@ export const BridgeOutStep2 = () => {
 
   const updateResourcesFromSelectedDonkeys = (selectedDonkeyIds: Set<bigint>) => {
     const allResources = Array.from(selectedDonkeyIds).flatMap(
-      (id) =>
-        donkeyInfos.find((d) => d.donkeyEntityId && BigInt(d.donkeyEntityId) === id)
-          ?.donkeyResources || [],
+      (id) => donkeyInfos.find((d) => d.donkeyEntityId && BigInt(d.donkeyEntityId) === id)?.donkeyResources || [],
     );
 
     setSelectedResourceIds(allResources.map((r) => r.resourceId as never));
@@ -97,7 +93,7 @@ export const BridgeOutStep2 = () => {
   };
   useEffect(() => {
     const newSelected = new Set<bigint>();
-    
+
     donkeyInfos?.forEach((donkey) => {
       if (Number(donkey.donkeyArrivalTime) * 1000 <= Date.now()) {
         newSelected.add(BigInt(donkey.donkeyEntityId || 0));
@@ -122,14 +118,13 @@ export const BridgeOutStep2 = () => {
         </div>
         <Collapsible open={isTableOpen} onOpenChange={setIsTableOpen}>
           <CollapsibleTrigger className="flex w-full items-center justify-between p-2 hover:bg-gold/5 rounded-lg">
-            <div><span className="font-semibold">Select Donkeys</span><span className="text-muted-foreground text-sm ml-2"> (optional)</span></div>
-            {isTableOpen ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
+            <div>
+              <span className="font-semibold">Select Donkeys</span>
+              <span className="text-muted-foreground text-sm ml-2"> (optional)</span>
+            </div>
+            {isTableOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </CollapsibleTrigger>
-          
+
           <CollapsibleContent>
             <div className="flex flex-col min-w-full mt-2">
               <Table>
@@ -150,7 +145,7 @@ export const BridgeOutStep2 = () => {
                               }
                             });
                           }
-                          setSe
+                          setSe;
                           setSelectedDonkeys(newSelected);
                           updateResourcesFromSelectedDonkeys(newSelected);
                         }}
@@ -206,7 +201,9 @@ export const BridgeOutStep2 = () => {
                           ) : (
                             `Arrives in ${Math.floor(
                               (Number(donkey.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60 * 60),
-                            )}h ${Math.floor(((Number(donkey.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60)) % 60)}m`
+                            )}h ${Math.floor(
+                              ((Number(donkey.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60)) % 60,
+                            )}m`
                           )}
                         </TableCell>
                       </TableRow>
