@@ -63,7 +63,7 @@ export const useBridgeAsset = () => {
   );
 
   const _bridgeFinishWithdrawFromRealm = useCallback(
-    async ( donkeyResources: { tokenAddress: string; from_entity_id: bigint }[], throughBankId: bigint) => {
+    async (donkeyResources: { tokenAddress: string; from_entity_id: bigint }[], throughBankId: bigint) => {
       if (account) {
         return await bridge_finish_withdraw_from_realm({
           signer: account,
