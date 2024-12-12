@@ -56,10 +56,10 @@ function ListSelect(props: ListSelectProps) {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <div className="fixed z-50 mt-1 w-min text-xs">
+              <div className="absolute top-[100%] z-50 w-min text-xs">
                 <Listbox.Options
                   className={clsx(
-                    "z-50 mt-3 w-full rounded-md py-1 max-h-72 overflow-scroll z-100 border border-gold/10 no-scrollbar",
+                    "z-50 mt-2 w-full rounded-md py-1 max-h-72 overflow-scroll z-100 border border-gold/10 no-scrollbar",
                     props.style === "black" ? "bg-brown" : " bg-brown",
                   )}
                 >

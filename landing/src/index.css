@@ -107,3 +107,9 @@
   /* border: 2px solid var(--gray-gold, #776756); */
   @apply bg-gold;
 }
+
+@property --border-angle {
+  inherits: false;
+  initial-value: 0deg;
+  syntax: "<angle>";
+}

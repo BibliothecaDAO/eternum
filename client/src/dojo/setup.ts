@@ -1,5 +1,11 @@
+import {
+  BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+  HYPERSTRUCTURE_CONFIG_ID,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getSyncEntities, getSyncEvents } from "@dojoengine/state";
+import { getEntities, getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
+import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
 import { ClientConfigManager } from "./modelManager/ConfigManager";
@@ -14,24 +20,98 @@ export async function setup({ ...config }: DojoConfig) {
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
 
-  // fetch all existing entities from torii
-  const sync = await getSyncEntities(network.toriiClient, network.contractComponents as any, undefined, [], 20_000);
-  const eventSync = getSyncEvents(
+  const configClauses: Clause[] = [
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString(), undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [BUILDING_CATEGORY_POPULATION_CONFIG_ID.toString(), undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [HYPERSTRUCTURE_CONFIG_ID.toString(), undefined],
+        pattern_matching: "VariableLen",
+        models: [],
+      },
+    },
+  ];
+
+  await getEntities(
     network.toriiClient,
-    network.contractComponents.events as any,
-    undefined,
-    [],
+    { Composite: { operator: "Or", clauses: configClauses } },
+    network.contractComponents as any,
     40_000,
-    false,
     false,
   );
 
+  const clauses: Clause[] = [
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+  ];
+
+  // fetch all existing entities from torii
+  await getSyncEntities(
+    network.toriiClient,
+    network.contractComponents as any,
+    { Composite: { operator: "Or", clauses } },
+    [],
+    40_000,
+    false,
+  );
+
+  const sync = await syncEntities(network.toriiClient, network.contractComponents as any, [], false);
+  const syncObject = {
+    sync,
+    clauses: [...clauses],
+  };
+
   configManager.setDojo(components);
+
+  const getFilteredEvents = (eventKeys: (keyof (typeof network.contractComponents)["events"])[]) => {
+    return eventKeys.map((key) => network.contractComponents["events"][key]);
+  };
+
+  const filteredEvents = getFilteredEvents([
+    // "BattleStartData",
+    // "BattleJoinData",
+    // "BattleLeaveData",
+    "BattlePillageData",
+    "GameEnded",
+    "AcceptOrder",
+    "TrophyProgression",
+    "SwapEvent",
+    "LiquidityEvent",
+    "HyperstructureFinished",
+    "HyperstructureContribution",
+  ]) as any;
+
+  const eventSync = getSyncEvents(network.toriiClient, filteredEvents as any, undefined, [], 20_000, false, false);
 
   return {
     network,
     components,
     systemCalls,
+    syncObject,
     sync,
     eventSync,
   };

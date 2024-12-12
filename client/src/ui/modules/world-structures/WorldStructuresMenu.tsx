@@ -16,16 +16,40 @@ import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { BattleSide, ContractAddress, findResourceById, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { currencyFormat, currencyIntlFormat, divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
+import {
+  BattleSide,
+  ContractAddress,
+  HYPERSTRUCTURE_CONFIG_ID,
+  ID,
+  ResourcesIds,
+  findResourceById,
+} from "@bibliothecadao/eternum";
+import { Metadata, getComponentValue } from "@dojoengine/recs";
+import { S } from "@dojoengine/recs/dist/types-3444e4c1";
+import { getEntities } from "@dojoengine/state";
+import { ToriiClient } from "@dojoengine/torii-wasm";
 import { ArrowRight } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { Component, useCallback, useEffect, useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
+  const dojo = useDojo();
   const {
     account: { account },
-  } = useDojo();
+  } = dojo;
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        await fetchHyperstructureData(dojo.network.toriiClient, dojo.network.contractComponents as any);
+      } catch (error) {
+        console.error("Fetch failed", error);
+      }
+    };
+
+    fetch();
+  }, []);
 
   const [selectedTab, setSelectedTab] = useState(0);
   const [showOnlyMine, setShowOnlyMine] = useState(false);
@@ -362,5 +386,51 @@ const EntityHeader = ({ entity }: { entity: any }) => {
       </div>
       <ArrowRight className="w-2 fill-current" />
     </div>
+  );
+};
+
+const fetchHyperstructureData = async (client: ToriiClient, components: Component<S, Metadata, undefined>[]) => {
+  const hyperstructureConfig = getComponentValue(
+    (components as any).HyperstructureResourceConfig,
+    getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, 4n]),
+  );
+
+  if (hyperstructureConfig) {
+    return;
+  }
+
+  await getEntities(
+    client,
+    {
+      Composite: {
+        operator: "Or",
+        clauses: [
+          {
+            Keys: {
+              keys: [undefined, undefined],
+              pattern_matching: "VariableLen",
+              models: ["s0_eternum-Contribution"],
+            },
+          },
+          {
+            Keys: {
+              keys: [undefined, undefined, undefined],
+              pattern_matching: "VariableLen",
+              models: ["s0_eternum-Epoch", "s0_eternum-Progress"],
+            },
+          },
+          {
+            Keys: {
+              keys: [HYPERSTRUCTURE_CONFIG_ID.toString(), undefined],
+              pattern_matching: "VariableLen",
+              models: [],
+            },
+          },
+        ],
+      },
+    },
+    components as any,
+    40_000,
+    false,
   );
 };

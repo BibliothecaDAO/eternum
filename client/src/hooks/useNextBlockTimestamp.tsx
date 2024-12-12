@@ -13,14 +13,19 @@ const useNextBlockTimestamp = () => {
 
     const updateTimestamp = () => {
       const timestamp = Math.floor(Date.now() / 1000);
+
+      const newDefaultTick = Math.floor(timestamp / Number(tickConfigDefault));
+      const newArmiesTick = Math.floor(timestamp / Number(tickConfigArmies));
+
       startTransition(() => {
         setNextBlockTimestamp(timestamp);
-        setCurrentDefaultTick(Math.floor(timestamp / Number(tickConfigDefault)));
-        setCurrentArmiesTick(Math.floor(timestamp / Number(tickConfigArmies)));
+        setCurrentDefaultTick(newDefaultTick);
+        setCurrentArmiesTick(newArmiesTick);
       });
     };
 
-    // Create a unique interval for each hook instance
+    updateTimestamp();
+
     const intervalId = setInterval(updateTimestamp, 10000);
 
     return () => {

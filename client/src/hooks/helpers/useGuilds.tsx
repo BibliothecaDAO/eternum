@@ -56,7 +56,7 @@ const formatGuilds = (
         isMember: guild.entity_id === guildMember?.guild_entity_id,
       };
     })
-    .filter((guild) => guild != null)
+    .filter((guild): guild is NonNullable<typeof guild> => guild !== undefined)
     .sort((a, b) => a.rank - b.rank)
     .map((guild, index) => ({
       ...guild,
@@ -87,6 +87,7 @@ const formatGuildMembers = (
       const addressName = getAddressName(guildMember.address);
 
       const playerIndex = players.findIndex((player) => player.address === guildMember.address);
+      if (playerIndex === -1) return;
 
       let timeSinceJoined = "";
       if (joinGuildEvent) {
@@ -99,13 +100,13 @@ const formatGuildMembers = (
         guildEntityId: guildMember.guild_entity_id,
         age: timeSinceJoined,
         name: addressName ? addressName : "Unknown",
-        rank: players[playerIndex].rank!,
-        points: players[playerIndex].points!,
+        rank: players[playerIndex].rank,
+        points: players[playerIndex].points,
         isUser: guildMember.address === ContractAddress(userAddress),
         isGuildMaster: owner?.address === guildMember.address,
       };
     })
-    .filter((guildMember) => guildMember != null);
+    .filter((guildMember): guildMember is NonNullable<typeof guildMember> => guildMember !== undefined);
 };
 
 const formatGuildWhitelist = (
@@ -128,12 +129,12 @@ const formatGuildWhitelist = (
         guildEntityId: guildWhitelist.guild_entity_id,
         name: addressName ?? "Unknown",
         guildName,
-        rank: players[playerIndex].rank!,
-        points: players[playerIndex].points!,
+        rank: players[playerIndex].rank,
+        points: players[playerIndex].points,
         address: guildWhitelist.address,
       };
     })
-    .filter((guildWhitelist) => guildWhitelist != null);
+    .filter((guildWhitelist): guildWhitelist is NonNullable<typeof guildWhitelist> => guildWhitelist !== undefined);
 };
 
 const formatPlayerWhitelist = (
@@ -152,7 +153,9 @@ const formatPlayerWhitelist = (
         guildName,
       };
     })
-    .filter((addressWhitelist) => addressWhitelist !== undefined);
+    .filter(
+      (addressWhitelist): addressWhitelist is NonNullable<typeof addressWhitelist> => addressWhitelist !== undefined,
+    );
 };
 
 export const useGuilds = () => {
@@ -285,7 +288,7 @@ export const useGuilds = () => {
     ).map((playerEntity) => {
       const player = getComponentValue(AddressName, playerEntity);
 
-      const name = shortString.decodeShortString(player!.name.toString());
+      const name = player ? shortString.decodeShortString(player.name.toString()) : "Unknown";
       const address = toHexString(player?.address || 0n);
 
       return {

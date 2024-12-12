@@ -19,9 +19,13 @@ const {
 // const isLocal = VITE_PUBLIC_CHAIN === "local" || VITE_PUBLIC_CHAIN === "testnet";
 // const manifest = VITE_PUBLIC_DEV === true && isLocal ? devManifest : productionManifest;
 
-let manifest = VITE_PUBLIC_DEV === true ? devManifest : sepoliaManifest;
+const manifestMap = {
+  local: devManifest,
+  mainnet: productionManifest,
+  sepolia: sepoliaManifest,
+} as const;
 
-manifest = VITE_PUBLIC_CHAIN === "mainnet" ? productionManifest : manifest;
+const manifest = manifestMap[VITE_PUBLIC_CHAIN as keyof typeof manifestMap] ?? sepoliaManifest;
 
 export const getManifest = () => {
   return manifest;

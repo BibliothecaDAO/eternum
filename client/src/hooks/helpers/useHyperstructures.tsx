@@ -33,16 +33,18 @@ export const useHyperstructures = () => {
       const hyperstructure = getComponentValue(Hyperstructure, hyperstructureEntityId);
       const structure = getComponentValue(Structure, hyperstructureEntityId);
       const position = getComponentValue(Position, hyperstructureEntityId);
-      const contributions = getContributions(hyperstructure!.entity_id, Contribution);
-      const ownerEntityIds = runQuery([Has(Owner), HasValue(Owner, { entity_id: hyperstructure!.entity_id })])
-        .values()
-        .next().value;
+      const contributions = hyperstructure ? getContributions(hyperstructure?.entity_id, Contribution) : [];
+      const ownerEntityIds = hyperstructure
+        ? runQuery([Has(Owner), HasValue(Owner, { entity_id: hyperstructure.entity_id })])
+            .values()
+            .next().value
+        : undefined;
 
       const ownerComponent = getComponentValue(Owner, ownerEntityIds || ("" as Entity));
       const owner = toHexString(ownerComponent?.address || 0n);
       const isOwner = ContractAddress(ownerComponent?.address ?? 0n) === ContractAddress(account.address);
       const entityName = getComponentValue(EntityName, hyperstructureEntityId);
-      const ownerName = getAddressNameFromEntity(hyperstructure?.entity_id!);
+      const ownerName = hyperstructure ? getAddressNameFromEntity(hyperstructure.entity_id!) : "";
 
       return {
         ...hyperstructure,

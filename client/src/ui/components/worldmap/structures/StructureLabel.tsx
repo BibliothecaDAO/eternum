@@ -41,11 +41,7 @@ export const StructureInfoLabel = memo(() => {
   const { getGuildFromPlayerAddress } = useGuilds();
 
   const structure = useMemo(() => {
-    if (hoveredStructure) {
-      const structure = getStructureByEntityId(hoveredStructure.entityId);
-      return structure;
-    }
-    return undefined;
+    return getStructureByEntityId(hoveredStructure?.entityId || 0);
   }, [hoveredStructure]);
 
   const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));

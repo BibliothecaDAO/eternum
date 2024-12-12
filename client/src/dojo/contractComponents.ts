@@ -1902,26 +1902,6 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
-      CancelOrder: (() => {
-        return defineComponent(
-          world,
-          {
-            taker_id: RecsType.Number,
-            maker_id: RecsType.Number,
-            trade_id: RecsType.Number,
-            timestamp: RecsType.BigInt,
-          },
-          {
-            metadata: {
-              namespace: "s0_eternum",
-              name: "CancelOrder",
-              types: ["u32", "u32", "u32", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
       CreateGuild: (() => {
         return defineComponent(
           world,
@@ -1941,26 +1921,6 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
-      CreateOrder: (() => {
-        return defineComponent(
-          world,
-          {
-            taker_id: RecsType.Number,
-            maker_id: RecsType.Number,
-            trade_id: RecsType.Number,
-            timestamp: RecsType.BigInt,
-          },
-          {
-            metadata: {
-              namespace: "s0_eternum",
-              name: "CreateOrder",
-              types: ["u32", "u32", "u32", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
       GameEnded: (() => {
         return defineComponent(
           world,
@@ -1973,26 +1933,6 @@ const eventsComponents = (world: World) => {
               namespace: "s0_eternum",
               name: "GameEnded",
               types: ["ContractAddress", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      FragmentMineDiscovered: (() => {
-        return defineComponent(
-          world,
-          {
-            entity_owner_id: RecsType.Number,
-            mine_entity_id: RecsType.Number,
-            production_deadline_tick: RecsType.BigInt,
-            discovered_at: RecsType.BigInt,
-          },
-          {
-            metadata: {
-              namespace: "s0_eternum",
-              name: "FragmentMineDiscovered",
-              types: ["u32", "u32", "u64", "u64"],
               customTypes: [],
             },
           },
@@ -2020,45 +1960,6 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
-      HyperstructureCoOwnersChange: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            hyperstructure_entity_id: RecsType.Number,
-            co_owners: RecsType.StringArray,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s0_eternum",
-              name: "HyperstructureCoOwnersChange",
-              types: ["u32", "u32", "array", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      HyperstructureStarted: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            hyperstructure_entity_id: RecsType.Number,
-            creator_address_name: RecsType.BigInt,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s0_eternum",
-              name: "HyperstructureStarted",
-              types: ["u32", "u32", "felt252", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
       HyperstructureFinished: (() => {
         return defineComponent(
           world,
@@ -2282,6 +2183,25 @@ const eventsComponents = (world: World) => {
               namespace: "s0_eternum",
               name: "TrophyProgression",
               types: ["felt252", "felt252", "u32", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+      HyperstructureCoOwnersChange: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            hyperstructure_entity_id: RecsType.Number,
+            co_owners: RecsType.StringArray,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s0_eternum",
+              name: "HyperstructureCoOwnersChange",
+              types: ["u32", "u32", "array", "u64"],
               customTypes: [],
             },
           },

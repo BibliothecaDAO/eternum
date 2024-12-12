@@ -1,5 +1,7 @@
+import { WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getSyncEntities, getSyncEvents } from "@dojoengine/state";
+import { getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
+import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
 import { ClientConfigManager } from "./modelManager/ConfigManager";
@@ -59,13 +61,43 @@ export async function setup({ ...config }: DojoConfig) {
     // count
     "FragmentMineDiscovered",
   ]) as any;
-
+  const clauses: Clause[] = [
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString(), undefined],
+        pattern_matching: "VariableLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString()],
+        pattern_matching: "VariableLen",
+        models: [],
+      },
+    },
+  ];
   // fetch all existing entities from torii with optional component filtering
-  const sync = await getSyncEntities(network.toriiClient, filteredComponents, undefined, [], 10_000);
+  await getSyncEntities(
+    network.toriiClient,
+    filteredComponents,
+    { Composite: { operator: "Or", clauses } },
+    [],
+    10_000,
+  );
 
-  const eventSync = getSyncEvents(network.toriiClient, filteredEvents, undefined, [], 20_000, false, false);
+  const sync = await syncEntities(network.toriiClient, filteredComponents, [], false);
 
   configManager.setDojo(components);
+
+  const eventSync = getSyncEvents(network.toriiClient, filteredEvents, undefined, [], 20_000, false, false);
 
   return {
     network,

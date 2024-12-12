@@ -149,9 +149,11 @@ export const BridgeIn = () => {
         throw new Error("No valid resources selected");
       }
 
-      await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
-      setSelectedResourceIds([]);
-      setSelectedResourceAmounts({});
+      const resp = await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
+      if (resp) {
+        setSelectedResourceIds([]);
+        setSelectedResourceAmounts({});
+      }
     } catch (error) {
       console.error("Bridge into realm error:", error);
       toast.error("Failed to transfer resources");
@@ -180,10 +182,10 @@ export const BridgeIn = () => {
             <div>{displayAddress(address || "")}</div>
           </div>
           <div>
-            <div className="text-xs uppercase mb-1">To Realm</div>
+            <div className="text-xs text-slate-500 uppercase mb-1">To Realm</div>
 
             <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
-              <SelectTrigger className="w-full border-gold/15">
+              <SelectTrigger className="w-full bg-dark-brown [background:linear-gradient(45deg,#1a1311,#1a1311)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box] border border-transparent animate-border">
                 <SelectValue placeholder="Select Realm To Transfer" />
               </SelectTrigger>
               <SelectContent>
@@ -256,9 +258,9 @@ export const BridgeIn = () => {
             setResourceFees={setResourceFees}
             type="deposit"
           />
-          <div className="flex flex-col gap-2 font-bold mt-3">
+          <div className="flex flex-col gap-2 font-bold mt-5">
             <div className="flex justify-between">
-              <div>Total Amount Received</div>
+              <div>Resources Received</div>
             </div>
             {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
               if (amount === 0) return null;
@@ -266,7 +268,8 @@ export const BridgeIn = () => {
               return (
                 <div key={id} className="flex justify-between text-sm font-normal">
                   <div className="flex items-center gap-2">
-                    <ResourceIcon resource={resourceName} size="md" /> {resourceName}
+                    <ResourceIcon resource={resourceName} size="sm" className="md:w-5 md:h-5" withTooltip={false} />{" "}
+                    {resourceName}
                   </div>
                   <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
                 </div>
@@ -281,7 +284,7 @@ export const BridgeIn = () => {
           disabled={
             isLoading ||
             !realmEntityId ||
-            donkeyBalance.balance <= donkeysNeeded ||
+            donkeyBalance.balance < donkeysNeeded ||
             !Object.values(selectedResourceAmounts).some((amount) => amount > 0)
           }
           onClick={() => onBridgeIntoRealm()}
@@ -337,7 +340,7 @@ const ResourceInputRow = ({
         : "0";
 
   return (
-    <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
+    <div key={id} className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
       <div className="relative  w-full">
         <Input
           type="text"
@@ -390,7 +393,7 @@ const ResourceInputRow = ({
             <>
               {res?.id && (
                 <SelectItem
-                  key={res?.id}
+                  key={res.id}
                   disabled={Object.keys(selectedResourceAmounts).includes(res?.id.toString() ?? "")}
                   value={res?.id.toString() ?? ""}
                 >

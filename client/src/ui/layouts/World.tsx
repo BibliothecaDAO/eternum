@@ -1,14 +1,20 @@
 import { Leva } from "leva";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
+import { addToSubscription } from "@/dojo/queries";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
+import { useWorldStore } from "@/hooks/store/useWorldLoading";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
-import { LoadingScreen } from "../modules/LoadingScreen";
 import { LoadingOroborus } from "../modules/loading-oroborus";
+import { LoadingScreen } from "../modules/LoadingScreen";
 // Lazy load components
 
 const SelectedArmy = lazy(() =>
@@ -79,6 +85,7 @@ const MiniMapNavigation = lazy(() =>
 );
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
+  const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
 
@@ -90,6 +97,79 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   // Setup hooks
   useFetchBlockchainData();
   useStructureEntityId();
+
+  // We could optimise this deeper....
+
+  const worldLoading = useWorldStore((state) => state.isWorldLoading);
+  const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
+
+  const dojo = useDojo();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const { playerStructures } = useEntities();
+  const structures = playerStructures();
+
+  const filteredStructures = useMemo(
+    () => structures.filter((structure: PlayerStructure) => !subscriptions[structure.entity_id.toString()]),
+    [structures, subscriptions],
+  );
+
+  const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]));
+
+  useEffect(() => {
+    if (!structureEntityId || subscriptions[structureEntityId.toString()]) return;
+    setWorldLoading(true);
+    setSubscriptions((prev) => ({ ...prev, [structureEntityId.toString()]: true }));
+    const fetch = async () => {
+      try {
+        await addToSubscription(
+          dojo.network.toriiClient,
+          dojo.network.contractComponents as any,
+          structureEntityId.toString(),
+          { x: position?.x || 0, y: position?.y || 0 },
+        );
+      } catch (error) {
+        console.error("Fetch failed", error);
+      } finally {
+        setWorldLoading(false);
+      }
+
+      console.log("world loading", worldLoading);
+    };
+
+    fetch();
+  }, [structureEntityId, subscriptions, setWorldLoading, setSubscriptions]);
+
+  useEffect(() => {
+    if (filteredStructures.length === 0) return;
+    setWorldLoading(true);
+    setSubscriptions((prev) => ({
+      ...prev,
+      ...Object.fromEntries(filteredStructures.map((structure) => [structure.entity_id.toString(), true])),
+    }));
+    const fetch = async () => {
+      try {
+        await Promise.all(
+          filteredStructures.map((structure: PlayerStructure) =>
+            addToSubscription(
+              dojo.network.toriiClient,
+              dojo.network.contractComponents as any,
+              structure.entity_id.toString(),
+              { x: structure.position.x, y: structure.position.y },
+            ),
+          ),
+        );
+      } catch (error) {
+        console.error("Fetch failed", error);
+      } finally {
+        setWorldLoading(false);
+      }
+
+      console.log("world loading", worldLoading);
+    };
+
+    fetch();
+  }, [filteredStructures, setWorldLoading, setSubscriptions]);
 
   return (
     <div

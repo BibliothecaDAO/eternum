@@ -26,9 +26,9 @@ import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
+import { ModalContainer } from "../ModalContainer";
 import { HintModal } from "../hints/HintModal";
 import { TroopDisplay } from "../military/TroopChip";
-import { ModalContainer } from "../ModalContainer";
 
 const MarketResourceSidebar = lazy(() =>
   import("./MarketResourceSideBar").then((module) => ({ default: module.MarketResourceSidebar })),
