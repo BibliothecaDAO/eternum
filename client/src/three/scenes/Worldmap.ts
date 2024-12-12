@@ -651,7 +651,9 @@ export default class WorldmapScene extends HexagonScene {
       }
     };
 
-    requestAnimationFrame(processBatch);
+    Promise.all(this.modelLoadPromises).then(() => {
+      requestAnimationFrame(processBatch);
+    });
   }
 
   private async computeTileEntities() {
