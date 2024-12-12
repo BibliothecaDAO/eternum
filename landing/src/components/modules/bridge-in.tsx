@@ -281,7 +281,7 @@ export const BridgeIn = () => {
           disabled={
             isLoading ||
             !realmEntityId ||
-            donkeyBalance.balance <= donkeysNeeded ||
+            donkeyBalance.balance < donkeysNeeded ||
             !Object.values(selectedResourceAmounts).some((amount) => amount > 0)
           }
           onClick={() => onBridgeIntoRealm()}
