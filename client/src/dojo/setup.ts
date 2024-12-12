@@ -149,7 +149,7 @@ export async function setup({ ...config }: DojoConfig) {
     network.contractComponents as any,
     { Composite: { operator: "Or", clauses: [...clauses] } },
     [],
-    1000,
+    5000,
     true,
   );
 

@@ -4,7 +4,6 @@ import { ReactComponent as Scroll } from "@/assets/icons/Scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/Sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { addToSubscription } from "@/dojo/queries";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
@@ -26,7 +25,7 @@ import { formatTimeDifference } from "@/ui/modules/military/battle-view/BattlePr
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import { ModalContainer } from "../ModalContainer";
 import { HintModal } from "../hints/HintModal";
 import { TroopDisplay } from "../military/TroopChip";
@@ -70,20 +69,6 @@ export const MarketModal = () => {
   const getStructure = useStructureByPosition();
 
   const bankStructure = getStructure(bank?.position || { x: 0, y: 0 });
-
-  useEffect(() => {
-    const fetch = async () => {
-      await addToSubscription(
-        dojo.setup.network.toriiClient,
-        dojo.setup.sync,
-        dojo.setup.network.contractComponents as any,
-        structureEntityId.toString(),
-        { x: 0, y: 0 },
-      );
-    };
-
-    fetch();
-  }, [bankStructure?.entity_id]);
 
   const battle = useMemo(() => {
     if (battles.length === 0) return null;
