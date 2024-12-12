@@ -4,7 +4,7 @@ import {
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getEntities, getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
+import { getEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
@@ -55,11 +55,11 @@ export async function setup({ ...config }: DojoConfig) {
     network.toriiClient,
     { Composite: { operator: "Or", clauses: configClauses } },
     network.contractComponents as any,
-    40_000,
-    false,
   );
 
-  const clauses: Clause[] = [
+  // fetch all existing entities from torii
+  await getEntities(
+    network.toriiClient,
     {
       Keys: {
         keys: [undefined],
@@ -67,51 +67,70 @@ export async function setup({ ...config }: DojoConfig) {
         models: [],
       },
     },
-  ];
-
-  // fetch all existing entities from torii
-  await getSyncEntities(
-    network.toriiClient,
     network.contractComponents as any,
-    { Composite: { operator: "Or", clauses } },
-    [],
     40_000,
     false,
   );
 
   const sync = await syncEntities(network.toriiClient, network.contractComponents as any, [], false);
-  const syncObject = {
-    sync,
-    clauses: [...clauses],
-  };
 
   configManager.setDojo(components);
 
-  const getFilteredEvents = (eventKeys: (keyof (typeof network.contractComponents)["events"])[]) => {
-    return eventKeys.map((key) => network.contractComponents["events"][key]);
-  };
-
-  const filteredEvents = getFilteredEvents([
-    // "BattleStartData",
-    // "BattleJoinData",
-    // "BattleLeaveData",
-    "BattlePillageData",
-    "GameEnded",
-    "AcceptOrder",
-    "TrophyProgression",
-    "SwapEvent",
-    "LiquidityEvent",
-    "HyperstructureFinished",
-    "HyperstructureContribution",
-  ]) as any;
-
-  const eventSync = getSyncEvents(network.toriiClient, filteredEvents as any, undefined, [], 20_000, false, false);
+  const eventSync = getSyncEvents(
+    network.toriiClient,
+    network.contractComponents.events as any,
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "VariableLen",
+        models: [
+          "s0_eternum-GameEnded",
+          "s0_eternum-HyperstructureFinished",
+          "s0_eternum-BattleStartData",
+          "s0_eternum-BattleJoinData",
+          "s0_eternum-BattleLeaveData",
+          "s0_eternum-BattlePillageData",
+          "s0_eternum-GameEnded",
+          "s0_eternum-AcceptOrder",
+          "s0_eternum-SwapEvent",
+          "s0_eternum-LiquidityEvent",
+          "s0_eternum-HyperstructureFinished",
+          "s0_eternum-HyperstructureContribution",
+        ],
+      },
+    },
+    [
+      {
+        Keys: {
+          keys: [undefined],
+          pattern_matching: "VariableLen",
+          models: [
+            "s0_eternum-GameEnded",
+            "s0_eternum-HyperstructureFinished",
+            "s0_eternum-BattleStartData",
+            "s0_eternum-BattleJoinData",
+            "s0_eternum-BattleLeaveData",
+            "s0_eternum-BattlePillageData",
+            "s0_eternum-GameEnded",
+            "s0_eternum-AcceptOrder",
+            "s0_eternum-SwapEvent",
+            "s0_eternum-LiquidityEvent",
+            "s0_eternum-HyperstructureFinished",
+            "s0_eternum-HyperstructureContribution",
+            "s0_eternum-MapExplored",
+          ],
+        },
+      },
+    ],
+    20_000,
+    false,
+    false,
+  );
 
   return {
     network,
     components,
     systemCalls,
-    syncObject,
     sync,
     eventSync,
   };

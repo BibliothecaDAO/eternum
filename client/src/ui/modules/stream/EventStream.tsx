@@ -119,7 +119,7 @@ export const EventStream = () => {
   });
 
   return (
-    <div className="h-full w-full md:justify-start justify-end">
+    <div className="h-full w-full md:justify-start justify-end pointer-events-auto">
       <div className={`flex flex-row text-sm text-center md:justify-start justify-end `}>
         <div className="flex ml-2">
           <div
