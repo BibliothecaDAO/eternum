@@ -1,10 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSyncPlayerRealms } from "@/hooks/helpers/use-sync-entity";
 import { BookOpen } from "lucide-react";
 import { BridgeIn } from "./bridge-in";
 import { BridgeOutStep1 } from "./bridge-out-step-1";
 import { BridgeOutStep2 } from "./bridge-out-step-2";
 
 export const SwapPanel = () => {
+  useSyncPlayerRealms();
   return (
     <div>
       <Tabs defaultValue="in">

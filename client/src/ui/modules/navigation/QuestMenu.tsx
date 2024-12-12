@@ -2,6 +2,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { Prize, QuestStatus, useQuests } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
+import { useWorldStore } from "@/hooks/store/useWorldLoading";
 import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/Button";
@@ -17,6 +18,8 @@ export const QuestsMenu = ({ unclaimedQuestsCount }: { unclaimedQuestsCount: num
       systemCalls: { claim_quest },
     },
   } = useDojo();
+
+  const worldLoading = useWorldStore((state) => state.isWorldLoading);
 
   useStartingTutorial();
 
@@ -75,6 +78,8 @@ export const QuestsMenu = ({ unclaimedQuestsCount }: { unclaimedQuestsCount: num
   };
 
   const handleClaimMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (worldLoading) return;
+
     const rect = e.currentTarget.getBoundingClientRect();
     const tooltipWidth = 300;
 
@@ -97,20 +102,24 @@ export const QuestsMenu = ({ unclaimedQuestsCount }: { unclaimedQuestsCount: num
   };
 
   return (
-    <div className="flex gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12 py-2">
+    <div
+      className={clsx("flex gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12 py-2", {
+        "opacity-50 pointer-events-none": worldLoading,
+      })}
+    >
       <Button
         variant="outline"
         isLoading={isLoading}
         className={clsx("claim-selector text-sm !font-bold capitalize", {
           "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
-            currentQuest?.status === QuestStatus.Completed,
+            currentQuest?.status === QuestStatus.Completed && !worldLoading,
         })}
         onClick={handleClaimQuest}
         onMouseEnter={handleClaimMouseEnter}
-        onMouseLeave={() => setTooltip(null)}
-        disabled={currentQuest?.status !== QuestStatus.Completed}
+        onMouseLeave={() => !worldLoading && setTooltip(null)}
+        disabled={currentQuest?.status !== QuestStatus.Completed || worldLoading}
       >
-        Claim
+        {worldLoading ? "Loading..." : "Claim"}
       </Button>
 
       <div className="h-full flex items-center">
@@ -120,16 +129,21 @@ export const QuestsMenu = ({ unclaimedQuestsCount }: { unclaimedQuestsCount: num
       <Button
         onClick={() => handleStart()}
         variant="outline"
-        disabled={currentQuest?.status === QuestStatus.Completed && currentQuest.id !== QuestType.Settle}
+        disabled={
+          (currentQuest?.status === QuestStatus.Completed && currentQuest.id !== QuestType.Settle) || worldLoading
+        }
         className={clsx("tutorial-selector relative text-sm capitalize", {
           "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
-            currentQuest?.status !== QuestStatus.Completed,
+            currentQuest?.status !== QuestStatus.Completed && !worldLoading,
         })}
       >
-        <span className="font-semibold">{currentQuest?.name}</span>
+        <span className="font-semibold">{worldLoading ? "Loading..." : currentQuest?.name}</span>
         <div
           className={clsx(
-            "absolute animate-bounce rounded-full border border-green/30 bg-green/90 text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold -top-1 -right-1",
+            "absolute rounded-full border border-green/30 bg-green/90 text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold -top-1 -right-1",
+            {
+              "animate-bounce": !worldLoading,
+            },
           )}
         >
           {unclaimedQuestsCount}
@@ -142,19 +156,39 @@ export const QuestsMenu = ({ unclaimedQuestsCount }: { unclaimedQuestsCount: num
 
       {skipQuest ? (
         <div className="flex flex-row gap-4">
-          <Button className="text-sm font-semibold capitalize" onClick={handleClaimAllQuests} variant="red">
-            Skip All Quests
+          <Button
+            className="text-sm font-semibold capitalize"
+            onClick={handleClaimAllQuests}
+            variant="red"
+            disabled={worldLoading}
+          >
+            {worldLoading ? "Loading..." : "Skip All Quests"}
           </Button>
-          <Button className="text-sm font-semibold capitalize" onClick={handleClaimQuest} variant="red">
-            Confirm
+          <Button
+            className="text-sm font-semibold capitalize"
+            onClick={handleClaimQuest}
+            variant="red"
+            disabled={worldLoading}
+          >
+            {worldLoading ? "Loading..." : "Confirm"}
           </Button>
-          <Button variant="primary" className="text-sm font-semibold capitalize" onClick={() => setSkipQuest(false)}>
-            Cancel
+          <Button
+            variant="primary"
+            className="text-sm font-semibold capitalize"
+            onClick={() => setSkipQuest(false)}
+            disabled={worldLoading}
+          >
+            {worldLoading ? "Loading..." : "Cancel"}
           </Button>
         </div>
       ) : (
-        <Button variant="primary" className="text-sm font-semibold capitalize w-6" onClick={() => setSkipQuest(true)}>
-          Skip
+        <Button
+          variant="primary"
+          className="text-sm font-semibold capitalize w-6"
+          onClick={() => setSkipQuest(true)}
+          disabled={worldLoading}
+        >
+          {worldLoading ? "..." : "Skip"}
         </Button>
       )}
     </div>

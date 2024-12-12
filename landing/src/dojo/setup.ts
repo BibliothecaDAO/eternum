@@ -1,6 +1,6 @@
 import { WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
+import { getEvents, getSyncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
@@ -15,16 +15,7 @@ export async function setup({ ...config }: DojoConfig) {
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
 
-  // Helper function to filter components or events for syncing
-  const getFilteredComponents = (componentKeys: (keyof typeof network.contractComponents)[]) => {
-    return componentKeys.map((key) => network.contractComponents[key]);
-  };
-
-  const getFilteredEvents = (eventKeys: (keyof (typeof network.contractComponents)["events"])[]) => {
-    return eventKeys.map((key) => network.contractComponents["events"][key]);
-  };
-
-  const filteredComponents = getFilteredComponents([
+  const filteredModels = [
     "AddressName",
     "Realm",
     "Owner",
@@ -40,27 +31,17 @@ export async function setup({ ...config }: DojoConfig) {
     "GuildMember",
     "EntityName",
     "Structure",
-    // todo: these are needed only for the bridge: how to improve this?
-    "Position",
-    "WeightConfig",
     "CapacityConfig",
-    "EntityOwner",
-    "ArrivalTime",
-    "OwnedResourcesTracker",
-    "Weight",
-    "Resource",
-    "SpeedConfig",
-  ]) as any;
+  ];
 
-  const filteredEvents = getFilteredEvents([
+  const filteredEvents = [
     "BurnDonkey",
     // points
     "HyperstructureCoOwnersChange",
     "HyperstructureFinished",
     "GameEnded",
-    // count
-    "FragmentMineDiscovered",
-  ]) as any;
+  ];
+
   const clauses: Clause[] = [
     {
       Keys: {
@@ -87,17 +68,42 @@ export async function setup({ ...config }: DojoConfig) {
   // fetch all existing entities from torii with optional component filtering
   await getSyncEntities(
     network.toriiClient,
-    filteredComponents,
+    network.contractComponents as any,
     { Composite: { operator: "Or", clauses } },
     [],
     10_000,
   );
 
-  const sync = await syncEntities(network.toriiClient, filteredComponents, [], false);
+  const sync = await getSyncEntities(
+    network.toriiClient,
+    network.contractComponents as any,
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "VariableLen",
+        models: filteredModels.map((model) => `s0_eternum-${model}`),
+      },
+    },
+    [],
+    10_000,
+  );
+
+  const eventSync = getEvents(
+    network.toriiClient,
+    network.contractComponents.events as any,
+    undefined,
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "VariableLen",
+        models: filteredEvents.map((event) => `s0_eternum-${event}`),
+      },
+    },
+    false,
+    false,
+  );
 
   configManager.setDojo(components);
-
-  const eventSync = getSyncEvents(network.toriiClient, filteredEvents, undefined, [], 20_000, false, false);
 
   return {
     network,
