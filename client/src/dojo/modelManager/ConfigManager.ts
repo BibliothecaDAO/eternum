@@ -59,32 +59,42 @@ export class ClientConfigManager {
   }
 
   private initializeResourceInputs() {
-    if (!this.components) return;
+    // if (!this.components) return;
 
-    for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
-      const productionConfig = getComponentValue(
-        this.components.ProductionConfig,
-        getEntityIdFromKeys([BigInt(resourceType)]),
-      );
+    // for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
+    //   const productionConfig = getComponentValue(
+    //     this.components.ProductionConfig,
+    //     getEntityIdFromKeys([BigInt(resourceType)]),
+    //   );
 
-      const inputCount = productionConfig?.input_count ?? 0;
-      const inputs: { resource: ResourcesIds; amount: number }[] = [];
+    //   const inputCount = productionConfig?.input_count ?? 0;
+    //   const inputs: { resource: ResourcesIds; amount: number }[] = [];
 
-      for (let index = 0; index < inputCount; index++) {
-        const productionInput = getComponentValue(
-          this.components.ProductionInput,
-          getEntityIdFromKeys([BigInt(resourceType), BigInt(index)]),
-        );
+    //   for (let index = 0; index < inputCount; index++) {
+    //     const productionInput = getComponentValue(
+    //       this.components.ProductionInput,
+    //       getEntityIdFromKeys([BigInt(resourceType), BigInt(index)]),
+    //     );
 
-        if (productionInput) {
-          const resource = productionInput.input_resource_type;
-          const amount = divideByPrecision(Number(productionInput.input_resource_amount));
-          inputs.push({ resource, amount });
-        }
-      }
+    //     if (productionInput) {
+    //       const resource = productionInput.input_resource_type;
+    //       const amount = divideByPrecision(Number(productionInput.input_resource_amount));
+    //       inputs.push({ resource, amount });
+    //     }
+    //   }
 
-      this.resourceInputs[Number(resourceType)] = inputs;
-    }
+    //   this.resourceInputs[Number(resourceType)] = inputs;
+    // }
+    this.resourceInputs = Object.entries(EternumGlobalConfig.resources.resourceInputs).reduce(
+      (acc, [key, inputs]) => {
+        acc[Number(key)] = inputs.map((input: { resource: number; amount: number }) => ({
+          resource: input.resource,
+          amount: input.amount * this.getResourceMultiplier(),
+        }));
+        return acc;
+      },
+      {} as typeof EternumGlobalConfig.resources.resourceInputs,
+    );
   }
 
   private initializeResourceOutput() {
@@ -125,93 +135,112 @@ export class ClientConfigManager {
   }
 
   private initializeRealmUpgradeCosts() {
-    const realmMaxLevel =
-      getComponentValue(this.components.RealmMaxLevelConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.max_level ?? 0;
+    // const realmMaxLevel =
+    //   getComponentValue(this.components.RealmMaxLevelConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.max_level ?? 0;
 
-    for (let index = 1; index <= realmMaxLevel; index++) {
-      const realmLevelConfig = getComponentValue(
-        this.components.RealmLevelConfig,
-        getEntityIdFromKeys([BigInt(index)]),
-      );
+    // for (let index = 1; index <= realmMaxLevel; index++) {
+    //   const realmLevelConfig = getComponentValue(
+    //     this.components.RealmLevelConfig,
+    //     getEntityIdFromKeys([BigInt(index)]),
+    //   );
 
-      const resourcesCount = realmLevelConfig?.required_resource_count ?? 0;
-      const detachedResourceId = realmLevelConfig?.required_resources_id ?? 0;
+    //   const resourcesCount = realmLevelConfig?.required_resource_count ?? 0;
+    //   const detachedResourceId = realmLevelConfig?.required_resources_id ?? 0;
 
-      const resources: { resource: ResourcesIds; amount: number }[] = [];
+    //   const resources: { resource: ResourcesIds; amount: number }[] = [];
 
-      for (let index = 0; index < resourcesCount; index++) {
-        const resource = getComponentValue(
-          this.components.DetachedResource,
-          getEntityIdFromKeys([BigInt(detachedResourceId), BigInt(index)]),
-        );
-        if (resource) {
-          const resourceId = resource.resource_type;
-          const amount = divideByPrecision(Number(resource.resource_amount));
-          resources.push({ resource: resourceId, amount });
-        }
-      }
-      this.realmUpgradeCosts[index] = resources;
-    }
+    //   for (let index = 0; index < resourcesCount; index++) {
+    //     const resource = getComponentValue(
+    //       this.components.DetachedResource,
+    //       getEntityIdFromKeys([BigInt(detachedResourceId), BigInt(index)]),
+    //     );
+    //     if (resource) {
+    //       const resourceId = resource.resource_type;
+    //       const amount = divideByPrecision(Number(resource.resource_amount));
+    //       resources.push({ resource: resourceId, amount });
+    //     }
+    //   }
+    //   this.realmUpgradeCosts[index] = resources;
+    // }
+    this.realmUpgradeCosts = Object.fromEntries(
+      Object.entries(EternumGlobalConfig.realmUpgradeCosts).map(([key, costs]) => [
+        key,
+        costs.map((cost: any) => ({ ...cost, amount: cost.amount * this.getResourceMultiplier() })),
+      ]),
+    );
   }
 
   private initializeResourceBuildingCosts() {
-    for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
-      const buildingConfig = getComponentValue(
-        this.components.BuildingConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(BuildingType.Resource), BigInt(resourceId)]),
-      );
+    // for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
+    // const buildingConfig = getComponentValue(
+    //   this.components.BuildingConfig,
+    //   getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(BuildingType.Resource), BigInt(resourceId)]),
+    // );
 
-      const resourceCostCount = buildingConfig?.resource_cost_count || 0;
-      const resourceCostId = buildingConfig?.resource_cost_id || 0;
+    // const resourceCostCount = buildingConfig?.resource_cost_count || 0;
+    // const resourceCostId = buildingConfig?.resource_cost_id || 0;
 
-      const resourceCosts: { resource: ResourcesIds; amount: number }[] = [];
-      for (let index = 0; index < resourceCostCount; index++) {
-        const resourceCost = getComponentValue(
-          this.components.ResourceCost,
-          getEntityIdFromKeys([BigInt(resourceCostId), BigInt(index)]),
-        );
-        if (!resourceCost) {
-          continue;
-        }
+    // const resourceCosts: { resource: ResourcesIds; amount: number }[] = [];
+    // for (let index = 0; index < resourceCostCount; index++) {
+    //   const resourceCost = getComponentValue(
+    //     this.components.ResourceCost,
+    //     getEntityIdFromKeys([BigInt(resourceCostId), BigInt(index)]),
+    //   );
+    //   if (!resourceCost) {
+    //     continue;
+    //   }
 
-        const resourceType = resourceCost.resource_type;
-        const amount = Number(resourceCost.amount) / EternumGlobalConfig.resources.resourcePrecision;
+    //   const resourceType = resourceCost.resource_type;
+    //   const amount = Number(resourceCost.amount) / EternumGlobalConfig.resources.resourcePrecision;
 
-        resourceCosts.push({ resource: resourceType, amount });
-      }
-      this.resourceBuildingCosts[Number(resourceId)] = resourceCosts;
-    }
+    //   resourceCosts.push({ resource: resourceType, amount });
+    // }
+    // this.resourceBuildingCosts[Number(resourceId)] = resourceCosts;
+
+    // }
+    this.resourceBuildingCosts = Object.fromEntries(
+      Object.entries(EternumGlobalConfig.resources.resourceBuildingCosts).map(([key, costs]) => [
+        key,
+        costs.map((cost: any) => ({ ...cost, amount: cost.amount * this.getResourceMultiplier() })),
+      ]),
+    );
   }
 
   private initializeBuildingCosts() {
-    for (const buildingType of Object.values(BuildingType).filter(Number.isInteger)) {
-      const resourceType = this.getResourceBuildingProduced(Number(buildingType));
+    // for (const buildingType of Object.values(BuildingType).filter(Number.isInteger)) {
+    //   const resourceType = this.getResourceBuildingProduced(Number(buildingType));
 
-      const buildingConfig = getComponentValue(
-        this.components.BuildingConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(buildingType), BigInt(resourceType)]),
-      );
+    //   const buildingConfig = getComponentValue(
+    //     this.components.BuildingConfig,
+    //     getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(buildingType), BigInt(resourceType)]),
+    //   );
 
-      const resourceCostCount = buildingConfig?.resource_cost_count || 0;
-      const resourceCostId = buildingConfig?.resource_cost_id || 0;
+    //   const resourceCostCount = buildingConfig?.resource_cost_count || 0;
+    //   const resourceCostId = buildingConfig?.resource_cost_id || 0;
 
-      const resourceCosts: { resource: ResourcesIds; amount: number }[] = [];
-      for (let index = 0; index < resourceCostCount; index++) {
-        const resourceCost = getComponentValue(
-          this.components.ResourceCost,
-          getEntityIdFromKeys([BigInt(resourceCostId), BigInt(index)]),
-        );
-        if (!resourceCost) {
-          continue;
-        }
+    //   const resourceCosts: { resource: ResourcesIds; amount: number }[] = [];
+    //   for (let index = 0; index < resourceCostCount; index++) {
+    //     const resourceCost = getComponentValue(
+    //       this.components.ResourceCost,
+    //       getEntityIdFromKeys([BigInt(resourceCostId), BigInt(index)]),
+    //     );
+    //     if (!resourceCost) {
+    //       continue;
+    //     }
 
-        const resourceType = resourceCost.resource_type;
-        const amount = Number(resourceCost.amount) / this.getResourcePrecision();
+    //     const resourceType = resourceCost.resource_type;
+    //     const amount = Number(resourceCost.amount) / this.getResourcePrecision();
 
-        resourceCosts.push({ resource: resourceType, amount });
-      }
-      this.buildingCosts[Number(buildingType)] = resourceCosts;
-    }
+    //     resourceCosts.push({ resource: resourceType, amount });
+    //   }
+    //   this.buildingCosts[Number(buildingType)] = resourceCosts;
+    // }
+    this.buildingCosts = Object.fromEntries(
+      Object.entries(EternumGlobalConfig.buildings.buildingCosts).map(([key, costs]) => [
+        key,
+        costs.map((cost: any) => ({ ...cost, amount: cost.amount * this.getResourceMultiplier() })),
+      ]),
+    );
   }
 
   private initializeStructureCosts() {
