@@ -89,7 +89,7 @@ export class ClientConfigManager {
       (acc, [key, inputs]) => {
         acc[Number(key)] = inputs.map((input: { resource: number; amount: number }) => ({
           resource: input.resource,
-          amount: input.amount * 1000,
+          amount: input.amount * this.getResourceMultiplier(),
         }));
         return acc;
       },
