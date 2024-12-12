@@ -1,14 +1,19 @@
 import { Leva } from "leva";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
+import { addToSubscription } from "@/dojo/queries";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
+import { useWorldStore } from "@/hooks/store/useWorldLoading";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
-import { LoadingScreen } from "../modules/LoadingScreen";
 import { LoadingOroborus } from "../modules/loading-oroborus";
+import { LoadingScreen } from "../modules/LoadingScreen";
 // Lazy load components
 
 const SelectedArmy = lazy(() =>
@@ -90,6 +95,48 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   // Setup hooks
   useFetchBlockchainData();
   useStructureEntityId();
+
+  // We could optimise this deeper....
+
+  const worldLoading = useWorldStore((state) => state.isWorldLoading);
+  const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
+
+  const dojo = useDojo();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]));
+
+  const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number>(Date.now());
+
+  useEffect(() => {
+    setWorldLoading(true);
+    const fetch = async () => {
+      try {
+        await addToSubscription(
+          dojo.network.toriiClient,
+          dojo.network.contractComponents as any,
+          structureEntityId.toString(),
+          { x: position?.x || 0, y: position?.y || 0 },
+        );
+      } catch (error) {
+        console.error("Fetch failed", error);
+      } finally {
+        setWorldLoading(false);
+      }
+
+      // const currentTime = Date.now();
+      // setLastFetchTimestamp((prevEndTime) => {
+      //   if (prevEndTime === null) return currentTime;
+      //   if (currentTime - prevEndTime >= 3000) {
+      //     setWorldLoading(false);
+      //   }
+      //   return currentTime;
+      // });
+
+      console.log("world loading", worldLoading);
+    };
+
+    fetch();
+  }, [structureEntityId, setWorldLoading]);
 
   return (
     <div

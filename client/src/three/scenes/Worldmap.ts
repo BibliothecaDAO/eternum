@@ -1,6 +1,3 @@
-import * as THREE from "three";
-import { Raycaster } from "three";
-
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
@@ -12,8 +9,12 @@ import { FELT_CENTER, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
+import { BiomeType, ID, getNeighborOffsets } from "@bibliothecadao/eternum";
+import { getEntities } from "@dojoengine/state";
+import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
+import * as THREE from "three";
+import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
@@ -41,6 +42,8 @@ export default class WorldmapScene extends HexagonScene {
 
   private currentChunk: string = "null";
 
+  private subscription: torii.Subscription | null = null;
+
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
   private battleManager: BattleManager;
@@ -56,6 +59,8 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
+  dojo: SetupResult;
+
   constructor(
     dojoContext: SetupResult,
     raycaster: Raycaster,
@@ -64,6 +69,8 @@ export default class WorldmapScene extends HexagonScene {
     sceneManager: SceneManager,
   ) {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
+
+    this.dojo = dojoContext;
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -565,9 +572,11 @@ export default class WorldmapScene extends HexagonScene {
     const hexPositions: THREE.Vector3[] = [];
     const batchSize = 25; // Adjust batch size as needed
     let currentIndex = 0;
+    let hashedTiles: string[] = [];
 
-    const processBatch = () => {
+    const processBatch = async () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
+
       for (let i = currentIndex; i < endIndex; i++) {
         const row = Math.floor(i / cols) - rows / 2;
         const col = (i % cols) - cols / 2;
@@ -635,12 +644,78 @@ export default class WorldmapScene extends HexagonScene {
         }
         this.cacheMatricesForChunk(startRow, startCol);
         this.interactiveHexManager.renderHexes();
+
+        await this.computeTileEntities();
       }
     };
 
     Promise.all(this.modelLoadPromises).then(() => {
       requestAnimationFrame(processBatch);
     });
+  }
+
+  private async computeTileEntities() {
+    const cameraPosition = new THREE.Vector3();
+    cameraPosition.copy(this.controls.target);
+
+    const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
+    const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;
+
+    // Parse current chunk coordinates
+    const { chunkX, chunkZ } = this.worldToChunkCoordinates(adjustedX, adjustedZ);
+
+    const startCol = chunkX * this.chunkSize + FELT_CENTER;
+    const startRow = chunkZ * this.chunkSize + FELT_CENTER;
+
+    const range = this.chunkSize + 4;
+
+    const sub = await getEntities(
+      this.dojo.network.toriiClient,
+      {
+        Composite: {
+          operator: "Or",
+          clauses: [
+            {
+              Member: {
+                model: "s0_eternum-Tile",
+                member: "col",
+                operator: "Gte",
+                value: { Primitive: { U32: startCol - range } },
+              },
+            },
+            {
+              Member: {
+                model: "s0_eternum-Tile",
+                member: "col",
+                operator: "Lte",
+                value: { Primitive: { U32: startCol + range } },
+              },
+            },
+            {
+              Member: {
+                model: "s0_eternum-Tile",
+                member: "row",
+                operator: "Gte",
+                value: { Primitive: { U32: startRow - range } },
+              },
+            },
+            {
+              Member: {
+                model: "s0_eternum-Tile",
+                member: "row",
+                operator: "Lte",
+                value: { Primitive: { U32: startRow + range } },
+              },
+            },
+          ],
+        },
+      },
+      this.dojo.network.contractComponents as any,
+      1000,
+      false,
+    );
+
+    console.log(sub);
   }
 
   private getExploredHexesForCurrentChunk() {

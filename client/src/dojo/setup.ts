@@ -1,5 +1,11 @@
+import {
+  BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+  HYPERSTRUCTURE_CONFIG_ID,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getSyncEntities, getSyncEvents } from "@dojoengine/state";
+import { getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
+import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
 import { ClientConfigManager } from "./modelManager/ConfigManager";
@@ -14,24 +20,77 @@ export async function setup({ ...config }: DojoConfig) {
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
 
+  const clauses: Clause[] = [
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [BUILDING_CATEGORY_POPULATION_CONFIG_ID.toString(), undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString(), undefined],
+        pattern_matching: "VariableLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString()],
+        pattern_matching: "VariableLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [HYPERSTRUCTURE_CONFIG_ID.toString()],
+        pattern_matching: "VariableLen",
+        models: [],
+      },
+    },
+  ];
+
   // fetch all existing entities from torii
-  const sync = await getSyncEntities(network.toriiClient, network.contractComponents as any, undefined, [], 20_000);
+  await getSyncEntities(
+    network.toriiClient,
+    network.contractComponents as any,
+    { Composite: { operator: "Or", clauses } },
+    [],
+    40_000,
+    false,
+  );
+
+  const sync = await syncEntities(network.toriiClient, network.contractComponents as any, [], false);
+  const syncObject = {
+    sync,
+    clauses: [...clauses],
+  };
+
+  configManager.setDojo(components);
+
   const eventSync = getSyncEvents(
     network.toriiClient,
     network.contractComponents.events as any,
     undefined,
     [],
-    40_000,
+    20_000,
     false,
     false,
   );
-
-  configManager.setDojo(components);
 
   return {
     network,
     components,
     systemCalls,
+    syncObject,
     sync,
     eventSync,
   };

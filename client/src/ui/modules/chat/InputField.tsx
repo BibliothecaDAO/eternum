@@ -58,7 +58,7 @@ export const InputField = ({
 
       const signature: Signature = await account.signMessage(data);
 
-      await toriiClient.publishMessage(JSON.stringify(data), signature as string[], false);
+      await toriiClient.publishMessage(JSON.stringify(data), signature as string[]);
     },
     [inputRef],
   );
