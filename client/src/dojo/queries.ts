@@ -69,32 +69,20 @@ export const addToSubscription = async <S extends Schema>(
   await getEntities(
     client,
     {
-      Composite: {
-        operator: "Or",
-        clauses: [
-          positionClause,
-          {
-            Keys: {
-              keys: [entityID],
-              pattern_matching: "FixedLen",
-              models: [],
-            },
-          },
-          {
-            Keys: {
-              keys: [entityID, undefined],
-              pattern_matching: "FixedLen",
-              models: [],
-            },
-          },
-          {
-            Keys: {
-              keys: [entityID, undefined, undefined],
-              pattern_matching: "FixedLen",
-              models: [],
-            },
-          },
-        ],
+      ...positionClause,
+    },
+    components,
+    10_000,
+    false,
+  );
+
+  await getEntities(
+    client,
+    {
+      Keys: {
+        keys: [entityID],
+        pattern_matching: "VariableLen",
+        models: [],
       },
     },
     components,

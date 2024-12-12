@@ -8,18 +8,18 @@ import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   BuildingType,
   Direction,
-  getDirectionBetweenAdjacentHexes,
-  getNeighborHexes,
   ID,
   Position,
   RealmLevels,
   ResourcesIds,
   StructureType,
+  getDirectionBetweenAdjacentHexes,
+  getNeighborHexes,
 } from "@bibliothecadao/eternum";
-import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
+import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { AccountInterface, CairoOption, CairoOptionVariant } from "starknet";
-import { configManager, SetupResult } from "../setup";
+import { SetupResult, configManager } from "../setup";
 
 export class TileManager {
   private col: number;
