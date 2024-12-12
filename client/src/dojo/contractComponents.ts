@@ -2188,6 +2188,25 @@ const eventsComponents = (world: World) => {
           },
         );
       })(),
+      HyperstructureCoOwnersChange: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            hyperstructure_entity_id: RecsType.Number,
+            co_owners: RecsType.StringArray,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s0_eternum",
+              name: "HyperstructureCoOwnersChange",
+              types: ["u32", "u32", "array", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
     },
   };
 };
