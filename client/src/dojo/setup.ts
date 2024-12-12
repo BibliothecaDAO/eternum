@@ -1,9 +1,10 @@
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+  HYPERSTRUCTURE_CONFIG_ID,
   WORLD_CONFIG_ID
 } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
+import { getEntities, getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
@@ -19,6 +20,39 @@ export async function setup({ ...config }: DojoConfig) {
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
 
+  const configClauses: Clause[] = [
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+        {
+          Keys: {
+            keys: [WORLD_CONFIG_ID.toString(), undefined],
+            pattern_matching: "FixedLen",
+            models: [],
+          },
+        },
+        {
+          Keys: {
+            keys: [BUILDING_CATEGORY_POPULATION_CONFIG_ID.toString(), undefined],
+            pattern_matching: "FixedLen",
+            models: [],
+          },
+        },
+        {
+          Keys: {
+            keys: [HYPERSTRUCTURE_CONFIG_ID.toString(), undefined],
+            pattern_matching: "VariableLen",
+            models: [],
+          },
+        },
+  ];
+
+  await getEntities(network.toriiClient, {Composite: {operator: "Or", clauses: configClauses}}, network.contractComponents as any);
+
   const clauses: Clause[] = [
     {
       Keys: {
@@ -27,29 +61,6 @@ export async function setup({ ...config }: DojoConfig) {
         models: [],
       },
     },
-    {
-      Keys: {
-        keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
-        pattern_matching: "FixedLen",
-        models: [],
-      },
-    },
-    {
-      Keys: {
-        keys: [WORLD_CONFIG_ID.toString(), undefined],
-        pattern_matching: "FixedLen",
-        models: [],
-      },
-    },
-    {
-      Keys: {
-        keys: [BUILDING_CATEGORY_POPULATION_CONFIG_ID.toString(), undefined],
-        pattern_matching: "FixedLen",
-        models: [],
-      },
-    },
-
-
   ];
 
   // fetch all existing entities from torii

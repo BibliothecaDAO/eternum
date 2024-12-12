@@ -20,7 +20,7 @@ export const Route = createLazyFileRoute("/season-passes")({
 
 function SeasonPasses() {
   const { connectors } = useConnect();
-  const { address, account } = useAccount();
+  const { address } = useAccount();
 
   const [isTransferOpen, setIsTransferOpen] = useState(false);
 
