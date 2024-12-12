@@ -4,7 +4,7 @@ import {
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getEntities, getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
+import { getEntities, getEvents, getSyncEntities, syncEntities, syncEvents } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
@@ -55,8 +55,6 @@ export async function setup({ ...config }: DojoConfig) {
     network.toriiClient,
     { Composite: { operator: "Or", clauses: configClauses } },
     network.contractComponents as any,
-    40_000,
-    false,
   );
 
   const clauses: Clause[] = [
@@ -87,25 +85,35 @@ export async function setup({ ...config }: DojoConfig) {
 
   configManager.setDojo(components);
 
-  const getFilteredEvents = (eventKeys: (keyof (typeof network.contractComponents)["events"])[]) => {
-    return eventKeys.map((key) => network.contractComponents["events"][key]);
-  };
+  getEvents(
+    network.toriiClient,
+    network.contractComponents.events as any,
+    20_000,
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "VariableLen",
+        models: [
+          "s0_eternum-GameEnded",
+          "s0_eternum-HyperstructureFinished",
+          "s0_eternum-BattleStartData",
+          "s0_eternum-BattleJoinData",
+          "s0_eternum-BattleLeaveData",
+          "s0_eternum-BattlePillageData",
+          "s0_eternum-GameEnded",
+          "s0_eternum-AcceptOrder",
+          "s0_eternum-SwapEvent",
+          "s0_eternum-LiquidityEvent",
+          "s0_eternum-HyperstructureFinished",
+          "s0_eternum-HyperstructureContribution",
+        ],
+      },
+    },
+    false,
+    false,
+  );
 
-  const filteredEvents = getFilteredEvents([
-    // "BattleStartData",
-    // "BattleJoinData",
-    // "BattleLeaveData",
-    "BattlePillageData",
-    "GameEnded",
-    "AcceptOrder",
-    "TrophyProgression",
-    "SwapEvent",
-    "LiquidityEvent",
-    "HyperstructureFinished",
-    "HyperstructureContribution",
-  ]) as any;
-
-  const eventSync = getSyncEvents(network.toriiClient, filteredEvents as any, undefined, [], 20_000, false, false);
+  const eventSync = syncEvents(network.toriiClient, network.contractComponents.events as any as any, [], false, false);
 
   return {
     network,

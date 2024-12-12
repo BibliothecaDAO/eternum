@@ -9,7 +9,7 @@ import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useWorldStore } from "@/hooks/store/useWorldLoading";
-import { useComponentValue } from "@dojoengine/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
@@ -114,10 +114,16 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     [structures, subscriptions],
   );
 
-  const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]));
-
   useEffect(() => {
-    if (!structureEntityId || subscriptions[structureEntityId.toString()]) return;
+    if (!structureEntityId || subscriptions[structureEntityId.toString()] || structureEntityId === 999999998) {
+      return;
+    }
+
+    const position = getComponentValue(
+      dojo.setup.components.Position,
+      getEntityIdFromKeys([BigInt(structureEntityId)]),
+    );
+
     setWorldLoading(true);
     setSubscriptions((prev) => ({ ...prev, [structureEntityId.toString()]: true }));
     const fetch = async () => {
