@@ -11,7 +11,7 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { StructureListItem } from "./StructureListItem";
 
@@ -40,8 +40,6 @@ export const StructureInfoLabel = memo(() => {
   const { getStructureByEntityId } = useStructures();
   const { getGuildFromPlayerAddress } = useGuilds();
 
-  const [isLoading, setIsLoading] = useState(false);
-
   const structure = useMemo(() => {
     return getStructureByEntityId(hoveredStructure?.entityId || 0);
   }, [hoveredStructure]);
@@ -57,31 +55,25 @@ export const StructureInfoLabel = memo(() => {
     <>
       {structure && isMapView && (
         <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-[350px]`}>
-          {isLoading ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="text-gold">Loading...</div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1">
-              <Headline className="text-center text-lg">
-                <div>{structure.ownerName}</div>
-                {playerGuild && (
-                  <div>
-                    {"< "}
-                    {playerGuild.name}
-                    {" >"}
-                  </div>
-                )}
-              </Headline>
-              <StructureListItem
-                structure={structure as Structure}
-                ownArmySelected={undefined}
-                setShowMergeTroopsPopup={() => {}}
-                maxInventory={3}
-              />
-              <ImmunityTimer isImmune={isImmune} timer={timer} />
-            </div>
-          )}
+          <div className="flex flex-col gap-1">
+            <Headline className="text-center text-lg">
+              <div>{structure.ownerName}</div>
+              {playerGuild && (
+                <div>
+                  {"< "}
+                  {playerGuild.name}
+                  {" >"}
+                </div>
+              )}
+            </Headline>
+            <StructureListItem
+              structure={structure as Structure}
+              ownArmySelected={undefined}
+              setShowMergeTroopsPopup={() => {}}
+              maxInventory={3}
+            />
+            <ImmunityTimer isImmune={isImmune} timer={timer} />
+          </div>
         </BaseThreeTooltip>
       )}
     </>
