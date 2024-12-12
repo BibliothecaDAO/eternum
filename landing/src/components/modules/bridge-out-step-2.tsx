@@ -1,9 +1,12 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useSyncEntity } from "@/hooks/helpers/use-sync-entity";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useDonkeyArrivals } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { displayAddress } from "@/lib/utils";
 import { ADMIN_BANK_ENTITY_ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
 import { useAccount } from "@starknet-react/core";
 import { ChevronDown, ChevronUp, Loader } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -19,8 +22,12 @@ import { BridgeFees } from "./bridge-fees";
 export const BridgeOutStep2 = () => {
   const { address } = useAccount();
 
+  const dojo = useDojo();
+
   const { getOwnerArrivalsAtBank, getDonkeyInfo } = useDonkeyArrivals();
+
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
@@ -41,7 +48,21 @@ export const BridgeOutStep2 = () => {
     return playerRealms.map((realm) => realm!.entity_id);
   }, [playerRealms]);
 
-  const donkeysArrivals = useMemo(() => getOwnerArrivalsAtBank(realmEntityIds as number[]), [realmEntityIds]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const donkeysArrivals = useMemo(
+    () => getOwnerArrivalsAtBank(realmEntityIds as number[]),
+    [realmEntityIds, refreshTrigger],
+  );
+
+  const donkeyArrivalsEntityIds = useMemo(() => {
+    return donkeysArrivals.map((entity) => {
+      const position = getComponentValue(dojo.setup.components.Position, entity);
+      return position?.entity_id;
+    });
+  }, [donkeysArrivals]) as number[];
+
+  useSyncEntity(donkeyArrivalsEntityIds);
+
   const donkeyInfos = useMemo(() => {
     return donkeysArrivals.map((donkey) => getDonkeyInfo(donkey));
   }, [donkeysArrivals]);
@@ -55,6 +76,7 @@ export const BridgeOutStep2 = () => {
         tokenAddress: resourceAddresses[ResourcesIds[id].toUpperCase() as keyof typeof resourceAddresses][1],
         from_entity_id: Array.from(selectedDonkeys)[index],
       }));
+
       try {
         setIsLoading(true);
         const tx = await bridgeFinishWithdrawFromRealm(donkeyResources, ADMIN_BANK_ENTITY_ID);
@@ -104,6 +126,12 @@ export const BridgeOutStep2 = () => {
     updateResourcesFromSelectedDonkeys(newSelected);
   }, [donkeyInfos]);
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setRefreshTrigger((prev) => prev + 1);
+    setTimeout(() => setIsRefreshing(false), 500); // Spin for 500ms
+  };
+
   return (
     <>
       <div className="max-w-md flex flex-col gap-3 max-h-[calc(75vh-100px)] overflow-y-auto p-3">
@@ -122,7 +150,35 @@ export const BridgeOutStep2 = () => {
               <span className="font-semibold">Select Donkeys</span>
               <span className="text-muted-foreground text-sm ml-2"> (optional)</span>
             </div>
-            {isTableOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRefresh();
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={isRefreshing ? "animate-spin" : ""}
+                >
+                  <path d="M21 2v6h-6"></path>
+                  <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                  <path d="M3 22v-6h6"></path>
+                  <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                </svg>
+              </Button>
+              {isTableOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </div>
           </CollapsibleTrigger>
 
           <CollapsibleContent>
@@ -145,7 +201,6 @@ export const BridgeOutStep2 = () => {
                               }
                             });
                           }
-                          setSe;
                           setSelectedDonkeys(newSelected);
                           updateResourcesFromSelectedDonkeys(newSelected);
                         }}
