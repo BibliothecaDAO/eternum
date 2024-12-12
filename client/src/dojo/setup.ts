@@ -1,6 +1,7 @@
 import { WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
 import { getSyncEntities, getSyncEvents } from "@dojoengine/state";
+import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
 import { ClientConfigManager } from "./modelManager/ConfigManager";
@@ -118,43 +119,44 @@ export async function setup({ ...config }: DojoConfig) {
     },
   };
 
+  const clauses: Clause[] = [
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString(), undefined],
+        pattern_matching: "VariableLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString()],
+        pattern_matching: "VariableLen",
+        models: [],
+      },
+    },
+  ];
+
   // fetch all existing entities from torii
   const sync = await getSyncEntities(
     network.toriiClient,
     network.contractComponents as any,
-    
-    {
-      Composite: {
-        operator: "Or",
-        clauses: [
-          {
-            Keys: {
-              keys: [undefined],
-              pattern_matching: "FixedLen",
-              models: [],
-            },
-          },
-          {
-            Keys: {
-              keys: [WORLD_CONFIG_ID.toString(), undefined],
-              pattern_matching: "VariableLen",
-              models: [],
-            },
-          },
-          {
-            Keys: {
-              keys: [WORLD_CONFIG_ID.toString()],
-              pattern_matching: "VariableLen",
-              models: [],
-            },
-          },
-        ],
-      },
-    },
-
+    { Composite: { operator: "Or", clauses: [...clauses] } },
     [],
     1000,
+    true,
   );
+
+  const syncObject = {
+    sync,
+    clauses: [...clauses],
+  };
 
   const eventSync = getSyncEvents(
     network.toriiClient,
@@ -172,7 +174,7 @@ export async function setup({ ...config }: DojoConfig) {
     network,
     components,
     systemCalls,
-    sync,
+    syncObject,
     eventSync,
   };
 }
