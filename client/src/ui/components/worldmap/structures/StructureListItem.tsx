@@ -8,7 +8,7 @@ import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures
 import { Structure, useIsStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
-import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { TroopDisplay } from "../../military/TroopChip";
@@ -187,9 +187,6 @@ export const StructureListItem = ({
               entityId={structure.entity_id}
               className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
               resourcesIconSize="xs"
-              dynamic={
-                structure.category === StructureType[StructureType.FragmentMine] ? [ResourcesIds.AncientFragment] : []
-              }
             />
           </div>
         </div>
