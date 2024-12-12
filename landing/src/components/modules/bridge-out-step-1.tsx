@@ -161,7 +161,7 @@ export const BridgeOutStep1 = () => {
           <div className="flex flex-col min-w-40">
             <div className="text-xs uppercase mb-1 ">From Realm</div>
             <Select onValueChange={(value) => setRealmEntityId(value)}>
-              <SelectTrigger className="w-full border-gold/15">
+              <SelectTrigger className="w-full bg-dark-brown [background:linear-gradient(45deg,#1a1311,#1a1311)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box] border border-transparent animate-border">
                 <SelectValue placeholder="Select Settled Realm" />
               </SelectTrigger>
               <SelectContent>

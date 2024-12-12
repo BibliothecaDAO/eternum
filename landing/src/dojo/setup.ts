@@ -62,7 +62,6 @@ export async function setup({ ...config }: DojoConfig) {
     "FragmentMineDiscovered",
   ]) as any;
   const clauses: Clause[] = [
-
     {
       Keys: {
         keys: [undefined],
@@ -86,14 +85,19 @@ export async function setup({ ...config }: DojoConfig) {
     },
   ];
   // fetch all existing entities from torii with optional component filtering
- await getSyncEntities(network.toriiClient, filteredComponents,     { Composite: { operator: "Or", clauses } } , [], 10_000);
+  await getSyncEntities(
+    network.toriiClient,
+    filteredComponents,
+    { Composite: { operator: "Or", clauses } },
+    [],
+    10_000,
+  );
 
   const sync = await syncEntities(network.toriiClient, filteredComponents, [], false);
 
   configManager.setDojo(components);
 
   const eventSync = getSyncEvents(network.toriiClient, filteredEvents, undefined, [], 20_000, false, false);
-
 
   return {
     network,
