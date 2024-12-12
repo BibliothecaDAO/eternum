@@ -154,6 +154,9 @@ importers:
       '@dojoengine/torii-client':
         specifier: 1.0.1
         version: 1.0.1
+      '@dojoengine/torii-wasm':
+        specifier: 1.0.1
+        version: 1.0.1
       '@dojoengine/utils':
         specifier: 1.0.1
         version: 1.0.1(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.3)(zod@3.23.8)
