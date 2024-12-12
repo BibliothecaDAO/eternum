@@ -124,7 +124,7 @@ export const MarketTradingHistory = () => {
       {filteredTradeEvents
         .sort((a, b) => b.event.eventTime.getTime() - a.event.eventTime.getTime())
         .filter((trade) =>
-          selectedResourceId
+          trade.event.resourceGiven && trade.event.resourceTaken && selectedResourceId
             ? trade.event.resourceGiven.resourceId === selectedResourceId ||
               trade.event.resourceTaken.resourceId === selectedResourceId
             : true,

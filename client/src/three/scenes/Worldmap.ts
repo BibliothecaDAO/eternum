@@ -479,7 +479,6 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   removeCachedMatricesAroundColRow(col: number, row: number) {
-    console.log("removing cache", col, row);
     for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
       for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
         if (i === 0 && j === 0) {
