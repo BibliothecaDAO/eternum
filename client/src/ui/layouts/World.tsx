@@ -1,14 +1,20 @@
 import { Leva } from "leva";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
+import { addToSubscription } from "@/dojo/queries";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
+import { useWorldStore } from "@/hooks/store/useWorldLoading";
+import { useComponentValue } from "@dojoengine/react";
+import { EntityKeysClause, Subscription } from "@dojoengine/torii-client";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
-import { LoadingScreen } from "../modules/LoadingScreen";
 import { LoadingOroborus } from "../modules/loading-oroborus";
+import { LoadingScreen } from "../modules/LoadingScreen";
 // Lazy load components
 
 const SelectedArmy = lazy(() =>
@@ -90,6 +96,31 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   // Setup hooks
   useFetchBlockchainData();
   useStructureEntityId();
+
+  // We could optimise this deeper....
+
+  const worldLoading = useWorldStore((state) => state.isWorldLoading);
+  const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
+
+  const dojo = useDojo();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]));
+
+  useEffect(() => {
+    setWorldLoading(true);
+    const fetch = async () => {
+      await addToSubscription(
+        dojo.setup.network.toriiClient,
+        dojo.setup.syncObject as { sync: Subscription; clauses: EntityKeysClause[] },
+        dojo.setup.network.contractComponents as any,
+        structureEntityId.toString(),
+        { x: position?.x || 0, y: position?.y || 0 },
+      );
+    };
+    fetch();
+    console.log("world loading", worldLoading);
+    setWorldLoading(false);
+  }, [structureEntityId]);
 
   return (
     <div

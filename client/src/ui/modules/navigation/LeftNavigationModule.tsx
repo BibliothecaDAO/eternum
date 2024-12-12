@@ -217,6 +217,10 @@ export const LeftNavigationModule = memo(() => {
     visible: { x: "0%", transition: { duration: 0.5 } },
   };
 
+  
+
+
+
   return (
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">

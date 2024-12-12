@@ -258,6 +258,8 @@ export abstract class HexagonScene {
 
     const { row, col } = this.getHexFromWorldPosition(position);
 
+    console.log("row", row, col);
+
     return { row, col, x: position.x, z: position.z };
   }
 

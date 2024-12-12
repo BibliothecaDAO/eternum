@@ -1,6 +1,3 @@
-import * as THREE from "three";
-import { Raycaster } from "three";
-
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
@@ -13,7 +10,11 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
+import { getSyncEntities } from "@dojoengine/state";
+import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
+import * as THREE from "three";
+import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
@@ -41,6 +42,8 @@ export default class WorldmapScene extends HexagonScene {
 
   private currentChunk: string = "null";
 
+  private subscription: torii.Subscription | null = null;
+
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
   private battleManager: BattleManager;
@@ -56,6 +59,8 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
+  dojo: SetupResult;
+
   constructor(
     dojoContext: SetupResult,
     raycaster: Raycaster,
@@ -64,6 +69,8 @@ export default class WorldmapScene extends HexagonScene {
     sceneManager: SceneManager,
   ) {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
+
+    this.dojo = dojoContext;
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -503,6 +510,8 @@ export default class WorldmapScene extends HexagonScene {
         const globalRow = startRow + row;
         const globalCol = startCol + col;
 
+
+
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
 
         if (!isExplored) {
@@ -565,15 +574,23 @@ export default class WorldmapScene extends HexagonScene {
     const hexPositions: THREE.Vector3[] = [];
     const batchSize = 25; // Adjust batch size as needed
     let currentIndex = 0;
+    let hashedTiles: string[] = [];
 
-    const processBatch = () => {
+    const processBatch = async () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
+
+      
+      
       for (let i = currentIndex; i < endIndex; i++) {
         const row = Math.floor(i / cols) - rows / 2;
         const col = (i % cols) - cols / 2;
 
         const globalRow = startRow + row;
         const globalCol = startCol + col;
+
+        const hashedTile = torii.poseidonHash([(startCol + col + FELT_CENTER).toString(), (startRow + row + FELT_CENTER).toString()]);
+
+        hashedTiles.push(hashedTile);
 
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
@@ -622,6 +639,7 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
 
+
       currentIndex = endIndex;
       if (currentIndex < rows * cols) {
         requestAnimationFrame(processBatch);
@@ -640,8 +658,23 @@ export default class WorldmapScene extends HexagonScene {
 
     Promise.all(this.modelLoadPromises).then(() => {
       requestAnimationFrame(processBatch);
+      this.computeTileEntities(hashedTiles);
     });
   }
+
+  private async computeTileEntities(hashedTiles: string[]) {
+    if (this.subscription) this.subscription.cancel();
+
+          const sub = await getSyncEntities(this.dojo.network.toriiClient, this.dojo.network.contractComponents as any, undefined, [
+          {
+            HashedKeys: hashedTiles
+          },
+        ]);
+
+        console.log("entities", sub);
+        this.subscription = sub;
+  }
+
 
   private getExploredHexesForCurrentChunk() {
     const chunkKey = this.currentChunk.split(",");
