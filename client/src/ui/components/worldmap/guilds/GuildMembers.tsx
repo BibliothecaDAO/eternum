@@ -6,6 +6,7 @@ import TwitterShareButton from "@/ui/elements/TwitterShareButton";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
+import { env } from "../../../../../env";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { GuildInviteList } from "./GuildInvitesList";
 import { GuildMemberList } from "./GuildMemberList";
@@ -91,7 +92,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
       ? formatSocialText(userGuild?.isOwner ? twitterTemplates.createdTribe : twitterTemplates.joinedTribe, {
           tribeName: selectedGuild?.name,
           addressName: playerName,
-          url: window.location.origin,
+          url: env.VITE_SOCIAL_LINK,
         })
       : undefined;
 
