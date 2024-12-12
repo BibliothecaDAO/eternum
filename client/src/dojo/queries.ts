@@ -62,11 +62,14 @@ export const syncEntitiesEternum = async <S extends Schema>(
 
 export const addToSubscription = async <S extends Schema>(client: ToriiClient, subscription: Subscription, components: Component<S, Metadata, undefined>[], entityID: string, position?: {x: number, y: number}) => {
 
+    console.log("position", subscription);
+
     await getEntities(client, { ...entityQueryOneKey(entityID), Keys: { ...entityQueryOneKey(entityID).Keys, pattern_matching: "FixedLen" } }, components, 1000, false);
     
     await getEntities(client, { ...entityQueryTwoKey(entityID), Keys: { ...entityQueryTwoKey(entityID).Keys, pattern_matching: "FixedLen" } }, components, 1000, false);
     
     await getEntities(client, { ...entityQueryThreeKey(entityID), Keys: { ...entityQueryThreeKey(entityID).Keys, pattern_matching: "FixedLen" } }, components, 1000, false);
+
     
     await getEntities(client, {
         Keys: {

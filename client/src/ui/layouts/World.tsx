@@ -1,10 +1,14 @@
 import { Leva } from "leva";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
+import { addToSubscription } from "@/dojo/queries";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
 import { LoadingScreen } from "../modules/LoadingScreen";
@@ -90,6 +94,20 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   // Setup hooks
   useFetchBlockchainData();
   useStructureEntityId();
+
+  const dojo = useDojo();
+
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]))
+
+  useEffect(() => {
+
+    const fetch = async () => {
+      await addToSubscription(dojo.setup.network.toriiClient, dojo.setup.sync, dojo.setup.network.contractComponents as any, structureEntityId.toString(), {x: position?.x || 0, y: position?.y || 0});
+    }
+    fetch();
+  }, [structureEntityId]);
 
   return (
     <div

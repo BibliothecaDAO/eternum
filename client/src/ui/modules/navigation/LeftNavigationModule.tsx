@@ -1,5 +1,3 @@
-import { addToSubscription } from "@/dojo/queries";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { usePlayerArrivalsNotifications } from "@/hooks/helpers/use-resource-arrivals";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -10,8 +8,6 @@ import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
-import { useComponentValue } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/Config";
@@ -224,17 +220,7 @@ export const LeftNavigationModule = memo(() => {
 
   
 
-  const dojo = useDojo();
 
-  const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]))
-  
-  useEffect(() => {
-
-    const fetch = async () => {
-      await addToSubscription(dojo.setup.network.toriiClient, dojo.setup.sync, dojo.setup.network.contractComponents as any, structureEntityId.toString(), {x: position?.x || 0, y: position?.y || 0});
-    }
-    fetch();
-  }, [structureEntityId]);
 
   return (
     <div className="flex flex-col">
