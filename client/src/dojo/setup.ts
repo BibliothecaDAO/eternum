@@ -50,7 +50,7 @@ export async function setup({ ...config }: DojoConfig) {
     false,
   );
 
-  const sync = await syncEntities(network.toriiClient, network.contractComponents as any, []);
+  const sync = await syncEntities(network.toriiClient, network.contractComponents as any, [], false);
   const syncObject = {
     sync,
     clauses: [...clauses],

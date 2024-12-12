@@ -28,10 +28,6 @@ export const getEntities = async <S extends Schema>(
       order_by: [],
     });
 
-    console.log("entities", entities);
-
-    if (logging) console.log(`Fetched ${entities} entities`);
-
     setEntities(entities, components, logging);
 
     if (Object.keys(entities).length < limit) {

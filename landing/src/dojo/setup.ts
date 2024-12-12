@@ -61,7 +61,7 @@ export async function setup({ ...config }: DojoConfig) {
   ]) as any;
 
   // fetch all existing entities from torii with optional component filtering
-  const sync = await getSyncEntities(network.toriiClient, filteredComponents, undefined, [], 10_000);
+  const sync = await getSyncEntities(network.toriiClient, filteredComponents, undefined, [], 10_000, false);
 
   const eventSync = getSyncEvents(network.toriiClient, filteredEvents, undefined, [], 20_000, false, false);
 
