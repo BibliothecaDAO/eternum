@@ -1,12 +1,12 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
+import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { getEntityIdFromKeys, toHexString } from "@/ui/utils/utils";
 import { ContractAddress, Player } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useMemo, useState } from "react";
+import { KeyboardEvent, useMemo, useState } from "react";
 import { PlayerCustom, PlayerList } from "./PlayerList";
 
 export const PlayersPanel = ({
@@ -25,15 +25,12 @@ export const PlayersPanel = ({
   } = useDojo();
 
   const { getGuildFromPlayerAddress } = useGuilds();
-
+  const { getEntityName } = useEntitiesUtils();
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
 
   const [isLoading, setIsLoading] = useState(false);
-
-  const [searchInput, setSearchInput] = useState("");
-
-  const { getEntityName } = useEntitiesUtils();
-  const getPlayers = useGetAllPlayers();
+  const [inputValue, setInputValue] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const playersWithStructures: PlayerCustom[] = useMemo(() => {
     // Sort players by points in descending order
@@ -52,7 +49,7 @@ export const PlayersPanel = ({
           const structureName = getEntityName(structure.entity_id);
           return structureName;
         })
-        .filter((structure) => structure !== undefined);
+        .filter((structure): structure is string => structure !== undefined);
 
       const guild = getGuildFromPlayerAddress(player.address);
 
@@ -73,18 +70,22 @@ export const PlayersPanel = ({
       };
     });
     return playersWithStructures;
-  }, [getPlayers, isLoading]);
+  }, [isLoading]);
 
   const filteredPlayers = useMemo(() => {
-    return playersWithStructures.filter(
-      (player) =>
-        player.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-        player.structures.some(
-          (structure) => structure && structure.toLowerCase().includes(searchInput.toLowerCase()),
-        ) ||
-        toHexString(player.address).toLowerCase().includes(searchInput.toLowerCase()),
-    );
-  }, [playersWithStructures, searchInput]);
+    const term = searchTerm.toLowerCase();
+    return searchTerm === ""
+      ? playersWithStructures
+      : playersWithStructures.filter((player) => {
+          const nameMatch = player.name.toLowerCase().includes(term);
+          if (nameMatch) return true;
+
+          const addressMatch = toHexString(player.address).toLowerCase().includes(term);
+          if (addressMatch) return true;
+
+          return player.structures.some((structure) => structure && structure.toLowerCase().includes(term));
+        });
+  }, [playersWithStructures, searchTerm]);
 
   const whitelistPlayer = (address: ContractAddress) => {
     setIsLoading(true);
@@ -104,17 +105,31 @@ export const PlayersPanel = ({
     }).finally(() => setIsLoading(false));
   };
 
+  const handleSearch = () => {
+    setSearchTerm(inputValue);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-72 p-2 h-full w-full overflow-hidden">
-      <div>
+      <div className="flex gap-2 mb-4">
         <TextInput
           placeholder="Search players/realms/structures..."
-          onChange={(searchInput) => setSearchInput(searchInput)}
-          className="mb-4"
+          onChange={(value) => setInputValue(value)}
+          onKeyDown={handleKeyDown}
+          className="flex-1"
         />
+        <Button onClick={handleSearch} variant="primary">
+          Search
+        </Button>
       </div>
 
-      <div className="flex-1 min-h-0 ">
+      <div className="flex-1 min-h-0">
         <PlayerList
           players={filteredPlayers}
           viewPlayerInfo={viewPlayerInfo}
