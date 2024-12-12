@@ -28,11 +28,11 @@ export const getEntities = async <S extends Schema>(
       order_by: [],
     });
 
-    console.log("entities", entities);
+    // console.log("entities", entities);
 
     if (logging) console.log(`Fetched ${entities} entities`);
 
-    setEntities(entities, components, logging);
+    setEntities(entities, components);
 
     if (Object.keys(entities).length < limit) {
       continueFetching = false;
@@ -46,13 +46,13 @@ export const syncEntitiesEternum = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityKeyClause: EntityKeysClause[],
-  logging: boolean = true,
+  logging: boolean = false,
 ) => {
-  if (logging) console.log("Starting syncEntities");
+  // if (logging) console.log("Starting syncEntities");
   return await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    if (logging) console.log("Entity updated", fetchedEntities);
+    // if (logging) console.log("Entity updated", fetchedEntities);
 
-    setEntities({ [fetchedEntities]: data }, components, logging);
+    setEntities({ [fetchedEntities]: data }, components);
   });
 };
 
@@ -62,11 +62,11 @@ export const addToSubscription = async <S extends Schema>(
   entityID: string,
   position?: { x: number; y: number },
 ) => {
-  await getEntities(client, { ...(entityQueryOneKey(entityID) as Clause) }, components, 1000, false);
+  // await getEntities(client, { ...(entityQueryOneKey(entityID) as Clause) }, components, 1000, false);
 
-  await getEntities(client, { ...(entityQueryTwoKey(entityID) as Clause) }, components, 1000, false);
+  // await getEntities(client, { ...(entityQueryTwoKey(entityID) as Clause) }, components, 1000, false);
 
-  await getEntities(client, { ...(entityQueryThreeKey(entityID) as Clause) }, components, 1000, false);
+  // await getEntities(client, { ...(entityQueryThreeKey(entityID) as Clause) }, components, 1000, false);
 
   const positionClause: EntityKeysClause = {
     Keys: {
@@ -76,7 +76,36 @@ export const addToSubscription = async <S extends Schema>(
     },
   };
 
-  await getEntities(client, positionClause, components, 1000, false);
+  await getEntities(client, {
+    Composite: {
+      operator: "Or",
+      clauses: [
+        positionClause,
+        {
+          Keys: {
+            keys: [entityID],
+            pattern_matching: "FixedLen",
+            models: []
+          }
+        },
+        {
+          Keys: {
+            keys: [entityID, undefined], 
+            pattern_matching: "FixedLen",
+            models: []
+          }
+        },
+        {
+          Keys: {
+            keys: [entityID, undefined, undefined],
+            pattern_matching: "FixedLen", 
+            models: []
+          }
+        }
+
+      ]
+    }
+  }, components, 1000, false);
 
   //   const newSubscriptions = [
   //     { ...entityQueryOneKey(entityID) },

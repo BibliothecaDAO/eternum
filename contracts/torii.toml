@@ -3,10 +3,10 @@
 [indexing]
 events_chunk_size = 1024 # Size of events page to fetch
 blocks_chunk_size = 10240 # Blocks to process before DB commit
-index_pending = true # Enable indexing pending blocks
+pending = true # Enable indexing pending blocks
 polling_interval = 500 # Polling interval in milliseconds
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
-index_transactions = true
+world_block = 940000
 contracts = [
       "erc721:0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
       "erc721:0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",

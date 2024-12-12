@@ -28,7 +28,6 @@ import { playSound } from "../sound/utils";
 import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { DUMMY_HYPERSTRUCTURE_ENTITY_ID, HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
-import { addToSubscription } from "@/dojo/queries";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -629,6 +628,8 @@ export default class WorldmapScene extends HexagonScene {
         const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
 
         dummy.updateMatrix();
+
+        // console.log("biome", hashedTiles);
 
         if (isExplored) {
           biomeHexes[biome].push(dummy.matrix.clone());
