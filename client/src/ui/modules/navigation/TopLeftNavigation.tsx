@@ -23,6 +23,7 @@ import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } fro
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QuestsMenu } from "./QuestMenu";
 import { SecondaryMenuItems } from "./SecondaryMenuItems";
+import { useWorldStore } from "@/hooks/store/useWorldLoading";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -95,6 +96,8 @@ const WorkersHutTooltipContent = () => {
 
 export const TopLeftNavigation = memo(() => {
   const { setup } = useDojo();
+
+  const worldLoading = useWorldStore((state) => state.isWorldLoading);
 
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
@@ -321,7 +324,7 @@ export const TopLeftNavigation = memo(() => {
       </motion.div>
       <div className="relative">
         <SecondaryMenuItems />
-        {unclaimedQuestsCount > 0 && (
+        {unclaimedQuestsCount > 0 && !worldLoading && (
           <div className="absolute right-0 px-4 top-full mt-2">
             <QuestsMenu unclaimedQuestsCount={unclaimedQuestsCount} />
           </div>
