@@ -677,7 +677,7 @@ export default class WorldmapScene extends HexagonScene {
                     model: "s0_eternum-Tile",
                     member: "col",
                     operator: "Gte",
-                    value: { Primitive: { U32: startCol - 10 } },
+                    value: { Primitive: { U32: startCol - 30 } },
                   },
                 },
                 {
@@ -685,7 +685,7 @@ export default class WorldmapScene extends HexagonScene {
                     model: "s0_eternum-Tile",
                     member: "col",
                     operator: "Lte", 
-                    value: { Primitive: { U32: startCol + 10 } },
+                    value: { Primitive: { U32: startCol + 30 } },
                   },
                 },
                 {
@@ -693,7 +693,7 @@ export default class WorldmapScene extends HexagonScene {
                     model: "s0_eternum-Tile",
                     member: "row",
                     operator: "Gte",
-                    value: { Primitive: { U32: startRow - 10 } },
+                    value: { Primitive: { U32: startRow - 30 } },
                   },
                 },
                 {
@@ -701,7 +701,7 @@ export default class WorldmapScene extends HexagonScene {
                     model: "s0_eternum-Tile",
                     member: "row",
                     operator: "Lte",
-                    value: { Primitive: { U32: startRow + 10 } },
+                    value: { Primitive: { U32: startRow + 30 } },
                   },
                 },
               ],
