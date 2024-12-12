@@ -4,7 +4,6 @@ import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
-import { useWorldStore } from "@/hooks/store/useWorldLoading";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { Position } from "@/types/Position";
@@ -96,8 +95,6 @@ const WorkersHutTooltipContent = () => {
 
 export const TopLeftNavigation = memo(() => {
   const { setup } = useDojo();
-
-  const worldLoading = useWorldStore((state) => state.isWorldLoading);
 
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
@@ -324,17 +321,10 @@ export const TopLeftNavigation = memo(() => {
       </motion.div>
       <div className="relative">
         <SecondaryMenuItems />
-        {worldLoading ? (
-          <div className="absolute right-2 p-4 mt-2 top-full flex flex-row items-center justify-center bg-black/80 rounded-lg">
-            <img src="/images/eternumloader.png" className="w-10" />
-            <div className="ml-4">Quests are loading...</div>
+        {unclaimedQuestsCount > 0 && (
+          <div className="absolute right-0 px-4 top-full mt-2">
+            <QuestsMenu unclaimedQuestsCount={unclaimedQuestsCount} />
           </div>
-        ) : (
-          unclaimedQuestsCount > 0 && (
-            <div className="absolute right-0 px-4 top-full mt-2">
-              <QuestsMenu unclaimedQuestsCount={unclaimedQuestsCount} />
-            </div>
-          )
         )}
       </div>
     </div>
