@@ -653,24 +653,28 @@ export default class WorldmapScene extends HexagonScene {
         }
         this.cacheMatricesForChunk(startRow, startCol);
         this.interactiveHexManager.renderHexes();
+
+        await this.computeTileEntities(hashedTiles);
       }
     };
 
-    Promise.all(this.modelLoadPromises).then(() => {
-      requestAnimationFrame(processBatch);
-      this.computeTileEntities(hashedTiles);
-    });
+    requestAnimationFrame(processBatch);
   }
 
   private async computeTileEntities(hashedTiles: string[]) {
     if (this.subscription) this.subscription.cancel();
-          const sub = await getSyncEntities(this.dojo.network.toriiClient, this.dojo.network.contractComponents as any, undefined, [
-          {
-            HashedKeys: hashedTiles
-          },
-        ]);
-        console.log("entities", sub);
-        this.subscription = sub;
+    console.log(hashedTiles);
+    const sub = await getSyncEntities(
+      this.dojo.network.toriiClient,
+      this.dojo.network.contractComponents as any,
+      undefined,
+      [
+        {
+          HashedKeys: hashedTiles,
+        },
+      ],
+    );
+    this.subscription = sub;
   }
 
   private getExploredHexesForCurrentChunk() {
