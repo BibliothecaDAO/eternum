@@ -43,6 +43,9 @@ const envSchema = z.object({
   VITE_PUBLIC_IPFS_GATEWAY: z.string().url(),
 
   VITE_PUBLIC_SLOT: z.string(),
+
+  // Social
+  VITE_SOCIAL_LINK: z.string().url(),
 });
 
 let env: z.infer<typeof envSchema>;
