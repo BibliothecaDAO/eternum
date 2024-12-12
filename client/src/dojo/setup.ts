@@ -85,16 +85,16 @@ export async function setup({ ...config }: DojoConfig) {
       keys: ["763", undefined],
       pattern_matching: "FixedLen",
       models: [
-        // 's0_eternum-Tile',
-        // 's0_eternum-BuildingQuantityv2',
-        // // 's0_eternum-Resource',
-        // // 's0_eternum-Production',
-        // 's0_eternum-GuildWhitelist',
-        // 's0_eternum-Progress',
-        // 's0_eternum-HyperstructureContribution',
-        // 's0_eternum-Epoch',
-        // // 's0_eternum-QuestBonus',
-        // // "s0_eternum-Progress",
+        // 's0_eternum-Tile', - done
+        // 's0_eternum-BuildingQuantityv2', - done with Realm
+        // // 's0_eternum-Resource', - done with Realm
+        // // 's0_eternum-Production',  - done with Realm
+        // 's0_eternum-GuildWhitelist', - add to subscription from somewhere
+        // 's0_eternum-Progress', - done
+        // 's0_eternum-HyperstructureContribution', - done
+        // 's0_eternum-Epoch', - done
+        // // 's0_eternum-QuestBonus', - done
+        // // "s0_eternum-Progress", - done
         // // "s0_eternum-Market",
         // 's0_eternum-Quest',
         // 's0_eternum-Position',
@@ -102,27 +102,11 @@ export async function setup({ ...config }: DojoConfig) {
     },
   };
 
-  const threeKeyQuery = {
-    Keys: {
-      keys: [undefined, undefined, undefined],
-      pattern_matching: "FixedLen",
-      models: ["s0_eternum-BuildingConfig", "s0_eternum-Liquidity"],
-    },
-  };
-
-  const fourKeyQuery = {
-    Keys: {
-      keys: [undefined, undefined, undefined, undefined],
-      pattern_matching: "FixedLen",
-      models: ["s0_eternum-Building"],
-    },
-  };
-
   // fetch all existing entities from torii
   const sync = await getSyncEntities(
     network.toriiClient,
     network.contractComponents as any,
-    
+
     {
       Composite: {
         operator: "Or",
