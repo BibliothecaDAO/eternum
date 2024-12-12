@@ -8,6 +8,7 @@ import { currencyFormat } from "@/ui/utils/utils";
 import { BattleSide } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
+import { env } from "../../../../../env";
 
 export const BattleTwitterShareButton = ({
   userArmiesInBattle,
@@ -82,7 +83,7 @@ export const BattleTwitterShareButton = ({
       enemyName,
       attackerTroops: currencyFormat(totalAttackerTroops, 0),
       defenderTroops: currencyFormat(totalDefenderTroops, 0),
-      url: window.location.origin,
+      url: env.VITE_SOCIAL_LINK,
     });
   };
 

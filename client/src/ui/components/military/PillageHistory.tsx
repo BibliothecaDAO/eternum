@@ -8,6 +8,7 @@ import { divideByPrecision, formatNumber, formatResources, formatTime } from "@/
 import { BattleSide, ID, Resource, resources } from "@bibliothecadao/eternum";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
+import { env } from "../../../../env";
 import { TroopDisplay } from "./TroopChip";
 
 type PillageEvent = ComponentValue<ClientComponents["events"]["BattlePillageData"]["schema"]>;
@@ -42,7 +43,7 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
               )?.trait}`,
           )
           .join(", "),
-        url: window.location.origin,
+        url: env.VITE_SOCIAL_LINK,
       });
     }
   }, [isSuccess, addressName]);
