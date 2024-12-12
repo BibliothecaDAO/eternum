@@ -666,13 +666,14 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = chunkX * this.chunkSize + FELT_CENTER;
     const startRow = chunkZ * this.chunkSize + FELT_CENTER;
 
-    const range = this.chunkSize + 4;
+    const { width } = this.renderChunkSize;
+    const range = width / 2;
 
     const sub = await getEntities(
       this.dojo.network.toriiClient,
       {
         Composite: {
-          operator: "Or",
+          operator: "And",
           clauses: [
             {
               Member: {
