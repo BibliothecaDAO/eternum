@@ -25,6 +25,13 @@ export const TradeHistoryRowHeader = () => {
 
 export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const { getAddressNameFromEntity } = useEntitiesUtils();
+
+  const resourceTaken = trade.event.resourceTaken;
+  const resourceGiven = trade.event.resourceGiven;
+  if (!resourceTaken || !resourceGiven) {
+    return null;
+  }
+
   const price = getLordsPricePerResource(trade.event.resourceGiven, trade.event.resourceTaken);
   const taker = getAddressNameFromEntity(trade.event.takerId);
 
@@ -37,12 +44,12 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
       <div className={`text-sm my-auto flex flex-row items-center justify-start`}>{taker}</div>
       <div className="text-sm my-auto flex flex-row">
         <div>{"bought"}</div>
-        <ResourceIcon resource={ResourcesIds[Number(trade.event.resourceTaken.resourceId)]} size={"sm"} />
-        <div>{`${currencyIntlFormat(divideByPrecision(trade.event.resourceTaken.amount), 2)} for ${currencyIntlFormat(
-          divideByPrecision(trade.event.resourceGiven.amount),
+        <ResourceIcon resource={ResourcesIds[Number(resourceTaken.resourceId)]} size={"sm"} />
+        <div>{`${currencyIntlFormat(divideByPrecision(resourceTaken.amount), 2)} for ${currencyIntlFormat(
+          divideByPrecision(resourceGiven.amount),
           2,
         )}`}</div>
-        <ResourceIcon resource={ResourcesIds[Number(trade.event.resourceGiven.resourceId)]} size={"sm"} />
+        <ResourceIcon resource={ResourcesIds[Number(resourceGiven.resourceId)]} size={"sm"} />
       </div>
       <div className="text-sm my-auto flex flex-row">
         {currencyIntlFormat(Number(price), 2)}
@@ -52,9 +59,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
           resource={
             ResourcesIds[
               Number(
-                trade.event.resourceTaken.resourceId === ResourcesIds.Lords
-                  ? trade.event.resourceGiven.resourceId
-                  : trade.event.resourceTaken.resourceId,
+                resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId,
               )
             ]
           }
@@ -66,8 +71,13 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
 };
 
 const getLordsPricePerResource = (resourceA: Resource, resourceB: Resource): number => {
-  const lordsResource = resourceA.resourceId === ResourcesIds.Lords ? resourceA : resourceB;
-  const otherResource = resourceA.resourceId === ResourcesIds.Lords ? resourceB : resourceA;
+  try {
+    const lordsResource = resourceA.resourceId === ResourcesIds.Lords ? resourceA : resourceB;
+    const otherResource = resourceA.resourceId === ResourcesIds.Lords ? resourceB : resourceA;
 
-  return Number(lordsResource.amount) / Number(otherResource.amount);
+    return Number(lordsResource.amount) / Number(otherResource.amount);
+  } catch (e) {
+    console.error(e);
+    return 0;
+  }
 };
