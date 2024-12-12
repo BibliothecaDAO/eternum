@@ -68,7 +68,7 @@ echo "Migrating world..."
 sozo migrate --profile mainnet --fee eth
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-mainnet-3 torii --version preview--91c76d9 --world 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --rpc https://api.cartridge.gg/x/starknet/mainnet --indexing.pending true --config ./torii.toml
+slot deployments create -t epic eternum-mainnet-5 torii --version preview--91c76d9 --world 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --rpc https://api.cartridge.gg/x/starknet/mainnet --indexing.pending true --config ./torii.toml
 
 echo "Setting up config..."
 

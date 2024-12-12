@@ -10,7 +10,7 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, ID, getNeighborOffsets } from "@bibliothecadao/eternum";
-import { getSyncEntities } from "@dojoengine/state";
+import { getEntities } from "@dojoengine/state";
 import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
@@ -629,8 +629,6 @@ export default class WorldmapScene extends HexagonScene {
 
         dummy.updateMatrix();
 
-        // console.log("biome", hashedTiles);
-
         if (isExplored) {
           biomeHexes[biome].push(dummy.matrix.clone());
         } else {
@@ -654,27 +652,70 @@ export default class WorldmapScene extends HexagonScene {
         this.cacheMatricesForChunk(startRow, startCol);
         this.interactiveHexManager.renderHexes();
 
-        await this.computeTileEntities(hashedTiles);
+        await this.computeTileEntities();
       }
     };
 
     requestAnimationFrame(processBatch);
   }
 
-  private async computeTileEntities(hashedTiles: string[]) {
-    if (this.subscription) this.subscription.cancel();
-    console.log(hashedTiles);
-    const sub = await getSyncEntities(
-      this.dojo.network.toriiClient,
-      this.dojo.network.contractComponents as any,
-      undefined,
-      [
-        {
-          HashedKeys: hashedTiles,
-        },
-      ],
-    );
-    this.subscription = sub;
+  private async computeTileEntities() {
+
+    // Parse current chunk coordinates
+    const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
+
+  console.log(chunkRow, chunkCol)
+
+    const sub = await getEntities(this.dojo.network.toriiClient,       {
+      Composite: {
+        operator: "And",
+        clauses: [
+          {
+            Composite: {
+              operator: "And",
+              clauses: [
+                {
+                  Member: {
+                    model: "s0-eternum-Tile",
+                    member: "col",
+                    operator: "Gte",
+                    value: { Primitive: { U32: chunkCol - 10 } },
+                  },
+                },
+                {
+                  Member: {
+                    model: "s0-eternum-Tile",
+                    member: "col",
+                    operator: "Lte", 
+                    value: { Primitive: { U32: chunkCol + 10 } },
+                  },
+                },
+                {
+                  Member: {
+                    model: "s0-eternum-Tile",
+                    member: "row",
+                    operator: "Gte",
+                    value: { Primitive: { U32: chunkRow - 10 } },
+                  },
+                },
+                {
+                  Member: {
+                    model: "s0-eternum-Tile",
+                    member: "row",
+                    operator: "Lte",
+                    value: { Primitive: { U32: chunkRow + 10 } },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    }, this.dojo.network.contractComponents as any, 1000, false);
+
+
+
+    console.log(sub);
   }
 
   private getExploredHexesForCurrentChunk() {

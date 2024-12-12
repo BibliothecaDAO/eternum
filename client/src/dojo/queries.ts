@@ -28,7 +28,7 @@ export const getEntities = async <S extends Schema>(
       order_by: [],
     });
 
-    setEntities(entities, components, logging);
+    setEntities(entities, components);
 
     if (Object.keys(entities).length < limit) {
       continueFetching = false;
