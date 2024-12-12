@@ -11,7 +11,7 @@ const checkIfGameIsRunningOnLaptop = async () => {
         // It's likely a desktop
         localStorage.setItem("LOW_GRAPHICS_FLAG", "false");
       } else {
-        // It's likely a laptop or mobile device
+        // It's likely a laptop or mobile device.
         localStorage.setItem("LOW_GRAPHICS_FLAG", "true");
       }
     } catch (error) {
