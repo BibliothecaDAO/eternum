@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
-import { addToSubscription } from "@/dojo/queries";
+import { addMarketSubscription, addToSubscription } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
@@ -138,6 +138,12 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         console.error("Fetch failed", error);
       } finally {
         setWorldLoading(false);
+      }
+
+      try {
+        await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
+      } catch (error) {
+        console.error("Fetch failed", error);
       }
 
       console.log("world loading", worldLoading);
