@@ -9,7 +9,6 @@ import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useWorldStore } from "@/hooks/store/useWorldLoading";
 import { useComponentValue } from "@dojoengine/react";
-import { EntityKeysClause, Subscription } from "@dojoengine/torii-wasm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
@@ -111,7 +110,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     const fetch = async () => {
       await addToSubscription(
         dojo.setup.network.toriiClient,
-        dojo.setup.syncObject as { sync: Subscription; clauses: EntityKeysClause[] },
         dojo.setup.network.contractComponents as any,
         structureEntityId.toString(),
         { x: position?.x || 0, y: position?.y || 0 },

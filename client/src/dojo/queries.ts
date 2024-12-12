@@ -2,7 +2,7 @@
 
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
-import { Clause, EntityKeysClause, PatternMatching, Subscription, ToriiClient } from "@dojoengine/torii-client";
+import { Clause, EntityKeysClause, PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 
 // on hexception -> fetch below queries based on entityID
 
@@ -58,13 +58,10 @@ export const syncEntitiesEternum = async <S extends Schema>(
 
 export const addToSubscription = async <S extends Schema>(
   client: ToriiClient,
-  syncObject: { sync: Subscription; clauses: EntityKeysClause[] },
   components: Component<S, Metadata, undefined>[],
   entityID: string,
   position?: { x: number; y: number },
 ) => {
-  console.log("position", syncObject);
-
   await getEntities(client, { ...(entityQueryOneKey(entityID) as Clause) }, components, 1000, false);
 
   await getEntities(client, { ...(entityQueryTwoKey(entityID) as Clause) }, components, 1000, false);
