@@ -7,6 +7,7 @@ import { addToSubscription } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
+import { useWorldStore } from "@/hooks/store/useWorldLoading";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../../env";
@@ -82,6 +83,8 @@ const MiniMapNavigation = lazy(() =>
   import("../modules/navigation/MiniMapNavigation").then((module) => ({ default: module.MiniMapNavigation })),
 );
 
+
+
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
@@ -95,18 +98,23 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   useFetchBlockchainData();
   useStructureEntityId();
 
+  // We could optimise this deeper....
+
+  const worldLoading = useWorldStore((state) => state.isWorldLoading);
+  const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
+
   const dojo = useDojo();
-
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-
   const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]))
 
   useEffect(() => {
 
+    setWorldLoading(true);
     const fetch = async () => {
       await addToSubscription(dojo.setup.network.toriiClient, dojo.setup.sync, dojo.setup.network.contractComponents as any, structureEntityId.toString(), {x: position?.x || 0, y: position?.y || 0});
     }
     fetch();
+    setWorldLoading(false);
   }, [structureEntityId]);
 
   return (
