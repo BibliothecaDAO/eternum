@@ -5,6 +5,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 
 import { addToSubscription } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useWorldStore } from "@/hooks/store/useWorldLoading";
@@ -103,6 +104,10 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const { playerStructures } = useEntities();
+  const structures = playerStructures();
+
   const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]));
 
   const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number>(Date.now());
@@ -111,11 +116,15 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     setWorldLoading(true);
     const fetch = async () => {
       try {
-        await addToSubscription(
-          dojo.network.toriiClient,
-          dojo.network.contractComponents as any,
-          structureEntityId.toString(),
-          { x: position?.x || 0, y: position?.y || 0 },
+        await Promise.all(
+          structures.map((structure: PlayerStructure) =>
+            addToSubscription(
+              dojo.network.toriiClient,
+              dojo.network.contractComponents as any,
+              structure.entity_id.toString(),
+              { x: structure.position.x, y: structure.position.y },
+            ),
+          ),
         );
       } catch (error) {
         console.error("Fetch failed", error);
@@ -136,7 +145,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, [structureEntityId, setWorldLoading]);
+  }, [setWorldLoading]);
 
   return (
     <div
