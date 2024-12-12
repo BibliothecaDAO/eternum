@@ -166,7 +166,7 @@ export const BridgeIn = () => {
 
   return (
     <>
-      <div className="max-w-md flex flex-col gap-3 relative max-h-[calc(75vh-100px)] overflow-y-auto p-3">
+      <div className="max-w-md flex flex-col bg-background gap-3 relative max-h-[calc(75vh-100px)] overflow-y-auto p-3">
         <TypeP>
           Bridge resources and lords from your Starknet wallet into the Eternum game. You will have to complete the
           claim on your Realm in the{" "}
@@ -185,7 +185,7 @@ export const BridgeIn = () => {
             <div className="text-xs text-slate-500 uppercase mb-1">To Realm</div>
 
             <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
-              <SelectTrigger className="w-full bg-dark-brown [background:linear-gradient(45deg,#1a1311,#1a1311)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box] border border-transparent animate-border">
+              <SelectTrigger className="w-full dark:[background:linear-gradient(45deg,#1a1311,#1a1311)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box] light:[background:linear-gradient(45deg,#ffffff,#ffffff)_padding-box,conic-gradient(from_var(--border-angle),#b08c4f_80%,_#daa520_86%,_#ffd700_90%,_#daa520_94%,_#b08c4f)_border-box] border border-transparent animate-border">
                 <SelectValue placeholder="Select Realm To Transfer" />
               </SelectTrigger>
               <SelectContent>
@@ -340,8 +340,8 @@ const ResourceInputRow = ({
         : "0";
 
   return (
-    <div key={id} className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
-      <div className="relative  w-full">
+    <div key={id} className="rounded-lg p-3 border border-gold/15 shadow-lg bg-background flex gap-3 items-center">
+      <div className="relative w-full">
         <Input
           type="text"
           placeholder="0.0"
@@ -352,7 +352,7 @@ const ResourceInputRow = ({
               [id]: Number(e.target.value),
             });
           }}
-          className="bg-dark-brown text-2xl  outline-none h-10 border-none"
+          className="bg-background text-2xl  outline-none h-10 border-none"
         />
         <div className="flex items-center gap-2 text-xxs absolute right-1 bottom-1">
           <span className="text-muted-foreground hover:text-gold text-xs">{fetchedBalance} </span>
@@ -397,7 +397,7 @@ const ResourceInputRow = ({
                   disabled={Object.keys(selectedResourceAmounts).includes(res?.id.toString() ?? "")}
                   value={res?.id.toString() ?? ""}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex bg-background items-center gap-2">
                     {res?.trait && <ResourceIcon resource={res?.trait} size="md" />}
                     {res?.trait ?? ""}
                     <span className="text-muted-foreground text-xs">
