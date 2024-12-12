@@ -58,12 +58,6 @@ export const addToSubscription = async <S extends Schema>(
   entityID: string,
   position?: { x: number; y: number },
 ) => {
-  // await getEntities(client, { ...(entityQueryOneKey(entityID) as Clause) }, components, 1000, false);
-
-  // await getEntities(client, { ...(entityQueryTwoKey(entityID) as Clause) }, components, 1000, false);
-
-  // await getEntities(client, { ...(entityQueryThreeKey(entityID) as Clause) }, components, 1000, false);
-
   const positionClause: EntityKeysClause = {
     Keys: {
       keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
@@ -72,92 +66,39 @@ export const addToSubscription = async <S extends Schema>(
     },
   };
 
-  await getEntities(client, {
-    Composite: {
-      operator: "Or",
-      clauses: [
-        positionClause,
-        {
-          Keys: {
-            keys: [entityID],
-            pattern_matching: "FixedLen",
-            models: []
-          }
-        },
-        {
-          Keys: {
-            keys: [entityID, undefined], 
-            pattern_matching: "FixedLen",
-            models: []
-          }
-        },
-        {
-          Keys: {
-            keys: [entityID, undefined, undefined],
-            pattern_matching: "FixedLen", 
-            models: []
-          }
-        }
-
-      ]
-    }
-  }, components, 1000, false);
-
-  //   const newSubscriptions = [
-  //     { ...entityQueryOneKey(entityID) },
-  //     { ...entityQueryTwoKey(entityID) },
-  //     { ...entityQueryThreeKey(entityID) },
-  //     { ...entityQueryFourKey(position?.x || 0, position?.y || 0) },
-  //     positionClause,
-  //     ...syncObject.clauses,
-  //   ];
-
-  //   try {
-  //     await client.updateEntitySubscription(syncObject.sync, newSubscriptions);
-  //   } catch (error) {
-  //     console.log("error", error);
-  //   }
-  //   console.log("subscriptions succeeded");
-
-  //   syncObject.clauses = newSubscriptions;
-};
-
-const entityQueryOneKey = (entityID: string) => {
-  return {
-    Keys: {
-      keys: [entityID],
-      pattern_matching: "FixedLen",
-      models: [],
+  await getEntities(
+    client,
+    {
+      Composite: {
+        operator: "Or",
+        clauses: [
+          positionClause,
+          {
+            Keys: {
+              keys: [entityID],
+              pattern_matching: "FixedLen",
+              models: [],
+            },
+          },
+          {
+            Keys: {
+              keys: [entityID, undefined],
+              pattern_matching: "FixedLen",
+              models: [],
+            },
+          },
+          {
+            Keys: {
+              keys: [entityID, undefined, undefined],
+              pattern_matching: "FixedLen",
+              models: [],
+            },
+          },
+        ],
+      },
     },
-  } as EntityKeysClause;
-};
-
-const entityQueryTwoKey = (entityID: string) => {
-  return {
-    Keys: {
-      keys: [entityID, undefined],
-      pattern_matching: "FixedLen",
-      models: [],
-    },
-  } as EntityKeysClause;
-};
-
-const entityQueryThreeKey = (entityID: string) => {
-  return {
-    Keys: {
-      keys: [entityID, undefined, undefined],
-      pattern_matching: "FixedLen",
-      models: [],
-    },
-  } as EntityKeysClause;
-};
-
-const entityQueryFourKey = (x: number, y: number) => {
-  return {
-    Keys: {
-      keys: [String(x), String(y), undefined, undefined],
-      pattern_matching: "FixedLen",
-      models: [],
-    },
-  } as EntityKeysClause;
+    components,
+    1000,
+    false,
+  );
 };

@@ -17,7 +17,6 @@ export async function setup({ ...config }: DojoConfig) {
   const systemCalls = createSystemCalls(network);
 
   const clauses: Clause[] = [
-
     {
       Keys: {
         keys: [undefined],
