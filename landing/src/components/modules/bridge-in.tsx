@@ -258,9 +258,9 @@ export const BridgeIn = () => {
             setResourceFees={setResourceFees}
             type="deposit"
           />
-          <div className="flex flex-col gap-2 font-bold mt-3">
+          <div className="flex flex-col gap-2 font-bold mt-5">
             <div className="flex justify-between">
-              <div>Total Amount Received</div>
+              <div>Resources Received</div>
             </div>
             {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
               if (amount === 0) return null;
@@ -268,7 +268,7 @@ export const BridgeIn = () => {
               return (
                 <div key={id} className="flex justify-between text-sm font-normal">
                   <div className="flex items-center gap-2">
-                    <ResourceIcon resource={resourceName} size="md" /> {resourceName}
+                    <ResourceIcon resource={resourceName} size="sm" className="md:w-5 md:h-5" withTooltip={false} /> {resourceName}
                   </div>
                   <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
                 </div>
