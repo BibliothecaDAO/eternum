@@ -10,6 +10,8 @@ import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/Config";
@@ -220,11 +222,16 @@ export const LeftNavigationModule = memo(() => {
     visible: { x: "0%", transition: { duration: 0.5 } },
   };
 
+  
+
   const dojo = useDojo();
+
+  const position = useComponentValue(dojo.setup.components.Position, getEntityIdFromKeys([BigInt(structureEntityId)]))
+  
   useEffect(() => {
 
     const fetch = async () => {
-      await addToSubscription(dojo.setup.network.toriiClient, dojo.setup.sync, structureEntityId.toString());
+      await addToSubscription(dojo.setup.network.toriiClient, dojo.setup.sync, dojo.setup.network.contractComponents as any, structureEntityId.toString(), {x: position?.x || 0, y: position?.y || 0});
     }
     fetch();
   }, [structureEntityId]);

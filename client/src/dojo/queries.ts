@@ -60,26 +60,45 @@ export const syncEntitiesEternum = async <S extends Schema>(
     );
 };
 
-export const addToSubscription = async (client: ToriiClient, subscription: Subscription, entityID: string) => {
+export const addToSubscription = async <S extends Schema>(client: ToriiClient, subscription: Subscription, components: Component<S, Metadata, undefined>[], entityID: string, position?: {x: number, y: number}) => {
 
-    const entities = await getEntities(client, {
-        Composite: {
-            operator: 'Or',
-            clauses: [
-                { ...entityQueryOneKey(entityID), Keys: { ...entityQueryOneKey(entityID).Keys, pattern_matching: "FixedLen" } },
-                { ...entityQueryTwoKey(entityID), Keys: { ...entityQueryTwoKey(entityID).Keys, pattern_matching: "FixedLen" } },
-                { ...entityQueryThreeKey(entityID), Keys: { ...entityQueryThreeKey(entityID).Keys, pattern_matching: "FixedLen" } },
-            ]
-        }
-    }, [], 1000, false);
-
-    console.log("entities", entities);
+    await getEntities(client, { ...entityQueryOneKey(entityID), Keys: { ...entityQueryOneKey(entityID).Keys, pattern_matching: "FixedLen" } }, components, 1000, false);
+    
+    await getEntities(client, { ...entityQueryTwoKey(entityID), Keys: { ...entityQueryTwoKey(entityID).Keys, pattern_matching: "FixedLen" } }, components, 1000, false);
+    
+    await getEntities(client, { ...entityQueryThreeKey(entityID), Keys: { ...entityQueryThreeKey(entityID).Keys, pattern_matching: "FixedLen" } }, components, 1000, false);
+    
+    await getEntities(client, {
+        Keys: {
+          keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
+          pattern_matching: 'FixedLen',
+          models: [
+          ],
+        },
+    }, components, 1000, false);
 
     await client.updateEntitySubscription(subscription, [
         { ...entityQueryOneKey(entityID), Keys: { ...entityQueryOneKey(entityID).Keys, pattern_matching: "FixedLen" } },
+    ]);
+
+    await client.updateEntitySubscription(subscription, [
         { ...entityQueryTwoKey(entityID), Keys: { ...entityQueryTwoKey(entityID).Keys, pattern_matching: "FixedLen" } },
+    ]);
+
+    await client.updateEntitySubscription(subscription, [
         { ...entityQueryThreeKey(entityID), Keys: { ...entityQueryThreeKey(entityID).Keys, pattern_matching: "FixedLen" } },
     ]);
+
+    await client.updateEntitySubscription(subscription, [
+        {
+            Keys: {
+              keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
+              pattern_matching: 'FixedLen',
+              models: [
+              ],
+            },
+          },
+    ]); 
 }
 
 const entityQueryOneKey = (entityID: string) => {
@@ -113,6 +132,18 @@ const entityQueryThreeKey = (entityID: string) => {
         },
       }
 }
+
+const entityQueryFourKey = ( x: number, y: number) => {
+    return {
+        Keys: {
+          keys: [String(x), String(y), undefined, undefined],
+          pattern_matching: 'FixedLen',
+          models: [
+          ],
+        },
+      }
+}
+
 
 
 
