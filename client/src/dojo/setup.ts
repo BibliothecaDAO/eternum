@@ -1,4 +1,8 @@
-import { BUILDING_CATEGORY_POPULATION_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import {
+  BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+  HYPERSTRUCTURE_CONFIG_ID,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
 import { getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
@@ -45,14 +49,13 @@ export async function setup({ ...config }: DojoConfig) {
         models: [],
       },
     },
-      {
-        Keys: {
-          keys: [HYPERSTRUCTURE_CONFIG_ID.toString()],
-          pattern_matching: "VariableLen",
-          models: [],
-        },
+    {
+      Keys: {
+        keys: [HYPERSTRUCTURE_CONFIG_ID.toString(), undefined],
+        pattern_matching: "VariableLen",
+        models: [],
       },
-
+    },
   ];
 
   // fetch all existing entities from torii
