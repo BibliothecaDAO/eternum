@@ -75,8 +75,8 @@ export function useTrade() {
         let trade = getComponentValue(Trade, id);
         if (trade) {
           const { takerGets, makerGets } = getTradeResources(trade.trade_id);
-          const makerRealm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
 
+          const makerRealm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
           const makerName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(trade.maker_id)]))?.name;
 
           const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
@@ -172,7 +172,6 @@ export function useSetMarket() {
   const { computeTrades } = useTrade();
 
   const allMarket = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0 })]);
-
   const allTrades = useMemo(() => {
     return computeTrades(allMarket, nextBlockTimestamp!);
   }, [allMarket]);

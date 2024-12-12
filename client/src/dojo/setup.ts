@@ -55,6 +55,8 @@ export async function setup({ ...config }: DojoConfig) {
     network.toriiClient,
     { Composite: { operator: "Or", clauses: configClauses } },
     network.contractComponents as any,
+    40_000,
+    false,
   );
 
   const clauses: Clause[] = [

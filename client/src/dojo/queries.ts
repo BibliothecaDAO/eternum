@@ -98,7 +98,21 @@ export const addToSubscription = async <S extends Schema>(
       },
     },
     components,
-    1000,
+    10_000,
+    false,
+  );
+
+  await getEntities(
+    client,
+    {
+      Keys: {
+        keys: [undefined, undefined],
+        pattern_matching: "FixedLen",
+        models: ["s0_eternum-DetachedResource"],
+      },
+    },
+    components,
+    10_000,
     false,
   );
 };
