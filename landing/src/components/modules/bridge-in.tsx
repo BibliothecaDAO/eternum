@@ -149,9 +149,11 @@ export const BridgeIn = () => {
         throw new Error("No valid resources selected");
       }
 
-      await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
-      setSelectedResourceIds([]);
-      setSelectedResourceAmounts({});
+      const resp = await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
+      if (resp) {
+        setSelectedResourceIds([]);
+        setSelectedResourceAmounts({});
+      }
     } catch (error) {
       console.error("Bridge into realm error:", error);
       toast.error("Failed to transfer resources");
@@ -337,7 +339,7 @@ const ResourceInputRow = ({
         : "0";
 
   return (
-    <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
+    <div key={id} className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3 items-center">
       <div className="relative  w-full">
         <Input
           type="text"
@@ -390,7 +392,7 @@ const ResourceInputRow = ({
             <>
               {res?.id && (
                 <SelectItem
-                  key={res?.id}
+                  key={res.id}
                   disabled={Object.keys(selectedResourceAmounts).includes(res?.id.toString() ?? "")}
                   value={res?.id.toString() ?? ""}
                 >

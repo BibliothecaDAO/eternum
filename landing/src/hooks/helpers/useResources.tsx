@@ -19,12 +19,13 @@ export function getResourceBalance() {
   return { getBalance };
 }
 
-export function donkeyArrivals() {
+export function useDonkeyArrivals() {
   const {
     setup: {
       components: { Position, EntityOwner, ArrivalTime, OwnedResourcesTracker, Weight },
     },
   } = useDojo();
+  const dojo = useDojo();
 
   const getOwnerArrivalsAtBank = (realmEntityIds: ID[]) => {
     const bankPosition = getComponentValue(Position, getEntityIdFromKeys([BigInt(ADMIN_BANK_ENTITY_ID)]));
@@ -46,7 +47,6 @@ export function donkeyArrivals() {
   };
 
   const getDonkeyInfo = (donkeyEntity: Entity) => {
-    const dojo = useDojo();
     const tickConfigDefault = configManager.getTick(TickIds.Default);
     const timestamp = Math.floor(Date.now() / 1000);
     const currentDefaultTick = Math.floor(timestamp / Number(tickConfigDefault));
