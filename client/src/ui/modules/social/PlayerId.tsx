@@ -94,7 +94,7 @@ export const PlayerId = ({
       SettleRealmData,
       Array.from(runQuery([HasValue(SettleRealmData, { owner_address: selectedPlayer })]))[0],
     );
-    return formatTime((useUIStore.getState()?.nextBlockTimestamp ?? 0) - (realmSettleData?.timestamp ?? 0));
+    return realmSettleData ? formatTime((useUIStore.getState()?.nextBlockTimestamp ?? 0) - (realmSettleData?.timestamp ?? 0)) : undefined;
   }, [selectedPlayer, playerEntityId]);
 
   const playerStructures = useMemo(() => {
