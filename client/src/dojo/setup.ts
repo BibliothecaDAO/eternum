@@ -32,7 +32,7 @@ export async function setup({ ...config }: DojoConfig) {
       Keys: {
         keys: [undefined, undefined],
         pattern_matching: "FixedLen",
-        models: ["s0_eternum-ResourceCost"],
+        models: [`${components.ResourceCost.metadata.namespace}-${components.ResourceCost.metadata.name}`],
       },
     },
     {
