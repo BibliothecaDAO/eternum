@@ -9,6 +9,7 @@ import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useWorldStore } from "@/hooks/store/useWorldLoading";
+import { Position } from "@/types/Position";
 import { ADMIN_BANK_ENTITY_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -132,7 +133,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     );
 
     setWorldLoading(true);
-    setSubscriptions((prev) => ({ ...prev, [structureEntityId.toString()]: true, [ADMIN_BANK_ENTITY_ID.toString()]: true }));
+    setSubscriptions((prev) => ({
+      ...prev,
+      [structureEntityId.toString()]: true,
+      [ADMIN_BANK_ENTITY_ID.toString()]: true,
+    }));
     const fetch = async () => {
       try {
         await addToSubscription(
@@ -142,11 +147,12 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           { x: position?.x || 0, y: position?.y || 0 },
         );
 
+        const bankPosition = new Position({ x: 0, y: 0 }).getContract();
         await addToSubscription(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           ADMIN_BANK_ENTITY_ID.toString(),
-          { x: 0, y: 0 },
+          bankPosition,
         );
       } catch (error) {
         console.error("Fetch failed", error);
