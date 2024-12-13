@@ -68,7 +68,7 @@ export async function setup({ ...config }: DojoConfig) {
       },
     },
     network.contractComponents as any,
-    40_000,
+    10_000,
     false,
   );
 
@@ -122,7 +122,7 @@ export async function setup({ ...config }: DojoConfig) {
         },
       },
     ],
-    20_000,
+    10_000,
     false,
     false,
   );
