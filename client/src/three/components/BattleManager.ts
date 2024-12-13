@@ -104,10 +104,10 @@ export class BattleManager {
   removeBattle(entityId: ID) {
     const meshMatrixIndex = this.battles.getBattleIndex(entityId);
 
-    // if (meshMatrixIndex === undefined && this.logging) {
-      // console.warn(`meshMatrixIndex not found for entityId ${entityId}`);
-    //   return;
-    // }
+    if (meshMatrixIndex === undefined) {
+      console.warn(`meshMatrixIndex not found for entityId ${entityId}`);
+      return;
+    }
 
     const newMatrix = new THREE.Matrix4().scale(new THREE.Vector3(0, 0, 0));
     this.battleModel.mesh.setMatrixAt(meshMatrixIndex, newMatrix);
@@ -116,10 +116,8 @@ export class BattleManager {
     this.battles.removeBattle(entityId);
 
     const label = this.labels.get(entityId);
-    if (!label) {
-      // console.warn(`Label not found for entityId ${entityId}`);
-      return;
-    }
+    
+    if (!label) throw new Error(`Label not found for entityId ${entityId}`);
 
     this.labelManager.removeLabel(label, this.scene);
     this.labels.delete(entityId);
