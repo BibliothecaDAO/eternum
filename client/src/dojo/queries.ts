@@ -52,7 +52,27 @@ export const syncEntitiesEternum = async <S extends Schema>(
   });
 };
 
-export const addToSubscription = async <S extends Schema>(
+export const syncEntityId = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityID: string,
+) => {
+  await getEntities(
+    client,
+    {
+      Keys: {
+        keys: [entityID],
+        pattern_matching: "VariableLen",
+        models: [],
+      },
+    },
+    components,
+    10_000,
+    false,
+  );
+};
+
+export const syncStructureByPosition = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityID: string,
@@ -77,19 +97,7 @@ export const addToSubscription = async <S extends Schema>(
       false,
     ));
 
-  await getEntities(
-    client,
-    {
-      Keys: {
-        keys: [entityID],
-        pattern_matching: "VariableLen",
-        models: [],
-      },
-    },
-    components,
-    10_000,
-    false,
-  );
+  await syncEntityId(client, components, entityID);
 };
 
 export const addMarketSubscription = async <S extends Schema>(

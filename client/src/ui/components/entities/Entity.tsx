@@ -1,4 +1,3 @@
-import { addToSubscription } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
@@ -13,6 +12,7 @@ import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import React, { useEffect, useMemo, useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
+import { syncEntityId } from "@/dojo/queries";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -53,7 +53,7 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
       setIsSyncing(true);
       const fetch = async () => {
         try {
-          await addToSubscription(
+          await syncEntityId(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             arrival.entityId.toString(),

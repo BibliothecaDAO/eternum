@@ -37,6 +37,13 @@ export async function setup({ ...config }: DojoConfig) {
     },
     {
       Keys: {
+        keys: [WORLD_CONFIG_ID.toString()],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
         keys: [BUILDING_CATEGORY_POPULATION_CONFIG_ID.toString(), undefined],
         pattern_matching: "FixedLen",
         models: [],
@@ -57,6 +64,25 @@ export async function setup({ ...config }: DojoConfig) {
     network.contractComponents as any,
   );
 
+  await getEntities(
+    network.toriiClient,
+    {
+      Keys: {
+        keys: [],
+        pattern_matching: "VariableLen",
+        models: [
+          "s0_eternum-ProductionConfig",
+          "s0_eternum-QuestRewardConfig",
+          "s0_eternum-ResourceBridgeWhitelistConfig",
+          "s0_eternum-RealmLevelConfig",
+          "s0_eternum-RealmMaxLevelConfig",
+          "s0_eternum-WeightConfig",
+        ],
+      },
+    },
+    network.contractComponents as any,
+  );
+
   // fetch all existing entities from torii
   await getEntities(
     network.toriiClient,
@@ -64,7 +90,7 @@ export async function setup({ ...config }: DojoConfig) {
       Keys: {
         keys: [undefined],
         pattern_matching: "FixedLen",
-        models: [],
+        models: ["s0_eternum-AddressName", "s0_eternum-Realm"],
       },
     },
     network.contractComponents as any,
@@ -96,6 +122,7 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-LiquidityEvent",
           "s0_eternum-HyperstructureFinished",
           "s0_eternum-HyperstructureContribution",
+          "s0_eternum-SettleRealmData",
         ],
       },
     },

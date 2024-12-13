@@ -673,38 +673,91 @@ export default class WorldmapScene extends HexagonScene {
       this.dojo.network.toriiClient,
       {
         Composite: {
-          operator: "And",
+          operator: "Or",
           clauses: [
             {
-              Member: {
-                model: "s0_eternum-Tile",
-                member: "col",
-                operator: "Gte",
-                value: { Primitive: { U32: startCol - range } },
+              Composite: {
+                operator: "And",
+                clauses: [
+                  {
+                    Member: {
+                      model: "s0_eternum-Tile",
+                      member: "col",
+                      operator: "Gte",
+                      value: { Primitive: { U32: startCol - range } },
+                    },
+                  },
+                  {
+                    Member: {
+                      model: "s0_eternum-Tile",
+                      member: "col",
+                      operator: "Lte",
+                      value: { Primitive: { U32: startCol + range } },
+                    },
+                  },
+                  {
+                    Member: {
+                      model: "s0_eternum-Tile",
+                      member: "row",
+                      operator: "Gte",
+                      value: { Primitive: { U32: startRow - range } },
+                    },
+                  },
+                  {
+                    Member: {
+                      model: "s0_eternum-Tile",
+                      member: "row",
+                      operator: "Lte",
+                      value: { Primitive: { U32: startRow + range } },
+                    },
+                  },
+                ],
               },
             },
             {
-              Member: {
-                model: "s0_eternum-Tile",
-                member: "col",
-                operator: "Lte",
-                value: { Primitive: { U32: startCol + range } },
-              },
-            },
-            {
-              Member: {
-                model: "s0_eternum-Tile",
-                member: "row",
-                operator: "Gte",
-                value: { Primitive: { U32: startRow - range } },
-              },
-            },
-            {
-              Member: {
-                model: "s0_eternum-Tile",
-                member: "row",
-                operator: "Lte",
-                value: { Primitive: { U32: startRow + range } },
+              Composite: {
+                operator: "And",
+                clauses: [
+                  {
+                    Member: {
+                      model: "s0_eternum-Position",
+                      member: "x",
+                      operator: "Gte",
+                      value: { Primitive: { U32: startCol - range } },
+                    },
+                  },
+                  {
+                    Member: {
+                      model: "s0_eternum-Position",
+                      member: "x",
+                      operator: "Lte",
+                      value: { Primitive: { U32: startCol + range } },
+                    },
+                  },
+                  {
+                    Member: {
+                      model: "s0_eternum-Position",
+                      member: "y",
+                      operator: "Gte",
+                      value: { Primitive: { U32: startRow - range } },
+                    },
+                  },
+                  {
+                    Member: {
+                      model: "s0_eternum-Position",
+                      member: "y",
+                      operator: "Lte",
+                      value: { Primitive: { U32: startRow + range } },
+                    },
+                  },
+                  {
+                    Keys: {
+                      keys: [undefined],
+                      pattern_matching: "FixedLen",
+                      models: ["s0_eternum-Army"],
+                    },
+                  },
+                ],
               },
             },
           ],

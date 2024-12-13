@@ -1,16 +1,19 @@
 import { Leva } from "leva";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Component, lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
-import { addMarketSubscription, addToSubscription } from "@/dojo/queries";
+import { addMarketSubscription, syncStructureByPosition } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useWorldStore } from "@/hooks/store/useWorldLoading";
-import { ADMIN_BANK_ENTITY_ID } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
+import { ADMIN_BANK_ENTITY_ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { getComponentValue, Metadata } from "@dojoengine/recs";
+import { S } from "@dojoengine/recs/dist/types-3444e4c1";
+import { getEntities } from "@dojoengine/state";
+import { ToriiClient } from "@dojoengine/torii-client";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
@@ -132,22 +135,28 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     );
 
     setWorldLoading(true);
-    setSubscriptions((prev) => ({ ...prev, [structureEntityId.toString()]: true, [ADMIN_BANK_ENTITY_ID.toString()]: true }));
+    setSubscriptions((prev) => ({
+      ...prev,
+      [structureEntityId.toString()]: true,
+      [ADMIN_BANK_ENTITY_ID.toString()]: true,
+    }));
     const fetch = async () => {
       try {
-        await addToSubscription(
+        await syncStructureByPosition(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           structureEntityId.toString(),
           { x: position?.x || 0, y: position?.y || 0 },
         );
 
-        await addToSubscription(
+        await syncStructureByPosition(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           ADMIN_BANK_ENTITY_ID.toString(),
           { x: 0, y: 0 },
         );
+
+        await initialSync(dojo.network.toriiClient, dojo.network.contractComponents as any);
       } catch (error) {
         console.error("Fetch failed", error);
       } finally {
@@ -179,7 +188,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       try {
         await Promise.all(
           filteredStructures.map((structure: PlayerStructure) =>
-            addToSubscription(
+            syncStructureByPosition(
               dojo.network.toriiClient,
               dojo.network.contractComponents as any,
               structure.entity_id.toString(),
@@ -286,3 +295,58 @@ const VersionDisplay = () => (
     </a>
   </div>
 );
+
+const initialSync = async (client: ToriiClient, components: Component<S, Metadata, undefined>[]) => {
+  const isAlreadySyncedComponentProof = getComponentValue(
+    (components as any).Season,
+    getEntityIdFromKeys([WORLD_CONFIG_ID]),
+  );
+  if (isAlreadySyncedComponentProof) {
+    return;
+  }
+
+  await getEntities(
+    client,
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "FixedLen",
+        models: [
+          "s0_eternum-CapacityCategory",
+          "s0_eternum-Health",
+          "s0_eternum-Army",
+          "s0_eternum-Protector",
+          "s0_eternum-Protectee",
+          "s0_eternum-Battle",
+          "s0_eternum-Guild",
+          "s0_eternum-GuildMember",
+          "s0_eternum-Hyperstructure",
+          "s0_eternum-Movable",
+          "s0_eternum-ArrivalTime",
+          "s0_eternum-EntityName",
+          "s0_eternum-Position",
+          "s0_eternum-ProductionDeadline",
+          "s0_eternum-Quantity",
+          "s0_eternum-QuantityTracker",
+          "s0_eternum-OwnedResourcesTracker",
+          "s0_eternum-ResourceTransferLock",
+          "s0_eternum-Season",
+          "s0_eternum-Leaderboard",
+          "s0_eternum-LeaderboardRegistered",
+          "s0_eternum-LeaderboardRewardClaimed",
+          "s0_eternum-LeaderboardEntry",
+          "s0_eternum-Stamina",
+          "s0_eternum-Structure",
+          "s0_eternum-StructureCount",
+          "s0_eternum-Trade",
+          "s0_eternum-Status",
+          "s0_eternum-Weight",
+          "s0_eternum-Bank",
+        ],
+      },
+    },
+    components as any,
+    100_000,
+    false,
+  );
+};
