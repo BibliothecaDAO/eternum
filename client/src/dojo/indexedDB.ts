@@ -194,7 +194,7 @@ export const getEntitiesByTime = async <S extends Schema>(
     let offset = 0;
     let continueFetching = true;
 
-    
+    while (continueFetching) {
         const entities = await client.getEntities({
             limit,
             offset,
@@ -220,7 +220,7 @@ export const getEntitiesByTime = async <S extends Schema>(
         } else {
             offset += limit;
         }
-    
+    }
 };
 
 const setLastSync = (time: string) => {

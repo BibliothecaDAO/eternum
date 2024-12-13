@@ -4,9 +4,9 @@ import {
   WORLD_CONFIG_ID
 } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getEntities, getSyncEvents, setEntities, syncEntities } from "@dojoengine/state";
+import { getSyncEvents, setEntities, syncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
-import { allModels } from "./allModels";
+import { everyModel } from "./allModels";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
 import { getAllEntities, getEntitiesByTime, getLastSync } from "./indexedDB";
@@ -66,10 +66,21 @@ export async function setup({ ...config }: DojoConfig) {
   time = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
  }
 
-  const createClause = allModels.map((model) => {
+  const createClause1 = everyModel.slice(0, 60).map((model) => {
     return {
       Member: {
-        model: `s0_eternum-${model}`,
+        model: `${model}`,
+        member: "internal_updated_at",
+        operator: "Gte",
+        value: { String: time },
+      },
+    };
+  });
+
+  const createClause2 = everyModel.slice(60).map((model) => {
+    return {
+      Member: {
+        model: `${model}`,
         member: "internal_updated_at",
         operator: "Gte",
         value: { String: time },
@@ -81,13 +92,22 @@ export async function setup({ ...config }: DojoConfig) {
     Composite: {
       operator: "Or",
       clauses: [
-        ...createClause as any,
+        ...createClause1 as any,
       ],
     },
-  }, [], 50000, false);
+  }, [], 20000, false);
+
+  await getEntitiesByTime(network.toriiClient, {
+    Composite: {
+      operator: "Or",
+      clauses: [
+        ...createClause2 as any,
+      ],
+    },
+  }, [], 20000, false);
 
   // fetch all existing entities from indexedDB
-  await getEntities(network.toriiClient, {Composite: {operator: "Or", clauses: configClauses}}, network.contractComponents as any);
+  // await getEntities(network.toriiClient, {Composite: {operator: "Or", clauses: configClauses}}, network.contractComponents as any);
 
   // const clauses: Clause[] = [
   //   {
