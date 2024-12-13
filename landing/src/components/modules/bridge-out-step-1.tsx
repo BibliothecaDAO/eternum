@@ -162,7 +162,7 @@ export const BridgeOutStep1 = () => {
             <div className="text-xs uppercase mb-1 ">From Realm</div>
             <Select onValueChange={(value) => setRealmEntityId(value)}>
               <SelectTrigger className="w-full bg-background dark:[background:linear-gradient(45deg,#1a1311,#1a1311)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box] light:[background:linear-gradient(45deg,#ffffff,#ffffff)_padding-box,conic-gradient(from_var(--border-angle),#d4b17d_80%,_#e8c088_86%,_#f5d4a3_90%,_#e8c088_94%,_#d4b17d)_border-box] border border-transparent animate-border">
-                <SelectValue placeholder="Select Settled Realm" />
+                {address ? <SelectValue placeholder="Select Settled Realm" /> : <div> -- Connect your wallet --</div>}
               </SelectTrigger>
               <SelectContent>
                 {playerRealmsIdAndName.map((realm) => {

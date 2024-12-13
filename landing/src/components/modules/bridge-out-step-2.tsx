@@ -142,7 +142,7 @@ export const BridgeOutStep2 = () => {
         <hr />
         <div className="mb-2">
           <div className="text-xs uppercase mb-1">Withdraw To</div>
-          <div>{displayAddress(address || "")}</div>
+          <div>{address ? displayAddress(address || "") : " -- Connect your wallet --"}</div>
         </div>
         <Collapsible open={isTableOpen} onOpenChange={setIsTableOpen}>
           <CollapsibleTrigger className="flex w-full items-center justify-between p-2 hover:bg-gold/5 rounded-lg">
@@ -308,7 +308,7 @@ export const BridgeOutStep2 = () => {
           className="w-full"
         >
           {isLoading && <Loader className="animate-spin pr-2" />}
-          {isLoading ? "Sending to Wallet..." : "Send to Wallet (Final Step)"}
+          {isLoading ? "Sending to Wallet..." : "Send to Wallet"}
         </Button>
       </div>
     </>

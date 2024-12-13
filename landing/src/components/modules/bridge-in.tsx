@@ -190,7 +190,11 @@ export const BridgeIn = () => {
 
             <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
               <SelectTrigger className="w-full dark:[background:linear-gradient(45deg,#1a1311,#1a1311)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box] light:[background:linear-gradient(45deg,#ffffff,#ffffff)_padding-box,conic-gradient(from_var(--border-angle),#b08c4f_80%,_#daa520_86%,_#ffd700_90%,_#daa520_94%,_#b08c4f)_border-box] border border-transparent animate-border">
-                <SelectValue placeholder="Select Realm To Transfer" />
+                {address ? (
+                  <SelectValue placeholder="Select Realm To Transfer" />
+                ) : (
+                  <div> -- Connect your wallet --</div>
+                )}
               </SelectTrigger>
               <SelectContent>
                 {playerRealmsIdAndName.length
