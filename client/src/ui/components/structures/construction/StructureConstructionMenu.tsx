@@ -4,7 +4,14 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED, HYPERSTRUCTURE_CREATION_COSTS, ID, ResourceTier, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import {
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
+  HYPERSTRUCTURE_CREATION_COSTS,
+  ID,
+  ResourceTier,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import React from "react";
 import { StructureCard } from "./StructureCard";
 

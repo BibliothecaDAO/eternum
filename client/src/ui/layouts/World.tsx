@@ -132,7 +132,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     );
 
     setWorldLoading(true);
-    setSubscriptions((prev) => ({ ...prev, [structureEntityId.toString()]: true, [ADMIN_BANK_ENTITY_ID.toString()]: true }));
+    setSubscriptions((prev) => ({
+      ...prev,
+      [structureEntityId.toString()]: true,
+      [ADMIN_BANK_ENTITY_ID.toString()]: true,
+    }));
     const fetch = async () => {
       try {
         await addToSubscription(
