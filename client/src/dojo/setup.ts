@@ -4,15 +4,15 @@ import {
   WORLD_CONFIG_ID
 } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getEntities, getSyncEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
+import { getEntities, getSyncEvents, setEntities, syncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
+import { allModels } from "./allModels";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
-import { getAllEntities, setAllDbEntities } from "./indexedDB";
+import { getAllEntities, getEntitiesByTime, getLastSync } from "./indexedDB";
 import { ClientConfigManager } from "./modelManager/ConfigManager";
 import { setupNetwork } from "./setupNetwork";
 
-import entitiesJson from "./entities.json";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
@@ -22,6 +22,12 @@ export async function setup({ ...config }: DojoConfig) {
   const network = await setupNetwork(config);
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
+
+
+  // set entities from indexedDB
+  const entities = await getAllEntities();
+  setEntities(entities, network.contractComponents as any, false);
+  console.log("cached entities", entities);
 
   const configClauses: Clause[] = [
     {
@@ -54,38 +60,55 @@ export async function setup({ ...config }: DojoConfig) {
         },
   ];
 
-  await setAllDbEntities(entitiesJson as any);
-  // fetch all existing entities from indexedDB
-  const entities = await getAllEntities();
-  console.log("cache", entities);
+ let time = getLastSync()
 
+ if(!time) {
+  time = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+ }
+
+  const createClause = allModels.map((model) => {
+    return {
+      Member: {
+        model: `s0_eternum-${model}`,
+        member: "internal_updated_at",
+        operator: "Gte",
+        value: { String: time },
+      },
+    };
+  });
+
+  await getEntitiesByTime(network.toriiClient, {
+    Composite: {
+      operator: "Or",
+      clauses: [
+        ...createClause as any,
+      ],
+    },
+  }, [], 50000, false);
+
+  // fetch all existing entities from indexedDB
   await getEntities(network.toriiClient, {Composite: {operator: "Or", clauses: configClauses}}, network.contractComponents as any);
 
-  const clauses: Clause[] = [
-    {
-      Keys: {
-        keys: [undefined],
-        pattern_matching: "FixedLen",
-        models: [],
-      },
-    },
-  ];
+  // const clauses: Clause[] = [
+  //   {
+  //     Keys: {
+  //       keys: [undefined],
+  //       pattern_matching: "FixedLen",
+  //       models: [],
+  //     },
+  //   },
+  // ];
 
-  // fetch all existing entities from torii
-  await getSyncEntities(
-    network.toriiClient,
-    network.contractComponents as any,
-    { Composite: { operator: "Or", clauses } },
-    [],
-    40_000,
-    false,
-  );
+  // // fetch all existing entities from torii
+  // await getEntities(
+  //   network.toriiClient,
+  //   { Composite: { operator: "Or", clauses } },
+  //   network.contractComponents as any,
+  //   40_000,
+  // );
 
+  // setup sync to all
   const sync = await syncEntities(network.toriiClient, network.contractComponents as any, [], false);
-  const syncObject = {
-    sync,
-    clauses: [...clauses],
-  };
 
   configManager.setDojo(components);
 
@@ -103,7 +126,6 @@ export async function setup({ ...config }: DojoConfig) {
     network,
     components,
     systemCalls,
-    syncObject,
     sync,
     eventSync,
   };

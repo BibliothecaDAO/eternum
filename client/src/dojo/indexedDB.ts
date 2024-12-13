@@ -183,18 +183,18 @@ async function setAllDbEntities(entities: EntityData): Promise<void> {
   });
 }
 
-export const getEntities = async <S extends Schema>(
+export const getEntitiesByTime = async <S extends Schema>(
     client: ToriiClient,
     clause: Clause | undefined,
     components: Component<S, Metadata, undefined>[],
     limit: number = 100,
     logging: boolean = false
 ) => {
-    if (logging) console.log("Starting getEntities");
+    console.log("Starting getEntities");
     let offset = 0;
     let continueFetching = true;
 
-    while (continueFetching) {
+    
         const entities = await client.getEntities({
             limit,
             offset,
@@ -203,7 +203,7 @@ export const getEntities = async <S extends Schema>(
             order_by: [],
         });
 
-        if (logging) console.log("entities", entities);
+        console.log("entities", entities);
 
         if (logging) console.log(`Fetched ${entities} entities`);
 
@@ -213,15 +213,26 @@ export const getEntities = async <S extends Schema>(
         // set in recs
         setEntities(entities, components, logging);
 
+        setLastSync(new Date(Date.now()).toISOString() + "+00:00");
+
         if (Object.keys(entities).length < limit) {
             continueFetching = false;
         } else {
             offset += limit;
         }
-    }
+    
 };
 
+const setLastSync = (time: string) => {
+  localStorage.setItem('lastSync', time);
+}
+
+const getLastSync = () => {
+    console.log("lastSync", localStorage.getItem('lastSync'));
+  return localStorage.getItem('lastSync');
+}
 
 
-export { getAllEntities, getEntity, openDatabase, setAllDbEntities, setEntity, type ConfigValue, type EntityData, type GameConfig, type GameData };
+
+export { getAllEntities, getEntity, getLastSync, openDatabase, setAllDbEntities, setEntity, setLastSync, type ConfigValue, type EntityData, type GameConfig, type GameData };
 

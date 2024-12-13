@@ -1,12 +1,6 @@
-// onload -> fetch single key entities
-
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, PatternMatching, ToriiClient } from "@dojoengine/torii-client";
-
-// on hexception -> fetch below queries based on entityID
-
-// background sync after load ->
 
 export const getEntities = async <S extends Schema>(
   client: ToriiClient,
@@ -28,6 +22,8 @@ export const getEntities = async <S extends Schema>(
       order_by: [],
     });
 
+    console.log("entities", entities);
+
     setEntities(entities, components);
 
     if (Object.keys(entities).length < limit) {
@@ -36,20 +32,6 @@ export const getEntities = async <S extends Schema>(
       offset += limit;
     }
   }
-};
-
-export const syncEntitiesEternum = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityKeyClause: EntityKeysClause[],
-  logging: boolean = false,
-) => {
-  // if (logging) console.log("Starting syncEntities");
-  return await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    // if (logging) console.log("Entity updated", fetchedEntities);
-
-    setEntities({ [fetchedEntities]: data }, components);
-  });
 };
 
 export const addToSubscription = async <S extends Schema>(
@@ -73,7 +55,7 @@ export const addToSubscription = async <S extends Schema>(
         ...positionClause,
       },
       components,
-      10_000,
+      40_000,
       false,
     ));
 
@@ -87,7 +69,7 @@ export const addToSubscription = async <S extends Schema>(
       },
     },
     components,
-    10_000,
+    40_000,
     false,
   );
 };
@@ -106,7 +88,7 @@ export const addMarketSubscription = async <S extends Schema>(
       },
     },
     components,
-    10_000,
+    40_000,
     false,
   );
 };
