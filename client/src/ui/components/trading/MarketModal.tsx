@@ -142,7 +142,7 @@ export const MarketModal = () => {
           </div>
         ),
         component: bank && (
-          <Suspense fallback={ <LoadingAnimation />}>
+          <Suspense fallback={<LoadingAnimation />}>
             <BankPanel
               bankEntityId={bank.entityId}
               structureEntityId={structureEntityId}
