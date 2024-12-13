@@ -333,6 +333,7 @@ export default class WorldmapScene extends HexagonScene {
           const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
           playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
           armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
+          this.state.updateHoveredHex(null);
         }
       }
     }
