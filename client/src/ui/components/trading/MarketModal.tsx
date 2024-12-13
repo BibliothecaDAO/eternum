@@ -53,21 +53,16 @@ export const MarketModal = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const { playerStructures } = useEntities();
-
   const { toggleModal } = useModalStore();
-
   const banks = useGetBanks();
-
-  const bank = banks.length === 1 ? banks[0] : null;
-
   const { bidOffers, askOffers } = useSetMarket();
 
+  const bank = banks.length === 1 ? banks[0] : null;
   const battles = useBattlesByPosition(bank?.position || { x: 0, y: 0 });
 
   const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
   const getStructure = useStructureByPosition();
-
   const bankStructure = getStructure(bank?.position || { x: 0, y: 0 });
 
   const battle = useMemo(() => {
@@ -114,6 +109,37 @@ export const MarketModal = () => {
     return battleManager.getUpdatedArmy(bankArmy, updatedBattle);
   }, [currentBlockTimestamp, battleManager, bankArmy]);
 
+
+  // const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
+  // const [isLoading, setIsLoading] = useState(false);
+
+  // useEffect(() => {
+  //   // if (!bank?.entityId || subscriptions[bank?.entityId?.toString()]) {
+  //   //   return;
+  //   // }
+  //   // setSubscriptions((prev) => ({ ...prev, [bank?.entityId?.toString()]: true }));
+  //   const fetch = async () => {
+  //     setIsLoading(true);
+
+  //     try {
+  //       await addToSubscription(
+  //         dojo.network.toriiClient,
+  //         dojo.network.contractComponents as any,
+  //         bank?.entityId?.toString() || "",
+  //         { x: 0, y: 0 },
+  //       );
+  //     } catch (error) {
+  //       console.error("Fetch failed", error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+
+  //     console.log("market modal loading");
+  //   };
+
+  //   fetch();
+  // }, [structureEntityId, bank?.entityId]);
+
   const tabs = useMemo(
     () => [
       {
@@ -144,7 +170,7 @@ export const MarketModal = () => {
           </div>
         ),
         component: bank && (
-          <Suspense fallback={<LoadingAnimation />}>
+          <Suspense fallback={ <LoadingAnimation />}>
             <BankPanel
               bankEntityId={bank.entityId}
               structureEntityId={structureEntityId}

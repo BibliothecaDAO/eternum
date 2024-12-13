@@ -4,7 +4,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED, HYPERSTRUCTURE_CREATION_COSTS, ID, ResourceTier, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import React from "react";
 import { StructureCard } from "./StructureCard";
 
@@ -43,7 +43,7 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
 
         // if is hyperstructure, the construction cost are only fragments
         const isHyperstructure = building === StructureType["Hyperstructure"];
-        const cost = configManager.structureCosts[building].filter(
+        const cost = HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED.filter(
           (cost) => !isHyperstructure || cost.resource === ResourcesIds.AncientFragment,
         );
 
@@ -85,8 +85,8 @@ const StructureInfo = ({
 }) => {
   // if is hyperstructure, the construction cost are only fragments
   const isHyperstructure = structureId === StructureType["Hyperstructure"];
-  const cost = configManager.structureCosts[structureId].filter(
-    (cost) => !isHyperstructure || cost.resource === ResourcesIds.AncientFragment,
+  const cost = HYPERSTRUCTURE_CREATION_COSTS.filter(
+    (cost) => !isHyperstructure || cost.resource_tier === ResourceTier.Lords,
   );
 
   const perTick =
@@ -110,13 +110,13 @@ const StructureInfo = ({
       <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
       <div className="grid grid-cols-1 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, ResourcesIds.AncientFragment);
           return (
             <ResourceCost
               key={index}
               type="horizontal"
-              resourceId={cost[Number(resourceId)].resource}
-              amount={cost[Number(resourceId)].amount}
+              resourceId={ResourcesIds.AncientFragment}
+              amount={cost[Number(resourceId)].min_amount * 1000}
               balance={balance.balance}
             />
           );
