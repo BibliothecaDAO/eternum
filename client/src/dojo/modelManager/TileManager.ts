@@ -208,38 +208,36 @@ export class TileManager {
 
     const populationOverrideId = uuid();
 
-    const realmEntityId = getEntityIdFromKeys([BigInt(entityId)]);
+    const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
 
     this.setup.components.Population.addOverride(populationOverrideId, {
-      entity: realmEntityId,
+      entity: realmEntity,
       value: {
         population:
-          (getComponentValue(this.setup.components.Population, realmEntityId)?.population || 0) +
+          (getComponentValue(this.setup.components.Population, realmEntity)?.population || 0) +
           configManager.getBuildingPopConfig(buildingType).population,
         capacity:
-          (getComponentValue(this.setup.components.Population, realmEntityId)?.capacity || 0) +
+          (getComponentValue(this.setup.components.Population, realmEntity)?.capacity || 0) +
           configManager.getBuildingPopConfig(buildingType).capacity,
       },
     });
     const quantityOverrideId = uuid();
-    if (buildingType === BuildingType.Storehouse) {
-      const storehouseQuantity =
-        getComponentValue(
-          this.setup.components.BuildingQuantityv2,
-          getEntityIdFromKeys([BigInt(entityId), BigInt(buildingType)]),
-        )?.value || 0;
 
-      this.setup.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
-        entity: realmEntityId,
-        value: {
-          value: storehouseQuantity + 1,
-        },
-      });
-    }
+    const buildingQuantityEntity = getEntityIdFromKeys([BigInt(entityId), BigInt(buildingType)]);
+
+    const storehouseQuantity =
+      getComponentValue(this.setup.components.BuildingQuantityv2, buildingQuantityEntity)?.value || 0;
+
+    this.setup.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
+      entity: buildingQuantityEntity,
+      value: {
+        value: storehouseQuantity + 1,
+      },
+    });
 
     const resourceChange = configManager.buildingCosts[buildingType];
     resourceChange.forEach((resource) => {
-      this._overrideResource(realmEntityId, resource.resource, -BigInt(resource.amount));
+      this._overrideResource(realmEntity, resource.resource, -BigInt(resource.amount));
     });
 
     return { overrideId, populationOverrideId, quantityOverrideId };

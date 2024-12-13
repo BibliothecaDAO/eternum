@@ -136,13 +136,45 @@ export const BridgeOutStep2 = () => {
     <>
       <div className="max-w-md bg-background flex flex-col gap-3 max-h-[calc(75vh-100px)] overflow-y-auto p-3">
         <TypeP>
-          Finalise the withdrawal of resources from your Realm in Eternum to your Starknet wallet. The bridge will close
-          and you will be unable to withdraw 48 hours after the Season is won.
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold mb-4 text-gold border-b border-gold/20 pb-2">
+              Finalize Bridge Withdrawal
+            </h2>
+
+            <div className="flex flex-col gap-4 bg-gold/5 p-4 rounded-lg border border-gold/10">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gold/20 text-gold">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-gold/90">Complete Withdrawal</h3>
+                  <p className="text-sm opacity-80">
+                    Finalize the withdrawal of resources from your Realm in Eternum to your Starknet wallet. Select a
+                    donkey to withdraw resources from.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </TypeP>
         <hr />
         <div className="mb-2">
           <div className="text-xs uppercase mb-1">Withdraw To</div>
-          <div>{displayAddress(address || "")}</div>
+          <div>{address ? displayAddress(address || "") : " -- Connect your wallet --"}</div>
         </div>
         <Collapsible open={isTableOpen} onOpenChange={setIsTableOpen}>
           <CollapsibleTrigger className="flex w-full items-center justify-between p-2 hover:bg-gold/5 rounded-lg">
@@ -308,7 +340,7 @@ export const BridgeOutStep2 = () => {
           className="w-full"
         >
           {isLoading && <Loader className="animate-spin pr-2" />}
-          {isLoading ? "Sending to Wallet..." : "Send to Wallet (Final Step)"}
+          {isLoading ? "Sending to Wallet..." : "Send to Wallet"}
         </Button>
       </div>
     </>

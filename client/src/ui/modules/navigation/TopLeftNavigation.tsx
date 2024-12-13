@@ -2,7 +2,6 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
@@ -96,7 +95,6 @@ const WorkersHutTooltipContent = () => {
 export const TopLeftNavigation = memo(() => {
   const { setup } = useDojo();
 
-  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
   const { playerStructures } = useEntities();
   const { getEntityInfo } = useEntitiesUtils();
@@ -321,11 +319,7 @@ export const TopLeftNavigation = memo(() => {
       </motion.div>
       <div className="relative">
         <SecondaryMenuItems />
-        {unclaimedQuestsCount > 0 && (
-          <div className="absolute right-0 px-4 top-full mt-2">
-            <QuestsMenu unclaimedQuestsCount={unclaimedQuestsCount} />
-          </div>
-        )}
+        <QuestsMenu />
       </div>
     </div>
   );

@@ -293,7 +293,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
-    const overlay = document.querySelector(".shepherd-modal-overlay-container");
+    const overlay = document.querySelector(".shepherd-modal-is-visible");
     const overlayClick = document.querySelector(".allow-modal-click");
     if (overlay && !overlayClick) {
       return;

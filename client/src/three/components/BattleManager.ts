@@ -116,7 +116,7 @@ export class BattleManager {
     this.battles.removeBattle(entityId);
 
     const label = this.labels.get(entityId);
-    
+
     if (!label) throw new Error(`Label not found for entityId ${entityId}`);
 
     this.labelManager.removeLabel(label, this.scene);

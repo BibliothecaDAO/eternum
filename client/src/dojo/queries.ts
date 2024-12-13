@@ -69,7 +69,7 @@ export const addToSubscription = async <S extends Schema>(
       },
     },
     components,
-    40_000,
+    20_000,
     false,
   );
 };
@@ -88,7 +88,7 @@ export const addMarketSubscription = async <S extends Schema>(
       },
     },
     components,
-    40_000,
+    50_000,
     false,
   );
 };

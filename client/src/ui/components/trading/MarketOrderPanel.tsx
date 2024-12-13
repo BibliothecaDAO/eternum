@@ -11,6 +11,7 @@ import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import {
+  calculateDonkeysNeeded,
   currencyFormat,
   divideByPrecision,
   formatNumber,
@@ -691,8 +692,4 @@ const OrderCreation = ({
       </div>
     </div>
   );
-};
-
-const calculateDonkeysNeeded = (orderWeight: number): number => {
-  return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
 };

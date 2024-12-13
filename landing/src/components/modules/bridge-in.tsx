@@ -38,8 +38,10 @@ export const BridgeIn = () => {
   const { computeTravelTime } = useTravel();
   const { getRealmNameById } = useRealm();
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([]);
-  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
+  const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([ResourcesIds.Lords]);
+  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({
+    [ResourcesIds.Lords]: 0,
+  });
   const [resourceAddresses, setResourceAddresses] = useState<{ [key: string]: string }>({});
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -151,8 +153,10 @@ export const BridgeIn = () => {
 
       const resp = await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
       if (resp) {
-        setSelectedResourceIds([]);
-        setSelectedResourceAmounts({});
+        setSelectedResourceIds([ResourcesIds.Lords]);
+        setSelectedResourceAmounts({
+          [ResourcesIds.Lords]: 0,
+        });
       }
     } catch (error) {
       console.error("Bridge into realm error:", error);
@@ -168,12 +172,49 @@ export const BridgeIn = () => {
     <>
       <div className="max-w-md flex flex-col bg-background gap-3 relative max-h-[calc(75vh-100px)] overflow-y-auto p-3">
         <TypeP>
-          Bridge resources and lords from your Starknet wallet into the Eternum game. You will have to complete the
-          claim on your Realm in the{" "}
-          <a href="https://eternum.realms.world/" target="_blank" className="text-gold underline">
-            game
-          </a>
-          .
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold mb-4 text-gold border-b border-gold/20 pb-2">
+              Bridge Resources Into Your Realm
+            </h2>
+
+            <div className="flex flex-col gap-4 bg-gold/5 p-4 rounded-lg border border-gold/10">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gold/20 text-gold font-semibold text-sm">
+                    1
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-gold/90">Bridge Assets into the Game</h3>
+                  <p className="text-sm opacity-80">
+                    Bridge your ERC20 assets, resources and lords from your Starknet wallet into the Eternum game.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gold/20 text-gold font-semibold text-sm">
+                    2
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-gold/90">Complete Claim</h3>
+                  <p className="text-sm opacity-80">
+                    Complete the claim on your Realm in the{" "}
+                    <a
+                      href="https://eternum.realms.world/"
+                      target="_blank"
+                      className="text-gold underline hover:text-gold/80 transition-colors"
+                    >
+                      <span className="font-bold">game</span>
+                    </a>{" "}
+                    by checking the <span className="font-bold">Resource Arrivals (Donkeys)</span> tab in the game.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </TypeP>
         <hr />
         <div className="flex justify-between">
@@ -186,7 +227,11 @@ export const BridgeIn = () => {
 
             <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
               <SelectTrigger className="w-full dark:[background:linear-gradient(45deg,#1a1311,#1a1311)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box] light:[background:linear-gradient(45deg,#ffffff,#ffffff)_padding-box,conic-gradient(from_var(--border-angle),#b08c4f_80%,_#daa520_86%,_#ffd700_90%,_#daa520_94%,_#b08c4f)_border-box] border border-transparent animate-border">
-                <SelectValue placeholder="Select Realm To Transfer" />
+                {address ? (
+                  <SelectValue placeholder="Select Realm To Transfer" />
+                ) : (
+                  <div> -- Connect your wallet --</div>
+                )}
               </SelectTrigger>
               <SelectContent>
                 {playerRealmsIdAndName.length

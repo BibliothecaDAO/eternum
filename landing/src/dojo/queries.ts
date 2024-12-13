@@ -98,7 +98,7 @@ export const addToSubscription = async <S extends Schema>(
       },
     },
     components,
-    10_000,
+    20_000,
     false,
   );
 };
