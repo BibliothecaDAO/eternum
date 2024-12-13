@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
-import { addToSubscription } from "@/dojo/queries";
+import { addMarketSubscription, addToSubscription } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
@@ -102,6 +102,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   const worldLoading = useWorldStore((state) => state.isWorldLoading);
   const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
+  const setMarketLoading = useWorldStore((state) => state.setMarketLoading);
 
   const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -141,6 +142,14 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       }
 
       console.log("world loading", worldLoading);
+
+      try {
+        await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
+      } catch (error) {
+        console.error("Fetch failed", error);
+      } finally {
+        setMarketLoading(false);
+      }
     };
 
     fetch();

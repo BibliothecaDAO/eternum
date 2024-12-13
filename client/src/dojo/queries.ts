@@ -66,15 +66,16 @@ export const addToSubscription = async <S extends Schema>(
     },
   };
 
-  await getEntities(
-    client,
-    {
-      ...positionClause,
-    },
-    components,
-    10_000,
-    false,
-  );
+  position &&
+    (await getEntities(
+      client,
+      {
+        ...positionClause,
+      },
+      components,
+      10_000,
+      false,
+    ));
 
   await getEntities(
     client,
@@ -89,7 +90,12 @@ export const addToSubscription = async <S extends Schema>(
     10_000,
     false,
   );
+};
 
+export const addMarketSubscription = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+) => {
   await getEntities(
     client,
     {
