@@ -77,19 +77,44 @@ export const addToSubscription = async <S extends Schema>(
       false,
     ));
 
+  const cache = getCache();
+
+  let time = cache ? cache : new Date().toISOString();
+
+  // cache this
+  // from then on only get future
   await getEntities(
     client,
     {
-      Keys: {
-        keys: [entityID],
-        pattern_matching: "VariableLen",
-        models: [],
+      Composite: {
+        operator: "And",
+        clauses: [
+          {
+            Keys: {
+              keys: [entityID],
+              pattern_matching: "VariableLen",
+              models: [],
+            },
+          },
+          {
+            Member: {
+              model: "s0_eternum-Realm",
+              member: "internal_updated_at",
+              operator: "Gte",
+              value: { String: time },
+            },
+          },
+        ],
       },
     },
     components,
     20_000,
     false,
   );
+
+  console.log("cache", cache);
+
+  setCache(time);
 };
 
 export const addMarketSubscription = async <S extends Schema>(
@@ -109,4 +134,12 @@ export const addMarketSubscription = async <S extends Schema>(
     50_000,
     false,
   );
+};
+
+const setCache = (time: string) => {
+  localStorage.setItem("eternum_cache", time);
+};
+
+const getCache = () => {
+  return localStorage.getItem("eternum_cache");
 };
