@@ -25,31 +25,43 @@ export const SeasonPassesGrid = ({ toggleNftSelection, isNftSelected, seasonPass
 
   if (!seasonPasses?.length) {
     return (
-      <div className="relative flex flex-col items-center justify-center p-16 text-center space-y-6 min-h-[500px] rounded-xl border-2 border-dashed border-gray-200 bg-gradient-to-b from-gray-50/50 to-gray-100/50">
-        {/* Decorative elements */}
+      <div className="relative flex flex-col items-center justify-center p-16 text-center space-y-8 min-h-[600px] rounded-xl border-2 border-dashed border-gray-200/70 bg-gradient-to-b from-gray-50/50 to-gray-100/50">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-4 -left-4 w-24 h-24 bg-primary/5 rounded-full blur-xl" />
-          <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary/5 rounded-full blur-xl" />
+          <div className="absolute -top-4 -left-4 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-pulse" />
+          <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-pulse" />
         </div>
-        <Crown className="w-20 h-20 text-primary/60 animate-pulse" />
         
-        <div className="relative">
-          <h3 className="text-2xl font-bold text-gray-900 tracking-tight mt-6">
+        <Crown className="w-24 h-24 text-primary/70 animate-pulse drop-shadow-lg" />
+        
+        <div className="relative space-y-6">
+          <h3 className="text-3xl font-bold text-gray-900 tracking-tight">
             No Season Passes Yet
           </h3>
           
-          <p className="text-gray-600 max-w-md leading-relaxed">
-            Your collection of season passes will appear here once you acquire them.
-            Get your first pass to join the game and start your journey into Eternum!
-          </p>
+          <div className="space-y-4">
+            <p className="text-gray-600 max-w-lg mx-auto leading-relaxed">
+              Your collection of season passes will appear here until you burn them to mint a realm in the game.
+            </p>
+            <p className="text-gray-500 max-w-lg mx-auto leading-relaxed">
+              Once you burn a pass, it will be removed from this view.
+            </p>
+            
+            <p className="text-primary/80 font-medium text-lg mt-6">
+              Get your pass to join the game and start your journey into Eternum!
+            </p>
+          </div>
           
-          <a href={`https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80`} target="_blank">
+          <a 
+            href="https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80" 
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Button 
               variant="outline" 
-            className="mt-6 group hover:border-primary/50 transition-all duration-300"
-          >
-            <Crown className="w-4 h-4 mr-2 group-hover:text-primary transition-colors" />
-            Buy Your First Pass 
+              className="mt-8 group hover:border-primary/50 hover:bg-primary/5 transition-all duration-300"
+            >
+              <Crown className="w-5 h-5 mr-2 group-hover:text-primary transition-colors" />
+              Get Your Season Pass 
             </Button>
           </a>
         </div>

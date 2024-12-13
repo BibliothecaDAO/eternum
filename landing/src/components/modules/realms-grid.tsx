@@ -49,7 +49,7 @@ export const RealmsGrid = ({
           <p className="text-gray-600 max-w-md leading-relaxed">
             Your collection of realms will appear here once you acquire them.
             
-            Get your first realm to start your journey into Realms World!
+            Get your realm to start your journey into Realms World!
           </p>
           
           <a href={`https://market.realms.world/collection/0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809`} target="_blank">
@@ -58,7 +58,7 @@ export const RealmsGrid = ({
             className="mt-6 group hover:border-primary/50 transition-all duration-300"
           >
             <Castle className="w-4 h-4 mr-2 group-hover:text-primary transition-colors" />
-            Buy Your First Realm 
+            Get Your Realm 
             </Button>
           </a>
         </div>
