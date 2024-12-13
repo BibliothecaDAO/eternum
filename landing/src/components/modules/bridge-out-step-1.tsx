@@ -22,7 +22,12 @@ import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Tooltip, TooltipProvider } from "../ui/tooltip";
-import { calculateDonkeysNeeded, divideByPrecision, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
+import {
+  calculateDonkeysNeeded,
+  divideByPrecision,
+  getSeasonAddresses,
+  getTotalResourceWeight,
+} from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
 function formatFee(fee: number) {
@@ -210,7 +215,8 @@ export const BridgeOutStep1 = () => {
               </TooltipProvider>
             </div>
             <div className="flex items-center gap-2">
-              {donkeysNeeded} / {divideByPrecision(donkeyBalance.balance)} <ResourceIcon resource={"Donkey"} size="md" />
+              {donkeysNeeded} / {divideByPrecision(donkeyBalance.balance)}{" "}
+              <ResourceIcon resource={"Donkey"} size="md" />
             </div>
           </div>
           <BridgeFees

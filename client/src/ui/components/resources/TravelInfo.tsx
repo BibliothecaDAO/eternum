@@ -2,7 +2,13 @@ import { configManager } from "@/dojo/setup";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { calculateDonkeysNeeded, currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
+import {
+  calculateDonkeysNeeded,
+  currencyFormat,
+  divideByPrecision,
+  getTotalResourceWeight,
+  multiplyByPrecision,
+} from "@/ui/utils/utils";
 import { CapacityConfigCategory, ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
@@ -21,7 +27,7 @@ export const TravelInfo = ({
 }) => {
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
-  const neededDonkeys = calculateDonkeysNeeded(resourceWeight)
+  const neededDonkeys = calculateDonkeysNeeded(resourceWeight);
 
   const { getBalance } = useResourceBalance();
 
