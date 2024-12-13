@@ -38,8 +38,10 @@ export const BridgeIn = () => {
   const { computeTravelTime } = useTravel();
   const { getRealmNameById } = useRealm();
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([]);
-  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
+  const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([ResourcesIds.Lords]);
+  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({
+    [ResourcesIds.Lords]: 0,
+  });
   const [resourceAddresses, setResourceAddresses] = useState<{ [key: string]: string }>({});
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -151,8 +153,10 @@ export const BridgeIn = () => {
 
       const resp = await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
       if (resp) {
-        setSelectedResourceIds([]);
-        setSelectedResourceAmounts({});
+        setSelectedResourceIds([ResourcesIds.Lords]);
+        setSelectedResourceAmounts({
+          [ResourcesIds.Lords]: 0,
+        });
       }
     } catch (error) {
       console.error("Bridge into realm error:", error);
