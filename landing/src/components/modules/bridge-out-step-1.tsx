@@ -153,8 +153,57 @@ export const BridgeOutStep1 = () => {
     <>
       <div className="max-w-md bg-background flex flex-col gap-3 max-h-[calc(75vh-100px)] overflow-y-auto p-3">
         <TypeP>
-          Bridge resources from your Realms balance in game to tradeable ERC20 assets in your Starknet wallet. This will
-          require a second step to send the resources to your wallet once the donkeys have arrived at the bank.
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold mb-4 text-gold border-b border-gold/20 pb-2">
+              Bridge Resources to Wallet
+            </h2>
+
+            <div className="flex flex-col gap-4 bg-gold/5 p-4 rounded-lg border border-gold/10">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gold/20 text-gold font-semibold text-sm">
+                    1
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-gold/90">Bridge Resources</h3>
+                  <p className="text-sm opacity-80">
+                    Bridge resources from your Realms balance in-game to tradeable ERC20 assets in your Starknet wallet.
+                    The first step is to send it to the bank.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gold/20 text-gold font-semibold text-sm">
+                    2
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-gold/90">Complete Transfer</h3>
+                  <p className="text-sm opacity-80">
+                    Once the donkeys arrive at the bank, complete the second step ( the next section ) to receive
+                    resources in your wallet.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 mt-1">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gold/20 text-gold font-semibold text-sm">
+                    ℹ️
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-gold/90">Important Note</h3>
+                  <p className="text-sm opacity-80">
+                    This bridge will only be available for withdrawals for up to 48 hours after the Season ends.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </TypeP>
         <hr />
         <div className="flex justify-between">

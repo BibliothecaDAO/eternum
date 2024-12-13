@@ -172,12 +172,49 @@ export const BridgeIn = () => {
     <>
       <div className="max-w-md flex flex-col bg-background gap-3 relative max-h-[calc(75vh-100px)] overflow-y-auto p-3">
         <TypeP>
-          Bridge resources and lords from your Starknet wallet into the Eternum game. You will have to complete the
-          claim on your Realm in the{" "}
-          <a href="https://eternum.realms.world/" target="_blank" className="text-gold underline">
-            game
-          </a>
-          .
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold mb-4 text-gold border-b border-gold/20 pb-2">
+              Bridge Resources Into Your Realm
+            </h2>
+
+            <div className="flex flex-col gap-4 bg-gold/5 p-4 rounded-lg border border-gold/10">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gold/20 text-gold font-semibold text-sm">
+                    1
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-gold/90">Bridge Assets into the Game</h3>
+                  <p className="text-sm opacity-80">
+                    Bridge your ERC20 assets, resources and lords from your Starknet wallet into the Eternum game.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gold/20 text-gold font-semibold text-sm">
+                    2
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-gold/90">Complete Claim</h3>
+                  <p className="text-sm opacity-80">
+                    Complete the claim on your Realm in the{" "}
+                    <a
+                      href="https://eternum.realms.world/"
+                      target="_blank"
+                      className="text-gold underline hover:text-gold/80 transition-colors"
+                    >
+                      <span className="font-bold">game</span>
+                    </a>{" "}
+                    by checking the <span className="font-bold">Resource Arrivals (Donkeys)</span> tab in the game.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </TypeP>
         <hr />
         <div className="flex justify-between">
