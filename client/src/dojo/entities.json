@@ -1,0 +1,3470 @@
+{
+    "0x3a9ac2d1d348f0acaf2e67d47ff3d19465ee10da36ce436842285641d91c28": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 3,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 3,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            }
+        }
+    },
+    "0x79d6c58fc7b57ef726bd8798c1b5c6055d75a3601db9c8e034cdf85badae19a": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 166,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 3,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x76a5ee3abcfbc2e8f2e48b349d9508aec9a098fea4dc633f7994b94b2032d83": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 249,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 249,
+                "key": false
+            }
+        }
+    },
+    "0x67f93492a9ef0ea026e4fd9780fcbcbbd65abe207e9887b526a69fce401137": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 175,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 12,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x10e47b6197ed2afc97df98b97661e579b7e84258dd0f083e80f726e87a0a90c": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 14,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 177,
+                "key": false
+            }
+        }
+    },
+    "0x62793a8416cca374ca031e5061c672a60efea65565dfe54ab22aa1666c3f497": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 2,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "TradingPost",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x6ad14a6c29ca7575b215281f71a7b599efbc1931eb9d1a3204fbe2c99799821": {
+        "s0_eternum-HyperstructureResourceConfig": {
+            "max_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000037e11d6000",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999992,
+                "key": true
+            },
+            "resource_tier": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 5,
+                "key": true
+            },
+            "min_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000001bf08eb000",
+                "key": false
+            }
+        }
+    },
+    "0x7ca96548f99d6e1f31709847d0ce3bfb5a3e7c57ba3ae7303f9de803b5fe62c": {
+        "s0_eternum-HyperstructureResourceConfig": {
+            "resource_tier": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 4,
+                "key": true
+            },
+            "min_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "key": false
+            },
+            "max_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999992,
+                "key": true
+            }
+        }
+    },
+    "0x5f9ae21322637cdd9cd23686066cb54430fbe40ff9198e33e3cb4a093282527": {
+        "s0_eternum-WeightConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 255,
+                "key": false
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 255,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000064",
+                "key": false
+            }
+        }
+    },
+    "0x52f3d12d22ae5848d1504ee83a90308ddbb04ccb1080ba22199e10a01738dc0": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 20,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 183,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0xd81c2b153473658aa635e339139444faadece17e41ecfffa6ec55ff40f4c9e": {
+        "s0_eternum-WeightConfig": {
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 11,
+                "key": false
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 11,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0xb2808adf36592f793cd4145b6db42591e48165321cc2290f06f6f70f426038": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 3,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Market",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            }
+        }
+    },
+    "0x49387c817f1c9d51c25254d651f0b093d85f7bad7f0feb51e00ab05d59262bb": {
+        "s0_eternum-TickConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "tick_id": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 0,
+                "key": true
+            },
+            "tick_interval_in_seconds": {
+                "type": "primitive",
+                "type_name": "u64",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000001",
+                "key": false
+            }
+        },
+        "s0_eternum-TravelStaminaCostConfig": {
+            "cost": {
+                "type": "primitive",
+                "type_name": "u16",
+                "value": 20,
+                "key": false
+            },
+            "travel_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 0,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x58b4ed2e062bf97ba62a57e5018e5d43c6bfe093aad33a10f1641c0e0933308": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 5,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Castle",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            }
+        }
+    },
+    "0x75631f99953d40edab9ac8664191a561023e54aa718048c965011b7b055810c": {
+        "s0_eternum-HyperstructureResourceConfig": {
+            "min_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999992,
+                "key": true
+            },
+            "max_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+                "key": false
+            },
+            "resource_tier": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 1,
+                "key": true
+            }
+        }
+    },
+    "0x2a72db61c03887372e1e100261545bc69675335909764ad9db39bbd35f0de7a": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 13,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 176,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x317e3f48a7474df4e08372af5f5c0004380c96ce96f26332120f7a5933462a6": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 164,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 1,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x462f35788e5e455437936a928b38fcc60398ac98a3001315f8c14c644c023d2": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 9,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 9,
+                "key": false
+            }
+        }
+    },
+    "0x471de648029cfdbf448f5b524c4426f4b233132c233ef4c360565fcbea5718d": {
+        "s0_eternum-BuildingConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 22,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 185,
+                "key": false
+            }
+        }
+    },
+    "0x49924a7ce0fe88b1d4e4b1efa330ae99ffdc2c0c3dcd1feb26f231759c57666": {
+        "s0_eternum-BuildingConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 17,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 180,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x11ed994fea349d0715ad2295442dcee99f9d5233109572cfe7fcb34a4eca70f": {
+        "s0_eternum-HyperstructureResourceConfig": {
+            "max_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "key": false
+            },
+            "min_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999992,
+                "key": true
+            },
+            "resource_tier": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 2,
+                "key": true
+            }
+        }
+    },
+    "0x4cb433695a9369841874716824051a3998a75a0c0dc47a441b849c02078152e": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 19,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 182,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x2c0b291e651bba561ec87e9954bc0ac28e4ece7bef5a1ce491d5f88c519a776": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 2,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 165,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x4287c59ea5476fc01291303e010e2ecfe71e425d80276c7018220f56cc26a8e": {
+        "s0_eternum-WeightConfig": {
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 22,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 22,
+                "key": false
+            }
+        }
+    },
+    "0x35ea830d0a3ea10b5a00cec4fed600df119e25fd1251e938c5d1cef7b80c73c": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 19,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 19,
+                "key": false
+            }
+        }
+    },
+    "0x64dfeac563ff2e5b64043f5fbecfc3547e7973b1b48f6cc1954186aef465e2a": {
+        "s0_eternum-WeightConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 16,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 16,
+                "key": false
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            }
+        }
+    },
+    "0x3800447cba8adb23fe79d31b335bbfbd099620147ed23807caacd882daab2b9": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 8,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 8,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0xb448d30d76c5c2b74bebe829e1582c6df2de4abca523c047436488897062b7": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 14,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 14,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x6ada7f1eea2d7b75eb24470a4235d36ce7a7b3ef7c51454b2a47974d5508532": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 6,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 6,
+                "key": false
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            }
+        }
+    },
+    "0xe7d2bc9a7c15975b0e946495bf14217dbe6ab27fd9594e141e48c95d7ff158": {
+        "s0_eternum-WeightConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 10,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 10,
+                "key": false
+            }
+        }
+    },
+    "0x230ecc82354371043cd8e63aff1bad4b5b28839b1ba818cb58c169ce690ac5c": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 5,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "WorkersHut",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x2c7d4562ce9a7a5212512f0deca073b30092abc6ba10aa68dfa5243cf2203a5": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "ArcheryRange",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 5,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 251,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 160,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x176270267c5590d9bb45f6c04adaaf601cfc7d977dec4990ffa6ee7dd6d62bb": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 254,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000064",
+                "key": false
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 254,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x18d86912777bbc63ff0757da4ad63068c136407d9be378126b95753be2e1de4": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 2,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            }
+        }
+    },
+    "0x605dbcd62161e31e07b8e22153e70b9d6a32654747559c834f65d146d21b98f": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 174,
+                "key": false
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 11,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x4d474ee122721a621b4ad5b3cb6c27b1ad8e34eb9ab25f47199f0128efb6ad9": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 255,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 157,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "FishingVillage",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x416f5c6bf077f08a45f2f2804fef2c4ca0da4b074d246c9e11343f335dd7732": {
+        "s0_eternum-WeightConfig": {
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 12,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 12,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x15a8937a03c1a0a5420e21645883f7a6a00f7d734b93d08d50970b29398aae0": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 29,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 186,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x757666d4660569f2a27cc6cd6c996e5b15c1e678771a4659c8244628e6e3bdc": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "WorkersHut",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 162,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 4,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 0,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x572cb61f2b3c168bd01c8958b1a6cc9976316ebed2a469d6bafd5b2fe2efb0c": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 252,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 190,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x425960fb56fc21aa9ba2f45ebb9338cb49285fefb3378bb2b43703a39ce27b8": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 193,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 255,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x477581e258894d9df47a33a81238d65e59496f6bfe5e036f6328ec6e0634bac": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 171,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 8,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x14d6058bf41154d4b2a6214423fc2c7f9b4dcc01e33192c7e7a763c7a412b2d": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 252,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 252,
+                "key": false
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000001388",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        },
+        "s0_eternum-TravelFoodCostConfig": {
+            "travel_fish_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000004",
+                "key": false
+            },
+            "explore_wheat_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x000000000000000000000000000000000000000000000000000000000000000a",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "unit_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 252,
+                "key": true
+            },
+            "travel_wheat_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000004",
+                "key": false
+            },
+            "explore_fish_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x000000000000000000000000000000000000000000000000000000000000000a",
+                "key": false
+            }
+        },
+        "s0_eternum-StaminaConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "unit_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 252,
+                "key": true
+            },
+            "max_stamina": {
+                "type": "primitive",
+                "type_name": "u16",
+                "value": 100,
+                "key": false
+            }
+        }
+    },
+    "0x18ef3fe62dea052cee3b72189379473bbc5572c0f53d842ed3059cdc3ccb4ab": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 2,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "ArcheryRange",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x4c0d48e4b7b1260f94742f798cf7a398dbcd8f9e7677d089424b4986cbd0a19": {
+        "s0_eternum-StaminaConfig": {
+            "max_stamina": {
+                "type": "primitive",
+                "type_name": "u16",
+                "value": 80,
+                "key": false
+            },
+            "unit_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 250,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        },
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 250,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000001388",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 250,
+                "key": false
+            }
+        },
+        "s0_eternum-TravelFoodCostConfig": {
+            "explore_wheat_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x000000000000000000000000000000000000000000000000000000000000000a",
+                "key": false
+            },
+            "travel_wheat_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000005",
+                "key": false
+            },
+            "travel_fish_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000005",
+                "key": false
+            },
+            "explore_fish_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x000000000000000000000000000000000000000000000000000000000000000a",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "unit_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 250,
+                "key": true
+            }
+        }
+    },
+    "0x40a929f519ad4899063589df4b50ce050e5032288c09880067f28d68696fb20": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 170,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 7,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x719a9949b9e627b19da6b3be9bab6c8c89819d4105d929c2b94f7cf2f9ae91b": {
+        "s0_eternum-SpeedConfig": {
+            "sec_per_km": {
+                "type": "primitive",
+                "type_name": "u16",
+                "value": 1,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "speed_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 258,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 258,
+                "key": false
+            }
+        }
+    },
+    "0x3b44993eb06493c8f1471e4b0f0ded5cde8f06f4d14cdd91bc1bf1f32fb27": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 5,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 252,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Stable",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 161,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x3c2f45c94f3ef1df65b15198d64453193e94cec8111f3309c7250328a5e51f4": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 178,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 15,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x2ca8ee9dd383033515fe2cf56d3d0ce78655e9cf7b74065e33752a779aa42af": {
+        "s0_eternum-WeightConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 29,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 29,
+                "key": false
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            }
+        }
+    },
+    "0x634b572ff0c584394ec171a8a8a7e2dddd793d35838de3dfe4255b88f4738d6": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 2,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Walls",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x77e056896cade8930b108ef0be6301fd7cd976708bfabf0b759418b62e6d897": {
+        "s0_eternum-HyperstructureResourceConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999992,
+                "key": true
+            },
+            "min_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000014f46b0400",
+                "key": false
+            },
+            "resource_tier": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 6,
+                "key": true
+            },
+            "max_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000029e8d60800",
+                "key": false
+            }
+        }
+    },
+    "0xc28888f3fcdb5efab2c5ae15fce43fb4237e768b808df5e41d45ffae334ee7": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 9,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 172,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x448e2cfff3d3ab12290240fbec68f35609423fb96c90bc088bf6c33db389140": {
+        "s0_eternum-WeightConfig": {
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 21,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 21,
+                "key": false
+            }
+        }
+    },
+    "0x2b357b68ddff57ace5c8d135d6bb3ec9523d5c0adb3c80e00fdf63a0bd9f105": {
+        "s0_eternum-WeightConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 5,
+                "key": false
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 5,
+                "key": true
+            }
+        }
+    },
+    "0x69e533b320edde821a818f46a0b85388d55b135d648dad33f3c532113862e55": {
+        "s0_eternum-TickConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "tick_id": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 1,
+                "key": true
+            },
+            "tick_interval_in_seconds": {
+                "type": "primitive",
+                "type_name": "u64",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000e10",
+                "key": false
+            }
+        },
+        "s0_eternum-WeightConfig": {
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        },
+        "s0_eternum-TravelStaminaCostConfig": {
+            "travel_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 1,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "cost": {
+                "type": "primitive",
+                "type_name": "u16",
+                "value": 10,
+                "key": false
+            }
+        }
+    },
+    "0x15f6363f2d4df9a7050428d127d1c681538e7b924bd795388d3174c6d46222f": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 2,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "WatchTower",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x6dd983a03f8a65799c6d4892482bc5f196c0dc8287b7c19933d981020b848aa": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Storehouse",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 0,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 163,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 4,
+                "key": false
+            }
+        }
+    },
+    "0x52a1323ded9ae7077591fc3ea4216dc1c094e7f8cf819af54f514c02c569100": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Farm",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x7f98e9bc2fcb952fe7266f51a32bde206c386e724b1cc1bd3abccd06603ee": {
+        "s0_eternum-BuildingConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 254,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 192,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x46310c8fca94ebcbb18c602008fb3593a3bce4b2abfc8a2894f2568550dce51": {
+        "s0_eternum-HyperstructureResourceConfig": {
+            "resource_tier": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 3,
+                "key": true
+            },
+            "min_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999992,
+                "key": true
+            },
+            "max_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "key": false
+            }
+        }
+    },
+    "0x4ee4ab73efb8f24059eae108226d5717fff845864edbf60bd6b9a5b0ff77588": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Farm",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 254,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 156,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x706a70fb956ccfa1636a2315e19077e74ab4993cb11c17ec07077acb6a4d12b": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 15,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 15,
+                "key": false
+            }
+        }
+    },
+    "0x4d475709f25e19e985f81a7c3642e371e712b242b4f3eeb41c8fa542902bd48": {
+        "s0_eternum-BuildingConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 179,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 16,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x5b9bca90a771769ffc00ea748763416d645c55c2b2ce0e991d3c1c3fdfec940": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 2,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Barracks",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x652ddbacfc055b3d24d7795bb1be0bb50549dfa83ad28337d6d945b29616017": {
+        "s0_eternum-WeightConfig": {
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 253,
+                "key": false
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 253,
+                "key": true
+            }
+        }
+    },
+    "0x69a3339a53143fc9db83d2fd72aa99744b0cd121b006938227c4945fe7a90f9": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 18,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 18,
+                "key": false
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0xdb3a1d6af2beb230e53132b2a4305e2d72afcf645c639fbd4bc3b102490207": {
+        "s0_eternum-BuildingConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 189,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 251,
+                "key": true
+            }
+        }
+    },
+    "0x84335b33938564579eac603b9d3bd0a4241ad1cd57462a91e4ef2a7fc2391f": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 187,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 249,
+                "key": true
+            }
+        }
+    },
+    "0x270a3f3991358d258a55e4cb1d126e2a44193b009b6c3ccb7ed0ab298222e32": {
+        "s0_eternum-HyperstructureResourceConfig": {
+            "min_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000009502f9000",
+                "key": false
+            },
+            "resource_tier": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 7,
+                "key": true
+            },
+            "max_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000012a05f2000",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999992,
+                "key": true
+            }
+        }
+    },
+    "0x4b68e0876bb8b63516af8f52443e9b400b6da6f6fb44ea6063c0a400db81c35": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 4,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 167,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x31a29b774161b6b290a8824f459a1d8393e6301598f7cd048924910f888d7ff": {
+        "s0_eternum-WeightConfig": {
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 2,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 2,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            }
+        }
+    },
+    "0x17b8e20afe4f4c0f946a45cfa36bf90e1a3372bdbec3fe0c7259bc5b1e61686": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "FishingVillage",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            }
+        }
+    },
+    "0x3a9116900024ac6e5e0b101cd8467ac517f7b011d5c822a3634763cc36ca7c0": {
+        "s0_eternum-HyperstructureResourceConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999992,
+                "key": true
+            },
+            "resource_tier": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 9,
+                "key": true
+            },
+            "min_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000001a13b8600",
+                "key": false
+            },
+            "max_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000342770c00",
+                "key": false
+            }
+        }
+    },
+    "0x7bfd5b69d775fbd5426e9c266a17b74e742cb58444b1ccf674cd005555b630": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 250,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 158,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Barracks",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 5,
+                "key": false
+            }
+        }
+    },
+    "0x68195e405473f6af5b8828f25d295ee5a2732089c36baf10c1274a76dd8ec8e": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 18,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 181,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x648df898d75aa62437564631a76f0f45bdaa319e09d371060e83aaca0ea0de8": {
+        "s0_eternum-WeightConfig": {
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 17,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 17,
+                "key": false
+            }
+        }
+    },
+    "0x35bfbdbc7ab0fe69f1c124538fcbf8cbcd01498dbbeca041a286ae7ef884dee": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 3,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Stable",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            }
+        }
+    },
+    "0x2b7113265c64933d91310afecd19f3629b8991b8241a889012c344d50244fe0": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 10,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 173,
+                "key": false
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x16d2dfd8a96b02e14154c89244dcc456175b500827a68e5d7119d8efdd78e8f": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 188,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 250,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            }
+        }
+    },
+    "0x1ce84eca31362d3cbedba5e08e59b7a6905f1001404ddd8e90787e235f94045": {
+        "s0_eternum-BuildingConfig": {
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 184,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 21,
+                "key": true
+            }
+        }
+    },
+    "0x5a0e515111443595a3e6d2bdfbfbf149e053dd556dcc20171822507c66ef9e2": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 6,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 169,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x4b9d46a9a4d765b1d909e4db2a649313cff31db706cb7a9f3224f258861eccb": {
+        "s0_eternum-BuildingConfig": {
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 249,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 5,
+                "key": false
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 159,
+                "key": false
+            },
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Market",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x65f105d22688f715ee6203d07c97dbee1b78ae17a83ecf4c61c10a7fb9c2510": {
+        "s0_eternum-WeightConfig": {
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 7,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 7,
+                "key": false
+            }
+        }
+    },
+    "0x7c10662fad7af99cab7cb8a8055e50caddd36c76083dc7510ca58975ec4e18d": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 168,
+                "key": false
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 5,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0xd5138619fa74926f144a9d5f03f51349d396528642c6443efdc3762f70f5e6": {
+        "s0_eternum-WeightConfig": {
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 20,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 20,
+                "key": true
+            }
+        }
+    },
+    "0x30306f11801e7c410fc6dba1ed98e27d428e7753594630dda3e6e49cf735ad3": {
+        "s0_eternum-SpeedConfig": {
+            "speed_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 256,
+                "key": true
+            },
+            "sec_per_km": {
+                "type": "primitive",
+                "type_name": "u16",
+                "value": 9,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 256,
+                "key": false
+            }
+        }
+    },
+    "0x8c6e1a83ac3bb8ddb0e72b80bd4715cc81f266af5330d2fb7fd42614e5893f": {
+        "s0_eternum-HyperstructureResourceConfig": {
+            "resource_tier": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 8,
+                "key": true
+            },
+            "max_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000009502f9000",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999992,
+                "key": true
+            },
+            "min_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000004a817c800",
+                "key": false
+            }
+        }
+    },
+    "0x7881e5b1b2e7c8e21418db82d2466d99ce0fa936924ee118f1c63fa72c11575": {
+        "s0_eternum-TravelFoodCostConfig": {
+            "explore_fish_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000005",
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "unit_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 251,
+                "key": true
+            },
+            "explore_wheat_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000006",
+                "key": false
+            },
+            "travel_wheat_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000003",
+                "key": false
+            },
+            "travel_fish_burn_amount": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000003",
+                "key": false
+            }
+        },
+        "s0_eternum-WeightConfig": {
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x0000000000000000000000000000000000000000000000000000000000000bb8",
+                "key": false
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 251,
+                "key": false
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 251,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        },
+        "s0_eternum-StaminaConfig": {
+            "unit_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 251,
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "max_stamina": {
+                "type": "primitive",
+                "type_name": "u16",
+                "value": 80,
+                "key": false
+            }
+        }
+    },
+    "0x3f715e98c9348b0dbaf3e8fd7e2b1f532534e46b02c95290018644d5c3ae51f": {
+        "s0_eternum-BuildingConfig": {
+            "category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Resource",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "resource_cost_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 191,
+                "key": false
+            },
+            "resource_type": {
+                "type": "primitive",
+                "type_name": "u8",
+                "value": 253,
+                "key": true
+            },
+            "resource_cost_count": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 1,
+                "key": false
+            }
+        }
+    },
+    "0x28a7925947e3db58a61ddd779492ee6296732512ceb19ac6ca3549a1dea8d19": {
+        "s0_eternum-WeightConfig": {
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 13,
+                "key": true
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 13,
+                "key": false
+            }
+        }
+    },
+    "0x4fbb8511ecefcc88365382c935309c3f669cb83287be5aa65971bb8c77485f3": {
+        "s0_eternum-WeightConfig": {
+            "weight_config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 4,
+                "key": true
+            },
+            "weight_gram": {
+                "type": "primitive",
+                "type_name": "u128",
+                "value": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+                "key": false
+            },
+            "entity_type": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 4,
+                "key": false
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999999,
+                "key": true
+            }
+        }
+    },
+    "0x1817412dc7015451eb67c4c070e3a33d49c3e1f479a23139436c966fa5e239d": {
+        "s0_eternum-BuildingCategoryPopConfig": {
+            "capacity": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 0,
+                "key": false
+            },
+            "building_category": {
+                "type": "enum",
+                "type_name": "BuildingCategory",
+                "value": {
+                    "option": "Storehouse",
+                    "value": {
+                        "type": "tuple",
+                        "type_name": "()",
+                        "value": [],
+                        "key": false
+                    }
+                },
+                "key": true
+            },
+            "config_id": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 999999990,
+                "key": true
+            },
+            "population": {
+                "type": "primitive",
+                "type_name": "u32",
+                "value": 2,
+                "key": false
+            }
+        }
+    }
+}
