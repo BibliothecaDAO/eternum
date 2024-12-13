@@ -34,105 +34,74 @@ import { Component, useCallback, useEffect, useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
-  const dojo = useDojo();
   const {
     account: { account },
-  } = dojo;
+    network: { toriiClient, contractComponents },
+  } = useDojo();
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       try {
-        await fetchHyperstructureData(dojo.network.toriiClient, dojo.network.contractComponents as any);
+        await fetchHyperstructureData(toriiClient, contractComponents as any);
       } catch (error) {
-        console.error("Fetch failed", error);
+        console.error("Failed to fetch hyperstructure data:", error);
       }
     };
-
-    fetch();
-  }, []);
+    fetchData();
+  }, [toriiClient, contractComponents]);
 
   const [selectedTab, setSelectedTab] = useState(0);
   const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const { hyperstructures } = useHyperstructures();
   const { fragmentMines } = useFragmentMines();
-
   const myHyperstructures = useGetHyperstructuresWithContributionsFromPlayer();
-  const hyperstructureExtraContent = useCallback(
-    (entityId: any) => {
-      const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === entityId);
-      if (!hyperstructure) return null;
-      return (
-        <HyperStructureExtraContent
-          hyperstructureEntityId={hyperstructure.entity_id!}
-          x={hyperstructure.x!}
-          y={hyperstructure.y!}
-        />
+
+  const renderExtraContent = useCallback(
+    (entityId: ID, type: "hyperstructure" | "fragmentMine") => {
+      const entities = type === "hyperstructure" ? hyperstructures : fragmentMines;
+      const entity = entities.find((e) => e.entity_id === entityId);
+      if (!entity) return null;
+
+      return type === "hyperstructure" ? (
+        <HyperStructureExtraContent hyperstructureEntityId={entity.entity_id!} x={entity.x!} y={entity.y!} />
+      ) : (
+        <FragmentMineExtraContent x={Number(entity.x!)} y={Number(entity.y!)} entityId={entityId!} />
       );
     },
-    [hyperstructures],
+    [hyperstructures, fragmentMines],
   );
 
-  const fragmentMineExtraContent = useCallback(
-    (entityId: any) => {
-      const fragmentMine = fragmentMines.find((fragmentMine) => fragmentMine.entity_id === entityId);
-      if (!fragmentMine) return null;
-
-      return <FragmentMineExtraContent x={Number(fragmentMine.x!)} y={Number(fragmentMine.y!)} entityId={entityId!} />;
+  const renderEntityHeader = useCallback(
+    (entityId: ID, type: "hyperstructure" | "fragmentMine") => {
+      const entities = type === "hyperstructure" ? hyperstructures : fragmentMines;
+      const entity = entities.find((e) => e.entity_id === entityId);
+      return entity ? <EntityHeader entity={entity} /> : null;
     },
-    [fragmentMines],
-  );
-
-  const hyperstructureEntityHeader = useCallback(
-    (entityId: any) => {
-      const entity = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === entityId);
-
-      if (!entity) return null;
-
-      return <EntityHeader entity={entity} />;
-    },
-    [hyperstructures],
-  );
-
-  const fragmentMineEntityHeader = useCallback(
-    (entityId: any) => {
-      const entity = fragmentMines.find((fragmentMine) => fragmentMine.entity_id === entityId);
-      if (!entity) return null;
-
-      return <EntityHeader entity={entity} />;
-    },
-    [fragmentMines],
+    [hyperstructures, fragmentMines],
   );
 
   const tabs = useMemo(
     () => [
       {
         key: "Hyperstructures",
-        label: (
-          <div className="flex group relative flex-col items-center">
-            <div>Hyperstructures</div>
-          </div>
-        ),
+        label: "Hyperstructures",
         component: (
           <>
-            <div className="px-2 pb-2">
-              <label className="flex items-center space-x-1 text-xs">
-                <Checkbox enabled={showOnlyMine} onClick={() => setShowOnlyMine(!showOnlyMine)} />
-                <span>Show only mine</span>
-              </label>
-            </div>
+            <FilterCheckbox showOnlyMine={showOnlyMine} setShowOnlyMine={setShowOnlyMine} />
             <EntityList
               title="Hyperstructures"
               panel={({ entity }) => <HyperstructurePanel entity={entity} />}
-              entityHeader={hyperstructureEntityHeader}
-              entityContent={hyperstructureExtraContent}
+              entityHeader={(id: any) => renderEntityHeader(id, "hyperstructure")}
+              entityContent={(id: any) => renderExtraContent(id, "hyperstructure")}
+              chunkSize={10}
               list={hyperstructures
-                .filter((hyperstructure) => hyperstructure.created_at)
+                .filter((h) => h.created_at)
                 .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
-                .map((hyperstructure) => ({
-                  id: hyperstructure.entity_id,
-                  position: { x: hyperstructure.x, y: hyperstructure.y },
-                  ...hyperstructure,
+                .map((h) => ({
+                  id: h.entity_id,
+                  position: { x: h.x, y: h.y },
+                  ...h,
                 }))}
               filterEntityIds={showOnlyMine ? Array.from(myHyperstructures()) : undefined}
             />
@@ -141,38 +110,26 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
       },
       {
         key: "Mines",
-        label: (
-          <div className="flex group relative flex-col items-center">
-            <div>Mines</div>
-          </div>
-        ),
+        label: "Mines",
         component: (
           <>
-            <div className="px-2 pb-2">
-              <label className="flex items-center space-x-1 text-xs">
-                <Checkbox enabled={showOnlyMine} onClick={() => setShowOnlyMine(!showOnlyMine)} />
-                <span>Show only mine</span>
-              </label>
-            </div>
+            <FilterCheckbox showOnlyMine={showOnlyMine} setShowOnlyMine={setShowOnlyMine} />
             <EntityList
               title="FragmentMines"
               panel={({ entity }) => <FragmentMinePanel entity={entity} />}
-              entityHeader={fragmentMineEntityHeader}
-              entityContent={fragmentMineExtraContent}
+              entityHeader={(id: any) => renderEntityHeader(id, "fragmentMine")}
+              entityContent={(id: any) => renderExtraContent(id, "fragmentMine")}
+              chunkSize={10}
               list={fragmentMines
                 .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
-                .map((fragmentMine) => ({
-                  id: fragmentMine.entity_id,
-                  position: { x: fragmentMine.x, y: fragmentMine.y },
-                  ...fragmentMine,
+                .map((m) => ({
+                  id: m.entity_id,
+                  position: { x: m.x, y: m.y },
+                  ...m,
                 }))}
               filterEntityIds={
                 showOnlyMine
-                  ? (fragmentMines
-                      .filter((mine) => {
-                        return mine.owner === account.address;
-                      })
-                      .map((mine) => mine.entity_id) as ID[])
+                  ? fragmentMines.filter((m) => m.owner === account.address).map((m) => m.entity_id as ID)
                   : undefined
               }
             />
@@ -180,21 +137,20 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
         ),
       },
     ],
-    [selectedTab, hyperstructures, fragmentMines],
+    [selectedTab, hyperstructures, fragmentMines, showOnlyMine, account.address, myHyperstructures],
   );
 
   return (
     <>
       <HintModalButton className="absolute top-1 right-1" section={HintSection.WorldStructures} />
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: number) => setSelectedTab(index)}
-        variant="default"
-        className=""
-      >
+      <Tabs selectedIndex={selectedTab} onChange={setSelectedTab} variant="default">
         <Tabs.List>
           {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            <Tabs.Tab key={index}>
+              <div className="flex group relative flex-col items-center">
+                <div>{tab.label}</div>
+              </div>
+            </Tabs.Tab>
           ))}
         </Tabs.List>
         <Tabs.Panels className="overflow-hidden">
@@ -206,6 +162,21 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     </>
   );
 };
+
+const FilterCheckbox = ({
+  showOnlyMine,
+  setShowOnlyMine,
+}: {
+  showOnlyMine: boolean;
+  setShowOnlyMine: (show: boolean) => void;
+}) => (
+  <div className="px-2 pb-2">
+    <label className="flex items-center space-x-1 text-xs">
+      <Checkbox enabled={showOnlyMine} onClick={() => setShowOnlyMine(!showOnlyMine)} />
+      <span>Show only mine</span>
+    </label>
+  </div>
+);
 
 const BaseStructureExtraContent = ({
   x,
@@ -228,44 +199,29 @@ const BaseStructureExtraContent = ({
     const ownerName = getAddressNameFromEntity(entityId);
     const address = getPlayerAddressFromEntity(entityId);
     const guildName = getGuildFromPlayerAddress(address || 0n)?.name;
-    return {
-      name: ownerName,
-      guildName,
-    };
-  }, []);
+    return { name: ownerName, guildName };
+  }, [entityId, getAddressNameFromEntity, getPlayerAddressFromEntity, getGuildFromPlayerAddress]);
 
-  const defensiveArmy = useMemo(() => {
-    const army = armies.find((army) => army.protectee?.protectee_id);
-    const ownerName = getAddressNameFromEntity(army?.entity_id || 0);
-    const guildName = getGuildFromPlayerAddress(army?.owner?.address || 0n)?.name;
-    return {
-      totalTroops:
-        (army?.troops?.knight_count || 0n) +
-        (army?.troops?.paladin_count || 0n) +
-        (army?.troops?.crossbowman_count || 0n),
-      army,
-      name: ownerName,
-      guildName,
-    };
-  }, [armies]);
-
-  const attackingArmy = useMemo(() => {
-    const army = armies.find(
-      (army) => army.battle_side === BattleSide[BattleSide.Attack] && army.battle_id === defensiveArmy.army?.battle_id,
+  const { defensiveArmy, attackingArmy } = useMemo(() => {
+    const defensive = armies.find((army) => army.protectee?.protectee_id);
+    const attacking = armies.find(
+      (army) => army.battle_side === BattleSide[BattleSide.Attack] && army.battle_id === defensive?.battle_id,
     );
-    if (!army) return;
-    const ownerName = getAddressNameFromEntity(army?.entity_id || 0);
-    const guildName = getGuildFromPlayerAddress(army?.owner?.address || 0n)?.name;
-    return {
-      totalTroops:
-        (army?.troops?.knight_count || 0n) +
-        (army?.troops?.paladin_count || 0n) +
-        (army?.troops?.crossbowman_count || 0n),
-      army,
-      name: ownerName,
-      guildName,
+
+    const getArmyInfo = (army?: any) => {
+      if (!army) return;
+      const ownerName = getAddressNameFromEntity(army.entity_id || 0);
+      const guildName = getGuildFromPlayerAddress(army.owner?.address || 0n)?.name;
+      const totalTroops =
+        (army.troops?.knight_count || 0n) + (army.troops?.paladin_count || 0n) + (army.troops?.crossbowman_count || 0n);
+      return { totalTroops, army, name: ownerName, guildName };
     };
-  }, [armies]);
+
+    return {
+      defensiveArmy: getArmyInfo(defensive) || { totalTroops: 0n },
+      attackingArmy: getArmyInfo(attacking),
+    };
+  }, [armies, getAddressNameFromEntity, getGuildFromPlayerAddress]);
 
   return (
     <div className="grid grid-cols-2 gap-4 text-xs">
@@ -280,7 +236,7 @@ const BaseStructureExtraContent = ({
       <div className="flex items-center gap-2 col-span-2">
         <span className="text-gold/80">Battle:</span>
         <span className="font-medium">
-          {attackingArmy ? `${attackingArmy?.guildName || attackingArmy?.name || "Mercenaries"}⚔` : "None"}
+          {attackingArmy ? `${attackingArmy.guildName || attackingArmy.name || "Mercenaries"}⚔` : "None"}
         </span>
       </div>
       {children}
@@ -297,16 +253,16 @@ const HyperStructureExtraContent = ({
   x: number;
   y: number;
 }) => {
-  const dojo = useDojo();
   const {
     account: { account },
-  } = dojo;
+  } = useDojo();
 
   const progress = useHyperstructureProgress(hyperstructureEntityId);
-
-  const latestChangeEvent = LeaderboardManager.instance(dojo).getCurrentCoOwners(hyperstructureEntityId);
-
+  const latestChangeEvent = LeaderboardManager.instance(useDojo()).getCurrentCoOwners(hyperstructureEntityId);
   const needTosetCoOwners = !latestChangeEvent && progress.percentage === 100;
+  const shares =
+    LeaderboardManager.instance(useDojo()).getAddressShares(ContractAddress(account.address), hyperstructureEntityId) ||
+    0;
 
   return (
     <BaseStructureExtraContent x={x} y={y} entityId={hyperstructureEntityId}>
@@ -317,16 +273,7 @@ const HyperStructureExtraContent = ({
       </div>
       <div className="flex items-center gap-2">
         <span className="text-gold/80">Shares:</span>
-        <span className="font-medium">
-          {currencyIntlFormat(
-            (LeaderboardManager.instance(dojo).getAddressShares(
-              ContractAddress(account.address),
-              hyperstructureEntityId,
-            ) || 0) * 100,
-            0,
-          )}
-          %
-        </span>
+        <span className="font-medium">{currencyIntlFormat(shares * 100, 0)}%</span>
       </div>
     </BaseStructureExtraContent>
   );
@@ -334,7 +281,7 @@ const HyperStructureExtraContent = ({
 
 const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
   const { getBalance } = useResourceBalance();
-  const dynamicResources = getBalance(entityId, ResourcesIds.AncientFragment);
+  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment);
   const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);
 
   return (
@@ -345,8 +292,8 @@ const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; en
           {Intl.NumberFormat("en-US", {
             notation: "compact",
             maximumFractionDigits: 1,
-          }).format(divideByPrecision(dynamicResources.balance || 0))}
-          <ResourceIcon className="ml-1" isLabor={false} withTooltip={false} resource={trait || ""} size={"xs"} />
+          }).format(divideByPrecision(balance || 0))}
+          <ResourceIcon className="ml-1" isLabor={false} withTooltip={false} resource={trait || ""} size="xs" />
         </span>
       </div>
     </BaseStructureExtraContent>
@@ -355,8 +302,17 @@ const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; en
 
 const EntityHeader = ({ entity }: { entity: any }) => {
   const position = { x: entity.x, y: entity.y };
-
   const access = entity?.access ? DisplayedAccess[entity.access as keyof typeof DisplayedAccess] : undefined;
+
+  const getAccessStyle = (access?: string) => {
+    if (!access) return "";
+    const styles = {
+      Public: "text-green border border-green",
+      Private: "text-red border border-red",
+      "Tribe Only": "text-gold border border-gold",
+    };
+    return styles[access as keyof typeof styles] || "";
+  };
 
   return (
     <div className="flex flex-row justify-between items-center">
@@ -364,22 +320,10 @@ const EntityHeader = ({ entity }: { entity: any }) => {
         <div className="flex flex-row items-center gap-2">
           <h5 className="font-semibold text-gold">{entity.name}</h5>
           {access && (
-            <span
-              className={`text-xs px-2 py-0.5 rounded-md font-medium ${
-                access === "Public"
-                  ? "text-green border border-green"
-                  : access === "Private"
-                    ? "text-red border border-red"
-                    : access === "Tribe Only"
-                      ? "text-gold border border-gold"
-                      : ""
-              }`}
-            >
-              {access}
-            </span>
+            <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${getAccessStyle(access)}`}>{access}</span>
           )}
-          <div className="flex flex-row ">
-            <ViewOnMapIcon className={"my-auto"} position={position} />
+          <div className="flex flex-row">
+            <ViewOnMapIcon className="my-auto" position={position} />
             <NavigateToPositionIcon className="h-6 w-6" position={position} />
           </div>
         </div>
