@@ -137,7 +137,7 @@ export const BridgeOutStep2 = () => {
       <div className="max-w-md bg-background flex flex-col gap-3 max-h-[calc(75vh-100px)] overflow-y-auto p-3">
         <TypeP>
           Finalise the withdrawal of resources from your Realm in Eternum to your Starknet wallet. The bridge will close
-          and you will be unable to withdraw 1 hour after the Season is won
+          and you will be unable to withdraw 48 hours after the Season is won.
         </TypeP>
         <hr />
         <div className="mb-2">
