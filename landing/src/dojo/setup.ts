@@ -1,6 +1,6 @@
 import { WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getEvents, getSyncEntities } from "@dojoengine/state";
+import { getEntities, getEvents, syncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
@@ -66,17 +66,15 @@ export async function setup({ ...config }: DojoConfig) {
     },
   ];
   // fetch all existing entities from torii with optional component filtering
-  await getSyncEntities(
+  await getEntities(
     network.toriiClient,
-    network.contractComponents as any,
     { Composite: { operator: "Or", clauses } },
-    [],
-    10_000,
+    network.contractComponents as any,
+    40_000,
   );
 
-  const sync = await getSyncEntities(
+  await getEntities(
     network.toriiClient,
-    network.contractComponents as any,
     {
       Keys: {
         keys: [undefined],
@@ -84,9 +82,11 @@ export async function setup({ ...config }: DojoConfig) {
         models: filteredModels.map((model) => `s0_eternum-${model}`),
       },
     },
-    [],
-    10_000,
+    network.contractComponents as any,
+    40_000,
   );
+
+  const sync = await syncEntities(network.toriiClient, network.contractComponents as any, [], false);
 
   const eventSync = getEvents(
     network.toriiClient,
