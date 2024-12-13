@@ -1,4 +1,3 @@
-import { divideByPrecision } from "@/ui/utils/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
@@ -78,7 +77,7 @@ export class ClientConfigManager {
 
     //     if (productionInput) {
     //       const resource = productionInput.input_resource_type;
-    //       const amount = divideByPrecision(Number(productionInput.input_resource_amount));
+    //       const amount = this.divideByPrecision(Number(productionInput.input_resource_amount));
     //       inputs.push({ resource, amount });
     //     }
     //   }
@@ -108,7 +107,7 @@ export class ClientConfigManager {
 
       this.resourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
-        amount: divideByPrecision(Number(productionConfig?.amount)),
+        amount: this.divideByPrecision(Number(productionConfig?.amount)),
       };
     }
   }
@@ -156,7 +155,7 @@ export class ClientConfigManager {
     //     );
     //     if (resource) {
     //       const resourceId = resource.resource_type;
-    //       const amount = divideByPrecision(Number(resource.resource_amount));
+    //       const amount = this.divideByPrecision(Number(resource.resource_amount));
     //       resources.push({ resource: resourceId, amount });
     //     }
     //   }
@@ -254,7 +253,7 @@ export class ClientConfigManager {
     );
 
     return {
-      amount: divideByPrecision(Number(hyperstructureResourceConfig?.min_amount) ?? 0),
+      amount: this.divideByPrecision(Number(hyperstructureResourceConfig?.min_amount) ?? 0),
       resource: ResourcesIds.AncientFragment,
     };
   }
@@ -293,7 +292,7 @@ export class ClientConfigManager {
     return this.getValueOrDefault(() => {
       const exploreConfig = getComponentValue(this.components.MapConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
-      return divideByPrecision(Number(exploreConfig?.reward_resource_amount ?? 0));
+      return this.divideByPrecision(Number(exploreConfig?.reward_resource_amount ?? 0));
     }, 0);
   }
 
@@ -309,7 +308,7 @@ export class ClientConfigManager {
           crossbowmanStrength: troopConfig?.crossbowman_strength ?? 0,
           advantagePercent: troopConfig?.advantage_percent ?? 0,
           disadvantagePercent: troopConfig?.disadvantage_percent ?? 0,
-          maxTroopCount: divideByPrecision(troopConfig?.max_troop_count ?? 0),
+          maxTroopCount: this.divideByPrecision(troopConfig?.max_troop_count ?? 0),
           pillageHealthDivisor: troopConfig?.pillage_health_divisor ?? 0,
           baseArmyNumberForStructure: troopConfig?.army_free_per_structure ?? 0,
           armyExtraPerMilitaryBuilding: troopConfig?.army_extra_per_building ?? 0,
@@ -414,7 +413,7 @@ export class ClientConfigManager {
         const bankConfig = getComponentValue(this.components.BankConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
         return {
-          lordsCost: divideByPrecision(Number(bankConfig?.lords_cost)),
+          lordsCost: this.divideByPrecision(Number(bankConfig?.lords_cost)),
           lpFeesNumerator: Number(bankConfig?.lp_fee_num ?? 0),
           lpFeesDenominator: Number(bankConfig?.lp_fee_denom ?? 0),
         };
@@ -557,11 +556,11 @@ export class ClientConfigManager {
     const maxAmount = Number(hyperstructureResourceConfig.max_amount);
 
     if (minAmount === maxAmount) {
-      return divideByPrecision(minAmount);
+      return this.divideByPrecision(minAmount);
     }
 
     const additionalAmount = Number(randomness % BigInt(maxAmount - minAmount));
-    return divideByPrecision(minAmount + Number(additionalAmount));
+    return this.divideByPrecision(minAmount + Number(additionalAmount));
   }
 
   getBasePopulationCapacity(): number {
@@ -624,6 +623,10 @@ export class ClientConfigManager {
 
   getResourcePrecision() {
     return EternumGlobalConfig.resources.resourcePrecision;
+  }
+
+  divideByPrecision(value: number) {
+    return value / EternumGlobalConfig.resources.resourcePrecision;
   }
 
   getResourceMultiplier() {
