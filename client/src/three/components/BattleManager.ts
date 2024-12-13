@@ -105,7 +105,7 @@ export class BattleManager {
     const meshMatrixIndex = this.battles.getBattleIndex(entityId);
 
     if (meshMatrixIndex === undefined) {
-      console.warn(`meshMatrixIndex not found for entityId ${entityId}`);
+      // console.warn(`meshMatrixIndex not found for entityId ${entityId}`);
       return;
     }
 
