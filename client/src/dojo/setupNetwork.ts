@@ -8,7 +8,7 @@ import * as torii from "@dojoengine/torii-client";
 import { Account } from "starknet";
 
 import { env } from "./../../env";
-const { VITE_VRF_PROVIDER_ADDRESS } = env;
+const { VITE_VRF_PROVIDER_ADDRESS, VITE_PUBLIC_DEV } = env;
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
@@ -31,7 +31,7 @@ export async function setupNetwork({ ...config }: DojoConfig) {
 
   try {
     await burnerManager.init();
-    if (burnerManager.list().length === 0) {
+    if (VITE_PUBLIC_DEV === true && burnerManager.list().length === 0) {
       await burnerManager.create();
     }
   } catch (e) {
