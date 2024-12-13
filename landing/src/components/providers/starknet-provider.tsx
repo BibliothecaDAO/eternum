@@ -4,7 +4,15 @@ import { mainnet, sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 import React, { useCallback } from "react";
 import { env } from "../../../env";
+import { getSeasonAddresses } from "../ui/utils/utils";
 //import { cartridgeController } from "./cartridge-controller";
+
+const resourceAddresses = await getSeasonAddresses();
+
+const LORDS = resourceAddresses["LORDS"][1];
+const otherResources = Object.entries(resourceAddresses)
+  .filter(([key]) => key !== "LORDS")
+  .map(([_, [__, address]]) => address);
 
 const theme: string = "eternum";
 const slot: string = "realms-world-04";
@@ -17,7 +25,7 @@ const cartridgeController = new ControllerConnector({
   theme,
   colorMode,
   tokens: {
-    erc20: ["0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49"],
+    erc20: [LORDS, ...otherResources],
   },
   // namespace,
   slot,

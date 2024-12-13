@@ -1,12 +1,19 @@
-import React, { useCallback } from "react";
-
+import { getSeasonAddresses } from "@/ui/utils/utils";
 import ControllerConnector from "@cartridge/connector/controller";
 import { ColorMode } from "@cartridge/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
+import React, { useCallback } from "react";
 import { env } from "../../../env";
 import { policies } from "./policies";
 import { signingPolicy } from "./signing-policy";
+
+const resourceAddresses = await getSeasonAddresses();
+
+const LORDS = resourceAddresses["LORDS"][1];
+const otherResources = Object.entries(resourceAddresses)
+  .filter(([key]) => key !== "LORDS")
+  .map(([_, [__, address]]) => address);
 
 const preset: string = "eternum";
 const theme: string = "eternum";
@@ -28,7 +35,7 @@ const controller =
         slot,
         preset,
         tokens: {
-          erc20: ["0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49"],
+          erc20: [LORDS, ...otherResources],
         },
         colorMode,
       })
@@ -40,7 +47,7 @@ const controller =
         policies: [...signingPolicy, ...policies, vrfPolicy],
         theme,
         tokens: {
-          erc20: ["0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49"],
+          erc20: [LORDS, ...otherResources],
         },
         colorMode,
       });
