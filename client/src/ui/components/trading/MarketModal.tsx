@@ -112,37 +112,6 @@ export const MarketModal = () => {
     return battleManager.getUpdatedArmy(bankArmy, updatedBattle);
   }, [currentBlockTimestamp, battleManager, bankArmy]);
 
-
-  // const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
-  // const [isLoading, setIsLoading] = useState(false);
-
-  // useEffect(() => {
-  //   // if (!bank?.entityId || subscriptions[bank?.entityId?.toString()]) {
-  //   //   return;
-  //   // }
-  //   // setSubscriptions((prev) => ({ ...prev, [bank?.entityId?.toString()]: true }));
-  //   const fetch = async () => {
-  //     setIsLoading(true);
-
-  //     try {
-  //       await addToSubscription(
-  //         dojo.network.toriiClient,
-  //         dojo.network.contractComponents as any,
-  //         bank?.entityId?.toString() || "",
-  //         { x: 0, y: 0 },
-  //       );
-  //     } catch (error) {
-  //       console.error("Fetch failed", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-
-  //     console.log("market modal loading");
-  //   };
-
-  //   fetch();
-  // }, [structureEntityId, bank?.entityId]);
-
   const tabs = useMemo(
     () => [
       {
