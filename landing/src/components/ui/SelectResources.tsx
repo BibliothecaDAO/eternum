@@ -158,8 +158,6 @@ export const SelectSingleResource = ({
                 value={selectedResourceIds[index]}
                 onChange={(value) => {
                   const updatedResourceIds = [...selectedResourceIds];
-                  console.log(updatedResourceIds);
-                  console.log(index);
                   updatedResourceIds[index] = value;
                   setSelectedResourceIds(updatedResourceIds);
 
