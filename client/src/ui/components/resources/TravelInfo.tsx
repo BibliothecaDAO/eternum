@@ -9,8 +9,8 @@ import {
   getTotalResourceWeight,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
-import { CapacityConfigCategory, ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
-import { useEffect, useState } from "react";
+import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
+import { useEffect, useMemo, useState } from "react";
 
 export const TravelInfo = ({
   entityId,
@@ -27,18 +27,22 @@ export const TravelInfo = ({
 }) => {
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
-  const neededDonkeys = calculateDonkeysNeeded(resourceWeight);
+  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
 
   const { getBalance } = useResourceBalance();
 
   useEffect(() => {
     const totalWeight = getTotalResourceWeight(resources);
+
     const multipliedWeight = multiplyByPrecision(totalWeight);
     setResourceWeight(multipliedWeight);
 
     const { balance } = getBalance(entityId, ResourcesIds.Donkey);
+
     const currentDonkeyAmount = isAmm ? 0 : resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
+
     const calculatedDonkeyBalance = divideByPrecision(balance) - currentDonkeyAmount;
+
     setDonkeyBalance(calculatedDonkeyBalance);
 
     if (setCanCarry) {

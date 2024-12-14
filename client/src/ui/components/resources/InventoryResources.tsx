@@ -4,7 +4,10 @@ import { useResourceBalance, useResourcesUtils } from "@/hooks/helpers/useResour
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+
+const CACHE_KEY = "inventory-resources-sync";
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
 
 export const InventoryResources = ({
   entityId,
@@ -36,25 +39,31 @@ export const InventoryResources = ({
     [dynamic, entityId, getBalance],
   );
 
-  useEffect(() => {
+  useMemo(async () => {
     if (inventoriesResources.length === 0) {
+      const cacheKey = `${CACHE_KEY}-${entityId}`;
+      const cachedTime = localStorage.getItem(cacheKey);
+      const now = Date.now();
+
+      if (cachedTime && now - parseInt(cachedTime) < CACHE_DURATION) {
+        return;
+      }
+
       setIsSyncing(true);
-      const fetch = async () => {
-        try {
-          await addToSubscription(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            entityId.toString(),
-          );
-        } catch (error) {
-          console.error("Fetch failed", error);
-        } finally {
-          setIsSyncing(false);
-        }
-      };
-      fetch();
+      try {
+        await addToSubscription(
+          dojo.network.toriiClient,
+          dojo.network.contractComponents as any,
+          entityId.toString(),
+        );
+        localStorage.setItem(cacheKey, now.toString());
+      } catch (error) {
+        console.error("Fetch failed", error);
+      } finally {
+        setIsSyncing(false);
+      }
     }
-  }, [inventoriesResources.length, entityId]);
+  }, [inventoriesResources.length, entityId, dojo.network.toriiClient, dojo.network.contractComponents]);
 
   const allResources = [...inventoriesResources, ...dynamicResources];
 
