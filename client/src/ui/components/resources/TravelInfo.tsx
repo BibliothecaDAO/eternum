@@ -2,9 +2,15 @@ import { configManager } from "@/dojo/setup";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
-import { CapacityConfigCategory, ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
-import { useEffect, useState } from "react";
+import {
+  calculateDonkeysNeeded,
+  currencyFormat,
+  divideByPrecision,
+  getTotalResourceWeight,
+  multiplyByPrecision,
+} from "@/ui/utils/utils";
+import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
+import { useEffect, useMemo, useState } from "react";
 
 export const TravelInfo = ({
   entityId,
@@ -21,20 +27,22 @@ export const TravelInfo = ({
 }) => {
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
-  const neededDonkeys = Math.ceil(
-    divideByPrecision(resourceWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey),
-  );
+  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
 
   const { getBalance } = useResourceBalance();
 
   useEffect(() => {
     const totalWeight = getTotalResourceWeight(resources);
+
     const multipliedWeight = multiplyByPrecision(totalWeight);
     setResourceWeight(multipliedWeight);
 
     const { balance } = getBalance(entityId, ResourcesIds.Donkey);
+
     const currentDonkeyAmount = isAmm ? 0 : resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
+
     const calculatedDonkeyBalance = divideByPrecision(balance) - currentDonkeyAmount;
+
     setDonkeyBalance(calculatedDonkeyBalance);
 
     if (setCanCarry) {

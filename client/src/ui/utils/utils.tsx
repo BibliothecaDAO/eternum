@@ -1,17 +1,18 @@
 import { type ClientComponents } from "@/dojo/createClientComponents";
 import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
 import { HEX_SIZE } from "@/three/scenes/constants";
-import { type HexPosition, ResourceMiningTypes } from "@/types";
+import { ResourceMiningTypes, type HexPosition } from "@/types";
 import {
   BuildingType,
+  CapacityConfigCategory,
   ContractAddress,
   EternumGlobalConfig,
-  type ID,
-  type Position,
-  type Resource,
   ResourceCost,
   ResourcesIds,
   TickIds,
+  type ID,
+  type Position,
+  type Resource,
 } from "@bibliothecadao/eternum";
 import { type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -498,4 +499,11 @@ export const getRandomBackgroundImage = () => {
 
 export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
   return cost.map((item) => (item.resource === ResourcesIds.Lords ? { ...item, amount: item.amount * 0.1 } : item));
+};
+
+export const calculateDonkeysNeeded = (orderWeight: number): number => {
+  const configManager = ClientConfigManager.instance();
+  const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfigCategory.Donkey);
+
+  return Math.ceil((orderWeight / 1000) / donkeyCapacityGrams);
 };

@@ -150,7 +150,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           ADMIN_BANK_ENTITY_ID.toString(),
-          { x: 0, y: 0 },
         );
       } catch (error) {
         console.error("Fetch failed", error);
@@ -160,13 +159,13 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
       console.log("world loading", worldLoading);
 
-      try {
-        await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        setMarketLoading(false);
-      }
+        try {
+          await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
+        } catch (error) {
+          console.error("Fetch failed", error);
+        } finally {
+          setMarketLoading(false);
+        }
     };
 
     fetch();

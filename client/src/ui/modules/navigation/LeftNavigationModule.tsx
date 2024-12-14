@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
-import { EventStream } from "../stream/EventStream";
+import { Chat } from "../chat/Chat";
 
 const EntityDetails = lazy(() =>
   import("../entity-details/EntityDetails").then((module) => ({ default: module.EntityDetails })),
@@ -259,8 +259,8 @@ export const LeftNavigationModule = memo(() => {
       </div>
       {!IS_MOBILE && (
         <div className="flex">
-          {/* <Chat /> */}
-          <EventStream />
+          <Chat />
+          {/* <EventStream /> */}
         </div>
       )}
     </div>
