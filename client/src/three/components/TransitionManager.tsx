@@ -15,7 +15,8 @@ export class TransitionManager {
   }
 
   fadeIn() {
-    const { setIsLoadingScreenEnabled } = useUIStore.getState();
+    const { setIsLoadingScreenEnabled, setTooltip } = useUIStore.getState();
     setIsLoadingScreenEnabled(false);
+    setTooltip(null);
   }
 }

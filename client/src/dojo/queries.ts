@@ -73,7 +73,7 @@ export const addToSubscription = async <S extends Schema>(
         ...positionClause,
       },
       components,
-      10_000,
+      30_000,
       false,
     ));
 
@@ -87,7 +87,7 @@ export const addToSubscription = async <S extends Schema>(
       },
     },
     components,
-    10_000,
+    30_000,
     false,
   );
 };
@@ -106,7 +106,7 @@ export const addMarketSubscription = async <S extends Schema>(
       },
     },
     components,
-    10_000,
+   30_000,
     false,
   );
 };
