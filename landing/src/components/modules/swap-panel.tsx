@@ -21,13 +21,13 @@ export const SwapPanel = () => {
             Bridge Out (Finish)
           </TabsTrigger>
         </TabsList>
-        <TabsContent className="border-2 rounded-xl bg-brown border-gold/15 round-tr-none" value="in">
+        <TabsContent className="border-2 rounded-xl border-opacity-15 round-tr-none" value="in">
           <BridgeIn />
         </TabsContent>
-        <TabsContent className="border-2 rounded-xl bg-brown border-gold/15 round-tr-none" value="out-start">
+        <TabsContent className="border-2 rounded-xl border-opacity-15 round-tr-none" value="out-start">
           <BridgeOutStep1 />
         </TabsContent>
-        <TabsContent className="border-2 rounded-xl bg-brown border-gold/15 round-tr-none" value="out-finish">
+        <TabsContent className="border-2 rounded-xl border-opacity-15 round-tr-none" value="out-finish">
           <BridgeOutStep2 />
         </TabsContent>
       </Tabs>
