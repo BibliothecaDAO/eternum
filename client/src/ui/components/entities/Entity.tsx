@@ -57,7 +57,7 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
       const cachedTime = localStorage.getItem(cacheKey);
       const now = Date.now();
 
-      if (cachedTime && now - parseInt(cachedTime) < CACHE_DURATION) {
+      if (cachedTime) {
         return;
       }
 
