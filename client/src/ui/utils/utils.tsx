@@ -503,6 +503,7 @@ export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
 
 export const calculateDonkeysNeeded = (orderWeight: number): number => {
   const configManager = ClientConfigManager.instance();
+  const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfigCategory.Donkey);
 
-  return Math.ceil(orderWeight / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
+  return Math.ceil((orderWeight / 1000) / donkeyCapacityGrams);
 };
