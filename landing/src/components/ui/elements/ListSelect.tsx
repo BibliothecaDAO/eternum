@@ -1,6 +1,6 @@
 import { ReactComponent as CaretDown } from "@/assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
-import { Listbox, Transition } from "@headlessui/react";
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from "@headlessui/react";
 import clsx from "clsx";
 import { Fragment, ReactNode, useMemo } from "react";
 
@@ -30,8 +30,8 @@ function ListSelect(props: ListSelectProps) {
     <div className={clsx("w-full", props.className, "z-100")}>
       <Listbox value={props.value} onChange={props.onChange} disabled={props.disabled}>
         {({ open }) => (
-          <div className="relative  ">
-            <Listbox.Button
+          <div>
+            <ListboxButton
               className={clsx(
                 "flex items-center relative  cursor-pointer text-xs py-1 min-h-[32px] z-0 w-full bg-gold/10 hover:bg-gold/20 px-2",
               )}
@@ -45,7 +45,7 @@ function ListSelect(props: ListSelectProps) {
                   />
                 </div>
               </span>
-            </Listbox.Button>
+            </ListboxButton>
             <Transition
               as={Fragment}
               show={open}
@@ -58,14 +58,15 @@ function ListSelect(props: ListSelectProps) {
               leaveTo="opacity-0"
             >
               <div className="fixed z-50 w-min text-xs">
-                <Listbox.Options
+                <ListboxOptions
+                  anchor="bottom start"
                   className={clsx(
-                    "z-50 w-full rounded-md py-1 max-h-72 overflow-scroll z-100 border border-gold/10 no-scrollbar",
+                    "z-50 rounded-md py-1 max-h-72 overflow-scroll z-100 border border-gold/10 no-scrollbar",
                     props.style === "black" ? "bg-brown" : " bg-brown",
                   )}
                 >
                   {props.options.map((option) => (
-                    <Listbox.Option
+                    <ListboxOption
                       key={option.id}
                       className={({ active }) =>
                         `overflow-visible relative cursor-pointer z-50 select-none py-2 flex items-center pl-8 text-gold ${
@@ -90,9 +91,9 @@ function ListSelect(props: ListSelectProps) {
                           ) : null}
                         </>
                       )}
-                    </Listbox.Option>
+                    </ListboxOption>
                   ))}
-                </Listbox.Options>
+                </ListboxOptions>
               </div>
             </Transition>
           </div>
