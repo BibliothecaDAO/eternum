@@ -10,7 +10,15 @@ import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
-import { ContractAddress, DONKEY_ENTITY_TYPE, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  DONKEY_ENTITY_TYPE,
+  ID,
+  RESOURCE_TIERS,
+  Resources,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/TravelInfo";
 import { ConfirmationPopup } from "./ConfirmationPopup";
@@ -173,10 +181,18 @@ export const ResourceSwap = ({
     }
   };
 
+  const orderedResources = useMemo(() => {
+    return Object.values(RESOURCE_TIERS)
+      .flat()
+      .map((id) => resources.find((r) => r.id === id))
+      .filter((r): r is Resources => !!r)
+      .filter((r) => !Number.isNaN(r.id));
+  }, []);
+
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => {
       const amount = isLords ? lordsAmount : resourceAmount;
-      const selectableResources = resources.filter((r) =>
+      const selectableResources = orderedResources.filter((r) =>
         isLords ? r.id === ResourcesIds.Lords : r.id !== ResourcesIds.Lords,
       );
 

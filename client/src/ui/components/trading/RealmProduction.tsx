@@ -20,11 +20,19 @@ export const RealmProduction = () => {
       <div className="flex flex-row justify-evenly my-2 ">
         <div>
           <p>Search produced resource</p>
-          <SelectResource onSelect={(resourceId) => setFilterProduced(resourceId)} className="w-full" />
+          <SelectResource
+            onSelect={(resourceId) => setFilterProduced(resourceId)}
+            className="w-full"
+            realmProduction={true}
+          />
         </div>
         <div>
           <p>Search consumed resource</p>
-          <SelectResource onSelect={(resourceId) => setFilterConsumed(resourceId)} className="w-full" />
+          <SelectResource
+            onSelect={(resourceId) => setFilterConsumed(resourceId)}
+            className="w-full"
+            realmProduction={true}
+          />
         </div>
       </div>
 

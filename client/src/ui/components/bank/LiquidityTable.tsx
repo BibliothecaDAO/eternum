@@ -1,5 +1,5 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { ID, RESOURCE_TIERS, resources } from "@bibliothecadao/eternum";
+import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useState } from "react";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
 
@@ -27,9 +27,9 @@ export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps)
   }
 
   const filteredResources = Object.entries(RESOURCE_TIERS).flatMap(([tier, resourceIds]) => {
-    if (tier === "lords") return [];
     return resourceIds.filter(
       (resourceId) =>
+        resourceId !== ResourcesIds.Lords &&
         resources
           .find((r) => r.id === resourceId)
           ?.trait.toLowerCase()
