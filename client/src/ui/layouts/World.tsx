@@ -159,13 +159,13 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
       console.log("world loading", worldLoading);
 
-      try {
-        await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        setMarketLoading(false);
-      }
+        try {
+          await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
+        } catch (error) {
+          console.error("Fetch failed", error);
+        } finally {
+          setMarketLoading(false);
+        }
     };
 
     fetch();

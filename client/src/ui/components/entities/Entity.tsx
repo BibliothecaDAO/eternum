@@ -30,6 +30,9 @@ type EntityProps = {
   arrival: ArrivalInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
+const CACHE_KEY = "inventory-resources-sync";
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
+
 export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   const dojo = useDojo();
 
@@ -50,23 +53,32 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
 
   useEffect(() => {
     if (entityResources.length === 0) {
+      const cacheKey = `${CACHE_KEY}-${arrival.entityId}`;
+      const cachedTime = localStorage.getItem(cacheKey);
+      const now = Date.now();
+
+      if (cachedTime && now - parseInt(cachedTime) < CACHE_DURATION) {
+        return;
+      }
+
       setIsSyncing(true);
       const fetch = async () => {
-        try {
-          await addToSubscription(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            arrival.entityId.toString(),
-          );
-        } catch (error) {
-          console.error("Fetch failed", error);
-        } finally {
-          setIsSyncing(false);
+            try {
+              await addToSubscription(
+                dojo.network.toriiClient,
+                dojo.network.contractComponents as any,
+                arrival.entityId.toString(),
+              );
+              localStorage.setItem(cacheKey, now.toString());
+            } catch (error) {
+              console.error("Fetch failed", error);
+            } finally {
+              setIsSyncing(false);
+            }
+          };
+          fetch();
         }
-      };
-      fetch();
-    }
-  }, [arrival.entityId, dojo.network.toriiClient, dojo.network.contractComponents, entityResources.length]);
+      }, [arrival.entityId, dojo.network.toriiClient, dojo.network.contractComponents, entityResources.length]);
 
   const army = useMemo(() => getArmy(arrival.entityId), [arrival.entityId, entity.resources]);
 
