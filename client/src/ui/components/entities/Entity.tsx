@@ -63,22 +63,22 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
 
       setIsSyncing(true);
       const fetch = async () => {
-            try {
-              await addToSubscription(
-                dojo.network.toriiClient,
-                dojo.network.contractComponents as any,
-                arrival.entityId.toString(),
-              );
-              localStorage.setItem(cacheKey, now.toString());
-            } catch (error) {
-              console.error("Fetch failed", error);
-            } finally {
-              setIsSyncing(false);
-            }
-          };
-          fetch();
+        try {
+          await addToSubscription(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            arrival.entityId.toString(),
+          );
+          localStorage.setItem(cacheKey, now.toString());
+        } catch (error) {
+          console.error("Fetch failed", error);
+        } finally {
+          setIsSyncing(false);
         }
-      }, [arrival.entityId, dojo.network.toriiClient, dojo.network.contractComponents, entityResources.length]);
+      };
+      fetch();
+    }
+  }, [arrival.entityId, dojo.network.toriiClient, dojo.network.contractComponents, entityResources.length]);
 
   const army = useMemo(() => getArmy(arrival.entityId), [arrival.entityId, entity.resources]);
 
@@ -90,7 +90,8 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
         </div>
       ) : (
         <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
-          {formatTime(Number(entity.arrivalTime) - nextBlockTimestamp)}
+          Arriving in {formatTime(Number(entity.arrivalTime) - nextBlockTimestamp)} to{" "}
+          {getEntityName(arrival.recipientEntityId)}
         </div>
       )
     ) : null;
@@ -109,6 +110,7 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
           className="!text-gold"
           type="vertical"
           size="xs"
+          withTooltip={true}
           resourceId={resource.resourceId}
           amount={divideByPrecision(resource.amount)}
         />
