@@ -63,22 +63,22 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
 
       setIsSyncing(true);
       const fetch = async () => {
-            try {
-              await addToSubscription(
-                dojo.network.toriiClient,
-                dojo.network.contractComponents as any,
-                arrival.entityId.toString(),
-              );
-              localStorage.setItem(cacheKey, now.toString());
-            } catch (error) {
-              console.error("Fetch failed", error);
-            } finally {
-              setIsSyncing(false);
-            }
-          };
-          fetch();
+        try {
+          await addToSubscription(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            arrival.entityId.toString(),
+          );
+          localStorage.setItem(cacheKey, now.toString());
+        } catch (error) {
+          console.error("Fetch failed", error);
+        } finally {
+          setIsSyncing(false);
         }
-      }, [arrival.entityId, dojo.network.toriiClient, dojo.network.contractComponents, entityResources.length]);
+      };
+      fetch();
+    }
+  }, [arrival.entityId, dojo.network.toriiClient, dojo.network.contractComponents, entityResources.length]);
 
   const army = useMemo(() => getArmy(arrival.entityId), [arrival.entityId, entity.resources]);
 

@@ -106,7 +106,7 @@ export const addMarketSubscription = async <S extends Schema>(
       },
     },
     components,
-   30_000,
+    30_000,
     false,
   );
 };
