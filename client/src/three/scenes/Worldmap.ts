@@ -680,63 +680,63 @@ export default class WorldmapScene extends HexagonScene {
 
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
-        console.log("Already fetched");
-        return;
+      console.log("Already fetched");
+      return;
     }
 
     // Add to fetched chunks before the query to prevent concurrent duplicate requests
     this.fetchedChunks.add(chunkKey);
 
     try {
-        await getEntities(
-            this.dojo.network.toriiClient,
-            {
-                Composite: {
-                    operator: "And",
-                    clauses: [
-                        {
-                            Member: {
-                                model: "s0_eternum-Tile",
-                                member: "col",
-                                operator: "Gte",
-                                value: { Primitive: { U32: startCol - range } },
-                            },
-                        },
-                        {
-                            Member: {
-                                model: "s0_eternum-Tile",
-                                member: "col",
-                                operator: "Lte",
-                                value: { Primitive: { U32: startCol + range } },
-                            },
-                        },
-                        {
-                            Member: {
-                                model: "s0_eternum-Tile",
-                                member: "row",
-                                operator: "Gte",
-                                value: { Primitive: { U32: startRow - range } },
-                            },
-                        },
-                        {
-                            Member: {
-                                model: "s0_eternum-Tile",
-                                member: "row",
-                                operator: "Lte",
-                                value: { Primitive: { U32: startRow + range } },
-                            },
-                        },
-                    ],
+      await getEntities(
+        this.dojo.network.toriiClient,
+        {
+          Composite: {
+            operator: "And",
+            clauses: [
+              {
+                Member: {
+                  model: "s0_eternum-Tile",
+                  member: "col",
+                  operator: "Gte",
+                  value: { Primitive: { U32: startCol - range } },
                 },
-            },
-            this.dojo.network.contractComponents as any,
-            1000,
-            false,
-        );
+              },
+              {
+                Member: {
+                  model: "s0_eternum-Tile",
+                  member: "col",
+                  operator: "Lte",
+                  value: { Primitive: { U32: startCol + range } },
+                },
+              },
+              {
+                Member: {
+                  model: "s0_eternum-Tile",
+                  member: "row",
+                  operator: "Gte",
+                  value: { Primitive: { U32: startRow - range } },
+                },
+              },
+              {
+                Member: {
+                  model: "s0_eternum-Tile",
+                  member: "row",
+                  operator: "Lte",
+                  value: { Primitive: { U32: startRow + range } },
+                },
+              },
+            ],
+          },
+        },
+        this.dojo.network.contractComponents as any,
+        1000,
+        false,
+      );
     } catch (error) {
-        // If there's an error, remove the chunk from cached set so it can be retried
-        this.fetchedChunks.delete(chunkKey);
-        console.error('Error fetching tile entities:', error);
+      // If there's an error, remove the chunk from cached set so it can be retried
+      this.fetchedChunks.delete(chunkKey);
+      console.error("Error fetching tile entities:", error);
     }
   }
 

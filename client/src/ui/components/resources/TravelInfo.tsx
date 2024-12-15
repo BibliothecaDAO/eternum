@@ -46,7 +46,7 @@ export const TravelInfo = ({
     setDonkeyBalance(calculatedDonkeyBalance);
 
     const onlyDonkeysAndLords = resources.every(
-      (r) => r.resourceId === ResourcesIds.Donkey || r.resourceId === ResourcesIds.Lords
+      (r) => r.resourceId === ResourcesIds.Donkey || r.resourceId === ResourcesIds.Lords,
     );
 
     if (setCanCarry) {
@@ -66,7 +66,9 @@ export const TravelInfo = ({
                 {`${Math.floor(travelTime / 60)} hrs ${travelTime % 60} mins`}
               </td>
             </tr>
-          ):''}
+          ) : (
+            ""
+          )}
           <tr className="hover:bg-gold/5 transition-colors">
             <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Total Transfer Weight</td>
             <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{`${currencyFormat(

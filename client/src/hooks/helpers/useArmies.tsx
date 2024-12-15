@@ -120,7 +120,8 @@ const formatArmies = (
 
       const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
 
-      const structurePosition = structure && getComponentValue(Position, getEntityIdFromKeys([BigInt(structure.entity_id)]));
+      const structurePosition =
+        structure && getComponentValue(Position, getEntityIdFromKeys([BigInt(structure.entity_id)]));
 
       const isMine = (owner?.address || 0n) === ContractAddress(playerAddress);
       const isMercenary = owner === undefined;
@@ -171,7 +172,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
         Protectee,
         EntityName,
         Stamina,
-        Structure
+        Structure,
       },
     },
     account: { account },
@@ -197,7 +198,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
       Owner,
       Realm,
       Stamina,
-      Structure
+      Structure,
     );
   }, [armies]);
 
@@ -228,7 +229,7 @@ export const useArmiesByEntityOwnerWithPositionAndQuantity = ({
         Protectee,
         EntityName,
         Stamina,
-        Structure
+        Structure,
       },
     },
     account: { account },
@@ -259,7 +260,7 @@ export const useArmiesByEntityOwnerWithPositionAndQuantity = ({
       Owner,
       Realm,
       Stamina,
-      Structure
+      Structure,
     );
   }, [armies]);
 
@@ -286,7 +287,7 @@ export const getArmiesByBattleId = () => {
         Protectee,
         EntityName,
         Stamina,
-        Structure
+        Structure,
       },
     },
     account: { account },
@@ -311,7 +312,7 @@ export const getArmiesByBattleId = () => {
       Owner,
       Realm,
       Stamina,
-      Structure
+      Structure,
     );
   };
   return armiesByBattleId;
@@ -335,7 +336,7 @@ export const useArmyByArmyEntityId = (entityId: ID): ArmyInfo | undefined => {
         Protectee,
         EntityName,
         Stamina,
-        Structure
+        Structure,
       },
     },
     account: { account },
@@ -359,7 +360,7 @@ export const useArmyByArmyEntityId = (entityId: ID): ArmyInfo | undefined => {
     Owner,
     Realm,
     Stamina,
-    Structure
+    Structure,
   )[0];
 };
 
@@ -382,7 +383,7 @@ export const getUserArmyInBattle = (battle_id: ID) => {
         Protectee,
         EntityName,
         Stamina,
-        Structure
+        Structure,
       },
     },
   } = useDojo();
@@ -412,7 +413,7 @@ export const getUserArmyInBattle = (battle_id: ID) => {
       Owner,
       Realm,
       Stamina,
-      Structure
+      Structure,
     )[0];
   }, [battle_id]);
 
@@ -447,7 +448,7 @@ export const useOwnArmiesByPosition = ({
           Protectee,
           EntityName,
           Stamina,
-          Structure
+          Structure,
         },
       },
     } = useDojo();
@@ -477,7 +478,7 @@ export const useOwnArmiesByPosition = ({
         Owner,
         Realm,
         Stamina,
-        Structure
+        Structure,
       ).filter((army) =>
         playerStructures.some((structure) => structure.entity_id === army.entityOwner.entity_owner_id),
       );
@@ -513,7 +514,7 @@ export const useEnemyArmiesByPosition = ({
           Protectee,
           EntityName,
           Stamina,
-          Structure
+          Structure,
         },
       },
     } = useDojo();
@@ -542,7 +543,7 @@ export const useEnemyArmiesByPosition = ({
         Owner,
         Realm,
         Stamina,
-        Structure
+        Structure,
       ).filter((army) =>
         playerStructures.every((structure) => structure.entity_id !== army.entityOwner.entity_owner_id),
       );
@@ -570,7 +571,7 @@ export const getArmyByEntityId = () => {
         Protectee,
         EntityName,
         Stamina,
-        Structure
+        Structure,
       },
     },
     account: { account },
@@ -595,7 +596,7 @@ export const getArmyByEntityId = () => {
       Owner,
       Realm,
       Stamina,
-      Structure
+      Structure,
     )[0];
   };
 
@@ -619,7 +620,7 @@ export const getArmyByEntityId = () => {
       Owner,
       Realm,
       Stamina,
-      Structure
+      Structure,
     )[0];
   };
 
@@ -645,7 +646,7 @@ export const getArmiesByPosition = () => {
         Protectee,
         EntityName,
         Stamina,
-        Structure
+        Structure,
       },
     },
   } = useDojo();
@@ -669,7 +670,7 @@ export const getArmiesByPosition = () => {
       Owner,
       Realm,
       Stamina,
-      Structure
+      Structure,
     );
   };
 

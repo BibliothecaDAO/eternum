@@ -523,7 +523,7 @@ export const getSeasonAddresses = async (): Promise<ResourceAddresses> => {
     console.error("Error loading season addresses:", error);
     return {};
   }
-}
+};
 export const calculateDonkeysNeeded = (orderWeight: number): number => {
   const configManager = ClientConfigManager.instance();
   const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfigCategory.Donkey);
