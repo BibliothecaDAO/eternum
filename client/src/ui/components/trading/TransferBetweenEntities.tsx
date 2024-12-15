@@ -10,7 +10,7 @@ import TextInput from "@/ui/elements/TextInput";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { DONKEY_ENTITY_TYPE, ID } from "@bibliothecadao/eternum";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/TravelInfo";
 import { ToggleComponent } from "../toggle/ToggleComponent";
 import { SelectEntityFromList } from "./SelectEntityFromList";
@@ -40,6 +40,126 @@ interface SelectedEntity {
   name: string;
   entityId: ID;
 }
+
+const SelectEntitiesStep = memo(
+  ({
+    selectedEntityIdFrom,
+    selectedEntityIdTo,
+    setSelectedEntityIdFrom,
+    setSelectedEntityIdTo,
+    travelTime,
+    entitiesListWithAccountNames,
+    fromSearchTerm,
+    setFromSearchTerm,
+    toSearchTerm,
+    setToSearchTerm,
+    filtered,
+    filterBy,
+    setSelectedStepId,
+  }: {
+    selectedEntityIdFrom: SelectedEntity | null;
+    selectedEntityIdTo: SelectedEntity | null;
+    setSelectedEntityIdFrom: (entity: SelectedEntity | null) => void;
+    setSelectedEntityIdTo: (entity: SelectedEntity | null) => void;
+    travelTime: number | undefined;
+    entitiesListWithAccountNames: { entities: any[]; name: string }[];
+    fromSearchTerm: string;
+    setFromSearchTerm: (term: string) => void;
+    toSearchTerm: string;
+    setToSearchTerm: (term: string) => void;
+    filtered: boolean;
+    filterBy: (filtered: boolean) => void;
+    setSelectedStepId: (stepId: STEP_ID) => void;
+  }) => {
+    const isEntitySelected = (entities: any[], selectedEntityId: ID | undefined) => {
+      return entities.some((entity) => entity.entity_id === selectedEntityId);
+    };
+
+    const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: ID | undefined) => {
+      return entities.filter(
+        (entity) =>
+          entity.entity_id === selectedEntityId ||
+          entity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (entity.accountName && entity.accountName.toLowerCase().includes(searchTerm.toLowerCase())),
+      );
+    };
+
+    return (
+      <>
+        <div className="w-full flex justify-center items-center">
+          Travel Time: {Math.floor((travelTime || 0) / 60)} hrs {(travelTime || 0) % 60} mins
+        </div>
+        <div className="grid grid-cols-2 gap-6 mt-3">
+          {/* From column */}
+          <div className="justify-around">
+            <Headline>From</Headline>
+            <TextInput placeholder="Search Structures..." onChange={setFromSearchTerm} className="my-2" />
+            {entitiesListWithAccountNames
+              .filter(({ name }) => name !== "Other Realms")
+              .map(({ entities, name: title }, index) => {
+                const filteredEntities = filterEntities(entities, fromSearchTerm, selectedEntityIdFrom?.entityId);
+                if (filteredEntities.length === 0) return null;
+                return (
+                  <ToggleComponent
+                    title={title}
+                    key={index}
+                    searchTerm={fromSearchTerm}
+                    initialOpen={fromSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdFrom?.entityId)}
+                  >
+                    <SelectEntityFromList
+                      onSelect={(name, entityId) => setSelectedEntityIdFrom({ name, entityId })}
+                      selectedCounterpartyId={selectedEntityIdTo?.entityId!}
+                      selectedEntityId={selectedEntityIdFrom?.entityId!}
+                      entities={filteredEntities}
+                    />
+                  </ToggleComponent>
+                );
+              })}
+          </div>
+          {/* To column */}
+          <div className="justify-around overflow-auto">
+            <Headline>To</Headline>
+            <div className="p-1">
+              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => filterBy(!filtered)}>
+                <Checkbox enabled={filtered} />
+                <div>Tribe Only</div>
+              </div>
+            </div>
+
+            <TextInput placeholder="Search entities..." onChange={setToSearchTerm} className="my-2" />
+            {entitiesListWithAccountNames.map(({ entities, name: title }, index) => (
+              <ToggleComponent
+                title={title}
+                key={index}
+                searchTerm={toSearchTerm}
+                initialOpen={toSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdTo?.entityId)}
+              >
+                <SelectEntityFromList
+                  onSelect={(name, entityId) => setSelectedEntityIdTo({ name, entityId })}
+                  selectedCounterpartyId={selectedEntityIdFrom?.entityId!}
+                  selectedEntityId={selectedEntityIdTo?.entityId!}
+                  entities={filterEntities(entities, toSearchTerm, selectedEntityIdTo?.entityId)}
+                />
+              </ToggleComponent>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-center w-full">
+          <Button
+            className="w-full mt-8"
+            disabled={!selectedEntityIdFrom || !selectedEntityIdTo}
+            variant="primary"
+            size="md"
+            onClick={() => setSelectedStepId(STEP_ID.SELECT_RESOURCES)}
+          >
+            Next - Select Resources
+            <LucideArrowRight className="ml-2" />
+          </Button>
+        </div>
+      </>
+    );
+  },
+);
 
 export const TransferBetweenEntities = ({
   entitiesList,
@@ -125,19 +245,6 @@ export const TransferBetweenEntities = ({
     setSelectedStepId(STEP_ID.SELECT_ENTITIES);
   };
 
-  const isEntitySelected = (entities: any[], selectedEntityId: ID | undefined) => {
-    return entities.some((entity) => entity.entity_id === selectedEntityId);
-  };
-
-  const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: ID | undefined) => {
-    return entities.filter(
-      (entity) =>
-        entity.entity_id === selectedEntityId ||
-        entity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (entity.accountName && entity.accountName.toLowerCase().includes(searchTerm.toLowerCase())),
-    );
-  };
-
   const entitiesListWithAccountNames = useMemo(() => {
     return entitiesList.map(({ entities, name }) => ({
       entities: entities.map((entity) => ({
@@ -167,87 +274,21 @@ export const TransferBetweenEntities = ({
       </div>
 
       {currentStep?.id === STEP_ID.SELECT_ENTITIES && (
-        <>
-          <div className="w-full flex justify-center items-center">
-            Travel Time: {Math.floor((travelTime || 0) / 60)} hrs {(travelTime || 0) % 60} mins
-          </div>
-          <div className="grid grid-cols-2 gap-6 mt-3">
-            <div className="justify-around">
-              <Headline>From</Headline>
-              <TextInput
-                placeholder="Search Structures..."
-                onChange={(fromSearchTerm) => setFromSearchTerm(fromSearchTerm)}
-                className="my-2"
-              />
-              {entitiesListWithAccountNames
-                .filter(({ name }) => name !== "Other Realms")
-                .map(({ entities, name: title }, index) => {
-                  const filteredEntities = filterEntities(entities, fromSearchTerm, selectedEntityIdFrom?.entityId);
-                  if (filteredEntities.length === 0) return null;
-                  return (
-                    <ToggleComponent
-                      title={title}
-                      key={index}
-                      searchTerm={fromSearchTerm}
-                      initialOpen={fromSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdFrom?.entityId)}
-                    >
-                      <SelectEntityFromList
-                        onSelect={(name, entityId) => setSelectedEntityIdFrom({ name, entityId })}
-                        selectedCounterpartyId={selectedEntityIdTo?.entityId!}
-                        selectedEntityId={selectedEntityIdFrom?.entityId!}
-                        entities={filteredEntities}
-                      />
-                    </ToggleComponent>
-                  );
-                })}
-            </div>
-            <div className="justify-around overflow-auto">
-              <Headline>To</Headline>
-              <div className="p-1">
-                {" "}
-                <div className="flex space-x-2 items-center cursor-pointer" onClick={() => filterBy(!filtered)}>
-                  <Checkbox enabled={filtered} />
-                  <div>Tribe Only</div>
-                </div>
-              </div>
-
-              <TextInput
-                placeholder="Search entities..."
-                onChange={(toSearchTerm) => setToSearchTerm(toSearchTerm)}
-                className="my-2"
-              />
-              {entitiesListWithAccountNames.map(({ entities, name: title }, index) => (
-                <ToggleComponent
-                  title={title}
-                  key={index}
-                  searchTerm={toSearchTerm}
-                  initialOpen={toSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdTo?.entityId)}
-                >
-                  <SelectEntityFromList
-                    onSelect={(name, entityId) => setSelectedEntityIdTo({ name, entityId })}
-                    selectedCounterpartyId={selectedEntityIdFrom?.entityId!}
-                    selectedEntityId={selectedEntityIdTo?.entityId!}
-                    entities={filterEntities(entities, toSearchTerm, selectedEntityIdTo?.entityId)}
-                  />
-                </ToggleComponent>
-              ))}
-            </div>
-          </div>
-          <div className="flex justify-center w-full">
-            <Button
-              className="w-full mt-8"
-              disabled={!selectedEntityIdFrom || !selectedEntityIdTo}
-              variant="primary"
-              size="md"
-              onClick={() => {
-                setSelectedStepId(STEP_ID.SELECT_RESOURCES);
-              }}
-            >
-              Next - Select Resources
-              <LucideArrowRight className="ml-2" />
-            </Button>
-          </div>
-        </>
+        <SelectEntitiesStep
+          selectedEntityIdFrom={selectedEntityIdFrom}
+          selectedEntityIdTo={selectedEntityIdTo}
+          setSelectedEntityIdFrom={setSelectedEntityIdFrom}
+          setSelectedEntityIdTo={setSelectedEntityIdTo}
+          travelTime={travelTime}
+          entitiesListWithAccountNames={entitiesListWithAccountNames}
+          fromSearchTerm={fromSearchTerm}
+          setFromSearchTerm={setFromSearchTerm}
+          toSearchTerm={toSearchTerm}
+          setToSearchTerm={setToSearchTerm}
+          filtered={filtered}
+          filterBy={filterBy}
+          setSelectedStepId={setSelectedStepId}
+        />
       )}
 
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
@@ -292,16 +333,19 @@ export const TransferBetweenEntities = ({
           </div>
         </div>
       )}
-
-      {currentStep?.id === STEP_ID.SUCCESS && (
-        <div className=" justify-center items-center text-center">
-          <h4>Transfer successful!</h4>
-          <p>Check transfers in the right sidebar transfer menu.</p>
-          <Button variant="primary" size="md" className="mt-4" onClick={onNewTrade}>
-            New transfer
-          </Button>
-        </div>
-      )}
+      {currentStep?.id === STEP_ID.SUCCESS && <FinalTransfer onNewTrade={onNewTrade} />}
     </div>
   );
 };
+
+const FinalTransfer = memo(({ onNewTrade }: { onNewTrade: () => void }) => {
+  return (
+    <div className=" justify-center items-center text-center">
+      <h4>Transfer successful!</h4>
+      <p>Check transfers in the right sidebar transfer menu.</p>
+      <Button variant="primary" size="md" className="mt-4" onClick={onNewTrade}>
+        New transfer
+      </Button>
+    </div>
+  );
+});

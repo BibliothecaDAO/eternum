@@ -9,9 +9,9 @@ import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { QuestType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useState } from "react";
+import { memo, useState } from "react";
 
-export const QuestsMenu = () => {
+export const QuestsMenu = memo(() => {
   const {
     account: { account },
     setup: {
@@ -201,7 +201,7 @@ export const QuestsMenu = () => {
       </div>
     )
   );
-};
+});
 
 const QuestRewards = ({ prizes }: { prizes: Prize[] | undefined }) => {
   const { getQuestResources } = useRealm();

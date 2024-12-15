@@ -29,6 +29,38 @@ export const MarketResourceSidebar = ({
     });
   }, []);
 
+  const resourceList = useMemo(() => {
+    return filteredResources
+      .filter((resourceId) => resourceId !== ResourcesIds.Lords)
+      .map((resourceId) => {
+        const marketManager = bankEntityId ? new MarketManager(setup, bankEntityId, 0n, resourceId) : undefined;
+
+        const askPrice = resourceBidOffers
+          .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
+          .reduce((acc, offer) => (offer.perLords > acc ? offer.perLords : acc), 0);
+
+        const bidPrice = resourceAskOffers
+          .filter((offer) => offer.takerGets[0].resourceId === resourceId)
+          .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
+
+        const ammPrice = marketManager?.getMarketPrice() || 0;
+
+        return (
+          <MarketResource
+            key={resourceId}
+            entityId={entityId || 0}
+            resourceId={resourceId}
+            active={selectedResource == resourceId}
+            onClick={onClick}
+            askPrice={askPrice === Infinity ? 0 : askPrice}
+            bidPrice={bidPrice === Infinity ? 0 : bidPrice}
+            ammPrice={ammPrice}
+          />
+        );
+      });
+  }, [filteredResources, bankEntityId, setup, resourceBidOffers, resourceAskOffers, selectedResource, entityId, onClick]);
+
+
   return (
     <div className="market-resource-bar-selector px-1 bg-brown rounded-2xl p-1">
       <div className="w-full mb-1">
@@ -41,34 +73,7 @@ export const MarketResourceSidebar = ({
       </div>
 
       <div className="flex flex-col h-full gap-[0.1]">
-        {filteredResources
-          .filter((resourceId) => resourceId !== ResourcesIds.Lords)
-          .map((resourceId) => {
-            const marketManager = bankEntityId ? new MarketManager(setup, bankEntityId, 0n, resourceId) : undefined;
-
-            const askPrice = resourceBidOffers
-              .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
-              .reduce((acc, offer) => (offer.perLords > acc ? offer.perLords : acc), 0);
-
-            const bidPrice = resourceAskOffers
-              .filter((offer) => offer.takerGets[0].resourceId === resourceId)
-              .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
-
-            const ammPrice = marketManager?.getMarketPrice() || 0;
-
-            return (
-              <MarketResource
-                key={resourceId}
-                entityId={entityId || 0}
-                resourceId={resourceId}
-                active={selectedResource == resourceId}
-                onClick={onClick}
-                askPrice={askPrice === Infinity ? 0 : askPrice}
-                bidPrice={bidPrice === Infinity ? 0 : bidPrice}
-                ammPrice={ammPrice}
-              />
-            );
-          })}
+      {resourceList}
       </div>
     </div>
   );
