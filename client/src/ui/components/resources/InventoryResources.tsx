@@ -1,4 +1,4 @@
-import { addToSubscription } from "@/dojo/queries";
+import { syncByEntityId } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance, useResourcesUtils } from "@/hooks/helpers/useResources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -51,7 +51,7 @@ export const InventoryResources = ({
 
       setIsSyncing(true);
       try {
-        await addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, entityId.toString());
+        await syncByEntityId(dojo.network.toriiClient, dojo.network.contractComponents as any, entityId.toString(), dojo.setup.db);
         localStorage.setItem(cacheKey, now.toString());
       } catch (error) {
         console.error("Fetch failed", error);

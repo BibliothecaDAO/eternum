@@ -730,6 +730,8 @@ export default class WorldmapScene extends HexagonScene {
           },
         },
         this.dojo.network.contractComponents as any,
+        [],
+        [],
         1000,
         false,
       );

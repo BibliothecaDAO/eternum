@@ -8,6 +8,7 @@ import { getEntities, getSyncEvents, syncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
+import { openDatabase, syncEntitiesFromStorage } from "./indexedDB";
 import { ClientConfigManager } from "./modelManager/ConfigManager";
 import { setupNetwork } from "./setupNetwork";
 
@@ -51,13 +52,20 @@ export async function setup({ ...config }: DojoConfig) {
     },
   ];
 
+  const indexedDB = await openDatabase();
+  await syncEntitiesFromStorage(indexedDB, network.contractComponents as any);
+
   await getEntities(
     network.toriiClient,
     { Composite: { operator: "Or", clauses: configClauses } },
     network.contractComponents as any,
+    [],
+    [],
+    10_000,
+    false,
+    { dbConnection: indexedDB, timestampCacheKey: "config_query" },
   );
 
-  // fetch all existing entities from torii
   await getEntities(
     network.toriiClient,
     {
@@ -68,8 +76,11 @@ export async function setup({ ...config }: DojoConfig) {
       },
     },
     network.contractComponents as any,
+    [],
+    [],
     10_000,
     false,
+    { dbConnection: indexedDB, timestampCacheKey: "single_keyed_query" },
   );
 
   const sync = await syncEntities(network.toriiClient, network.contractComponents as any, [], false);
@@ -122,8 +133,9 @@ export async function setup({ ...config }: DojoConfig) {
         },
       },
     ],
+    [],
+    [],
     10_000,
-    false,
     false,
   );
 
@@ -133,5 +145,6 @@ export async function setup({ ...config }: DojoConfig) {
     systemCalls,
     sync,
     eventSync,
+    db: indexedDB,
   };
 }

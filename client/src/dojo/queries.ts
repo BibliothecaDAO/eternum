@@ -1,100 +1,76 @@
 // onload -> fetch single key entities
 
 import { Component, Metadata, Schema } from "@dojoengine/recs";
-import { setEntities } from "@dojoengine/state";
-import { Clause, EntityKeysClause, PatternMatching, ToriiClient } from "@dojoengine/torii-client";
+import { getEntities } from "@dojoengine/state";
+import { EntityKeysClause, PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 
-// on hexception -> fetch below queries based on entityID
-
-// background sync after load ->
-
-export const getEntities = async <S extends Schema>(
-  client: ToriiClient,
-  clause: Clause | undefined,
-  components: Component<S, Metadata, undefined>[],
-  limit: number = 100,
-  logging: boolean = false,
-) => {
-  if (logging) console.log("Starting getEntities");
-  let offset = 0;
-  let continueFetching = true;
-
-  while (continueFetching) {
-    const entities = await client.getEntities({
-      limit,
-      offset,
-      clause,
-      dont_include_hashed_keys: false,
-      order_by: [],
-    });
-
-    setEntities(entities, components);
-
-    if (Object.keys(entities).length < limit) {
-      continueFetching = false;
-    } else {
-      offset += limit;
-    }
-  }
-};
-
-export const syncEntitiesEternum = async <S extends Schema>(
+export const syncByPosition = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
-  entityKeyClause: EntityKeysClause[],
-  logging: boolean = false,
-) => {
-  // if (logging) console.log("Starting syncEntities");
-  return await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    // if (logging) console.log("Entity updated", fetchedEntities);
-
-    setEntities({ [fetchedEntities]: data }, components);
-  });
-};
-
-export const addToSubscription = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityID: string,
-  position?: { x: number; y: number },
+  position: { x: number; y: number },
+  db: IDBDatabase,
 ) => {
   const positionClause: EntityKeysClause = {
     Keys: {
-      keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
+      keys: [String(position.x), String(position.y), undefined, undefined],
       pattern_matching: "FixedLen" as PatternMatching,
       models: [],
     },
   };
 
-  position &&
-    (await getEntities(
-      client,
-      {
-        ...positionClause,
-      },
-      components,
-      30_000,
-      false,
-    ));
+  await getEntities(
+    client,
+    {
+      ...positionClause,
+    },
+    components,
+    [],
+    [],
+    10_000,
+    false,
+    { dbConnection: db, timestampCacheKey: `position_${position.x}_${position.y}_query` },
+  );
+};
 
+export const syncByEntityId = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityId: string,
+  db: IDBDatabase,
+) => {
   await getEntities(
     client,
     {
       Keys: {
-        keys: [entityID],
+        keys: [entityId],
         pattern_matching: "VariableLen",
         models: [],
       },
     },
     components,
+    [],
+    [],
     30_000,
     false,
+    { dbConnection: db, timestampCacheKey: `entity_${entityId}_query` },
   );
 };
 
-export const addMarketSubscription = async <S extends Schema>(
+export const syncStructure = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
+  entityID: string,
+  position: { x: number; y: number },
+  db: IDBDatabase,
+) => {
+  await syncByPosition(client, components, position, db);
+  await syncByEntityId(client, components, entityID, db);
+};
+
+export const syncMarket = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  db: IDBDatabase,
 ) => {
   await getEntities(
     client,
@@ -105,8 +81,11 @@ export const addMarketSubscription = async <S extends Schema>(
         models: ["s0_eternum-DetachedResource"],
       },
     },
-    components,
+    components as any,
+    [],
+    ["s0_eternum-DetachedResource"],
     30_000,
     false,
+    { dbConnection: db, timestampCacheKey: "market_query" },
   );
 };

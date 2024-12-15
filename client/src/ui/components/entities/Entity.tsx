@@ -1,4 +1,4 @@
-import { addToSubscription } from "@/dojo/queries";
+import { syncByEntityId } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
@@ -64,10 +64,11 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
       setIsSyncing(true);
       const fetch = async () => {
         try {
-          await addToSubscription(
+          await syncByEntityId(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             arrival.entityId.toString(),
+            dojo.setup.db,
           );
           localStorage.setItem(cacheKey, now.toString());
         } catch (error) {

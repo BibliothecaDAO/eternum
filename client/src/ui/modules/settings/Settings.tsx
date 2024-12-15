@@ -5,6 +5,7 @@ import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as Controller } from "@/assets/icons/Controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
+import { clearCache } from "@/dojo/indexedDB";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -165,6 +166,15 @@ export const SettingsWindow = () => {
           </a>
         </div>
 
+        <Button
+          onClick={() => {
+            clearCache();
+            setShowSettings(false);
+            setBlankOverlay(true);
+          }}
+        >
+          clear cache
+        </Button>
         <Button
           onClick={() => {
             setShowSettings(false);

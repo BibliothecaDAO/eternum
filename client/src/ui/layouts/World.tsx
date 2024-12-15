@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
-import { addMarketSubscription, addToSubscription } from "@/dojo/queries";
+import { syncMarket, syncStructure } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
@@ -86,7 +86,9 @@ const MiniMapNavigation = lazy(() =>
 );
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
+  const dojo = useDojo();
+
+  const [syncedStructures, setSyncedStructures] = useState<{ [entity: string]: boolean }>({});
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
 
@@ -105,51 +107,54 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
   const setMarketLoading = useWorldStore((state) => state.setMarketLoading);
 
-  const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const { playerStructures } = useEntities();
   const structures = playerStructures();
 
   const filteredStructures = useMemo(
-    () => structures.filter((structure: PlayerStructure) => !subscriptions[structure.entity_id.toString()]),
-    [structures, subscriptions],
+    () => structures.filter((structure: PlayerStructure) => !syncedStructures[structure.entity_id.toString()]),
+    [structures, syncedStructures],
   );
 
   useEffect(() => {
     if (
       !structureEntityId ||
-      subscriptions[structureEntityId.toString()] ||
-      subscriptions[ADMIN_BANK_ENTITY_ID.toString()] ||
+      syncedStructures[structureEntityId.toString()] ||
+      syncedStructures[ADMIN_BANK_ENTITY_ID.toString()] ||
       structureEntityId === 999999999
     ) {
       return;
     }
-
     const position = getComponentValue(
       dojo.setup.components.Position,
       getEntityIdFromKeys([BigInt(structureEntityId)]),
     );
 
+    if (!position) return;
+
     setWorldLoading(true);
-    setSubscriptions((prev) => ({
+    setSyncedStructures((prev) => ({
       ...prev,
       [structureEntityId.toString()]: true,
       [ADMIN_BANK_ENTITY_ID.toString()]: true,
     }));
+
     const fetch = async () => {
       try {
-        await addToSubscription(
+        await syncStructure(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           structureEntityId.toString(),
-          { x: position?.x || 0, y: position?.y || 0 },
+          { x: position.x, y: position.y },
+          dojo.setup.db,
         );
-
-        await addToSubscription(
+        await syncStructure(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           ADMIN_BANK_ENTITY_ID.toString(),
+          { x: position.x, y: position.y },
+          dojo.setup.db,
         );
       } catch (error) {
         console.error("Fetch failed", error);
@@ -157,10 +162,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         setWorldLoading(false);
       }
 
-      console.log("world loading", worldLoading);
-
       try {
-        await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
+        await syncMarket(dojo.network.toriiClient, dojo.network.contractComponents as any, dojo.setup.db);
       } catch (error) {
         console.error("Fetch failed", error);
       } finally {
@@ -169,24 +172,27 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, [structureEntityId, subscriptions, setWorldLoading, setSubscriptions]);
+  }, [structureEntityId, syncedStructures, setWorldLoading, setSyncedStructures]);
 
   useEffect(() => {
     if (filteredStructures.length === 0) return;
+
     setWorldLoading(true);
-    setSubscriptions((prev) => ({
+    setSyncedStructures((prev) => ({
       ...prev,
       ...Object.fromEntries(filteredStructures.map((structure) => [structure.entity_id.toString(), true])),
     }));
+
     const fetch = async () => {
       try {
         await Promise.all(
           filteredStructures.map((structure: PlayerStructure) =>
-            addToSubscription(
+            syncStructure(
               dojo.network.toriiClient,
               dojo.network.contractComponents as any,
               structure.entity_id.toString(),
               { x: structure.position.x, y: structure.position.y },
+              dojo.setup.db,
             ),
           ),
         );
@@ -200,7 +206,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, [filteredStructures, setWorldLoading, setSubscriptions]);
+  }, [filteredStructures, setWorldLoading, setSyncedStructures]);
 
   return (
     <div
