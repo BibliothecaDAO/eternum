@@ -170,7 +170,7 @@ export const BridgeIn = () => {
 
   return (
     <>
-      <div className="max-w-md flex flex-col bg-background gap-3 relative max-h-[calc(75vh-100px)] overflow-y-auto p-3">
+      <div className="max-w-md flex flex-col gap-3 relative max-h-[calc(75vh-100px)] overflow-y-auto p-3">
         <TypeP>
           <div className="space-y-4">
             <h2 className="text-2xl font-bold mb-4 text-gold border-b border-gold/20 pb-2">
@@ -226,7 +226,14 @@ export const BridgeIn = () => {
             <div className="text-xs text-slate-500 uppercase mb-1">To Realm</div>
 
             <Select onValueChange={(value) => setRealmEntityId(Number(value))}>
-              <SelectTrigger className="w-full dark:[background:linear-gradient(45deg,#1a1311,#1a1311)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box] light:[background:linear-gradient(45deg,#ffffff,#ffffff)_padding-box,conic-gradient(from_var(--border-angle),#b08c4f_80%,_#daa520_86%,_#ffd700_90%,_#daa520_94%,_#b08c4f)_border-box] border border-transparent animate-border">
+              <SelectTrigger
+                className={
+                  "w-full " +
+                  (!realmEntityId
+                    ? "bg-dark-brown dark:[background:linear-gradient(45deg,#1a1311,#1a1311)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box] border border-transparent animate-border [background:linear-gradient(45deg,#ffffff,#ffffff)_padding-box,conic-gradient(from_var(--border-angle),#8b7355_80%,_#c6a366_86%,_#e5c088_90%,_#c6a366_94%,_#8b7355)_border-box]"
+                    : "border-gold/15")
+                }
+              >
                 {address ? (
                   <SelectValue placeholder="Select Realm To Transfer" />
                 ) : (

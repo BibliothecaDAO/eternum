@@ -56,7 +56,7 @@ export const TopNavigationView = ({
           onClick={() => {
             window.open("https://eternum.realms.world", "_blank");
           }}
-          className="gap-2"
+          className="gap-2 hidden sm:flex"
         >
           <PlayIcon className="!w-4 h-2" />
           Play Eternum
@@ -92,7 +92,7 @@ export const TopNavigationView = ({
         {isConnected ? (
           <Button
             variant="outline"
-            className="gap-2"
+            className="px-1"
             size={"default"}
             onClick={() => {
               onDisconnect();

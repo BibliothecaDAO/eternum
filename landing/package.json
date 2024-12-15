@@ -28,7 +28,7 @@
     "@dojoengine/utils": "1.0.3-alpha.2",
     "@graphql-codegen/schema-ast": "^4.1.0",
     "@graphql-typed-document-node/core": "^3.2.0",
-    "@headlessui/react": "^1.7.18",
+    "@headlessui/react": "^2.2.0",
     "@parcel/watcher": "^2.4.1",
     "@radix-ui/react-checkbox": "^1.1.2",
     "@radix-ui/react-collapsible": "^1.1.1",

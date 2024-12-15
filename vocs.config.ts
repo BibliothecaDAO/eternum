@@ -82,7 +82,7 @@ export default defineConfig({
 
         { text: "Trading", link: "/mechanics/trading" },
         { text: "World Map", link: "/mechanics/world-map" },
-        { text: "Hyperstructures & Points", link: "/mechanics/hyperstructures" },
+        { text: "Hyperstructures & Victory Points", link: "/mechanics/hyperstructures" },
         { text: "Tribes", link: "/mechanics/tribes" },
       ],
     },

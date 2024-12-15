@@ -134,7 +134,7 @@ export const BridgeOutStep2 = () => {
 
   return (
     <>
-      <div className="max-w-md bg-background flex flex-col gap-3 max-h-[calc(75vh-100px)] overflow-y-auto p-3">
+      <div className="max-w-md flex flex-col gap-3 max-h-[calc(75vh-100px)] overflow-y-auto p-3">
         <TypeP>
           <div className="space-y-4">
             <h2 className="text-2xl font-bold mb-4 text-gold border-b border-gold/20 pb-2">

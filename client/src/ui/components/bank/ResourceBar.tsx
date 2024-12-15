@@ -129,21 +129,23 @@ export const ResourceBar = ({
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder={HintSection.Resources} />
         </SelectTrigger>
-        <SelectContent className="bg-brown/90 text-gold">
+        <SelectContent>
           {resources.length > 1 && (
-            <TextInput
-              ref={inputRef}
-              onChange={setSearchInput}
-              placeholder="Filter resources..."
-              className="w-full"
-              onKeyDown={handleKeyDown}
-            />
+            <div className="p-2">
+              <TextInput
+                ref={inputRef}
+                onChange={setSearchInput}
+                placeholder="Filter resources..."
+                onKeyDown={handleKeyDown}
+              />
+            </div>
           )}
           {filteredResources.map((resource) => (
             <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId}>
               <ResourceCost
                 resourceId={resource.id}
                 amount={divideByPrecision(getBalance(entityId, resource.id).balance)}
+                className="border-0 bg-transparent"
               />
             </SelectItem>
           ))}

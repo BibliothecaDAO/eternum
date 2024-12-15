@@ -1,7 +1,7 @@
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { ResourceIcon } from "./ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./Select";
 import TextInput from "./TextInput";
@@ -9,20 +9,37 @@ import TextInput from "./TextInput";
 interface SelectResourceProps {
   onSelect: (resourceId: number | null) => void;
   className?: string;
+  realmProduction?: boolean;
 }
 
-export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, className }) => {
+export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, className, realmProduction = false }) => {
   const [searchInput, setSearchInput] = useState("");
   const [selectedResource, setSelectedResource] = useState<string>("");
   const [open, setOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const resourceIds = Object.values(ResourcesIds)
-    .filter((resource) => resource !== ResourcesIds.AncientFragment && resource !== ResourcesIds.Lords)
-    .filter((resource) => typeof resource === "number");
+  const REALM_PRODUCTION_EXCLUDED = [
+    ResourcesIds.AncientFragment,
+    ResourcesIds.Crossbowman,
+    ResourcesIds.Knight,
+    ResourcesIds.Paladin,
+    ResourcesIds.Fish,
+    ResourcesIds.Wheat,
+    ResourcesIds.Donkey,
+  ];
 
-  const filteredResourceIds = resourceIds.filter((resourceId) =>
+  const orderedResources = useMemo(() => {
+    return Object.values(RESOURCE_TIERS)
+      .flat()
+      .filter((resourceId) => {
+        if (resourceId === ResourcesIds.Lords) return false;
+        if (realmProduction && REALM_PRODUCTION_EXCLUDED.includes(resourceId)) return false;
+        return true;
+      });
+  }, [realmProduction]);
+
+  const filteredResourceIds = orderedResources.filter((resourceId) =>
     ResourcesIds[resourceId].toLowerCase().startsWith(searchInput.toLowerCase()),
   );
 
@@ -76,13 +93,14 @@ export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, classN
           <SelectValue placeholder="Select a resource" />
         </SelectTrigger>
         <SelectContent>
-          <TextInput
-            ref={inputRef}
-            onChange={setSearchInput}
-            placeholder="Filter resources..."
-            className="w-full"
-            onKeyDown={handleKeyDown}
-          />
+          <div className="p-2">
+            <TextInput
+              ref={inputRef}
+              onChange={setSearchInput}
+              placeholder="Filter resources..."
+              onKeyDown={handleKeyDown}
+            />
+          </div>
           {filteredResourceIds.map((resourceId) => (
             <SelectItem key={resourceId} value={resourceId.toString()}>
               <div className="flex items-center">
