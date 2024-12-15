@@ -51,11 +51,7 @@ export const InventoryResources = ({
 
       setIsSyncing(true);
       try {
-        await addToSubscription(
-          dojo.network.toriiClient,
-          dojo.network.contractComponents as any,
-          entityId.toString(),
-        );
+        await addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, entityId.toString());
         localStorage.setItem(cacheKey, now.toString());
       } catch (error) {
         console.error("Fetch failed", error);

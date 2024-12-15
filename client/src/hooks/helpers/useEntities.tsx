@@ -252,7 +252,6 @@ export const useEntitiesUtils = () => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(entityId)]));
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(entityId)]));
-
     if (structure?.category === StructureType[StructureType.Realm] && realm) {
       return getRealmName(realm);
     }
@@ -272,9 +271,8 @@ export const useEntitiesUtils = () => {
       if (abbr) {
         return `${abbr} ${structure.entity_id}`;
       }
-
-      return `${structure?.category} ${structure?.entity_id}`;
     }
+    return `${structure?.category} ${structure?.entity_id}`;
   };
 
   const getAddressName = (address: ContractAddress) => {

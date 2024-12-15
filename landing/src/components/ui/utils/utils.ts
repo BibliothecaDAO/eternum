@@ -438,7 +438,11 @@ export const getJSONFile = async (filePath: string) => {
   return data;
 };
 
-export const getSeasonAddresses = async () => {
+interface ResourceAddresses {
+  [key: string]: [number, string];
+}
+
+export const getSeasonAddresses = async (): Promise<ResourceAddresses> => {
   try {
     const path = getSeasonAddressesPath();
     const data = await getJSONFile(path);

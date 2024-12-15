@@ -17,6 +17,7 @@ import {
 import { type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
+import { env } from "../../../env";
 import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
@@ -501,9 +502,31 @@ export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
   return cost.map((item) => (item.resource === ResourcesIds.Lords ? { ...item, amount: item.amount * 0.1 } : item));
 };
 
+export const getSeasonAddressesPath = () => {
+  return `/resource_addresses/${env.VITE_PUBLIC_CHAIN}/resource_addresses.json`;
+};
+export const getJSONFile = async (filePath: string) => {
+  const response = await fetch(filePath);
+  const data = await response.json();
+  return data;
+};
+interface ResourceAddresses {
+  [key: string]: [number, string];
+}
+
+export const getSeasonAddresses = async (): Promise<ResourceAddresses> => {
+  try {
+    const path = getSeasonAddressesPath();
+    const data = await getJSONFile(path);
+    return data;
+  } catch (error) {
+    console.error("Error loading season addresses:", error);
+    return {};
+  }
+};
 export const calculateDonkeysNeeded = (orderWeight: number): number => {
   const configManager = ClientConfigManager.instance();
   const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfigCategory.Donkey);
 
-  return Math.ceil((orderWeight / 1000) / donkeyCapacityGrams);
+  return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacityGrams);
 };

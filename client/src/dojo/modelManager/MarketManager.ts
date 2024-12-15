@@ -87,7 +87,7 @@ export class MarketManager {
 
   public getOutputAmount(inputAmount: number, inputReserve: bigint, outputReserve: bigint, feeRateNum: number) {
     // Ensure reserves are not zero and input amount is valid
-    if (inputReserve < 0n || outputReserve < 0n) {
+    if (inputReserve <= 0n || outputReserve < 0n) {
       throw new Error("Reserves must be >= zero");
     }
     if (inputAmount < 0) {
@@ -137,7 +137,12 @@ export class MarketManager {
     const market = this.getMarket();
     if (!market) return 0;
 
-    let outputAmount = this.getOutputAmount(lordsAmount, market.lords_amount, market.resource_amount, feeRateNum);
+    let outputAmount = 0n;
+    try {
+      outputAmount = this.getOutputAmount(lordsAmount, market.lords_amount, market.resource_amount, feeRateNum);
+    } catch (e) {
+      console.log(e);
+    }
     return Number(outputAmount);
   };
 
@@ -157,6 +162,8 @@ export class MarketManager {
 
     const numerator = BigInt(inputReserve) * BigInt(outputReserve);
     const denominator = BigInt(outputReserve) - BigInt(resourceAmount);
+    if (denominator <= 0n) return 0;
+
     const inputAmount = numerator / denominator - BigInt(inputReserve);
 
     // Adjust for fees

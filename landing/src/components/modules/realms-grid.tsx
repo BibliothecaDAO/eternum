@@ -30,7 +30,6 @@ export const RealmsGrid = ({
 }: SeasonPassRowProps) => {
   const [isCompactGrid, setIsCompactGrid] = useState(false);
 
-
   if (!realms?.length) {
     return (
       <div className="relative flex flex-col items-center justify-center p-16 text-center space-y-6 min-h-[500px] rounded-xl border-2 border-dashed border-gray-200 bg-gradient-to-b from-gray-50/50 to-gray-100/50">
@@ -40,25 +39,22 @@ export const RealmsGrid = ({
           <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary/5 rounded-full blur-xl" />
         </div>
         <Castle className="w-20 h-20 text-primary/60 animate-pulse" />
-        
+
         <div className="relative">
-          <h3 className="text-2xl font-bold text-gray-900 tracking-tight mt-6">
-            No Realms Yet
-          </h3>
-          
+          <h3 className="text-2xl font-bold text-gray-900 tracking-tight mt-6">No Realms Yet</h3>
+
           <p className="text-gray-600 max-w-md leading-relaxed">
-            Your collection of realms will appear here once you acquire them.
-            
-            Get your realm to start your journey into Realms World!
+            Your collection of realms will appear here once you acquire them. Get your realm to start your journey into
+            Realms World!
           </p>
-          
-          <a href={`https://market.realms.world/collection/0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809`} target="_blank">
-            <Button 
-              variant="outline" 
-            className="mt-6 group hover:border-primary/50 transition-all duration-300"
+
+          <a
+            href={`https://market.realms.world/collection/0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809`}
+            target="_blank"
           >
-            <Castle className="w-4 h-4 mr-2 group-hover:text-primary transition-colors" />
-            Get Your Realm 
+            <Button variant="outline" className="mt-6 group hover:border-primary/50 transition-all duration-300">
+              <Castle className="w-4 h-4 mr-2 group-hover:text-primary transition-colors" />
+              Get Your Realm
             </Button>
           </a>
         </div>

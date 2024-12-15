@@ -19,7 +19,6 @@ import {
   multiplyByPrecision,
 } from "@/ui/utils/utils";
 import {
-  CapacityConfigCategory,
   DONKEY_ENTITY_TYPE,
   ONE_MONTH,
   ResourcesIds,
@@ -557,7 +556,7 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return calculateDonkeysNeeded(orderWeight);
+    return calculateDonkeysNeeded(multiplyByPrecision(orderWeight));
   }, [orderWeight]);
 
   const { currentDefaultTick } = useNextBlockTimestamp();

@@ -2,10 +2,8 @@ import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
 import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
-import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
@@ -18,22 +16,22 @@ import { Tabs } from "@/ui/elements/tab";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import {
+  ResourceIdToMiningType,
   adjustWonderLordsCost,
   divideByPrecision,
   getEntityIdFromKeys,
   gramToKg,
   isResourceProductionBuilding,
-  ResourceIdToMiningType,
 } from "@/ui/utils/utils";
 import {
   BuildingEnumToString,
   BuildingType,
   CapacityConfigCategory,
-  findResourceById,
   ID,
   ResourceCost as ResourceCostType,
   ResourcesIds,
   WORLD_CONFIG_ID,
+  findResourceById,
 } from "@bibliothecadao/eternum";
 import { Component, getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
@@ -45,13 +43,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realm } = useGetRealm(entityId);
 
   const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
-  const { questClaimStatus } = useQuestClaimStatus();
 
   const buildingTypes = Object.keys(BuildingType).filter(
     (key) =>
