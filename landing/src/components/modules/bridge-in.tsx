@@ -1,13 +1,16 @@
 import { configManager } from "@/dojo/setup";
+import { execute } from "@/hooks/gql/execute";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { GET_ENTITY_RESOURCES } from "@/hooks/query/resources";
 import { useLords } from "@/hooks/use-lords";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress, divideByPrecision, multiplyByPrecision } from "@/lib/utils";
 import { ADMIN_BANK_ENTITY_ID, DONKEY_ENTITY_TYPE, Resources, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useAccount, useBalance } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -23,8 +26,16 @@ import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } fr
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeIn = () => {
+
   const { address } = useAccount();
   const [realmEntityId, setRealmEntityId] = useState<number>();
+
+  const { data: resourceBalances, isLoading: isResourcesLoading } = useQuery({
+    queryKey: ["entityResources", realmEntityId],
+    queryFn: () => (realmEntityId ? execute(GET_ENTITY_RESOURCES, { entityId: realmEntityId }) : null),
+    refetchInterval: 10_000,
+  });
+
   const [resourceFees, setResourceFees] = useState<
     {
       id: string;
@@ -105,14 +116,16 @@ export const BridgeIn = () => {
       return 0;
     }
   }, [orderWeight]);
-  const { getBalance } = getResourceBalance();
+
   const donkeyBalance = useMemo(() => {
     if (realmEntityId) {
-      return getBalance(Number(realmEntityId), ResourcesIds.Donkey);
+      return resourceBalances?.s0EternumResourceModels?.edges?.find(
+        (edge) => edge?.node?.resource_type === ResourcesIds.Donkey
+      )?.node?.balance;
     } else {
-      return { balance: 0 };
+      return 0 ;
     }
-  }, [getBalance, realmEntityId]);
+  }, [resourceBalances, realmEntityId]);
 
   const { bridgeIntoRealm } = useBridgeAsset();
 
@@ -282,7 +295,7 @@ export const BridgeIn = () => {
             <div>{travelTimeInHoursAndMinutes(travelTime ?? 0)}</div>
           </div>
           <div
-            className={"flex justify-between mb-3 " + (donkeysNeeded > donkeyBalance.balance ? "text-destructive" : "")}
+            className={"flex justify-between mb-3 " + (donkeysNeeded > donkeyBalance ? "text-destructive" : "")}
           >
             <div>
               Donkeys Burnt
@@ -299,7 +312,7 @@ export const BridgeIn = () => {
               </TooltipProvider>
             </div>
             <div className="flex items-center gap-2">
-              {donkeysNeeded} / {divideByPrecision(donkeyBalance.balance)}{" "}
+              {donkeysNeeded} / {isResourcesLoading ? <Loader className="animate-spin pr-2" /> :  divideByPrecision(donkeyBalance)}{" "}
               <ResourceIcon withTooltip={false} resource={"Donkey"} size="md" />
             </div>
           </div>
@@ -336,7 +349,7 @@ export const BridgeIn = () => {
           disabled={
             isLoading ||
             !realmEntityId ||
-            donkeyBalance.balance < donkeysNeeded ||
+            donkeyBalance < donkeysNeeded ||
             !Object.values(selectedResourceAmounts).some((amount) => amount > 0)
           }
           onClick={() => onBridgeIntoRealm()}
