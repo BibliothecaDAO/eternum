@@ -55,35 +55,52 @@ export const syncEntitiesEternum = async <S extends Schema>(
 export const addToSubscription = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
-  entityID: string,
-  position?: { x: number; y: number },
+  entityID: string[],
+  position?: { x: number; y: number }[],
 ) => {
-  const positionClause: EntityKeysClause = {
-    Keys: {
-      keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
-      pattern_matching: "FixedLen" as PatternMatching,
-      models: [],
-    },
-  };
-
-  position &&
-    (await getEntities(
-      client,
-      {
-        ...positionClause,
-      },
-      components,
-      30_000,
-      false,
-    ));
+  // position &&
+  //   (await getEntities(
+  //     client,
+  //     {
+  //       Composite: {
+  //         operator: "Or",
+  //         clauses: position.map((position) => ({
+  //           Keys: {
+  //             keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
+  //             pattern_matching: "FixedLen" as PatternMatching,
+  //             models: [],
+  //           },
+  //         })),
+  //       },
+  //     },
+  //     components,
+  //     30_000,
+  //     false,
+  //   ));
 
   await getEntities(
     client,
     {
-      Keys: {
-        keys: [entityID],
-        pattern_matching: "VariableLen",
-        models: [],
+      Composite: {
+        operator: "Or",
+        clauses: [
+          ...entityID.map((id) => ({
+            Keys: {
+              keys: [id],
+              pattern_matching: "VariableLen" as PatternMatching,
+              models: [],
+            },
+          })),
+          ...(position
+            ? position.map((position) => ({
+                Keys: {
+                  keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
+                  pattern_matching: "FixedLen" as PatternMatching,
+                  models: [],
+                },
+              }))
+            : []),
+        ],
       },
     },
     components,

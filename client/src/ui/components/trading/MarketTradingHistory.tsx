@@ -6,7 +6,7 @@ import { SelectResource } from "@/ui/elements/SelectResource";
 import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "./TradeHistoryEvent";
 
 const MAX_TRADES = 100;
@@ -23,7 +23,7 @@ export type TradeEvent = {
   };
 };
 
-export const MarketTradingHistory = () => {
+export const MarketTradingHistory = memo(() => {
   const {
     account: {
       account: { address },
@@ -103,7 +103,10 @@ export const MarketTradingHistory = () => {
     });
   }, []);
 
-  const filteredTradeEvents = showOnlyYourSwaps ? tradeEvents.filter((trade) => trade.event.isYours) : tradeEvents;
+  const filteredTradeEvents = useMemo(
+    () => (showOnlyYourSwaps ? tradeEvents.filter((trade) => trade.event.isYours) : tradeEvents),
+    [showOnlyYourSwaps, tradeEvents],
+  );
 
   const [selectedResourceId, setSelectedResourceId] = useState<number | null>(null);
 
@@ -135,4 +138,4 @@ export const MarketTradingHistory = () => {
         })}
     </div>
   );
-};
+});

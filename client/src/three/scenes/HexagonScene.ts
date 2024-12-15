@@ -414,7 +414,11 @@ export abstract class HexagonScene {
     this.updateLights();
     this.updateHighlightPulse();
     this.biomeModels.forEach((biome) => {
-      biome.updateAnimations(deltaTime);
+      try {
+        biome.updateAnimations(deltaTime);
+      } catch (error) {
+        console.error(`Error updating biome animations:`, error);
+      }
     });
   }
 
