@@ -26,7 +26,6 @@ import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } fr
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeIn = () => {
-
   const { address } = useAccount();
   const [realmEntityId, setRealmEntityId] = useState<number>();
 
@@ -46,7 +45,12 @@ export const BridgeIn = () => {
       totalFee?: string;
     }[]
   >([]);
-  const { computeTravelTime } = useTravel();
+  const { computeTravelTime } = useTravel(
+    Number(ADMIN_BANK_ENTITY_ID),
+    Number(realmEntityId!),
+    configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+    true,
+  );
   const { getRealmNameById } = useRealm();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([ResourcesIds.Lords]);
@@ -120,10 +124,10 @@ export const BridgeIn = () => {
   const donkeyBalance = useMemo(() => {
     if (realmEntityId) {
       return resourceBalances?.s0EternumResourceModels?.edges?.find(
-        (edge) => edge?.node?.resource_type === ResourcesIds.Donkey
+        (edge) => edge?.node?.resource_type === ResourcesIds.Donkey,
       )?.node?.balance;
     } else {
-      return 0 ;
+      return 0;
     }
   }, [resourceBalances, realmEntityId]);
 
@@ -294,9 +298,7 @@ export const BridgeIn = () => {
             <div>Time to Transfer</div>
             <div>{travelTimeInHoursAndMinutes(travelTime ?? 0)}</div>
           </div>
-          <div
-            className={"flex justify-between mb-3 " + (donkeysNeeded > donkeyBalance ? "text-destructive" : "")}
-          >
+          <div className={"flex justify-between mb-3 " + (donkeysNeeded > donkeyBalance ? "text-destructive" : "")}>
             <div>
               Donkeys Burnt
               <TooltipProvider>
@@ -312,7 +314,8 @@ export const BridgeIn = () => {
               </TooltipProvider>
             </div>
             <div className="flex items-center gap-2">
-              {donkeysNeeded} / {isResourcesLoading ? <Loader className="animate-spin pr-2" /> :  divideByPrecision(donkeyBalance)}{" "}
+              {donkeysNeeded} /{" "}
+              {isResourcesLoading ? <Loader className="animate-spin pr-2" /> : divideByPrecision(donkeyBalance)}{" "}
               <ResourceIcon withTooltip={false} resource={"Donkey"} size="md" />
             </div>
           </div>
