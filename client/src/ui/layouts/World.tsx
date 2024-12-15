@@ -142,15 +142,13 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         await addToSubscription(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
-          structureEntityId.toString(),
-          { x: position?.x || 0, y: position?.y || 0 },
+          [structureEntityId.toString()],
+          [{ x: position?.x || 0, y: position?.y || 0 }],
         );
 
-        await addToSubscription(
-          dojo.network.toriiClient,
-          dojo.network.contractComponents as any,
+        await addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
           ADMIN_BANK_ENTITY_ID.toString(),
-        );
+        ]);
       } catch (error) {
         console.error("Fetch failed", error);
       } finally {
@@ -180,15 +178,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     }));
     const fetch = async () => {
       try {
-        await Promise.all(
-          filteredStructures.map((structure: PlayerStructure) =>
-            addToSubscription(
-              dojo.network.toriiClient,
-              dojo.network.contractComponents as any,
-              structure.entity_id.toString(),
-              { x: structure.position.x, y: structure.position.y },
-            ),
-          ),
+        await addToSubscription(
+          dojo.network.toriiClient,
+          dojo.network.contractComponents as any,
+          [...filteredStructures.map((structure) => structure.entity_id.toString())],
+          [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
         );
       } catch (error) {
         console.error("Fetch failed", error);

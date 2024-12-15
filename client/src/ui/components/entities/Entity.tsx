@@ -64,11 +64,9 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
       setIsSyncing(true);
       const fetch = async () => {
         try {
-          await addToSubscription(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
+          await addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
             arrival.entityId.toString(),
-          );
+          ]);
           localStorage.setItem(cacheKey, now.toString());
         } catch (error) {
           console.error("Fetch failed", error);
