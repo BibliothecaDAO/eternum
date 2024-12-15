@@ -505,5 +505,5 @@ export const calculateDonkeysNeeded = (orderWeight: number): number => {
   const configManager = ClientConfigManager.instance();
   const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfigCategory.Donkey);
 
-  return Math.ceil((orderWeight / 1000) / donkeyCapacityGrams);
+  return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacityGrams);
 };
