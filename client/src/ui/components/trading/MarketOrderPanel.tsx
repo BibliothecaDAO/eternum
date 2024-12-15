@@ -442,7 +442,7 @@ const OrderRow = ({
         <ConfirmationPopup
           title="Confirm Trade"
           onConfirm={onAccept}
-          disabled={donkeysNeeded > donkeyBalance || donkeyBalance === 0}
+          disabled={!isBuy && donkeysNeeded > donkeyBalance}
           onCancel={() => {
             setConfirmOrderModal(false);
           }}
