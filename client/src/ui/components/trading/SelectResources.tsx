@@ -5,7 +5,7 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { ID, resources } from "@bibliothecadao/eternum";
+import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const SelectResources = ({
@@ -24,8 +24,18 @@ export const SelectResources = ({
   const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
 
+  const orderedResources = useMemo(() => {
+    return Object.values(RESOURCE_TIERS)
+      .flat()
+      .filter((resourceId) => resourceId !== ResourcesIds.Lords)
+      .map((resourceId) => ({
+        id: resourceId,
+        trait: ResourcesIds[resourceId],
+      }));
+  }, []);
+
   const unselectedResources = useMemo(
-    () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
+    () => orderedResources.filter((res) => !selectedResourceIds.includes(res.id)),
     [selectedResourceIds],
   );
 
@@ -42,7 +52,8 @@ export const SelectResources = ({
     <div className="items-center col-span-4 space-y-2 p-3">
       {selectedResourceIds.map((id: any, index: any) => {
         const resource = getBalance(entity_id, id);
-        const options = [resources.find((res) => res.id === id), ...unselectedResources].map((res: any) => ({
+
+        const options = [orderedResources.find((res) => res.id === id), ...unselectedResources].map((res: any) => ({
           id: res.id,
           label: (
             <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(entity_id, res.id)?.balance || 0)} />
