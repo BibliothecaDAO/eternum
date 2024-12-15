@@ -278,9 +278,17 @@ export const TransferBetweenEntities = ({
             </div>
           </div>
 
-          <div className="w-full col-span-2">
+          <div className="w-full col-span-2 grid grid-cols-4 gap-4">
             <Button
-              className="w-full justify-center"
+              className="col-span-1 justify-center"
+              variant="secondary"
+              size="md"
+              onClick={() => setSelectedStepId(STEP_ID.SELECT_ENTITIES)}
+            >
+              Back
+            </Button>
+            <Button
+              className="col-span-3 justify-center"
               isLoading={isLoading}
               disabled={!canCarry || selectedResourceIds.length === 0}
               variant="primary"
