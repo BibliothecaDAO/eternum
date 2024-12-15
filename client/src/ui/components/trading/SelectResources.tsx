@@ -39,7 +39,7 @@ export const SelectResources = ({
   };
 
   return (
-    <div className=" items-center col-span-4 space-y-2 p-3">
+    <div className="items-center col-span-4 space-y-2 p-3">
       {selectedResourceIds.map((id: any, index: any) => {
         const resource = getBalance(entity_id, id);
         const options = [resources.find((res) => res.id === id), ...unselectedResources].map((res: any) => ({
@@ -65,7 +65,10 @@ export const SelectResources = ({
               </Button>
             )}
             <ListSelect
-              options={options}
+              options={options.map((option) => ({
+                ...option,
+                searchText: resources.find((res) => res.id === option.id)?.trait,
+              }))}
               value={selectedResourceIds[index]}
               onChange={(value) => {
                 const updatedResourceIds = [...selectedResourceIds];
@@ -77,6 +80,7 @@ export const SelectResources = ({
                 });
                 playResourceSound(value);
               }}
+              enableFilter={true}
             />
             <NumberInput
               className="h-14 "
