@@ -1,4 +1,3 @@
-import { addToSubscription } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
@@ -11,7 +10,7 @@ import { divideByPrecision, formatTime, getEntityIdFromKeys } from "@/ui/utils/u
 import { EntityType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
 
 const entityIcon: Record<EntityType, string> = {
@@ -50,33 +49,6 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   const entityResources = useMemo(() => {
     return getResourcesFromBalance(arrival.entityId);
   }, [weight]);
-
-  useEffect(() => {
-    if (entityResources.length === 0) {
-      const cacheKey = `${CACHE_KEY}-${arrival.entityId}`;
-      const cachedTime = localStorage.getItem(cacheKey);
-      const now = Date.now();
-
-      if (cachedTime && now - parseInt(cachedTime) < CACHE_DURATION) {
-        return;
-      }
-
-      setIsSyncing(true);
-      const fetch = async () => {
-        try {
-          await addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-            arrival.entityId.toString(),
-          ]);
-          localStorage.setItem(cacheKey, now.toString());
-        } catch (error) {
-          console.error("Fetch failed", error);
-        } finally {
-          setIsSyncing(false);
-        }
-      };
-      fetch();
-    }
-  }, [arrival.entityId, dojo.network.toriiClient, dojo.network.contractComponents, entityResources.length]);
 
   const army = useMemo(() => getArmy(arrival.entityId), [arrival.entityId, entity.resources]);
 
