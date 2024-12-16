@@ -7,12 +7,13 @@ import { Checkbox } from "@/ui/elements/Checkbox";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { Dispatch, SetStateAction, memo, useCallback, useState } from "react";
 import { num } from "starknet";
 import { OSWindow } from "../navigation/OSWindow";
 
 type transferCall = {
+  structureId: ID;
   sender_entity_id: num.BigNumberish;
   recipient_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
@@ -156,6 +157,10 @@ export const RealmTransferBalance = memo(
       return resourceManager.getProduction();
     }, [resourceManager]);
 
+    if (structure.entity_id === selectedStructureEntityId) {
+      return;
+    }
+
     return (
       <div className="flex flex-row gap-4">
         <div className="self-center w-1/2">
@@ -171,22 +176,23 @@ export const RealmTransferBalance = memo(
           onChange={(amount) => {
             setInput(amount);
             add((prev) => {
-              // Remove any existing calls for this realm
-              const filtered = prev.filter((call) => call.sender_entity_id !== structure.entity_id);
+              const existingIndex = prev.findIndex((call) => call.structureId === structure.entity_id);
 
-              // Only add new call if amount > 0
-              if (amount > 0) {
-                return [
-                  ...filtered,
-                  {
-                    sender_entity_id: type === "send" ? selectedStructureEntityId : structure.entity_id,
-                    recipient_entity_id: type === "send" ? structure.entity_id : selectedStructureEntityId,
-                    resources: [resource, amount],
-                    realmName: structure.name,
-                  },
-                ];
+              if (amount === 0) {
+                return prev.filter((_, i) => i !== existingIndex);
               }
-              return filtered;
+
+              const newCall = {
+                structureId: structure.entity_id,
+                sender_entity_id: type === "send" ? selectedStructureEntityId : structure.entity_id,
+                recipient_entity_id: type === "send" ? structure.entity_id : selectedStructureEntityId,
+                resources: [resource, amount],
+                realmName: structure.name,
+              };
+
+              return existingIndex === -1
+                ? [...prev, newCall]
+                : [...prev.slice(0, existingIndex), newCall, ...prev.slice(existingIndex + 1)];
             });
           }}
         />
