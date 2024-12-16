@@ -124,7 +124,7 @@ export async function setup({ ...config }: DojoConfig) {
       },
     },
     network.contractComponents as any,
-    10_000,
+    40_000,
     false,
   );
 
