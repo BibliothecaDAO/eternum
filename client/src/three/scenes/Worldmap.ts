@@ -734,62 +734,62 @@ export default class WorldmapScene extends HexagonScene {
         1000,
         false,
       );
-      const promisePositions = getEntities(
-        this.dojo.network.toriiClient,
-        {
-          Composite: {
-            operator: "And",
-            clauses: [
-              {
-                Composite: {
-                  operator: "And",
-                  clauses: [
-                    {
-                      Member: {
-                        model: "s0_eternum-Position",
-                        member: "x",
-                        operator: "Gte",
-                        value: { Primitive: { U32: startCol - range } },
-                      },
-                    },
-                    {
-                      Member: {
-                        model: "s0_eternum-Position",
-                        member: "x",
-                        operator: "Lte",
-                        value: { Primitive: { U32: startCol + range } },
-                      },
-                    },
-                    {
-                      Member: {
-                        model: "s0_eternum-Position",
-                        member: "y",
-                        operator: "Gte",
-                        value: { Primitive: { U32: startRow - range } },
-                      },
-                    },
-                    {
-                      Member: {
-                        model: "s0_eternum-Position",
-                        member: "y",
-                        operator: "Lte",
-                        value: { Primitive: { U32: startRow + range } },
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-          },
-        },
-        this.dojo.network.contractComponents as any,
-        [],
-        ["s0_eternum-Tile"],
-        1000,
-        false,
-      );
-      Promise.all([promiseTiles, promisePositions]).then(([tiles, positions]) => {
-        console.log(tiles, positions);
+      // const promisePositions = getEntities(
+      //   this.dojo.network.toriiClient,
+      //   {
+      //     Composite: {
+      //       operator: "And",
+      //       clauses: [
+      //         {
+      //           Composite: {
+      //             operator: "And",
+      //             clauses: [
+      //               {
+      //                 Member: {
+      //                   model: "s0_eternum-Position",
+      //                   member: "x",
+      //                   operator: "Gte",
+      //                   value: { Primitive: { U32: startCol - range } },
+      //                 },
+      //               },
+      //               {
+      //                 Member: {
+      //                   model: "s0_eternum-Position",
+      //                   member: "x",
+      //                   operator: "Lte",
+      //                   value: { Primitive: { U32: startCol + range } },
+      //                 },
+      //               },
+      //               {
+      //                 Member: {
+      //                   model: "s0_eternum-Position",
+      //                   member: "y",
+      //                   operator: "Gte",
+      //                   value: { Primitive: { U32: startRow - range } },
+      //                 },
+      //               },
+      //               {
+      //                 Member: {
+      //                   model: "s0_eternum-Position",
+      //                   member: "y",
+      //                   operator: "Lte",
+      //                   value: { Primitive: { U32: startRow + range } },
+      //                 },
+      //               },
+      //             ],
+      //           },
+      //         },
+      //       ],
+      //     },
+      //   },
+      //   this.dojo.network.contractComponents as any,
+      //   [],
+      //   ["s0_eternum-Tile"],
+      //   1000,
+      //   false,
+      // );
+      Promise.all([promiseTiles]).then(([tiles]) => {
+        // console.log(tiles, positions);
       });
     } catch (error) {
       // If there's an error, remove the chunk from cached set so it can be retried

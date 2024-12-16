@@ -141,7 +141,9 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-Bank",
           "s0_eternum-Trade",
           "s0_eternum-Army",
-           // Probably load this w/ market
+          "s0_eternum-Structure",
+          "s0_eternum-Battle",
+          // Probably load this w/ market
         ],
       },
     },
