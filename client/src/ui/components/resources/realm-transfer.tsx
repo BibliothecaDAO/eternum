@@ -122,8 +122,9 @@ export const RealmTransfer = memo(
           ))}
 
           <div className="pt-2 border-t border-gold/20">
-            <div className="uppercase font-bold text-sm">
-              Transfers ({calls.length} {neededDonkeys.toString()})
+            <div className="uppercase font-bold text-sm flex flex-row justify-around">
+              <p>{calls.length} Transfers</p>
+              <p>Donkeys burned: {neededDonkeys.toString()}</p>
             </div>
             <div className="flex flex-col gap-2">
               {calls.map((call, index) => (
@@ -179,10 +180,6 @@ export const RealmTransferBalance = memo(
     const getBalance = useCallback(() => {
       return resourceManager.balance(tick);
     }, [resourceManager, tick]);
-
-    const getProduction = useCallback(() => {
-      return resourceManager.getProduction();
-    }, [resourceManager]);
 
     if (structure.entity_id === selectedStructureEntityId) {
       return;
