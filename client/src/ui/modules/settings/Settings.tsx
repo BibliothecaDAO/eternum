@@ -12,7 +12,7 @@ import { useMusicPlayer } from "@/hooks/useMusic";
 import useScreenOrientation from "@/hooks/useScreenOrientation";
 import { settings } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
-import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
+import { GraphicsSettings } from "@/ui/config";
 import Avatar from "@/ui/elements/Avatar";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
@@ -61,10 +61,11 @@ export const SettingsWindow = () => {
 
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
 
-  const isLowGraphics = IS_LOW_GRAPHICS_ENABLED;
+  const GRAPHICS_SETTING = localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings || GraphicsSettings.HIGH;
+
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
-      <div className="flex p-4 justify-between">
+      <div className="flex justify-between p-4">
         <div className="relative">
           <Avatar
             onClick={() => setShowSettings(!showSettings)}
@@ -93,25 +94,31 @@ export const SettingsWindow = () => {
         <Headline>Graphics</Headline>
         <div className="flex space-x-2">
           <Button
-            disabled={!!isLowGraphics}
-            variant={isLowGraphics ? "success" : "outline"}
+            disabled={GRAPHICS_SETTING === GraphicsSettings.LOW}
+            variant={GRAPHICS_SETTING === GraphicsSettings.LOW ? "success" : "outline"}
             onClick={() => {
-              if (!isLowGraphics) {
-                localStorage.setItem("LOW_GRAPHICS_FLAG", "true");
-                window.location.reload();
-              }
+              localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.LOW);
+              window.location.reload();
             }}
           >
             Low
           </Button>
           <Button
-            disabled={!isLowGraphics}
-            variant={isLowGraphics ? "outline" : "success"}
+            disabled={GRAPHICS_SETTING === GraphicsSettings.MID}
+            variant={GRAPHICS_SETTING === GraphicsSettings.MID ? "success" : "outline"}
             onClick={() => {
-              if (isLowGraphics) {
-                localStorage.removeItem("LOW_GRAPHICS_FLAG");
-                window.location.reload();
-              }
+              localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.MID);
+              window.location.reload();
+            }}
+          >
+            Medium
+          </Button>
+          <Button
+            disabled={GRAPHICS_SETTING === GraphicsSettings.HIGH}
+            variant={GRAPHICS_SETTING === GraphicsSettings.HIGH ? "success" : "outline"}
+            onClick={() => {
+              localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
+              window.location.reload();
             }}
           >
             High
@@ -122,11 +129,11 @@ export const SettingsWindow = () => {
         <div className="flex space-x-2">
           {isSoundOn ? (
             <Button variant="outline" onClick={() => toggleSound()}>
-              <Unmuted className="w-4 cursor-pointer  fill-gold" />
+              <Unmuted className="w-4 cursor-pointer fill-gold" />
             </Button>
           ) : (
             <Button variant="outline" onClick={() => toggleSound()}>
-              <Muted className="w-4 cursor-pointer  fill-gold" />
+              <Muted className="w-4 cursor-pointer fill-gold" />
             </Button>
           )}
 
