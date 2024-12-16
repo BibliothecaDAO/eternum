@@ -676,8 +676,6 @@ export default class WorldmapScene extends HexagonScene {
     // Create a unique key for this chunk range
     const chunkKey = `${startCol - range},${startCol + range},${startRow - range},${startRow + range}`;
 
-    console.log(chunkKey);
-
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
       console.log("Already fetched");
@@ -686,9 +684,10 @@ export default class WorldmapScene extends HexagonScene {
 
     // Add to fetched chunks before the query to prevent concurrent duplicate requests
     this.fetchedChunks.add(chunkKey);
+    console.log(startCol, startRow, range);
 
     try {
-      await getEntities(
+      const promiseTiles = getEntities(
         this.dojo.network.toriiClient,
         {
           Composite: {
@@ -730,9 +729,68 @@ export default class WorldmapScene extends HexagonScene {
           },
         },
         this.dojo.network.contractComponents as any,
+        [],
+        ["s0_eternum-Tile"],
         1000,
         false,
       );
+      const promisePositions = getEntities(
+        this.dojo.network.toriiClient,
+        {
+          Composite: {
+            operator: "And",
+            clauses: [
+              {
+                Composite: {
+                  operator: "And",
+                  clauses: [
+                    {
+                      Member: {
+                        model: "s0_eternum-Position",
+                        member: "x",
+                        operator: "Gte",
+                        value: { Primitive: { U32: startCol - range } },
+                      },
+                    },
+                    {
+                      Member: {
+                        model: "s0_eternum-Position",
+                        member: "x",
+                        operator: "Lte",
+                        value: { Primitive: { U32: startCol + range } },
+                      },
+                    },
+                    {
+                      Member: {
+                        model: "s0_eternum-Position",
+                        member: "y",
+                        operator: "Gte",
+                        value: { Primitive: { U32: startRow - range } },
+                      },
+                    },
+                    {
+                      Member: {
+                        model: "s0_eternum-Position",
+                        member: "y",
+                        operator: "Lte",
+                        value: { Primitive: { U32: startRow + range } },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        this.dojo.network.contractComponents as any,
+        [],
+        ["s0_eternum-Tile"],
+        1000,
+        false,
+      );
+      Promise.all([promiseTiles, promisePositions]).then(([tiles, positions]) => {
+        console.log(tiles, positions);
+      });
     } catch (error) {
       // If there's an error, remove the chunk from cached set so it can be retried
       this.fetchedChunks.delete(chunkKey);

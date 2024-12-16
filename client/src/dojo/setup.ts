@@ -146,6 +146,8 @@ export async function setup({ ...config }: DojoConfig) {
       },
     },
     network.contractComponents as any,
+    [],
+    [],
     40_000,
     false,
   );
@@ -162,6 +164,8 @@ export async function setup({ ...config }: DojoConfig) {
       },
     },
     network.contractComponents as any,
+    [],
+    [],
     40_000,
     false,
   );
@@ -176,6 +180,8 @@ export async function setup({ ...config }: DojoConfig) {
   const eventSync = getEvents(
     network.toriiClient,
     network.contractComponents.events as any,
+    [],
+    [],
     20000,
     {
       Keys: {
