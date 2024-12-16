@@ -501,7 +501,7 @@ export default class WorldmapScene extends HexagonScene {
     this.interactiveHexManager.clearHexes();
 
     let currentIndex = 0;
-    const batchSize = 25;
+    const batchSize = 50;
 
     const processBatch = () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);

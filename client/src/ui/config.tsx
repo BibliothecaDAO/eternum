@@ -3,29 +3,47 @@ import { BuildingType, FELT_CENTER } from "@bibliothecadao/eternum";
 
 export { FELT_CENTER };
 
-const checkIfGameIsRunningOnLaptop = async () => {
+export enum GraphicsSettings {
+  LOW = "LOW",
+  MID = "MID",
+  HIGH = "HIGH"
+}
+
+const checkGraphicsSettings = async () => {
+  // Handle migration from old LOW_GRAPHICS_FLAG
+  const oldLowGraphicsFlag = localStorage.getItem("LOW_GRAPHICS_FLAG");
+  if (oldLowGraphicsFlag !== null) {
+    // Migrate old setting to new format
+    const newSetting = oldLowGraphicsFlag === "true" ? GraphicsSettings.LOW : GraphicsSettings.HIGH;
+    localStorage.setItem("GRAPHICS_SETTING", newSetting);
+    localStorage.removeItem("LOW_GRAPHICS_FLAG"); // Clean up old setting
+    return newSetting;
+  }
+
+  // Check if initial laptop check has been done
   if (!localStorage.getItem("INITIAL_LAPTOP_CHECK")) {
     try {
       const battery = await (navigator as any).getBattery();
       if (battery.charging && battery.chargingTime === 0) {
         // It's likely a desktop
-        localStorage.setItem("LOW_GRAPHICS_FLAG", "false");
+        localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
       } else {
-        // It's likely a laptop or mobile device.
-        localStorage.setItem("LOW_GRAPHICS_FLAG", "true");
+        // It's likely a laptop or mobile device
+        localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.LOW);
       }
     } catch (error) {
       console.error("Error calling getBattery():", error);
       // Set default values if getBattery() is not supported
-      localStorage.setItem("LOW_GRAPHICS_FLAG", "true");
+      localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.LOW);
     } finally {
       localStorage.setItem("INITIAL_LAPTOP_CHECK", "true");
     }
   }
-  return localStorage.getItem("LOW_GRAPHICS_FLAG") === "true";
+
+  return localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings || GraphicsSettings.HIGH;
 };
 
-export const IS_LOW_GRAPHICS_ENABLED = await checkIfGameIsRunningOnLaptop();
+export const GRAPHICS_SETTING = await checkGraphicsSettings();
 
 export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 

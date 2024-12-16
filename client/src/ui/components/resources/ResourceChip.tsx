@@ -6,6 +6,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { currencyFormat, currencyIntlFormat, formatTime, gramToKg, TimeFormat } from "../../utils/utils";
+import { RealmTransfer } from "./realm-transfer";
 
 export const ResourceChip = ({
   isLabor = false,
@@ -148,56 +149,66 @@ export const ResourceChip = ({
     setShowPerHour(true);
   }, [setTooltip]);
 
+  const togglePopup = useUIStore((state) => state.togglePopup);
+
   return (
-    <div
-      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20 `}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {icon}
-      <div className="grid grid-cols-10 w-full">
-        <div className="self-center font-bold col-span-3">{currencyFormat(balance ? Number(balance) : 0, 0)}</div>
+    <>
+      <RealmTransfer balance={balance} resource={resourceId} tick={tick} />
+      <div
+        className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20 `}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={() => {
+          togglePopup(resourceId.toString());
+        }}
+      >
+        {icon}
+        <div className="grid grid-cols-10 w-full">
+          <div className="self-center font-bold col-span-3">{currencyFormat(balance ? Number(balance) : 0, 0)}</div>
 
-        <div className="self-center m-y-auto font-bold col-span-4 text-center">
-          {timeUntilValueReached !== 0
-            ? formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)
-            : ""}
-        </div>
+          <div className="self-center m-y-auto font-bold col-span-4 text-center">
+            {timeUntilValueReached !== 0
+              ? formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)
+              : ""}
+          </div>
 
-        {isProducingOrConsuming ? (
-          <div
-            className={`${
-              Number(netRate) < 0 ? "text-light-red" : "text-green/80"
-            } self-center px-2 flex font-bold text-[10px] col-span-3 text-center mx-auto`}
-          >
-            <div className={`self-center`}>
-              {parseFloat(netRate.toString()) < 0 ? "" : "+"}
-              {showPerHour ? `${currencyIntlFormat(netRate * 3.6, 2)}/h` : `${currencyIntlFormat(netRate / 1000, 2)}/s`}
+          {isProducingOrConsuming ? (
+            <div
+              className={`${
+                Number(netRate) < 0 ? "text-light-red" : "text-green/80"
+              } self-center px-2 flex font-bold text-[10px] col-span-3 text-center mx-auto`}
+            >
+              <div className={`self-center`}>
+                {parseFloat(netRate.toString()) < 0 ? "" : "+"}
+                {showPerHour
+                  ? `${currencyIntlFormat(netRate * 3.6, 2)}/h`
+                  : `${currencyIntlFormat(netRate / 1000, 2)}/s`}
+              </div>
             </div>
-          </div>
-        ) : (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "top",
-                content: (
-                  <>
-                    {isConsumingInputsWithoutOutput
-                      ? "Production has stopped because inputs have been depleted"
-                      : "Production has stopped because the max balance has been reached"}
-                  </>
-                ),
-              });
-            }}
-            onMouseLeave={() => {
-              setTooltip(null);
-            }}
-            className="self-center px-2 col-span-3 mx-auto"
-          >
-            {isConsumingInputsWithoutOutput || reachedMaxCap ? "⚠️" : ""}
-          </div>
-        )}
+          ) : (
+            <div
+              onMouseEnter={() => {
+                setTooltip({
+                  position: "top",
+                  content: (
+                    <>
+                      {isConsumingInputsWithoutOutput
+                        ? "Production has stopped because inputs have been depleted"
+                        : "Production has stopped because the max balance has been reached"}
+                    </>
+                  ),
+                });
+              }}
+              onMouseLeave={() => {
+                setTooltip(null);
+              }}
+              className="self-center px-2 col-span-3 mx-auto"
+            >
+              {isConsumingInputsWithoutOutput || reachedMaxCap ? "⚠️" : ""}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };

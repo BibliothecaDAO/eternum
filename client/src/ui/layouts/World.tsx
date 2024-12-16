@@ -136,71 +136,39 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       ...prev,
       [structureEntityId.toString()]: true,
       [ADMIN_BANK_ENTITY_ID.toString()]: true,
+      ...Object.fromEntries(filteredStructures.map((structure) => [structure.entity_id.toString(), true])),
     }));
+
     const fetch = async () => {
       try {
-        await addToSubscription(
-          dojo.network.toriiClient,
-          dojo.network.contractComponents as any,
-          structureEntityId.toString(),
-          { x: position?.x || 0, y: position?.y || 0 },
-        );
-
-        await addToSubscription(
-          dojo.network.toriiClient,
-          dojo.network.contractComponents as any,
-          ADMIN_BANK_ENTITY_ID.toString(),
-        );
+        await Promise.all([
+          addToSubscription(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            [structureEntityId.toString()],
+            [{ x: position?.x || 0, y: position?.y || 0 }],
+          ),
+          addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
+            ADMIN_BANK_ENTITY_ID.toString(),
+          ]),
+          addToSubscription(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            [...filteredStructures.map((structure) => structure.entity_id.toString())],
+            [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
+          ),
+          addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any),
+        ]);
       } catch (error) {
         console.error("Fetch failed", error);
       } finally {
         setWorldLoading(false);
-      }
-
-      console.log("world loading", worldLoading);
-
-      try {
-        await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
         setMarketLoading(false);
       }
     };
 
     fetch();
-  }, [structureEntityId, subscriptions, setWorldLoading, setSubscriptions]);
-
-  useEffect(() => {
-    if (filteredStructures.length === 0) return;
-    setWorldLoading(true);
-    setSubscriptions((prev) => ({
-      ...prev,
-      ...Object.fromEntries(filteredStructures.map((structure) => [structure.entity_id.toString(), true])),
-    }));
-    const fetch = async () => {
-      try {
-        await Promise.all(
-          filteredStructures.map((structure: PlayerStructure) =>
-            addToSubscription(
-              dojo.network.toriiClient,
-              dojo.network.contractComponents as any,
-              structure.entity_id.toString(),
-              { x: structure.position.x, y: structure.position.y },
-            ),
-          ),
-        );
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        setWorldLoading(false);
-      }
-
-      console.log("world loading", worldLoading);
-    };
-
-    fetch();
-  }, [filteredStructures, setWorldLoading, setSubscriptions]);
+  }, [structureEntityId, subscriptions, setWorldLoading, setSubscriptions, filteredStructures]);
 
   return (
     <div
