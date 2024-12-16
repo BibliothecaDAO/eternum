@@ -37,6 +37,7 @@ export const RealmTransfer = memo(
 
     const { playerStructures } = useEntities();
 
+    const [isLoading, setIsLoading] = useState(false);
     const [calls, setCalls] = useState<transferCall[]>([]);
 
     const [type, setType] = useState<"send" | "receive">("send");
@@ -64,7 +65,7 @@ export const RealmTransfer = memo(
     }, [calls]);
 
     const handleTransfer = useCallback(() => {
-      // setIsLoading(true);
+      setIsLoading(true);
       const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
         sender_entity_id,
         recipient_entity_id,
@@ -76,7 +77,7 @@ export const RealmTransfer = memo(
         calls: cleanedCalls,
       }).finally(() => {
         // playDonkeyScreaming();
-        // setIsLoading(false);
+        setIsLoading(false);
       });
     }, [calls]);
 
@@ -145,7 +146,7 @@ export const RealmTransfer = memo(
           </div>
 
           <div className="pt-2 border-t border-gold/20">
-            <Button variant="primary" size="md" onClick={handleTransfer}>
+            <Button isLoading={isLoading} variant="primary" size="md" onClick={handleTransfer}>
               {type === "send" ? "Send All" : "Receive All"}
             </Button>
           </div>
