@@ -374,6 +374,8 @@ const fetchHyperstructureData = async (client: ToriiClient, components: Componen
       },
     },
     components as any,
+    [],
+    [],
     40_000,
     false,
   );
