@@ -153,7 +153,7 @@ export const ResourceChip = ({
 
   return (
     <>
-      <RealmTransfer icon={icon} balance={balance} resource={resourceId} />
+      <RealmTransfer balance={balance} resource={resourceId} tick={tick} />
       <div
         className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20 `}
         onMouseEnter={handleMouseEnter}
