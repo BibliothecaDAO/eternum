@@ -165,8 +165,8 @@ export default class GameRenderer {
     this.renderer = new THREE.WebGLRenderer({
       powerPreference: "high-performance",
       antialias: false,
-      stencil: false,
-      depth: false,
+      stencil: this.graphicsSetting === GraphicsSettings.LOW,
+      depth: this.graphicsSetting === GraphicsSettings.LOW,
     });
     this.renderer.setPixelRatio(this.graphicsSetting !== GraphicsSettings.HIGH ? 0.75 : window.devicePixelRatio);
     this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
