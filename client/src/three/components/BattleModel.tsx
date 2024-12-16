@@ -1,3 +1,4 @@
+import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { gltfLoader } from "../helpers/utils";
@@ -74,6 +75,10 @@ export class BattleModel {
   }
 
   updateAnimations(deltaTime: number) {
+    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+      return;
+    }
+
     if (this.mixer && this.mesh && this.animation) {
       const time = performance.now() * 0.001;
       for (let i = 0; i < this.mesh.count; i++) {

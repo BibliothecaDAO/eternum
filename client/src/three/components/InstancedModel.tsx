@@ -1,3 +1,4 @@
+import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
@@ -73,7 +74,7 @@ export default class InstancedModel {
         tmp.userData.isInstanceModel = true;
 
         if (!enableRaycast) {
-          tmp.raycast = () => {};
+          tmp.raycast = () => { };
         }
 
         this.mixer = new AnimationMixer(gltf.scene);
@@ -168,6 +169,10 @@ export default class InstancedModel {
   }
 
   updateAnimations(deltaTime: number) {
+    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+      return;
+    }
+
     if (this.mixer && this.animation) {
       const time = performance.now() * 0.001;
       this.instancedMeshes.forEach((mesh, meshIndex) => {

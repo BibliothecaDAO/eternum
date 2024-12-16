@@ -1,7 +1,7 @@
 import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { SceneName } from "@/types";
-import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
+import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import throttle from "lodash/throttle";
 import {
   BloomEffect,
@@ -69,10 +69,10 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private systemManager!: SystemManager;
 
-  private isLowGraphicsMode: boolean;
+  private graphicsSetting: GraphicsSettings;
 
   constructor(dojoContext: SetupResult) {
-    this.isLowGraphicsMode = IS_LOW_GRAPHICS_ENABLED;
+    this.graphicsSetting = GRAPHICS_SETTING;
     this.initializeRenderer();
     this.dojo = dojoContext;
     this.locationManager = new LocationManager();
@@ -165,16 +165,13 @@ export default class GameRenderer {
     this.renderer = new THREE.WebGLRenderer({
       powerPreference: "high-performance",
       antialias: false,
-      stencil: false,
-      depth: false,
+      stencil: this.graphicsSetting === GraphicsSettings.LOW,
+      depth: this.graphicsSetting === GraphicsSettings.LOW,
     });
-    this.renderer.setPixelRatio(this.isLowGraphicsMode ? 0.75 : window.devicePixelRatio);
-    this.renderer.shadowMap.enabled = !this.isLowGraphicsMode;
+    this.renderer.setPixelRatio(this.graphicsSetting !== GraphicsSettings.HIGH ? 0.75 : window.devicePixelRatio);
+    this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.setSize(
-      this.isLowGraphicsMode ? window.innerWidth : window.innerWidth,
-      this.isLowGraphicsMode ? window.innerHeight : window.innerHeight,
-    );
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.toneMappingExposure = 1;
     this.renderer.autoClear = false;
@@ -207,7 +204,7 @@ export default class GameRenderer {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.1;
     this.controls.target.set(0, 0, 0);
-    if (this.isLowGraphicsMode) {
+    if (this.graphicsSetting !== GraphicsSettings.HIGH) {
       this.controls.enableDamping = false;
     }
     this.controls.addEventListener(
@@ -296,41 +293,45 @@ export default class GameRenderer {
 
     const obj = { brightness: -0.1, contrast: 0 };
     const folder = GUIManager.addFolder("BrightnesContrastt");
-    const BCEffect = new BrightnessContrastEffect({
-      brightness: obj.brightness,
-      contrast: obj.contrast,
-    });
-    folder
-      .add(obj, "brightness")
-      .name("Brightness")
-      .min(-1)
-      .max(1)
-      .step(0.01)
-      .onChange((value: number) => {
-        BCEffect.brightness = value;
+    if (GRAPHICS_SETTING !== GraphicsSettings.LOW) {
+      const BCEffect = new BrightnessContrastEffect({
+        brightness: obj.brightness,
+        contrast: obj.contrast,
       });
-    folder
-      .add(obj, "contrast")
-      .name("Contrast")
-      .min(-1)
-      .max(1)
-      .step(0.01)
-      .onChange((value: number) => {
-        BCEffect.contrast = value;
-      });
-    this.composer.addPass(
-      new EffectPass(
-        this.camera,
 
-        new FXAAEffect(),
-        new BloomEffect({
-          luminanceThreshold: 1.1,
-          mipmapBlur: true,
-          intensity: 0.25,
-        }),
-        BCEffect,
-      ),
-    );
+      folder
+        .add(obj, "brightness")
+        .name("Brightness")
+        .min(-1)
+        .max(1)
+        .step(0.01)
+        .onChange((value: number) => {
+          BCEffect.brightness = value;
+        });
+      folder
+        .add(obj, "contrast")
+        .name("Contrast")
+        .min(-1)
+        .max(1)
+        .step(0.01)
+        .onChange((value: number) => {
+          BCEffect.contrast = value;
+        });
+
+      this.composer.addPass(
+        new EffectPass(
+          this.camera,
+
+          new FXAAEffect(),
+          new BloomEffect({
+            luminanceThreshold: 1.1,
+            mipmapBlur: true,
+            intensity: 0.25,
+          }),
+          BCEffect,
+        ),
+      );
+    }
 
     this.sceneManager.moveCameraForScene();
   }
@@ -391,8 +392,19 @@ export default class GameRenderer {
       });
       return;
     }
+
     const currentTime = performance.now();
     const deltaTime = (currentTime - this.lastTime) / 1000; // Convert to seconds
+
+    // Skip frame if not enough time has passed (for 30 FPS)
+    if (this.graphicsSetting !== GraphicsSettings.HIGH) {
+      const frameTime = 1000 / 30; // 33.33ms for 30 FPS
+      if (currentTime - this.lastTime < frameTime) {
+        requestAnimationFrame(() => this.animate());
+        return;
+      }
+    }
+
     this.lastTime = currentTime;
 
     if (this.stats) this.stats.update();
@@ -421,7 +433,6 @@ export default class GameRenderer {
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
 
-    // Update the minimap
     requestAnimationFrame(() => {
       this.animate();
     });
