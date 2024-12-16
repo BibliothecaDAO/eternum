@@ -39,7 +39,11 @@ export const syncEntitiesDebounced = async <S extends Schema>(
   // Handle entity updates
   const entitySub = await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
     if (logging) console.log("Entity updated", fetchedEntities);
-    entityBatch[fetchedEntities] = data;
+    // Merge new data with existing data for this entity
+    entityBatch[fetchedEntities] = {
+      ...entityBatch[fetchedEntities],
+      ...data,
+    };
     debouncedSetEntities();
   });
 
@@ -49,7 +53,11 @@ export const syncEntitiesDebounced = async <S extends Schema>(
     historical,
     (fetchedEntities: any, data: any) => {
       if (logging) console.log("Event message updated", fetchedEntities);
-      entityBatch[fetchedEntities] = data;
+      // Merge new data with existing data for this entity
+      entityBatch[fetchedEntities] = {
+        ...entityBatch[fetchedEntities],
+        ...data,
+      };
       debouncedSetEntities();
     },
   );
@@ -139,12 +147,11 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-BattleJoinData",
           "s0_eternum-BattleLeaveData",
           "s0_eternum-BattlePillageData",
-          "s0_eternum-GameEnded",
           "s0_eternum-AcceptOrder",
           "s0_eternum-SwapEvent",
           "s0_eternum-LiquidityEvent",
-          "s0_eternum-HyperstructureFinished",
           "s0_eternum-HyperstructureContribution",
+          "s0_eternum-MapExplored",
         ],
       },
     },
