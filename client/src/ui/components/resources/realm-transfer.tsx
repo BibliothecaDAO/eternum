@@ -9,6 +9,7 @@ import { calculateDonkeysNeeded, currencyFormat, getTotalResourceWeight, multipl
 import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 
+import { configManager } from "@/dojo/setup";
 import { ID } from "@bibliothecadao/eternum";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { num } from "starknet";
@@ -50,7 +51,7 @@ export const RealmTransfer = memo(
       const resources = calls.map((call) => {
         return {
           resourceId: Number(call.resources[0]),
-          amount: Number(call.resources[1]),
+          amount: Number(call.resources[1]) * configManager.getResourceMultiplier(),
         };
       });
       const totalWeight = getTotalResourceWeight(resources);
@@ -73,6 +74,8 @@ export const RealmTransfer = memo(
       }).finally(() => {
         setIsLoading(false);
       });
+
+      setCalls([]);
     }, [calls]);
 
     return (
