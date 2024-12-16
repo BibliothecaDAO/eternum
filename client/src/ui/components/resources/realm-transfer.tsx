@@ -6,9 +6,9 @@ import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat } from "@/ui/utils/utils";
+import { calculateDonkeysNeeded, currencyFormat, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
-import { Dispatch, SetStateAction, memo, useCallback, useState } from "react";
+import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
 import { OSWindow } from "../navigation/OSWindow";
 
@@ -37,6 +37,24 @@ export const RealmTransfer = memo(
     const [calls, setCalls] = useState<transferCall[]>([]);
 
     const [type, setType] = useState<"send" | "receive">("send");
+
+    const [resourceWeight, setResourceWeight] = useState(0);
+
+    const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
+
+    useEffect(() => {
+      const resources = calls.map((call) => {
+        return {
+          resourceId: Number(call.resources[0]),
+          amount: Number(call.resources[1]),
+        };
+      });
+
+      const totalWeight = getTotalResourceWeight(resources);
+
+      const multipliedWeight = multiplyByPrecision(totalWeight);
+      setResourceWeight(multipliedWeight);
+    }, []);
 
     const handleTransfer = useCallback(() => {
       // setIsLoading(true);
@@ -96,7 +114,9 @@ export const RealmTransfer = memo(
           ))}
 
           <div className="pt-2 border-t border-gold/20">
-            <div className="uppercase font-bold text-sm">Transfers</div>
+            <div className="uppercase font-bold text-sm">
+              Transfers ({calls.length} {neededDonkeys.toString()})
+            </div>
             <div className="flex flex-col gap-2">
               {calls.map((call, index) => (
                 <div
