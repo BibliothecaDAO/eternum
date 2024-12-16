@@ -806,7 +806,7 @@ export default class WorldmapScene extends HexagonScene {
     return { chunkX, chunkZ };
   }
 
-  updateVisibleChunks = throttle((force: boolean = false) => {
+  updateVisibleChunks(force: boolean = false) {
     const cameraPosition = new THREE.Vector3();
     cameraPosition.copy(this.controls.target);
     const { selectedEntityId } = this.state.armyActions;
@@ -832,7 +832,7 @@ export default class WorldmapScene extends HexagonScene {
         this.highlightHexManager.highlightHexes([]);
       }
     }
-  }, 1000);
+  }
 
   update(deltaTime: number) {
     super.update(deltaTime);
