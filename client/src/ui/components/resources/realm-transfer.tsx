@@ -1,4 +1,5 @@
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useResourceManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -20,19 +21,38 @@ type transferCall = {
 
 export const RealmTransfer = memo(
   ({ resource, balance, tick }: { resource: ResourcesIds; balance: number; tick: number }) => {
+    const {
+      setup: {
+        systemCalls: { send_resources_multiple },
+      },
+      account: { account },
+    } = useDojo();
     const togglePopup = useUIStore((state) => state.togglePopup);
-    const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
 
-    const { playerRealms } = useEntities();
+    const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
+    const selectedStructureEntityId = useUIStore((state) => state.structureEntityId);
+
+    const { playerStructures } = useEntities();
 
     const [calls, setCalls] = useState<transferCall[]>([]);
 
     const [type, setType] = useState<"send" | "receive">("send");
 
     const handleTransfer = useCallback(() => {
-      // TODO:
+      // setIsLoading(true);
+      const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
+        sender_entity_id,
+        recipient_entity_id,
+        resources,
+      }));
 
-      setCalls([]);
+      send_resources_multiple({
+        signer: account,
+        calls: cleanedCalls,
+      }).finally(() => {
+        // playDonkeyScreaming();
+        // setIsLoading(false);
+      });
     }, [calls]);
 
     return (
@@ -62,14 +82,16 @@ export const RealmTransfer = memo(
             <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 0)}</div>
           </div>
 
-          {playerRealms().map((realm) => (
+          {playerStructures().map((structure) => (
             <RealmTransferBalance
-              key={realm.entity_id}
-              realm={realm}
+              key={structure.entity_id}
+              structure={structure}
+              selectedStructureEntityId={selectedStructureEntityId}
               resource={resource}
               balance={balance}
               tick={tick}
               add={setCalls}
+              type={type}
             />
           ))}
 
@@ -94,13 +116,7 @@ export const RealmTransfer = memo(
           </div>
 
           <div className="pt-2 border-t border-gold/20">
-            <Button
-              variant="primary"
-              size="md"
-              onClick={() => {
-                // TODO:
-              }}
-            >
+            <Button variant="primary" size="md" onClick={handleTransfer}>
               {type === "send" ? "Send All" : "Receive All"}
             </Button>
           </div>
@@ -109,23 +125,28 @@ export const RealmTransfer = memo(
     );
   },
 );
+
 export const RealmTransferBalance = memo(
   ({
     resource,
     balance,
-    realm,
+    structure,
+    selectedStructureEntityId,
     add,
     tick,
+    type,
   }: {
     resource: ResourcesIds;
     balance: number;
-    realm: any;
+    structure: PlayerStructure;
+    selectedStructureEntityId: number;
     add: Dispatch<SetStateAction<transferCall[]>>;
     tick: number;
+    type: "send" | "receive";
   }) => {
     const [input, setInput] = useState(0);
 
-    const resourceManager = useResourceManager(realm.entity_id, resource);
+    const resourceManager = useResourceManager(structure.entity_id, resource);
 
     const getBalance = useCallback(() => {
       return resourceManager.balance(tick);
@@ -138,7 +159,7 @@ export const RealmTransferBalance = memo(
     return (
       <div className="flex flex-row gap-4">
         <div className="self-center w-1/2">
-          <div className="uppercase font-bold text-sm">{realm.name}</div>
+          <div className="uppercase font-bold text-sm">{structure.name}</div>
           <div className="self-center">{currencyFormat(getBalance() ? Number(getBalance()) : 0, 0)}</div>
         </div>
 
@@ -151,17 +172,17 @@ export const RealmTransferBalance = memo(
             setInput(amount);
             add((prev) => {
               // Remove any existing calls for this realm
-              const filtered = prev.filter((call) => call.sender_entity_id !== realm.entity_id);
+              const filtered = prev.filter((call) => call.sender_entity_id !== structure.entity_id);
 
               // Only add new call if amount > 0
               if (amount > 0) {
                 return [
                   ...filtered,
                   {
-                    sender_entity_id: realm.entity_id,
-                    recipient_entity_id: realm.entity_id,
+                    sender_entity_id: type === "send" ? selectedStructureEntityId : structure.entity_id,
+                    recipient_entity_id: type === "send" ? structure.entity_id : selectedStructureEntityId,
                     resources: [resource, amount],
-                    realmName: realm.name,
+                    realmName: structure.name,
                   },
                 ];
               }
