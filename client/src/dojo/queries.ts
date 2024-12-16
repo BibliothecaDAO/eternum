@@ -1,6 +1,12 @@
+// onload -> fetch single key entities
+
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import { Clause, PatternMatching, ToriiClient } from "@dojoengine/torii-client";
+
+// on hexception -> fetch below queries based on entityID
+
+// background sync after load ->
 
 export const getEntities = async <S extends Schema>(
   client: ToriiClient,
@@ -12,42 +18,22 @@ export const getEntities = async <S extends Schema>(
   if (logging) console.log("Starting getEntities");
   let offset = 0;
   let continueFetching = true;
-  let retries = 0;
-  const maxRetries = 3;
 
   while (continueFetching) {
-    try {
-      const entities = await client.getEntities({
-        limit,
-        offset,
-        clause,
-        dont_include_hashed_keys: false,
-        order_by: [],
-      });
+    const entities = await client.getEntities({
+      limit,
+      offset,
+      clause,
+      dont_include_hashed_keys: false,
+      order_by: [],
+    });
 
-      setEntities(entities, components);
+    setEntities(entities, components);
 
-      if (Object.keys(entities).length < limit) {
-        continueFetching = false;
-      } else {
-        offset += limit;
-      }
-
-      // Reset retries on successful request
-      retries = 0;
-    } catch (error) {
-      console.error(`Error fetching entities: ${error}`);
-      retries++;
-
-      if (retries >= maxRetries) {
-        throw new Error(`Failed to fetch entities after ${maxRetries} retries`);
-      }
-
-      // Wait before retrying with exponential backoff
-      await new Promise((resolve) => setTimeout(resolve, Math.pow(2, retries) * 1000));
-
-      // Continue the loop to retry
-      continue;
+    if (Object.keys(entities).length < limit) {
+      continueFetching = false;
+    } else {
+      offset += limit;
     }
   }
 };
