@@ -101,7 +101,7 @@ export const RealmTransfer = memo(
                 // TODO:
               }}
             >
-              {type === "send" ? "Receive All" : "Send All"}
+              {type === "send" ? "Send All" : "Receive All"}
             </Button>
           </div>
         </div>
