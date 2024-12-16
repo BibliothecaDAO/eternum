@@ -122,7 +122,9 @@ export const RealmTransfer = memo(
 
           <div className="pt-2 border-t border-gold/20">
             <div className="uppercase font-bold text-sm">
-              Transfers ({calls.length} {neededDonkeys.toString()})
+              Transfers ({calls.length}{" "}
+              <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />{" "}
+              {neededDonkeys.toString()})
             </div>
             <div className="flex flex-col gap-2">
               {calls.map((call, index) => (
@@ -174,14 +176,30 @@ export const RealmTransferBalance = memo(
     const [input, setInput] = useState(0);
 
     const resourceManager = useResourceManager(structure.entity_id, resource);
+    const donkeyManager = useResourceManager(structure.entity_id, ResourcesIds.Donkey);
 
     const getBalance = useCallback(() => {
       return resourceManager.balance(tick);
     }, [resourceManager, tick]);
 
-    const getProduction = useCallback(() => {
-      return resourceManager.getProduction();
-    }, [resourceManager]);
+    const getDonkeyBalance = useCallback(() => {
+      return donkeyManager.balance(tick);
+    }, [donkeyManager, tick]);
+
+    const [resourceWeight, setResourceWeight] = useState(0);
+
+    useEffect(() => {
+      const totalWeight = getTotalResourceWeight([{ resourceId: resource, amount: input }]);
+      const multipliedWeight = multiplyByPrecision(totalWeight);
+
+      setResourceWeight(multipliedWeight);
+    }, [input]);
+
+    const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
+
+    const canCarry = useMemo(() => {
+      return getDonkeyBalance() >= neededDonkeys;
+    }, [getDonkeyBalance, neededDonkeys]);
 
     if (structure.entity_id === selectedStructureEntityId) {
       return;
@@ -199,6 +217,7 @@ export const RealmTransferBalance = memo(
           min={0}
           step={100}
           value={input}
+          disabled={!canCarry}
           onChange={(amount) => {
             setInput(amount);
             add((prev) => {
@@ -222,6 +241,11 @@ export const RealmTransferBalance = memo(
             });
           }}
         />
+
+        <div className="self-center gap-2 flex ">
+          <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />
+          {neededDonkeys.toString()}
+        </div>
       </div>
     );
   },
