@@ -159,9 +159,9 @@ export class ArmyModel {
   updateAnimations(deltaTime: number) {
     const time = performance.now() * 0.001;
 
-    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
-      return;
-    }
+    // if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+    //   return;
+    // }
 
     this.models.forEach((modelData) => {
       let needsMatrixUpdate = false;
@@ -188,7 +188,10 @@ export class ArmyModel {
 
       for (let i = 0; i < modelData.mesh.count; i++) {
         const animationState = this.animationStates[i];
-        if (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) {
+        if (
+          (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
+          GRAPHICS_SETTING === GraphicsSettings.LOW
+        ) {
           continue;
         }
 
