@@ -1,4 +1,4 @@
-import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
+import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { gltfLoader } from "../helpers/utils";
@@ -159,6 +159,10 @@ export class ArmyModel {
   updateAnimations(deltaTime: number) {
     const time = performance.now() * 0.001;
 
+    // if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+    //   return;
+    // }
+
     this.models.forEach((modelData) => {
       let needsMatrixUpdate = false;
 
@@ -184,7 +188,10 @@ export class ArmyModel {
 
       for (let i = 0; i < modelData.mesh.count; i++) {
         const animationState = this.animationStates[i];
-        if (IS_LOW_GRAPHICS_ENABLED && animationState === ANIMATION_STATE_IDLE) {
+        if (
+          (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
+          GRAPHICS_SETTING === GraphicsSettings.LOW
+        ) {
           continue;
         }
 
