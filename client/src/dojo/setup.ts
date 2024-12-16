@@ -139,7 +139,9 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-RealmLevelConfig",
           "s0_eternum-BankConfig",
           "s0_eternum-Bank",
-          "s0_eternum-Trade", // Probably load this w/ market
+          "s0_eternum-Trade",
+          "s0_eternum-Army",
+           // Probably load this w/ market
         ],
       },
     },
