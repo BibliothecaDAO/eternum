@@ -1,7 +1,6 @@
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   HYPERSTRUCTURE_CONFIG_ID,
-  POPULATION_CONFIG_ID,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
@@ -138,8 +137,9 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-CapacityConfig",
           "s0_eternum-ProductionConfig",
           "s0_eternum-RealmLevelConfig",
-          // "s0_eternum-Army",
-          //ResourceCost
+          "s0_eternum-BankConfig",
+          "s0_eternum-Bank",
+          "s0_eternum-Trade", // Probably load this w/ market
         ],
       },
     },
@@ -156,7 +156,7 @@ export async function setup({ ...config }: DojoConfig) {
       Keys: {
         keys: [undefined, undefined],
         pattern_matching: "FixedLen",
-        models: ["s0_eternum-CapacityConfigCategory"],
+        models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
       },
     },
     network.contractComponents as any,
@@ -190,7 +190,6 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-SwapEvent",
           "s0_eternum-LiquidityEvent",
           "s0_eternum-HyperstructureContribution",
-          "s0_eternum-MapExplored",
         ],
       },
     },
