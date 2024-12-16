@@ -3,7 +3,6 @@ import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useResourceManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
-import { Checkbox } from "@/ui/elements/Checkbox";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { calculateDonkeysNeeded, currencyFormat, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
@@ -11,6 +10,7 @@ import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 
 import { ID } from "@bibliothecadao/eternum";
+import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { num } from "starknet";
 import { OSWindow } from "../navigation/OSWindow";
 
@@ -82,13 +82,14 @@ export const RealmTransfer = memo(
         show={isOpen}
       >
         <div className="p-1">
-          <div
-            className="flex space-x-2 items-center cursor-pointer"
+          <Button
+            variant={type === "send" ? "outline" : "secondary"}
             onClick={() => setType((prev) => (prev === "send" ? "receive" : "send"))}
           >
-            <Checkbox enabled={type === "send"} />
-            <div>{type === "send" ? "Send Resources" : "Receive Resources"}</div>
-          </div>
+            {type === "receive" && <ArrowLeftIcon className="w-4 h-4" />}
+            {type === "send" ? "Send Resources" : "Receive Resources"}
+            {type === "send" && <ArrowRightIcon className="w-4 h-4" />}
+          </Button>
         </div>
         <div className="p-4">
           <div>
@@ -115,10 +116,10 @@ export const RealmTransfer = memo(
           ))}
 
           <div className="pt-2 border-t border-gold/20">
-            <div className="uppercase font-bold text-sm flex items-center gap-1">
-              Transfers ({calls.length}
-              <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />
-              {neededDonkeys.toString()})
+            <div className="uppercase font-bold text-sm flex gap-3">
+              Transfers {calls.length} |
+              <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />{" "}
+              {neededDonkeys.toString()}
             </div>
 
             <div className="flex flex-col gap-2">
@@ -139,7 +140,7 @@ export const RealmTransfer = memo(
             </div>
           </div>
 
-          <div className="pt-2 border-t border-gold/20">
+          <div className="pt-2 border-t border-gold/20 flex flex-row justify-end">
             <Button
               disabled={calls.length === 0}
               isLoading={isLoading}
