@@ -94,13 +94,6 @@ export async function setup({ ...config }: DojoConfig) {
     },
     {
       Keys: {
-        keys: [undefined, undefined],
-        pattern_matching: "FixedLen",
-        models: ["s0_eternum-TickConfig"],
-      },
-    },
-    {
-      Keys: {
         keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
         pattern_matching: "FixedLen",
         models: [],
@@ -145,7 +138,7 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-CapacityConfig",
           "s0_eternum-ProductionConfig",
           "s0_eternum-RealmLevelConfig",
-          "s0_eternum-Army",
+          // "s0_eternum-Army",
           //ResourceCost
         ],
       },
