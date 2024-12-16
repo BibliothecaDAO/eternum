@@ -62,7 +62,10 @@ async function init() {
 
   root.render(<LoadingScreen backgroundImage={backgroundImage} />);
 
+  const setupStart = performance.now();
   const setupResult = await setup(dojoConfig);
+  const setupEnd = performance.now();
+  console.log("SetupEnd", setupEnd - setupStart);
 
   const graphic = new GameRenderer(setupResult);
 

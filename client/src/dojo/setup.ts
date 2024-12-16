@@ -1,6 +1,7 @@
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   HYPERSTRUCTURE_CONFIG_ID,
+  POPULATION_CONFIG_ID,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
@@ -30,7 +31,7 @@ export const syncEntitiesDebounced = async <S extends Schema>(
 
   const debouncedSetEntities = debounce(() => {
     if (Object.keys(entityBatch).length > 0) {
-      console.log("Applying batch update", entityBatch);
+      // console.log("Applying batch update", entityBatch);
       setEntities(entityBatch, components, logging);
       entityBatch = {}; // Clear the batch after applying
     }
@@ -79,7 +80,7 @@ export async function setup({ ...config }: DojoConfig) {
   const configClauses: Clause[] = [
     {
       Keys: {
-        keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
+        keys: [WORLD_CONFIG_ID.toString()],
         pattern_matching: "FixedLen",
         models: [],
       },
@@ -87,6 +88,20 @@ export async function setup({ ...config }: DojoConfig) {
     {
       Keys: {
         keys: [WORLD_CONFIG_ID.toString(), undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
+        keys: [undefined, undefined],
+        pattern_matching: "FixedLen",
+        models: ["s0_eternum-TickConfig"],
+      },
+    },
+    {
+      Keys: {
+        keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
         pattern_matching: "FixedLen",
         models: [],
       },
@@ -107,28 +122,59 @@ export async function setup({ ...config }: DojoConfig) {
     },
   ];
 
+  const CompositeStart = performance.now();
   await getEntities(
     network.toriiClient,
     { Composite: { operator: "Or", clauses: configClauses } },
     network.contractComponents as any,
   );
+  const CompositeEnd = performance.now();
 
   // fetch all existing entities from torii
+  const SingleKeyStart = performance.now();
   await getEntities(
     network.toriiClient,
     {
       Keys: {
         keys: [undefined],
         pattern_matching: "FixedLen",
-        models: [],
+        models: [
+          "s0_eternum-AddressName",
+          "s0_eternum-Realm",
+          "s0_eternum-PopulationConfig",
+          "s0_eternum-CapacityConfig",
+          "s0_eternum-ProductionConfig",
+          "s0_eternum-RealmLevelConfig",
+          "s0_eternum-Army",
+          //ResourceCost
+        ],
       },
     },
     network.contractComponents as any,
     40_000,
     false,
   );
+  const SingleKeyEnd = performance.now();
 
+  const DoubleKeyStart = performance.now();
+  await getEntities(
+    network.toriiClient,
+    {
+      Keys: {
+        keys: [undefined, undefined],
+        pattern_matching: "FixedLen",
+        models: ["s0_eternum-CapacityConfigCategory"],
+      },
+    },
+    network.contractComponents as any,
+    40_000,
+    false,
+  );
+  const DoubleKeyEnd = performance.now();
+
+  const SyncStart = performance.now();
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
+  const SyncEnd = performance.now();
 
   configManager.setDojo(components);
 
@@ -158,6 +204,11 @@ export async function setup({ ...config }: DojoConfig) {
     false,
     false,
   );
+
+  console.log("CompositeEnd", CompositeEnd - CompositeStart);
+  console.log("SyncEnd", SyncEnd - SyncStart);
+  console.log("SingleKeyEnd", SingleKeyEnd - SingleKeyStart);
+  console.log("DoubleKeyEnd", DoubleKeyEnd - DoubleKeyStart);
 
   return {
     network,

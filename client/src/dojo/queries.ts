@@ -20,6 +20,7 @@ export const getEntities = async <S extends Schema>(
   let continueFetching = true;
 
   while (continueFetching) {
+    const start = performance.now();
     const entities = await client.getEntities({
       limit,
       offset,
@@ -29,6 +30,8 @@ export const getEntities = async <S extends Schema>(
     });
 
     setEntities(entities, components);
+    const end = performance.now();
+    console.log("GetEntitiesEnd", end - start);
 
     if (Object.keys(entities).length < limit) {
       continueFetching = false;
@@ -38,12 +41,82 @@ export const getEntities = async <S extends Schema>(
   }
 };
 
+export const syncPosition = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityID: string,
+) => {
+  await getEntities(
+    client,
+    {
+      Keys: {
+        keys: [entityID],
+        pattern_matching: "FixedLen" as PatternMatching,
+        models: ["s0_eternum-Position"],
+      },
+    },
+    components,
+    30_000,
+    false,
+  );
+};
+export const syncBuildingQty = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityID: string,
+) => {
+  await getEntities(
+    client,
+    {
+      Keys: {
+        keys: [entityID, undefined],
+        pattern_matching: "FixedLen" as PatternMatching,
+        models: ["s0_eternum-BuildingQuantityv2"],
+      },
+    },
+    components,
+    30_000,
+    false,
+  );
+};
+
+export const addToSubscriptionBuildingQty = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityID: string[],
+) => {
+  const start = performance.now();
+  await getEntities(
+    client,
+    {
+      Composite: {
+        operator: "Or",
+        clauses: [
+          ...entityID.map((id) => ({
+            Keys: {
+              keys: [id, undefined],
+              pattern_matching: "VariableLen" as PatternMatching,
+              models: ["s0_eternum-BuildingQuantityv2"],
+            },
+          })),
+        ],
+      },
+    },
+    components,
+    30_000,
+    false,
+  );
+  const end = performance.now();
+  console.log("AddToSubscription Building qty", end - start);
+};
+
 export const addToSubscription = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityID: string[],
   position?: { x: number; y: number }[],
 ) => {
+  const start = performance.now();
   await getEntities(
     client,
     {
@@ -73,12 +146,15 @@ export const addToSubscription = async <S extends Schema>(
     30_000,
     false,
   );
+  const end = performance.now();
+  console.log("AddToSubscriptionEnd", end - start);
 };
 
 export const addMarketSubscription = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
+  const start = performance.now();
   await getEntities(
     client,
     {
@@ -92,4 +168,6 @@ export const addMarketSubscription = async <S extends Schema>(
     30_000,
     false,
   );
+  const end = performance.now();
+  console.log("MarketEnd", end - start);
 };
