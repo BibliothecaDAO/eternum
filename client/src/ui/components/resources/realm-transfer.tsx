@@ -15,6 +15,7 @@ type transferCall = {
   sender_entity_id: num.BigNumberish;
   recipient_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
+  realmName: string;
 };
 
 export const RealmTransfer = memo(
@@ -52,10 +53,10 @@ export const RealmTransfer = memo(
               isLabor={false}
               withTooltip={false}
               resource={findResourceById(resource)?.trait as string}
-              size="lg"
+              size="xxl"
               className="mr-3 self-center"
             />
-            <div className="py-3">{currencyFormat(balance ? Number(balance) : 0, 0)}</div>
+            <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 0)}</div>
           </div>
 
           {playerRealms().map((realm) => (
@@ -69,20 +70,30 @@ export const RealmTransfer = memo(
             />
           ))}
 
-          <div className="flex flex-col gap-2">
-            {calls.map((call, index) => (
-              <div
-                className="flex flex-row w-full justify-between p-2 gap-2 border-gold/20 bg-gold/10 border-2 rounded-md"
-                key={index}
-              >
-                <div>{call.resources[1].toString()}</div>
-                <Button onClick={() => setCalls((prev) => prev.filter((c) => c !== call))}>Remove</Button>
-              </div>
-            ))}
+          <div className="pt-2 border-t border-gold/20">
+            <div className="uppercase font-bold text-sm">Transfers</div>
+            <div className="flex flex-col gap-2">
+              {calls.map((call, index) => (
+                <div
+                  className="flex flex-row w-full justify-between p-2 gap-2 border-gold/20 bg-gold/10 border-2 rounded-md"
+                  key={index}
+                >
+                  <div className="uppercase font-bold text-sm self-center">{call.realmName}</div>
+                  <div className="self-center" self-center>
+                    {call.resources[1].toLocaleString()}
+                  </div>
+                  <Button size="xs" onClick={() => setCalls((prev) => prev.filter((c) => c !== call))}>
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="pt-2 border-t border-gold/20">
             <Button
+              variant="primary"
+              size="md"
               onClick={() => {
                 // TODO:
               }}
@@ -123,7 +134,7 @@ export const RealmTransferBalance = memo(
 
     return (
       <div className="flex flex-row gap-4">
-        <div className="self-center">
+        <div className="self-center w-1/2">
           <div className="uppercase font-bold text-sm">{realm.name}</div>
           <div className="self-center">{currencyFormat(getBalance() ? Number(getBalance()) : 0, 0)}</div>
         </div>
@@ -147,6 +158,7 @@ export const RealmTransferBalance = memo(
                     sender_entity_id: realm.entity_id,
                     recipient_entity_id: realm.entity_id,
                     resources: [resource, amount],
+                    realmName: realm.name,
                   },
                 ];
               }
