@@ -56,8 +56,12 @@ export const RealmTransfer = memo(
       const totalWeight = getTotalResourceWeight(resources);
 
       const multipliedWeight = multiplyByPrecision(totalWeight);
+
+      console.log("resources", resources);
+      console.log("multipliedWeight", multipliedWeight);
+
       setResourceWeight(multipliedWeight);
-    }, []);
+    }, [calls]);
 
     const handleTransfer = useCallback(() => {
       // setIsLoading(true);
