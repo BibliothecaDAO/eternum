@@ -2,11 +2,11 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { useResourceManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
+import { Checkbox } from "@/ui/elements/Checkbox";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
-import { Switch } from "@headlessui/react";
 import { Dispatch, SetStateAction, memo, useCallback, useState } from "react";
 import { num } from "starknet";
 import { OSWindow } from "../navigation/OSWindow";
@@ -41,11 +41,14 @@ export const RealmTransfer = memo(
         onClick={() => togglePopup(resource.toString())}
         show={isOpen}
       >
-        <div>
-          <Switch
-            checked={type === "send"}
-            onChange={() => setType((prev) => (prev === "send" ? "receive" : "send"))}
-          />
+        <div className="p-1">
+          <div
+            className="flex space-x-2 items-center cursor-pointer"
+            onClick={() => setType((prev) => (prev === "send" ? "receive" : "send"))}
+          >
+            <Checkbox enabled={type === "send"} />
+            <div>{type === "send" ? "Send Resources" : "Receive Resources"}</div>
+          </div>
         </div>
         <div className="p-4">
           <div>
