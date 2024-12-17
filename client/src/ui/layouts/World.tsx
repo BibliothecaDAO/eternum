@@ -151,28 +151,37 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [...filteredStructures.map((structure) => structure.entity_id.toString())],
+            dojo.setup.db,
           ),
           addToSubscriptionTwoKeyModelbyRealmEntityId(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [...filteredStructures.map((structure) => structure.entity_id.toString())],
+            dojo.setup.db,
           ),
           addToSubscription(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [structureEntityId.toString()],
+            dojo.setup.db,
             [{ x: position?.x || 0, y: position?.y || 0 }],
           ),
-          addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-            ADMIN_BANK_ENTITY_ID.toString(),
-          ]),
+
+          addToSubscription(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            [ADMIN_BANK_ENTITY_ID.toString()],
+            dojo.setup.db,
+          ),
+
           addToSubscription(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [...filteredStructures.map((structure) => structure.entity_id.toString())],
+            dojo.setup.db,
             [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
           ),
-          addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any),
+          addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, dojo.setup.db),
         ]);
       } catch (error) {
         console.error("Fetch failed", error);

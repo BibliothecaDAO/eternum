@@ -5,6 +5,7 @@ import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as Controller } from "@/assets/icons/Controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
+import { clearCache } from "@/dojo/indexedDB";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -61,7 +62,7 @@ export const SettingsWindow = () => {
 
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
 
-  const GRAPHICS_SETTING = localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings || GraphicsSettings.HIGH;
+  const GRAPHICS_SETTING = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
 
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
@@ -171,6 +172,15 @@ export const SettingsWindow = () => {
             Github
           </a>
         </div>
+        <Button
+          onClick={() => {
+            clearCache();
+            setShowSettings(false);
+            setBlankOverlay(true);
+          }}
+        >
+          clear cache
+        </Button>
 
         <Button
           onClick={() => {
