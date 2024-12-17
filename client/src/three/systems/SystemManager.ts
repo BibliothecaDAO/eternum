@@ -87,6 +87,9 @@ export class SystemManager {
             isComponentUpdate(update, this.setup.components.Health)
           ) {
             const army = getComponentValue(this.setup.components.Army, update.entity);
+
+            console.log({ armyUpdates: army });
+
             if (!army) return;
 
             const position = getComponentValue(this.setup.components.Position, update.entity);
