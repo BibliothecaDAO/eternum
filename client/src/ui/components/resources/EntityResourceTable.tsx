@@ -7,6 +7,7 @@ import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS, StructureType
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
 import { ResourceChip } from "./ResourceChip";
+import { getComponentValue } from "@dojoengine/recs";
 
 export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();
@@ -19,8 +20,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
       getEntityIdFromKeys([BigInt(entityId || 0), BigInt(BuildingType.Storehouse)]),
     )?.value || 0;
 
-  const { getStructureByEntityId } = useStructures();
-  const structure = getStructureByEntityId(entityId || 0);
+  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 
   const maxStorehouseCapacityKg = useMemo(() => {
     if (structure?.category === StructureType[StructureType.FragmentMine]) return Infinity;
