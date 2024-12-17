@@ -3,20 +3,24 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
-import { addMarketSubscription, addToSubscription, addToSubscriptionBuildingQty, syncBuildingQty } from "@/dojo/queries";
+import {
+  addMarketSubscription,
+  addToSubscription,
+  addToSubscriptionOneKeyModelbyRealmEntityId,
+  addToSubscriptionTwoKeyModelbyRealmEntityId,
+} from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useWorldStore } from "@/hooks/store/useWorldLoading";
-import { ADMIN_BANK_ENTITY_ID, BuildingType } from "@bibliothecadao/eternum";
+import { ADMIN_BANK_ENTITY_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
 import { LoadingOroborus } from "../modules/loading-oroborus";
 import { LoadingScreen } from "../modules/LoadingScreen";
-import { useBuildings } from "@/hooks/helpers/use-buildings";
 // Lazy load components
 
 const SelectedArmy = lazy(() =>
@@ -117,12 +121,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     [structures, subscriptions],
   );
 
-  // const { getBuildings } = useBuildings();
-  // filteredStructures.forEach((structure) => {
-  //   console.log("Buildings", getBuildings(structure.position.x, structure.position.y));
-  // });
-
-  // console.log("FilteredStructures", filteredStructures);
   useEffect(() => {
     if (
       !structureEntityId ||
@@ -132,13 +130,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     ) {
       return;
     }
-
-    // syncBuildingQty(dojo.network.toriiClient, dojo.network.contractComponents as any, structureEntityId.toString());
-    // filteredStructures.forEach((structure) => {
-    //   syncBuildingQty(dojo.network.toriiClient, dojo.network.contractComponents as any, structure.entity_id.toString());
-    // });
-
-    
 
     const position = getComponentValue(
       dojo.setup.components.Position,
@@ -155,9 +146,13 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
     const fetch = async () => {
       try {
-        const start = performance.now();
         await Promise.all([
-          addToSubscriptionBuildingQty(
+          addToSubscriptionOneKeyModelbyRealmEntityId(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            [...filteredStructures.map((structure) => structure.entity_id.toString())],
+          ),
+          addToSubscriptionTwoKeyModelbyRealmEntityId(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [...filteredStructures.map((structure) => structure.entity_id.toString())],
@@ -179,14 +174,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           ),
           addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any),
         ]);
-        const end = performance.now();
-        console.log("FetchEnd", end - start);
       } catch (error) {
         console.error("Fetch failed", error);
       } finally {
         setWorldLoading(false);
         setMarketLoading(false);
-        console.log("Done fetching")
       }
     };
 

@@ -59,9 +59,10 @@ const usePlayerArrivals = () => {
   ];
 
   const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
-    return positions.flatMap((position) => {
+    const arrivals = positions.flatMap((position) => {
       return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...queryFragments]));
     });
+    return arrivals;
   }, []);
 
   const createArrivalInfo = useCallback(
