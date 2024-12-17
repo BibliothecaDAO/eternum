@@ -114,16 +114,13 @@ export async function setup({ ...config }: DojoConfig) {
     },
   ];
 
-  const CompositeStart = performance.now();
   await getEntities(
     network.toriiClient,
     { Composite: { operator: "Or", clauses: configClauses } },
     network.contractComponents as any,
   );
-  const CompositeEnd = performance.now();
 
   // fetch all existing entities from torii
-  const SingleKeyStart = performance.now();
   await getEntities(
     network.toriiClient,
     {
@@ -143,7 +140,7 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-Army",
           "s0_eternum-Structure",
           "s0_eternum-Battle",
-          // Probably load this w/ market
+          "s0_eternum-EntityOwner",
         ],
       },
     },
@@ -153,9 +150,7 @@ export async function setup({ ...config }: DojoConfig) {
     40_000,
     false,
   );
-  const SingleKeyEnd = performance.now();
 
-  const DoubleKeyStart = performance.now();
   await getEntities(
     network.toriiClient,
     {
@@ -171,11 +166,8 @@ export async function setup({ ...config }: DojoConfig) {
     40_000,
     false,
   );
-  const DoubleKeyEnd = performance.now();
 
-  const SyncStart = performance.now();
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
-  const SyncEnd = performance.now();
 
   configManager.setDojo(components);
 
@@ -206,11 +198,6 @@ export async function setup({ ...config }: DojoConfig) {
     false,
     false,
   );
-
-  console.log("CompositeEnd", CompositeEnd - CompositeStart);
-  console.log("SyncEnd", SyncEnd - SyncStart);
-  console.log("SingleKeyEnd", SingleKeyEnd - SingleKeyStart);
-  console.log("DoubleKeyEnd", DoubleKeyEnd - DoubleKeyStart);
 
   return {
     network,
