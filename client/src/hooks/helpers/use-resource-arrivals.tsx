@@ -83,7 +83,7 @@ const usePlayerArrivals = () => {
 
       const ownedResourceTracker = getComponentValue(OwnedResourcesTracker, id);
 
-      const hasResources = ownedResourceTracker?.resource_types !== 0n;
+      const hasResources = !!ownedResourceTracker && ownedResourceTracker.resource_types !== 0n;
 
       const playerStructurePosition = playerStructurePositions.find(
         (structurePosition) => structurePosition.x === position.x && structurePosition.y === position.y,
