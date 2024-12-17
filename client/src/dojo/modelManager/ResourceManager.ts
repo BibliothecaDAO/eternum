@@ -1,5 +1,5 @@
 import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, CapacityConfigCategory, ResourcesIds, type ID } from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfigCategory, ResourcesIds, StructureType, type ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { configManager, type SetupResult } from "../setup";
 
@@ -91,6 +91,12 @@ export class ResourceManager {
   }
 
   public getStoreCapacity(): number {
+    const structure = getComponentValue(
+      this.setup.components.Structure,
+      getEntityIdFromKeys([BigInt(this.entityId || 0)]),
+    );
+    if (structure?.category === StructureType[StructureType.FragmentMine]) return Infinity;
+
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse));
     const quantity =
       getComponentValue(
