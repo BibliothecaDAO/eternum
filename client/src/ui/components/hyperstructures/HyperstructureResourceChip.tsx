@@ -37,7 +37,7 @@ export const HyperstructureResourceChip = ({
 
   let maxContributableAmount = Math.min(progress.costNeeded! - progress.amount, balance);
   maxContributableAmount *= progress.costNeeded - progress.amount > balance ? safetyMargin : 1;
-  maxContributableAmount = Math.floor(maxContributableAmount);
+  maxContributableAmount = Math.ceil(maxContributableAmount);
 
   useEffect(() => {
     let contributionsCopy = Object.assign({}, contributions);
