@@ -1,6 +1,7 @@
 import { Component, Metadata, Schema } from "@dojoengine/recs";
+import { setEntities } from "@dojoengine/state";
 import { Entities } from "@dojoengine/torii-client";
-import { setEntities } from "./dojojscopy";
+// import { setEntities } from "./dojojscopy";
 
 const DB_NAME = "eternum-db";
 const DB_VERSION = 1;
