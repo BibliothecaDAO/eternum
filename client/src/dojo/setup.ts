@@ -184,10 +184,11 @@ export async function setup({ ...config }: DojoConfig) {
         models: [
           "s0_eternum-GameEnded",
           "s0_eternum-HyperstructureFinished",
-          "s0_eternum-BattleStartData",
+          "s0_eternum-BattleClaimData",
           "s0_eternum-BattleJoinData",
           "s0_eternum-BattleLeaveData",
           "s0_eternum-BattlePillageData",
+          "s0_eternum-BattleStartData",
           "s0_eternum-AcceptOrder",
           "s0_eternum-SwapEvent",
           "s0_eternum-LiquidityEvent",
