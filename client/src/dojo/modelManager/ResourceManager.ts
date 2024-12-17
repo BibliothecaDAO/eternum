@@ -95,7 +95,7 @@ export class ResourceManager {
       this.setup.components.Structure,
       getEntityIdFromKeys([BigInt(this.entityId || 0)]),
     );
-    if (structure?.category === StructureType[StructureType.FragmentMine]) return Infinity;
+    if (structure?.category !== StructureType[StructureType.Realm]) return Infinity;
 
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse));
     const quantity =
