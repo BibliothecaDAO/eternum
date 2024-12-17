@@ -28,33 +28,12 @@ export const syncPosition = async <S extends Schema>(
     30_000,
   );
 };
-export const syncBuildingQty = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityID: string,
-) => {
-  await getEntities(
-    client,
-    {
-      Keys: {
-        keys: [entityID, undefined],
-        pattern_matching: "FixedLen" as PatternMatching,
-        models: ["s0_eternum-BuildingQuantityv2"],
-      },
-    },
-    components,
-    [],
-    [],
-    30_000,
-  );
-};
 
-export const addToSubscriptionBuildingQty = async <S extends Schema>(
+export const addToSubscriptionTwoKeyModelbyRealmEntityId = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityID: string[],
 ) => {
-  const start = performance.now();
   await getEntities(
     client,
     {
@@ -76,8 +55,34 @@ export const addToSubscriptionBuildingQty = async <S extends Schema>(
     [],
     30_000,
   );
-  const end = performance.now();
-  console.log("AddToSubscription Building qty", end - start);
+};
+
+export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityID: string[],
+) => {
+  await getEntities(
+    client,
+    {
+      Composite: {
+        operator: "Or",
+        clauses: [
+          ...entityID.map((id) => ({
+            Keys: {
+              keys: [id],
+              pattern_matching: "VariableLen" as PatternMatching,
+              models: ["s0_eternum-ArrivalTime", "s0_eternum-OwnedResourcesTracker"],
+            },
+          })),
+        ],
+      },
+    },
+    components,
+    [],
+    [],
+    30_000,
+  );
 };
 
 export const addToSubscription = async <S extends Schema>(
