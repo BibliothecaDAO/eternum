@@ -1,11 +1,13 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useStructures } from "@/hooks/helpers/useStructures";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
 import { ResourceChip } from "./ResourceChip";
+import { getComponentValue } from "@dojoengine/recs";
 
 export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();
@@ -18,7 +20,10 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
       getEntityIdFromKeys([BigInt(entityId || 0), BigInt(BuildingType.Storehouse)]),
     )?.value || 0;
 
+  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
+
   const maxStorehouseCapacityKg = useMemo(() => {
+    if (structure?.category !== StructureType[StructureType.Realm]) return Infinity;
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse));
     return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
   }, [quantity, entityId]);

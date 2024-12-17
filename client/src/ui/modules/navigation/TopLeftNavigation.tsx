@@ -179,6 +179,7 @@ export const TopLeftNavigation = memo(() => {
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
+  console.log(entityInfo.structureCategory);
   return (
     <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
       <motion.div
@@ -253,11 +254,16 @@ export const TopLeftNavigation = memo(() => {
               className="storehouse-selector px-3 flex gap-2 justify-start items-center text-xxs md:text-sm"
             >
               <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
-              {IS_MOBILE ? (
-                <div className="self-center">{storehouses.quantity.toLocaleString()}</div>
+              {entityInfo.structureCategory !== "Realm" ? (
+                <div className="self-center">∞</div>
               ) : (
                 <div className="self-center">{storehouses.capacityKg.toLocaleString()} kg</div>
               )}
+              {/* {IS_MOBILE ? (
+                <div className="self-center">{storehouses.quantity.toLocaleString()}</div>
+              ) : (
+                <div className="self-center">{storehouses.capacityKg.toLocaleString()} kg</div>
+              )} */}
             </div>
           )}
 
