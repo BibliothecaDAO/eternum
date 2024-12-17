@@ -783,6 +783,7 @@ export default class WorldmapScene extends HexagonScene {
           "s0_eternum-Health",
           "s0_eternum-EntityOwner",
           "s0_eternum-Protectee",
+          "s0_eternum-Stamina",
         ],
         1000,
         false,
