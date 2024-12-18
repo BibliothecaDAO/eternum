@@ -161,6 +161,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   useEffect(() => {
     try {
+      setWorldLoading(true);
       addToSubscription(
         dojo.network.toriiClient,
         dojo.network.contractComponents as any,
@@ -172,6 +173,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       ]);
     } catch (error) {
       console.error("Fetch failed", error);
+    } finally {
+      setWorldLoading(false);
     }
   }, [filteredStructures]);
 
