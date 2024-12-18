@@ -163,16 +163,12 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             [structureEntityId.toString()],
             [{ x: position?.x || 0, y: position?.y || 0 }],
           ),
-          addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-            ADMIN_BANK_ENTITY_ID.toString(),
-          ]),
           addToSubscription(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [...filteredStructures.map((structure) => structure.entity_id.toString())],
             [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
           ),
-          addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any),
         ]);
       } catch (error) {
         console.error("Fetch failed", error);
@@ -184,6 +180,20 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
     fetch();
   }, [structureEntityId, subscriptions, setWorldLoading, setSubscriptions, filteredStructures]);
+
+  useEffect(() => {
+    try {
+      setMarketLoading(true);
+      addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
+        ADMIN_BANK_ENTITY_ID.toString(),
+      ]);
+      addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
+    } catch (error) {
+      console.error("Fetch failed", error);
+    } finally {
+      setMarketLoading(false);
+    }
+  }, []);
 
   return (
     <div

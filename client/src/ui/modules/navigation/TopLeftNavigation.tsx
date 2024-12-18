@@ -317,10 +317,7 @@ export const TopLeftNavigation = memo(() => {
               />
             </div>
           </div>
-          <div
-            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded-bl-2xl rounded-tr-2xl mx-1"
-            style={{ width: `${progress}%` }}
-          ></div>
+          <ProgressBar progress={progress} />
         </div>
       </motion.div>
       <div className="relative">
@@ -333,7 +330,18 @@ export const TopLeftNavigation = memo(() => {
 
 TopLeftNavigation.displayName = "TopLeftNavigation";
 
-const TickProgress = () => {
+const ProgressBar = memo(({ progress }: { progress: number }) => {
+  return (
+    <div
+      className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded-bl-2xl rounded-tr-2xl mx-1"
+      style={{ width: `${progress}%` }}
+    ></div>
+  );
+});
+
+ProgressBar.displayName = "ProgressBar";
+
+const TickProgress = memo(() => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { nextBlockTimestamp } = useNextBlockTimestamp();
 
@@ -397,4 +405,4 @@ const TickProgress = () => {
       {progress.toFixed()}%
     </div>
   );
-};
+});
