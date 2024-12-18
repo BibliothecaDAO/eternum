@@ -112,25 +112,6 @@ export async function setup({ ...config }: DojoConfig) {
         models: [],
       },
     },
-  ];
-
-  const indexedDB = await openDatabase();
-  await syncEntitiesFromStorage(indexedDB, network.contractComponents as any);
-
-  await getEntities(
-    network.toriiClient,
-    { Composite: { operator: "Or", clauses: configClauses } },
-    network.contractComponents as any,
-    [],
-    [],
-    40_000,
-    false,
-    { dbConnection: indexedDB, timestampCacheKey: "config_query" },
-  );
-
-  // fetch all existing entities from torii
-  await getEntities(
-    network.toriiClient,
     {
       Keys: {
         keys: [undefined],
@@ -152,16 +133,6 @@ export async function setup({ ...config }: DojoConfig) {
         ],
       },
     },
-    network.contractComponents as any,
-    [],
-    [],
-    40_000,
-    false,
-    { dbConnection: indexedDB, timestampCacheKey: "single_keyed_query" },
-  );
-
-  await getEntities(
-    network.toriiClient,
     {
       Keys: {
         keys: [undefined, undefined],
@@ -169,13 +140,72 @@ export async function setup({ ...config }: DojoConfig) {
         models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
       },
     },
-    network.contractComponents as any,
-    [],
-    [],
-    40_000,
-    false,
-    { dbConnection: indexedDB, timestampCacheKey: "double_keyed_query" },
-  );
+  ];
+
+  const indexedDB = await openDatabase();
+  await syncEntitiesFromStorage(indexedDB, network.contractComponents as any);
+
+  await Promise.all([
+    getEntities(
+      network.toriiClient,
+      { Composite: { operator: "Or", clauses: configClauses } },
+      network.contractComponents as any,
+      [],
+      [],
+      40_000,
+      false,
+      { dbConnection: indexedDB, timestampCacheKey: "config_query" },
+    ),
+
+    // fetch all existing entities from torii
+    // getEntities(
+    //   network.toriiClient,
+    //   {
+    //     Keys: {
+    //       keys: [undefined],
+    //       pattern_matching: "FixedLen",
+    //       models: [
+    //         "s0_eternum-AddressName",
+    //         "s0_eternum-Realm",
+    //         "s0_eternum-PopulationConfig",
+    //         "s0_eternum-CapacityConfig",
+    //         "s0_eternum-ProductionConfig",
+    //         "s0_eternum-RealmLevelConfig",
+    //         "s0_eternum-BankConfig",
+    //         "s0_eternum-Bank",
+    //         "s0_eternum-Trade",
+    //         "s0_eternum-Army",
+    //         "s0_eternum-Structure",
+    //         "s0_eternum-Battle",
+    //         "s0_eternum-EntityOwner",
+    //       ],
+    //     },
+    //   },
+    //   network.contractComponents as any,
+    //   [],
+    //   [],
+    //   40_000,
+    //   false,
+    //   { dbConnection: indexedDB, timestampCacheKey: "single_keyed_query" },
+    // ),
+
+    // getEntities(
+    //   network.toriiClient,
+    //   {
+    //     Keys: {
+    //       keys: [undefined, undefined],
+    //       pattern_matching: "FixedLen",
+    //       models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
+    //     },
+    //   },
+    //   network.contractComponents as any,
+    //   [],
+    //   [],
+    //   40_000,
+    //   false,
+    //   { dbConnection: indexedDB, timestampCacheKey: "double_keyed_query" },
+    // )
+  ]);
 
   const sync = await setupWorker(
     {
