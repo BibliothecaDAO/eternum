@@ -41,14 +41,21 @@ async function syncEntitiesFromStorage<S extends Schema>(
 
     request.onsuccess = () => {
       const entities = request.result;
-      const entityMap: Entities = {};
 
-      for (const entity of entities) {
-        const { id, ...data } = entity;
-        entityMap[id] = data;
+      const CHUNK_SIZE = 50000;
+
+      // Process entities in chunks
+      for (let i = 0; i < entities.length; i += CHUNK_SIZE) {
+        const chunk = entities.slice(i, i + CHUNK_SIZE);
+        const chunkMap: Entities = {};
+
+        for (const entity of chunk) {
+          const { id, ...data } = entity;
+          chunkMap[id] = data;
+        }
+
+        setEntities(chunkMap, components, false);
       }
-
-      setEntities(entityMap, components, false);
 
       resolve();
     };

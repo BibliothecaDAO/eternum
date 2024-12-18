@@ -1,6 +1,5 @@
 import { debounce } from "lodash";
 
-let toriiClient = null;
 let entityBatch = {};
 let logging = false;
 const DEBOUNCE_DELAY = 1000;
