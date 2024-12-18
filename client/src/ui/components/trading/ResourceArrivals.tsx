@@ -29,9 +29,12 @@ export const AllResourceArrivals = memo(
       });
 
       // Move API call outside of state updates
-      addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, unsubscribedIds).catch(
-        (error) => console.error("Fetch failed", error),
-      );
+      addToSubscription(
+        dojo.network.toriiClient,
+        dojo.network.contractComponents as any,
+        unsubscribedIds,
+        dojo.setup.db,
+      ).catch((error) => console.error("Fetch failed", error));
     }, [arrivals, subscribedIds]);
 
     return (

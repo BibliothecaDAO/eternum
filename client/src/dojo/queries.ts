@@ -4,35 +4,11 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 
-// on hexception -> fetch below queries based on entityID
-
-// background sync after load ->
-
-export const syncPosition = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityID: string,
-) => {
-  await getEntities(
-    client,
-    {
-      Keys: {
-        keys: [entityID],
-        pattern_matching: "FixedLen" as PatternMatching,
-        models: ["s0_eternum-Position"],
-      },
-    },
-    components,
-    [],
-    [],
-    30_000,
-  );
-};
-
 export const addToSubscriptionTwoKeyModelbyRealmEntityId = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityID: string[],
+  db: IDBDatabase,
 ) => {
   await getEntities(
     client,
@@ -54,6 +30,8 @@ export const addToSubscriptionTwoKeyModelbyRealmEntityId = async <S extends Sche
     [],
     [],
     30_000,
+    false,
+    { dbConnection: db, timestampCacheKey: `entity_two_key_${entityID}_query` },
   );
 };
 
@@ -61,6 +39,7 @@ export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Sche
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityID: string[],
+  db: IDBDatabase,
 ) => {
   await getEntities(
     client,
@@ -82,6 +61,8 @@ export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Sche
     [],
     [],
     30_000,
+    false,
+    { dbConnection: db, timestampCacheKey: `entity_one_key_${entityID}_query` },
   );
 };
 
@@ -89,6 +70,7 @@ export const addToSubscription = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityID: string[],
+  db: IDBDatabase,
   position?: { x: number; y: number }[],
 ) => {
   const start = performance.now();
@@ -121,6 +103,8 @@ export const addToSubscription = async <S extends Schema>(
     [],
     [],
     30_000,
+    false,
+    { dbConnection: db, timestampCacheKey: `entity_${entityID}_query` },
   );
   const end = performance.now();
   console.log("AddToSubscriptionEnd", end - start);
@@ -129,6 +113,7 @@ export const addToSubscription = async <S extends Schema>(
 export const addMarketSubscription = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
+  db: IDBDatabase,
 ) => {
   const start = performance.now();
   await getEntities(
@@ -145,6 +130,7 @@ export const addMarketSubscription = async <S extends Schema>(
     [],
     30_000,
     false,
+    { dbConnection: db, timestampCacheKey: "market_query" },
   );
   const end = performance.now();
   console.log("MarketEnd", end - start);
