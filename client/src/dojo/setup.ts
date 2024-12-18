@@ -137,10 +137,12 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-BankConfig",
           "s0_eternum-Bank",
           "s0_eternum-Trade",
-          "s0_eternum-Army",
+          // improve
+          // "s0_eternum-Army",
           "s0_eternum-Structure",
           "s0_eternum-Battle",
-          "s0_eternum-EntityOwner",
+          // improve
+          // "s0_eternum-EntityOwner",
         ],
       },
     },
