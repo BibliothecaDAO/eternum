@@ -3,12 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
-import {
-  addMarketSubscription,
-  addToSubscription,
-  addToSubscriptionOneKeyModelbyRealmEntityId,
-  addToSubscriptionTwoKeyModelbyRealmEntityId,
-} from "@/dojo/queries";
+import { addMarketSubscription, addToSubscription, addToSubscriptionOneKeyModelbyRealmEntityId } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
@@ -169,7 +164,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, [structureEntityId, subscriptions, setWorldLoading, setSubscriptions]);
+  }, [structureEntityId, subscriptions]);
 
   // Handle filtered structures subscription
   useEffect(() => {
@@ -185,12 +180,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       try {
         await Promise.all([
           addToSubscriptionOneKeyModelbyRealmEntityId(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            filteredStructures.map((structure) => structure.entity_id.toString()),
-            dojo.setup.db,
-          ),
-          addToSubscriptionTwoKeyModelbyRealmEntityId(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             filteredStructures.map((structure) => structure.entity_id.toString()),
@@ -212,11 +201,12 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, [filteredStructures, setWorldLoading, setSubscriptions]);
+  }, [filteredStructures]);
 
   // Handle market subscription
   useEffect(() => {
     const fetch = async () => {
+      setMarketLoading(true);
       try {
         await addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, dojo.setup.db);
       } catch (error) {
@@ -227,7 +217,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, [setMarketLoading]);
+  }, []);
 
   return (
     <div
