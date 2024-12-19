@@ -182,7 +182,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             ...filteredStructures.map((structure) => structure.entity_id.toString()),
           ]),
         ]).finally(() => {
-          // setPlayerStructuresLoading(false);
+          setPlayerStructuresLoading(false);
         });
 
         await debounceAddResourceArrivals(
