@@ -19,7 +19,7 @@ const documents = {
     "\n  query getEntityPosition($fromEntityId: u32!, $toEntityId: u32!) {\n    s0EternumPositionModels(where: { entity_idIN: [$fromEntityId, $toEntityId] }) {\n      edges {\n        node {\n          x\n          y\n          entity_id\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n": types.GetEntityPositionDocument,
     "\n  query getAccountTokens($accountAddress: String!) {\n    tokenBalances(accountAddress: $accountAddress, limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n": types.GetAccountTokensDocument,
     "\n  query getERC721Mints {\n    tokenTransfers(accountAddress: \"0x0\", limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n": types.GetErc721MintsDocument,
-    "\n  query getEntityResources($entityId: u32!) {\n    s0EternumResourceModels(where: { entity_id: $entityId }) {\n      edges {\n        node {\n          resource_type\n          balance\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n": types.GetEntityResourcesDocument,
+    "\n  query getEntityResources($entityId: u32!, $resourceType: u8) {\n    s0EternumResourceModels(where: { entity_id: $entityId, resource_type: $resourceType }) {\n      edges {\n        node {\n          resource_type\n          balance\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n": types.GetEntityResourcesDocument,
 };
 
 /**
@@ -41,7 +41,7 @@ export function graphql(source: "\n  query getERC721Mints {\n    tokenTransfers(
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query getEntityResources($entityId: u32!) {\n    s0EternumResourceModels(where: { entity_id: $entityId }) {\n      edges {\n        node {\n          resource_type\n          balance\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetEntityResourcesDocument;
+export function graphql(source: "\n  query getEntityResources($entityId: u32!, $resourceType: u8) {\n    s0EternumResourceModels(where: { entity_id: $entityId, resource_type: $resourceType }) {\n      edges {\n        node {\n          resource_type\n          balance\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetEntityResourcesDocument;
 
 
 export function graphql(source: string) {

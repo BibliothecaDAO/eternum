@@ -1,4 +1,3 @@
-import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { ID, resources } from "@bibliothecadao/eternum";
 import { XIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";

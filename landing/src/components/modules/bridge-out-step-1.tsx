@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress, multiplyByPrecision } from "@/lib/utils";
@@ -39,8 +39,12 @@ export const BridgeOutStep1 = () => {
   const [realmEntityId, setRealmEntityId] = useState<string>("");
 
   const { getRealmNameById } = useRealm();
-  const { computeTravelTime } = useTravel();
-  const [isFeesOpen, setIsFeesOpen] = useState(false);
+  const { computeTravelTime } = useTravel(
+    Number(ADMIN_BANK_ENTITY_ID),
+    Number(realmEntityId!),
+    configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+    true,
+  );  const [isFeesOpen, setIsFeesOpen] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const { bridgeStartWithdrawFromRealm } = useBridgeAsset();
@@ -63,10 +67,10 @@ export const BridgeOutStep1 = () => {
     }[]
   >([]);
 
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance({entityId: Number(realmEntityId)});
   const donkeyBalance = useMemo(() => {
     if (realmEntityId) {
-      return getBalance(Number(realmEntityId), ResourcesIds.Donkey);
+      return getBalance(ResourcesIds.Donkey);
     } else {
       return { balance: 0 };
     }

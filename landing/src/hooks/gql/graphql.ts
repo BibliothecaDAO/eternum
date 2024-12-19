@@ -8216,6 +8216,7 @@ export type GetErc721MintsQuery = { __typename?: 'World__Query', tokenTransfers?
 
 export type GetEntityResourcesQueryVariables = Exact<{
   entityId: Scalars['u32']['input'];
+  resourceType?: InputMaybe<Scalars['u8']['input']>;
 }>;
 
 
@@ -8313,8 +8314,10 @@ export const GetErc721MintsDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GetErc721MintsQuery, GetErc721MintsQueryVariables>;
 export const GetEntityResourcesDocument = new TypedDocumentString(`
-    query getEntityResources($entityId: u32!) {
-  s0EternumResourceModels(where: {entity_id: $entityId}) {
+    query getEntityResources($entityId: u32!, $resourceType: u8) {
+  s0EternumResourceModels(
+    where: {entity_id: $entityId, resource_type: $resourceType}
+  ) {
     edges {
       node {
         resource_type

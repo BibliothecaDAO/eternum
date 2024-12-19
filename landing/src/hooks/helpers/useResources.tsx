@@ -2,21 +2,24 @@ import { configManager } from "@/dojo/setup";
 import { ADMIN_BANK_ENTITY_ID, ID, resources, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useQuery } from "@tanstack/react-query";
 import { ResourceManager } from "../../dojo/modelManager/ResourceManager";
 import { useDojo } from "../context/DojoContext";
+import { execute } from "../gql/execute";
+import { GET_ENTITY_RESOURCES } from "../query/resources";
 
-export function getResourceBalance() {
-  const dojo = useDojo();
-  const tickConfigDefault = configManager.getTick(TickIds.Default);
-  const timestamp = Math.floor(Date.now() / 1000);
-  const currentDefaultTick = Math.floor(timestamp / Number(tickConfigDefault));
+export function useResourceBalance({ entityId, resourceId }: { entityId?: ID; resourceId?: ResourcesIds }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["entityResources", entityId],
+    queryFn: () => (entityId ? execute(GET_ENTITY_RESOURCES, { entityId, resourceType: resourceId }) : null),
+    refetchInterval: 10_000,
+  });
 
-  const getBalance = (entityId: ID, resourceId: ResourcesIds) => {
-    const resourceManager = new ResourceManager(dojo.setup, entityId, resourceId);
-    return { balance: resourceManager.balance(currentDefaultTick), resourceId };
+  const getBalance = (resourceId: ResourcesIds) => {
+    return data?.s0EternumResourceModels?.edges?.find((r) => r?.node?.resource_type === resourceId)?.node?.balance ?? 0;
   };
 
-  return { getBalance };
+  return { data: data?.s0EternumResourceModels?.edges, isLoading, getBalance };
 }
 
 export function useDonkeyArrivals() {

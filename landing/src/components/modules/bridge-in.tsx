@@ -2,7 +2,7 @@ import { configManager } from "@/dojo/setup";
 import { execute } from "@/hooks/gql/execute";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { GET_ENTITY_RESOURCES } from "@/hooks/query/resources";
 import { useLords } from "@/hooks/use-lords";
 import { useBridgeAsset } from "@/hooks/useBridge";
@@ -123,9 +123,10 @@ export const BridgeIn = () => {
 
   const donkeyBalance = useMemo(() => {
     if (realmEntityId) {
-      return resourceBalances?.s0EternumResourceModels?.edges?.find(
+      const balance = resourceBalances?.s0EternumResourceModels?.edges?.find(
         (edge) => edge?.node?.resource_type === ResourcesIds.Donkey,
-      )?.node?.balance;
+      )
+      return balance?.node?.balance ?? 0;
     } else {
       return 0;
     }
@@ -390,15 +391,15 @@ const ResourceInputRow = ({
   const { data: balance } = useBalance({ token: resourceAddress as `0x${string}`, address: address });
   const { lordsBalance } = useLords({ disabled: id !== ResourcesIds.Lords });
 
-  const { getBalance } = getResourceBalance();
+  const { data, getBalance } = useResourceBalance({entityId: realmEntityId});
 
-  const realmResourceBalance = useMemo(() => {
+  /*const realmResourceBalance = useMemo(() => {
     if (realmEntityId) {
       return getBalance(Number(realmEntityId), id);
     } else {
       return { balance: 0 };
     }
-  }, [getBalance, realmEntityId, id]);
+  }, [getBalance, realmEntityId, id]);*/
 
   const fetchedBalance =
     id !== ResourcesIds.Lords
@@ -472,7 +473,7 @@ const ResourceInputRow = ({
                       {Intl.NumberFormat("en-US", {
                         notation: "compact",
                         maximumFractionDigits: 1,
-                      }).format(divideByPrecision(realmResourceBalance.balance))}
+                      }).format(divideByPrecision(getBalance(res?.id) ?? 0))}
                     </span>
                   </div>
                 </SelectItem>
