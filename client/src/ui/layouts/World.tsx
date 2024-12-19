@@ -4,6 +4,7 @@ import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
 import {
+  debounceAddResourceArrivals,
   debouncedAddMarketSubscription,
   debouncedAddToSubscription,
   debouncedAddToSubscriptionOneKey,
@@ -104,8 +105,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   useStructureEntityId();
 
   // We could optimise this deeper....
-
-  const worldLoading = useWorldStore((state) => state.isWorldLoading);
   const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
   const setMarketLoading = useWorldStore((state) => state.setMarketLoading);
 
@@ -176,6 +175,9 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       );
       debouncedAddToSubscriptionOneKey(dojo.network.toriiClient, dojo.network.contractComponents as any, [
         ...filteredStructures.map((structure) => structure.entity_id.toString()),
+      ]);
+      debounceAddResourceArrivals(dojo.network.toriiClient, dojo.network.contractComponents as any, [
+        ...structures.map((structure) => structure.entity_id),
       ]);
     } catch (error) {
       console.error("Fetch failed", error);

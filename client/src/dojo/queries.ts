@@ -153,42 +153,56 @@ export const addMarketSubscription = async <S extends Schema>(
 };
 
 export const addArrivalsSubscription = async <S extends Schema>(
-  entityIds: number[],
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
+  entityIds: number[],
 ) => {
   const start = performance.now();
   console.log("ArrivalsEnd: starting resource arrivals");
   await getEntities(
     client,
+    // {
+    //   Composite: {
+    //     operator: "And",
+    //     clauses: [
+    //       {
+    //         Composite: {
+    //           operator: "And",
+    //           clauses: entityIds.map((id) => ({
+    //             Member: {
+    //               model: "s0_eternum-EntityOwner",
+    //               member: "entity_owner_id",
+    //               operator: "Eq",
+    //               value: { Primitive: { U32: id } },
+    //             },
+    //           })),
+    //         },
+    //       },
+    //       {
+    //         Member: {
+    //           model: "s0_eternum-OwnedResourcesTracker",
+    //           member: "resource_types",
+    //           operator: "Neq",
+    //           value: { Primitive: { U256: "0" } },
+    //         },
+    //       },
+    //     ],
+    //   },
+    // },
     {
       Composite: {
-        operator: "And",
-        clauses: [
-          {
-            Composite: {
-              operator: "And",
-              clauses: entityIds.map((id) => ({
-                Member: {
-                  model: "s0_eternum-EntityOwner",
-                  member: "entity_owner_id",
-                  operator: "Eq",
-                  value: { Primitive: { U32: id } },
-                },
-              })),
-            },
+        operator: "Or",
+        clauses: entityIds.map((id) => ({
+          Member: {
+            model: "s0_eternum-EntityOwner",
+            member: "entity_owner_id",
+            operator: "Eq",
+            value: { Primitive: { U32: id } },
           },
-          {
-            Member: {
-              model: "s0_eternum-OwnedResourcesTracker",
-              member: "resource_types",
-              operator: "Neq",
-              value: { Primitive: { U256: "0" } },
-            },
-          },
-        ],
+        })),
       },
     },
+
     components,
     [],
     [
