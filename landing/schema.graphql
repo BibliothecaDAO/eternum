@@ -35,118 +35,7 @@ union ERC__Token = ERC20__Token | ERC721__Token
 
 scalar Enum
 
-union ModelUnion =
-    s0_eternum_AcceptOrder
-  | s0_eternum_AcceptPartialOrder
-  | s0_eternum_AddressName
-  | s0_eternum_Army
-  | s0_eternum_ArrivalTime
-  | s0_eternum_Bank
-  | s0_eternum_BankConfig
-  | s0_eternum_Battle
-  | s0_eternum_BattleClaimData
-  | s0_eternum_BattleConfig
-  | s0_eternum_BattleJoinData
-  | s0_eternum_BattleLeaveData
-  | s0_eternum_BattlePillageData
-  | s0_eternum_BattleStartData
-  | s0_eternum_Building
-  | s0_eternum_BuildingCategoryPopConfig
-  | s0_eternum_BuildingConfig
-  | s0_eternum_BuildingGeneralConfig
-  | s0_eternum_BuildingQuantityv2
-  | s0_eternum_BurnDonkey
-  | s0_eternum_CancelOrder
-  | s0_eternum_CapacityCategory
-  | s0_eternum_CapacityConfig
-  | s0_eternum_Contribution
-  | s0_eternum_CreateGuild
-  | s0_eternum_CreateOrder
-  | s0_eternum_DetachedResource
-  | s0_eternum_EntityName
-  | s0_eternum_EntityOwner
-  | s0_eternum_Epoch
-  | s0_eternum_FragmentMineDiscovered
-  | s0_eternum_GameEnded
-  | s0_eternum_Guild
-  | s0_eternum_GuildMember
-  | s0_eternum_GuildWhitelist
-  | s0_eternum_Health
-  | s0_eternum_Hyperstructure
-  | s0_eternum_HyperstructureCoOwnersChange
-  | s0_eternum_HyperstructureConfig
-  | s0_eternum_HyperstructureContribution
-  | s0_eternum_HyperstructureFinished
-  | s0_eternum_HyperstructureResourceConfig
-  | s0_eternum_JoinGuild
-  | s0_eternum_Leaderboard
-  | s0_eternum_LeaderboardEntry
-  | s0_eternum_LeaderboardRegistered
-  | s0_eternum_LeaderboardRewardClaimed
-  | s0_eternum_LevelingConfig
-  | s0_eternum_Liquidity
-  | s0_eternum_LiquidityEvent
-  | s0_eternum_MapConfig
-  | s0_eternum_MapExplored
-  | s0_eternum_Market
-  | s0_eternum_MercenariesConfig
-  | s0_eternum_Message
-  | s0_eternum_Movable
-  | s0_eternum_Orders
-  | s0_eternum_OwnedResourcesTracker
-  | s0_eternum_Owner
-  | s0_eternum_Population
-  | s0_eternum_PopulationConfig
-  | s0_eternum_Position
-  | s0_eternum_Production
-  | s0_eternum_ProductionConfig
-  | s0_eternum_ProductionDeadline
-  | s0_eternum_ProductionInput
-  | s0_eternum_ProductionOutput
-  | s0_eternum_Progress
-  | s0_eternum_Protectee
-  | s0_eternum_Protector
-  | s0_eternum_Quantity
-  | s0_eternum_QuantityTracker
-  | s0_eternum_Quest
-  | s0_eternum_QuestBonus
-  | s0_eternum_QuestConfig
-  | s0_eternum_QuestRewardConfig
-  | s0_eternum_Realm
-  | s0_eternum_RealmLevelConfig
-  | s0_eternum_RealmMaxLevelConfig
-  | s0_eternum_Resource
-  | s0_eternum_ResourceAllowance
-  | s0_eternum_ResourceBridgeConfig
-  | s0_eternum_ResourceBridgeFeeSplitConfig
-  | s0_eternum_ResourceBridgeWhitelistConfig
-  | s0_eternum_ResourceCost
-  | s0_eternum_ResourceTransferLock
-  | s0_eternum_Season
-  | s0_eternum_SeasonAddressesConfig
-  | s0_eternum_SettleRealmData
-  | s0_eternum_SettlementConfig
-  | s0_eternum_SpeedConfig
-  | s0_eternum_Stamina
-  | s0_eternum_StaminaConfig
-  | s0_eternum_StaminaRefillConfig
-  | s0_eternum_Status
-  | s0_eternum_Structure
-  | s0_eternum_StructureCount
-  | s0_eternum_SwapEvent
-  | s0_eternum_TickConfig
-  | s0_eternum_Tile
-  | s0_eternum_Trade
-  | s0_eternum_Transfer
-  | s0_eternum_Travel
-  | s0_eternum_TravelFoodCostConfig
-  | s0_eternum_TravelStaminaCostConfig
-  | s0_eternum_TroopConfig
-  | s0_eternum_TrophyCreation
-  | s0_eternum_TrophyProgression
-  | s0_eternum_Weight
-  | s0_eternum_WeightConfig
-  | s0_eternum_WorldConfig
+union ModelUnion = s0_eternum_AcceptOrder | s0_eternum_AcceptPartialOrder | s0_eternum_AddressName | s0_eternum_Army | s0_eternum_ArrivalTime | s0_eternum_Bank | s0_eternum_BankConfig | s0_eternum_Battle | s0_eternum_BattleClaimData | s0_eternum_BattleConfig | s0_eternum_BattleJoinData | s0_eternum_BattleLeaveData | s0_eternum_BattlePillageData | s0_eternum_BattleStartData | s0_eternum_Building | s0_eternum_BuildingCategoryPopConfig | s0_eternum_BuildingConfig | s0_eternum_BuildingGeneralConfig | s0_eternum_BuildingQuantityv2 | s0_eternum_BurnDonkey | s0_eternum_CancelOrder | s0_eternum_CapacityCategory | s0_eternum_CapacityConfig | s0_eternum_Contribution | s0_eternum_CreateGuild | s0_eternum_CreateOrder | s0_eternum_DetachedResource | s0_eternum_EntityName | s0_eternum_EntityOwner | s0_eternum_Epoch | s0_eternum_FragmentMineDiscovered | s0_eternum_GameEnded | s0_eternum_Guild | s0_eternum_GuildMember | s0_eternum_GuildWhitelist | s0_eternum_Health | s0_eternum_Hyperstructure | s0_eternum_HyperstructureCoOwnersChange | s0_eternum_HyperstructureConfig | s0_eternum_HyperstructureContribution | s0_eternum_HyperstructureFinished | s0_eternum_HyperstructureResourceConfig | s0_eternum_HyperstructureStarted | s0_eternum_JoinGuild | s0_eternum_Leaderboard | s0_eternum_LeaderboardEntry | s0_eternum_LeaderboardRegisterContribution | s0_eternum_LeaderboardRegisterShare | s0_eternum_LeaderboardRegistered | s0_eternum_LeaderboardRewardClaimed | s0_eternum_LevelingConfig | s0_eternum_Liquidity | s0_eternum_LiquidityEvent | s0_eternum_MapConfig | s0_eternum_MapExplored | s0_eternum_Market | s0_eternum_MercenariesConfig | s0_eternum_Message | s0_eternum_Movable | s0_eternum_Orders | s0_eternum_OwnedResourcesTracker | s0_eternum_Owner | s0_eternum_Population | s0_eternum_PopulationConfig | s0_eternum_Position | s0_eternum_Production | s0_eternum_ProductionConfig | s0_eternum_ProductionDeadline | s0_eternum_ProductionInput | s0_eternum_ProductionOutput | s0_eternum_Progress | s0_eternum_Protectee | s0_eternum_Protector | s0_eternum_Quantity | s0_eternum_QuantityTracker | s0_eternum_Quest | s0_eternum_QuestBonus | s0_eternum_QuestConfig | s0_eternum_QuestRewardConfig | s0_eternum_Realm | s0_eternum_RealmLevelConfig | s0_eternum_RealmMaxLevelConfig | s0_eternum_Resource | s0_eternum_ResourceAllowance | s0_eternum_ResourceBridgeConfig | s0_eternum_ResourceBridgeFeeSplitConfig | s0_eternum_ResourceBridgeWhitelistConfig | s0_eternum_ResourceCost | s0_eternum_ResourceTransferLock | s0_eternum_Season | s0_eternum_SeasonAddressesConfig | s0_eternum_SeasonBridgeConfig | s0_eternum_SettleRealmData | s0_eternum_SettlementConfig | s0_eternum_SpeedConfig | s0_eternum_Stamina | s0_eternum_StaminaConfig | s0_eternum_StaminaRefillConfig | s0_eternum_Status | s0_eternum_Structure | s0_eternum_StructureCount | s0_eternum_SwapEvent | s0_eternum_TickConfig | s0_eternum_Tile | s0_eternum_Trade | s0_eternum_Transfer | s0_eternum_Travel | s0_eternum_TravelFoodCostConfig | s0_eternum_TravelStaminaCostConfig | s0_eternum_TroopConfig | s0_eternum_TrophyCreation | s0_eternum_TrophyProgression | s0_eternum_VRFConfig | s0_eternum_Weight | s0_eternum_WeightConfig | s0_eternum_WorldConfig
 
 enum OrderDirection {
   ASC
@@ -321,1183 +210,134 @@ type World__PageInfo {
 }
 
 type World__Query {
-  entities(
-    after: Cursor
-    before: Cursor
-    first: Int
-    keys: [String]
-    last: Int
-    limit: Int
-    offset: Int
-  ): World__EntityConnection
+  entities(after: Cursor, before: Cursor, first: Int, keys: [String], last: Int, limit: Int, offset: Int): World__EntityConnection
   entity(id: ID!): World__Entity!
   eventMessage(id: ID!): World__EventMessage!
-  eventMessages(
-    after: Cursor
-    before: Cursor
-    first: Int
-    keys: [String]
-    last: Int
-    limit: Int
-    offset: Int
-  ): World__EventMessageConnection
-  events(
-    after: Cursor
-    before: Cursor
-    first: Int
-    keys: [String]
-    last: Int
-    limit: Int
-    offset: Int
-  ): World__EventConnection
+  eventMessages(after: Cursor, before: Cursor, first: Int, keys: [String], last: Int, limit: Int, offset: Int): World__EventMessageConnection
+  events(after: Cursor, before: Cursor, first: Int, keys: [String], last: Int, limit: Int, offset: Int): World__EventConnection
   metadatas(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): World__MetadataConnection
   model(id: ID!): World__Model!
-  models(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: World__ModelOrder
-  ): World__ModelConnection
-  s0EternumAcceptOrderModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_AcceptOrderOrder
-    where: s0_eternum_AcceptOrderWhereInput
-  ): s0_eternum_AcceptOrderConnection
-  s0EternumAcceptPartialOrderModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_AcceptPartialOrderOrder
-    where: s0_eternum_AcceptPartialOrderWhereInput
-  ): s0_eternum_AcceptPartialOrderConnection
-  s0EternumAddressNameModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_AddressNameOrder
-    where: s0_eternum_AddressNameWhereInput
-  ): s0_eternum_AddressNameConnection
-  s0EternumArmyModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ArmyOrder
-    where: s0_eternum_ArmyWhereInput
-  ): s0_eternum_ArmyConnection
-  s0EternumArrivalTimeModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ArrivalTimeOrder
-    where: s0_eternum_ArrivalTimeWhereInput
-  ): s0_eternum_ArrivalTimeConnection
-  s0EternumBankConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BankConfigOrder
-    where: s0_eternum_BankConfigWhereInput
-  ): s0_eternum_BankConfigConnection
-  s0EternumBankModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BankOrder
-    where: s0_eternum_BankWhereInput
-  ): s0_eternum_BankConnection
-  s0EternumBattleClaimDataModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BattleClaimDataOrder
-    where: s0_eternum_BattleClaimDataWhereInput
-  ): s0_eternum_BattleClaimDataConnection
-  s0EternumBattleConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BattleConfigOrder
-    where: s0_eternum_BattleConfigWhereInput
-  ): s0_eternum_BattleConfigConnection
-  s0EternumBattleJoinDataModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BattleJoinDataOrder
-    where: s0_eternum_BattleJoinDataWhereInput
-  ): s0_eternum_BattleJoinDataConnection
-  s0EternumBattleLeaveDataModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BattleLeaveDataOrder
-    where: s0_eternum_BattleLeaveDataWhereInput
-  ): s0_eternum_BattleLeaveDataConnection
-  s0EternumBattleModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BattleOrder
-    where: s0_eternum_BattleWhereInput
-  ): s0_eternum_BattleConnection
-  s0EternumBattlePillageDataModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BattlePillageDataOrder
-    where: s0_eternum_BattlePillageDataWhereInput
-  ): s0_eternum_BattlePillageDataConnection
-  s0EternumBattleStartDataModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BattleStartDataOrder
-    where: s0_eternum_BattleStartDataWhereInput
-  ): s0_eternum_BattleStartDataConnection
-  s0EternumBuildingCategoryPopConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BuildingCategoryPopConfigOrder
-    where: s0_eternum_BuildingCategoryPopConfigWhereInput
-  ): s0_eternum_BuildingCategoryPopConfigConnection
-  s0EternumBuildingConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BuildingConfigOrder
-    where: s0_eternum_BuildingConfigWhereInput
-  ): s0_eternum_BuildingConfigConnection
-  s0EternumBuildingGeneralConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BuildingGeneralConfigOrder
-    where: s0_eternum_BuildingGeneralConfigWhereInput
-  ): s0_eternum_BuildingGeneralConfigConnection
-  s0EternumBuildingModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BuildingOrder
-    where: s0_eternum_BuildingWhereInput
-  ): s0_eternum_BuildingConnection
-  s0EternumBuildingQuantityv2Models(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BuildingQuantityv2Order
-    where: s0_eternum_BuildingQuantityv2WhereInput
-  ): s0_eternum_BuildingQuantityv2Connection
-  s0EternumBurnDonkeyModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_BurnDonkeyOrder
-    where: s0_eternum_BurnDonkeyWhereInput
-  ): s0_eternum_BurnDonkeyConnection
-  s0EternumCancelOrderModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_CancelOrderOrder
-    where: s0_eternum_CancelOrderWhereInput
-  ): s0_eternum_CancelOrderConnection
-  s0EternumCapacityCategoryModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_CapacityCategoryOrder
-    where: s0_eternum_CapacityCategoryWhereInput
-  ): s0_eternum_CapacityCategoryConnection
-  s0EternumCapacityConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_CapacityConfigOrder
-    where: s0_eternum_CapacityConfigWhereInput
-  ): s0_eternum_CapacityConfigConnection
-  s0EternumContributionModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ContributionOrder
-    where: s0_eternum_ContributionWhereInput
-  ): s0_eternum_ContributionConnection
-  s0EternumCreateGuildModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_CreateGuildOrder
-    where: s0_eternum_CreateGuildWhereInput
-  ): s0_eternum_CreateGuildConnection
-  s0EternumCreateOrderModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_CreateOrderOrder
-    where: s0_eternum_CreateOrderWhereInput
-  ): s0_eternum_CreateOrderConnection
-  s0EternumDetachedResourceModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_DetachedResourceOrder
-    where: s0_eternum_DetachedResourceWhereInput
-  ): s0_eternum_DetachedResourceConnection
-  s0EternumEntityNameModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_EntityNameOrder
-    where: s0_eternum_EntityNameWhereInput
-  ): s0_eternum_EntityNameConnection
-  s0EternumEntityOwnerModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_EntityOwnerOrder
-    where: s0_eternum_EntityOwnerWhereInput
-  ): s0_eternum_EntityOwnerConnection
-  s0EternumEpochModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_EpochOrder
-    where: s0_eternum_EpochWhereInput
-  ): s0_eternum_EpochConnection
-  s0EternumFragmentMineDiscoveredModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_FragmentMineDiscoveredOrder
-    where: s0_eternum_FragmentMineDiscoveredWhereInput
-  ): s0_eternum_FragmentMineDiscoveredConnection
-  s0EternumGameEndedModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_GameEndedOrder
-    where: s0_eternum_GameEndedWhereInput
-  ): s0_eternum_GameEndedConnection
-  s0EternumGuildMemberModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_GuildMemberOrder
-    where: s0_eternum_GuildMemberWhereInput
-  ): s0_eternum_GuildMemberConnection
-  s0EternumGuildModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_GuildOrder
-    where: s0_eternum_GuildWhereInput
-  ): s0_eternum_GuildConnection
-  s0EternumGuildWhitelistModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_GuildWhitelistOrder
-    where: s0_eternum_GuildWhitelistWhereInput
-  ): s0_eternum_GuildWhitelistConnection
-  s0EternumHealthModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_HealthOrder
-    where: s0_eternum_HealthWhereInput
-  ): s0_eternum_HealthConnection
-  s0EternumHyperstructureCoOwnersChangeModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_HyperstructureCoOwnersChangeOrder
-    where: s0_eternum_HyperstructureCoOwnersChangeWhereInput
-  ): s0_eternum_HyperstructureCoOwnersChangeConnection
-  s0EternumHyperstructureConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_HyperstructureConfigOrder
-    where: s0_eternum_HyperstructureConfigWhereInput
-  ): s0_eternum_HyperstructureConfigConnection
-  s0EternumHyperstructureContributionModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_HyperstructureContributionOrder
-    where: s0_eternum_HyperstructureContributionWhereInput
-  ): s0_eternum_HyperstructureContributionConnection
-  s0EternumHyperstructureFinishedModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_HyperstructureFinishedOrder
-    where: s0_eternum_HyperstructureFinishedWhereInput
-  ): s0_eternum_HyperstructureFinishedConnection
-  s0EternumHyperstructureModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_HyperstructureOrder
-    where: s0_eternum_HyperstructureWhereInput
-  ): s0_eternum_HyperstructureConnection
-  s0EternumHyperstructureResourceConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_HyperstructureResourceConfigOrder
-    where: s0_eternum_HyperstructureResourceConfigWhereInput
-  ): s0_eternum_HyperstructureResourceConfigConnection
-  s0EternumJoinGuildModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_JoinGuildOrder
-    where: s0_eternum_JoinGuildWhereInput
-  ): s0_eternum_JoinGuildConnection
-  s0EternumLeaderboardEntryModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_LeaderboardEntryOrder
-    where: s0_eternum_LeaderboardEntryWhereInput
-  ): s0_eternum_LeaderboardEntryConnection
-  s0EternumLeaderboardModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_LeaderboardOrder
-    where: s0_eternum_LeaderboardWhereInput
-  ): s0_eternum_LeaderboardConnection
-  s0EternumLeaderboardRegisteredModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_LeaderboardRegisteredOrder
-    where: s0_eternum_LeaderboardRegisteredWhereInput
-  ): s0_eternum_LeaderboardRegisteredConnection
-  s0EternumLeaderboardRewardClaimedModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_LeaderboardRewardClaimedOrder
-    where: s0_eternum_LeaderboardRewardClaimedWhereInput
-  ): s0_eternum_LeaderboardRewardClaimedConnection
-  s0EternumLevelingConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_LevelingConfigOrder
-    where: s0_eternum_LevelingConfigWhereInput
-  ): s0_eternum_LevelingConfigConnection
-  s0EternumLiquidityEventModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_LiquidityEventOrder
-    where: s0_eternum_LiquidityEventWhereInput
-  ): s0_eternum_LiquidityEventConnection
-  s0EternumLiquidityModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_LiquidityOrder
-    where: s0_eternum_LiquidityWhereInput
-  ): s0_eternum_LiquidityConnection
-  s0EternumMapConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_MapConfigOrder
-    where: s0_eternum_MapConfigWhereInput
-  ): s0_eternum_MapConfigConnection
-  s0EternumMapExploredModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_MapExploredOrder
-    where: s0_eternum_MapExploredWhereInput
-  ): s0_eternum_MapExploredConnection
-  s0EternumMarketModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_MarketOrder
-    where: s0_eternum_MarketWhereInput
-  ): s0_eternum_MarketConnection
-  s0EternumMercenariesConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_MercenariesConfigOrder
-    where: s0_eternum_MercenariesConfigWhereInput
-  ): s0_eternum_MercenariesConfigConnection
-  s0EternumMessageModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_MessageOrder
-    where: s0_eternum_MessageWhereInput
-  ): s0_eternum_MessageConnection
-  s0EternumMovableModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_MovableOrder
-    where: s0_eternum_MovableWhereInput
-  ): s0_eternum_MovableConnection
-  s0EternumOrdersModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_OrdersOrder
-    where: s0_eternum_OrdersWhereInput
-  ): s0_eternum_OrdersConnection
-  s0EternumOwnedResourcesTrackerModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_OwnedResourcesTrackerOrder
-    where: s0_eternum_OwnedResourcesTrackerWhereInput
-  ): s0_eternum_OwnedResourcesTrackerConnection
-  s0EternumOwnerModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_OwnerOrder
-    where: s0_eternum_OwnerWhereInput
-  ): s0_eternum_OwnerConnection
-  s0EternumPopulationConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_PopulationConfigOrder
-    where: s0_eternum_PopulationConfigWhereInput
-  ): s0_eternum_PopulationConfigConnection
-  s0EternumPopulationModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_PopulationOrder
-    where: s0_eternum_PopulationWhereInput
-  ): s0_eternum_PopulationConnection
-  s0EternumPositionModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_PositionOrder
-    where: s0_eternum_PositionWhereInput
-  ): s0_eternum_PositionConnection
-  s0EternumProductionConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ProductionConfigOrder
-    where: s0_eternum_ProductionConfigWhereInput
-  ): s0_eternum_ProductionConfigConnection
-  s0EternumProductionDeadlineModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ProductionDeadlineOrder
-    where: s0_eternum_ProductionDeadlineWhereInput
-  ): s0_eternum_ProductionDeadlineConnection
-  s0EternumProductionInputModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ProductionInputOrder
-    where: s0_eternum_ProductionInputWhereInput
-  ): s0_eternum_ProductionInputConnection
-  s0EternumProductionModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ProductionOrder
-    where: s0_eternum_ProductionWhereInput
-  ): s0_eternum_ProductionConnection
-  s0EternumProductionOutputModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ProductionOutputOrder
-    where: s0_eternum_ProductionOutputWhereInput
-  ): s0_eternum_ProductionOutputConnection
-  s0EternumProgressModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ProgressOrder
-    where: s0_eternum_ProgressWhereInput
-  ): s0_eternum_ProgressConnection
-  s0EternumProtecteeModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ProtecteeOrder
-    where: s0_eternum_ProtecteeWhereInput
-  ): s0_eternum_ProtecteeConnection
-  s0EternumProtectorModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ProtectorOrder
-    where: s0_eternum_ProtectorWhereInput
-  ): s0_eternum_ProtectorConnection
-  s0EternumQuantityModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_QuantityOrder
-    where: s0_eternum_QuantityWhereInput
-  ): s0_eternum_QuantityConnection
-  s0EternumQuantityTrackerModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_QuantityTrackerOrder
-    where: s0_eternum_QuantityTrackerWhereInput
-  ): s0_eternum_QuantityTrackerConnection
-  s0EternumQuestBonusModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_QuestBonusOrder
-    where: s0_eternum_QuestBonusWhereInput
-  ): s0_eternum_QuestBonusConnection
-  s0EternumQuestConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_QuestConfigOrder
-    where: s0_eternum_QuestConfigWhereInput
-  ): s0_eternum_QuestConfigConnection
-  s0EternumQuestModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_QuestOrder
-    where: s0_eternum_QuestWhereInput
-  ): s0_eternum_QuestConnection
-  s0EternumQuestRewardConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_QuestRewardConfigOrder
-    where: s0_eternum_QuestRewardConfigWhereInput
-  ): s0_eternum_QuestRewardConfigConnection
-  s0EternumRealmLevelConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_RealmLevelConfigOrder
-    where: s0_eternum_RealmLevelConfigWhereInput
-  ): s0_eternum_RealmLevelConfigConnection
-  s0EternumRealmMaxLevelConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_RealmMaxLevelConfigOrder
-    where: s0_eternum_RealmMaxLevelConfigWhereInput
-  ): s0_eternum_RealmMaxLevelConfigConnection
-  s0EternumRealmModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_RealmOrder
-    where: s0_eternum_RealmWhereInput
-  ): s0_eternum_RealmConnection
-  s0EternumResourceAllowanceModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ResourceAllowanceOrder
-    where: s0_eternum_ResourceAllowanceWhereInput
-  ): s0_eternum_ResourceAllowanceConnection
-  s0EternumResourceBridgeConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ResourceBridgeConfigOrder
-    where: s0_eternum_ResourceBridgeConfigWhereInput
-  ): s0_eternum_ResourceBridgeConfigConnection
-  s0EternumResourceBridgeFeeSplitConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ResourceBridgeFeeSplitConfigOrder
-    where: s0_eternum_ResourceBridgeFeeSplitConfigWhereInput
-  ): s0_eternum_ResourceBridgeFeeSplitConfigConnection
-  s0EternumResourceBridgeWhitelistConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ResourceBridgeWhitelistConfigOrder
-    where: s0_eternum_ResourceBridgeWhitelistConfigWhereInput
-  ): s0_eternum_ResourceBridgeWhitelistConfigConnection
-  s0EternumResourceCostModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ResourceCostOrder
-    where: s0_eternum_ResourceCostWhereInput
-  ): s0_eternum_ResourceCostConnection
-  s0EternumResourceModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ResourceOrder
-    where: s0_eternum_ResourceWhereInput
-  ): s0_eternum_ResourceConnection
-  s0EternumResourceTransferLockModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_ResourceTransferLockOrder
-    where: s0_eternum_ResourceTransferLockWhereInput
-  ): s0_eternum_ResourceTransferLockConnection
-  s0EternumSeasonAddressesConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_SeasonAddressesConfigOrder
-    where: s0_eternum_SeasonAddressesConfigWhereInput
-  ): s0_eternum_SeasonAddressesConfigConnection
-  s0EternumSeasonModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_SeasonOrder
-    where: s0_eternum_SeasonWhereInput
-  ): s0_eternum_SeasonConnection
-  s0EternumSettleRealmDataModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_SettleRealmDataOrder
-    where: s0_eternum_SettleRealmDataWhereInput
-  ): s0_eternum_SettleRealmDataConnection
-  s0EternumSettlementConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_SettlementConfigOrder
-    where: s0_eternum_SettlementConfigWhereInput
-  ): s0_eternum_SettlementConfigConnection
-  s0EternumSpeedConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_SpeedConfigOrder
-    where: s0_eternum_SpeedConfigWhereInput
-  ): s0_eternum_SpeedConfigConnection
-  s0EternumStaminaConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_StaminaConfigOrder
-    where: s0_eternum_StaminaConfigWhereInput
-  ): s0_eternum_StaminaConfigConnection
-  s0EternumStaminaModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_StaminaOrder
-    where: s0_eternum_StaminaWhereInput
-  ): s0_eternum_StaminaConnection
-  s0EternumStaminaRefillConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_StaminaRefillConfigOrder
-    where: s0_eternum_StaminaRefillConfigWhereInput
-  ): s0_eternum_StaminaRefillConfigConnection
-  s0EternumStatusModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_StatusOrder
-    where: s0_eternum_StatusWhereInput
-  ): s0_eternum_StatusConnection
-  s0EternumStructureCountModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_StructureCountOrder
-    where: s0_eternum_StructureCountWhereInput
-  ): s0_eternum_StructureCountConnection
-  s0EternumStructureModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_StructureOrder
-    where: s0_eternum_StructureWhereInput
-  ): s0_eternum_StructureConnection
-  s0EternumSwapEventModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_SwapEventOrder
-    where: s0_eternum_SwapEventWhereInput
-  ): s0_eternum_SwapEventConnection
-  s0EternumTickConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TickConfigOrder
-    where: s0_eternum_TickConfigWhereInput
-  ): s0_eternum_TickConfigConnection
-  s0EternumTileModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TileOrder
-    where: s0_eternum_TileWhereInput
-  ): s0_eternum_TileConnection
-  s0EternumTradeModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TradeOrder
-    where: s0_eternum_TradeWhereInput
-  ): s0_eternum_TradeConnection
-  s0EternumTransferModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TransferOrder
-    where: s0_eternum_TransferWhereInput
-  ): s0_eternum_TransferConnection
-  s0EternumTravelFoodCostConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TravelFoodCostConfigOrder
-    where: s0_eternum_TravelFoodCostConfigWhereInput
-  ): s0_eternum_TravelFoodCostConfigConnection
-  s0EternumTravelModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TravelOrder
-    where: s0_eternum_TravelWhereInput
-  ): s0_eternum_TravelConnection
-  s0EternumTravelStaminaCostConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TravelStaminaCostConfigOrder
-    where: s0_eternum_TravelStaminaCostConfigWhereInput
-  ): s0_eternum_TravelStaminaCostConfigConnection
-  s0EternumTroopConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TroopConfigOrder
-    where: s0_eternum_TroopConfigWhereInput
-  ): s0_eternum_TroopConfigConnection
-  s0EternumTrophyCreationModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TrophyCreationOrder
-    where: s0_eternum_TrophyCreationWhereInput
-  ): s0_eternum_TrophyCreationConnection
-  s0EternumTrophyProgressionModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_TrophyProgressionOrder
-    where: s0_eternum_TrophyProgressionWhereInput
-  ): s0_eternum_TrophyProgressionConnection
-  s0EternumWeightConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_WeightConfigOrder
-    where: s0_eternum_WeightConfigWhereInput
-  ): s0_eternum_WeightConfigConnection
-  s0EternumWeightModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_WeightOrder
-    where: s0_eternum_WeightWhereInput
-  ): s0_eternum_WeightConnection
-  s0EternumWorldConfigModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_WorldConfigOrder
-    where: s0_eternum_WorldConfigWhereInput
-  ): s0_eternum_WorldConfigConnection
-  tokenBalances(
-    accountAddress: String!
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-  ): Token__BalanceConnection
-  tokenTransfers(
-    accountAddress: String!
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-  ): Token__TransferConnection
+  models(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: World__ModelOrder): World__ModelConnection
+  s0EternumAcceptOrderModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_AcceptOrderOrder, where: s0_eternum_AcceptOrderWhereInput): s0_eternum_AcceptOrderConnection
+  s0EternumAcceptPartialOrderModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_AcceptPartialOrderOrder, where: s0_eternum_AcceptPartialOrderWhereInput): s0_eternum_AcceptPartialOrderConnection
+  s0EternumAddressNameModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_AddressNameOrder, where: s0_eternum_AddressNameWhereInput): s0_eternum_AddressNameConnection
+  s0EternumArmyModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ArmyOrder, where: s0_eternum_ArmyWhereInput): s0_eternum_ArmyConnection
+  s0EternumArrivalTimeModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ArrivalTimeOrder, where: s0_eternum_ArrivalTimeWhereInput): s0_eternum_ArrivalTimeConnection
+  s0EternumBankConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BankConfigOrder, where: s0_eternum_BankConfigWhereInput): s0_eternum_BankConfigConnection
+  s0EternumBankModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BankOrder, where: s0_eternum_BankWhereInput): s0_eternum_BankConnection
+  s0EternumBattleClaimDataModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BattleClaimDataOrder, where: s0_eternum_BattleClaimDataWhereInput): s0_eternum_BattleClaimDataConnection
+  s0EternumBattleConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BattleConfigOrder, where: s0_eternum_BattleConfigWhereInput): s0_eternum_BattleConfigConnection
+  s0EternumBattleJoinDataModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BattleJoinDataOrder, where: s0_eternum_BattleJoinDataWhereInput): s0_eternum_BattleJoinDataConnection
+  s0EternumBattleLeaveDataModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BattleLeaveDataOrder, where: s0_eternum_BattleLeaveDataWhereInput): s0_eternum_BattleLeaveDataConnection
+  s0EternumBattleModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BattleOrder, where: s0_eternum_BattleWhereInput): s0_eternum_BattleConnection
+  s0EternumBattlePillageDataModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BattlePillageDataOrder, where: s0_eternum_BattlePillageDataWhereInput): s0_eternum_BattlePillageDataConnection
+  s0EternumBattleStartDataModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BattleStartDataOrder, where: s0_eternum_BattleStartDataWhereInput): s0_eternum_BattleStartDataConnection
+  s0EternumBuildingCategoryPopConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BuildingCategoryPopConfigOrder, where: s0_eternum_BuildingCategoryPopConfigWhereInput): s0_eternum_BuildingCategoryPopConfigConnection
+  s0EternumBuildingConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BuildingConfigOrder, where: s0_eternum_BuildingConfigWhereInput): s0_eternum_BuildingConfigConnection
+  s0EternumBuildingGeneralConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BuildingGeneralConfigOrder, where: s0_eternum_BuildingGeneralConfigWhereInput): s0_eternum_BuildingGeneralConfigConnection
+  s0EternumBuildingModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BuildingOrder, where: s0_eternum_BuildingWhereInput): s0_eternum_BuildingConnection
+  s0EternumBuildingQuantityv2Models(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BuildingQuantityv2Order, where: s0_eternum_BuildingQuantityv2WhereInput): s0_eternum_BuildingQuantityv2Connection
+  s0EternumBurnDonkeyModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_BurnDonkeyOrder, where: s0_eternum_BurnDonkeyWhereInput): s0_eternum_BurnDonkeyConnection
+  s0EternumCancelOrderModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_CancelOrderOrder, where: s0_eternum_CancelOrderWhereInput): s0_eternum_CancelOrderConnection
+  s0EternumCapacityCategoryModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_CapacityCategoryOrder, where: s0_eternum_CapacityCategoryWhereInput): s0_eternum_CapacityCategoryConnection
+  s0EternumCapacityConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_CapacityConfigOrder, where: s0_eternum_CapacityConfigWhereInput): s0_eternum_CapacityConfigConnection
+  s0EternumContributionModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ContributionOrder, where: s0_eternum_ContributionWhereInput): s0_eternum_ContributionConnection
+  s0EternumCreateGuildModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_CreateGuildOrder, where: s0_eternum_CreateGuildWhereInput): s0_eternum_CreateGuildConnection
+  s0EternumCreateOrderModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_CreateOrderOrder, where: s0_eternum_CreateOrderWhereInput): s0_eternum_CreateOrderConnection
+  s0EternumDetachedResourceModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_DetachedResourceOrder, where: s0_eternum_DetachedResourceWhereInput): s0_eternum_DetachedResourceConnection
+  s0EternumEntityNameModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_EntityNameOrder, where: s0_eternum_EntityNameWhereInput): s0_eternum_EntityNameConnection
+  s0EternumEntityOwnerModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_EntityOwnerOrder, where: s0_eternum_EntityOwnerWhereInput): s0_eternum_EntityOwnerConnection
+  s0EternumEpochModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_EpochOrder, where: s0_eternum_EpochWhereInput): s0_eternum_EpochConnection
+  s0EternumFragmentMineDiscoveredModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_FragmentMineDiscoveredOrder, where: s0_eternum_FragmentMineDiscoveredWhereInput): s0_eternum_FragmentMineDiscoveredConnection
+  s0EternumGameEndedModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_GameEndedOrder, where: s0_eternum_GameEndedWhereInput): s0_eternum_GameEndedConnection
+  s0EternumGuildMemberModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_GuildMemberOrder, where: s0_eternum_GuildMemberWhereInput): s0_eternum_GuildMemberConnection
+  s0EternumGuildModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_GuildOrder, where: s0_eternum_GuildWhereInput): s0_eternum_GuildConnection
+  s0EternumGuildWhitelistModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_GuildWhitelistOrder, where: s0_eternum_GuildWhitelistWhereInput): s0_eternum_GuildWhitelistConnection
+  s0EternumHealthModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_HealthOrder, where: s0_eternum_HealthWhereInput): s0_eternum_HealthConnection
+  s0EternumHyperstructureCoOwnersChangeModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_HyperstructureCoOwnersChangeOrder, where: s0_eternum_HyperstructureCoOwnersChangeWhereInput): s0_eternum_HyperstructureCoOwnersChangeConnection
+  s0EternumHyperstructureConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_HyperstructureConfigOrder, where: s0_eternum_HyperstructureConfigWhereInput): s0_eternum_HyperstructureConfigConnection
+  s0EternumHyperstructureContributionModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_HyperstructureContributionOrder, where: s0_eternum_HyperstructureContributionWhereInput): s0_eternum_HyperstructureContributionConnection
+  s0EternumHyperstructureFinishedModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_HyperstructureFinishedOrder, where: s0_eternum_HyperstructureFinishedWhereInput): s0_eternum_HyperstructureFinishedConnection
+  s0EternumHyperstructureModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_HyperstructureOrder, where: s0_eternum_HyperstructureWhereInput): s0_eternum_HyperstructureConnection
+  s0EternumHyperstructureResourceConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_HyperstructureResourceConfigOrder, where: s0_eternum_HyperstructureResourceConfigWhereInput): s0_eternum_HyperstructureResourceConfigConnection
+  s0EternumHyperstructureStartedModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_HyperstructureStartedOrder, where: s0_eternum_HyperstructureStartedWhereInput): s0_eternum_HyperstructureStartedConnection
+  s0EternumJoinGuildModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_JoinGuildOrder, where: s0_eternum_JoinGuildWhereInput): s0_eternum_JoinGuildConnection
+  s0EternumLeaderboardEntryModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_LeaderboardEntryOrder, where: s0_eternum_LeaderboardEntryWhereInput): s0_eternum_LeaderboardEntryConnection
+  s0EternumLeaderboardModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_LeaderboardOrder, where: s0_eternum_LeaderboardWhereInput): s0_eternum_LeaderboardConnection
+  s0EternumLeaderboardRegisterContributionModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_LeaderboardRegisterContributionOrder, where: s0_eternum_LeaderboardRegisterContributionWhereInput): s0_eternum_LeaderboardRegisterContributionConnection
+  s0EternumLeaderboardRegisterShareModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_LeaderboardRegisterShareOrder, where: s0_eternum_LeaderboardRegisterShareWhereInput): s0_eternum_LeaderboardRegisterShareConnection
+  s0EternumLeaderboardRegisteredModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_LeaderboardRegisteredOrder, where: s0_eternum_LeaderboardRegisteredWhereInput): s0_eternum_LeaderboardRegisteredConnection
+  s0EternumLeaderboardRewardClaimedModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_LeaderboardRewardClaimedOrder, where: s0_eternum_LeaderboardRewardClaimedWhereInput): s0_eternum_LeaderboardRewardClaimedConnection
+  s0EternumLevelingConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_LevelingConfigOrder, where: s0_eternum_LevelingConfigWhereInput): s0_eternum_LevelingConfigConnection
+  s0EternumLiquidityEventModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_LiquidityEventOrder, where: s0_eternum_LiquidityEventWhereInput): s0_eternum_LiquidityEventConnection
+  s0EternumLiquidityModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_LiquidityOrder, where: s0_eternum_LiquidityWhereInput): s0_eternum_LiquidityConnection
+  s0EternumMapConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_MapConfigOrder, where: s0_eternum_MapConfigWhereInput): s0_eternum_MapConfigConnection
+  s0EternumMapExploredModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_MapExploredOrder, where: s0_eternum_MapExploredWhereInput): s0_eternum_MapExploredConnection
+  s0EternumMarketModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_MarketOrder, where: s0_eternum_MarketWhereInput): s0_eternum_MarketConnection
+  s0EternumMercenariesConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_MercenariesConfigOrder, where: s0_eternum_MercenariesConfigWhereInput): s0_eternum_MercenariesConfigConnection
+  s0EternumMessageModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_MessageOrder, where: s0_eternum_MessageWhereInput): s0_eternum_MessageConnection
+  s0EternumMovableModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_MovableOrder, where: s0_eternum_MovableWhereInput): s0_eternum_MovableConnection
+  s0EternumOrdersModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_OrdersOrder, where: s0_eternum_OrdersWhereInput): s0_eternum_OrdersConnection
+  s0EternumOwnedResourcesTrackerModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_OwnedResourcesTrackerOrder, where: s0_eternum_OwnedResourcesTrackerWhereInput): s0_eternum_OwnedResourcesTrackerConnection
+  s0EternumOwnerModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_OwnerOrder, where: s0_eternum_OwnerWhereInput): s0_eternum_OwnerConnection
+  s0EternumPopulationConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_PopulationConfigOrder, where: s0_eternum_PopulationConfigWhereInput): s0_eternum_PopulationConfigConnection
+  s0EternumPopulationModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_PopulationOrder, where: s0_eternum_PopulationWhereInput): s0_eternum_PopulationConnection
+  s0EternumPositionModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_PositionOrder, where: s0_eternum_PositionWhereInput): s0_eternum_PositionConnection
+  s0EternumProductionConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ProductionConfigOrder, where: s0_eternum_ProductionConfigWhereInput): s0_eternum_ProductionConfigConnection
+  s0EternumProductionDeadlineModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ProductionDeadlineOrder, where: s0_eternum_ProductionDeadlineWhereInput): s0_eternum_ProductionDeadlineConnection
+  s0EternumProductionInputModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ProductionInputOrder, where: s0_eternum_ProductionInputWhereInput): s0_eternum_ProductionInputConnection
+  s0EternumProductionModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ProductionOrder, where: s0_eternum_ProductionWhereInput): s0_eternum_ProductionConnection
+  s0EternumProductionOutputModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ProductionOutputOrder, where: s0_eternum_ProductionOutputWhereInput): s0_eternum_ProductionOutputConnection
+  s0EternumProgressModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ProgressOrder, where: s0_eternum_ProgressWhereInput): s0_eternum_ProgressConnection
+  s0EternumProtecteeModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ProtecteeOrder, where: s0_eternum_ProtecteeWhereInput): s0_eternum_ProtecteeConnection
+  s0EternumProtectorModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ProtectorOrder, where: s0_eternum_ProtectorWhereInput): s0_eternum_ProtectorConnection
+  s0EternumQuantityModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_QuantityOrder, where: s0_eternum_QuantityWhereInput): s0_eternum_QuantityConnection
+  s0EternumQuantityTrackerModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_QuantityTrackerOrder, where: s0_eternum_QuantityTrackerWhereInput): s0_eternum_QuantityTrackerConnection
+  s0EternumQuestBonusModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_QuestBonusOrder, where: s0_eternum_QuestBonusWhereInput): s0_eternum_QuestBonusConnection
+  s0EternumQuestConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_QuestConfigOrder, where: s0_eternum_QuestConfigWhereInput): s0_eternum_QuestConfigConnection
+  s0EternumQuestModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_QuestOrder, where: s0_eternum_QuestWhereInput): s0_eternum_QuestConnection
+  s0EternumQuestRewardConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_QuestRewardConfigOrder, where: s0_eternum_QuestRewardConfigWhereInput): s0_eternum_QuestRewardConfigConnection
+  s0EternumRealmLevelConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_RealmLevelConfigOrder, where: s0_eternum_RealmLevelConfigWhereInput): s0_eternum_RealmLevelConfigConnection
+  s0EternumRealmMaxLevelConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_RealmMaxLevelConfigOrder, where: s0_eternum_RealmMaxLevelConfigWhereInput): s0_eternum_RealmMaxLevelConfigConnection
+  s0EternumRealmModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_RealmOrder, where: s0_eternum_RealmWhereInput): s0_eternum_RealmConnection
+  s0EternumResourceAllowanceModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ResourceAllowanceOrder, where: s0_eternum_ResourceAllowanceWhereInput): s0_eternum_ResourceAllowanceConnection
+  s0EternumResourceBridgeConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ResourceBridgeConfigOrder, where: s0_eternum_ResourceBridgeConfigWhereInput): s0_eternum_ResourceBridgeConfigConnection
+  s0EternumResourceBridgeFeeSplitConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ResourceBridgeFeeSplitConfigOrder, where: s0_eternum_ResourceBridgeFeeSplitConfigWhereInput): s0_eternum_ResourceBridgeFeeSplitConfigConnection
+  s0EternumResourceBridgeWhitelistConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ResourceBridgeWhitelistConfigOrder, where: s0_eternum_ResourceBridgeWhitelistConfigWhereInput): s0_eternum_ResourceBridgeWhitelistConfigConnection
+  s0EternumResourceCostModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ResourceCostOrder, where: s0_eternum_ResourceCostWhereInput): s0_eternum_ResourceCostConnection
+  s0EternumResourceModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ResourceOrder, where: s0_eternum_ResourceWhereInput): s0_eternum_ResourceConnection
+  s0EternumResourceTransferLockModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_ResourceTransferLockOrder, where: s0_eternum_ResourceTransferLockWhereInput): s0_eternum_ResourceTransferLockConnection
+  s0EternumSeasonAddressesConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_SeasonAddressesConfigOrder, where: s0_eternum_SeasonAddressesConfigWhereInput): s0_eternum_SeasonAddressesConfigConnection
+  s0EternumSeasonBridgeConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_SeasonBridgeConfigOrder, where: s0_eternum_SeasonBridgeConfigWhereInput): s0_eternum_SeasonBridgeConfigConnection
+  s0EternumSeasonModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_SeasonOrder, where: s0_eternum_SeasonWhereInput): s0_eternum_SeasonConnection
+  s0EternumSettleRealmDataModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_SettleRealmDataOrder, where: s0_eternum_SettleRealmDataWhereInput): s0_eternum_SettleRealmDataConnection
+  s0EternumSettlementConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_SettlementConfigOrder, where: s0_eternum_SettlementConfigWhereInput): s0_eternum_SettlementConfigConnection
+  s0EternumSpeedConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_SpeedConfigOrder, where: s0_eternum_SpeedConfigWhereInput): s0_eternum_SpeedConfigConnection
+  s0EternumStaminaConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_StaminaConfigOrder, where: s0_eternum_StaminaConfigWhereInput): s0_eternum_StaminaConfigConnection
+  s0EternumStaminaModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_StaminaOrder, where: s0_eternum_StaminaWhereInput): s0_eternum_StaminaConnection
+  s0EternumStaminaRefillConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_StaminaRefillConfigOrder, where: s0_eternum_StaminaRefillConfigWhereInput): s0_eternum_StaminaRefillConfigConnection
+  s0EternumStatusModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_StatusOrder, where: s0_eternum_StatusWhereInput): s0_eternum_StatusConnection
+  s0EternumStructureCountModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_StructureCountOrder, where: s0_eternum_StructureCountWhereInput): s0_eternum_StructureCountConnection
+  s0EternumStructureModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_StructureOrder, where: s0_eternum_StructureWhereInput): s0_eternum_StructureConnection
+  s0EternumSwapEventModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_SwapEventOrder, where: s0_eternum_SwapEventWhereInput): s0_eternum_SwapEventConnection
+  s0EternumTickConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TickConfigOrder, where: s0_eternum_TickConfigWhereInput): s0_eternum_TickConfigConnection
+  s0EternumTileModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TileOrder, where: s0_eternum_TileWhereInput): s0_eternum_TileConnection
+  s0EternumTradeModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TradeOrder, where: s0_eternum_TradeWhereInput): s0_eternum_TradeConnection
+  s0EternumTransferModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TransferOrder, where: s0_eternum_TransferWhereInput): s0_eternum_TransferConnection
+  s0EternumTravelFoodCostConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TravelFoodCostConfigOrder, where: s0_eternum_TravelFoodCostConfigWhereInput): s0_eternum_TravelFoodCostConfigConnection
+  s0EternumTravelModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TravelOrder, where: s0_eternum_TravelWhereInput): s0_eternum_TravelConnection
+  s0EternumTravelStaminaCostConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TravelStaminaCostConfigOrder, where: s0_eternum_TravelStaminaCostConfigWhereInput): s0_eternum_TravelStaminaCostConfigConnection
+  s0EternumTroopConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TroopConfigOrder, where: s0_eternum_TroopConfigWhereInput): s0_eternum_TroopConfigConnection
+  s0EternumTrophyCreationModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TrophyCreationOrder, where: s0_eternum_TrophyCreationWhereInput): s0_eternum_TrophyCreationConnection
+  s0EternumTrophyProgressionModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_TrophyProgressionOrder, where: s0_eternum_TrophyProgressionWhereInput): s0_eternum_TrophyProgressionConnection
+  s0EternumVrfConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_VRFConfigOrder, where: s0_eternum_VRFConfigWhereInput): s0_eternum_VRFConfigConnection
+  s0EternumWeightConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_WeightConfigOrder, where: s0_eternum_WeightConfigWhereInput): s0_eternum_WeightConfigConnection
+  s0EternumWeightModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_WeightOrder, where: s0_eternum_WeightWhereInput): s0_eternum_WeightConnection
+  s0EternumWorldConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s0_eternum_WorldConfigOrder, where: s0_eternum_WorldConfigWhereInput): s0_eternum_WorldConfigConnection
+  tokenBalances(accountAddress: String!, after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): Token__BalanceConnection
+  tokenTransfers(accountAddress: String!, after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): Token__TransferConnection
   transaction(transactionHash: ID!): World__Transaction!
-  transactions(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-  ): World__TransactionConnection
+  transactions(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): World__TransactionConnection
 }
 
 type World__Social {
@@ -4626,6 +3466,7 @@ type s0_eternum_Hyperstructure {
   eventMessage: World__EventMessage
   last_updated_by: ContractAddress
   last_updated_timestamp: u64
+  randomness: felt252
 }
 
 type s0_eternum_HyperstructureCoOwnersChange {
@@ -4885,6 +3726,7 @@ type s0_eternum_HyperstructureFinished {
   entity: World__Entity
   eventMessage: World__EventMessage
   hyperstructure_entity_id: u32
+  hyperstructure_owner_name: felt252
   id: u32
   timestamp: u64
 }
@@ -4908,6 +3750,7 @@ input s0_eternum_HyperstructureFinishedOrder {
 enum s0_eternum_HyperstructureFinishedOrderField {
   CONTRIBUTOR_ENTITY_ID
   HYPERSTRUCTURE_ENTITY_ID
+  HYPERSTRUCTURE_OWNER_NAME
   ID
   TIMESTAMP
 }
@@ -4935,6 +3778,17 @@ input s0_eternum_HyperstructureFinishedWhereInput {
   hyperstructure_entity_idNEQ: u32
   hyperstructure_entity_idNOTIN: [u32]
   hyperstructure_entity_idNOTLIKE: u32
+  hyperstructure_owner_name: felt252
+  hyperstructure_owner_nameEQ: felt252
+  hyperstructure_owner_nameGT: felt252
+  hyperstructure_owner_nameGTE: felt252
+  hyperstructure_owner_nameIN: [felt252]
+  hyperstructure_owner_nameLIKE: felt252
+  hyperstructure_owner_nameLT: felt252
+  hyperstructure_owner_nameLTE: felt252
+  hyperstructure_owner_nameNEQ: felt252
+  hyperstructure_owner_nameNOTIN: [felt252]
+  hyperstructure_owner_nameNOTLIKE: felt252
   id: u32
   idEQ: u32
   idGT: u32
@@ -4971,14 +3825,16 @@ enum s0_eternum_HyperstructureOrderField {
   ENTITY_ID
   LAST_UPDATED_BY
   LAST_UPDATED_TIMESTAMP
+  RANDOMNESS
 }
 
 type s0_eternum_HyperstructureResourceConfig {
-  amount_for_completion: u128
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
-  resource_type: u8
+  max_amount: u128
+  min_amount: u128
+  resource_tier: u8
 }
 
 type s0_eternum_HyperstructureResourceConfigConnection {
@@ -4998,23 +3854,13 @@ input s0_eternum_HyperstructureResourceConfigOrder {
 }
 
 enum s0_eternum_HyperstructureResourceConfigOrderField {
-  AMOUNT_FOR_COMPLETION
   CONFIG_ID
-  RESOURCE_TYPE
+  MAX_AMOUNT
+  MIN_AMOUNT
+  RESOURCE_TIER
 }
 
 input s0_eternum_HyperstructureResourceConfigWhereInput {
-  amount_for_completion: u128
-  amount_for_completionEQ: u128
-  amount_for_completionGT: u128
-  amount_for_completionGTE: u128
-  amount_for_completionIN: [u128]
-  amount_for_completionLIKE: u128
-  amount_for_completionLT: u128
-  amount_for_completionLTE: u128
-  amount_for_completionNEQ: u128
-  amount_for_completionNOTIN: [u128]
-  amount_for_completionNOTLIKE: u128
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -5026,17 +3872,118 @@ input s0_eternum_HyperstructureResourceConfigWhereInput {
   config_idNEQ: u32
   config_idNOTIN: [u32]
   config_idNOTLIKE: u32
-  resource_type: u8
-  resource_typeEQ: u8
-  resource_typeGT: u8
-  resource_typeGTE: u8
-  resource_typeIN: [u8]
-  resource_typeLIKE: u8
-  resource_typeLT: u8
-  resource_typeLTE: u8
-  resource_typeNEQ: u8
-  resource_typeNOTIN: [u8]
-  resource_typeNOTLIKE: u8
+  max_amount: u128
+  max_amountEQ: u128
+  max_amountGT: u128
+  max_amountGTE: u128
+  max_amountIN: [u128]
+  max_amountLIKE: u128
+  max_amountLT: u128
+  max_amountLTE: u128
+  max_amountNEQ: u128
+  max_amountNOTIN: [u128]
+  max_amountNOTLIKE: u128
+  min_amount: u128
+  min_amountEQ: u128
+  min_amountGT: u128
+  min_amountGTE: u128
+  min_amountIN: [u128]
+  min_amountLIKE: u128
+  min_amountLT: u128
+  min_amountLTE: u128
+  min_amountNEQ: u128
+  min_amountNOTIN: [u128]
+  min_amountNOTLIKE: u128
+  resource_tier: u8
+  resource_tierEQ: u8
+  resource_tierGT: u8
+  resource_tierGTE: u8
+  resource_tierIN: [u8]
+  resource_tierLIKE: u8
+  resource_tierLT: u8
+  resource_tierLTE: u8
+  resource_tierNEQ: u8
+  resource_tierNOTIN: [u8]
+  resource_tierNOTLIKE: u8
+}
+
+type s0_eternum_HyperstructureStarted {
+  creator_address_name: felt252
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  hyperstructure_entity_id: u32
+  id: u32
+  timestamp: u64
+}
+
+type s0_eternum_HyperstructureStartedConnection {
+  edges: [s0_eternum_HyperstructureStartedEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type s0_eternum_HyperstructureStartedEdge {
+  cursor: Cursor
+  node: s0_eternum_HyperstructureStarted
+}
+
+input s0_eternum_HyperstructureStartedOrder {
+  direction: OrderDirection!
+  field: s0_eternum_HyperstructureStartedOrderField!
+}
+
+enum s0_eternum_HyperstructureStartedOrderField {
+  CREATOR_ADDRESS_NAME
+  HYPERSTRUCTURE_ENTITY_ID
+  ID
+  TIMESTAMP
+}
+
+input s0_eternum_HyperstructureStartedWhereInput {
+  creator_address_name: felt252
+  creator_address_nameEQ: felt252
+  creator_address_nameGT: felt252
+  creator_address_nameGTE: felt252
+  creator_address_nameIN: [felt252]
+  creator_address_nameLIKE: felt252
+  creator_address_nameLT: felt252
+  creator_address_nameLTE: felt252
+  creator_address_nameNEQ: felt252
+  creator_address_nameNOTIN: [felt252]
+  creator_address_nameNOTLIKE: felt252
+  hyperstructure_entity_id: u32
+  hyperstructure_entity_idEQ: u32
+  hyperstructure_entity_idGT: u32
+  hyperstructure_entity_idGTE: u32
+  hyperstructure_entity_idIN: [u32]
+  hyperstructure_entity_idLIKE: u32
+  hyperstructure_entity_idLT: u32
+  hyperstructure_entity_idLTE: u32
+  hyperstructure_entity_idNEQ: u32
+  hyperstructure_entity_idNOTIN: [u32]
+  hyperstructure_entity_idNOTLIKE: u32
+  id: u32
+  idEQ: u32
+  idGT: u32
+  idGTE: u32
+  idIN: [u32]
+  idLIKE: u32
+  idLT: u32
+  idLTE: u32
+  idNEQ: u32
+  idNOTIN: [u32]
+  idNOTLIKE: u32
+  timestamp: u64
+  timestampEQ: u64
+  timestampGT: u64
+  timestampGTE: u64
+  timestampIN: [u64]
+  timestampLIKE: u64
+  timestampLT: u64
+  timestampLTE: u64
+  timestampNEQ: u64
+  timestampNOTIN: [u64]
+  timestampNOTLIKE: u64
 }
 
 input s0_eternum_HyperstructureWhereInput {
@@ -5086,6 +4033,17 @@ input s0_eternum_HyperstructureWhereInput {
   last_updated_timestampNEQ: u64
   last_updated_timestampNOTIN: [u64]
   last_updated_timestampNOTLIKE: u64
+  randomness: felt252
+  randomnessEQ: felt252
+  randomnessGT: felt252
+  randomnessGTE: felt252
+  randomnessIN: [felt252]
+  randomnessLIKE: felt252
+  randomnessLT: felt252
+  randomnessLTE: felt252
+  randomnessNEQ: felt252
+  randomnessNOTIN: [felt252]
+  randomnessNOTLIKE: felt252
 }
 
 type s0_eternum_JoinGuild {
@@ -5252,6 +4210,131 @@ enum s0_eternum_LeaderboardOrderField {
   REGISTRATION_END_TIMESTAMP
   TOTAL_POINTS
   TOTAL_PRICE_POOL
+}
+
+type s0_eternum_LeaderboardRegisterContribution {
+  address: ContractAddress
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  hyperstructure_entity_id: u32
+  registered: bool
+}
+
+type s0_eternum_LeaderboardRegisterContributionConnection {
+  edges: [s0_eternum_LeaderboardRegisterContributionEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type s0_eternum_LeaderboardRegisterContributionEdge {
+  cursor: Cursor
+  node: s0_eternum_LeaderboardRegisterContribution
+}
+
+input s0_eternum_LeaderboardRegisterContributionOrder {
+  direction: OrderDirection!
+  field: s0_eternum_LeaderboardRegisterContributionOrderField!
+}
+
+enum s0_eternum_LeaderboardRegisterContributionOrderField {
+  ADDRESS
+  HYPERSTRUCTURE_ENTITY_ID
+  REGISTERED
+}
+
+input s0_eternum_LeaderboardRegisterContributionWhereInput {
+  address: ContractAddress
+  addressEQ: ContractAddress
+  addressGT: ContractAddress
+  addressGTE: ContractAddress
+  addressIN: [ContractAddress]
+  addressLIKE: ContractAddress
+  addressLT: ContractAddress
+  addressLTE: ContractAddress
+  addressNEQ: ContractAddress
+  addressNOTIN: [ContractAddress]
+  addressNOTLIKE: ContractAddress
+  hyperstructure_entity_id: u32
+  hyperstructure_entity_idEQ: u32
+  hyperstructure_entity_idGT: u32
+  hyperstructure_entity_idGTE: u32
+  hyperstructure_entity_idIN: [u32]
+  hyperstructure_entity_idLIKE: u32
+  hyperstructure_entity_idLT: u32
+  hyperstructure_entity_idLTE: u32
+  hyperstructure_entity_idNEQ: u32
+  hyperstructure_entity_idNOTIN: [u32]
+  hyperstructure_entity_idNOTLIKE: u32
+  registered: bool
+}
+
+type s0_eternum_LeaderboardRegisterShare {
+  address: ContractAddress
+  entity: World__Entity
+  epoch: u16
+  eventMessage: World__EventMessage
+  hyperstructure_entity_id: u32
+  registered: bool
+}
+
+type s0_eternum_LeaderboardRegisterShareConnection {
+  edges: [s0_eternum_LeaderboardRegisterShareEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type s0_eternum_LeaderboardRegisterShareEdge {
+  cursor: Cursor
+  node: s0_eternum_LeaderboardRegisterShare
+}
+
+input s0_eternum_LeaderboardRegisterShareOrder {
+  direction: OrderDirection!
+  field: s0_eternum_LeaderboardRegisterShareOrderField!
+}
+
+enum s0_eternum_LeaderboardRegisterShareOrderField {
+  ADDRESS
+  EPOCH
+  HYPERSTRUCTURE_ENTITY_ID
+  REGISTERED
+}
+
+input s0_eternum_LeaderboardRegisterShareWhereInput {
+  address: ContractAddress
+  addressEQ: ContractAddress
+  addressGT: ContractAddress
+  addressGTE: ContractAddress
+  addressIN: [ContractAddress]
+  addressLIKE: ContractAddress
+  addressLT: ContractAddress
+  addressLTE: ContractAddress
+  addressNEQ: ContractAddress
+  addressNOTIN: [ContractAddress]
+  addressNOTLIKE: ContractAddress
+  epoch: u16
+  epochEQ: u16
+  epochGT: u16
+  epochGTE: u16
+  epochIN: [u16]
+  epochLIKE: u16
+  epochLT: u16
+  epochLTE: u16
+  epochNEQ: u16
+  epochNOTIN: [u16]
+  epochNOTLIKE: u16
+  hyperstructure_entity_id: u32
+  hyperstructure_entity_idEQ: u32
+  hyperstructure_entity_idGT: u32
+  hyperstructure_entity_idGTE: u32
+  hyperstructure_entity_idIN: [u32]
+  hyperstructure_entity_idLIKE: u32
+  hyperstructure_entity_idLT: u32
+  hyperstructure_entity_idLTE: u32
+  hyperstructure_entity_idNEQ: u32
+  hyperstructure_entity_idNOTIN: [u32]
+  hyperstructure_entity_idNOTLIKE: u32
+  registered: bool
 }
 
 type s0_eternum_LeaderboardRegistered {
@@ -8396,11 +7479,11 @@ input s0_eternum_ResourceWhereInput {
 
 type s0_eternum_Season {
   config_id: u32
+  ended_at: u64
   entity: World__Entity
   eventMessage: World__EventMessage
   is_over: bool
   start_at: u64
-  ended_at: u64
 }
 
 type s0_eternum_SeasonAddressesConfig {
@@ -8482,6 +7565,59 @@ input s0_eternum_SeasonAddressesConfigWhereInput {
   season_pass_addressNOTLIKE: ContractAddress
 }
 
+type s0_eternum_SeasonBridgeConfig {
+  close_after_end_seconds: u64
+  config_id: u32
+  entity: World__Entity
+  eventMessage: World__EventMessage
+}
+
+type s0_eternum_SeasonBridgeConfigConnection {
+  edges: [s0_eternum_SeasonBridgeConfigEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type s0_eternum_SeasonBridgeConfigEdge {
+  cursor: Cursor
+  node: s0_eternum_SeasonBridgeConfig
+}
+
+input s0_eternum_SeasonBridgeConfigOrder {
+  direction: OrderDirection!
+  field: s0_eternum_SeasonBridgeConfigOrderField!
+}
+
+enum s0_eternum_SeasonBridgeConfigOrderField {
+  CLOSE_AFTER_END_SECONDS
+  CONFIG_ID
+}
+
+input s0_eternum_SeasonBridgeConfigWhereInput {
+  close_after_end_seconds: u64
+  close_after_end_secondsEQ: u64
+  close_after_end_secondsGT: u64
+  close_after_end_secondsGTE: u64
+  close_after_end_secondsIN: [u64]
+  close_after_end_secondsLIKE: u64
+  close_after_end_secondsLT: u64
+  close_after_end_secondsLTE: u64
+  close_after_end_secondsNEQ: u64
+  close_after_end_secondsNOTIN: [u64]
+  close_after_end_secondsNOTLIKE: u64
+  config_id: u32
+  config_idEQ: u32
+  config_idGT: u32
+  config_idGTE: u32
+  config_idIN: [u32]
+  config_idLIKE: u32
+  config_idLT: u32
+  config_idLTE: u32
+  config_idNEQ: u32
+  config_idNOTIN: [u32]
+  config_idNOTLIKE: u32
+}
+
 type s0_eternum_SeasonConnection {
   edges: [s0_eternum_SeasonEdge]
   pageInfo: World__PageInfo!
@@ -8500,9 +7636,9 @@ input s0_eternum_SeasonOrder {
 
 enum s0_eternum_SeasonOrderField {
   CONFIG_ID
+  ENDED_AT
   IS_OVER
   START_AT
-  ENDED_AT
 }
 
 input s0_eternum_SeasonWhereInput {
@@ -8517,6 +7653,17 @@ input s0_eternum_SeasonWhereInput {
   config_idNEQ: u32
   config_idNOTIN: [u32]
   config_idNOTLIKE: u32
+  ended_at: u64
+  ended_atEQ: u64
+  ended_atGT: u64
+  ended_atGTE: u64
+  ended_atIN: [u64]
+  ended_atLIKE: u64
+  ended_atLT: u64
+  ended_atLTE: u64
+  ended_atNEQ: u64
+  ended_atNOTIN: [u64]
+  ended_atNOTLIKE: u64
   is_over: bool
   start_at: u64
   start_atEQ: u64
@@ -8529,17 +7676,6 @@ input s0_eternum_SeasonWhereInput {
   start_atNEQ: u64
   start_atNOTIN: [u64]
   start_atNOTLIKE: u64
-  ended_at: u64
-  ended_atEQ: u64
-  ended_atGT: u64
-  ended_atGTE: u64
-  ended_atIN: [u64]
-  ended_atLIKE: u64
-  ended_atLT: u64
-  ended_atLTE: u64
-  ended_atNEQ: u64
-  ended_atNOTIN: [u64]
-  ended_atNOTLIKE: u64
 }
 
 type s0_eternum_SettleRealmData {
@@ -10662,6 +9798,59 @@ input s0_eternum_TrophyProgressionWhereInput {
   timeNEQ: u64
   timeNOTIN: [u64]
   timeNOTLIKE: u64
+}
+
+type s0_eternum_VRFConfig {
+  config_id: u32
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  vrf_provider_address: ContractAddress
+}
+
+type s0_eternum_VRFConfigConnection {
+  edges: [s0_eternum_VRFConfigEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type s0_eternum_VRFConfigEdge {
+  cursor: Cursor
+  node: s0_eternum_VRFConfig
+}
+
+input s0_eternum_VRFConfigOrder {
+  direction: OrderDirection!
+  field: s0_eternum_VRFConfigOrderField!
+}
+
+enum s0_eternum_VRFConfigOrderField {
+  CONFIG_ID
+  VRF_PROVIDER_ADDRESS
+}
+
+input s0_eternum_VRFConfigWhereInput {
+  config_id: u32
+  config_idEQ: u32
+  config_idGT: u32
+  config_idGTE: u32
+  config_idIN: [u32]
+  config_idLIKE: u32
+  config_idLT: u32
+  config_idLTE: u32
+  config_idNEQ: u32
+  config_idNOTIN: [u32]
+  config_idNOTLIKE: u32
+  vrf_provider_address: ContractAddress
+  vrf_provider_addressEQ: ContractAddress
+  vrf_provider_addressGT: ContractAddress
+  vrf_provider_addressGTE: ContractAddress
+  vrf_provider_addressIN: [ContractAddress]
+  vrf_provider_addressLIKE: ContractAddress
+  vrf_provider_addressLT: ContractAddress
+  vrf_provider_addressLTE: ContractAddress
+  vrf_provider_addressNEQ: ContractAddress
+  vrf_provider_addressNOTIN: [ContractAddress]
+  vrf_provider_addressNOTLIKE: ContractAddress
 }
 
 type s0_eternum_Weight {

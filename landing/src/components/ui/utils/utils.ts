@@ -1,7 +1,5 @@
 import { type ClientComponents } from "@/dojo/createClientComponents";
 import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
-import { configManager } from "@/dojo/setup";
-import { CapacityConfigCategory } from "@bibliothecadao/eternum";
 import { env } from "../../../../env";
 
 import {
@@ -425,8 +423,8 @@ export const separateCamelCase = (str: string): string => {
     .join(" ");
 };
 
-export const calculateDonkeysNeeded = (orderWeight: number): number => {
-  return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
+export const calculateDonkeysNeeded = (orderWeight: number, donkeyCapacity: number): number => {
+  return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacity);
 };
 
 export const getSeasonAddressesPath = () => {
