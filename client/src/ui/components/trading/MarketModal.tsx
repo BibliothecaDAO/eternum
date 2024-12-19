@@ -222,7 +222,7 @@ export const MarketModal = () => {
               </Select>
             </div>
             <div className=" ml-2 bg-map align-middle flex gap-2">
-              {currencyFormat(Number(lordsBalance), 0)}{" "}
+              {currencyFormat(Number(lordsBalance), 2)}{" "}
               <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
             </div>
           </div>

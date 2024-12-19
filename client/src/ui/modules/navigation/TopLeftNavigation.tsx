@@ -129,7 +129,7 @@ export const TopLeftNavigation = memo(() => {
         isFavorite: favorites.includes(structure.entity_id),
       }))
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
-  }, [favorites, structures]);
+  }, [favorites, structures.length]);
 
   const toggleFavorite = useCallback((entityId: number) => {
     setFavorites((prev) => {
@@ -179,7 +179,6 @@ export const TopLeftNavigation = memo(() => {
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
-  console.log(entityInfo.structureCategory);
   return (
     <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
       <motion.div
@@ -317,10 +316,7 @@ export const TopLeftNavigation = memo(() => {
               />
             </div>
           </div>
-          <div
-            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded-bl-2xl rounded-tr-2xl mx-1"
-            style={{ width: `${progress}%` }}
-          ></div>
+          <ProgressBar progress={progress} />
         </div>
       </motion.div>
       <div className="relative">
@@ -333,7 +329,18 @@ export const TopLeftNavigation = memo(() => {
 
 TopLeftNavigation.displayName = "TopLeftNavigation";
 
-const TickProgress = () => {
+const ProgressBar = memo(({ progress }: { progress: number }) => {
+  return (
+    <div
+      className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded-bl-2xl rounded-tr-2xl mx-1"
+      style={{ width: `${progress}%` }}
+    ></div>
+  );
+});
+
+ProgressBar.displayName = "ProgressBar";
+
+const TickProgress = memo(() => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { nextBlockTimestamp } = useNextBlockTimestamp();
 
@@ -397,4 +404,4 @@ const TickProgress = () => {
       {progress.toFixed()}%
     </div>
   );
-};
+});
