@@ -62,6 +62,8 @@ const usePlayerArrivals = () => {
     const arrivals = positions.flatMap((position) => {
       return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...queryFragments]));
     });
+
+    console.log("arrivals", arrivals);
     return arrivals;
   }, []);
 
