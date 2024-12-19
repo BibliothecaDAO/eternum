@@ -7,7 +7,7 @@ import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useWorldStore } from "@/hooks/store/useWorldLoading";
+import useUIStore from "@/hooks/store/useUIStore";
 import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
@@ -33,8 +33,8 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     network: { toriiClient, contractComponents },
   } = useDojo();
 
-  const isStructuresLoading = useWorldStore((state) => state.isStructuresLoading);
-  const setStructuresLoading = useWorldStore((state) => state.setStructuresLoading);
+  const isHyperstructureLoading = useUIStore((state) => state.isHyperstructureLoading);
+  const setHyperstructureLoading = useUIStore((state) => state.setHyperstructureLoading);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,8 +42,8 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
         await fetchHyperstructureData(
           toriiClient,
           contractComponents as any,
-          isStructuresLoading,
-          setStructuresLoading,
+          isHyperstructureLoading,
+          setHyperstructureLoading,
         );
       } catch (error) {
         console.error("Failed to fetch hyperstructure data:", error);
@@ -142,7 +142,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     [selectedTab, hyperstructures, fragmentMines, showOnlyMine, account.address, myHyperstructures],
   );
 
-  if (isStructuresLoading) {
+  if (isHyperstructureLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-gold">Loading structures...</div>

@@ -686,6 +686,8 @@ export default class WorldmapScene extends HexagonScene {
     this.fetchedChunks.add(chunkKey);
     console.log(startCol, startRow, range);
 
+    this.state.setMapLoading(true);
+
     try {
       const promiseTiles = getEntities(
         this.dojo.network.toriiClient,
@@ -789,7 +791,7 @@ export default class WorldmapScene extends HexagonScene {
         false,
       );
       Promise.all([promiseTiles, promisePositions]).then(([tiles, positions]) => {
-        // Promise.all([promiseTiles]).then(([tiles]) => {
+        this.state.setMapLoading(false);
       });
     } catch (error) {
       // If there's an error, remove the chunk from cached set so it can be retried
