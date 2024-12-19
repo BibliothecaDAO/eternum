@@ -140,6 +140,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     }));
 
     const fetch = async () => {
+      console.log("AddToSubscriptionStart - 1");
       try {
         await Promise.all([
           addToSubscription(
@@ -162,6 +163,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   useEffect(() => {
     try {
       setWorldLoading(true);
+      console.log("AddToSubscriptionStart - 2");
       addToSubscription(
         dojo.network.toriiClient,
         dojo.network.contractComponents as any,
@@ -176,11 +178,12 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     } finally {
       setWorldLoading(false);
     }
-  }, [filteredStructures]);
+  }, [structures.length]);
 
   useEffect(() => {
     try {
       setMarketLoading(true);
+      console.log("AddToSubscriptionStart - 3");
       addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
         ADMIN_BANK_ENTITY_ID.toString(),
       ]);

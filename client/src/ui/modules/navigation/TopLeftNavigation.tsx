@@ -129,7 +129,7 @@ export const TopLeftNavigation = memo(() => {
         isFavorite: favorites.includes(structure.entity_id),
       }))
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
-  }, [favorites, structures]);
+  }, [favorites, structures.length]);
 
   const toggleFavorite = useCallback((entityId: number) => {
     setFavorites((prev) => {
@@ -179,7 +179,6 @@ export const TopLeftNavigation = memo(() => {
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
-  console.log(entityInfo.structureCategory);
   return (
     <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
       <motion.div

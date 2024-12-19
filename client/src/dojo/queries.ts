@@ -92,6 +92,8 @@ export const addToSubscription = async <S extends Schema>(
   position?: { x: number; y: number }[],
 ) => {
   const start = performance.now();
+
+  console.log("AddToSubscriptionStart", entityID);
   await getEntities(
     client,
     {

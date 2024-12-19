@@ -51,6 +51,7 @@ export const InventoryResources = ({
 
       setIsSyncing(true);
       try {
+        console.log("AddToSubscriptionStart - 4");
         await addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
           entityId.toString(),
         ]);
