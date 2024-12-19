@@ -2,12 +2,12 @@ import { type ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
 import {
   ContractAddress,
-  type ID,
   getOrderName,
   getQuestResources as getStartingResources,
+  type ID,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { type ComponentValue, type Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue, runQuery, type ComponentValue, type Entity } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
@@ -265,7 +265,7 @@ export function getRealms(): RealmInfo[] {
       const position = getComponentValue(Position, entity);
       const population = getComponentValue(Population, entity);
 
-      if (!realm || !owner || !position) return;
+      if (!realm || !owner || !position) return null;
 
       const { realm_id, entity_id, produced_resources, order } = realm;
 
@@ -291,7 +291,7 @@ export function getRealms(): RealmInfo[] {
         hasWonder: realm.has_wonder,
       };
     })
-    .filter((realm) => realm !== undefined);
+    .filter((realm): realm is RealmInfo => realm !== null);
 }
 
 export function usePlayerRealms(): RealmInfo[] {
@@ -312,7 +312,7 @@ export function usePlayerRealms(): RealmInfo[] {
         const position = getComponentValue(Position, entity);
         const population = getComponentValue(Population, entity);
 
-        if (!realm || !owner || !position) return;
+        if (!realm || !owner || !position) return null;
 
         const { realm_id, entity_id, produced_resources, order } = realm;
 
@@ -338,7 +338,7 @@ export function usePlayerRealms(): RealmInfo[] {
           hasWonder: realm.has_wonder,
         };
       })
-      .filter((realm) => realm !== undefined);
+      .filter((realm): realm is RealmInfo => realm !== null);
   }, [realmEntities]);
   return realms;
 }

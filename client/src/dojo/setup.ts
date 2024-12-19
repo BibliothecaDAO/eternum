@@ -107,7 +107,7 @@ export async function setup({ ...config }: DojoConfig) {
     },
     {
       Keys: {
-        keys: [HYPERSTRUCTURE_CONFIG_ID.toString(), undefined],
+        keys: [HYPERSTRUCTURE_CONFIG_ID.toString()],
         pattern_matching: "VariableLen",
         models: [],
       },
