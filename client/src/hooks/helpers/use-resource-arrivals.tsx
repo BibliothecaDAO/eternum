@@ -39,14 +39,11 @@ const usePlayerArrivals = () => {
     HasValue(Owner, { address: ContractAddress(account.address) }),
   ]);
 
-  const [playerStructurePositions, setPlayerStructurePositions] = useState<(Position & { entityId: ID })[]>([]);
-
-  useEffect(() => {
-    const positions = playerStructures.map((entityId) => {
+  const playerStructurePositions = useMemo(() => {
+    return playerStructures.map((entityId) => {
       const position = getComponentValue(Position, entityId);
       return { x: position?.x ?? 0, y: position?.y ?? 0, entityId: position?.entity_id || 0 };
     });
-    setPlayerStructurePositions(positions);
   }, [playerStructures, Position]);
 
   const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
@@ -62,8 +59,6 @@ const usePlayerArrivals = () => {
     const arrivals = positions.flatMap((position) => {
       return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...queryFragments]));
     });
-
-    console.log("arrivals", arrivals);
     return arrivals;
   }, []);
 
