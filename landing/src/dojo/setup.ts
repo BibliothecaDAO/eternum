@@ -1,6 +1,5 @@
 import { WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { getEntities, getEvents, syncEntities } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
@@ -16,7 +15,7 @@ export async function setup({ ...config }: DojoConfig) {
   const systemCalls = createSystemCalls(network);
 
   const filteredModels = [
-    "AddressName",
+    /*"AddressName",
     "Realm",
     "Owner",
     // points
@@ -30,7 +29,7 @@ export async function setup({ ...config }: DojoConfig) {
     // leaderboard
     "GuildMember",
     "EntityName",
-    "Structure",
+    "Structure",*/
     "CapacityConfig",
   ];
 
@@ -66,11 +65,11 @@ export async function setup({ ...config }: DojoConfig) {
     },
   ];
   // fetch all existing entities from torii with optional component filtering
-  await getEntities(
+  /*await getEntities(
     network.toriiClient,
     { Composite: { operator: "Or", clauses } },
-    network.contractComponents as any,
-    40_000,
+    filteredModels as any,
+    1_000,
   );
 
   await getEntities(
@@ -86,7 +85,7 @@ export async function setup({ ...config }: DojoConfig) {
     40_000,
   );
 
-  const sync = await syncEntities(network.toriiClient, network.contractComponents as any, [], false);
+  const sync = await syncEntities(network.toriiClient, filteredModels as any, [], false);
 
   const eventSync = getEvents(
     network.toriiClient,
@@ -102,14 +101,14 @@ export async function setup({ ...config }: DojoConfig) {
     false,
     false,
   );
-
+*/
   configManager.setDojo(components);
 
   return {
     network,
     components,
     systemCalls,
-    sync,
-    eventSync,
+    //sync,
+    /*eventSync,*/
   };
 }

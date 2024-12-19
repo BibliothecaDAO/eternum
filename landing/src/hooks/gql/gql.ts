@@ -15,21 +15,22 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 const documents = {
+    "\n  query getCapacitySpeedConfig($category: Enum!, $entityType: u32!) {\n    s0EternumCapacityConfigModels(where: {category: $category }) {\n        edges{\n          node {\n           weight_gram\n          }\n        }\n      }\n      s0EternumSpeedConfigModels(where: {entity_type: $entityType }) {\n        edges{\n          node {\n           sec_per_km\n          }\n        }\n      }\n  }\n": types.GetCapacitySpeedConfigDocument,
     "\n  query getEternumOwnerRealmIds($accountAddress: ContractAddress!) {\n    s0EternumOwnerModels(where: { address: $accountAddress }) {\n      edges {\n        node {\n          address\n          entity_id\n          entity {\n            models {\n              __typename\n              ... on s0_eternum_Realm {\n                realm_id\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n": types.GetEternumOwnerRealmIdsDocument,
-    "\n  query getEntityPosition($fromEntityId: u32!, $toEntityId: u32!) {\n    s0EternumPositionModels(where: { entity_idIN: [$fromEntityId, $toEntityId] }) {\n      edges {\n        node {\n          x\n          y\n          entity_id\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n": types.GetEntityPositionDocument,
     "\n  query getAccountTokens($accountAddress: String!) {\n    tokenBalances(accountAddress: $accountAddress, limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n": types.GetAccountTokensDocument,
     "\n  query getERC721Mints {\n    tokenTransfers(accountAddress: \"0x0\", limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n": types.GetErc721MintsDocument,
-    "\n  query getEntityResources($entityId: u32!, $resourceType: u8) {\n    s0EternumResourceModels(where: { entity_id: $entityId, resource_type: $resourceType }) {\n      edges {\n        node {\n          resource_type\n          balance\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n": types.GetEntityResourcesDocument,
+    "\n  query getEntityPosition($fromEntityId: u32!, $toEntityId: u32!) {\n    s0EternumPositionModels(where: { entity_idIN: [$fromEntityId, $toEntityId] }) {\n      edges {\n        node {\n          x\n          y\n          entity_id\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n": types.GetEntityPositionDocument,
+    "\n  query getEntityResources($entityId: u32!) {\n    s0EternumResourceModels(\n      where: { \n        entity_id: $entityId\n      }\n      limit: 50\n    ) {\n      edges {\n        node {\n          resource_type\n          balance\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n": types.GetEntityResourcesDocument,
 };
 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query getEternumOwnerRealmIds($accountAddress: ContractAddress!) {\n    s0EternumOwnerModels(where: { address: $accountAddress }) {\n      edges {\n        node {\n          address\n          entity_id\n          entity {\n            models {\n              __typename\n              ... on s0_eternum_Realm {\n                realm_id\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetEternumOwnerRealmIdsDocument;
+export function graphql(source: "\n  query getCapacitySpeedConfig($category: Enum!, $entityType: u32!) {\n    s0EternumCapacityConfigModels(where: {category: $category }) {\n        edges{\n          node {\n           weight_gram\n          }\n        }\n      }\n      s0EternumSpeedConfigModels(where: {entity_type: $entityType }) {\n        edges{\n          node {\n           sec_per_km\n          }\n        }\n      }\n  }\n"): typeof import('./graphql').GetCapacitySpeedConfigDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query getEntityPosition($fromEntityId: u32!, $toEntityId: u32!) {\n    s0EternumPositionModels(where: { entity_idIN: [$fromEntityId, $toEntityId] }) {\n      edges {\n        node {\n          x\n          y\n          entity_id\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetEntityPositionDocument;
+export function graphql(source: "\n  query getEternumOwnerRealmIds($accountAddress: ContractAddress!) {\n    s0EternumOwnerModels(where: { address: $accountAddress }) {\n      edges {\n        node {\n          address\n          entity_id\n          entity {\n            models {\n              __typename\n              ... on s0_eternum_Realm {\n                realm_id\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetEternumOwnerRealmIdsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -41,7 +42,11 @@ export function graphql(source: "\n  query getERC721Mints {\n    tokenTransfers(
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query getEntityResources($entityId: u32!, $resourceType: u8) {\n    s0EternumResourceModels(where: { entity_id: $entityId, resource_type: $resourceType }) {\n      edges {\n        node {\n          resource_type\n          balance\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetEntityResourcesDocument;
+export function graphql(source: "\n  query getEntityPosition($fromEntityId: u32!, $toEntityId: u32!) {\n    s0EternumPositionModels(where: { entity_idIN: [$fromEntityId, $toEntityId] }) {\n      edges {\n        node {\n          x\n          y\n          entity_id\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetEntityPositionDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query getEntityResources($entityId: u32!) {\n    s0EternumResourceModels(\n      where: { \n        entity_id: $entityId\n      }\n      limit: 50\n    ) {\n      edges {\n        node {\n          resource_type\n          balance\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetEntityResourcesDocument;
 
 
 export function graphql(source: string) {

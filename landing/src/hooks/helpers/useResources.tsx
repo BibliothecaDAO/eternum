@@ -11,7 +11,7 @@ import { GET_ENTITY_RESOURCES } from "../query/resources";
 export function useResourceBalance({ entityId, resourceId }: { entityId?: ID; resourceId?: ResourcesIds }) {
   const { data, isLoading } = useQuery({
     queryKey: ["entityResources", entityId],
-    queryFn: () => (entityId ? execute(GET_ENTITY_RESOURCES, { entityId, resourceType: resourceId }) : null),
+    queryFn: () => (entityId ? execute(GET_ENTITY_RESOURCES, { entityId/*, resourceType: Number(resourceId)*/ }) : null),
     refetchInterval: 10_000,
   });
 

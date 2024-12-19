@@ -1,6 +1,5 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useSyncEntity } from "@/hooks/helpers/use-sync-entity";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useDonkeyArrivals } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
@@ -61,7 +60,7 @@ export const BridgeOutStep2 = () => {
     });
   }, [donkeysArrivals]) as number[];
 
-  useSyncEntity(donkeyArrivalsEntityIds);
+  //useSyncEntity(donkeyArrivalsEntityIds);
 
   const donkeyInfos = useMemo(() => {
     return donkeysArrivals.map((donkey) => getDonkeyInfo(donkey));

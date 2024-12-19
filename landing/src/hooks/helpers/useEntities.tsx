@@ -1,24 +1,19 @@
-import { ContractAddress } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { useDojo } from "../context/DojoContext";
 import { execute } from "../gql/execute";
 import { GET_ETERNUM_OWNER_REALM_IDS } from "../query/entities";
 
 export const useEntities = () => {
-  const {
+  /*const {
     account: { account },
     setup: {
       components: { Realm, Owner },
     },
-  } = useDojo();
+  } = useDojo();*/
 
   const { address } = useAccount();
 
-  const dojoAddress = ContractAddress(account?.address || "");
+ /* const dojoAddress = ContractAddress(account?.address || "");
 
   // Get all realms
   const allRealms = useEntityQuery([Has(Realm)]);
@@ -35,7 +30,7 @@ export const useEntities = () => {
       const realm = getComponentValue(Realm, id);
       return realm;
     });
-  }, [filterPlayerRealms]);
+  }, [filterPlayerRealms]);*/
 
   const { data, isLoading } = useQuery({
     queryKey: ["entityResources", address],
@@ -45,6 +40,6 @@ export const useEntities = () => {
 
   return {
     data,
-    playerRealms,
+    //playerRealms,
   };
 };
