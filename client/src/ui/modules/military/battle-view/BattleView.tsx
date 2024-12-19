@@ -6,10 +6,10 @@ import { Structure, useStructureByEntityId, useStructureByPosition } from "@/hoo
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { BattleSide } from "@bibliothecadao/eternum";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Battle } from "./Battle";
 
-export const BattleView = () => {
+export const BattleView = memo(() => {
   const dojo = useDojo();
   const getStructure = useStructureByPosition();
   const armiesByBattleId = getArmiesByBattleId();
@@ -148,4 +148,4 @@ export const BattleView = () => {
       structure={structure as Structure}
     />
   );
-};
+});

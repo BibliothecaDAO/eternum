@@ -1,7 +1,7 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 
-export const BattleContainer = ({ children }: { children: React.ReactNode }) => {
+export const BattleContainer = memo(({ children }: { children: React.ReactNode }) => {
   const setBattleView = useUIStore((state) => state.setBattleView);
 
   const battleView = useUIStore((state) => state.battleView);
@@ -26,4 +26,4 @@ export const BattleContainer = ({ children }: { children: React.ReactNode }) => 
       {children}
     </div>
   );
-};
+});

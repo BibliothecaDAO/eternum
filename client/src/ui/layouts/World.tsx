@@ -93,10 +93,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
-
   const battleView = useUIStore((state) => state.battleView);
 
   // Setup hooks
@@ -199,6 +197,21 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     }
   }, []);
 
+  const battleViewContent = useMemo(
+    () => (
+      <div>
+        <Suspense fallback={<LoadingOroborus loading={true} />}>
+          {battleView && (
+            <BattleContainer>
+              <BattleView />
+            </BattleContainer>
+          )}
+        </Suspense>
+      </div>
+    ),
+    [battleView],
+  );
+
   return (
     <div
       onClick={(e) => {
@@ -232,9 +245,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           </>
         )}
 
-        <BattleContainer>
-          <BattleView />
-        </BattleContainer>
+        {battleViewContent}
 
         <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
           <LeftMiddleContainer>
@@ -261,7 +272,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           )}
 
           <TopLeftContainer>
-            <TopLeftNavigation />
+            <TopLeftNavigation structures={structures} />
           </TopLeftContainer>
         </div>
 
