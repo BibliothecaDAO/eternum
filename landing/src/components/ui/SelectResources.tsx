@@ -1,3 +1,4 @@
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { ID, resources } from "@bibliothecadao/eternum";
 import { XIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
@@ -20,7 +21,7 @@ export const SelectResources = ({
   setSelectedResourceAmounts: any;
   entity_id: ID;
 }) => {
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance({entityId: entity_id});
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -38,11 +39,11 @@ export const SelectResources = ({
   return (
     <div className=" items-center col-span-4 space-y-2 p-3">
       {selectedResourceIds.map((id: any, index: any) => {
-        const resource = getBalance(entity_id, id);
+        const resource = getBalance(id);
         const options = [resources.find((res) => res.id === id), ...unselectedResources].map((res: any) => ({
           id: res.id,
           label: (
-            <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(entity_id, res.id)?.balance || 0)} />
+            <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(res.id) || 0)} />
           ),
         }));
 
@@ -116,7 +117,7 @@ export const SelectSingleResource = ({
   setSelectedResourceAmounts: any;
   entity_id: ID;
 }) => {
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance({entityId: entity_id});
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -140,11 +141,12 @@ export const SelectSingleResource = ({
   return (
     <div className=" items-center col-span-4 space-y-2 p-3">
       {selectedResourceIds.map((id: any, index: any) => {
-        const resource = getBalance(entity_id, id);
+        const resource = getBalance(id);
+        console.log(resource)
         const options = [resources.find((res) => res.id === id), ...unselectedResources].map((res: any) => ({
           id: res.id,
           label: (
-            <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(entity_id, res.id)?.balance || 0)} />
+            <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(res.id) || 0)} />
           ),
         }));
 
@@ -217,7 +219,7 @@ export const ShowSingleResource = ({
   setSelectedResourceAmounts: any;
   entity_id: ID;
 }) => {
-  const { getBalance } = getResourceBalance();
+  const { getBalance } = useResourceBalance({entityId: entity_id});
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),

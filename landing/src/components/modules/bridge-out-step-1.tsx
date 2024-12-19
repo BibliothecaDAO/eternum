@@ -1,7 +1,9 @@
 import { configManager } from "@/dojo/setup";
+import { execute } from "@/hooks/gql/execute";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealms";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacityConfig";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress, multiplyByPrecision } from "@/lib/utils";
@@ -14,6 +16,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { useAccount } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TypeP } from "../typography/type-p";
@@ -30,10 +33,14 @@ import {
 } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
-function formatFee(fee: number) {
-  return fee.toFixed(2);
+interface S0EternumRealm {
+  __typename: "s0_eternum_Realm";
+  realm_id: number;
 }
 
+function isS0EternumRealm(model: any): model is S0EternumRealm {
+  return model?.__typename === "s0_eternum_Realm";
+}
 export const BridgeOutStep1 = () => {
   const { address } = useAccount();
   const [realmEntityId, setRealmEntityId] = useState<string>("");
@@ -45,6 +52,16 @@ export const BridgeOutStep1 = () => {
     configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
     true,
   );  const [isFeesOpen, setIsFeesOpen] = useState(false);
+  const { data } = useQuery({
+    queryKey: ["capacitySpeedConfig"],
+    queryFn: () =>  execute(GET_CAPACITY_SPEED_CONFIG, { category: "Donkey", entityType: DONKEY_ENTITY_TYPE }),
+    refetchInterval: 10_000,
+  });
+
+  const donkeyConfig = useMemo(() => ({
+    capacity: Number(data?.s0EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
+    speed: data?.s0EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0
+  }), [data]);
 
   const [isLoading, setIsLoading] = useState(false);
   const { bridgeStartWithdrawFromRealm } = useBridgeAsset();
@@ -76,21 +93,24 @@ export const BridgeOutStep1 = () => {
     }
   }, [getBalance, realmEntityId]);
 
-  const { playerRealms } = useEntities();
+  const { data: playerRealms } = useEntities();
   const playerRealmsIdAndName = useMemo(() => {
-    return playerRealms.map((realm) => ({
-      realmId: realm!.realm_id,
-      entityId: realm!.entity_id,
-      name: getRealmNameById(realm!.realm_id),
-    }));
-  }, [playerRealms]);
+    return playerRealms?.s0EternumOwnerModels?.edges?.map((realm) => {
+      const realmModel = realm?.node?.entity?.models?.find(isS0EternumRealm);
+      return {
+        realmId: realmModel?.realm_id,
+        entityId: realm?.node?.entity_id,
+        name: getRealmNameById(realmModel?.realm_id ?? 0),
+      };
+    });
+  }, [playerRealms, getRealmNameById]);
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
       return computeTravelTime(
         Number(ADMIN_BANK_ENTITY_ID),
         Number(realmEntityId!),
-        configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+        donkeyConfig.speed,
         false,
       );
     } else {
@@ -121,7 +141,7 @@ export const BridgeOutStep1 = () => {
 
   const donkeysNeeded = useMemo(() => {
     if (orderWeight) {
-      return calculateDonkeysNeeded(orderWeight);
+      return calculateDonkeysNeeded(orderWeight, donkeyConfig.capacity);
     } else {
       return 0;
     }
@@ -230,7 +250,7 @@ export const BridgeOutStep1 = () => {
                 {address ? <SelectValue placeholder="Select Settled Realm" /> : <div> -- Connect your wallet --</div>}
               </SelectTrigger>
               <SelectContent>
-                {playerRealmsIdAndName.map((realm) => {
+                {playerRealmsIdAndName?.map((realm) => {
                   return (
                     <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
                       #{realm.realmId} - {realm.name}
@@ -275,7 +295,7 @@ export const BridgeOutStep1 = () => {
               </TooltipProvider>
             </div>
             <div className="flex items-center gap-2">
-              {donkeysNeeded} / {divideByPrecision(donkeyBalance.balance)}{" "}
+              {donkeysNeeded} / {divideByPrecision(donkeyBalance)}{" "}
               <ResourceIcon resource={"Donkey"} size="md" />
             </div>
           </div>
