@@ -59,9 +59,10 @@ const usePlayerArrivals = () => {
   ];
 
   const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
-    return positions.flatMap((position) => {
+    const arrivals = positions.flatMap((position) => {
       return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...queryFragments]));
     });
+    return arrivals;
   }, []);
 
   const createArrivalInfo = useCallback(
@@ -82,7 +83,7 @@ const usePlayerArrivals = () => {
 
       const ownedResourceTracker = getComponentValue(OwnedResourcesTracker, id);
 
-      const hasResources = ownedResourceTracker?.resource_types !== 0n;
+      const hasResources = !!ownedResourceTracker && ownedResourceTracker.resource_types !== 0n;
 
       const playerStructurePosition = playerStructurePositions.find(
         (structurePosition) => structurePosition.x === position.x && structurePosition.y === position.y,

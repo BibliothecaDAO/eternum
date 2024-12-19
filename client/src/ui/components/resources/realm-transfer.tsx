@@ -64,7 +64,7 @@ export const RealmTransfer = memo(
       const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
         sender_entity_id,
         recipient_entity_id,
-        resources,
+        resources: [resources[0], BigInt(resources[1]) * BigInt(1000)],
       }));
 
       send_resources_multiple({
@@ -73,6 +73,8 @@ export const RealmTransfer = memo(
       }).finally(() => {
         setIsLoading(false);
       });
+
+      setCalls([]);
     }, [calls]);
 
     return (
