@@ -32,6 +32,7 @@ export const AllResourceArrivals = memo(
       addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, unsubscribedIds).catch(
         (error) => console.error("Fetch failed", error),
       );
+      console.log("AddToSubscriptionStart - 5");
     }, [arrivals, subscribedIds]);
 
     return (

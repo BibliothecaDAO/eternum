@@ -34,7 +34,7 @@ export const syncEntitiesDebounced = async <S extends Schema>(
       setEntities(entityBatch, components, logging);
       entityBatch = {}; // Clear the batch after applying
     }
-  }, 1000); // Increased debounce time to 1 second for larger batches
+  }, 200); // Increased debounce time to 1 second for larger batches
 
   // Handle entity updates
   const entitySub = await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
@@ -107,7 +107,7 @@ export async function setup({ ...config }: DojoConfig) {
     },
     {
       Keys: {
-        keys: [HYPERSTRUCTURE_CONFIG_ID.toString(), undefined],
+        keys: [HYPERSTRUCTURE_CONFIG_ID.toString()],
         pattern_matching: "VariableLen",
         models: [],
       },

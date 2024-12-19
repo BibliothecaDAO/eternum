@@ -9,7 +9,7 @@ import {
   type ID,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, getComponentValue, type ComponentValue } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue, type ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
@@ -23,7 +23,7 @@ export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["sche
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
 };
 
-type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
+export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
@@ -43,41 +43,18 @@ export const useEntities = () => {
   const { getEntityName } = useEntitiesUtils();
 
   // Get all realms
-  const allRealms = useEntityQuery([Has(Realm)]);
-
-  const filterPlayerRealms = useMemo(() => {
-    return allRealms.filter((id) => {
-      const owner = getComponentValue(Owner, id);
-      return owner && ContractAddress(owner.address) === ContractAddress(address);
-    });
-  }, [allRealms, address]);
-
-  const filterOtherRealms = useMemo(() => {
-    return allRealms.filter((id) => {
-      const owner = getComponentValue(Owner, id);
-      return owner && ContractAddress(owner.address) !== ContractAddress(address);
-    });
-  }, [allRealms, address]);
+  const playerRealmsQuery = useEntityQuery([Has(Realm), HasValue(Owner, { address: address })]);
 
   // Get all structures
-  const allStructures = useEntityQuery([Has(Structure), Has(Position), Has(Owner)]);
-
-  const filterPlayerStructures = useMemo(() => {
-    return allStructures.filter((id) => {
-      const owner = getComponentValue(Owner, id);
-      return owner && ContractAddress(owner.address) === ContractAddress(address);
-    });
-  }, [allStructures, address]);
-
-  const filterOtherStructures = useMemo(() => {
-    return allStructures.filter((id) => {
-      const owner = getComponentValue(Owner, id);
-      return owner && ContractAddress(owner.address) !== ContractAddress(address);
-    });
-  }, [allStructures, address]);
+  const playerStructuresQuery = useEntityQuery([
+    Has(Structure),
+    Has(Position),
+    Has(Owner),
+    HasValue(Owner, { address: address }),
+  ]);
 
   const playerRealms = useMemo(() => {
-    return filterPlayerRealms.map((id) => {
+    return playerRealmsQuery.map((id) => {
       const realm = getComponentValue(Realm, id);
       return {
         ...realm,
@@ -86,22 +63,10 @@ export const useEntities = () => {
         owner: getComponentValue(Owner, id),
       } as RealmWithPosition;
     });
-  }, [filterPlayerRealms]);
-
-  const otherRealms = useMemo(() => {
-    return filterOtherRealms.map((id) => {
-      const realm = getComponentValue(Realm, id);
-      return {
-        ...realm,
-        position: getComponentValue(Position, id),
-        name: getRealmNameById(realm!.realm_id),
-        owner: getComponentValue(Owner, id),
-      } as RealmWithPosition;
-    });
-  }, [filterOtherRealms]);
+  }, [playerRealmsQuery]);
 
   const playerStructures = useMemo(() => {
-    return filterPlayerStructures
+    return playerStructuresQuery
       .map((id) => {
         const structure = getComponentValue(Structure, id);
         if (!structure) return;
@@ -121,36 +86,13 @@ export const useEntities = () => {
         if (b.category === StructureType[StructureType.Realm]) return 1;
         return a.category.localeCompare(b.category);
       });
-  }, [filterPlayerStructures]);
-
-  const otherStructures = useMemo(() => {
-    return filterOtherStructures
-      .map((id) => {
-        const structure = getComponentValue(Structure, id);
-        if (!structure || structure.category === StructureType[StructureType.Realm]) return;
-
-        const position = getComponentValue(Position, id);
-
-        const structureName = getEntityName(structure.entity_id);
-
-        const name = structureName ? `${structure?.category} ${structureName}` : structure.category || "";
-        return { ...structure, position: position!, name, owner: getComponentValue(Owner, id) };
-      })
-      .filter((structure): structure is PlayerStructure => structure !== undefined)
-      .sort((a, b) => a.category.localeCompare(b.category));
-  }, [filterOtherStructures]);
+  }, [playerStructuresQuery]);
 
   const getPlayerRealms = (filterFn?: (realm: RealmWithPosition) => boolean) => {
     return useMemo(() => {
       const realms = filterFn ? playerRealms.filter(filterFn) : playerRealms;
       return realms.sort((a, b) => a.name.localeCompare(b.name));
     }, [playerRealms, filterFn]);
-  };
-
-  const getOtherRealms = (filterFn?: (realm: RealmWithPosition) => boolean) => {
-    return useMemo(() => {
-      return filterFn ? otherRealms.filter(filterFn) : otherRealms;
-    }, [otherRealms, filterFn]);
   };
 
   const getPlayerStructures = (filterFn?: (structure: PlayerStructure) => boolean) => {
@@ -160,17 +102,9 @@ export const useEntities = () => {
     }, [playerStructures, filterFn]);
   };
 
-  const getOtherStructures = (filterFn?: (structure: PlayerStructure) => boolean) => {
-    return useMemo(() => {
-      return filterFn ? otherStructures.filter(filterFn) : otherStructures;
-    }, [otherStructures, filterFn]);
-  };
-
   return {
     playerRealms: getPlayerRealms,
-    otherRealms: getOtherRealms,
     playerStructures: getPlayerStructures,
-    otherStructures: getOtherStructures,
   };
 };
 

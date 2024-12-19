@@ -1,16 +1,15 @@
 import { Leva } from "leva";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
 import {
-  addMarketSubscription,
-  addToSubscription,
-  addToSubscriptionOneKeyModelbyRealmEntityId,
-  addToSubscriptionTwoKeyModelbyRealmEntityId,
-} from "@/dojo/queries";
+  debouncedAddMarketSubscription,
+  debouncedAddToSubscription,
+  debouncedAddToSubscriptionOneKey,
+} from "@/dojo/debouncedQueries";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useWorldStore } from "@/hooks/store/useWorldLoading";
@@ -91,6 +90,7 @@ const MiniMapNavigation = lazy(() =>
 );
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
+  const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
 
@@ -105,6 +105,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   // We could optimise this deeper....
 
+  const worldLoading = useWorldStore((state) => state.isWorldLoading);
   const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
   const setMarketLoading = useWorldStore((state) => state.setMarketLoading);
 
@@ -114,18 +115,39 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const { playerStructures } = useEntities();
   const structures = playerStructures();
 
+  const filteredStructures = useMemo(
+    () => structures.filter((structure: PlayerStructure) => !subscriptions[structure.entity_id.toString()]),
+    [structures, subscriptions],
+  );
+
   useEffect(() => {
+    if (
+      !structureEntityId ||
+      subscriptions[structureEntityId.toString()] ||
+      subscriptions[ADMIN_BANK_ENTITY_ID.toString()] ||
+      structureEntityId === 999999999
+    ) {
+      return;
+    }
+
     const position = getComponentValue(
       dojo.setup.components.Position,
       getEntityIdFromKeys([BigInt(structureEntityId)]),
     );
 
     setWorldLoading(true);
+    setSubscriptions((prev) => ({
+      ...prev,
+      [structureEntityId.toString()]: true,
+      [ADMIN_BANK_ENTITY_ID.toString()]: true,
+      ...Object.fromEntries(filteredStructures.map((structure) => [structure.entity_id.toString(), true])),
+    }));
 
     const fetch = async () => {
+      console.log("AddToSubscriptionStart - 1");
       try {
         await Promise.all([
-          addToSubscription(
+          debouncedAddToSubscription(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [structureEntityId.toString()],
@@ -136,7 +158,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         console.error("Fetch failed", error);
       } finally {
         setWorldLoading(false);
-        setMarketLoading(false);
       }
     };
 
@@ -144,57 +165,38 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   }, [structureEntityId]);
 
   useEffect(() => {
-    const structuresEntityIds = structures.map((structure) => structure.entity_id.toString());
-
-    const fetch = async () => {
-      try {
-        await Promise.all([
-          addToSubscriptionOneKeyModelbyRealmEntityId(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            structuresEntityIds,
-          ),
-          addToSubscriptionTwoKeyModelbyRealmEntityId(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            structuresEntityIds,
-          ),
-          addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, structuresEntityIds, [
-            ...structures.map((structure) => ({ x: structure.position.x, y: structure.position.y })),
-          ]),
-        ]);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        setWorldLoading(false);
-        setMarketLoading(false);
-      }
-    };
-
-    fetch();
-  }, [structures]);
+    try {
+      setWorldLoading(true);
+      console.log("AddToSubscriptionStart - 2");
+      debouncedAddToSubscription(
+        dojo.network.toriiClient,
+        dojo.network.contractComponents as any,
+        [...filteredStructures.map((structure) => structure.entity_id.toString())],
+        [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
+      );
+      debouncedAddToSubscriptionOneKey(dojo.network.toriiClient, dojo.network.contractComponents as any, [
+        ...filteredStructures.map((structure) => structure.entity_id.toString()),
+      ]);
+    } catch (error) {
+      console.error("Fetch failed", error);
+    } finally {
+      setWorldLoading(false);
+    }
+  }, [structures.length]);
 
   useEffect(() => {
-    setWorldLoading(true);
-
-    const fetch = async () => {
-      try {
-        await Promise.all([
-          addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-            ADMIN_BANK_ENTITY_ID.toString(),
-          ]),
-
-          addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any),
-        ]);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        setWorldLoading(false);
-        setMarketLoading(false);
-      }
-    };
-
-    fetch();
+    try {
+      setMarketLoading(true);
+      console.log("AddToSubscriptionStart - 3");
+      debouncedAddToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
+        ADMIN_BANK_ENTITY_ID.toString(),
+      ]);
+      debouncedAddMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
+    } catch (error) {
+      console.error("Fetch failed", error);
+    } finally {
+      setMarketLoading(false);
+    }
   }, []);
 
   return (
