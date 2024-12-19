@@ -2,7 +2,6 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { Prize, QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
-import { useWorldStore } from "@/hooks/store/useWorldLoading";
 import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/Button";
@@ -19,7 +18,7 @@ export const QuestsMenu = memo(() => {
     },
   } = useDojo();
 
-  const worldLoading = useWorldStore((state) => state.isWorldLoading);
+  const worldLoading = useUIStore((state) => state.isWorldLoading);
 
   useStartingTutorial();
 
@@ -34,7 +33,7 @@ export const QuestsMenu = memo(() => {
 
   const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestType.Settle));
 
-  const isWorldLoading = useWorldStore((state) => state.isWorldLoading);
+  const isWorldLoading = useUIStore((state) => state.isWorldLoading);
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
 
   const [isLoading, setIsLoading] = useState(false);

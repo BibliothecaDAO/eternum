@@ -10,6 +10,7 @@ import { ThreeStore, createThreeStoreSlice } from "./_threeStore";
 import { BattleViewInfo } from "./types";
 import { BlockchainStore, createBlockchainStore } from "./useBlockchainStore";
 import { RealmStore, createRealmStoreSlice } from "./useRealmStore";
+import { WorldStore, createWorldStoreSlice } from "./useWorldLoading";
 
 type TooltipType = {
   content: React.ReactNode;
@@ -70,7 +71,7 @@ interface UIStore {
   setShowToS: (show: boolean) => void;
 }
 
-export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore;
+export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore & WorldStore;
 
 const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
@@ -139,6 +140,7 @@ const useUIStore = create(
     ...createBuildModeStoreSlice(set),
     ...createRealmStoreSlice(set),
     ...createBlockchainStore(set),
+    ...createWorldStoreSlice(set),
   })),
 );
 
