@@ -146,7 +146,7 @@ export const addMarketSubscription = async <S extends Schema>(
     components,
     [],
     [],
-    5_000,
+    30_000,
     false,
   );
   const end = performance.now();
