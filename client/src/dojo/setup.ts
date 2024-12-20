@@ -166,6 +166,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
           "s0_eternum-Trade",
           "s0_eternum-Structure",
           "s0_eternum-Battle",
+          "s0_eternum-Guild",
         ],
       },
     },

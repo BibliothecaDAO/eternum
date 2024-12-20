@@ -308,5 +308,6 @@ export const useGuilds = () => {
     usePlayerWhitelist,
     getGuildFromEntityId,
     getPlayersInPlayersGuild,
+    getPlayerListInGuild,
   };
 };
