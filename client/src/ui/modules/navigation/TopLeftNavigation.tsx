@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { PlayerStructure, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
@@ -92,13 +92,11 @@ const WorkersHutTooltipContent = () => {
   );
 };
 
-export const TopLeftNavigation = memo(() => {
+export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStructure[] }) => {
   const { setup } = useDojo();
 
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
-  const { playerStructures } = useEntities();
   const { getEntityInfo } = useEntitiesUtils();
-  const structures = playerStructures();
 
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
