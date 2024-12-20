@@ -23,6 +23,7 @@ export type ArrivalInfo = {
   isOwner: boolean;
   hasResources: boolean;
   isHome: boolean;
+  originOwner: string;
   // resources: Resource[];
 };
 
@@ -95,6 +96,7 @@ const usePlayerArrivals = () => {
         isOwner: true,
         position: { x: position.x, y: position.y },
         hasResources,
+        originOwner: owner?.address.toString(),
         isHome,
       };
     },
