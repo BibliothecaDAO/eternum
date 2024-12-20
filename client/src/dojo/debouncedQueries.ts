@@ -2,6 +2,7 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { ToriiClient } from "@dojoengine/torii-client";
 import debounce from "lodash/debounce";
 import {
+  addArrivalsSubscription,
   addMarketSubscription,
   addToSubscription,
   addToSubscriptionOneKeyModelbyRealmEntityId,
@@ -16,8 +17,11 @@ class RequestQueue {
   private batchSize = 3; // Number of concurrent requests
   private batchDelayMs = 100; // Delay between batches
 
-  async add(request: () => Promise<void>) {
-    this.queue.push(request);
+  async add(request: () => Promise<void>, onComplete?: () => void) {
+    this.queue.push(async () => {
+      await request();
+      onComplete?.(); // Call onComplete after the request is processed
+    });
     if (!this.processing) {
       this.processing = true;
       this.processQueue();
@@ -54,8 +58,13 @@ const marketQueue = new RequestQueue();
 
 // Debounced functions that add to queues
 export const debouncedSyncPosition = debounce(
-  async <S extends Schema>(client: ToriiClient, components: Component<S, Metadata, undefined>[], entityID: string) => {
-    await positionQueue.add(() => syncPosition(client, components, entityID));
+  async <S extends Schema>(
+    client: ToriiClient,
+    components: Component<S, Metadata, undefined>[],
+    entityID: string,
+    onComplete?: () => void,
+  ) => {
+    await positionQueue.add(() => syncPosition(client, components, entityID), onComplete);
   },
   100,
   { leading: true }, // Add leading: true to execute immediately on first call
@@ -66,8 +75,12 @@ export const debouncedAddToSubscriptionTwoKey = debounce(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
     entityID: string[],
+    onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addToSubscriptionTwoKeyModelbyRealmEntityId(client, components, entityID));
+    await subscriptionQueue.add(
+      () => addToSubscriptionTwoKeyModelbyRealmEntityId(client, components, entityID),
+      onComplete,
+    );
   },
   250,
   { leading: true },
@@ -78,8 +91,25 @@ export const debouncedAddToSubscriptionOneKey = debounce(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
     entityID: string[],
+    onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addToSubscriptionOneKeyModelbyRealmEntityId(client, components, entityID));
+    await subscriptionQueue.add(
+      () => addToSubscriptionOneKeyModelbyRealmEntityId(client, components, entityID),
+      onComplete,
+    );
+  },
+  250,
+  { leading: true },
+);
+
+export const debounceAddResourceArrivals = debounce(
+  async <S extends Schema>(
+    client: ToriiClient,
+    components: Component<S, Metadata, undefined>[],
+    entityID: number[],
+    onComplete?: () => void,
+  ) => {
+    await subscriptionQueue.add(() => addArrivalsSubscription(client, components, entityID), onComplete);
   },
   250,
   { leading: true },
@@ -91,16 +121,21 @@ export const debouncedAddToSubscription = debounce(
     components: Component<S, Metadata, undefined>[],
     entityID: string[],
     position?: { x: number; y: number }[],
+    onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addToSubscription(client, components, entityID, position));
+    await subscriptionQueue.add(() => addToSubscription(client, components, entityID, position), onComplete);
   },
   250,
   { leading: true },
 );
 
 export const debouncedAddMarketSubscription = debounce(
-  async <S extends Schema>(client: ToriiClient, components: Component<S, Metadata, undefined>[]) => {
-    await marketQueue.add(() => addMarketSubscription(client, components));
+  async <S extends Schema>(
+    client: ToriiClient,
+    components: Component<S, Metadata, undefined>[],
+    onComplete?: () => void,
+  ) => {
+    await marketQueue.add(() => addMarketSubscription(client, components), onComplete);
   },
   500,
   { leading: true },
