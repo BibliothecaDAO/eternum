@@ -141,83 +141,44 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       ...Object.fromEntries(filteredStructures.map((structure) => [structure.entity_id.toString(), true])),
     }));
 
-    const fetch = async () => {
-      console.log("AddToSubscriptionStart - 1");
-      try {
-        // Wrap the debounced call in a Promise
-        await new Promise<void>((resolve) => {
-          debouncedAddToSubscription(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            [structureEntityId.toString()],
-            [{ x: position?.x || 0, y: position?.y || 0 }],
-          ).then(() => resolve());
-        });
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        setWorldLoading(false);
-      }
-    };
-
-    fetch();
+    console.log("AddToSubscriptionStart - 1");
+    debouncedAddToSubscription(
+      dojo.network.toriiClient,
+      dojo.network.contractComponents as any,
+      [structureEntityId.toString()],
+      [{ x: position?.x || 0, y: position?.y || 0 }],
+    ).finally(() => setWorldLoading(false));
   }, [structureEntityId]);
 
   useEffect(() => {
-    setWorldLoading(true);
-    const fetch = async () => {
-      try {
-        console.log("AddToSubscriptionStart - 2");
-        await Promise.all([
-          new Promise<void>((resolve) => {
-            debouncedAddToSubscription(
-              dojo.network.toriiClient,
-              dojo.network.contractComponents as any,
-              [...filteredStructures.map((structure) => structure.entity_id.toString())],
-              [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
-            ).then(() => resolve());
-          }),
-          new Promise<void>((resolve) => {
-            debouncedAddToSubscriptionOneKey(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-              ...filteredStructures.map((structure) => structure.entity_id.toString()),
-            ]).then(() => resolve());
-          }),
-        ]);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        setWorldLoading(false);
-      }
-    };
+    if (filteredStructures.length === 0) return;
 
-    fetch();
+    setWorldLoading(true);
+    console.log("AddToSubscriptionStart - 2");
+
+    Promise.all([
+      debouncedAddToSubscription(
+        dojo.network.toriiClient,
+        dojo.network.contractComponents as any,
+        [...filteredStructures.map((structure) => structure.entity_id.toString())],
+        [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
+      ),
+      debouncedAddToSubscriptionOneKey(dojo.network.toriiClient, dojo.network.contractComponents as any, [
+        ...filteredStructures.map((structure) => structure.entity_id.toString()),
+      ]),
+    ]).finally(() => setWorldLoading(false));
   }, [structures.length]);
 
   useEffect(() => {
     setMarketLoading(true);
-    const fetch = async () => {
-      try {
-        console.log("AddToSubscriptionStart - 3");
-        await Promise.all([
-          new Promise<void>((resolve) => {
-            debouncedAddToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-              ADMIN_BANK_ENTITY_ID.toString(),
-            ]).then(() => resolve());
-          }),
-          new Promise<void>((resolve) => {
-            debouncedAddMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any).then(() =>
-              resolve(),
-            );
-          }),
-        ]);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        setMarketLoading(false);
-      }
-    };
+    console.log("AddToSubscriptionStart - 3");
 
-    fetch();
+    Promise.all([
+      debouncedAddToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
+        ADMIN_BANK_ENTITY_ID.toString(),
+      ]),
+      debouncedAddMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any),
+    ]).finally(() => setMarketLoading(false));
   }, []);
 
   const battleViewContent = useMemo(
