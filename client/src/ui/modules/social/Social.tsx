@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useHyperstructureData } from "@/hooks/store/useLeaderBoardStore";
+import { useHyperstructureData, useLeaderBoardStore } from "@/hooks/store/useLeaderBoardStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { social } from "@/ui/components/navigation/Config";
@@ -12,11 +12,11 @@ import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { EndSeasonButton } from "./EndSeasonButton";
 import { PlayerId } from "./PlayerId";
 
-export const Social = ({ players }: { players: Player[] }) => {
+export const Social = ({ getPlayers }: { getPlayers: () => Player[] }) => {
   const {
     setup: {
       components: {
@@ -26,7 +26,7 @@ export const Social = ({ players }: { players: Player[] }) => {
   } = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState<ID>(0);
   const [selectedPlayer, setSelectedPlayer] = useState<ContractAddress>(0n);
 
@@ -35,7 +35,20 @@ export const Social = ({ players }: { players: Player[] }) => {
 
   const gameEnded = useEntityQuery([Has(GameEnded)]);
 
+  const [players, setPlayers] = useState(() => getPlayers());
+  const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
+
   const updateLeaderboard = useHyperstructureData();
+
+  const handleUpdatePoints = () => {
+    setIsLoading(true);
+    updateLeaderboard();
+  };
+
+  useEffect(() => {
+    setPlayers(getPlayers());
+    setIsLoading(false);
+  }, [playersByRank]);
 
   const viewGuildMembers = (guildEntityId: ID) => {
     if (selectedGuild === guildEntityId) {
@@ -112,7 +125,7 @@ export const Social = ({ players }: { players: Player[] }) => {
 
         <div className="flex justify-center gap-8">
           {gameEnded.length === 0 && <EndSeasonButton />}
-          <Button variant="secondary" onClick={updateLeaderboard}>
+          <Button isLoading={isLoading} variant="secondary" onClick={handleUpdatePoints}>
             Update Points
           </Button>
         </div>
