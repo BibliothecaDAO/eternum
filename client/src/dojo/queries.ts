@@ -25,7 +25,7 @@ export const syncPosition = async <S extends Schema>(
     components,
     [],
     [],
-    5_000,
+    20_000,
   );
 };
 
@@ -53,7 +53,7 @@ export const addToSubscriptionTwoKeyModelbyRealmEntityId = async <S extends Sche
     components,
     [],
     [],
-    5_000,
+    20_000,
   );
 };
 
@@ -81,7 +81,7 @@ export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Sche
     components,
     [],
     [],
-    5_000,
+    20_000,
   );
 };
 
@@ -122,7 +122,7 @@ export const addToSubscription = async <S extends Schema>(
     components as any,
     [],
     [],
-    5_000,
+    20_000,
   );
   const end = performance.now();
   console.log("AddToSubscriptionEnd", end - start);
@@ -145,7 +145,7 @@ export const addMarketSubscription = async <S extends Schema>(
     components,
     [],
     [],
-    5_000,
+    20_000,
     false,
   );
   const end = performance.now();
