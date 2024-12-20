@@ -153,6 +153,44 @@ export const addMarketSubscription = async <S extends Schema>(
   console.log("MarketEnd", end - start);
 };
 
+export const addHyperstructureSubscription = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+) => {
+  const start = performance.now();
+  await getEntities(
+    client,
+    {
+      Composite: {
+        operator: "Or",
+        clauses: [
+          {
+            Keys: {
+              keys: [undefined, undefined],
+              pattern_matching: "FixedLen",
+              models: ["s0_eternum-Epoch", "s0_eternum-Progress"],
+            },
+          },
+          {
+            Keys: {
+              keys: [undefined, undefined, undefined],
+              pattern_matching: "FixedLen",
+              models: ["s0_eternum-Contribution"],
+            },
+          },
+        ],
+      },
+    },
+    components as any,
+    [],
+    [],
+    40_000,
+    false,
+  );
+  const end = performance.now();
+  console.log("HyperstructureEnd", end - start);
+};
+
 export const addArrivalsSubscription = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],

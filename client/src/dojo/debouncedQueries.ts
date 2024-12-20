@@ -3,6 +3,7 @@ import { ToriiClient } from "@dojoengine/torii-client";
 import debounce from "lodash/debounce";
 import {
   addArrivalsSubscription,
+  addHyperstructureSubscription,
   addMarketSubscription,
   addToSubscription,
   addToSubscriptionOneKeyModelbyRealmEntityId,
@@ -55,7 +56,7 @@ class RequestQueue {
 const positionQueue = new RequestQueue();
 const subscriptionQueue = new RequestQueue();
 const marketQueue = new RequestQueue();
-
+const hyperstructureQueue = new RequestQueue();
 // Debounced functions that add to queues
 export const debouncedSyncPosition = debounce(
   async <S extends Schema>(
@@ -141,9 +142,22 @@ export const debouncedAddMarketSubscription = debounce(
   { leading: true },
 );
 
+export const debouncedAddHyperstructureSubscription = debounce(
+  async <S extends Schema>(
+    client: ToriiClient,
+    components: Component<S, Metadata, undefined>[],
+    onComplete?: () => void,
+  ) => {
+    await hyperstructureQueue.add(() => addHyperstructureSubscription(client, components), onComplete);
+  },
+  500,
+  { leading: true },
+);
+
 // Utility function to clear all queues if needed
 export const clearAllQueues = () => {
   positionQueue.clear();
   subscriptionQueue.clear();
   marketQueue.clear();
+  hyperstructureQueue.clear();
 };
