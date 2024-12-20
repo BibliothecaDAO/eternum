@@ -164,7 +164,7 @@ export const SettingsWindow = () => {
             ))}
           </div>
           {selectedGuilds.length > 0 && (
-            <Button variant="outline" onClick={handleClearGuilds} className="self-start">
+            <Button size="xs" variant="danger" onClick={handleClearGuilds} className="self-start">
               Clear All
             </Button>
           )}

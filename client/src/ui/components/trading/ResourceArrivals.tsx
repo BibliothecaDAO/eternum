@@ -28,7 +28,6 @@ const useSubscribedIdsStore = create<SubscribedIdsStore>((set) => ({
 
 export const AllResourceArrivals = memo(
   ({ arrivals, className = "" }: { arrivals: ArrivalInfo[]; className?: string }) => {
-    const dojo = useDojo();
     const [displayCount, setDisplayCount] = useState(DISPLAYED_ARRIVALS);
     const [showOnlyArrived, setShowOnlyArrived] = useState(true);
     const [showOnlyGuildMembers, setShowOnlyGuildMembers] = useState(false);
@@ -40,11 +39,10 @@ export const AllResourceArrivals = memo(
 
     const {
       account: { account },
+      network: { toriiClient, contractComponents },
     } = useDojo();
 
     const savedGuilds = localStorage.getItem("WHITELIST")?.split(",");
-
-    console.log("savedGuilds", savedGuilds);
 
     const whitelistedGuilds = useMemo(() => {
       return [
@@ -73,19 +71,28 @@ export const AllResourceArrivals = memo(
       addSubscribedIds(unsubscribedIds);
 
       // Move API call outside of state updates
-      addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, unsubscribedIds).catch(
-        (error) => console.error("Fetch failed", error),
+      addToSubscription(toriiClient, contractComponents as any, unsubscribedIds).catch((error) =>
+        console.error("Fetch failed", error),
       );
       console.log("AddToSubscriptionStart - 5");
     }, [arrivals, subscribedIds, addSubscribedIds]);
 
     const guildPlayers = getPlayersInPlayersGuild(BigInt(account?.address || 0n)).map((player) => player.address);
 
-    const filteredArrivals = arrivals.filter((arrival) => {
-      const timeCondition = showOnlyArrived ? arrival.arrivesAt < nextBlockTimestamp : true;
-      const guildCondition = showOnlyGuildMembers ? guildPlayers.includes(arrival.originOwner) : true;
-      return timeCondition && guildCondition;
-    });
+    const filteredArrivals = useMemo(
+      () =>
+        arrivals.filter((arrival) => {
+          const timeCondition = showOnlyArrived ? arrival.arrivesAt < nextBlockTimestamp : true;
+          // Add a check for empty guildPlayers array
+          const guildCondition = showOnlyGuildMembers
+            ? guildPlayers.length === 0
+              ? true // If no guild players, show all arrivals
+              : guildPlayers.includes(arrival.originOwner)
+            : true;
+          return timeCondition && guildCondition;
+        }),
+      [arrivals, showOnlyArrived, showOnlyGuildMembers, nextBlockTimestamp, guildPlayers],
+    );
 
     const displayedArrivals = filteredArrivals.slice(0, displayCount);
     const hasMore = displayCount < filteredArrivals.length;
