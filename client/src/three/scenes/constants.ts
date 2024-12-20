@@ -1,4 +1,5 @@
 import { HyperstructureTypesNames, ResourceMiningTypes } from "@/types";
+import { IS_FLAT_MODE } from "@/ui/config";
 import { BuildingType, RealmLevelNames, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { BiomeType } from "../components/Biome";
@@ -76,24 +77,47 @@ export const buildingModelPaths: Record<
 };
 
 const BASE_PATH = "/models/biomes-opt/";
+const FLAT_PATH = "/models/biomes-flat-opt/";
+const MODELS_PATH = IS_FLAT_MODE ? FLAT_PATH : BASE_PATH;
+
+export enum BiomeFilenames {
+  Bare = "bare.glb",
+  Beach = "beach.glb",
+  TemperateDeciduousForest = "deciduousForest.glb",
+  DeepOcean = "deepOcean.glb",
+  Grassland = "grassland.glb",
+  Ocean = "ocean.glb",
+  Outline = "outline.glb",
+  Scorched = "scorched.glb",
+  Tundra = "tundra.glb",
+  TemperateDesert = "temperateDesert.glb",
+  Shrubland = "shrubland.glb",
+  Snow = "snow.glb",
+  Taiga = "taiga.glb",
+  TemperateRainForest = "temperateRainforest.glb",
+  SubtropicalDesert = "subtropicalDesert.glb",
+  TropicalRainForest = "tropicalRainforest.glb",
+  TropicalSeasonalForest = "tropicalSeasonalForest.glb",
+}
+
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
-  Bare: BASE_PATH + "bare.glb",
-  Beach: BASE_PATH + "beach.glb",
-  TemperateDeciduousForest: BASE_PATH + "deciduousForest.glb",
-  DeepOcean: BASE_PATH + "deepOcean.glb",
-  Grassland: BASE_PATH + "grassland.glb",
-  Ocean: BASE_PATH + "ocean.glb",
-  Outline: BASE_PATH + "outline.glb",
-  Scorched: BASE_PATH + "scorched.glb",
-  Tundra: BASE_PATH + "tundra.glb",
-  TemperateDesert: BASE_PATH + "temperateDesert.glb",
-  Shrubland: BASE_PATH + "shrubland.glb",
-  Snow: BASE_PATH + "snow.glb",
-  Taiga: BASE_PATH + "taiga.glb",
-  TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-  SubtropicalDesert: BASE_PATH + "subtropicalDesert.glb",
-  TropicalRainForest: BASE_PATH + "tropicalRainforest.glb",
-  TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
+  Bare: MODELS_PATH + BiomeFilenames.Grassland,
+  Beach: MODELS_PATH + BiomeFilenames.Grassland,
+  TemperateDeciduousForest: MODELS_PATH + BiomeFilenames.Grassland,
+  DeepOcean: MODELS_PATH + BiomeFilenames.Grassland,
+  Grassland: MODELS_PATH + BiomeFilenames.Grassland,
+  Ocean: MODELS_PATH + BiomeFilenames.Grassland,
+  Outline: BASE_PATH + BiomeFilenames.Outline,
+  Scorched: MODELS_PATH + BiomeFilenames.Grassland,
+  Tundra: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  TemperateDesert: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  Shrubland: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  Snow: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  Taiga: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  TemperateRainForest: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  SubtropicalDesert: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  TropicalRainForest: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  TropicalSeasonalForest: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
 };
 
 export const PROGRESS_HALF_THRESHOLD = 50;

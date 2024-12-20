@@ -5,6 +5,7 @@ import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
+import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import {
@@ -271,7 +272,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.removeCastleFromScene();
     this.updateHexceptionGrid(this.hexceptionRadius);
-    this.controls.maxDistance = 18;
+    this.controls.maxDistance = IS_FLAT_MODE ? 36 : 18;
     this.controls.enablePan = false;
     this.controls.zoomToCursor = false;
 
@@ -540,6 +541,7 @@ export default class HexceptionScene extends HexagonScene {
           this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[biome as BiomeType]);
         });
         pillarOffset += matrices.length;
+        this.pillars!.position.y = -0.01;
         this.pillars!.count = pillarOffset;
         this.pillars!.computeBoundingSphere();
         hexMesh.setCount(matrices.length);
@@ -670,12 +672,16 @@ export default class HexceptionScene extends HexagonScene {
     positions.forEach((position) => {
       dummy.position.x = position.x;
       dummy.position.z = position.z;
-      dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
+      dummy.position.y = isMainHex || isFlat || position.isBorder || IS_FLAT_MODE ? 0 : position.y / 2;
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
       const rotationSeed = this.hashCoordinates(position.col, position.row);
       const rotationIndex = Math.floor(rotationSeed * 6);
       const randomRotation = (rotationIndex * Math.PI) / 3;
-      dummy.rotation.y = randomRotation;
+      if (!IS_FLAT_MODE) {
+        dummy.rotation.y = randomRotation;
+      } else {
+        dummy.rotation.y = 0;
+      }
       dummy.updateMatrix();
       biomeHexes[biome].push(dummy.matrix.clone());
     });
