@@ -219,6 +219,10 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         ]);
       } catch (error) {
         console.error("Fetch failed", error);
+      } finally {
+        // Ensure loading states are reset even if there's an error
+        setLoading(LoadingStateKey.Bank, false);
+        setLoading(LoadingStateKey.Market, false);
       }
     };
 
