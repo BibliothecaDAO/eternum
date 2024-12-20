@@ -2,6 +2,7 @@ import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMoveme
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import { soundSelector } from "@/hooks/useUISound";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
@@ -675,6 +676,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Create a unique key for this chunk range
     const chunkKey = `${startCol - range},${startCol + range},${startRow - range},${startRow + range}`;
+    console.log({ chunkKey });
 
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
@@ -687,6 +689,7 @@ export default class WorldmapScene extends HexagonScene {
     console.log(startCol, startRow, range);
 
     try {
+      this.state.setLoading(LoadingStateKey.Map, true);
       const promiseTiles = getEntities(
         this.dojo.network.toriiClient,
         {
@@ -734,62 +737,62 @@ export default class WorldmapScene extends HexagonScene {
         1000,
         false,
       );
-      // const promisePositions = getEntities(
-      //   this.dojo.network.toriiClient,
-      //   {
-      //     Composite: {
-      //       operator: "And",
-      //       clauses: [
-      //         {
-      //           Composite: {
-      //             operator: "And",
-      //             clauses: [
-      //               {
-      //                 Member: {
-      //                   model: "s0_eternum-Position",
-      //                   member: "x",
-      //                   operator: "Gte",
-      //                   value: { Primitive: { U32: startCol - range } },
-      //                 },
-      //               },
-      //               {
-      //                 Member: {
-      //                   model: "s0_eternum-Position",
-      //                   member: "x",
-      //                   operator: "Lte",
-      //                   value: { Primitive: { U32: startCol + range } },
-      //                 },
-      //               },
-      //               {
-      //                 Member: {
-      //                   model: "s0_eternum-Position",
-      //                   member: "y",
-      //                   operator: "Gte",
-      //                   value: { Primitive: { U32: startRow - range } },
-      //                 },
-      //               },
-      //               {
-      //                 Member: {
-      //                   model: "s0_eternum-Position",
-      //                   member: "y",
-      //                   operator: "Lte",
-      //                   value: { Primitive: { U32: startRow + range } },
-      //                 },
-      //               },
-      //             ],
-      //           },
-      //         },
-      //       ],
-      //     },
-      //   },
-      //   this.dojo.network.contractComponents as any,
-      //   [],
-      //   ["s0_eternum-Tile"],
-      //   1000,
-      //   false,
-      // );
-      Promise.all([promiseTiles]).then(([tiles]) => {
-        // console.log(tiles, positions);
+      const promisePositions = getEntities(
+        this.dojo.network.toriiClient,
+        {
+          Composite: {
+            operator: "And",
+            clauses: [
+              {
+                Member: {
+                  model: "s0_eternum-Position",
+                  member: "x",
+                  operator: "Gte",
+                  value: { Primitive: { U32: startCol - range } },
+                },
+              },
+              {
+                Member: {
+                  model: "s0_eternum-Position",
+                  member: "x",
+                  operator: "Lte",
+                  value: { Primitive: { U32: startCol + range } },
+                },
+              },
+              {
+                Member: {
+                  model: "s0_eternum-Position",
+                  member: "y",
+                  operator: "Gte",
+                  value: { Primitive: { U32: startRow - range } },
+                },
+              },
+              {
+                Member: {
+                  model: "s0_eternum-Position",
+                  member: "y",
+                  operator: "Lte",
+                  value: { Primitive: { U32: startRow + range } },
+                },
+              },
+            ],
+          },
+        },
+        this.dojo.network.contractComponents as any,
+        [],
+        [
+          "s0_eternum-Army",
+          "s0_eternum-Position",
+          "s0_eternum-Health",
+          "s0_eternum-EntityOwner",
+          "s0_eternum-Protectee",
+          "s0_eternum-Stamina",
+        ],
+        1000,
+        false,
+      );
+      Promise.all([promiseTiles, promisePositions]).then(() => {
+        this.state.setLoading(LoadingStateKey.Map, false);
       });
     } catch (error) {
       // If there's an error, remove the chunk from cached set so it can be retried

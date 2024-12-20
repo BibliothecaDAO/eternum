@@ -2,7 +2,6 @@ import { useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
-import { useWorldStore } from "@/hooks/store/useWorldLoading";
 import { Position } from "@/types/Position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { InventoryResources } from "@/ui/components/resources/InventoryResources";
@@ -14,8 +13,6 @@ export const SelectedArmy = () => {
   const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
   const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
   const { isMapView } = useQuery();
-
-  const isWorldLoading = useWorldStore((state) => state.isWorldLoading);
 
   const [selectedArmyIndex, setSelectedArmyIndex] = useState(0);
 
@@ -66,52 +63,34 @@ export const SelectedArmy = () => {
   const showTooltip = selectedHex && ownArmy && isMapView;
 
   return (
-    <>
-      <div
-        className={`
-        fixed left-1/2 transform -translate-x-1/2
-        bg-black/80 p-2 rounded-lg
-        transition-all duration-200 ease-in-out
-        origin-bottom scale-75 md:scale-100
-        ${isWorldLoading ? "bottom-0 opacity-100" : "translate-y-full opacity-0"}
-      `}
-      >
-        {isWorldLoading && (
-          <div className="flex flex-row items-center justify-center h-full p-2">
-            <img src="/images/eternumloader.png" className="w-10" />
-            <div className="ml-4">World state is loading...</div>
-          </div>
-        )}
-      </div>
-      <div
-        className={`
+    <div
+      className={`
         fixed left-1/2 transform -translate-x-1/2
         bg-black/80 p-2 rounded-lg
         transition-all duration-200 ease-in-out
         origin-bottom scale-75 md:scale-100
         ${showTooltip ? "bottom-0 opacity-100" : "translate-y-full opacity-0"}
       `}
-      >
-        {showTooltip && (
-          <div>
-            {userArmies.length > 1 && (
-              <div className="flex flex-row justify-between mt-2">
-                <div className="px-2 py-1 text-sm rounded-tl animate-pulse">Press Tab to cycle through armies</div>
-                <div className="px-2 py-1 text-sm rounded-bl ">
-                  Army {selectedArmyIndex + 1}/{userArmies.length}
-                </div>
+    >
+      {showTooltip && (
+        <div>
+          {userArmies.length > 1 && (
+            <div className="flex flex-row justify-between mt-2">
+              <div className="px-2 py-1 text-sm rounded-tl animate-pulse">Press Tab to cycle through armies</div>
+              <div className="px-2 py-1 text-sm rounded-bl ">
+                Army {selectedArmyIndex + 1}/{userArmies.length}
               </div>
-            )}
-            <ArmyWarning army={ownArmy!} />
-            <ArmyChip className="w-[27rem] bg-black/90" army={ownArmy} showButtons={false} />
-            <InventoryResources
-              entityId={ownArmy!.entity_id}
-              className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
-              resourcesIconSize="xs"
-            />
-          </div>
-        )}
-      </div>
-    </>
+            </div>
+          )}
+          <ArmyWarning army={ownArmy!} />
+          <ArmyChip className="w-[27rem] bg-black/90" army={ownArmy} showButtons={false} />
+          <InventoryResources
+            entityId={ownArmy!.entity_id}
+            className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
+            resourcesIconSize="xs"
+          />
+        </div>
+      )}
+    </div>
   );
 };

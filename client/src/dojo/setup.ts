@@ -1,3 +1,5 @@
+import { AppStore } from "@/hooks/store/useUIStore";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   HYPERSTRUCTURE_CONFIG_ID,
@@ -71,10 +73,11 @@ export const syncEntitiesDebounced = async <S extends Schema>(
   };
 };
 
-export async function setup({ ...config }: DojoConfig) {
+export async function setup(config: DojoConfig & { state: AppStore }) {
   const network = await setupNetwork(config);
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
+  const setLoading = config.state.setLoading;
 
   const configClauses: Clause[] = [
     {
@@ -114,13 +117,37 @@ export async function setup({ ...config }: DojoConfig) {
     },
   ];
 
-  await getEntities(
-    network.toriiClient,
-    { Composite: { operator: "Or", clauses: configClauses } },
-    network.contractComponents as any,
-  );
+  setLoading(LoadingStateKey.Config, true);
+  try {
+    await Promise.all([
+      getEntities(
+        network.toriiClient,
+        { Composite: { operator: "Or", clauses: configClauses } },
+        network.contractComponents as any,
+      ),
+      getEntities(
+        network.toriiClient,
+        {
+          Keys: {
+            keys: [undefined, undefined],
+            pattern_matching: "FixedLen",
+            models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
+          },
+        },
+        network.contractComponents as any,
+        [],
+        [],
+        40_000,
+        false,
+      ),
+    ]);
+  } finally {
+    setLoading(LoadingStateKey.Config, false);
+  }
 
   // fetch all existing entities from torii
+
+  setLoading(LoadingStateKey.SingleKey, true);
   await getEntities(
     network.toriiClient,
     {
@@ -137,10 +164,8 @@ export async function setup({ ...config }: DojoConfig) {
           "s0_eternum-BankConfig",
           "s0_eternum-Bank",
           "s0_eternum-Trade",
-          "s0_eternum-Army",
           "s0_eternum-Structure",
           "s0_eternum-Battle",
-          "s0_eternum-EntityOwner",
         ],
       },
     },
@@ -149,28 +174,15 @@ export async function setup({ ...config }: DojoConfig) {
     [],
     40_000,
     false,
-  );
-
-  await getEntities(
-    network.toriiClient,
-    {
-      Keys: {
-        keys: [undefined, undefined],
-        pattern_matching: "FixedLen",
-        models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
-      },
-    },
-    network.contractComponents as any,
-    [],
-    [],
-    40_000,
-    false,
-  );
+  ).finally(() => {
+    setLoading(LoadingStateKey.SingleKey, false);
+  });
 
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
 
   configManager.setDojo(components);
 
+  setLoading(LoadingStateKey.Events, true);
   const eventSync = getEvents(
     network.toriiClient,
     network.contractComponents.events as any,
@@ -198,7 +210,9 @@ export async function setup({ ...config }: DojoConfig) {
     },
     false,
     false,
-  );
+  ).finally(() => {
+    setLoading(LoadingStateKey.Events, false);
+  });
 
   return {
     network,

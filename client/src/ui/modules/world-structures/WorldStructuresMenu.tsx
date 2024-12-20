@@ -7,7 +7,8 @@ import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useWorldStore } from "@/hooks/store/useWorldLoading";
+import useUIStore from "@/hooks/store/useUIStore";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
@@ -33,18 +34,16 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     network: { toriiClient, contractComponents },
   } = useDojo();
 
-  const isStructuresLoading = useWorldStore((state) => state.isStructuresLoading);
-  const setStructuresLoading = useWorldStore((state) => state.setStructuresLoading);
+  const hyperstructuresLoaded = useUIStore((state) => state.loadingStates.hyperstructure);
+  const setLoading = useUIStore((state) => state.setLoading);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        await fetchHyperstructureData(
-          toriiClient,
-          contractComponents as any,
-          isStructuresLoading,
-          setStructuresLoading,
-        );
+        setLoading(LoadingStateKey.Hyperstructure, false),
+          await fetchHyperstructureData(toriiClient, contractComponents as any, hyperstructuresLoaded, () =>
+            setLoading(LoadingStateKey.Hyperstructure, true),
+          );
       } catch (error) {
         console.error("Failed to fetch hyperstructure data:", error);
       }
@@ -142,7 +141,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     [selectedTab, hyperstructures, fragmentMines, showOnlyMine, account.address, myHyperstructures],
   );
 
-  if (isStructuresLoading) {
+  if (hyperstructuresLoaded) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-gold">Loading structures...</div>
@@ -347,7 +346,7 @@ const fetchHyperstructureData = async (
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   isStructuresLoading: boolean,
-  setStructuresLoading: (loading: boolean) => void,
+  onCompleted?: () => void,
 ) => {
   if (!isStructuresLoading) {
     return;
@@ -383,6 +382,6 @@ const fetchHyperstructureData = async (
     40_000,
     false,
   ).finally(() => {
-    setStructuresLoading(false);
+    onCompleted?.();
   });
 };
