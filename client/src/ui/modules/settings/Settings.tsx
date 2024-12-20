@@ -13,7 +13,7 @@ import { useMusicPlayer } from "@/hooks/useMusic";
 import useScreenOrientation from "@/hooks/useScreenOrientation";
 import { settings } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
-import { GraphicsSettings } from "@/ui/config";
+import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import Avatar from "@/ui/elements/Avatar";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
@@ -86,6 +86,17 @@ export const SettingsWindow = () => {
     toast("Guild whitelist cleared!");
   };
 
+  const [isFlatMode, setIsFlatMode] = useState<boolean>(() => IS_FLAT_MODE);
+
+  const toggleFlatMode = () => {
+    setIsFlatMode((prev) => {
+      const newFlatMode = !prev;
+      localStorage.setItem("FLAT_MODE", newFlatMode.toString());
+      window.location.reload(); // Reload the page to apply changes
+      return newFlatMode;
+    });
+  };
+
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
       <div className="flex justify-between p-4">
@@ -147,7 +158,10 @@ export const SettingsWindow = () => {
             High
           </Button>
         </div>
-        <Headline>Sound</Headline>
+        <div className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold" onClick={toggleFlatMode}>
+          <Checkbox enabled={isFlatMode} />
+          <div>Flat Mode</div>
+        </div>
 
         <div className="flex flex-col gap-2">
           <h5>Whitelist guilds</h5>
@@ -169,7 +183,7 @@ export const SettingsWindow = () => {
             </Button>
           )}
         </div>
-
+        <Headline>Sound</Headline>
         <div className="flex space-x-2">
           {isSoundOn ? (
             <Button variant="outline" onClick={() => toggleSound()}>

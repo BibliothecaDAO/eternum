@@ -6,7 +6,7 @@ export { FELT_CENTER };
 export enum GraphicsSettings {
   LOW = "LOW",
   MID = "MID",
-  HIGH = "HIGH"
+  HIGH = "HIGH",
 }
 
 const checkGraphicsSettings = async () => {
@@ -40,10 +40,16 @@ const checkGraphicsSettings = async () => {
     }
   }
 
-  return localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings || GraphicsSettings.HIGH;
+  return (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
+};
+
+const getFlatMode = () => {
+  const flatMode = localStorage.getItem("FLAT_MODE");
+  return flatMode === null ? false : flatMode === "true";
 };
 
 export const GRAPHICS_SETTING = await checkGraphicsSettings();
+export const IS_FLAT_MODE = getFlatMode();
 
 export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 

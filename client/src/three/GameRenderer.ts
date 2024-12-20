@@ -1,7 +1,7 @@
 import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { SceneName } from "@/types";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import throttle from "lodash/throttle";
 import {
   BloomEffect,
@@ -87,7 +87,7 @@ export default class GameRenderer {
       this.state = state;
     });
 
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 30);
+    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, IS_FLAT_MODE ? 50 : 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
     this.camera.position.set(0, cameraHeight, cameraDepth);
