@@ -1,4 +1,5 @@
 import { AppStore } from "@/hooks/store/useUIStore";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   HYPERSTRUCTURE_CONFIG_ID,
@@ -7,7 +8,7 @@ import {
 import { DojoConfig } from "@dojoengine/core";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
-import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
+import { Clause, ComparisonOperator, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
@@ -76,8 +77,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
   const network = await setupNetwork(config);
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
-  const setConfigLoading = config.state.setConfigLoading;
-  const setSingleKeyLoading = config.state.setSingleKeyLoading;
+  const setLoading = config.state.setLoading;
 
   const configClauses: Clause[] = [
     {
@@ -117,37 +117,37 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
     },
   ];
 
-  setConfigLoading(true);
-  await Promise.all([
-    getEntities(
-      network.toriiClient,
-      { Composite: { operator: "Or", clauses: configClauses } },
-      network.contractComponents as any,
-    ).finally(() => {
-      setConfigLoading(false);
-    }),
-    getEntities(
-      network.toriiClient,
-      {
-        Keys: {
-          keys: [undefined, undefined],
-          pattern_matching: "FixedLen",
-          models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
+  setLoading(LoadingStateKey.Config, true);
+  try {
+    await Promise.all([
+      getEntities(
+        network.toriiClient,
+        { Composite: { operator: "Or", clauses: configClauses } },
+        network.contractComponents as any,
+      ),
+      getEntities(
+        network.toriiClient,
+        {
+          Keys: {
+            keys: [undefined, undefined],
+            pattern_matching: "FixedLen",
+            models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
+          },
         },
-      },
-      network.contractComponents as any,
-      [],
-      [],
-      40_000,
-      false,
-    ),
-  ]).finally(() => {
-    setConfigLoading(false);
-  });
+        network.contractComponents as any,
+        [],
+        [],
+        40_000,
+        false,
+      ),
+    ]);
+  } finally {
+    setLoading(LoadingStateKey.Config, false);
+  }
 
   // fetch all existing entities from torii
 
-  setSingleKeyLoading(true);
+  setLoading(LoadingStateKey.SingleKey, true);
   await getEntities(
     network.toriiClient,
     {
@@ -164,12 +164,8 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
           "s0_eternum-BankConfig",
           "s0_eternum-Bank",
           "s0_eternum-Trade",
-          // improve
-          // "s0_eternum-Army",
           "s0_eternum-Structure",
           "s0_eternum-Battle",
-          // improve
-          // "s0_eternum-EntityOwner",
         ],
       },
     },
@@ -179,14 +175,15 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
     40_000,
     false,
   ).finally(() => {
-    setSingleKeyLoading(false);
+    setLoading(LoadingStateKey.SingleKey, false);
   });
 
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
 
   configManager.setDojo(components);
 
-  const eventSync = getEvents(
+  setLoading(LoadingStateKey.Events, true);
+  const eventSync1 = getEvents(
     network.toriiClient,
     network.contractComponents.events as any,
     [],
@@ -199,13 +196,6 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
         models: [
           "s0_eternum-GameEnded",
           "s0_eternum-HyperstructureFinished",
-          "s0_eternum-BattleClaimData",
-          "s0_eternum-BattleJoinData",
-          "s0_eternum-BattleLeaveData",
-          "s0_eternum-BattlePillageData",
-          "s0_eternum-BattleStartData",
-          "s0_eternum-AcceptOrder",
-          "s0_eternum-SwapEvent",
           "s0_eternum-LiquidityEvent",
           "s0_eternum-HyperstructureContribution",
         ],
@@ -214,6 +204,49 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
     false,
     false,
   );
+
+  const TWO_DAYS_IN_SECONDS = 172800;
+  const currentTimestamp = Math.floor(Date.now() / 1000);
+
+  const createTimestampClause = (model: string) => ({
+    Member: {
+      model: `s0_eternum-${model}`,
+      member: "timestamp",
+      operator: "Gt" as ComparisonOperator, // Cast to the correct type
+      value: { Primitive: { U64: currentTimestamp - TWO_DAYS_IN_SECONDS } },
+    },
+  });
+
+  const eventModels = [
+    "HyperstructureContribution",
+    "BattleClaimData",
+    "BattleJoinData",
+    "BattleLeaveData",
+    "BattlePillageData",
+    "BattleStartData",
+    "AcceptOrder",
+    "SwapEvent",
+  ];
+
+  const eventSync2 = getEvents(
+    network.toriiClient,
+    network.contractComponents.events as any,
+    [],
+    [],
+    20000,
+    {
+      Composite: {
+        operator: "Or",
+        clauses: eventModels.map(createTimestampClause),
+      },
+    },
+    false,
+    false,
+  );
+
+  const eventSync = Promise.all([eventSync1, eventSync2]).finally(() => {
+    setLoading(LoadingStateKey.Events, false);
+  });
 
   return {
     network,

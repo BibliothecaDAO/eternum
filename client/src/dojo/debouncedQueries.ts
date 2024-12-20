@@ -17,8 +17,11 @@ class RequestQueue {
   private batchSize = 3; // Number of concurrent requests
   private batchDelayMs = 100; // Delay between batches
 
-  async add(request: () => Promise<void>) {
-    this.queue.push(request);
+  async add(request: () => Promise<void>, onComplete?: () => void) {
+    this.queue.push(async () => {
+      await request();
+      onComplete?.(); // Call onComplete after the request is processed
+    });
     if (!this.processing) {
       this.processing = true;
       this.processQueue();
@@ -61,8 +64,7 @@ export const debouncedSyncPosition = debounce(
     entityID: string,
     onComplete?: () => void,
   ) => {
-    await positionQueue.add(() => syncPosition(client, components, entityID));
-    onComplete?.();
+    await positionQueue.add(() => syncPosition(client, components, entityID), onComplete);
   },
   100,
   { leading: true }, // Add leading: true to execute immediately on first call
@@ -75,8 +77,10 @@ export const debouncedAddToSubscriptionTwoKey = debounce(
     entityID: string[],
     onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addToSubscriptionTwoKeyModelbyRealmEntityId(client, components, entityID));
-    onComplete?.();
+    await subscriptionQueue.add(
+      () => addToSubscriptionTwoKeyModelbyRealmEntityId(client, components, entityID),
+      onComplete,
+    );
   },
   250,
   { leading: true },
@@ -89,8 +93,10 @@ export const debouncedAddToSubscriptionOneKey = debounce(
     entityID: string[],
     onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addToSubscriptionOneKeyModelbyRealmEntityId(client, components, entityID));
-    onComplete?.();
+    await subscriptionQueue.add(
+      () => addToSubscriptionOneKeyModelbyRealmEntityId(client, components, entityID),
+      onComplete,
+    );
   },
   250,
   { leading: true },
@@ -103,8 +109,7 @@ export const debounceAddResourceArrivals = debounce(
     entityID: number[],
     onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addArrivalsSubscription(client, components, entityID));
-    onComplete?.();
+    await subscriptionQueue.add(() => addArrivalsSubscription(client, components, entityID), onComplete);
   },
   250,
   { leading: true },
@@ -118,8 +123,7 @@ export const debouncedAddToSubscription = debounce(
     position?: { x: number; y: number }[],
     onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addToSubscription(client, components, entityID, position));
-    onComplete?.();
+    await subscriptionQueue.add(() => addToSubscription(client, components, entityID, position), onComplete);
   },
   250,
   { leading: true },
@@ -131,8 +135,7 @@ export const debouncedAddMarketSubscription = debounce(
     components: Component<S, Metadata, undefined>[],
     onComplete?: () => void,
   ) => {
-    await marketQueue.add(() => addMarketSubscription(client, components));
-    onComplete?.();
+    await marketQueue.add(() => addMarketSubscription(client, components), onComplete);
   },
   500,
   { leading: true },

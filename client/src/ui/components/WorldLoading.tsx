@@ -1,43 +1,25 @@
 import useUIStore from "@/hooks/store/useUIStore";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 
 export const WorldLoading = () => {
-  const isSelectedStructureLoading = useUIStore((state) => state.isSelectedStructureLoading);
-  const isMarketLoading = useUIStore((state) => state.isMarketLoading);
-  const isPlayerStructuresLoading = useUIStore((state) => state.isPlayerStructuresLoading);
-  const isArrivalsLoading = useUIStore((state) => state.isArrivalsLoading);
-  const isMapLoading = useUIStore((state) => state.isMapLoading);
-  const isBankLoading = useUIStore((state) => state.isBankLoading);
-  const isWorldLoading = useUIStore((state) => state.isWorldLoading);
-  const isHyperstructureLoading = useUIStore((state) => state.isHyperstructureLoading);
-  const isSingleKeyLoading = useUIStore((state) => state.isSingleKeyLoading);
-  const isConfigLoading = useUIStore((state) => state.isConfigLoading);
+  const loadingStates = useUIStore((state) => state.loadingStates);
 
-  const anyLoading =
-    isSelectedStructureLoading ||
-    isMarketLoading ||
-    isPlayerStructuresLoading ||
-    isArrivalsLoading ||
-    isMapLoading ||
-    isBankLoading ||
-    isWorldLoading ||
-    isHyperstructureLoading ||
-    isSingleKeyLoading ||
-    isConfigLoading;
-
-  console.log({ isArrivalsLoading });
+  const anyLoading = Object.values(loadingStates).some((isLoading) => isLoading);
 
   const getLoadingItems = () => {
     const items = [];
-    if (isSelectedStructureLoading) items.push("Structure");
-    if (isMarketLoading) items.push("Market");
-    if (isPlayerStructuresLoading) items.push("Player Structures");
-    if (isArrivalsLoading) items.push("Arrivals");
-    if (isMapLoading) items.push("Map");
-    if (isBankLoading) items.push("Bank");
-    if (isWorldLoading) items.push("World");
-    if (isHyperstructureLoading) items.push("Hyperstructure");
-    if (isSingleKeyLoading) items.push("Single Key");
-    if (isConfigLoading) items.push("Config");
+    if (loadingStates[LoadingStateKey.SelectedStructure]) items.push("Selected Structure");
+    if (loadingStates[LoadingStateKey.Market]) items.push("Market");
+    if (loadingStates[LoadingStateKey.PlayerStructuresOneKey] || loadingStates[LoadingStateKey.PlayerStructuresTwoKey])
+      items.push("Player Structures");
+    if (loadingStates[LoadingStateKey.Arrivals]) items.push("Arrivals");
+    if (loadingStates[LoadingStateKey.Map]) items.push("Map");
+    if (loadingStates[LoadingStateKey.Bank]) items.push("Bank");
+    if (loadingStates[LoadingStateKey.World]) items.push("World");
+    if (loadingStates[LoadingStateKey.Hyperstructure]) items.push("Hyperstructure");
+    if (loadingStates[LoadingStateKey.SingleKey]) items.push("Single Key");
+    if (loadingStates[LoadingStateKey.Config]) items.push("Config");
+    if (loadingStates[LoadingStateKey.Events]) items.push("Events");
     return items.join(", ");
   };
 

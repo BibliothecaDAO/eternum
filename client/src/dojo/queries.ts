@@ -136,10 +136,11 @@ export const addMarketSubscription = async <S extends Schema>(
   await getEntities(
     client,
     {
-      Keys: {
-        keys: [undefined, undefined],
-        pattern_matching: "FixedLen",
-        models: ["s0_eternum-DetachedResource"],
+      Member: {
+        model: "s0_eternum-DetachedResource",
+        member: "resource_amount",
+        operator: "Gt",
+        value: { Primitive: { U128: "0" } },
       },
     },
     components,
@@ -161,13 +162,14 @@ export const addArrivalsSubscription = async <S extends Schema>(
   console.log("ArrivalsEnd: starting resource arrivals");
   await getEntities(
     client,
+    // todo: waiting on ghlim to check issue with this query
     // {
     //   Composite: {
     //     operator: "And",
     //     clauses: [
     //       {
     //         Composite: {
-    //           operator: "And",
+    //           operator: "Or",
     //           clauses: entityIds.map((id) => ({
     //             Member: {
     //               model: "s0_eternum-EntityOwner",

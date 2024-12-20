@@ -13,6 +13,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import { ADMIN_BANK_ENTITY_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -104,11 +105,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   useStructureEntityId();
 
   // We could optimise this deeper....
-  const setMarketLoading = useUIStore((state) => state.setMarketLoading);
-  const setArrivalsLoading = useUIStore((state) => state.setArrivalsLoading);
-  const setPlayerStructuresLoading = useUIStore((state) => state.setPlayerStructuresLoading);
-  const setSelectedStructureLoading = useUIStore((state) => state.setSelectedStructureLoading);
-  const setBankLoading = useUIStore((state) => state.setBankLoading);
+  const setLoading = useUIStore((state) => state.setLoading);
 
   const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -143,7 +140,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       ...Object.fromEntries(filteredStructures.map((structure) => [structure.entity_id.toString(), true])),
     }));
 
-    setSelectedStructureLoading(true);
+    setLoading(LoadingStateKey.SelectedStructure, true);
     const fetch = async () => {
       console.log("AddToSubscriptionStart - 1");
       try {
@@ -153,10 +150,9 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             dojo.network.contractComponents as any,
             [structureEntityId.toString()],
             [{ x: position?.x || 0, y: position?.y || 0 }],
+            () => setLoading(LoadingStateKey.SelectedStructure, false),
           ),
-        ]).finally(() => {
-          setSelectedStructureLoading(false);
-        });
+        ]);
       } catch (error) {
         console.error("Fetch failed", error);
       }
@@ -167,8 +163,12 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   useEffect(() => {
     const fetch = async () => {
-      setPlayerStructuresLoading(true);
-      setArrivalsLoading(true);
+      setLoading(LoadingStateKey.PlayerStructuresOneKey, true);
+      setLoading(LoadingStateKey.PlayerStructuresTwoKey, true);
+      setLoading(LoadingStateKey.Arrivals, true);
+
+      const isSyncing = true;
+
       try {
         console.log("AddToSubscriptionStart - 2");
         await Promise.all([
@@ -177,22 +177,22 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             dojo.network.contractComponents as any,
             [...filteredStructures.map((structure) => structure.entity_id.toString())],
             [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
+            () => setLoading(LoadingStateKey.PlayerStructuresOneKey, false),
           ),
-          debouncedAddToSubscriptionOneKey(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-            ...filteredStructures.map((structure) => structure.entity_id.toString()),
-          ]),
-        ]).finally(() => {
-          setPlayerStructuresLoading(false);
-        });
+          debouncedAddToSubscriptionOneKey(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            [...filteredStructures.map((structure) => structure.entity_id.toString())],
+            () => setLoading(LoadingStateKey.PlayerStructuresTwoKey, false),
+          ),
+        ]);
 
         await debounceAddResourceArrivals(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           [...structures.map((structure) => structure.entity_id)],
-          () => setArrivalsLoading(false),
-        ).finally(() => {
-          // setArrivalsLoading(false);
-        });
+          () => setLoading(LoadingStateKey.Arrivals, false),
+        );
       } catch (error) {
         console.error("Fetch failed", error);
       }
@@ -203,17 +203,20 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   useEffect(() => {
     try {
-      setMarketLoading(true);
-      setBankLoading(true);
+      setLoading(LoadingStateKey.Market, true);
+      setLoading(LoadingStateKey.Bank, true);
       console.log("AddToSubscriptionStart - 3");
-      debouncedAddToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-        ADMIN_BANK_ENTITY_ID.toString(),
-      ]).finally(() => {
-        setBankLoading(false);
-      });
-      debouncedAddMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any).finally(() => {
-        setMarketLoading(false);
-      });
+      debouncedAddToSubscription(
+        dojo.network.toriiClient,
+        dojo.network.contractComponents as any,
+        [ADMIN_BANK_ENTITY_ID.toString()],
+        [],
+        () => setLoading(LoadingStateKey.Bank, false),
+      );
+
+      debouncedAddMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
+        setLoading(LoadingStateKey.Market, false),
+      );
     } catch (error) {
       console.error("Fetch failed", error);
     }

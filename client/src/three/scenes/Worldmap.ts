@@ -2,6 +2,7 @@ import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMoveme
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import { soundSelector } from "@/hooks/useUISound";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
@@ -675,6 +676,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Create a unique key for this chunk range
     const chunkKey = `${startCol - range},${startCol + range},${startRow - range},${startRow + range}`;
+    console.log({ chunkKey });
 
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
@@ -686,9 +688,8 @@ export default class WorldmapScene extends HexagonScene {
     this.fetchedChunks.add(chunkKey);
     console.log(startCol, startRow, range);
 
-    this.state.setMapLoading(true);
-
     try {
+      this.state.setLoading(LoadingStateKey.Map, true);
       const promiseTiles = getEntities(
         this.dojo.network.toriiClient,
         {
@@ -790,8 +791,8 @@ export default class WorldmapScene extends HexagonScene {
         1000,
         false,
       );
-      Promise.all([promiseTiles, promisePositions]).then(([tiles, positions]) => {
-        this.state.setMapLoading(false);
+      Promise.all([promiseTiles, promisePositions]).then(() => {
+        this.state.setLoading(LoadingStateKey.Map, false);
       });
     } catch (error) {
       // If there's an error, remove the chunk from cached set so it can be retried
