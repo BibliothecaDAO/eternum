@@ -8,7 +8,7 @@ import {
 import { DojoConfig } from "@dojoengine/core";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
-import { Clause, ComparisonOperator, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
+import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
@@ -183,7 +183,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
   configManager.setDojo(components);
 
   setLoading(LoadingStateKey.Events, true);
-  const eventSync1 = getEvents(
+  const eventSync = getEvents(
     network.toriiClient,
     network.contractComponents.events as any,
     [],
@@ -196,6 +196,13 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
         models: [
           "s0_eternum-GameEnded",
           "s0_eternum-HyperstructureFinished",
+          "s0_eternum-BattleClaimData",
+          "s0_eternum-BattleJoinData",
+          "s0_eternum-BattleLeaveData",
+          "s0_eternum-BattlePillageData",
+          "s0_eternum-BattleStartData",
+          "s0_eternum-AcceptOrder",
+          "s0_eternum-SwapEvent",
           "s0_eternum-LiquidityEvent",
           "s0_eternum-HyperstructureContribution",
         ],
@@ -203,48 +210,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
     },
     false,
     false,
-  );
-
-  const TWO_DAYS_IN_SECONDS = 172800;
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-
-  const createTimestampClause = (model: string) => ({
-    Member: {
-      model: `s0_eternum-${model}`,
-      member: "timestamp",
-      operator: "Gt" as ComparisonOperator, // Cast to the correct type
-      value: { Primitive: { U64: currentTimestamp - TWO_DAYS_IN_SECONDS } },
-    },
-  });
-
-  const eventModels = [
-    "HyperstructureContribution",
-    "BattleClaimData",
-    "BattleJoinData",
-    "BattleLeaveData",
-    "BattlePillageData",
-    "BattleStartData",
-    "AcceptOrder",
-    "SwapEvent",
-  ];
-
-  const eventSync2 = getEvents(
-    network.toriiClient,
-    network.contractComponents.events as any,
-    [],
-    [],
-    20000,
-    {
-      Composite: {
-        operator: "Or",
-        clauses: eventModels.map(createTimestampClause),
-      },
-    },
-    false,
-    false,
-  );
-
-  const eventSync = Promise.all([eventSync1, eventSync2]).finally(() => {
+  ).finally(() => {
     setLoading(LoadingStateKey.Events, false);
   });
 
