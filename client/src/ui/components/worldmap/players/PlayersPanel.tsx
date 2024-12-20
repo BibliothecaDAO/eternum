@@ -70,7 +70,7 @@ export const PlayersPanel = ({
       };
     });
     return playersWithStructures;
-  }, [isLoading]);
+  }, [isLoading, players]);
 
   const filteredPlayers = useMemo(() => {
     const term = searchTerm.toLowerCase();
