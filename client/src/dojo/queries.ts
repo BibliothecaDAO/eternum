@@ -19,12 +19,12 @@ export const syncPosition = async <S extends Schema>(
       Keys: {
         keys: [entityID],
         pattern_matching: "FixedLen" as PatternMatching,
-        models: ["s0_eternum-Position"],
+        models: [],
       },
     },
     components,
     [],
-    [],
+    ["s0_eternum-Position"],
     5_000,
   );
 };
@@ -52,7 +52,7 @@ export const addToSubscriptionTwoKeyModelbyRealmEntityId = async <S extends Sche
     },
     components,
     [],
-    [],
+    ["s0_eternum-BuildingQuantityv2"],
     5_000,
   );
 };
@@ -80,7 +80,7 @@ export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Sche
     },
     components,
     [],
-    [],
+    ["s0_eternum-ArrivalTime", "s0_eternum-OwnedResourcesTracker"],
     5_000,
   );
 };
@@ -89,6 +89,7 @@ export const addToSubscription = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityID: string[],
+  entityModels: string[],
   position?: { x: number; y: number }[],
 ) => {
   const start = performance.now();
@@ -121,7 +122,7 @@ export const addToSubscription = async <S extends Schema>(
     },
     components as any,
     [],
-    [],
+    entityModels,
     5_000,
   );
   const end = performance.now();
@@ -133,7 +134,7 @@ export const addMarketSubscription = async <S extends Schema>(
   components: Component<S, Metadata, undefined>[],
 ) => {
   const start = performance.now();
-  await getEntities(
+  const resourcePromise = await getEntities(
     client,
     {
       Member: {
@@ -145,10 +146,26 @@ export const addMarketSubscription = async <S extends Schema>(
     },
     components,
     [],
-    [],
+    ["s0_eternum-DetachedResource"],
     30_000,
     false,
   );
+  const marketPromise = await getEntities(
+    client,
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "VariableLen",
+        models: ["s0_eternum-Market", "s0_eternum-Liquidity"],
+      },
+    },
+    components,
+    [],
+    ["s0_eternum-Market", "s0_eternum-Liquidity"],
+    30_000,
+    false,
+  );
+  await Promise.all([resourcePromise, marketPromise]);
   const end = performance.now();
   console.log("MarketEnd", end - start);
 };
@@ -242,7 +259,6 @@ export const addArrivalsSubscription = async <S extends Schema>(
         })),
       },
     },
-
     components,
     [],
     [

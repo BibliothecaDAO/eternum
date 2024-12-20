@@ -9,7 +9,7 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import { usePlayerRealms } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
-import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/SettleRealmComponent";
+import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview/realm/SettleRealmComponent";
 import Button from "@/ui/elements/Button";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";

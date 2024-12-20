@@ -140,14 +140,20 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     }));
 
     setLoading(LoadingStateKey.SelectedStructure, true);
+
     const fetch = async () => {
-      console.log("AddToSubscriptionStart - 1");
       try {
         await Promise.all([
           debouncedAddToSubscription(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [structureEntityId.toString()],
+            [
+              "s0_eternum-BuildingQuantityv2",
+              "s0_eternum-Hyperstructure",
+              "s0_eternum-Resource",
+              "s0_eternum-Building",
+            ],
             [{ x: position?.x || 0, y: position?.y || 0 }],
             () => setLoading(LoadingStateKey.SelectedStructure, false),
           ),
@@ -162,25 +168,30 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   useEffect(() => {
     const fetch = async () => {
-      setLoading(LoadingStateKey.PlayerStructuresOneKey, true);
-      setLoading(LoadingStateKey.PlayerStructuresTwoKey, true);
-      setLoading(LoadingStateKey.Arrivals, true);
-
-      const isSyncing = true;
-
       try {
-        console.log("AddToSubscriptionStart - 2");
+        setLoading(LoadingStateKey.PlayerStructuresOneKey, true);
+        setLoading(LoadingStateKey.PlayerStructuresTwoKey, true);
+        setLoading(LoadingStateKey.Arrivals, true);
+
         await Promise.all([
           debouncedAddToSubscription(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [...filteredStructures.map((structure) => structure.entity_id.toString())],
+            [
+              "s0_eternum-BuildingQuantityv2",
+              "s0_eternum-Hyperstructure",
+              "s0_eternum-Resource",
+              "s0_eternum-Building",
+              "s0_eternum-Quest",
+            ],
             [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
             () => setLoading(LoadingStateKey.PlayerStructuresOneKey, false),
           ),
           debouncedAddToSubscriptionOneKey(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
+            ["s0_eternum-ArrivalTime", "s0_eternum-OwnedResourcesTracker"],
             [...filteredStructures.map((structure) => structure.entity_id.toString())],
             () => setLoading(LoadingStateKey.PlayerStructuresTwoKey, false),
           ),
@@ -205,12 +216,13 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       try {
         setLoading(LoadingStateKey.Market, true);
         setLoading(LoadingStateKey.Bank, true);
-        console.log("AddToSubscriptionStart - 3");
+
         await Promise.all([
           debouncedAddToSubscription(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [ADMIN_BANK_ENTITY_ID.toString()],
+            ["s0_eternum-Bank"],
             [],
             () => setLoading(LoadingStateKey.Bank, false),
           ),
@@ -218,6 +230,51 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             setLoading(LoadingStateKey.Market, false),
           ),
         ]);
+      } catch (error) {
+        console.error("Fetch failed", error);
+      } finally {
+        setLoading(LoadingStateKey.Bank, false);
+        setLoading(LoadingStateKey.Market, false);
+      }
+    };
+
+    fetch();
+  }, []);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        setLoading(LoadingStateKey.Events, true);
+        // getEvents(
+        //   dojo.network.toriiClient,
+        //   dojo.network.contractComponents.events as any,
+        //   [],
+        //   [],
+        //   20000,
+        //   {
+        //     Keys: {
+        //       keys: [undefined],
+        //       pattern_matching: "VariableLen",
+        //       models: [
+        //         "s0_eternum-GameEnded",
+        //         "s0_eternum-HyperstructureFinished",
+        //         "s0_eternum-BattleClaimData",
+        //         "s0_eternum-BattleJoinData",
+        //         "s0_eternum-BattleLeaveData",
+        //         "s0_eternum-BattlePillageData",
+        //         "s0_eternum-BattleStartData",
+        //         "s0_eternum-AcceptOrder",
+        //         "s0_eternum-SwapEvent",
+        //         "s0_eternum-LiquidityEvent",
+        //         "s0_eternum-HyperstructureContribution",
+        //       ],
+        //     },
+        //   },
+        //   false,
+        //   false,
+        // ).finally(() => {
+        //   setLoading(LoadingStateKey.Events, false);
+        // });
       } catch (error) {
         console.error("Fetch failed", error);
       } finally {

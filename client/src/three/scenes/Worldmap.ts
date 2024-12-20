@@ -676,11 +676,9 @@ export default class WorldmapScene extends HexagonScene {
 
     // Create a unique key for this chunk range
     const chunkKey = `${startCol - range},${startCol + range},${startRow - range},${startRow + range}`;
-    console.log({ chunkKey });
 
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
-      console.log("Already fetched");
       return;
     }
 

@@ -91,6 +91,7 @@ export const debouncedAddToSubscriptionOneKey = debounce(
   async <S extends Schema>(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
+    entityModels: string[],
     entityID: string[],
     onComplete?: () => void,
   ) => {
@@ -121,10 +122,14 @@ export const debouncedAddToSubscription = debounce(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
     entityID: string[],
+    entityModels: string[],
     position?: { x: number; y: number }[],
     onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addToSubscription(client, components, entityID, position), onComplete);
+    await subscriptionQueue.add(
+      () => addToSubscription(client, components, entityID, entityModels, position),
+      onComplete,
+    );
   },
   250,
   { leading: true },

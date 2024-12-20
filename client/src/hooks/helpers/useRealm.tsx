@@ -298,7 +298,7 @@ export function usePlayerRealms(): RealmInfo[] {
   const {
     account: { account },
     setup: {
-      components: { Realm, Position, Owner, Population, AddressName, Structure },
+      components: { Realm, Position, Owner, Population, AddressName },
     },
   } = useDojo();
 

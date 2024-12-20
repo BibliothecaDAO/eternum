@@ -7,7 +7,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
-import { getEntities, getEvents, setEntities } from "@dojoengine/state";
+import { getEntities, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
 import { createClientComponents } from "./createClientComponents";
@@ -124,6 +124,8 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
         network.toriiClient,
         { Composite: { operator: "Or", clauses: configClauses } },
         network.contractComponents as any,
+        [],
+        configModels,
       ),
       getEntities(
         network.toriiClient,
@@ -131,12 +133,12 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
           Keys: {
             keys: [undefined, undefined],
             pattern_matching: "FixedLen",
-            models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
+            models: [],
           },
         },
         network.contractComponents as any,
         [],
-        [],
+        ["s0_eternum-CapacityConfig", "s0_eternum-ResourceCost"],
         40_000,
         false,
       ),
@@ -145,8 +147,6 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
     setLoading(LoadingStateKey.Config, false);
   }
 
-  // fetch all existing entities from torii
-
   setLoading(LoadingStateKey.SingleKey, true);
   await getEntities(
     network.toriiClient,
@@ -154,25 +154,12 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
       Keys: {
         keys: [undefined],
         pattern_matching: "FixedLen",
-        models: [
-          "s0_eternum-AddressName",
-          "s0_eternum-Realm",
-          "s0_eternum-PopulationConfig",
-          "s0_eternum-CapacityConfig",
-          "s0_eternum-ProductionConfig",
-          "s0_eternum-RealmLevelConfig",
-          "s0_eternum-BankConfig",
-          "s0_eternum-Bank",
-          "s0_eternum-Trade",
-          "s0_eternum-Structure",
-          "s0_eternum-Battle",
-          "s0_eternum-Guild",
-        ],
+        models: [],
       },
     },
     network.contractComponents as any,
     [],
-    [],
+    singleKeyModels,
     40_000,
     false,
   ).finally(() => {
@@ -183,43 +170,63 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
 
   configManager.setDojo(components);
 
-  setLoading(LoadingStateKey.Events, true);
-  const eventSync = getEvents(
-    network.toriiClient,
-    network.contractComponents.events as any,
-    [],
-    [],
-    20000,
-    {
-      Keys: {
-        keys: [undefined],
-        pattern_matching: "VariableLen",
-        models: [
-          "s0_eternum-GameEnded",
-          "s0_eternum-HyperstructureFinished",
-          "s0_eternum-BattleClaimData",
-          "s0_eternum-BattleJoinData",
-          "s0_eternum-BattleLeaveData",
-          "s0_eternum-BattlePillageData",
-          "s0_eternum-BattleStartData",
-          "s0_eternum-AcceptOrder",
-          "s0_eternum-SwapEvent",
-          "s0_eternum-LiquidityEvent",
-          "s0_eternum-HyperstructureContribution",
-        ],
-      },
-    },
-    false,
-    false,
-  ).finally(() => {
-    setLoading(LoadingStateKey.Events, false);
-  });
-
   return {
     network,
     components,
     systemCalls,
     sync,
-    eventSync,
   };
 }
+
+const configModels = [
+  "s0_eternum-WorldConfig",
+  "s0_eternum-SeasonAddressesConfig",
+  "s0_eternum-SeasonBridgeConfig",
+  "s0_eternum-HyperstructureResourceConfig",
+  "s0_eternum-HyperstructureConfig",
+  "s0_eternum-CapacityConfig",
+  "s0_eternum-TravelStaminaCostConfig",
+  "s0_eternum-SpeedConfig",
+  "s0_eternum-MapConfig",
+  "s0_eternum-SettlementConfig",
+  "s0_eternum-TickConfig",
+  "s0_eternum-StaminaRefillConfig",
+  "s0_eternum-StaminaConfig",
+  "s0_eternum-TravelFoodCostConfig",
+  "s0_eternum-MercenariesConfig",
+  "s0_eternum-WeightConfig",
+  "s0_eternum-LevelingConfig",
+  "s0_eternum-ProductionConfig",
+  "s0_eternum-VRFConfig",
+  "s0_eternum-BankConfig",
+  "s0_eternum-BuildingGeneralConfig",
+  "s0_eternum-BuildingConfig",
+  "s0_eternum-TroopConfig",
+  "s0_eternum-BattleConfig",
+  "s0_eternum-BuildingCategoryPopConfig",
+  "s0_eternum-PopulationConfig",
+  "s0_eternum-QuestConfig",
+  "s0_eternum-QuestRewardConfig",
+  "s0_eternum-ResourceBridgeConfig",
+  "s0_eternum-ResourceBridgeFeeSplitConfig",
+  "s0_eternum-ResourceBridgeWhitelistConfig",
+  "s0_eternum-RealmMaxLevelConfig",
+  "s0_eternum-RealmLevelConfig",
+];
+
+const singleKeyModels = [
+  "s0_eternum-AddressName",
+  "s0_eternum-Realm",
+  "s0_eternum-Bank",
+  "s0_eternum-Trade",
+  "s0_eternum-Status",
+  "s0_eternum-Structure",
+  "s0_eternum-Battle",
+  "s0_eternum-Owner",
+  "s0_eternum-Position",
+  "s0_eternum-Population",
+  "s0_eternum-Hyperstructure",
+  "s0_eternum-Guild",
+  "s0_eternum-GuildMember",
+  "s0_eternum-EntityName",
+];

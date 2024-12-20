@@ -172,6 +172,7 @@ export function useSetMarket() {
   const { computeTrades } = useTrade();
 
   const allMarket = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0 })]);
+
   const allTrades = useMemo(() => {
     return computeTrades(allMarket, nextBlockTimestamp!);
   }, [allMarket]);
