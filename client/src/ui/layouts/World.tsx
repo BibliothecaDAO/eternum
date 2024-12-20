@@ -200,24 +200,29 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   }, [structures.length]);
 
   useEffect(() => {
-    try {
-      setLoading(LoadingStateKey.Market, true);
-      setLoading(LoadingStateKey.Bank, true);
-      console.log("AddToSubscriptionStart - 3");
-      debouncedAddToSubscription(
-        dojo.network.toriiClient,
-        dojo.network.contractComponents as any,
-        [ADMIN_BANK_ENTITY_ID.toString()],
-        [],
-        () => setLoading(LoadingStateKey.Bank, false),
-      );
+    const fetch = async () => {
+      try {
+        setLoading(LoadingStateKey.Market, true);
+        setLoading(LoadingStateKey.Bank, true);
+        console.log("AddToSubscriptionStart - 3");
+        await Promise.all([
+          debouncedAddToSubscription(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            [ADMIN_BANK_ENTITY_ID.toString()],
+            [],
+            () => setLoading(LoadingStateKey.Bank, false),
+          ),
+          debouncedAddMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
+            setLoading(LoadingStateKey.Market, false),
+          ),
+        ]);
+      } catch (error) {
+        console.error("Fetch failed", error);
+      }
+    };
 
-      debouncedAddMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
-        setLoading(LoadingStateKey.Market, false),
-      );
-    } catch (error) {
-      console.error("Fetch failed", error);
-    }
+    fetch();
   }, []);
 
   const battleViewContent = useMemo(
