@@ -284,7 +284,7 @@ export const useGuilds = () => {
 
   const getPlayerListInGuild = (guild_entity_id: ID) => {
     const players = Array.from(
-      runQuery([Has(AddressName), Has(GuildMember), HasValue(Guild, { entity_id: guild_entity_id })]),
+      runQuery([Has(AddressName), Has(GuildMember), HasValue(GuildMember, { guild_entity_id: guild_entity_id })]),
     ).map((playerEntity) => {
       const player = getComponentValue(AddressName, playerEntity);
 
