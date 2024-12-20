@@ -1,6 +1,7 @@
 # db_dir = "./torii-db"
 
 [indexing]
+
 events_chunk_size = 1024 # Size of events page to fetch
 blocks_chunk_size = 10240 # Blocks to process before DB commit
 pending = true # Enable indexing pending blocks

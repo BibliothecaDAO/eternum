@@ -15,7 +15,6 @@ import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { useWorldStore } from "@/hooks/store/useWorldLoading";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { LoadingAnimation } from "@/ui/elements/LoadingAnimation";
@@ -60,8 +59,6 @@ export const MarketModal = () => {
 
   const bank = banks.length === 1 ? banks[0] : null;
   const battles = useBattlesByPosition(bank?.position || { x: 0, y: 0 });
-
-  const isMarketLoading = useWorldStore((state) => state.isMarketLoading);
 
   const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
@@ -222,7 +219,7 @@ export const MarketModal = () => {
               </Select>
             </div>
             <div className=" ml-2 bg-map align-middle flex gap-2">
-              {currencyFormat(Number(lordsBalance), 0)}{" "}
+              {currencyFormat(Number(lordsBalance), 2)}{" "}
               <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
             </div>
           </div>
@@ -342,14 +339,6 @@ export const MarketModal = () => {
           </Tabs>
         </div>
       </div>
-      {isMarketLoading && (
-        <div className="absolute bottom-4 inset-x-0 z-10 flex justify-center pointer-events-none">
-          <div className="bg-brown/90 text-sm px-4 py-1 rounded-t-lg border border-gold/30 flex items-center gap-2">
-            <div className="w-2 h-2 bg-gold/50 rounded-full animate-pulse" />
-            <span>Syncing market data...</span>
-          </div>
-        </div>
-      )}
     </ModalContainer>
   );
 };

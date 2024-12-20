@@ -32,6 +32,7 @@ export const LiquidityResourceRow = ({
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
   const [showInputResourcesPrice, setShowInputResourcesPrice] = useState(false);
+  const [withdrawalPercentage, setWithdrawalPercentage] = useState(100);
 
   const marketEntityId = useMemo(
     () => getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
@@ -80,29 +81,52 @@ export const LiquidityResourceRow = ({
 
   const { computeTravelTime } = useTravel();
 
-  const onWithdraw = useCallback(() => {
-    setIsLoading(true);
-    const sharesUnscaled = marketManager.getSharesUnscaled();
-    const totalLiquidityUnscaled = marketManager.getTotalLiquidityUnscaled();
-    const withdrawShares = sharesUnscaled > totalLiquidityUnscaled ? totalLiquidityUnscaled : sharesUnscaled;
-    dojoContext.setup.systemCalls
-      .remove_liquidity({
-        bank_entity_id: bankEntityId,
-        entity_id: entityId,
-        resource_type: BigInt(resourceId),
-        shares: withdrawShares,
-        signer: dojoContext.account.account,
-      })
-      .finally(() => {
-        setIsLoading(false);
-        setOpenConfirmation(false);
-      });
-  }, [dojoContext, bankEntityId, entityId, resourceId, marketManager]);
+  const onWithdraw = useCallback(
+    (percentage: number) => {
+      setIsLoading(true);
+      const { withdrawShares } = calculateWithdrawAmounts(percentage);
+
+      dojoContext.setup.systemCalls
+        .remove_liquidity({
+          bank_entity_id: bankEntityId,
+          entity_id: entityId,
+          resource_type: BigInt(resourceId),
+          shares: withdrawShares,
+          signer: dojoContext.account.account,
+        })
+        .finally(() => {
+          setIsLoading(false);
+          setOpenConfirmation(false);
+        });
+    },
+    [dojoContext, bankEntityId, entityId, resourceId, marketManager],
+  );
+
+  const calculateWithdrawAmounts = useCallback(
+    (percentage: number) => {
+      const sharesUnscaled = marketManager.getSharesUnscaled();
+      const totalLiquidityUnscaled = marketManager.getTotalLiquidityUnscaled();
+      const maxShares = sharesUnscaled > totalLiquidityUnscaled ? totalLiquidityUnscaled : sharesUnscaled;
+      const withdrawShares = (maxShares * BigInt(percentage)) / BigInt(100);
+
+      const lordsToReceive = (lordsAmount * percentage) / 100;
+      const resourceToReceive = (resourceAmount * percentage) / 100;
+
+      return {
+        withdrawShares: withdrawShares,
+        lords: lordsToReceive,
+        resource: resourceToReceive,
+      };
+    },
+    [marketManager, lordsAmount, resourceAmount],
+  );
 
   const renderConfirmationPopup = useMemo(() => {
+    const { lords, resource } = calculateWithdrawAmounts(withdrawalPercentage);
+
     const travelResources = [
-      { amount: divideByPrecision(lordsAmount), resourceId: ResourcesIds.Lords },
-      { amount: divideByPrecision(resourceAmount), resourceId: resourceId },
+      { amount: divideByPrecision(lords), resourceId: ResourcesIds.Lords },
+      { amount: divideByPrecision(resource), resourceId: resourceId },
     ];
 
     return (
@@ -111,36 +135,54 @@ export const LiquidityResourceRow = ({
         warning="Warning: not enough donkeys to transport resources"
         disabled={!canCarry}
         isLoading={isLoading}
-        onConfirm={onWithdraw}
+        onConfirm={() => onWithdraw(withdrawalPercentage)}
         onCancel={() => setOpenConfirmation(false)}
       >
-        <div>
-          <div className="flex items-center justify-center space-x-2">
-            {travelResources.map((cost, index) => (
-              <div key={index} className="flex items-center">
-                <ResourceCost withTooltip amount={cost.amount} resourceId={cost.resourceId} />
-              </div>
-            ))}
+        <div className="space-y-4">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="w-full flex items-center justify-between">
+              <span>Withdrawal Amount:</span>
+              <span className="font-bold">{withdrawalPercentage}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={withdrawalPercentage}
+              onChange={(e) => setWithdrawalPercentage(Number(e.target.value))}
+              className="w-full appearance-none bg-gold/20 h-2 rounded-lg focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-gold [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-gold [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer"
+            />
           </div>
-          <div className="bg-gold/10 p-2 mt-2 rounded-lg h-auto">
-            <div className="flex flex-col items-center">
-              <TravelInfo
-                entityId={entityId}
-                resources={travelResources}
-                travelTime={computeTravelTime(
-                  bankEntityId,
-                  entityId,
-                  configManager.getSpeedConfig(EntityType.DONKEY),
-                  true,
-                )}
-                setCanCarry={setCanCarry}
-              />
+
+          <div>
+            <div className="flex items-center justify-center space-x-2">
+              {travelResources.map((cost, index) => (
+                <div key={index} className="flex items-center">
+                  <ResourceCost withTooltip amount={cost.amount} resourceId={cost.resourceId} />
+                </div>
+              ))}
+            </div>
+            <div className="bg-gold/10 p-2 mt-2 rounded-lg h-auto">
+              <div className="flex flex-col items-center">
+                <TravelInfo
+                  entityId={entityId}
+                  resources={travelResources}
+                  travelTime={computeTravelTime(
+                    bankEntityId,
+                    entityId,
+                    configManager.getSpeedConfig(EntityType.DONKEY),
+                    true,
+                  )}
+                  setCanCarry={setCanCarry}
+                />
+              </div>
             </div>
           </div>
         </div>
       </ConfirmationPopup>
     );
   }, [
+    withdrawalPercentage,
     lordsAmount,
     resourceAmount,
     canCarry,
@@ -151,6 +193,7 @@ export const LiquidityResourceRow = ({
     entityId,
     computeTravelTime,
     setCanCarry,
+    calculateWithdrawAmounts,
   ]);
 
   return (

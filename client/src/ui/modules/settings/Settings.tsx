@@ -1,11 +1,12 @@
+import { ReactComponent as Controller } from "@/assets/icons/Controller.svg";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Next } from "@/assets/icons/common/fast-forward.svg";
 import { ReactComponent as Muted } from "@/assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
-import { ReactComponent as Controller } from "@/assets/icons/Controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useMusicPlayer } from "@/hooks/useMusic";
@@ -61,7 +62,29 @@ export const SettingsWindow = () => {
 
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
 
-  const GRAPHICS_SETTING = localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings || GraphicsSettings.HIGH;
+  const GRAPHICS_SETTING = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
+
+  const { useGuildQuery } = useGuilds();
+  const { guilds } = useGuildQuery();
+  const [selectedGuilds, setSelectedGuilds] = useState<string[]>(() => {
+    const savedGuilds = localStorage.getItem("WHITELIST");
+    return savedGuilds ? savedGuilds.split(",") : [];
+  });
+
+  const handleGuildSelect = (guildId: string) => {
+    setSelectedGuilds((prev) => {
+      const newGuilds = prev.includes(guildId) ? prev.filter((id) => id !== guildId) : [...prev, guildId];
+      localStorage.setItem("WHITELIST", newGuilds.join(","));
+      toast(prev.includes(guildId) ? "Guild removed from whitelist!" : "Guild added to whitelist!");
+      return newGuilds;
+    });
+  };
+
+  const handleClearGuilds = () => {
+    setSelectedGuilds([]);
+    localStorage.removeItem("WHITELIST");
+    toast("Guild whitelist cleared!");
+  };
 
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
@@ -125,6 +148,27 @@ export const SettingsWindow = () => {
           </Button>
         </div>
         <Headline>Sound</Headline>
+
+        <div className="flex flex-col gap-2">
+          <h5>Whitelist guilds</h5>
+          <div className="flex flex-wrap gap-2">
+            {guilds.map((guild) => (
+              <Button
+                size="xs"
+                key={guild.entityId}
+                variant={selectedGuilds.includes(guild.entityId.toString()) ? "success" : "outline"}
+                onClick={() => handleGuildSelect(guild.entityId.toString())}
+              >
+                {guild.name}
+              </Button>
+            ))}
+          </div>
+          {selectedGuilds.length > 0 && (
+            <Button size="xs" variant="danger" onClick={handleClearGuilds} className="self-start">
+              Clear All
+            </Button>
+          )}
+        </div>
 
         <div className="flex space-x-2">
           {isSoundOn ? (

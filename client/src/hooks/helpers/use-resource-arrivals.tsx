@@ -23,6 +23,7 @@ export type ArrivalInfo = {
   isOwner: boolean;
   hasResources: boolean;
   isHome: boolean;
+  originOwner: string;
   // resources: Resource[];
 };
 
@@ -39,14 +40,11 @@ const usePlayerArrivals = () => {
     HasValue(Owner, { address: ContractAddress(account.address) }),
   ]);
 
-  const [playerStructurePositions, setPlayerStructurePositions] = useState<(Position & { entityId: ID })[]>([]);
-
-  useEffect(() => {
-    const positions = playerStructures.map((entityId) => {
+  const playerStructurePositions = useMemo(() => {
+    return playerStructures.map((entityId) => {
       const position = getComponentValue(Position, entityId);
       return { x: position?.x ?? 0, y: position?.y ?? 0, entityId: position?.entity_id || 0 };
     });
-    setPlayerStructurePositions(positions);
   }, [playerStructures, Position]);
 
   const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
@@ -59,9 +57,10 @@ const usePlayerArrivals = () => {
   ];
 
   const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
-    return positions.flatMap((position) => {
+    const arrivals = positions.flatMap((position) => {
       return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...queryFragments]));
     });
+    return arrivals;
   }, []);
 
   const createArrivalInfo = useCallback(
@@ -82,7 +81,7 @@ const usePlayerArrivals = () => {
 
       const ownedResourceTracker = getComponentValue(OwnedResourcesTracker, id);
 
-      const hasResources = ownedResourceTracker?.resource_types !== 0n;
+      const hasResources = !!ownedResourceTracker && ownedResourceTracker.resource_types !== 0n;
 
       const playerStructurePosition = playerStructurePositions.find(
         (structurePosition) => structurePosition.x === position.x && structurePosition.y === position.y,
@@ -97,6 +96,7 @@ const usePlayerArrivals = () => {
         isOwner: true,
         position: { x: position.x, y: position.y },
         hasResources,
+        originOwner: owner?.address.toString(),
         isHome,
       };
     },

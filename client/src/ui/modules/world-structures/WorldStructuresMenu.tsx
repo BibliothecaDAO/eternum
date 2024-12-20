@@ -7,6 +7,8 @@ import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
+import useUIStore from "@/hooks/store/useUIStore";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
@@ -16,16 +18,9 @@ import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat, currencyIntlFormat, divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
-import {
-  BattleSide,
-  ContractAddress,
-  HYPERSTRUCTURE_CONFIG_ID,
-  ID,
-  ResourcesIds,
-  findResourceById,
-} from "@bibliothecadao/eternum";
-import { Metadata, getComponentValue } from "@dojoengine/recs";
+import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { BattleSide, ContractAddress, ID, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { Metadata } from "@dojoengine/recs";
 import { S } from "@dojoengine/recs/dist/types-3444e4c1";
 import { getEntities } from "@dojoengine/state";
 import { ToriiClient } from "@dojoengine/torii-wasm";
@@ -39,10 +34,16 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     network: { toriiClient, contractComponents },
   } = useDojo();
 
+  const hyperstructuresLoaded = useUIStore((state) => state.loadingStates.hyperstructure);
+  const setLoading = useUIStore((state) => state.setLoading);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        await fetchHyperstructureData(toriiClient, contractComponents as any);
+        setLoading(LoadingStateKey.Hyperstructure, false),
+          await fetchHyperstructureData(toriiClient, contractComponents as any, hyperstructuresLoaded, () =>
+            setLoading(LoadingStateKey.Hyperstructure, true),
+          );
       } catch (error) {
         console.error("Failed to fetch hyperstructure data:", error);
       }
@@ -139,6 +140,14 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     ],
     [selectedTab, hyperstructures, fragmentMines, showOnlyMine, account.address, myHyperstructures],
   );
+
+  if (hyperstructuresLoaded) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gold">Loading structures...</div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -333,16 +342,17 @@ const EntityHeader = ({ entity }: { entity: any }) => {
   );
 };
 
-const fetchHyperstructureData = async (client: ToriiClient, components: Component<S, Metadata, undefined>[]) => {
-  const hyperstructureConfig = getComponentValue(
-    (components as any).HyperstructureResourceConfig,
-    getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, 4n]),
-  );
-
-  if (hyperstructureConfig) {
+const fetchHyperstructureData = async (
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  isStructuresLoading: boolean,
+  onCompleted?: () => void,
+) => {
+  if (!isStructuresLoading) {
     return;
   }
 
+  console.log("Fetching hyperstructure data");
   await getEntities(
     client,
     {
@@ -363,18 +373,15 @@ const fetchHyperstructureData = async (client: ToriiClient, components: Componen
               models: ["s0_eternum-Epoch", "s0_eternum-Progress"],
             },
           },
-          {
-            Keys: {
-              keys: [HYPERSTRUCTURE_CONFIG_ID.toString(), undefined],
-              pattern_matching: "VariableLen",
-              models: [],
-            },
-          },
         ],
       },
     },
     components as any,
+    [],
+    [],
     40_000,
     false,
-  );
+  ).finally(() => {
+    onCompleted?.();
+  });
 };

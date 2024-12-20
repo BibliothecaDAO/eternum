@@ -13,6 +13,7 @@ import App from "./App";
 import { setup } from "./dojo/setup";
 import { DojoProvider } from "./hooks/context/DojoContext";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
+import useUIStore from "./hooks/store/useUIStore";
 import "./index.css";
 import GameRenderer from "./three/GameRenderer";
 import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
@@ -62,7 +63,12 @@ async function init() {
 
   root.render(<LoadingScreen backgroundImage={backgroundImage} />);
 
-  const setupResult = await setup(dojoConfig);
+  const state = useUIStore.getState();
+
+  const setupStart = performance.now();
+  const setupResult = await setup({ state, ...dojoConfig });
+  const setupEnd = performance.now();
+  console.log("SetupEnd", setupEnd - setupStart);
 
   const graphic = new GameRenderer(setupResult);
 

@@ -1,3 +1,5 @@
+import { AppStore } from "@/hooks/store/useUIStore";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   HYPERSTRUCTURE_CONFIG_ID,
@@ -30,11 +32,11 @@ export const syncEntitiesDebounced = async <S extends Schema>(
 
   const debouncedSetEntities = debounce(() => {
     if (Object.keys(entityBatch).length > 0) {
-      console.log("Applying batch update", entityBatch);
+      // console.log("Applying batch update", entityBatch);
       setEntities(entityBatch, components, logging);
       entityBatch = {}; // Clear the batch after applying
     }
-  }, 1000); // Increased debounce time to 1 second for larger batches
+  }, 200); // Increased debounce time to 1 second for larger batches
 
   // Handle entity updates
   const entitySub = await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
@@ -71,15 +73,16 @@ export const syncEntitiesDebounced = async <S extends Schema>(
   };
 };
 
-export async function setup({ ...config }: DojoConfig) {
+export async function setup(config: DojoConfig & { state: AppStore }) {
   const network = await setupNetwork(config);
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
+  const setLoading = config.state.setLoading;
 
   const configClauses: Clause[] = [
     {
       Keys: {
-        keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
+        keys: [WORLD_CONFIG_ID.toString()],
         pattern_matching: "FixedLen",
         models: [],
       },
@@ -93,6 +96,13 @@ export async function setup({ ...config }: DojoConfig) {
     },
     {
       Keys: {
+        keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
+        pattern_matching: "FixedLen",
+        models: [],
+      },
+    },
+    {
+      Keys: {
         keys: [BUILDING_CATEGORY_POPULATION_CONFIG_ID.toString(), undefined],
         pattern_matching: "FixedLen",
         models: [],
@@ -100,41 +110,85 @@ export async function setup({ ...config }: DojoConfig) {
     },
     {
       Keys: {
-        keys: [HYPERSTRUCTURE_CONFIG_ID.toString(), undefined],
+        keys: [HYPERSTRUCTURE_CONFIG_ID.toString()],
         pattern_matching: "VariableLen",
         models: [],
       },
     },
   ];
 
-  await getEntities(
-    network.toriiClient,
-    { Composite: { operator: "Or", clauses: configClauses } },
-    network.contractComponents as any,
-  );
+  setLoading(LoadingStateKey.Config, true);
+  try {
+    await Promise.all([
+      getEntities(
+        network.toriiClient,
+        { Composite: { operator: "Or", clauses: configClauses } },
+        network.contractComponents as any,
+      ),
+      getEntities(
+        network.toriiClient,
+        {
+          Keys: {
+            keys: [undefined, undefined],
+            pattern_matching: "FixedLen",
+            models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
+          },
+        },
+        network.contractComponents as any,
+        [],
+        [],
+        40_000,
+        false,
+      ),
+    ]);
+  } finally {
+    setLoading(LoadingStateKey.Config, false);
+  }
 
   // fetch all existing entities from torii
+
+  setLoading(LoadingStateKey.SingleKey, true);
   await getEntities(
     network.toriiClient,
     {
       Keys: {
         keys: [undefined],
         pattern_matching: "FixedLen",
-        models: [],
+        models: [
+          "s0_eternum-AddressName",
+          "s0_eternum-Realm",
+          "s0_eternum-PopulationConfig",
+          "s0_eternum-CapacityConfig",
+          "s0_eternum-ProductionConfig",
+          "s0_eternum-RealmLevelConfig",
+          "s0_eternum-BankConfig",
+          "s0_eternum-Bank",
+          "s0_eternum-Trade",
+          "s0_eternum-Structure",
+          "s0_eternum-Battle",
+          "s0_eternum-Guild",
+        ],
       },
     },
     network.contractComponents as any,
+    [],
+    [],
     40_000,
     false,
-  );
+  ).finally(() => {
+    setLoading(LoadingStateKey.SingleKey, false);
+  });
 
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
 
   configManager.setDojo(components);
 
+  setLoading(LoadingStateKey.Events, true);
   const eventSync = getEvents(
     network.toriiClient,
     network.contractComponents.events as any,
+    [],
+    [],
     20000,
     {
       Keys: {
@@ -143,21 +197,23 @@ export async function setup({ ...config }: DojoConfig) {
         models: [
           "s0_eternum-GameEnded",
           "s0_eternum-HyperstructureFinished",
-          "s0_eternum-BattleStartData",
+          "s0_eternum-BattleClaimData",
           "s0_eternum-BattleJoinData",
           "s0_eternum-BattleLeaveData",
           "s0_eternum-BattlePillageData",
+          "s0_eternum-BattleStartData",
           "s0_eternum-AcceptOrder",
           "s0_eternum-SwapEvent",
           "s0_eternum-LiquidityEvent",
           "s0_eternum-HyperstructureContribution",
-          "s0_eternum-MapExplored",
         ],
       },
     },
     false,
     false,
-  );
+  ).finally(() => {
+    setLoading(LoadingStateKey.Events, false);
+  });
 
   return {
     network,

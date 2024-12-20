@@ -1,12 +1,12 @@
 import { Transition } from "@headlessui/react";
-import React, { Fragment } from "react";
+import { Fragment, memo } from "react";
 
 type BlurOverlayContainerProps = {
   children?: React.ReactNode;
   open: boolean;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const BlankOverlayContainer = ({ children, open }: BlurOverlayContainerProps) => {
+export const BlankOverlayContainer = memo(({ children, open }: BlurOverlayContainerProps) => {
   return (
     <Transition
       show={open}
@@ -23,4 +23,4 @@ export const BlankOverlayContainer = ({ children, open }: BlurOverlayContainerPr
       </div>
     </Transition>
   );
-};
+});
