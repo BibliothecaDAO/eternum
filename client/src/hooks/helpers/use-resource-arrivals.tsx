@@ -1,13 +1,19 @@
 import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Entity, Has, HasValue, NotValue, defineQuery, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
+import {
+  Entity,
+  Has,
+  HasValue,
+  NotValue,
+  defineQuery,
+  getComponentValue,
+  isComponentUpdate,
+  runQuery,
+} from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDojo } from "../context/DojoContext";
 import useNextBlockTimestamp from "../useNextBlockTimestamp";
-
-const DONKEY_RESOURCE_TRACKER = 452312848583266388373324160190187140051835877600158453279131187530910662656n;
-const LORDS_RESOURCE_TRACKER = 7237005577332262213973186563042994240829374041602535252466099000494570602496n;
 
 export type ArrivalInfo = {
   entityId: ID;
@@ -21,19 +27,13 @@ export type ArrivalInfo = {
   // resources: Resource[];
 };
 
-const getCurrentDonkeyWeightMinimum = () => {
-  return Number(localStorage.getItem("WEIGHT_MINIMUM") || 0) * 1000;
-};
-
 const usePlayerArrivals = () => {
   const {
     account: { account },
     setup: {
-      components: { Position, Owner, EntityOwner, OwnedResourcesTracker, ArrivalTime, Weight, Structure },
+      components: { Position, Owner, EntityOwner, OwnedResourcesTracker, ArrivalTime, Weight, Resource, Structure },
     },
   } = useDojo();
-
-  const minWeight = getCurrentDonkeyWeightMinimum();
 
   const playerStructures = useEntityQuery([
     Has(Structure),
@@ -49,13 +49,19 @@ const usePlayerArrivals = () => {
 
   const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
 
-  const hasMinWeight = useCallback(
-    (entity: Entity) => {
-      const weight = getComponentValue(Weight, entity);
-      return !!(weight?.value && Number(weight.value) >= minWeight);
-    },
-    [minWeight],
-  );
+  const queryFragments = [
+    Has(Weight),
+    Has(ArrivalTime),
+    Has(EntityOwner),
+    NotValue(OwnedResourcesTracker, { resource_types: 0n }),
+  ];
+
+  const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
+    const arrivals = positions.flatMap((position) => {
+      return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...queryFragments]));
+    });
+    return arrivals;
+  }, []);
 
   const createArrivalInfo = useCallback(
     (id: Entity): ArrivalInfo | undefined => {
@@ -65,17 +71,6 @@ const usePlayerArrivals = () => {
       const arrivalTime = getComponentValue(ArrivalTime, id);
       if (!arrivalTime) return undefined;
 
-      const ownedResourceTracker = getComponentValue(OwnedResourcesTracker, id);
-      const weightLessResources =
-        ownedResourceTracker?.resource_types === DONKEY_RESOURCE_TRACKER ||
-        ownedResourceTracker?.resource_types === LORDS_RESOURCE_TRACKER;
-
-      console.log({ weightLessResources, hasMinWeight: hasMinWeight(id) });
-
-      if (!weightLessResources && !hasMinWeight(id)) {
-        return undefined;
-      }
-
       const entityOwner = getComponentValue(EntityOwner, id);
       const ownerEntityId = getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]);
       const owner = getComponentValue(Owner, ownerEntityId);
@@ -83,6 +78,8 @@ const usePlayerArrivals = () => {
       if (owner?.address !== ContractAddress(account.address)) {
         return undefined;
       }
+
+      const ownedResourceTracker = getComponentValue(OwnedResourcesTracker, id);
 
       const hasResources = !!ownedResourceTracker && ownedResourceTracker.resource_types !== 0n;
 
@@ -106,6 +103,15 @@ const usePlayerArrivals = () => {
     [account, playerStructurePositions],
   );
 
+  // initial load
+  useEffect(() => {
+    const arrivals = getArrivalsWithResourceOnPosition(playerStructurePositions)
+      .map(createArrivalInfo)
+      .filter((arrival): arrival is ArrivalInfo => arrival !== undefined)
+      .filter((arrival) => arrival.hasResources);
+    setEntitiesWithInventory(arrivals);
+  }, [playerStructurePositions, getArrivalsWithResourceOnPosition, createArrivalInfo]);
+
   const isMine = useCallback(
     (entity: Entity) => {
       const entityOwner = getComponentValue(EntityOwner, entity);
@@ -116,16 +122,7 @@ const usePlayerArrivals = () => {
   );
 
   useEffect(() => {
-    const query = defineQuery(
-      [
-        Has(Position),
-        Has(Weight),
-        Has(ArrivalTime),
-        Has(EntityOwner),
-        NotValue(OwnedResourcesTracker, { resource_types: 0n }),
-      ],
-      { runOnInit: false },
-    );
+    const query = defineQuery([Has(Position), ...queryFragments], { runOnInit: false });
 
     const handleArrivalUpdate = (arrivals: ArrivalInfo[], newArrival: ArrivalInfo | undefined) => {
       if (!newArrival) return arrivals;
