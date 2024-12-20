@@ -46,8 +46,10 @@ export const AllResourceArrivals = memo(
 
     const whitelistedGuilds = useMemo(() => {
       return [
-        ...(savedGuilds?.flatMap((guildId) => getPlayerListInGuild(Number(guildId))) || []),
-        ...getPlayersInPlayersGuild(BigInt(account?.address || 0n)).map((player) => player.address),
+        ...(savedGuilds
+          ?.flatMap((guildId) => getPlayerListInGuild(Number(guildId)))
+          .map((player) => BigInt(player.address)) || []),
+        ...getPlayersInPlayersGuild(BigInt(account?.address || 0n)).map((player) => BigInt(player.address)),
       ];
     }, [account?.address, savedGuilds]);
 
@@ -57,7 +59,9 @@ export const AllResourceArrivals = memo(
       const newIdsSet = new Set(
         arrivals
           .filter(
-            (arrival) => whitelistedGuilds.includes(arrival.originOwner) || arrival.originOwner === account.address,
+            (arrival) =>
+              whitelistedGuilds.includes(BigInt(arrival.originOwner)) ||
+              BigInt(arrival.originOwner) === BigInt(account.address),
           )
           .map((arrival) => arrival.entityId.toString()),
       );
@@ -77,7 +81,9 @@ export const AllResourceArrivals = memo(
       console.log("AddToSubscriptionStart - 5");
     }, [arrivals, subscribedIds, addSubscribedIds]);
 
-    const guildPlayers = getPlayersInPlayersGuild(BigInt(account?.address || 0n)).map((player) => player.address);
+    const guildPlayers = getPlayersInPlayersGuild(BigInt(account?.address || 0n)).map((player) =>
+      BigInt(player.address),
+    );
 
     const filteredArrivals = useMemo(
       () =>
@@ -87,7 +93,7 @@ export const AllResourceArrivals = memo(
           const guildCondition = showOnlyGuildMembers
             ? guildPlayers.length === 0
               ? true // If no guild players, show all arrivals
-              : guildPlayers.includes(arrival.originOwner)
+              : guildPlayers.includes(BigInt(arrival.originOwner))
             : true;
           return timeCondition && guildCondition;
         }),
