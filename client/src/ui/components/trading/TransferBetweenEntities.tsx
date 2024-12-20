@@ -7,7 +7,7 @@ import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";
 import TextInput from "@/ui/elements/TextInput";
-import { multiplyByPrecision } from "@/ui/utils/utils";
+import { multiplyByPrecision, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { DONKEY_ENTITY_TYPE, ID } from "@bibliothecadao/eternum";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
@@ -76,11 +76,13 @@ const SelectEntitiesStep = memo(
     };
 
     const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: ID | undefined) => {
+      const normalizedSearchTerm = normalizeDiacriticalMarks(searchTerm.toLowerCase());
       return entities.filter(
         (entity) =>
           entity.entity_id === selectedEntityId ||
-          entity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (entity.accountName && entity.accountName.toLowerCase().includes(searchTerm.toLowerCase())),
+          normalizeDiacriticalMarks(entity.name.toLowerCase()).includes(normalizedSearchTerm) ||
+          (entity.accountName &&
+            normalizeDiacriticalMarks(entity.accountName.toLowerCase()).includes(normalizedSearchTerm)),
       );
     };
 
