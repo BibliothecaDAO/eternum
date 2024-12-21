@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
-import { GET_ACCOUNT_TOKENS } from "@/hooks/query/realms";
+import { GET_ACCOUNT_TOKENS } from "@/hooks/query/erc721";
 import { displayAddress } from "@/lib/utils";
 import { SeasonPassMint } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
