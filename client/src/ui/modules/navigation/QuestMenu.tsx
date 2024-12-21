@@ -2,7 +2,6 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { Prize, QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
-import { useWorldStore } from "@/hooks/store/useWorldLoading";
 import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/Button";
@@ -19,7 +18,7 @@ export const QuestsMenu = memo(() => {
     },
   } = useDojo();
 
-  const worldLoading = useWorldStore((state) => state.isWorldLoading);
+  const questsLoaded = useUIStore((state) => state.loadingStates.playerStructuresTwoKey);
 
   useStartingTutorial();
 
@@ -34,7 +33,6 @@ export const QuestsMenu = memo(() => {
 
   const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestType.Settle));
 
-  const isWorldLoading = useWorldStore((state) => state.isWorldLoading);
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -81,7 +79,7 @@ export const QuestsMenu = memo(() => {
   };
 
   const handleClaimMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (worldLoading) return;
+    if (questsLoaded) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const tooltipWidth = 300;
@@ -106,11 +104,11 @@ export const QuestsMenu = memo(() => {
 
   return (
     unclaimedQuestsCount > 0 &&
-    !isWorldLoading && (
+    !questsLoaded && (
       <div className="absolute right-0 px-4 top-full mt-2">
         <div
           className={clsx("flex gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12 py-2", {
-            "opacity-50 pointer-events-none": worldLoading,
+            "opacity-50 pointer-events-none": questsLoaded,
           })}
         >
           <Button
@@ -118,14 +116,14 @@ export const QuestsMenu = memo(() => {
             isLoading={isLoading}
             className={clsx("claim-selector text-sm !font-bold capitalize", {
               "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
-                currentQuest?.status === QuestStatus.Completed && !worldLoading,
+                currentQuest?.status === QuestStatus.Completed && !questsLoaded,
             })}
             onClick={handleClaimQuest}
             onMouseEnter={handleClaimMouseEnter}
-            onMouseLeave={() => !worldLoading && setTooltip(null)}
-            disabled={currentQuest?.status !== QuestStatus.Completed || worldLoading}
+            onMouseLeave={() => !questsLoaded && setTooltip(null)}
+            disabled={currentQuest?.status !== QuestStatus.Completed || questsLoaded}
           >
-            {worldLoading ? "Loading..." : "Claim"}
+            {questsLoaded ? "Loading..." : "Claim"}
           </Button>
 
           <div className="h-full flex items-center">
@@ -136,19 +134,19 @@ export const QuestsMenu = memo(() => {
             onClick={() => handleStart()}
             variant="outline"
             disabled={
-              (currentQuest?.status === QuestStatus.Completed && currentQuest.id !== QuestType.Settle) || worldLoading
+              (currentQuest?.status === QuestStatus.Completed && currentQuest.id !== QuestType.Settle) || questsLoaded
             }
             className={clsx("tutorial-selector relative text-sm capitalize", {
               "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
-                currentQuest?.status !== QuestStatus.Completed && !worldLoading,
+                currentQuest?.status !== QuestStatus.Completed && !questsLoaded,
             })}
           >
-            <span className="font-semibold">{worldLoading ? "Loading..." : currentQuest?.name}</span>
+            <span className="font-semibold">{questsLoaded ? "Loading..." : currentQuest?.name}</span>
             <div
               className={clsx(
                 "absolute rounded-full border border-green/30 bg-green/90 text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold -top-1 -right-1",
                 {
-                  "animate-bounce": !worldLoading,
+                  "animate-bounce": !questsLoaded,
                 },
               )}
             >
@@ -166,25 +164,25 @@ export const QuestsMenu = memo(() => {
                 className="text-sm font-semibold capitalize"
                 onClick={handleClaimAllQuests}
                 variant="red"
-                disabled={worldLoading}
+                disabled={questsLoaded}
               >
-                {worldLoading ? "Loading..." : "Skip All Quests"}
+                {questsLoaded ? "Loading..." : "Skip All Quests"}
               </Button>
               <Button
                 className="text-sm font-semibold capitalize"
                 onClick={handleClaimQuest}
                 variant="red"
-                disabled={worldLoading}
+                disabled={questsLoaded}
               >
-                {worldLoading ? "Loading..." : "Confirm"}
+                {questsLoaded ? "Loading..." : "Confirm"}
               </Button>
               <Button
                 variant="primary"
                 className="text-sm font-semibold capitalize"
                 onClick={() => setSkipQuest(false)}
-                disabled={worldLoading}
+                disabled={questsLoaded}
               >
-                {worldLoading ? "Loading..." : "Cancel"}
+                {questsLoaded ? "Loading..." : "Cancel"}
               </Button>
             </div>
           ) : (
@@ -192,9 +190,9 @@ export const QuestsMenu = memo(() => {
               variant="primary"
               className="text-sm font-semibold capitalize w-6"
               onClick={() => setSkipQuest(true)}
-              disabled={worldLoading}
+              disabled={questsLoaded}
             >
-              {worldLoading ? "..." : "Skip"}
+              {questsLoaded ? "..." : "Skip"}
             </Button>
           )}
         </div>

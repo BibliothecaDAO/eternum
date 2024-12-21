@@ -3,12 +3,18 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
-import { addMarketSubscription, addToSubscription, addToSubscriptionOneKeyModelbyRealmEntityId } from "@/dojo/queries";
+import {
+  debounceAddResourceArrivals,
+  debouncedAddHyperstructureSubscription,
+  debouncedAddMarketSubscription,
+  debouncedAddToSubscription,
+  debouncedAddToSubscriptionOneKey,
+} from "@/dojo/debouncedQueries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
-import { useWorldStore } from "@/hooks/store/useWorldLoading";
+import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import { ADMIN_BANK_ENTITY_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -89,10 +95,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
-
   const battleView = useUIStore((state) => state.battleView);
 
   // Setup hooks
@@ -100,10 +104,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   useStructureEntityId();
 
   // We could optimise this deeper....
-
-  const worldLoading = useWorldStore((state) => state.isWorldLoading);
-  const setWorldLoading = useWorldStore((state) => state.setWorldLoading);
-  const setMarketLoading = useWorldStore((state) => state.setMarketLoading);
+  const setLoading = useUIStore((state) => state.setLoading);
 
   const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -131,7 +132,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       getEntityIdFromKeys([BigInt(structureEntityId)]),
     );
 
-    setWorldLoading(true);
     setSubscriptions((prev) => ({
       ...prev,
       [structureEntityId.toString()]: true,
@@ -139,21 +139,21 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       ...Object.fromEntries(filteredStructures.map((structure) => [structure.entity_id.toString(), true])),
     }));
 
+    setLoading(LoadingStateKey.SelectedStructure, true);
     const fetch = async () => {
       console.log("AddToSubscriptionStart - 1");
       try {
         await Promise.all([
-          addToSubscription(
+          debouncedAddToSubscription(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [structureEntityId.toString()],
             [{ x: position?.x || 0, y: position?.y || 0 }],
+            () => setLoading(LoadingStateKey.SelectedStructure, false),
           ),
         ]);
       } catch (error) {
         console.error("Fetch failed", error);
-      } finally {
-        setWorldLoading(false);
       }
     };
 
@@ -161,39 +161,110 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   }, [structureEntityId]);
 
   useEffect(() => {
-    try {
-      setWorldLoading(true);
-      console.log("AddToSubscriptionStart - 2");
-      addToSubscription(
-        dojo.network.toriiClient,
-        dojo.network.contractComponents as any,
-        [...filteredStructures.map((structure) => structure.entity_id.toString())],
-        [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
-      );
-      addToSubscriptionOneKeyModelbyRealmEntityId(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-        ...filteredStructures.map((structure) => structure.entity_id.toString()),
-      ]);
-    } catch (error) {
-      console.error("Fetch failed", error);
-    } finally {
-      setWorldLoading(false);
-    }
+    const fetch = async () => {
+      setLoading(LoadingStateKey.PlayerStructuresOneKey, true);
+      setLoading(LoadingStateKey.PlayerStructuresTwoKey, true);
+      setLoading(LoadingStateKey.Arrivals, true);
+
+      const isSyncing = true;
+
+      try {
+        console.log("AddToSubscriptionStart - 2");
+        await Promise.all([
+          debouncedAddToSubscription(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            [...filteredStructures.map((structure) => structure.entity_id.toString())],
+            [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
+            () => setLoading(LoadingStateKey.PlayerStructuresOneKey, false),
+          ),
+          debouncedAddToSubscriptionOneKey(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            [...filteredStructures.map((structure) => structure.entity_id.toString())],
+            () => setLoading(LoadingStateKey.PlayerStructuresTwoKey, false),
+          ),
+        ]);
+
+        await debounceAddResourceArrivals(
+          dojo.network.toriiClient,
+          dojo.network.contractComponents as any,
+          [...structures.map((structure) => structure.entity_id)],
+          () => setLoading(LoadingStateKey.Arrivals, false),
+        );
+      } catch (error) {
+        console.error("Fetch failed", error);
+      }
+    };
+
+    fetch();
   }, [structures.length]);
 
   useEffect(() => {
-    try {
-      setMarketLoading(true);
-      console.log("AddToSubscriptionStart - 3");
-      addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
-        ADMIN_BANK_ENTITY_ID.toString(),
-      ]);
-      addMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any);
-    } catch (error) {
-      console.error("Fetch failed", error);
-    } finally {
-      setMarketLoading(false);
-    }
+    const fetch = async () => {
+      try {
+        setLoading(LoadingStateKey.Market, true);
+        setLoading(LoadingStateKey.Bank, true);
+        console.log("AddToSubscriptionStart - 3");
+        await Promise.all([
+          debouncedAddToSubscription(
+            dojo.network.toriiClient,
+            dojo.network.contractComponents as any,
+            [ADMIN_BANK_ENTITY_ID.toString()],
+            [],
+            () => setLoading(LoadingStateKey.Bank, false),
+          ),
+          debouncedAddMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
+            setLoading(LoadingStateKey.Market, false),
+          ),
+        ]);
+      } catch (error) {
+        console.error("Fetch failed", error);
+      } finally {
+        // Ensure loading states are reset even if there's an error
+        setLoading(LoadingStateKey.Bank, false);
+        setLoading(LoadingStateKey.Market, false);
+      }
+    };
+
+    fetch();
   }, []);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        setLoading(LoadingStateKey.Hyperstructure, true);
+        console.log("AddToSubscriptionStart - 4");
+        await Promise.all([
+          debouncedAddHyperstructureSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
+            setLoading(LoadingStateKey.Hyperstructure, false),
+          ),
+        ]);
+      } catch (error) {
+        console.error("Fetch failed", error);
+      } finally {
+        // Ensure loading states are reset even if there's an error
+        setLoading(LoadingStateKey.Hyperstructure, false);
+      }
+    };
+
+    fetch();
+  }, []);
+
+  const battleViewContent = useMemo(
+    () => (
+      <div>
+        <Suspense fallback={<LoadingOroborus loading={true} />}>
+          {battleView && (
+            <BattleContainer>
+              <BattleView />
+            </BattleContainer>
+          )}
+        </Suspense>
+      </div>
+    ),
+    [battleView],
+  );
 
   return (
     <div
@@ -228,9 +299,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           </>
         )}
 
-        <BattleContainer>
-          <BattleView />
-        </BattleContainer>
+        {battleViewContent}
 
         <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
           <LeftMiddleContainer>
@@ -257,7 +326,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           )}
 
           <TopLeftContainer>
-            <TopLeftNavigation />
+            <TopLeftNavigation structures={structures} />
           </TopLeftContainer>
         </div>
 

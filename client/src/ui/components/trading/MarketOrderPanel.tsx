@@ -451,7 +451,7 @@ const OrderRow = memo(
           <ConfirmationPopup
             title="Confirm Trade"
             onConfirm={onAccept}
-            disabled={donkeysNeeded > donkeyBalance || donkeyBalance === 0}
+            disabled={!isBuy && donkeysNeeded > donkeyBalance}
             onCancel={() => {
               setConfirmOrderModal(false);
             }}
@@ -600,7 +600,7 @@ const OrderCreation = memo(
 
     const enoughDonkeys = useMemo(() => {
       if (resourceId === ResourcesIds.Donkey) return true;
-      return donkeyBalance > donkeysNeeded;
+      return donkeyBalance >= donkeysNeeded;
     }, [donkeyBalance, donkeysNeeded, resourceId]);
 
     return (

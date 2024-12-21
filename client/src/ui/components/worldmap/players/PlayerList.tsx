@@ -38,11 +38,16 @@ export const PlayerList = ({
     sort: "none",
   });
 
+  const sortedPlayers = useMemo(
+    () => sortItems(players, activeSort, { sortKey: "rank", sort: "asc" }),
+    [players, activeSort],
+  );
+
   return (
     <div className="flex flex-col h-full p-2 bg-brown-900/50 border border-gold/30 rounded-xl backdrop-blur-sm">
       <PlayerListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
       <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-        {sortItems(players, activeSort, { sortKey: "rank", sort: "asc" }).map((player) => (
+        {sortedPlayers.map((player) => (
           <PlayerRow
             key={player.address}
             player={player}

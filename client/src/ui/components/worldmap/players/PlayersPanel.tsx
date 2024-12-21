@@ -3,7 +3,7 @@ import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { getEntityIdFromKeys, toHexString } from "@/ui/utils/utils";
+import { getEntityIdFromKeys, normalizeDiacriticalMarks, toHexString } from "@/ui/utils/utils";
 import { ContractAddress, Player } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { KeyboardEvent, useMemo, useState } from "react";
@@ -70,20 +70,23 @@ export const PlayersPanel = ({
       };
     });
     return playersWithStructures;
-  }, [isLoading]);
+  }, [isLoading, players]);
 
   const filteredPlayers = useMemo(() => {
-    const term = searchTerm.toLowerCase();
+    const normalizedTerm = normalizeDiacriticalMarks(searchTerm.toLowerCase());
+
     return searchTerm === ""
       ? playersWithStructures
       : playersWithStructures.filter((player) => {
-          const nameMatch = player.name.toLowerCase().includes(term);
+          const nameMatch = normalizeDiacriticalMarks(player.name.toLowerCase()).includes(normalizedTerm);
           if (nameMatch) return true;
 
-          const addressMatch = toHexString(player.address).toLowerCase().includes(term);
+          const addressMatch = toHexString(player.address).toLowerCase().includes(normalizedTerm);
           if (addressMatch) return true;
 
-          return player.structures.some((structure) => structure && structure.toLowerCase().includes(term));
+          return player.structures.some(
+            (structure) => structure && normalizeDiacriticalMarks(structure.toLowerCase()).includes(normalizedTerm),
+          );
         });
   }, [playersWithStructures, searchTerm]);
 
