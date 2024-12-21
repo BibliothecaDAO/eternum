@@ -6,8 +6,8 @@ import { GET_ENTITY_DISTANCE } from "./query/position";
 
 export function useTravel(fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) {
   const { data: entityPositions, isLoading } = useQuery({
-    queryKey: ["entityResources", fromId, toId],
-    queryFn: () => execute(GET_ENTITY_DISTANCE, { fromEntityId: fromId, toEntityId: toId }),
+    queryKey: ["entityPosition", fromId, toId],
+    queryFn: () => execute(GET_ENTITY_DISTANCE, { entityIds: [fromId, toId] }),
     refetchInterval: 10_000,
   });
   

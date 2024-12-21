@@ -1,17 +1,17 @@
-import { configManager } from "@/dojo/setup";
-import { ADMIN_BANK_ENTITY_ID, ID, resources, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
-import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { ADMIN_BANK_ENTITY_ID, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useQuery } from "@tanstack/react-query";
-import { ResourceManager } from "../../dojo/modelManager/ResourceManager";
-import { useDojo } from "../context/DojoContext";
+import { useMemo } from "react";
 import { execute } from "../gql/execute";
-import { GET_ENTITY_RESOURCES } from "../query/resources";
+import { GetEternumEntityOwnerQuery } from "../gql/graphql";
+import { GET_ETERNUM_ENTITY_OWNERS } from "../query/entityOwners";
+import { GET_ENTITY_DISTANCE } from "../query/position";
+import { GET_ENTITIES_RESOURCES } from "../query/resources";
 
 export function useResourceBalance({ entityId, resourceId }: { entityId?: ID; resourceId?: ResourcesIds }) {
   const { data, isLoading } = useQuery({
     queryKey: ["entityResources", entityId],
-    queryFn: () => (entityId ? execute(GET_ENTITY_RESOURCES, { entityId/*, resourceType: Number(resourceId)*/ }) : null),
+    queryFn: () =>
+      entityId ? execute(GET_ENTITIES_RESOURCES, { entityIds: [entityId] }) : null,
     refetchInterval: 10_000,
   });
 
@@ -22,51 +22,86 @@ export function useResourceBalance({ entityId, resourceId }: { entityId?: ID; re
   return { data: data?.s0EternumResourceModels?.edges, isLoading, getBalance };
 }
 
-export function useDonkeyArrivals() {
+export function useDonkeyArrivals(realmEntityIds: ID[]) {
   const {
-    setup: {
-      components: { Position, EntityOwner, ArrivalTime, OwnedResourcesTracker, Weight },
-    },
-  } = useDojo();
-  const dojo = useDojo();
+    data: entityPositions,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["entityPositionBank"],
+    queryFn: () => execute(GET_ENTITY_DISTANCE, { entityIds: [Number(ADMIN_BANK_ENTITY_ID)] }),
+  });
 
-  const getOwnerArrivalsAtBank = (realmEntityIds: ID[]) => {
-    const bankPosition = getComponentValue(Position, getEntityIdFromKeys([BigInt(ADMIN_BANK_ENTITY_ID)]));
+  const {
+    data: donkeyEntities,
+    isLoading: isLoadingDonkeyEntityIds,
+    error: errorDonkeyEntityIds,
+  } = useQuery({
+    queryKey: ["donkeyEntityIds" + realmEntityIds],
+    queryFn: () => execute(GET_ETERNUM_ENTITY_OWNERS, { entityOwnerIds: realmEntityIds }),
+  });
 
-    const arrivals: any[] = [];
-    for (const realmEntityId of realmEntityIds) {
-      const res = runQuery([
-        HasValue(Position, { x: bankPosition?.x ?? 0, y: bankPosition?.y ?? 0 }),
-        NotValue(OwnedResourcesTracker, { resource_types: 0n }),
-        Has(OwnedResourcesTracker),
-        Has(Weight),
-        Has(ArrivalTime),
-        HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
-      ]);
 
-      arrivals.push(...res);
-    }
+  const bankPosition = useMemo(
+    () =>
+      entityPositions?.s0EternumPositionModels?.edges?.find((entity) => entity?.node?.entity_id == ADMIN_BANK_ENTITY_ID)
+        ?.node,
+    [entityPositions],
+  );
 
-    return arrivals;
+
+
+  const donkeysAtBank = useMemo(() => 
+    donkeyEntities?.s0EternumEntityOwnerModels?.edges?.filter((edge) => {
+      const position = edge?.node?.entity?.models?.find(
+        (model) => model?.__typename === "s0_eternum_Position"
+      );
+      
+      return position?.x === bankPosition?.x && 
+             position?.y === bankPosition?.y;
+    }) ?? []
+  , [donkeyEntities, bankPosition]);
+
+  const donkeyEntityIds = useMemo(
+    () =>
+      donkeysAtBank?.map((edge) => edge?.node?.entity_id)
+        .filter((id): id is number => id != null) ?? [],
+    [donkeysAtBank],
+  );
+
+  const { data: donkeyResources } = useQuery({
+    queryKey: ["donkeyResources" + donkeyEntityIds],
+    queryFn: () => execute(GET_ENTITIES_RESOURCES, { entityIds: donkeyEntityIds }),
+    enabled: !!donkeyEntityIds,
+  });
+
+  const getDonkeyInfo = (
+    donkeyEntity: NonNullable<
+      NonNullable<NonNullable<GetEternumEntityOwnerQuery["s0EternumEntityOwnerModels"]>["edges"]>[number]
+    >,
+  ) => {
+    const donkeyEntityId = donkeyEntity?.node?.entity_id;
+    const donkeyArrivalTime = donkeyEntity?.node?.entity?.models?.find(
+      (model) => model?.__typename === "s0_eternum_ArrivalTime",
+    )?.arrives_at;
+
+    const donkeyResourceBalances =
+      donkeyResources?.s0EternumResourceModels?.edges
+        ?.filter((edge) => edge?.node?.entity_id === donkeyEntityId)
+        ?.map((edge) => edge?.node)
+        ?.map((node) => ({
+          resourceId: node?.resource_type,
+          amount: node?.balance,
+        }))
+        .filter((r) => Number(r.amount) > 0) ?? [];
+
+    return { donkeyEntityId, donkeyArrivalTime, donkeyResourceBalances };
   };
 
-  const getDonkeyInfo = (donkeyEntity: Entity) => {
-    const tickConfigDefault = configManager.getTick(TickIds.Default);
-    const timestamp = Math.floor(Date.now() / 1000);
-    const currentDefaultTick = Math.floor(timestamp / Number(tickConfigDefault));
-
-    const donkeyArrivalTime = getComponentValue(ArrivalTime, donkeyEntity)?.arrives_at;
-    const donkeyEntityId = getComponentValue(EntityOwner, donkeyEntity)?.entity_id;
-    const donkeyResources = resources
-      .map((r) => r.id)
-      .map((id) => {
-        const resourceManager = new ResourceManager(dojo.setup, donkeyEntityId as number, id);
-        const balance = resourceManager.balance(currentDefaultTick);
-        return { resourceId: id, amount: balance };
-      })
-      .filter((r) => r.amount > 0);
-    return { donkeyArrivalTime, donkeyEntityId, donkeyResources };
+  return {
+    donkeyArrivals: donkeyEntities?.s0EternumEntityOwnerModels?.edges,
+    getDonkeyInfo,
+    bankPosition,
+    donkeyResources,
   };
-
-  return { getOwnerArrivalsAtBank, getDonkeyInfo };
 }

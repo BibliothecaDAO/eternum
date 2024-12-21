@@ -7279,6 +7279,13 @@ export type GetEternumOwnerRealmIdsQueryVariables = Exact<{
 
 export type GetEternumOwnerRealmIdsQuery = { __typename?: 'World__Query', s0EternumOwnerModels?: { __typename?: 's0_eternum_OwnerConnection', edges?: Array<{ __typename?: 's0_eternum_OwnerEdge', node?: { __typename?: 's0_eternum_Owner', address?: any | null, entity_id?: any | null, entity?: { __typename?: 'World__Entity', models?: Array<{ __typename: 's0_eternum_AcceptOrder' } | { __typename: 's0_eternum_AcceptPartialOrder' } | { __typename: 's0_eternum_AddressName' } | { __typename: 's0_eternum_Army' } | { __typename: 's0_eternum_ArrivalTime' } | { __typename: 's0_eternum_Bank' } | { __typename: 's0_eternum_BankConfig' } | { __typename: 's0_eternum_Battle' } | { __typename: 's0_eternum_BattleClaimData' } | { __typename: 's0_eternum_BattleConfig' } | { __typename: 's0_eternum_BattleJoinData' } | { __typename: 's0_eternum_BattleLeaveData' } | { __typename: 's0_eternum_BattlePillageData' } | { __typename: 's0_eternum_BattleStartData' } | { __typename: 's0_eternum_Building' } | { __typename: 's0_eternum_BuildingCategoryPopConfig' } | { __typename: 's0_eternum_BuildingConfig' } | { __typename: 's0_eternum_BuildingGeneralConfig' } | { __typename: 's0_eternum_BuildingQuantityv2' } | { __typename: 's0_eternum_BurnDonkey' } | { __typename: 's0_eternum_CancelOrder' } | { __typename: 's0_eternum_CapacityCategory' } | { __typename: 's0_eternum_CapacityConfig' } | { __typename: 's0_eternum_Contribution' } | { __typename: 's0_eternum_CreateGuild' } | { __typename: 's0_eternum_CreateOrder' } | { __typename: 's0_eternum_DetachedResource' } | { __typename: 's0_eternum_EntityName' } | { __typename: 's0_eternum_EntityOwner' } | { __typename: 's0_eternum_Epoch' } | { __typename: 's0_eternum_FragmentMineDiscovered' } | { __typename: 's0_eternum_GameEnded' } | { __typename: 's0_eternum_Guild' } | { __typename: 's0_eternum_GuildMember' } | { __typename: 's0_eternum_GuildWhitelist' } | { __typename: 's0_eternum_Health' } | { __typename: 's0_eternum_Hyperstructure' } | { __typename: 's0_eternum_HyperstructureCoOwnersChange' } | { __typename: 's0_eternum_HyperstructureConfig' } | { __typename: 's0_eternum_HyperstructureContribution' } | { __typename: 's0_eternum_HyperstructureFinished' } | { __typename: 's0_eternum_HyperstructureResourceConfig' } | { __typename: 's0_eternum_HyperstructureStarted' } | { __typename: 's0_eternum_JoinGuild' } | { __typename: 's0_eternum_Leaderboard' } | { __typename: 's0_eternum_LeaderboardEntry' } | { __typename: 's0_eternum_LeaderboardRegisterContribution' } | { __typename: 's0_eternum_LeaderboardRegisterShare' } | { __typename: 's0_eternum_LeaderboardRegistered' } | { __typename: 's0_eternum_LeaderboardRewardClaimed' } | { __typename: 's0_eternum_LevelingConfig' } | { __typename: 's0_eternum_Liquidity' } | { __typename: 's0_eternum_LiquidityEvent' } | { __typename: 's0_eternum_MapConfig' } | { __typename: 's0_eternum_MapExplored' } | { __typename: 's0_eternum_Market' } | { __typename: 's0_eternum_MercenariesConfig' } | { __typename: 's0_eternum_Message' } | { __typename: 's0_eternum_Movable' } | { __typename: 's0_eternum_Orders' } | { __typename: 's0_eternum_OwnedResourcesTracker' } | { __typename: 's0_eternum_Owner' } | { __typename: 's0_eternum_Population' } | { __typename: 's0_eternum_PopulationConfig' } | { __typename: 's0_eternum_Position' } | { __typename: 's0_eternum_Production' } | { __typename: 's0_eternum_ProductionConfig' } | { __typename: 's0_eternum_ProductionDeadline' } | { __typename: 's0_eternum_ProductionInput' } | { __typename: 's0_eternum_ProductionOutput' } | { __typename: 's0_eternum_Progress' } | { __typename: 's0_eternum_Protectee' } | { __typename: 's0_eternum_Protector' } | { __typename: 's0_eternum_Quantity' } | { __typename: 's0_eternum_QuantityTracker' } | { __typename: 's0_eternum_Quest' } | { __typename: 's0_eternum_QuestBonus' } | { __typename: 's0_eternum_QuestConfig' } | { __typename: 's0_eternum_QuestRewardConfig' } | { __typename: 's0_eternum_Realm', realm_id?: any | null } | { __typename: 's0_eternum_RealmLevelConfig' } | { __typename: 's0_eternum_RealmMaxLevelConfig' } | { __typename: 's0_eternum_Resource' } | { __typename: 's0_eternum_ResourceAllowance' } | { __typename: 's0_eternum_ResourceBridgeConfig' } | { __typename: 's0_eternum_ResourceBridgeFeeSplitConfig' } | { __typename: 's0_eternum_ResourceBridgeWhitelistConfig' } | { __typename: 's0_eternum_ResourceCost' } | { __typename: 's0_eternum_ResourceTransferLock' } | { __typename: 's0_eternum_Season' } | { __typename: 's0_eternum_SeasonAddressesConfig' } | { __typename: 's0_eternum_SeasonBridgeConfig' } | { __typename: 's0_eternum_SettleRealmData' } | { __typename: 's0_eternum_SettlementConfig' } | { __typename: 's0_eternum_SpeedConfig' } | { __typename: 's0_eternum_Stamina' } | { __typename: 's0_eternum_StaminaConfig' } | { __typename: 's0_eternum_StaminaRefillConfig' } | { __typename: 's0_eternum_Status' } | { __typename: 's0_eternum_Structure' } | { __typename: 's0_eternum_StructureCount' } | { __typename: 's0_eternum_SwapEvent' } | { __typename: 's0_eternum_TickConfig' } | { __typename: 's0_eternum_Tile' } | { __typename: 's0_eternum_Trade' } | { __typename: 's0_eternum_Transfer' } | { __typename: 's0_eternum_Travel' } | { __typename: 's0_eternum_TravelFoodCostConfig' } | { __typename: 's0_eternum_TravelStaminaCostConfig' } | { __typename: 's0_eternum_TroopConfig' } | { __typename: 's0_eternum_TrophyCreation' } | { __typename: 's0_eternum_TrophyProgression' } | { __typename: 's0_eternum_VRFConfig' } | { __typename: 's0_eternum_Weight' } | { __typename: 's0_eternum_WeightConfig' } | { __typename: 's0_eternum_WorldConfig' } | null> | null } | null } | null } | null> | null } | null };
 
+export type GetEternumEntityOwnerQueryVariables = Exact<{
+  entityOwnerIds: Array<Scalars['u32']['input']> | Scalars['u32']['input'];
+}>;
+
+
+export type GetEternumEntityOwnerQuery = { __typename?: 'World__Query', s0EternumEntityOwnerModels?: { __typename?: 's0_eternum_EntityOwnerConnection', edges?: Array<{ __typename?: 's0_eternum_EntityOwnerEdge', node?: { __typename?: 's0_eternum_EntityOwner', entity_id?: any | null, entity_owner_id?: any | null, entity?: { __typename?: 'World__Entity', models?: Array<{ __typename: 's0_eternum_AcceptOrder' } | { __typename: 's0_eternum_AcceptPartialOrder' } | { __typename: 's0_eternum_AddressName' } | { __typename: 's0_eternum_Army' } | { __typename: 's0_eternum_ArrivalTime', arrives_at?: any | null } | { __typename: 's0_eternum_Bank' } | { __typename: 's0_eternum_BankConfig' } | { __typename: 's0_eternum_Battle' } | { __typename: 's0_eternum_BattleClaimData' } | { __typename: 's0_eternum_BattleConfig' } | { __typename: 's0_eternum_BattleJoinData' } | { __typename: 's0_eternum_BattleLeaveData' } | { __typename: 's0_eternum_BattlePillageData' } | { __typename: 's0_eternum_BattleStartData' } | { __typename: 's0_eternum_Building' } | { __typename: 's0_eternum_BuildingCategoryPopConfig' } | { __typename: 's0_eternum_BuildingConfig' } | { __typename: 's0_eternum_BuildingGeneralConfig' } | { __typename: 's0_eternum_BuildingQuantityv2' } | { __typename: 's0_eternum_BurnDonkey' } | { __typename: 's0_eternum_CancelOrder' } | { __typename: 's0_eternum_CapacityCategory' } | { __typename: 's0_eternum_CapacityConfig' } | { __typename: 's0_eternum_Contribution' } | { __typename: 's0_eternum_CreateGuild' } | { __typename: 's0_eternum_CreateOrder' } | { __typename: 's0_eternum_DetachedResource' } | { __typename: 's0_eternum_EntityName' } | { __typename: 's0_eternum_EntityOwner' } | { __typename: 's0_eternum_Epoch' } | { __typename: 's0_eternum_FragmentMineDiscovered' } | { __typename: 's0_eternum_GameEnded' } | { __typename: 's0_eternum_Guild' } | { __typename: 's0_eternum_GuildMember' } | { __typename: 's0_eternum_GuildWhitelist' } | { __typename: 's0_eternum_Health' } | { __typename: 's0_eternum_Hyperstructure' } | { __typename: 's0_eternum_HyperstructureCoOwnersChange' } | { __typename: 's0_eternum_HyperstructureConfig' } | { __typename: 's0_eternum_HyperstructureContribution' } | { __typename: 's0_eternum_HyperstructureFinished' } | { __typename: 's0_eternum_HyperstructureResourceConfig' } | { __typename: 's0_eternum_HyperstructureStarted' } | { __typename: 's0_eternum_JoinGuild' } | { __typename: 's0_eternum_Leaderboard' } | { __typename: 's0_eternum_LeaderboardEntry' } | { __typename: 's0_eternum_LeaderboardRegisterContribution' } | { __typename: 's0_eternum_LeaderboardRegisterShare' } | { __typename: 's0_eternum_LeaderboardRegistered' } | { __typename: 's0_eternum_LeaderboardRewardClaimed' } | { __typename: 's0_eternum_LevelingConfig' } | { __typename: 's0_eternum_Liquidity' } | { __typename: 's0_eternum_LiquidityEvent' } | { __typename: 's0_eternum_MapConfig' } | { __typename: 's0_eternum_MapExplored' } | { __typename: 's0_eternum_Market' } | { __typename: 's0_eternum_MercenariesConfig' } | { __typename: 's0_eternum_Message' } | { __typename: 's0_eternum_Movable' } | { __typename: 's0_eternum_Orders' } | { __typename: 's0_eternum_OwnedResourcesTracker', resource_types?: any | null } | { __typename: 's0_eternum_Owner' } | { __typename: 's0_eternum_Population' } | { __typename: 's0_eternum_PopulationConfig' } | { __typename: 's0_eternum_Position', x?: any | null, y?: any | null } | { __typename: 's0_eternum_Production' } | { __typename: 's0_eternum_ProductionConfig' } | { __typename: 's0_eternum_ProductionDeadline' } | { __typename: 's0_eternum_ProductionInput' } | { __typename: 's0_eternum_ProductionOutput' } | { __typename: 's0_eternum_Progress' } | { __typename: 's0_eternum_Protectee' } | { __typename: 's0_eternum_Protector' } | { __typename: 's0_eternum_Quantity' } | { __typename: 's0_eternum_QuantityTracker' } | { __typename: 's0_eternum_Quest' } | { __typename: 's0_eternum_QuestBonus' } | { __typename: 's0_eternum_QuestConfig' } | { __typename: 's0_eternum_QuestRewardConfig' } | { __typename: 's0_eternum_Realm' } | { __typename: 's0_eternum_RealmLevelConfig' } | { __typename: 's0_eternum_RealmMaxLevelConfig' } | { __typename: 's0_eternum_Resource' } | { __typename: 's0_eternum_ResourceAllowance' } | { __typename: 's0_eternum_ResourceBridgeConfig' } | { __typename: 's0_eternum_ResourceBridgeFeeSplitConfig' } | { __typename: 's0_eternum_ResourceBridgeWhitelistConfig' } | { __typename: 's0_eternum_ResourceCost' } | { __typename: 's0_eternum_ResourceTransferLock' } | { __typename: 's0_eternum_Season' } | { __typename: 's0_eternum_SeasonAddressesConfig' } | { __typename: 's0_eternum_SeasonBridgeConfig' } | { __typename: 's0_eternum_SettleRealmData' } | { __typename: 's0_eternum_SettlementConfig' } | { __typename: 's0_eternum_SpeedConfig' } | { __typename: 's0_eternum_Stamina' } | { __typename: 's0_eternum_StaminaConfig' } | { __typename: 's0_eternum_StaminaRefillConfig' } | { __typename: 's0_eternum_Status' } | { __typename: 's0_eternum_Structure' } | { __typename: 's0_eternum_StructureCount' } | { __typename: 's0_eternum_SwapEvent' } | { __typename: 's0_eternum_TickConfig' } | { __typename: 's0_eternum_Tile' } | { __typename: 's0_eternum_Trade' } | { __typename: 's0_eternum_Transfer' } | { __typename: 's0_eternum_Travel' } | { __typename: 's0_eternum_TravelFoodCostConfig' } | { __typename: 's0_eternum_TravelStaminaCostConfig' } | { __typename: 's0_eternum_TroopConfig' } | { __typename: 's0_eternum_TrophyCreation' } | { __typename: 's0_eternum_TrophyProgression' } | { __typename: 's0_eternum_VRFConfig' } | { __typename: 's0_eternum_Weight', value?: any | null } | { __typename: 's0_eternum_WeightConfig' } | { __typename: 's0_eternum_WorldConfig' } | null> | null } | null } | null } | null> | null } | null };
+
 export type GetAccountTokensQueryVariables = Exact<{
   accountAddress: Scalars['String']['input'];
 }>;
@@ -7292,19 +7299,18 @@ export type GetErc721MintsQueryVariables = Exact<{ [key: string]: never; }>;
 export type GetErc721MintsQuery = { __typename?: 'World__Query', tokenTransfers?: { __typename?: 'Token__TransferConnection', edges?: Array<{ __typename?: 'Token__TransferEdge', node?: { __typename?: 'Token__Transfer', tokenMetadata: { __typename: 'ERC20__Token' } | { __typename: 'ERC721__Token', tokenId: string, metadataDescription?: string | null, imagePath: string, contractAddress: string, metadata: string } } | null } | null> | null } | null };
 
 export type GetEntityPositionQueryVariables = Exact<{
-  fromEntityId: Scalars['u32']['input'];
-  toEntityId: Scalars['u32']['input'];
+  entityIds: Array<Scalars['u32']['input']> | Scalars['u32']['input'];
 }>;
 
 
 export type GetEntityPositionQuery = { __typename?: 'World__Query', s0EternumPositionModels?: { __typename?: 's0_eternum_PositionConnection', edges?: Array<{ __typename?: 's0_eternum_PositionEdge', node?: { __typename?: 's0_eternum_Position', x?: any | null, y?: any | null, entity_id?: any | null, entity?: { __typename: 'World__Entity' } | null } | null } | null> | null } | null };
 
-export type GetEntityResourcesQueryVariables = Exact<{
-  entityId: Scalars['u32']['input'];
+export type GetEntitiesResourcesQueryVariables = Exact<{
+  entityIds: Array<Scalars['u32']['input']> | Scalars['u32']['input'];
 }>;
 
 
-export type GetEntityResourcesQuery = { __typename?: 'World__Query', s0EternumResourceModels?: { __typename?: 's0_eternum_ResourceConnection', edges?: Array<{ __typename?: 's0_eternum_ResourceEdge', node?: { __typename?: 's0_eternum_Resource', resource_type?: any | null, balance?: any | null, entity?: { __typename: 'World__Entity' } | null } | null } | null> | null } | null };
+export type GetEntitiesResourcesQuery = { __typename?: 'World__Query', s0EternumResourceModels?: { __typename?: 's0_eternum_ResourceConnection', edges?: Array<{ __typename?: 's0_eternum_ResourceEdge', node?: { __typename?: 's0_eternum_Resource', entity_id?: any | null, resource_type?: any | null, balance?: any | null, entity?: { __typename: 'World__Entity' } | null } | null } | null> | null } | null };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -7359,6 +7365,36 @@ export const GetEternumOwnerRealmIdsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetEternumOwnerRealmIdsQuery, GetEternumOwnerRealmIdsQueryVariables>;
+export const GetEternumEntityOwnerDocument = new TypedDocumentString(`
+    query getEternumEntityOwner($entityOwnerIds: [u32!]!) {
+  s0EternumEntityOwnerModels(where: {entity_owner_idIN: $entityOwnerIds}) {
+    edges {
+      node {
+        entity_id
+        entity_owner_id
+        entity {
+          models {
+            __typename
+            ... on s0_eternum_OwnedResourcesTracker {
+              resource_types
+            }
+            ... on s0_eternum_Position {
+              x
+              y
+            }
+            ... on s0_eternum_ArrivalTime {
+              arrives_at
+            }
+            ... on s0_eternum_Weight {
+              value
+            }
+          }
+        }
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GetEternumEntityOwnerQuery, GetEternumEntityOwnerQueryVariables>;
 export const GetAccountTokensDocument = new TypedDocumentString(`
     query getAccountTokens($accountAddress: String!) {
   tokenBalances(accountAddress: $accountAddress, limit: 8000) {
@@ -7400,8 +7436,8 @@ export const GetErc721MintsDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GetErc721MintsQuery, GetErc721MintsQueryVariables>;
 export const GetEntityPositionDocument = new TypedDocumentString(`
-    query getEntityPosition($fromEntityId: u32!, $toEntityId: u32!) {
-  s0EternumPositionModels(where: {entity_idIN: [$fromEntityId, $toEntityId]}) {
+    query getEntityPosition($entityIds: [u32!]!) {
+  s0EternumPositionModels(where: {entity_idIN: $entityIds}) {
     edges {
       node {
         x
@@ -7415,11 +7451,12 @@ export const GetEntityPositionDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetEntityPositionQuery, GetEntityPositionQueryVariables>;
-export const GetEntityResourcesDocument = new TypedDocumentString(`
-    query getEntityResources($entityId: u32!) {
-  s0EternumResourceModels(where: {entity_id: $entityId}, limit: 50) {
+export const GetEntitiesResourcesDocument = new TypedDocumentString(`
+    query getEntitiesResources($entityIds: [u32!]!) {
+  s0EternumResourceModels(where: {entity_idIN: $entityIds}, limit: 100) {
     edges {
       node {
+        entity_id
         resource_type
         balance
         entity {
@@ -7429,4 +7466,4 @@ export const GetEntityResourcesDocument = new TypedDocumentString(`
     }
   }
 }
-    `) as unknown as TypedDocumentString<GetEntityResourcesQuery, GetEntityResourcesQueryVariables>;
+    `) as unknown as TypedDocumentString<GetEntitiesResourcesQuery, GetEntitiesResourcesQueryVariables>;
