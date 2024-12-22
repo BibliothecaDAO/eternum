@@ -4,7 +4,7 @@ import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
 import {
-  debounceAddResourceArrivals,
+  debounceAddDonkeysAndArmiesSubscription,
   debouncedAddHyperstructureSubscription,
   debouncedAddMarketSubscription,
   debouncedAddToSubscription,
@@ -164,7 +164,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     const fetch = async () => {
       setLoading(LoadingStateKey.PlayerStructuresOneKey, true);
       setLoading(LoadingStateKey.PlayerStructuresTwoKey, true);
-      setLoading(LoadingStateKey.Arrivals, true);
+      setLoading(LoadingStateKey.DonkeysAndArmies, true);
 
       const isSyncing = true;
 
@@ -186,11 +186,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           ),
         ]);
 
-        await debounceAddResourceArrivals(
+        await debounceAddDonkeysAndArmiesSubscription(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           [...structures.map((structure) => structure.entity_id)],
-          () => setLoading(LoadingStateKey.Arrivals, false),
+          () => setLoading(LoadingStateKey.DonkeysAndArmies, false),
         );
       } catch (error) {
         console.error("Fetch failed", error);
