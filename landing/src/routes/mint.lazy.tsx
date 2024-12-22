@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { realmsAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
-import { GET_ACCOUNT_TOKENS } from "@/hooks/query/realms";
+import { GET_ACCOUNT_TOKENS } from "@/hooks/query/erc721";
 import useNftSelection from "@/hooks/useNftSelection";
 import { displayAddress } from "@/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
