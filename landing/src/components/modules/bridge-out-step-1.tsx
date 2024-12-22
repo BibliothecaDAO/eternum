@@ -87,7 +87,7 @@ export const BridgeOutStep1 = () => {
     }
   }, [getBalance, realmEntityId]);
 
-  const { playerRealms } = useEntities();
+  const { playerStructures } = useEntities();
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
@@ -226,13 +226,13 @@ export const BridgeOutStep1 = () => {
                     : "border-gold/40")
                 }
               >
-                {address ? <SelectValue placeholder="Select Settled Realm" /> : <div> -- Connect your wallet --</div>}
+                {address ? <SelectValue placeholder="Select Structure" /> : <div> -- Connect your wallet --</div>}
               </SelectTrigger>
               <SelectContent>
-                {playerRealms?.map((realm) => {
+                {playerStructures?.map((structure) => {
                   return (
-                    <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                      #{realm.realmId} - {realm.name}
+                    <SelectItem key={structure.realmId} value={structure.entityId.toString()}>
+                      #{structure.realmId} - {structure.name}
                     </SelectItem>
                   );
                 })}

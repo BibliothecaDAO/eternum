@@ -19,11 +19,9 @@ import { BridgeFees } from "./bridge-fees";
 export const BridgeOutStep2 = () => {
   const { address } = useAccount();
 
-  const { playerRealms } = useEntities();
+  const { playerStructures } = useEntities();
 
-  console.log({ playerRealms });
-
-  const { donkeyInfos } = useDonkeyArrivals(playerRealms.map((realm) => realm.entityId));
+  const { donkeyInfos } = useDonkeyArrivals(playerStructures.map((structure) => structure.entityId));
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);

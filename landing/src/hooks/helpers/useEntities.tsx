@@ -14,6 +14,10 @@ export function isS0EternumRealm(model: any): model is S0EternumRealm {
   return model?.__typename === "s0_eternum_Realm";
 }
 
+export function isS0EternumStructure(model: any): model is S0EternumRealm {
+  return model?.__typename === "s0_eternum_Structure";
+}
+
 export const useEntities = () => {
   const { address } = useAccount();
   const { getRealmNameById } = useRealm();
@@ -40,8 +44,27 @@ export const useEntities = () => {
       .filter(Boolean) as { realmId: number; entityId: number; name: string }[];
   }, [data, getRealmNameById]);
 
+  const playerStructures = useMemo(() => {
+    if (!data) return [];
+
+    return data.s0EternumOwnerModels?.edges
+      ?.map((structure) => {
+        const structureModel = structure?.node?.entity?.models?.find(isS0EternumStructure);
+        if (!structureModel) return null;
+        const realmModel = structure?.node?.entity?.models?.find(isS0EternumRealm);
+        const entityId = structure?.node?.entity_id;
+        return {
+          realmId: realmModel?.realm_id || entityId,
+          entityId,
+          name: realmModel ? getRealmNameById(realmModel?.realm_id ?? 0) : "Structure",
+        };
+      })
+      .filter(Boolean) as { realmId: number | undefined; entityId: number; name: string }[];
+  }, [data, getRealmNameById]);
+
   return {
     playerRealms,
+    playerStructures,
     isLoading,
   };
 };

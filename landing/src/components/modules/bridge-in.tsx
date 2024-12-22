@@ -77,7 +77,7 @@ export const BridgeIn = () => {
     });
   };
 
-  const { playerRealms } = useEntities();
+  const { playerStructures } = useEntities();
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
@@ -238,21 +238,21 @@ export const BridgeIn = () => {
                 }
               >
                 {address ? (
-                  <SelectValue placeholder="Select Realm To Transfer" />
+                  <SelectValue placeholder="Select Structure To Transfer" />
                 ) : (
                   <div> -- Connect your wallet --</div>
                 )}
               </SelectTrigger>
               <SelectContent>
-                {playerRealms?.length
-                  ? playerRealms.map((realm) => {
+                {playerStructures?.length
+                  ? playerStructures.map((structure) => {
                       return (
-                        <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                          #{realm.realmId} - {realm.name}
+                        <SelectItem key={structure.realmId} value={structure.entityId.toString()}>
+                          #{structure.realmId} - {structure.name}
                         </SelectItem>
                       );
                     })
-                  : "No Realms settled in Eternum"}
+                  : "No Structure settled in Eternum"}
               </SelectContent>
             </Select>
           </div>
