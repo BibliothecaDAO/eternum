@@ -7298,6 +7298,11 @@ export type GetErc721MintsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetErc721MintsQuery = { __typename?: 'World__Query', tokenTransfers?: { __typename?: 'Token__TransferConnection', edges?: Array<{ __typename?: 'Token__TransferEdge', node?: { __typename?: 'Token__Transfer', tokenMetadata: { __typename: 'ERC20__Token' } | { __typename: 'ERC721__Token', tokenId: string, metadataDescription?: string | null, imagePath: string, contractAddress: string, metadata: string } } | null } | null> | null } | null };
 
+export type EternumStatisticsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type EternumStatisticsQuery = { __typename?: 'World__Query', s0EternumAddressNameModels?: { __typename?: 's0_eternum_AddressNameConnection', totalCount: number } | null, s0EternumHyperstructureModels?: { __typename?: 's0_eternum_HyperstructureConnection', totalCount: number } | null, s0EternumRealmModels?: { __typename?: 's0_eternum_RealmConnection', totalCount: number } | null, s0EternumFragmentMineDiscoveredModels?: { __typename?: 's0_eternum_FragmentMineDiscoveredConnection', totalCount: number } | null };
+
 export type GetEntityPositionQueryVariables = Exact<{
   entityIds: Array<Scalars['u32']['input']> | Scalars['u32']['input'];
 }>;
@@ -7438,6 +7443,22 @@ export const GetErc721MintsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetErc721MintsQuery, GetErc721MintsQueryVariables>;
+export const EternumStatisticsDocument = new TypedDocumentString(`
+    query eternumStatistics {
+  s0EternumAddressNameModels {
+    totalCount
+  }
+  s0EternumHyperstructureModels {
+    totalCount
+  }
+  s0EternumRealmModels {
+    totalCount
+  }
+  s0EternumFragmentMineDiscoveredModels {
+    totalCount
+  }
+}
+    `) as unknown as TypedDocumentString<EternumStatisticsQuery, EternumStatisticsQueryVariables>;
 export const GetEntityPositionDocument = new TypedDocumentString(`
     query getEntityPosition($entityIds: [u32!]!) {
   s0EternumPositionModels(where: {entity_idIN: $entityIds}) {
