@@ -649,6 +649,7 @@ export default class WorldmapScene extends HexagonScene {
         if (!IS_FLAT_MODE) {
           dummy.rotation.y = randomRotation;
         } else {
+          dummy.position.y += 0.1;
           dummy.rotation.y = 0;
         }
 
