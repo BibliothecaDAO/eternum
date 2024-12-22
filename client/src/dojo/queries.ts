@@ -191,7 +191,7 @@ export const addHyperstructureSubscription = async <S extends Schema>(
   console.log("HyperstructureEnd", end - start);
 };
 
-export const addArrivalsSubscription = async <S extends Schema>(
+export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityIds: number[],
@@ -200,35 +200,6 @@ export const addArrivalsSubscription = async <S extends Schema>(
   console.log("ArrivalsEnd: starting resource arrivals");
   await getEntities(
     client,
-    // todo: waiting on ghlim to check issue with this query
-    // {
-    //   Composite: {
-    //     operator: "And",
-    //     clauses: [
-    //       {
-    //         Composite: {
-    //           operator: "Or",
-    //           clauses: entityIds.map((id) => ({
-    //             Member: {
-    //               model: "s0_eternum-EntityOwner",
-    //               member: "entity_owner_id",
-    //               operator: "Eq",
-    //               value: { Primitive: { U32: id } },
-    //             },
-    //           })),
-    //         },
-    //       },
-    //       {
-    //         Member: {
-    //           model: "s0_eternum-OwnedResourcesTracker",
-    //           member: "resource_types",
-    //           operator: "Neq",
-    //           value: { Primitive: { U256: "0" } },
-    //         },
-    //       },
-    //     ],
-    //   },
-    // },
     {
       Composite: {
         operator: "Or",
@@ -248,10 +219,14 @@ export const addArrivalsSubscription = async <S extends Schema>(
     [
       "s0_eternum-Army",
       "s0_eternum-Position",
+      "s0_eternum-Health",
       "s0_eternum-EntityOwner",
+      "s0_eternum-Protectee",
+      "s0_eternum-Stamina",
       "s0_eternum-Weight",
       "s0_eternum-OwnedResourcesTracker",
       "s0_eternum-ArrivalTime",
+      "s0_eternum-Quantity",
     ],
     1000,
     false,

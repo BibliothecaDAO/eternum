@@ -2,7 +2,7 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { ToriiClient } from "@dojoengine/torii-client";
 import debounce from "lodash/debounce";
 import {
-  addArrivalsSubscription,
+  addDonkeysAndArmiesSubscription,
   addHyperstructureSubscription,
   addMarketSubscription,
   addToSubscription,
@@ -103,14 +103,14 @@ export const debouncedAddToSubscriptionOneKey = debounce(
   { leading: true },
 );
 
-export const debounceAddResourceArrivals = debounce(
+export const debounceAddDonkeysAndArmiesSubscription = debounce(
   async <S extends Schema>(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
     entityID: number[],
     onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addArrivalsSubscription(client, components, entityID), onComplete);
+    await subscriptionQueue.add(() => addDonkeysAndArmiesSubscription(client, components, entityID), onComplete);
   },
   250,
   { leading: true },
