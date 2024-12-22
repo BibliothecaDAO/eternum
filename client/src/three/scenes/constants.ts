@@ -101,23 +101,23 @@ export enum BiomeFilenames {
 }
 
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
-  Bare: MODELS_PATH + BiomeFilenames.Grassland,
-  Beach: MODELS_PATH + BiomeFilenames.Grassland,
-  TemperateDeciduousForest: MODELS_PATH + BiomeFilenames.Grassland,
-  DeepOcean: MODELS_PATH + BiomeFilenames.Grassland,
+  Bare: MODELS_PATH + BiomeFilenames.Bare,
+  Beach: MODELS_PATH + BiomeFilenames.Beach,
+  TemperateDeciduousForest: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  DeepOcean: MODELS_PATH + BiomeFilenames.DeepOcean,
   Grassland: MODELS_PATH + BiomeFilenames.Grassland,
-  Ocean: MODELS_PATH + BiomeFilenames.Grassland,
+  Ocean: MODELS_PATH + BiomeFilenames.Ocean,
   Outline: BASE_PATH + BiomeFilenames.Outline,
-  Scorched: MODELS_PATH + BiomeFilenames.Grassland,
-  Tundra: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  TemperateDesert: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  Shrubland: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  Snow: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  Taiga: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  TemperateRainForest: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  SubtropicalDesert: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  TropicalRainForest: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  TropicalSeasonalForest: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  Scorched: MODELS_PATH + BiomeFilenames.Scorched,
+  Tundra: MODELS_PATH + BiomeFilenames.Tundra,
+  TemperateDesert: MODELS_PATH + BiomeFilenames.TemperateDesert,
+  Shrubland: MODELS_PATH + BiomeFilenames.Shrubland,
+  Snow: MODELS_PATH + BiomeFilenames.Snow,
+  Taiga: MODELS_PATH + BiomeFilenames.Taiga,
+  TemperateRainForest: MODELS_PATH + BiomeFilenames.TemperateRainForest,
+  SubtropicalDesert: MODELS_PATH + BiomeFilenames.SubtropicalDesert,
+  TropicalRainForest: MODELS_PATH + BiomeFilenames.TropicalRainForest,
+  TropicalSeasonalForest: MODELS_PATH + BiomeFilenames.TropicalSeasonalForest,
 };
 
 export const PROGRESS_HALF_THRESHOLD = 50;
