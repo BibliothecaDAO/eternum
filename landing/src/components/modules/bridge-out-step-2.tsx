@@ -1,7 +1,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useDonkeyArrivals } from "@/hooks/helpers/useDonkeyArrivals";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useDonkeyArrivals } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { displayAddress } from "@/lib/utils";
 import { ADMIN_BANK_ENTITY_ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
@@ -27,7 +27,7 @@ export const BridgeOutStep2 = () => {
     return playerRealms?.s0EternumOwnerModels?.edges?.map((realm) => realm?.node?.entity_id) ?? [];
   }, [playerRealms]);
 
-  const { donkeyArrivals, getDonkeyInfo, bankPosition } = useDonkeyArrivals(realmEntityIds);
+  const { donkeyInfos } = useDonkeyArrivals(realmEntityIds);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -63,9 +63,7 @@ export const BridgeOutStep2 = () => {
 
   //useSyncEntity(donkeyArrivalsEntityIds);
 
-  const donkeyInfos = useMemo(() => {
-    return donkeyArrivals?.map((donkey) => donkey && getDonkeyInfo(donkey));
-  }, [donkeyArrivals]);
+
 
   const { bridgeFinishWithdrawFromRealm } = useBridgeAsset();
 

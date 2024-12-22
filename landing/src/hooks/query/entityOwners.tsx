@@ -2,7 +2,7 @@ import { graphql } from "../gql";
 
 export const GET_ETERNUM_ENTITY_OWNERS = graphql(`
   query getEternumEntityOwner($entityOwnerIds: [u32!]!) {
-    s0EternumEntityOwnerModels(where: { entity_owner_idIN: $entityOwnerIds }) {
+    s0EternumEntityOwnerModels(where: { entity_owner_idIN: $entityOwnerIds}, limit: 200) {
       edges {
         node {
           entity_id

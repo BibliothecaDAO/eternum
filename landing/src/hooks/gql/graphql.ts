@@ -7367,7 +7367,10 @@ export const GetEternumOwnerRealmIdsDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetEternumOwnerRealmIdsQuery, GetEternumOwnerRealmIdsQueryVariables>;
 export const GetEternumEntityOwnerDocument = new TypedDocumentString(`
     query getEternumEntityOwner($entityOwnerIds: [u32!]!) {
-  s0EternumEntityOwnerModels(where: {entity_owner_idIN: $entityOwnerIds}) {
+  s0EternumEntityOwnerModels(
+    where: {entity_owner_idIN: $entityOwnerIds}
+    limit: 200
+  ) {
     edges {
       node {
         entity_id
