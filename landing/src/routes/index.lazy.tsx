@@ -123,7 +123,7 @@ function Index() {
         },
       },
     ],
-    [playerCount, donkeysBurned, realmsCount, hyperstructuresCount, fragmentMinesCount, lordsBalance],
+    [data?.s0EternumAddressNameModels, prizePoolPlayers, donkeysBurned, lordsBalance],
   );
 
   return (
