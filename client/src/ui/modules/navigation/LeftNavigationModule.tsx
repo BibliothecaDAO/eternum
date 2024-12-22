@@ -126,7 +126,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.construction,
         button: (
           <CircleButton
-            // disabled={!structureIsMine || !isRealm}
+            disabled={!structureIsMine || !isRealm}
             className="construction-selector"
             image={BuildingThumbs.construction}
             tooltipLocation="top"
