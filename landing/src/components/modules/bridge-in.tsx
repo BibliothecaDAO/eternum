@@ -1,7 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { execute } from "@/hooks/gql/execute";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useRealm } from "@/hooks/helpers/useRealms";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacityConfig";
 import { useLords } from "@/hooks/use-lords";
@@ -25,30 +24,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
-interface S0EternumRealm {
-  __typename: "s0_eternum_Realm";
-  realm_id: number;
-}
-
-function isS0EternumRealm(model: any): model is S0EternumRealm {
-  return model?.__typename === "s0_eternum_Realm";
-}
-
 export const BridgeIn = () => {
   const { address } = useAccount();
   const [realmEntityId, setRealmEntityId] = useState<number>();
 
-  const { getBalance, isLoading: isResourcesLoading } = useResourceBalance({entityId: realmEntityId});
+  const { getBalance, isLoading: isResourcesLoading } = useResourceBalance({ entityId: realmEntityId });
   const { data } = useQuery({
     queryKey: ["capacitySpeedConfig"],
-    queryFn: () =>  execute(GET_CAPACITY_SPEED_CONFIG, { category: "Donkey", entityType: DONKEY_ENTITY_TYPE }),
+    queryFn: () => execute(GET_CAPACITY_SPEED_CONFIG, { category: "Donkey", entityType: DONKEY_ENTITY_TYPE }),
     refetchInterval: 10_000,
   });
 
-  const donkeyConfig = useMemo(() => ({
-    capacity: Number(data?.s0EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
-    speed: data?.s0EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0
-  }), [data]);
+  const donkeyConfig = useMemo(
+    () => ({
+      capacity: Number(data?.s0EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
+      speed: data?.s0EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
+    }),
+    [data],
+  );
 
   const [resourceFees, setResourceFees] = useState<
     {
@@ -66,7 +59,6 @@ export const BridgeIn = () => {
     configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
     true,
   );
-  const { getRealmNameById } = useRealm();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([ResourcesIds.Lords]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({
@@ -85,26 +77,11 @@ export const BridgeIn = () => {
     });
   };
 
-  const { data: playerRealms } = useEntities();
-  const playerRealmsIdAndName = useMemo(() => {
-    return playerRealms?.s0EternumOwnerModels?.edges?.map((realm) => {
-      const realmModel = realm?.node?.entity?.models?.find(isS0EternumRealm);
-      return {
-        realmId: realmModel?.realm_id,
-        entityId: realm?.node?.entity_id,
-        name: getRealmNameById(realmModel?.realm_id ?? 0),
-      };
-    });
-  }, [playerRealms, getRealmNameById]);
+  const { playerRealms } = useEntities();
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
-      return computeTravelTime(
-        Number(ADMIN_BANK_ENTITY_ID),
-        Number(realmEntityId!),
-        donkeyConfig.speed,
-        true,
-      );
+      return computeTravelTime(Number(ADMIN_BANK_ENTITY_ID), Number(realmEntityId!), donkeyConfig.speed, true);
     } else {
       return 0;
     }
@@ -139,7 +116,7 @@ export const BridgeIn = () => {
     }
   }, [orderWeight, donkeyConfig.capacity]);
 
-  const donkeyBalance = getBalance(ResourcesIds.Donkey)
+  const donkeyBalance = getBalance(ResourcesIds.Donkey);
   const { bridgeIntoRealm } = useBridgeAsset();
 
   useEffect(() => {
@@ -267,8 +244,8 @@ export const BridgeIn = () => {
                 )}
               </SelectTrigger>
               <SelectContent>
-                {playerRealmsIdAndName?.length
-                  ? playerRealmsIdAndName.map((realm) => {
+                {playerRealms?.length
+                  ? playerRealms.map((realm) => {
                       return (
                         <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
                           #{realm.realmId} - {realm.name}
@@ -399,7 +376,7 @@ const ResourceInputRow = ({
   const { data: balance } = useBalance({ token: resourceAddress as `0x${string}`, address: address });
   const { lordsBalance } = useLords({ disabled: id !== ResourcesIds.Lords });
 
-  const { data, getBalance } = useResourceBalance({entityId: realmEntityId});
+  const { data, getBalance } = useResourceBalance({ entityId: realmEntityId });
 
   const fetchedBalance =
     id !== ResourcesIds.Lords

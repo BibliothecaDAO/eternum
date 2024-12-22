@@ -1,5 +1,4 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { useDonkeyArrivals } from "@/hooks/helpers/useDonkeyArrivals";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useBridgeAsset } from "@/hooks/useBridge";
@@ -7,7 +6,7 @@ import { displayAddress } from "@/lib/utils";
 import { ADMIN_BANK_ENTITY_ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { ChevronDown, ChevronUp, Loader } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { TypeP } from "../typography/type-p";
 import { ShowSingleResource } from "../ui/SelectResources";
 import { Button } from "../ui/button";
@@ -20,14 +19,11 @@ import { BridgeFees } from "./bridge-fees";
 export const BridgeOutStep2 = () => {
   const { address } = useAccount();
 
-  const dojo = useDojo();
+  const { playerRealms } = useEntities();
 
-  const { data: playerRealms } = useEntities();
-  const realmEntityIds = useMemo(() => {
-    return playerRealms?.s0EternumOwnerModels?.edges?.map((realm) => realm?.node?.entity_id) ?? [];
-  }, [playerRealms]);
+  console.log({ playerRealms });
 
-  const { donkeyInfos } = useDonkeyArrivals(realmEntityIds);
+  const { donkeyInfos } = useDonkeyArrivals(playerRealms.map((realm) => realm.entityId));
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -46,7 +42,6 @@ export const BridgeOutStep2 = () => {
     }[]
   >([]);
 
-
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   /*const donkeysArrivals = useMemo(() => {
     if (bankPosition) {
@@ -62,8 +57,6 @@ export const BridgeOutStep2 = () => {
   }, [donkeyArrivals]) as number[];*/
 
   //useSyncEntity(donkeyArrivalsEntityIds);
-
-
 
   const { bridgeFinishWithdrawFromRealm } = useBridgeAsset();
 
@@ -97,7 +90,8 @@ export const BridgeOutStep2 = () => {
 
   const updateResourcesFromSelectedDonkeys = (selectedDonkeyIds: Set<bigint>) => {
     const allResources = Array.from(selectedDonkeyIds).flatMap(
-      (id) => donkeyInfos?.find((d) => d?.donkeyEntityId && BigInt(d.donkeyEntityId) === id)?.donkeyResourceBalances || [],
+      (id) =>
+        donkeyInfos?.find((d) => d?.donkeyEntityId && BigInt(d.donkeyEntityId) === id)?.donkeyResourceBalances || [],
     );
 
     setSelectedResourceIds(allResources.map((r) => r.resourceId as never));
@@ -250,7 +244,7 @@ export const BridgeOutStep2 = () => {
                         className={`${
                           selectedDonkeys.has(BigInt(donkey?.donkeyEntityId || 0)) ? "bg-gold/10" : ""
                         } hover:bg-gold/5 ${!isArrived ? "opacity-60" : "cursor-pointer"}`}
-                        onClick={(e) => { 
+                        onClick={(e) => {
                           if (!isArrived) return;
 
                           const newSelected = new Set(selectedDonkeys);
