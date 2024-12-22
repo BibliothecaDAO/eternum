@@ -14,7 +14,7 @@ export function isS0EternumRealm(model: any): model is S0EternumRealm {
   return model?.__typename === "s0_eternum_Realm";
 }
 
-export function isS0EternumStructure(model: any): model is S0EternumRealm {
+export function isS0EternumStructure(model: any) {
   return model?.__typename === "s0_eternum_Structure";
 }
 
