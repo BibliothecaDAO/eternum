@@ -231,12 +231,13 @@ export class ClientConfigManager {
   }
 
   getResourceWeight(resourceId: number): number {
+    // todo: using EternumGlobalConfig because no access to recs
     return this.getValueOrDefault(() => {
-      const weightConfig = getComponentValue(
-        this.components.WeightConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(resourceId)]),
-      );
-      return Number(weightConfig?.weight_gram ?? 0);
+      const weightGram =
+        EternumGlobalConfig.resources.resourceWeightsGrams[
+          resourceId as keyof typeof EternumGlobalConfig.resources.resourceWeightsGrams
+        ];
+      return weightGram;
     }, 0);
   }
 

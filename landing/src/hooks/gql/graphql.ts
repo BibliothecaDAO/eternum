@@ -7352,7 +7352,7 @@ export const GetCapacitySpeedConfigDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetCapacitySpeedConfigQuery, GetCapacitySpeedConfigQueryVariables>;
 export const GetEternumOwnerRealmIdsDocument = new TypedDocumentString(`
     query getEternumOwnerRealmIds($accountAddress: ContractAddress!) {
-  s0EternumOwnerModels(where: {address: $accountAddress}) {
+  s0EternumOwnerModels(where: {address: $accountAddress}, limit: 1000) {
     edges {
       node {
         address
