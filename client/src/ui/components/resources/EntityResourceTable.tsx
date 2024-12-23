@@ -1,13 +1,12 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useStructures } from "@/hooks/helpers/useStructures";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { ResourceChip } from "./ResourceChip";
-import { getComponentValue } from "@dojoengine/recs";
 
 export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();
@@ -42,6 +41,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
         tick={tick}
       />
     ));
+
     return (
       <div key={tier}>
         <div className="grid grid-cols-1 flex-wrap">{resources}</div>
