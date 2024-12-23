@@ -599,11 +599,13 @@ export default class WorldmapScene extends HexagonScene {
     const batchSize = 25; // Adjust batch size as needed
     let currentIndex = 0;
     let hashedTiles: string[] = [];
+
     this.computeTileEntities(this.currentChunk);
-    this.getChunksAround(this.currentChunk).forEach((chunkKey) => {
-      console.log("chunkKey", chunkKey);
-      this.computeTileEntities(chunkKey);
-    });
+
+    // this.getChunksAround(this.currentChunk).forEach((chunkKey) => {
+    //   console.log("chunkKey", chunkKey);
+    //   this.computeTileEntities(chunkKey);
+    // });
     const processBatch = async () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
 
@@ -691,7 +693,10 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = parseInt(chunkKey.split(",")[1]) + FELT_CENTER;
     const startRow = parseInt(chunkKey.split(",")[0]) + FELT_CENTER;
 
-    const range = this.chunkSize / 2;
+    //const range = this.chunkSize / 2;
+
+    const { width } = this.renderChunkSize;
+    const range = width / 2;
 
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
