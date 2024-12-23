@@ -434,6 +434,7 @@ export default class WorldmapScene extends HexagonScene {
       const randomRotation = (rotationIndex * Math.PI) / 3;
       dummy.rotation.y = randomRotation;
     } else {
+      dummy.position.y += 0.1;
       dummy.rotation.y = 0;
     }
 
