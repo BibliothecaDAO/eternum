@@ -27,7 +27,6 @@ export const SelectResources = ({
   const orderedResources = useMemo(() => {
     return Object.values(RESOURCE_TIERS)
       .flat()
-      .filter((resourceId) => resourceId !== ResourcesIds.Lords)
       .map((resourceId) => ({
         id: resourceId,
         trait: ResourcesIds[resourceId],
