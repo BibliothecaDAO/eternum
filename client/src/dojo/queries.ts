@@ -185,14 +185,14 @@ export const addHyperstructureSubscription = async <S extends Schema>(
             Keys: {
               keys: [undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s0_eternum-Epoch", "s0_eternum-Progress"],
+              models: [],
             },
           },
           {
             Keys: {
               keys: [undefined, undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s0_eternum-Contribution"],
+              models: [],
             },
           },
         ],
@@ -200,7 +200,7 @@ export const addHyperstructureSubscription = async <S extends Schema>(
     },
     components as any,
     [],
-    [],
+    ["s0_eternum-Epoch", "s0_eternum-Progress", "s0_eternum-Contribution"],
     40_000,
     false,
   );

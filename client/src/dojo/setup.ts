@@ -79,6 +79,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
   const systemCalls = createSystemCalls(network);
   const setLoading = config.state.setLoading;
 
+	
   const configClauses: Clause[] = [
     {
       Keys: {
@@ -132,13 +133,18 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
         {
           Keys: {
             keys: [undefined, undefined],
-            pattern_matching: "FixedLen",
+            pattern_matching: "VariableLen",
             models: [],
           },
         },
         network.contractComponents as any,
         [],
-        ["s0_eternum-CapacityConfig", "s0_eternum-ResourceCost"],
+        [
+          "s0_eternum-CapacityConfig",
+          "s0_eternum-ResourceCost",
+          "s0_eternum-LeaderboardRegisterContribution",
+          "s0_eternum-LeaderboardRegisterShare",
+        ],
         40_000,
         false,
       ),
@@ -229,4 +235,8 @@ const singleKeyModels = [
   "s0_eternum-Guild",
   "s0_eternum-GuildMember",
   "s0_eternum-EntityName",
+  "s0_eternum-Season",
+  "s0_eternum-Leaderboard",
+  "s0_eternum-LeaderboardRegistered",
+  "s0_eternum-LeaderboardRewardClaimed",
 ];
