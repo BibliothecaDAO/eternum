@@ -59,20 +59,24 @@ export const RealmTransfer = memo(
       setResourceWeight(multipliedWeight);
     }, [calls]);
 
-    const handleTransfer = useCallback(() => {
+    const handleTransfer = useCallback(async () => {
       setIsLoading(true);
       const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
         sender_entity_id,
         recipient_entity_id,
-        resources: [resources[0], BigInt(resources[1]) * BigInt(1000)],
+        resources: [resources[0], BigInt(Number(resources[1]) * 1000)],
       }));
 
-      send_resources_multiple({
-        signer: account,
-        calls: cleanedCalls,
-      }).finally(() => {
+      try {
+        await send_resources_multiple({
+          signer: account,
+          calls: cleanedCalls,
+        });
+      } catch (error) {
+        console.error(error);
+      } finally {
         setIsLoading(false);
-      });
+      }
 
       setCalls([]);
     }, [calls]);
@@ -102,7 +106,7 @@ export const RealmTransfer = memo(
               size="xxl"
               className="mr-3 self-center"
             />
-            <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 0)}</div>
+            <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
           </div>
 
           {playerStructures().map((structure) => (
@@ -225,6 +229,7 @@ export const RealmTransferBalance = memo(
             min={0}
             step={100}
             value={input}
+            allowDecimals
             disabled={!canCarry || (type === "receive" && getDonkeyBalance() === 0)}
             onChange={(amount) => {
               setInput(amount);
