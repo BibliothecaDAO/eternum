@@ -2,7 +2,7 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { formatTime, toHexString } from "@/ui/utils/utils";
 import { ContractAddress, GuildInfo, GuildMemberInfo, GuildWhitelistInfo, ID, Player } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Component, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback } from "react";
 import { shortString } from "starknet";
@@ -181,7 +181,7 @@ export const useGuilds = () => {
 
   const useGuildQuery = () => {
     const guildsRanked = useLeaderBoardStore.getState().guildsByRank;
-    const guilds = useEntityQuery([Has(Guild)]);
+    const guilds = useEntityQuery([Has(Guild), NotValue(Guild, { member_count: 0 })]);
 
     return {
       guilds: formatGuilds(

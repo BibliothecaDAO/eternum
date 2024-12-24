@@ -1,15 +1,12 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { useSyncEntity } from "@/hooks/helpers/use-sync-entity";
+import { useDonkeyArrivals } from "@/hooks/helpers/useDonkeyArrivals";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useDonkeyArrivals } from "@/hooks/helpers/useResources";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { displayAddress } from "@/lib/utils";
 import { ADMIN_BANK_ENTITY_ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
 import { useAccount } from "@starknet-react/core";
 import { ChevronDown, ChevronUp, Loader } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { TypeP } from "../typography/type-p";
 import { ShowSingleResource } from "../ui/SelectResources";
 import { Button } from "../ui/button";
@@ -22,9 +19,9 @@ import { BridgeFees } from "./bridge-fees";
 export const BridgeOutStep2 = () => {
   const { address } = useAccount();
 
-  const dojo = useDojo();
+  const { playerStructures } = useEntities();
 
-  const { getOwnerArrivalsAtBank, getDonkeyInfo } = useDonkeyArrivals();
+  const { donkeyInfos } = useDonkeyArrivals(playerStructures.map((structure) => structure.entityId));
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -43,29 +40,21 @@ export const BridgeOutStep2 = () => {
     }[]
   >([]);
 
-  const { playerRealms } = useEntities();
-  const realmEntityIds = useMemo(() => {
-    return playerRealms.map((realm) => realm!.entity_id);
-  }, [playerRealms]);
-
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const donkeysArrivals = useMemo(
-    () => getOwnerArrivalsAtBank(realmEntityIds as number[]),
-    [realmEntityIds, refreshTrigger],
-  );
+  /*const donkeysArrivals = useMemo(() => {
+    if (bankPosition) {
+      return getOwnerArrivalsAtBank(realmEntityIds as number[]);
+    }
+  }, [realmEntityIds, refreshTrigger, bankPosition]);*/
 
-  const donkeyArrivalsEntityIds = useMemo(() => {
-    return donkeysArrivals.map((entity) => {
+  /*const donkeyArrivalsEntityIds = useMemo(() => {
+    return donkeyArrivals?.map((entity) => {
       const position = getComponentValue(dojo.setup.components.Position, entity);
       return position?.entity_id;
     });
-  }, [donkeysArrivals]) as number[];
+  }, [donkeyArrivals]) as number[];*/
 
-  useSyncEntity(donkeyArrivalsEntityIds);
-
-  const donkeyInfos = useMemo(() => {
-    return donkeysArrivals.map((donkey) => getDonkeyInfo(donkey));
-  }, [donkeysArrivals]);
+  //useSyncEntity(donkeyArrivalsEntityIds);
 
   const { bridgeFinishWithdrawFromRealm } = useBridgeAsset();
 
@@ -99,7 +88,8 @@ export const BridgeOutStep2 = () => {
 
   const updateResourcesFromSelectedDonkeys = (selectedDonkeyIds: Set<bigint>) => {
     const allResources = Array.from(selectedDonkeyIds).flatMap(
-      (id) => donkeyInfos.find((d) => d.donkeyEntityId && BigInt(d.donkeyEntityId) === id)?.donkeyResources || [],
+      (id) =>
+        donkeyInfos?.find((d) => d?.donkeyEntityId && BigInt(d.donkeyEntityId) === id)?.donkeyResourceBalances || [],
     );
 
     setSelectedResourceIds(allResources.map((r) => r.resourceId as never));
@@ -117,8 +107,8 @@ export const BridgeOutStep2 = () => {
     const newSelected = new Set<bigint>();
 
     donkeyInfos?.forEach((donkey) => {
-      if (Number(donkey.donkeyArrivalTime) * 1000 <= Date.now()) {
-        newSelected.add(BigInt(donkey.donkeyEntityId || 0));
+      if (Number(donkey?.donkeyArrivalTime) * 1000 <= Date.now()) {
+        newSelected.add(BigInt(donkey?.donkeyEntityId || 0));
       }
     });
 
@@ -222,14 +212,14 @@ export const BridgeOutStep2 = () => {
                       <Input
                         type="checkbox"
                         className="w-4"
-                        checked={donkeyInfos?.length > 0 && selectedDonkeys.size === donkeyInfos.length}
+                        checked={donkeyInfos?.length > 0 && selectedDonkeys.size === donkeyInfos?.length}
                         onChange={() => {
                           const newSelected = new Set<bigint>();
 
-                          if (selectedDonkeys.size !== donkeyInfos.length) {
-                            donkeyInfos.forEach((donkey) => {
-                              if (Number(donkey.donkeyArrivalTime) * 1000 <= Date.now()) {
-                                newSelected.add(BigInt(donkey.donkeyEntityId || 0));
+                          if (selectedDonkeys.size !== donkeyInfos?.length) {
+                            donkeyInfos?.forEach((donkey) => {
+                              if (Number(donkey?.donkeyArrivalTime) * 1000 <= Date.now()) {
+                                newSelected.add(BigInt(donkey?.donkeyEntityId || 0));
                               }
                             });
                           }
@@ -245,18 +235,18 @@ export const BridgeOutStep2 = () => {
                 </TableHeader>
                 <TableBody>
                   {donkeyInfos?.map((donkey) => {
-                    const isArrived = Number(donkey.donkeyArrivalTime) * 1000 <= Date.now();
+                    const isArrived = Number(donkey?.donkeyArrivalTime) * 1000 <= Date.now();
                     return (
                       <TableRow
-                        key={donkey.donkeyEntityId}
+                        key={donkey?.donkeyEntityId}
                         className={`${
-                          selectedDonkeys.has(BigInt(donkey.donkeyEntityId || 0)) ? "bg-gold/10" : ""
+                          selectedDonkeys.has(BigInt(donkey?.donkeyEntityId || 0)) ? "bg-gold/10" : ""
                         } hover:bg-gold/5 ${!isArrived ? "opacity-60" : "cursor-pointer"}`}
                         onClick={(e) => {
                           if (!isArrived) return;
 
                           const newSelected = new Set(selectedDonkeys);
-                          const donkeyId = BigInt(donkey.donkeyEntityId || 0);
+                          const donkeyId = BigInt(donkey?.donkeyEntityId || 0);
                           if (newSelected.has(donkeyId)) {
                             newSelected.delete(donkeyId);
                           } else {
@@ -269,13 +259,13 @@ export const BridgeOutStep2 = () => {
                         <TableCell>
                           <Input
                             type="checkbox"
-                            checked={selectedDonkeys.has(BigInt(donkey.donkeyEntityId || 0))}
+                            checked={selectedDonkeys.has(BigInt(donkey?.donkeyEntityId || 0))}
                             className="w-4"
                           />
                         </TableCell>
-                        <TableCell>#{donkey.donkeyEntityId}</TableCell>
+                        <TableCell>#{donkey?.donkeyEntityId}</TableCell>
                         <TableCell className="flex-grow">
-                          {donkey.donkeyResources.map((resource) => (
+                          {donkey?.donkeyResourceBalances.map((resource) => (
                             <div key={resource.resourceId} className="flex items-center gap-1">
                               <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" />
                               <span className="text-sm">{(resource.amount / RESOURCE_PRECISION).toFixed(2)}</span>
@@ -283,13 +273,13 @@ export const BridgeOutStep2 = () => {
                           ))}
                         </TableCell>
                         <TableCell>
-                          {Number(donkey.donkeyArrivalTime) * 1000 <= Date.now() ? (
+                          {Number(donkey?.donkeyArrivalTime) * 1000 <= Date.now() ? (
                             <span className="text-green">Arrived</span>
                           ) : (
                             `Arrives in ${Math.floor(
-                              (Number(donkey.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60 * 60),
+                              (Number(donkey?.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60 * 60),
                             )}h ${Math.floor(
-                              ((Number(donkey.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60)) % 60,
+                              ((Number(donkey?.donkeyArrivalTime) * 1000 - Date.now()) / (1000 * 60)) % 60,
                             )}m`
                           )}
                         </TableCell>

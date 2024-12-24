@@ -131,11 +131,11 @@ importers:
         specifier: workspace:^
         version: link:../sdk/packages/eternum
       '@cartridge/connector':
-        specifier: 0.5.6
-        version: 0.5.6(encoding@0.1.13)(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(typescript@5.7.2)
+        specifier: 0.5.7
+        version: 0.5.7(encoding@0.1.13)(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(typescript@5.7.2)
       '@cartridge/controller':
-        specifier: 0.5.6
-        version: 0.5.6(encoding@0.1.13)
+        specifier: 0.5.7
+        version: 0.5.7(encoding@0.1.13)
       '@dojoengine/core':
         specifier: 1.0.4-alpha.3.1.0
         version: 1.0.4-alpha.3.1.0(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.2)
@@ -424,11 +424,11 @@ importers:
         specifier: workspace:^
         version: link:../sdk/packages/eternum
       '@cartridge/connector':
-        specifier: ^0.5.6
-        version: 0.5.6(encoding@0.1.13)(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(typescript@5.7.2)
+        specifier: ^0.5.7
+        version: 0.5.7(encoding@0.1.13)(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(typescript@5.7.2)
       '@cartridge/controller':
-        specifier: ^0.5.6
-        version: 0.5.6(encoding@0.1.13)
+        specifier: ^0.5.7
+        version: 0.5.7(encoding@0.1.13)
       '@dojoengine/core':
         specifier: 1.0.3-alpha.2
         version: 1.0.3-alpha.2(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.2)
@@ -1430,14 +1430,14 @@ packages:
   '@canvas/image-data@1.0.0':
     resolution: {integrity: sha512-BxOqI5LgsIQP1odU5KMwV9yoijleOPzHL18/YvNqF9KFSGF2K/DLlYAbDQsWqd/1nbaFuSkYD/191dpMtNh4vw==}
 
-  '@cartridge/account-wasm@0.5.6':
-    resolution: {integrity: sha512-2mNuFkRqePe5PiJP0ReZVgiIv41o7KOLzY0/eDtDWKXqOZW6PHkEyaFTXvircyHncfwSsGyPoWg+Z1B//D9H+w==}
+  '@cartridge/account-wasm@0.5.7':
+    resolution: {integrity: sha512-tUz3fUOAI9RkZPBQ3+ylm4CcVISB0oWTWHeKvm4hmWk2nX7ROxgvLrhxnTH87mRKijma6QRZUhDzEKYsxZTCjQ==}
 
-  '@cartridge/connector@0.5.6':
-    resolution: {integrity: sha512-MqmWlAuvWYWJroB8xvQb/rXFqfqV2YwuuLIT/Sw1bCUAhHlDI62xC1oS7JN+ojVe76Poqob8fw/ZW/VHtz8BxA==}
+  '@cartridge/connector@0.5.7':
+    resolution: {integrity: sha512-fW0hCOVkEopOtExceXSi/lssA7ox7rjdnsAzQVVRRuuSnWbyJ8973+mGHSqKzGFsvaVXzSaowpN4FUbizzIE5g==}
 
-  '@cartridge/controller@0.5.6':
-    resolution: {integrity: sha512-TJO0irbbwsBlJQcBmf2Szo33qIpKkMLVaYfqQ3sqtp23TE/QSxvPxB3NI3hbW27k0xdziOBwXjPI5NEhPptuqg==}
+  '@cartridge/controller@0.5.7':
+    resolution: {integrity: sha512-54+PmRA8nVGCzzAKqHt6NEELa5t/b7ZCE/+nKjEAiO5Pe8qZC9844/RpZY170lerOJYdLouGwB4afgfxpJLs3Q==}
 
   '@cartridge/penpal@6.2.3':
     resolution: {integrity: sha512-K8h9VqBfFPXcAFQNnvgBnejF/dp7249pS4jXu3NhNYR6JqMQxtcrDqfnPmJvbF4ECEBs+8Z2UiwlRQiKt5nNsg==}
@@ -10592,11 +10592,11 @@ snapshots:
 
   '@canvas/image-data@1.0.0': {}
 
-  '@cartridge/account-wasm@0.5.6': {}
+  '@cartridge/account-wasm@0.5.7': {}
 
-  '@cartridge/connector@0.5.6(encoding@0.1.13)(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(typescript@5.7.2)':
+  '@cartridge/connector@0.5.7(encoding@0.1.13)(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(typescript@5.7.2)':
     dependencies:
-      '@cartridge/controller': 0.5.6(encoding@0.1.13)
+      '@cartridge/controller': 0.5.7(encoding@0.1.13)
       '@starknet-react/core': 3.6.2(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.2)
       starknet: 6.11.0(encoding@0.1.13)
     transitivePeerDependencies:
@@ -10607,9 +10607,9 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@cartridge/controller@0.5.6(encoding@0.1.13)':
+  '@cartridge/controller@0.5.7(encoding@0.1.13)':
     dependencies:
-      '@cartridge/account-wasm': 0.5.6
+      '@cartridge/account-wasm': 0.5.7
       '@cartridge/penpal': 6.2.3
       '@starknet-io/types-js': 0.7.10
       '@telegram-apps/sdk': 2.9.1

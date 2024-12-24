@@ -1,13 +1,15 @@
 import { configManager } from "@/dojo/setup";
+import { execute } from "@/hooks/gql/execute";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useRealm } from "@/hooks/helpers/useRealms";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacityConfig";
 import { useLords } from "@/hooks/use-lords";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress, divideByPrecision, multiplyByPrecision } from "@/lib/utils";
 import { ADMIN_BANK_ENTITY_ID, DONKEY_ENTITY_TYPE, Resources, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useAccount, useBalance } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -25,6 +27,22 @@ import { BridgeFees } from "./bridge-fees";
 export const BridgeIn = () => {
   const { address } = useAccount();
   const [realmEntityId, setRealmEntityId] = useState<number>();
+
+  const { getBalance, isLoading: isResourcesLoading } = useResourceBalance({ entityId: realmEntityId });
+  const { data } = useQuery({
+    queryKey: ["capacitySpeedConfig"],
+    queryFn: () => execute(GET_CAPACITY_SPEED_CONFIG, { category: "Donkey", entityType: DONKEY_ENTITY_TYPE }),
+    refetchInterval: 10_000,
+  });
+
+  const donkeyConfig = useMemo(
+    () => ({
+      capacity: Number(data?.s0EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
+      speed: data?.s0EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
+    }),
+    [data],
+  );
+
   const [resourceFees, setResourceFees] = useState<
     {
       id: string;
@@ -35,8 +53,12 @@ export const BridgeIn = () => {
       totalFee?: string;
     }[]
   >([]);
-  const { computeTravelTime } = useTravel();
-  const { getRealmNameById } = useRealm();
+  const { computeTravelTime } = useTravel(
+    Number(ADMIN_BANK_ENTITY_ID),
+    Number(realmEntityId!),
+    configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+    true,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResourceIds, setSelectedResourceIds] = useState<number[]>([ResourcesIds.Lords]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({
@@ -55,23 +77,11 @@ export const BridgeIn = () => {
     });
   };
 
-  const { playerRealms } = useEntities();
-  const playerRealmsIdAndName = useMemo(() => {
-    return playerRealms.map((realm) => ({
-      realmId: realm!.realm_id,
-      entityId: realm!.entity_id,
-      name: getRealmNameById(realm!.realm_id),
-    }));
-  }, [playerRealms]);
+  const { playerStructures } = useEntities();
 
   const travelTime = useMemo(() => {
     if (realmEntityId) {
-      return computeTravelTime(
-        Number(ADMIN_BANK_ENTITY_ID),
-        Number(realmEntityId!),
-        configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
-        true,
-      );
+      return computeTravelTime(Number(ADMIN_BANK_ENTITY_ID), Number(realmEntityId!), donkeyConfig.speed, true);
     } else {
       return 0;
     }
@@ -100,20 +110,13 @@ export const BridgeIn = () => {
 
   const donkeysNeeded = useMemo(() => {
     if (orderWeight) {
-      return calculateDonkeysNeeded(orderWeight);
+      return calculateDonkeysNeeded(orderWeight, Number(donkeyConfig.capacity));
     } else {
       return 0;
     }
-  }, [orderWeight]);
-  const { getBalance } = getResourceBalance();
-  const donkeyBalance = useMemo(() => {
-    if (realmEntityId) {
-      return getBalance(Number(realmEntityId), ResourcesIds.Donkey);
-    } else {
-      return { balance: 0 };
-    }
-  }, [getBalance, realmEntityId]);
+  }, [orderWeight, donkeyConfig.capacity]);
 
+  const donkeyBalance = getBalance(ResourcesIds.Donkey);
   const { bridgeIntoRealm } = useBridgeAsset();
 
   useEffect(() => {
@@ -235,21 +238,21 @@ export const BridgeIn = () => {
                 }
               >
                 {address ? (
-                  <SelectValue placeholder="Select Realm To Transfer" />
+                  <SelectValue placeholder="Select Structure To Transfer" />
                 ) : (
                   <div> -- Connect your wallet --</div>
                 )}
               </SelectTrigger>
               <SelectContent>
-                {playerRealmsIdAndName.length
-                  ? playerRealmsIdAndName.map((realm) => {
+                {playerStructures?.length
+                  ? playerStructures.map((structure) => {
                       return (
-                        <SelectItem key={realm.realmId} value={realm.entityId.toString()}>
-                          #{realm.realmId} - {realm.name}
+                        <SelectItem key={structure.realmId} value={structure.entityId.toString()}>
+                          #{structure.realmId} - {structure.name}
                         </SelectItem>
                       );
                     })
-                  : "No Realms settled in Eternum"}
+                  : "No Structure settled in Eternum"}
               </SelectContent>
             </Select>
           </div>
@@ -281,9 +284,7 @@ export const BridgeIn = () => {
             <div>Time to Transfer</div>
             <div>{travelTimeInHoursAndMinutes(travelTime ?? 0)}</div>
           </div>
-          <div
-            className={"flex justify-between mb-3 " + (donkeysNeeded > donkeyBalance.balance ? "text-destructive" : "")}
-          >
+          <div className={"flex justify-between mb-3 " + (donkeysNeeded > donkeyBalance ? "text-destructive" : "")}>
             <div>
               Donkeys Burnt
               <TooltipProvider>
@@ -299,7 +300,8 @@ export const BridgeIn = () => {
               </TooltipProvider>
             </div>
             <div className="flex items-center gap-2">
-              {donkeysNeeded} / {divideByPrecision(donkeyBalance.balance)}{" "}
+              {donkeysNeeded} /{" "}
+              {isResourcesLoading ? <Loader className="animate-spin pr-2" /> : divideByPrecision(donkeyBalance)}{" "}
               <ResourceIcon withTooltip={false} resource={"Donkey"} size="md" />
             </div>
           </div>
@@ -336,7 +338,7 @@ export const BridgeIn = () => {
           disabled={
             isLoading ||
             !realmEntityId ||
-            donkeyBalance.balance < donkeysNeeded ||
+            donkeyBalance < donkeysNeeded ||
             !Object.values(selectedResourceAmounts).some((amount) => amount > 0)
           }
           onClick={() => onBridgeIntoRealm()}
@@ -374,15 +376,7 @@ const ResourceInputRow = ({
   const { data: balance } = useBalance({ token: resourceAddress as `0x${string}`, address: address });
   const { lordsBalance } = useLords({ disabled: id !== ResourcesIds.Lords });
 
-  const { getBalance } = getResourceBalance();
-
-  const realmResourceBalance = useMemo(() => {
-    if (realmEntityId) {
-      return getBalance(Number(realmEntityId), id);
-    } else {
-      return { balance: 0 };
-    }
-  }, [getBalance, realmEntityId, id]);
+  const { data, getBalance } = useResourceBalance({ entityId: realmEntityId });
 
   const fetchedBalance =
     id !== ResourcesIds.Lords
@@ -390,7 +384,6 @@ const ResourceInputRow = ({
       : lordsBalance
         ? Number(formatEther(uint256.uint256ToBN(lordsBalance))).toFixed(2)
         : "0";
-
   return (
     <div key={id} className="rounded-lg p-3 border border-gold/15 shadow-lg bg-background flex gap-3 items-center">
       <div className="relative w-full">
@@ -456,7 +449,7 @@ const ResourceInputRow = ({
                       {Intl.NumberFormat("en-US", {
                         notation: "compact",
                         maximumFractionDigits: 1,
-                      }).format(divideByPrecision(realmResourceBalance.balance))}
+                      }).format(divideByPrecision(getBalance(res?.id) ?? 0))}
                     </span>
                   </div>
                 </SelectItem>

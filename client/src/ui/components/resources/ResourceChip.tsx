@@ -164,7 +164,7 @@ export const ResourceChip = ({
       >
         {icon}
         <div className="grid grid-cols-10 w-full">
-          <div className="self-center font-bold col-span-3">{currencyFormat(balance ? Number(balance) : 0, 0)}</div>
+          <div className="self-center font-bold col-span-3">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
 
           <div className="self-center m-y-auto font-bold col-span-4 text-center">
             {timeUntilValueReached !== 0

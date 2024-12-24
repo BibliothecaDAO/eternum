@@ -6,7 +6,6 @@ import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useMusicPlayer } from "@/hooks/useMusic";
@@ -19,7 +18,7 @@ import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";
 import { RangeInput } from "@/ui/elements/RangeInput";
-import { addressToNumber, displayAddress } from "@/ui/utils/utils";
+import { addressToNumber, currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -42,6 +41,16 @@ export const SettingsWindow = () => {
   const setEffectsLevel = useUIStore((state) => state.setEffectsLevel);
   const isSoundOn = useUIStore((state) => state.isSoundOn);
   const toggleSound = useUIStore((state) => state.toggleSound);
+
+  const getCurrentDonkeyWeightMinimum = () => {
+    return Number(localStorage.getItem("WEIGHT_MINIMUM") || 0);
+  };
+
+  const [donkeyWeightLimit, setDonkeyWeightLimit] = useState(getCurrentDonkeyWeightMinimum());
+
+  useEffect(() => {
+    localStorage.setItem("WEIGHT_MINIMUM", donkeyWeightLimit.toString());
+  }, [donkeyWeightLimit]);
 
   const { toggleFullScreen, isFullScreen } = useScreenOrientation();
   const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
@@ -96,7 +105,7 @@ export const SettingsWindow = () => {
       return newFlatMode;
     });
   };
-
+  
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
       <div className="flex justify-between p-4">
@@ -203,6 +212,18 @@ export const SettingsWindow = () => {
 
         <RangeInput value={musicLevel} fromTitle="Mute" onChange={setMusicLevel} title="Music" />
         <RangeInput value={effectsLevel} fromTitle="Mute" onChange={setEffectsLevel} title="Effects" />
+
+        <Headline>Donkey Settings</Headline>
+        <RangeInput
+          value={donkeyWeightLimit}
+          min={0}
+          max={100000}
+          fromTitle="0"
+          toTitle={currencyIntlFormat(100000)}
+          onChange={setDonkeyWeightLimit}
+          title={`Minimum Weight: ${donkeyWeightLimit} kg`}
+        />
+
         <Button onClick={() => setShowSettings(false)} variant="outline" className="text-xxs !py-1 !px-2 mr-auto">
           Done
         </Button>

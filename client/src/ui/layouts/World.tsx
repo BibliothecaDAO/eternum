@@ -4,7 +4,8 @@ import { Redirect } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
 
 import {
-  debounceAddResourceArrivals,
+  debounceAddDonkeysAndArmiesSubscription,
+  debouncedAddHyperstructureSubscription,
   debouncedAddMarketSubscription,
   debouncedAddToSubscription,
   debouncedAddToSubscriptionOneKey,
@@ -163,7 +164,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     const fetch = async () => {
       setLoading(LoadingStateKey.PlayerStructuresOneKey, true);
       setLoading(LoadingStateKey.PlayerStructuresTwoKey, true);
-      setLoading(LoadingStateKey.Arrivals, true);
+      setLoading(LoadingStateKey.DonkeysAndArmies, true);
 
       const isSyncing = true;
 
@@ -185,11 +186,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           ),
         ]);
 
-        await debounceAddResourceArrivals(
+        await debounceAddDonkeysAndArmiesSubscription(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           [...structures.map((structure) => structure.entity_id)],
-          () => setLoading(LoadingStateKey.Arrivals, false),
+          () => setLoading(LoadingStateKey.DonkeysAndArmies, false),
         );
       } catch (error) {
         console.error("Fetch failed", error);
@@ -223,6 +224,27 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         // Ensure loading states are reset even if there's an error
         setLoading(LoadingStateKey.Bank, false);
         setLoading(LoadingStateKey.Market, false);
+      }
+    };
+
+    fetch();
+  }, []);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        setLoading(LoadingStateKey.Hyperstructure, true);
+        console.log("AddToSubscriptionStart - 4");
+        await Promise.all([
+          debouncedAddHyperstructureSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
+            setLoading(LoadingStateKey.Hyperstructure, false),
+          ),
+        ]);
+      } catch (error) {
+        console.error("Fetch failed", error);
+      } finally {
+        // Ensure loading states are reset even if there's an error
+        setLoading(LoadingStateKey.Hyperstructure, false);
       }
     };
 

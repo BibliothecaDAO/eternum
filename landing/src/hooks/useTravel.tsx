@@ -1,24 +1,25 @@
 import { ID } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useQuery } from "@tanstack/react-query";
 import { calculateDistance } from "../components/ui/utils/utils";
-import { useDojo } from "./context/DojoContext";
+import { execute } from "./gql/execute";
+import { GET_ENTITY_DISTANCE } from "./query/position";
 
-export function useTravel() {
-  const {
-    setup: {
-      components: { Position },
-    },
-  } = useDojo();
+export function useTravel(fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) {
+  const { data: entityPositions, isLoading } = useQuery({
+    queryKey: ["entityPosition", fromId, toId],
+    queryFn: () => execute(GET_ENTITY_DISTANCE, { entityIds: [fromId, toId] }),
+    refetchInterval: 10_000,
+  });
+  
 
   const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) => {
-    const fromPosition = getComponentValue(Position, getEntityIdFromKeys([BigInt(fromId)]));
-    const toPosition = getComponentValue(Position, getEntityIdFromKeys([BigInt(toId)]));
+    const fromPosition = entityPositions?.s0EternumPositionModels?.edges?.find((entity)=> entity?.node?.entity_id == fromId);
+    const toPosition = entityPositions?.s0EternumPositionModels?.edges?.find((entity)=> entity?.node?.entity_id == toId);
     if (!fromPosition || !toPosition) return;
     const distanceFromPosition =
       calculateDistance(
-        { x: Number(fromPosition.x), y: Number(fromPosition.y) },
-        { x: Number(toPosition.x), y: Number(toPosition.y) },
+        { x: Number(fromPosition?.node?.x), y: Number(fromPosition?.node?.y) },
+        { x: Number(toPosition?.node?.x), y: Number(toPosition?.node?.y) },
       ) ?? 0;
 
     const onewayTime = Math.floor((distanceFromPosition * secPerKm) / 60);

@@ -12,7 +12,7 @@ export const WorldLoading = () => {
     if (loadingStates[LoadingStateKey.Market]) items.push("Market");
     if (loadingStates[LoadingStateKey.PlayerStructuresOneKey] || loadingStates[LoadingStateKey.PlayerStructuresTwoKey])
       items.push("Player Structures");
-    if (loadingStates[LoadingStateKey.Arrivals]) items.push("Arrivals");
+    if (loadingStates[LoadingStateKey.DonkeysAndArmies]) items.push("Donkeys and Armies");
     if (loadingStates[LoadingStateKey.Map]) items.push("Map");
     if (loadingStates[LoadingStateKey.Bank]) items.push("Bank");
     if (loadingStates[LoadingStateKey.World]) items.push("World");

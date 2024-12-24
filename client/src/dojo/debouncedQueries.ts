@@ -2,7 +2,8 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { ToriiClient } from "@dojoengine/torii-client";
 import debounce from "lodash/debounce";
 import {
-  addArrivalsSubscription,
+  addDonkeysAndArmiesSubscription,
+  addHyperstructureSubscription,
   addMarketSubscription,
   addToSubscription,
   addToSubscriptionOneKeyModelbyRealmEntityId,
@@ -55,7 +56,7 @@ class RequestQueue {
 const positionQueue = new RequestQueue();
 const subscriptionQueue = new RequestQueue();
 const marketQueue = new RequestQueue();
-
+const hyperstructureQueue = new RequestQueue();
 // Debounced functions that add to queues
 export const debouncedSyncPosition = debounce(
   async <S extends Schema>(
@@ -102,14 +103,14 @@ export const debouncedAddToSubscriptionOneKey = debounce(
   { leading: true },
 );
 
-export const debounceAddResourceArrivals = debounce(
+export const debounceAddDonkeysAndArmiesSubscription = debounce(
   async <S extends Schema>(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
     entityID: number[],
     onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addArrivalsSubscription(client, components, entityID), onComplete);
+    await subscriptionQueue.add(() => addDonkeysAndArmiesSubscription(client, components, entityID), onComplete);
   },
   250,
   { leading: true },
@@ -141,9 +142,22 @@ export const debouncedAddMarketSubscription = debounce(
   { leading: true },
 );
 
+export const debouncedAddHyperstructureSubscription = debounce(
+  async <S extends Schema>(
+    client: ToriiClient,
+    components: Component<S, Metadata, undefined>[],
+    onComplete?: () => void,
+  ) => {
+    await hyperstructureQueue.add(() => addHyperstructureSubscription(client, components), onComplete);
+  },
+  500,
+  { leading: true },
+);
+
 // Utility function to clear all queues if needed
 export const clearAllQueues = () => {
   positionQueue.clear();
   subscriptionQueue.clear();
   marketQueue.clear();
+  hyperstructureQueue.clear();
 };
