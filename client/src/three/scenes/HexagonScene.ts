@@ -1,6 +1,7 @@
 import { type SetupResult } from "@/dojo/setup";
 import useUIStore, { type AppStore } from "@/hooks/store/useUIStore";
 import { type HexPosition, type SceneName } from "@/types";
+import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
@@ -66,7 +67,9 @@ export abstract class HexagonScene {
     this.scene.background = new THREE.Color(0x8790a1);
     this.state = useUIStore.getState();
     this.fog = new THREE.Fog(0xffffff, 21, 30);
-    this.scene.fog = this.fog;
+    if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
+      this.scene.fog = this.fog;
+    }
 
     // subscribe to state changes
     useUIStore.subscribe(
@@ -311,19 +314,22 @@ export abstract class HexagonScene {
 
   public moveCameraToXYZ(x: number, y: number, z: number, duration: number = 2) {
     const newTarget = new THREE.Vector3(x, y, z);
-
     const target = this.controls.target;
     const pos = this.controls.object.position;
-
-    // go to new target but keep same view angle
     const deltaX = newTarget.x - target.x;
     const deltaZ = newTarget.z - target.z;
+
+    const newPosition = IS_FLAT_MODE
+      ? new THREE.Vector3(newTarget.x, pos.y, newTarget.z)
+      : new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ);
+
     if (duration) {
-      this.cameraAnimate(new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ), newTarget, duration);
+      this.cameraAnimate(newPosition, newTarget, duration);
     } else {
-      target.set(newTarget.x, newTarget.y, newTarget.z);
-      pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
+      target.copy(newTarget);
+      pos.copy(newPosition);
     }
+
     this.controls.update();
   }
 
@@ -338,11 +344,16 @@ export abstract class HexagonScene {
     // go to new target with but keep same view angle
     const deltaX = newTarget.x - target.x;
     const deltaZ = newTarget.z - target.z;
+
+    const newPosition = IS_FLAT_MODE
+      ? new THREE.Vector3(newTarget.x, pos.y, newTarget.z)
+      : new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ);
+
     if (duration) {
-      this.cameraAnimate(new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ), newTarget, duration);
+      this.cameraAnimate(newPosition, newTarget, duration);
     } else {
-      target.set(newTarget.x, newTarget.y, newTarget.z);
-      pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
+      target.copy(newTarget);
+      pos.copy(newPosition);
     }
     this.controls.update();
   }
