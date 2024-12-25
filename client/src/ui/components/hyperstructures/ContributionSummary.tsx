@@ -16,6 +16,9 @@ export const ContributionSummary = ({
   const { getContributions, getContributionsTotalPercentage } = useContributions();
   const { getAddressName } = useRealm();
 
+  const [showContributions, setShowContributions] = useState(false);
+  const [selectedResource, setSelectedResource] = useState<number | null>(null);
+
   type Resource = {
     amount: number;
     resourceId: number;
@@ -37,17 +40,16 @@ export const ContributionSummary = ({
 
   const resourceContributions: Record<string, Resource[]> = Object.entries(groupedContributions).reduce(
     (acc, [playerAddress, resources]) => {
-      acc[playerAddress] = Object.entries(resources).map(([resourceType, amount]) => ({
-        amount: Number(amount),
-        resourceId: Number(resourceType),
-      }));
+      acc[playerAddress] = Object.entries(resources)
+        .filter(([resourceType]) => (selectedResource ? Number(resourceType) === selectedResource : true))
+        .map(([resourceType, amount]) => ({
+          amount: Number(amount),
+          resourceId: Number(resourceType),
+        }));
       return acc;
     },
     {} as Record<string, Resource[]>,
   );
-
-  const [showContributions, setShowContributions] = useState(false);
-  const [selectedResource, setSelectedResource] = useState<number | null>(null);
 
   // Calculate percentages and sort contributors
   const sortedContributors = useMemo(
