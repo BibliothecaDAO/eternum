@@ -603,7 +603,7 @@ mod hyperstructure_systems {
                 );
 
                 if points_already_added.get(points_already_added_key) {
-                    panic!("points already added for hyperstructure {}", hyperstructure_entity_id);
+                    panic!("points already added for hyperstructure {}, epoch {}", hyperstructure_entity_id, index);
                 };
 
                 points_already_added.insert(points_already_added_key, true);
