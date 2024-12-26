@@ -6,7 +6,7 @@ import { displayAddress } from "@/lib/utils";
 import { ADMIN_BANK_ENTITY_ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { ChevronDown, ChevronUp, Loader } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TypeP } from "../typography/type-p";
 import { ShowSingleResource } from "../ui/SelectResources";
 import { Button } from "../ui/button";
@@ -15,6 +15,27 @@ import { Input } from "../ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { getSeasonAddresses } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
+
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T & { cancel: () => void } {
+  let timeout: NodeJS.Timeout | null = null;
+
+  const debounced = (...args: Parameters<T>) => {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => {
+      func(...args);
+    }, wait);
+  };
+
+  debounced.cancel = () => {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  };
+
+  return debounced as T & { cancel: () => void };
+}
 
 export const BridgeOutStep2 = () => {
   const { address } = useAccount();
@@ -103,18 +124,27 @@ export const BridgeOutStep2 = () => {
       ),
     );
   };
+
+  const debouncedUpdateResources = useCallback(
+    debounce((selectedDonkeyIds: Set<bigint>) => {
+      updateResourcesFromSelectedDonkeys(selectedDonkeyIds);
+    }, 10000),
+    [],
+  );
+
   useEffect(() => {
     const newSelected = new Set<bigint>();
 
     donkeyInfos?.forEach((donkey) => {
-      if (Number(donkey?.donkeyArrivalTime) * 1000 <= Date.now()) {
-        newSelected.add(BigInt(donkey?.donkeyEntityId || 0));
-      }
+      newSelected.add(BigInt(donkey?.donkeyEntityId || 0));
     });
 
-    setSelectedDonkeys(newSelected);
-    updateResourcesFromSelectedDonkeys(newSelected);
-  }, [donkeyInfos]);
+    debouncedUpdateResources(newSelected);
+
+    return () => {
+      debouncedUpdateResources.cancel();
+    };
+  }, [donkeyInfos, debouncedUpdateResources]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
