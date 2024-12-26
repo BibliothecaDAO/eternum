@@ -36,6 +36,7 @@ const items = [
     url: "/season-passes",
     icon: Gamepad2,
   },
+  { title: "Claim", url: "/claim", icon: Scale },
   {
     title: "Play",
     url: "https://eternum.realms.world/",
