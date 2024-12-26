@@ -9,8 +9,6 @@ import { GET_ENTITY_DISTANCE } from "../query/position";
 import { GET_ENTITIES_RESOURCES } from "../query/resources";
 
 export function useDonkeyArrivals(realmEntityIds: ID[]) {
-  const filteredRealmIds = useMemo(() => realmEntityIds.filter((id) => id !== 54), [realmEntityIds]);
-
   const {
     data: entityPositions,
     isLoading: isLoadingPositions,
@@ -25,14 +23,14 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
   //   isLoading: isLoadingDonkeyEntityIds,
   //   error: errorDonkeyEntityIds,
   // } = useQuery({
-  //   queryKey: ["donkeyEntityIds", filteredRealmIds],
-  //   queryFn: () => execute(GET_ETERNUM_ENTITY_OWNERS, { entityOwnerIds: filteredRealmIds }),
-  //   enabled: filteredRealmIds.length > 0,
+  //   queryKey: ["donkeyEntityIds", realmEntityIds],
+  //   queryFn: () => execute(GET_ETERNUM_ENTITY_OWNERS, { entityOwnerIds: realmEntityIds }),
+  //   enabled: realmEntityIds.length > 0,
   //   refetchInterval: 10_000,
   // });
 
   const donkeyQueriesResults = useQueries({
-    queries: filteredRealmIds.map((realmId) => ({
+    queries: realmEntityIds.map((realmId) => ({
       queryKey: ["donkeyEntityIds", realmId],
       queryFn: () => execute(GET_ETERNUM_ENTITY_OWNERS, { entityOwnerIds: [realmId] }),
       enabled: !!realmId,
