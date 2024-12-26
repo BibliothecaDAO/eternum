@@ -5,6 +5,7 @@ import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
 import { ClientConfigManager } from "./modelManager/ConfigManager";
 import { setupNetwork } from "./setupNetwork";
+import { getEvents } from "@dojoengine/state";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 export const configManager = ClientConfigManager.instance();
@@ -36,9 +37,9 @@ export async function setup({ ...config }: DojoConfig) {
   const filteredEvents = [
     "BurnDonkey",
     // points
-    "HyperstructureCoOwnersChange",
-    "HyperstructureFinished",
-    "GameEnded",
+    // "HyperstructureCoOwnersChange",
+    // "HyperstructureFinished",
+    // "GameEnded",
   ];
 
   const clauses: Clause[] = [
@@ -87,6 +88,7 @@ export async function setup({ ...config }: DojoConfig) {
 
   const sync = await syncEntities(network.toriiClient, filteredModels as any, [], false);
 
+  */
   const eventSync = getEvents(
     network.toriiClient,
     network.contractComponents.events as any,
@@ -101,7 +103,7 @@ export async function setup({ ...config }: DojoConfig) {
     false,
     false,
   );
-*/
+
   configManager.setDojo(components);
 
   return {
@@ -109,6 +111,6 @@ export async function setup({ ...config }: DojoConfig) {
     components,
     systemCalls,
     //sync,
-    /*eventSync,*/
+    eventSync,
   };
 }
