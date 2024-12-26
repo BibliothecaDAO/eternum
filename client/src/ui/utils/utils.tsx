@@ -258,9 +258,9 @@ export const formatTime = (
   return parts.join(" ");
 };
 
-export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string) => {
+export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string, hex: boolean = false) => {
   navigator.clipboard
-    .writeText(address.toString())
+    .writeText(hex ? toHexString(address) : address.toString())
     .then(() => {
       alert(`Address of ${name} copied to clipboard`);
     })

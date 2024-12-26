@@ -6,7 +6,7 @@ import { displayAddress } from "@/lib/utils";
 import { ADMIN_BANK_ENTITY_ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { ChevronDown, ChevronUp, Loader } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TypeP } from "../typography/type-p";
 import { ShowSingleResource } from "../ui/SelectResources";
 import { Button } from "../ui/button";
@@ -86,23 +86,27 @@ export const BridgeOutStep2 = () => {
   const [selectedDonkeys, setSelectedDonkeys] = useState<Set<bigint>>(new Set());
   const [isTableOpen, setIsTableOpen] = useState(false);
 
-  const updateResourcesFromSelectedDonkeys = (selectedDonkeyIds: Set<bigint>) => {
-    const allResources = Array.from(selectedDonkeyIds).flatMap(
-      (id) =>
-        donkeyInfos?.find((d) => d?.donkeyEntityId && BigInt(d.donkeyEntityId) === id)?.donkeyResourceBalances || [],
-    );
+  const updateResourcesFromSelectedDonkeys = useMemo(
+    () => (selectedDonkeyIds: Set<bigint>) => {
+      const allResources = Array.from(selectedDonkeyIds).flatMap(
+        (id) =>
+          donkeyInfos?.find((d) => d?.donkeyEntityId && BigInt(d.donkeyEntityId) === id)?.donkeyResourceBalances || [],
+      );
 
-    setSelectedResourceIds(allResources.map((r) => r.resourceId as never));
-    setSelectedResourceAmounts(
-      allResources.reduce(
-        (acc, r) => ({
-          ...acc,
-          [r.resourceId]: (acc[r.resourceId] || 0) + r.amount / RESOURCE_PRECISION,
-        }),
-        {},
-      ),
-    );
-  };
+      setSelectedResourceIds(allResources.map((r) => r.resourceId as never));
+      setSelectedResourceAmounts(
+        allResources.reduce(
+          (acc, r) => ({
+            ...acc,
+            [r.resourceId]: (acc[r.resourceId] || 0) + r.amount / RESOURCE_PRECISION,
+          }),
+          {},
+        ),
+      );
+    },
+    [donkeyInfos, selectedDonkeys],
+  );
+
   useEffect(() => {
     const newSelected = new Set<bigint>();
 
@@ -111,10 +115,7 @@ export const BridgeOutStep2 = () => {
         newSelected.add(BigInt(donkey?.donkeyEntityId || 0));
       }
     });
-
-    setSelectedDonkeys(newSelected);
-    updateResourcesFromSelectedDonkeys(newSelected);
-  }, [donkeyInfos]);
+  }, [donkeyInfos, selectedDonkeys]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
