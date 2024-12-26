@@ -76,7 +76,10 @@ export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, classN
           "my-auto w-8 mx-auto hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all",
           { "pointer-events-none fill-gold/50": !selectedResource },
         )}
-        onClick={() => setSelectedResource("")}
+        onClick={() => {
+          setSelectedResource("");
+          onSelect(null);
+        }}
       />
       <Select
         open={open}
