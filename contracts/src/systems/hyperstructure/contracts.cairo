@@ -39,6 +39,7 @@ trait IHyperstructureSystems<T> {
 mod hyperstructure_systems {
     use achievement::store::{Store, StoreTrait};
     use core::array::ArrayIndex;
+    use core::poseidon::poseidon_hash_span;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
@@ -596,10 +597,16 @@ mod hyperstructure_systems {
                 let (hyperstructure_entity_id, index) = *hyperstructure_shareholder_epochs.at(i);
 
                 // ensure we don't double count points for the same hyperstructure
-                if points_already_added.get(hyperstructure_entity_id.into()) {
+
+                let points_already_added_key: felt252 = poseidon_hash_span(
+                    array![hyperstructure_entity_id.into(), index.into()].span()
+                );
+
+                if points_already_added.get(points_already_added_key) {
                     panic!("points already added for hyperstructure {}", hyperstructure_entity_id);
                 };
-                points_already_added.insert(hyperstructure_entity_id.into(), true);
+
+                points_already_added.insert(points_already_added_key, true);
 
                 let epoch: Epoch = world.read_model((hyperstructure_entity_id, index));
                 let next_epoch: Epoch = world.read_model((hyperstructure_entity_id, index + 1));
