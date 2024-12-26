@@ -17,6 +17,7 @@ import { formatEther } from "viem";
 import { env } from "../../../../env";
 
 const REGISTRATION_DELAY = 60 * 60 * 24 * 4; // 4 days
+const BRIDGE_OUT_DELAY = 60 * 60 * 24 * 2; // 2 days
 
 export const Rewards = () => {
   const {
@@ -35,6 +36,8 @@ export const Rewards = () => {
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [registrationTimeRemaining, setRegistrationTimeRemaining] = useState<string>("");
+  const [bridgeOutTimeRemaining, setBridgeOutTimeRemaining] = useState<string>("");
 
   const prizePool = usePrizePool();
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -77,15 +80,24 @@ export const Rewards = () => {
     if (gameEnded) {
       const calculateTimeRemaining = () => {
         const currentTime = Math.floor(Date.now() / 1000);
-        const endTime = Number(gameEnded.timestamp + REGISTRATION_DELAY);
+        const registrationEndTime = Number(gameEnded.timestamp + REGISTRATION_DELAY);
+        const bridgeOutEndTime = Number(gameEnded.timestamp + BRIDGE_OUT_DELAY);
 
-        if (currentTime >= endTime) {
-          setTimeRemaining("Registration Closed");
-          return;
+        // Calculate registration time
+        if (currentTime >= registrationEndTime) {
+          setRegistrationTimeRemaining("Registration Closed");
+        } else {
+          const registrationDifference = registrationEndTime - currentTime;
+          setRegistrationTimeRemaining(formatTime(registrationDifference, undefined));
         }
 
-        const difference = endTime - currentTime;
-        setTimeRemaining(formatTime(difference, undefined));
+        // Calculate bridge out time
+        if (currentTime >= bridgeOutEndTime) {
+          setBridgeOutTimeRemaining("Bridge Out Closed");
+        } else {
+          const bridgeOutDifference = bridgeOutEndTime - currentTime;
+          setBridgeOutTimeRemaining(formatTime(bridgeOutDifference, undefined));
+        }
       };
 
       calculateTimeRemaining();
@@ -135,10 +147,19 @@ export const Rewards = () => {
                 <div className="text-lg">{Number(formatEther(prizePool)).toFixed(2)} $LORDS</div>
               </div>
             </Compartment>
-            <Compartment>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Compartment isCountdown>
               <div className="text-center text-lg font-semibold self-center w-full">
-                <div className="text-sm font-bold uppercase">Time left to register</div>
-                <div className="text-lg">{timeRemaining}</div>
+                <div className="text-md uppercase font-extrabold text-danger">Time left to register</div>
+                <div className="text-lg">{registrationTimeRemaining}</div>
+              </div>
+            </Compartment>
+            <Compartment isCountdown>
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-md font-extrabold text-danger uppercase">Time left to bridge out</div>
+                <div className="text-lg">{bridgeOutTimeRemaining}</div>
               </div>
             </Compartment>
           </div>
@@ -184,9 +205,9 @@ export const Rewards = () => {
   );
 };
 
-const Compartment = ({ children }: { children: React.ReactNode }) => {
+const Compartment = ({ children, isCountdown }: { children: React.ReactNode; isCountdown?: boolean }) => {
   return (
-    <div className="flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md bg-brown/50 bg-hex m-auto h-28">
+    <div className={`flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md ${isCountdown ? 'bg-brown/70' : 'bg-brown/50'} bg-hex m-auto h-28 ${isCountdown ? 'border-2 border-danger/50' : ''}`}>
       {children}
     </div>
   );
