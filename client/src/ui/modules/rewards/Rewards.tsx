@@ -16,7 +16,7 @@ import { shortString } from "starknet";
 import { formatEther } from "viem";
 import { env } from "../../../../env";
 
-const REGISTRATION_DELAY = 1800; // 1 week
+const REGISTRATION_DELAY = 60 * 60 * 24 * 4; // 4 days
 
 export const Rewards = () => {
   const {
