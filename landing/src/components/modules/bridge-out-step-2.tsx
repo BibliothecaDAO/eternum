@@ -86,26 +86,23 @@ export const BridgeOutStep2 = () => {
   const [selectedDonkeys, setSelectedDonkeys] = useState<Set<bigint>>(new Set());
   const [isTableOpen, setIsTableOpen] = useState(false);
 
-  const updateResourcesFromSelectedDonkeys = useMemo(
-    () => (selectedDonkeyIds: Set<bigint>) => {
-      const allResources = Array.from(selectedDonkeyIds).flatMap(
-        (id) =>
-          donkeyInfos?.find((d) => d?.donkeyEntityId && BigInt(d.donkeyEntityId) === id)?.donkeyResourceBalances || [],
-      );
+  const updateResourcesFromSelectedDonkeys = (selectedDonkeyIds: Set<bigint>) => {
+    const allResources = Array.from(selectedDonkeyIds).flatMap(
+      (id) =>
+        donkeyInfos?.find((d) => d?.donkeyEntityId && BigInt(d.donkeyEntityId) === id)?.donkeyResourceBalances || [],
+    );
 
-      setSelectedResourceIds(allResources.map((r) => r.resourceId as never));
-      setSelectedResourceAmounts(
-        allResources.reduce(
-          (acc, r) => ({
-            ...acc,
-            [r.resourceId]: (acc[r.resourceId] || 0) + r.amount / RESOURCE_PRECISION,
-          }),
-          {},
-        ),
-      );
-    },
-    [donkeyInfos, selectedDonkeys],
-  );
+    setSelectedResourceIds(allResources.map((r) => r.resourceId as never));
+    setSelectedResourceAmounts(
+      allResources.reduce(
+        (acc, r) => ({
+          ...acc,
+          [r.resourceId]: (acc[r.resourceId] || 0) + r.amount / RESOURCE_PRECISION,
+        }),
+        {},
+      ),
+    );
+  };
 
   useEffect(() => {
     const newSelected = new Set<bigint>();
@@ -115,7 +112,7 @@ export const BridgeOutStep2 = () => {
         newSelected.add(BigInt(donkey?.donkeyEntityId || 0));
       }
     });
-  }, [donkeyInfos, selectedDonkeys]);
+  }, [donkeyInfos]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
