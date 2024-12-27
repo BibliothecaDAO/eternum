@@ -10,7 +10,7 @@ import Button from "@/ui/elements/Button";
 import { formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
 import { formatEther } from "viem";
@@ -186,19 +186,21 @@ export const Rewards = () => {
             </div>
           </Compartment>
 
+          <div className=" flex gap-4">
+            <Button variant="primary" isLoading={isLoading} disabled={!registrationClosed} onClick={claimRewards}>
+              {registrationClosed ? "Claim Rewards" : "Waiting for registration period to end"}
+            </Button>
+
+            <Button
+              disabled={registrationClosed}
+              variant="primary"
+              isLoading={isLoading}
+              onClick={registerToLeaderboard}
+            >
+              Register to Leaderboard
+            </Button>
+          </div>
           {/* Action button */}
-          <Button
-            variant="primary"
-            isLoading={isLoading}
-            disabled={!registrationClosed && registrationStatus === "registered"}
-            onClick={registrationClosed ? claimRewards : registerToLeaderboard}
-          >
-            {registrationClosed
-              ? "Claim Rewards"
-              : registrationStatus === "unregistered"
-                ? "Register to Leaderboard"
-                : "Wait for claim period to start"}
-          </Button>
         </div>
       </div>
     </OSWindow>
@@ -207,7 +209,11 @@ export const Rewards = () => {
 
 const Compartment = ({ children, isCountdown }: { children: React.ReactNode; isCountdown?: boolean }) => {
   return (
-    <div className={`flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md ${isCountdown ? 'bg-brown/70' : 'bg-brown/50'} bg-hex m-auto h-28 ${isCountdown ? 'border-2 border-danger/50' : ''}`}>
+    <div
+      className={`flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md ${
+        isCountdown ? "bg-brown/70" : "bg-brown/50"
+      } bg-hex m-auto h-28 ${isCountdown ? "border-2 border-danger/50" : ""}`}
+    >
       {children}
     </div>
   );
