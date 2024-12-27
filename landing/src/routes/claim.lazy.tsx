@@ -122,7 +122,7 @@ function Claim() {
                   <div className="p-6 rounded-lg bg-white/5 w-full max-w-md">
                     <div className="space-y-4">
                       <p className="text-lg flex justify-between">
-                        <span>Total Points:</span>
+                        <span>Total Points Registred:</span>
                         <span className="font-semibold">{Number(leaderboard?.total_points) || 0}</span>
                       </p>
 
@@ -155,8 +155,7 @@ function Claim() {
                             <Button
                               variant="cta"
                               className="w-full"
-                              disabled={false}
-                              // disabled={hasRegistered || registerLoading || !winnerAddress}
+                              disabled={hasRegistered || registerLoading || !winnerAddress}
                               onClick={onRegister}
                             >
                               {registerLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Register"}
