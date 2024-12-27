@@ -69,3 +69,31 @@ export const useGetHyperstructuresWithContributionsFromPlayer = () => {
 
   return getContributions;
 };
+
+export const useGetUnregisteredContributions = () => {
+  const {
+    account: { account },
+    setup: {
+      components: { LeaderboardRegisterContribution },
+    },
+  } = useDojo();
+  const getContributions = useGetHyperstructuresWithContributionsFromPlayer();
+
+  const getUnregisteredContributions = useCallback(() => {
+    const registeredContributionsEntities = runQuery([
+      HasValue(LeaderboardRegisterContribution, { address: ContractAddress(account.address) }),
+    ]);
+    const registeredContributions = Array.from(registeredContributionsEntities)
+      .map((entityId) => getComponentValue(LeaderboardRegisterContribution, entityId)?.hyperstructure_entity_id)
+      .filter((x): x is number => x !== undefined);
+    console.log("registeredContributions", registeredContributions);
+    const hyperstructuresContributedTo = Array.from(getContributions());
+    console.log("hyperstructuresContributedTo", hyperstructuresContributedTo);
+    return hyperstructuresContributedTo.filter(
+      (hyperstructureEntityId) =>
+        !registeredContributions.some((contribution) => contribution === hyperstructureEntityId),
+    );
+  }, [getContributions]);
+
+  return getUnregisteredContributions;
+};
