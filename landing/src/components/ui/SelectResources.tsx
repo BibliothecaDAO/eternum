@@ -21,7 +21,7 @@ export const SelectResources = ({
   setSelectedResourceAmounts: any;
   entity_id: ID;
 }) => {
-  const { getBalance } = useResourceBalance({entityId: entity_id});
+  const { getBalance } = useResourceBalance({ entityId: entity_id });
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -32,7 +32,7 @@ export const SelectResources = ({
     setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
     setSelectedResourceAmounts({
       ...selectedResourceAmounts,
-      [unselectedResources[0].id]: 1,
+      [unselectedResources[0].id]: divideByPrecision(getBalance(unselectedResources[0].id) || 0),
     });
   };
 
@@ -40,12 +40,12 @@ export const SelectResources = ({
     <div className=" items-center col-span-4 space-y-2 p-3">
       {selectedResourceIds.map((id: any, index: any) => {
         const resource = getBalance(id);
-        const options = [resources.find((res) => res.id === id), ...unselectedResources].map((res: any) => ({
-          id: res.id,
-          label: (
-            <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(res.id) || 0)} />
-          ),
-        }));
+        const options = [resources.find((res) => res.id === id), ...unselectedResources]
+          .filter((res) => getBalance(res.id) > 0)
+          .map((res: any) => ({
+            id: res.id,
+            label: <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(res.id) || 0)} />,
+          }));
 
         return (
           <div key={id} className="flex items-center gap-4">
@@ -75,7 +75,7 @@ export const SelectResources = ({
                 const { [selectedResourceIds[index]]: _, ...remainingAmounts } = selectedResourceAmounts;
                 setSelectedResourceAmounts({
                   ...remainingAmounts,
-                  [value]: 1,
+                  [value]: divideByPrecision(getBalance(value) || 0),
                 });
                 // playResourceSound(value);
               }}
@@ -117,7 +117,7 @@ export const SelectSingleResource = ({
   setSelectedResourceAmounts: any;
   entity_id: ID;
 }) => {
-  const { getBalance } = useResourceBalance({entityId: entity_id});
+  const { getBalance } = useResourceBalance({ entityId: entity_id });
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -134,7 +134,7 @@ export const SelectSingleResource = ({
     setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
     setSelectedResourceAmounts({
       ...selectedResourceAmounts,
-      [unselectedResources[0].id]: 1,
+      [unselectedResources[0].id]: divideByPrecision(getBalance(unselectedResources[0].id) || 0),
     });
   };
 
@@ -142,12 +142,12 @@ export const SelectSingleResource = ({
     <div className=" items-center col-span-4 space-y-2 p-3">
       {selectedResourceIds.map((id: any, index: any) => {
         const resourceBalance = getBalance(id);
-        const options = [resources.find((res) => res.id === id), ...unselectedResources].map((res: any) => ({
-          id: res.id,
-          label: (
-            <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(res.id) || 0)} />
-          ),
-        }));
+        const options = [resources.find((res) => res.id === id), ...unselectedResources]
+          .filter((res) => getBalance(res.id) > 0)
+          .map((res: any) => ({
+            id: res.id,
+            label: <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(res.id) || 0)} />,
+          }));
 
         return (
           <>
@@ -165,7 +165,7 @@ export const SelectSingleResource = ({
                   const { [selectedResourceIds[index]]: _, ...remainingAmounts } = selectedResourceAmounts;
                   setSelectedResourceAmounts({
                     ...remainingAmounts,
-                    [value]: 1,
+                    [value]: divideByPrecision(getBalance(value) || 0),
                   });
                   // playResourceSound(value);
                 }}
@@ -218,7 +218,7 @@ export const ShowSingleResource = ({
   setSelectedResourceAmounts: any;
   entity_id: ID;
 }) => {
-  const { getBalance } = useResourceBalance({entityId: entity_id});
+  const { getBalance } = useResourceBalance({ entityId: entity_id });
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -235,7 +235,7 @@ export const ShowSingleResource = ({
     setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
     setSelectedResourceAmounts({
       ...selectedResourceAmounts,
-      [unselectedResources[0].id]: 1,
+      [unselectedResources[0].id]: divideByPrecision(getBalance(unselectedResources[0].id) || 0),
     });
   };
 
