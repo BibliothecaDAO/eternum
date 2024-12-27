@@ -1,15 +1,18 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { usePrizePool } from "@/hooks/helpers/use-rewards";
-import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
-import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
+import {
+  useGetHyperstructuresWithContributionsFromPlayer,
+  useGetUnregisteredContributions,
+} from "@/hooks/helpers/useContributions";
+import { useGetPlayerEpochs, useGetUnregisteredEpochs } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { rewards } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import Button from "@/ui/elements/Button";
 import { formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
-import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { ContractAddress } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
@@ -45,6 +48,8 @@ export const Rewards = () => {
 
   const getContributions = useGetHyperstructuresWithContributionsFromPlayer();
   const getEpochs = useGetPlayerEpochs();
+  const getUnregisteredContributions = useGetUnregisteredContributions();
+  const getUnregisteredEpochs = useGetUnregisteredEpochs();
 
   const gameEndedEntityId = useEntityQuery([Has(GameEnded)]);
 
@@ -52,27 +57,36 @@ export const Rewards = () => {
     return getComponentValue(GameEnded, gameEndedEntityId[0]);
   }, [gameEndedEntityId]);
 
-  const leaderboard = useComponentValue(Leaderboard, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
   const registerToLeaderboard = useCallback(async () => {
     setIsLoading(true);
-    const contributions = Array.from(getContributions());
-    const epochs = getEpochs();
+    const epochs = getUnregisteredEpochs();
+    const contributions = getUnregisteredContributions();
 
-    await register_to_leaderboard({
-      signer: account,
-      hyperstructure_contributed_to: contributions,
-      hyperstructure_shareholder_epochs: epochs,
-    });
-    setIsLoading(false);
+    try {
+      await register_to_leaderboard({
+        signer: account,
+        hyperstructure_contributed_to: contributions,
+        hyperstructure_shareholder_epochs: epochs,
+      });
+    } catch (error) {
+      console.error("Error registering to leaderboard", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [getContributions, getEpochs]);
 
   const claimRewards = useCallback(async () => {
     setIsLoading(true);
-    await claim_leaderboard_rewards({
-      signer: account,
-      token: env.VITE_LORDS_ADDRESS!,
-    });
+    try {
+      await claim_leaderboard_rewards({
+        signer: account,
+        token: env.VITE_LORDS_ADDRESS!,
+      });
+    } catch (error) {
+      console.error("Error claiming rewards", error);
+    } finally {
+      setIsLoading(false);
+    }
     setIsLoading(false);
   }, [account]);
 

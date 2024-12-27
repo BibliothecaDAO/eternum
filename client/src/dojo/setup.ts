@@ -157,14 +157,14 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
             Keys: {
               keys: [undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s0_eternum-Epoch", "s0_eternum-Progress"],
+              models: ["s0_eternum-Epoch", "s0_eternum-Progress", "s0_eternum-LeaderboardRegisterContribution"],
             },
           },
           {
             Keys: {
               keys: [undefined, undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s0_eternum-Contribution"],
+              models: ["s0_eternum-Contribution", "s0_eternum-LeaderboardRegisterShare"],
             },
           },
         ],
@@ -199,6 +199,10 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
           "s0_eternum-Structure",
           "s0_eternum-Battle",
           "s0_eternum-Guild",
+          "s0_eternum-LeaderboardRegistered",
+          "s0_eternum-Leaderboard",
+          "s0_eternum-LeaderboardRewardClaimed",
+          "s0_eternum-LeaderboardEntry",
         ],
       },
     },
@@ -232,7 +236,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
     },
     false,
     false,
-  )
+  );
   // .finally(() => {
   //   setLoading(LoadingStateKey.Events, false);
   // });
