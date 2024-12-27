@@ -1,6 +1,5 @@
 import { AnimatedGrid } from "@/components/modules/animated-grid";
 import { DataCard, DataCardProps } from "@/components/modules/data-card";
-import { Leaderboard } from "@/components/modules/leaderboard";
 import {
   PRIZE_POOL_ACHIEVEMENTS,
   PRIZE_POOL_CONTENT_CREATORS,
@@ -35,7 +34,6 @@ interface GridItemType {
 }
 
 function Index() {
-
   const { data, isLoading } = useQuery({
     queryKey: ["eternumStatistics"],
     queryFn: () => execute(GET_ETERNUM_STATTISTICS),
@@ -129,14 +127,7 @@ function Index() {
   return (
     <div className="p-4">
       <AnimatedGrid
-        items={[
-          ...dataCards,
-          {
-            colSpan: { sm: 2, md: 6, lg: 12 },
-            rowSpan: { sm: 1, md: 1, lg: 2 },
-            data: <Leaderboard />,
-          },
-        ]}
+        items={[...dataCards]}
         renderItem={(item) =>
           React.isValidElement(item.data) ? item.data : <DataCard {...(item.data as DataCardProps)} />
         }
