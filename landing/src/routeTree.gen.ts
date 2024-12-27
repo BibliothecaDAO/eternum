@@ -8,147 +8,181 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
 
 // Import Routes
 
-import { Route as rootRoute } from "./routes/__root";
-import { Route as MyEmpireImport } from "./routes/my-empire";
+import { Route as rootRoute } from './routes/__root'
+import { Route as MyEmpireImport } from './routes/my-empire'
 
 // Create Virtual Routes
 
-const TradeLazyImport = createFileRoute("/trade")();
-const SeasonPassesLazyImport = createFileRoute("/season-passes")();
-const MintLazyImport = createFileRoute("/mint")();
-const IndexLazyImport = createFileRoute("/")();
+const TradeLazyImport = createFileRoute('/trade')()
+const SeasonPassesLazyImport = createFileRoute('/season-passes')()
+const MintLazyImport = createFileRoute('/mint')()
+const ClaimLazyImport = createFileRoute('/claim')()
+const IndexLazyImport = createFileRoute('/')()
 
 // Create/Update Routes
 
 const TradeLazyRoute = TradeLazyImport.update({
-  id: "/trade",
-  path: "/trade",
+  id: '/trade',
+  path: '/trade',
   getParentRoute: () => rootRoute,
-} as any).lazy(() => import("./routes/trade.lazy").then((d) => d.Route));
+} as any).lazy(() => import('./routes/trade.lazy').then((d) => d.Route))
 
 const SeasonPassesLazyRoute = SeasonPassesLazyImport.update({
-  id: "/season-passes",
-  path: "/season-passes",
+  id: '/season-passes',
+  path: '/season-passes',
   getParentRoute: () => rootRoute,
-} as any).lazy(() => import("./routes/season-passes.lazy").then((d) => d.Route));
+} as any).lazy(() => import('./routes/season-passes.lazy').then((d) => d.Route))
 
 const MintLazyRoute = MintLazyImport.update({
-  id: "/mint",
-  path: "/mint",
+  id: '/mint',
+  path: '/mint',
   getParentRoute: () => rootRoute,
-} as any).lazy(() => import("./routes/mint.lazy").then((d) => d.Route));
+} as any).lazy(() => import('./routes/mint.lazy').then((d) => d.Route))
+
+const ClaimLazyRoute = ClaimLazyImport.update({
+  id: '/claim',
+  path: '/claim',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() => import('./routes/claim.lazy').then((d) => d.Route))
 
 const MyEmpireRoute = MyEmpireImport.update({
-  id: "/my-empire",
-  path: "/my-empire",
+  id: '/my-empire',
+  path: '/my-empire',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const IndexLazyRoute = IndexLazyImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRoute,
-} as any).lazy(() => import("./routes/index.lazy").then((d) => d.Route));
+} as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
 
 // Populate the FileRoutesByPath interface
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexLazyImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/my-empire": {
-      id: "/my-empire";
-      path: "/my-empire";
-      fullPath: "/my-empire";
-      preLoaderRoute: typeof MyEmpireImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/mint": {
-      id: "/mint";
-      path: "/mint";
-      fullPath: "/mint";
-      preLoaderRoute: typeof MintLazyImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/season-passes": {
-      id: "/season-passes";
-      path: "/season-passes";
-      fullPath: "/season-passes";
-      preLoaderRoute: typeof SeasonPassesLazyImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/trade": {
-      id: "/trade";
-      path: "/trade";
-      fullPath: "/trade";
-      preLoaderRoute: typeof TradeLazyImport;
-      parentRoute: typeof rootRoute;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexLazyImport
+      parentRoute: typeof rootRoute
+    }
+    '/my-empire': {
+      id: '/my-empire'
+      path: '/my-empire'
+      fullPath: '/my-empire'
+      preLoaderRoute: typeof MyEmpireImport
+      parentRoute: typeof rootRoute
+    }
+    '/claim': {
+      id: '/claim'
+      path: '/claim'
+      fullPath: '/claim'
+      preLoaderRoute: typeof ClaimLazyImport
+      parentRoute: typeof rootRoute
+    }
+    '/mint': {
+      id: '/mint'
+      path: '/mint'
+      fullPath: '/mint'
+      preLoaderRoute: typeof MintLazyImport
+      parentRoute: typeof rootRoute
+    }
+    '/season-passes': {
+      id: '/season-passes'
+      path: '/season-passes'
+      fullPath: '/season-passes'
+      preLoaderRoute: typeof SeasonPassesLazyImport
+      parentRoute: typeof rootRoute
+    }
+    '/trade': {
+      id: '/trade'
+      path: '/trade'
+      fullPath: '/trade'
+      preLoaderRoute: typeof TradeLazyImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
 // Create and export the route tree
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexLazyRoute;
-  "/my-empire": typeof MyEmpireRoute;
-  "/mint": typeof MintLazyRoute;
-  "/season-passes": typeof SeasonPassesLazyRoute;
-  "/trade": typeof TradeLazyRoute;
+  '/': typeof IndexLazyRoute
+  '/my-empire': typeof MyEmpireRoute
+  '/claim': typeof ClaimLazyRoute
+  '/mint': typeof MintLazyRoute
+  '/season-passes': typeof SeasonPassesLazyRoute
+  '/trade': typeof TradeLazyRoute
 }
 
 export interface FileRoutesByTo {
-  "/": typeof IndexLazyRoute;
-  "/my-empire": typeof MyEmpireRoute;
-  "/mint": typeof MintLazyRoute;
-  "/season-passes": typeof SeasonPassesLazyRoute;
-  "/trade": typeof TradeLazyRoute;
+  '/': typeof IndexLazyRoute
+  '/my-empire': typeof MyEmpireRoute
+  '/claim': typeof ClaimLazyRoute
+  '/mint': typeof MintLazyRoute
+  '/season-passes': typeof SeasonPassesLazyRoute
+  '/trade': typeof TradeLazyRoute
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  "/": typeof IndexLazyRoute;
-  "/my-empire": typeof MyEmpireRoute;
-  "/mint": typeof MintLazyRoute;
-  "/season-passes": typeof SeasonPassesLazyRoute;
-  "/trade": typeof TradeLazyRoute;
+  __root__: typeof rootRoute
+  '/': typeof IndexLazyRoute
+  '/my-empire': typeof MyEmpireRoute
+  '/claim': typeof ClaimLazyRoute
+  '/mint': typeof MintLazyRoute
+  '/season-passes': typeof SeasonPassesLazyRoute
+  '/trade': typeof TradeLazyRoute
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/my-empire" | "/mint" | "/season-passes" | "/trade";
-  fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/my-empire" | "/mint" | "/season-passes" | "/trade";
-  id: "__root__" | "/" | "/my-empire" | "/mint" | "/season-passes" | "/trade";
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/my-empire'
+    | '/claim'
+    | '/mint'
+    | '/season-passes'
+    | '/trade'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/my-empire' | '/claim' | '/mint' | '/season-passes' | '/trade'
+  id:
+    | '__root__'
+    | '/'
+    | '/my-empire'
+    | '/claim'
+    | '/mint'
+    | '/season-passes'
+    | '/trade'
+  fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexLazyRoute: typeof IndexLazyRoute;
-  MyEmpireRoute: typeof MyEmpireRoute;
-  MintLazyRoute: typeof MintLazyRoute;
-  SeasonPassesLazyRoute: typeof SeasonPassesLazyRoute;
-  TradeLazyRoute: typeof TradeLazyRoute;
+  IndexLazyRoute: typeof IndexLazyRoute
+  MyEmpireRoute: typeof MyEmpireRoute
+  ClaimLazyRoute: typeof ClaimLazyRoute
+  MintLazyRoute: typeof MintLazyRoute
+  SeasonPassesLazyRoute: typeof SeasonPassesLazyRoute
+  TradeLazyRoute: typeof TradeLazyRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
   MyEmpireRoute: MyEmpireRoute,
+  ClaimLazyRoute: ClaimLazyRoute,
   MintLazyRoute: MintLazyRoute,
   SeasonPassesLazyRoute: SeasonPassesLazyRoute,
   TradeLazyRoute: TradeLazyRoute,
-};
+}
 
-export const routeTree = rootRoute._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>();
+export const routeTree = rootRoute
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
 /* ROUTE_MANIFEST_START
 {
@@ -158,6 +192,7 @@ export const routeTree = rootRoute._addFileChildren(rootRouteChildren)._addFileT
       "children": [
         "/",
         "/my-empire",
+        "/claim",
         "/mint",
         "/season-passes",
         "/trade"
@@ -168,6 +203,9 @@ export const routeTree = rootRoute._addFileChildren(rootRouteChildren)._addFileT
     },
     "/my-empire": {
       "filePath": "my-empire.tsx"
+    },
+    "/claim": {
+      "filePath": "claim.lazy.tsx"
     },
     "/mint": {
       "filePath": "mint.lazy.tsx"
