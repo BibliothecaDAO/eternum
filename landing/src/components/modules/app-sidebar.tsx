@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Castle, Gamepad2, Home, PlayCircle, Scale, Sheet, Ship, Twitter } from "lucide-react";
+import { Castle, Coins, Gamepad2, Home, PlayCircle, Scale, Sheet, Ship, Twitter } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 import { ReactComponent as Discord } from "@/assets/icons/discord.svg";
@@ -20,12 +20,12 @@ const items = [
     url: "/",
     icon: Home,
   },
+  { title: "Claim", url: "/claim", icon: Coins },
   {
     title: "Bridge",
     url: "/trade",
     icon: Ship,
   },
-
   {
     title: "Realms",
     url: "/mint",
@@ -36,7 +36,6 @@ const items = [
     url: "/season-passes",
     icon: Gamepad2,
   },
-  { title: "Claim", url: "/claim", icon: Scale },
   {
     title: "Play",
     url: "https://eternum.realms.world/",

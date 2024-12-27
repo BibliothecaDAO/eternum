@@ -13,30 +13,8 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 
-export const Route = createLazyFileRoute("/claim")({
-  component: Claim,
-});
-
-function Claim() {
-  const {
-    setup: {
-      systemCalls: { claim_leaderboard_rewards, register_to_leaderboard },
-    },
-  } = useDojo();
-
-  const { account, address } = useAccount();
-
-  const [registerLoading, setRegisterLoading] = useState(false);
-  const [claimLoading, setClaimLoading] = useState(false);
+const RegistrationCountdown = ({ registrationEnd }: { registrationEnd: string | undefined }) => {
   const [timeLeft, setTimeLeft] = useState({ hours: "00", minutes: "00", seconds: "00" });
-
-  const { points, isLoading: isPointsLoading } = useLeaderboardEntry(address || "");
-  const { leaderboard, isLoading: isLeaderboardLoading } = useLeaderboardStatus();
-  const { winnerAddress, isLoading: isWinnerLoading } = useGameWinner();
-
-  const hasRegistered = points > 0;
-
-  const registrationEnd = leaderboard?.registration_end_timestamp;
 
   useEffect(() => {
     if (!registrationEnd) return;
@@ -64,16 +42,54 @@ function Claim() {
     return () => clearInterval(timer);
   }, [registrationEnd]);
 
-  const yourShare = leaderboard?.total_points ? ((points / leaderboard.total_points) * 100).toFixed(2) : "0";
+  return (
+    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 text-center">
+      <h2 className="text-2xl font-bold text-primary mb-4">Registration Countdown</h2>
+      <div className="text-3xl text-primary font-semibold">
+        {timeLeft.hours}:{timeLeft.minutes}:{timeLeft.seconds}
+      </div>
+    </div>
+  );
+};
+
+export const Route = createLazyFileRoute("/claim")({
+  component: Claim,
+});
+
+function Claim() {
+  const {
+    setup: {
+      systemCalls: { claim_leaderboard_rewards, register_to_leaderboard },
+    },
+  } = useDojo();
+
+  const { account, address } = useAccount();
+
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [claimLoading, setClaimLoading] = useState(false);
+
+  const { points, isLoading: isPointsLoading } = useLeaderboardEntry(address || "");
+  const { leaderboard, isLoading: isLeaderboardLoading } = useLeaderboardStatus();
+  const { winnerAddress, isLoading: isWinnerLoading } = useGameWinner();
+
+  const hasRegistered = points > 0;
+
+  const registrationEnd = leaderboard?.registration_end_timestamp;
+  const isRegistrationPeriodActive = registrationEnd && Math.floor(Date.now() / 1000) < Number(registrationEnd);
+
+  const yourShare = Number(leaderboard?.total_points)
+    ? ((points / Number(leaderboard?.total_points)) * 100).toFixed(2)
+    : "0";
 
   const { hyperstructures, isLoading: isHsLoading } = useGetPlayerHyperstructureContributions(address || "");
   const { epochs, isLoading: isEpochsLoading } = useGetEpochs(address || "");
 
   const loading = isPointsLoading || isLeaderboardLoading || isWinnerLoading || isHsLoading || isEpochsLoading;
 
+  const noPoints = hyperstructures.length === 0 && epochs.length === 0;
+
   const onRegister = async () => {
-    if (!account) return;
-    if (hyperstructures.length === 0 || epochs.length === 0) return;
+    if (!account || noPoints) return;
     setRegisterLoading(true);
     await register_to_leaderboard({
       signer: account,
@@ -88,8 +104,6 @@ function Claim() {
     await claim_leaderboard_rewards({ signer: account, token: lordsAddress }).finally(() => setClaimLoading(false));
   };
 
-  const noPoints = hyperstructures.length === 0 && epochs.length === 0;
-
   return (
     <div className="flex flex-col h-full">
       {loading && (
@@ -100,12 +114,7 @@ function Claim() {
       <div className="flex-grow overflow-y-auto p-4">
         <div className="flex flex-col gap-4">
           <Suspense fallback={<div>Loading...</div>}>
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 text-center">
-              <h2 className="text-2xl font-bold text-primary mb-4">Registration Countdown</h2>
-              <div className="text-3xl text-primary font-semibold">
-                {timeLeft.hours}:{timeLeft.minutes}:{timeLeft.seconds}
-              </div>
-            </div>
+            <RegistrationCountdown registrationEnd={registrationEnd} />
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8">
               <div className="flex flex-col gap-6">
@@ -113,15 +122,15 @@ function Claim() {
                   <div className="p-6 rounded-lg bg-white/5 w-full max-w-md">
                     <div className="space-y-4">
                       <p className="text-lg flex justify-between">
-                        <span>Total Points:</span>
-                        <span className="font-semibold">{leaderboard?.total_points || 0}</span>
+                        <span>Total Points Registred:</span>
+                        <span className="font-semibold">{Number(leaderboard?.total_points) || 0}</span>
                       </p>
 
                       {address && (
                         <>
                           <p className="text-lg flex justify-between">
                             <span>Your Points:</span>
-                            <span className="font-semibold">{points}</span>
+                            <span className="font-semibold">{Number(points)}</span>
                           </p>
                           <p className="text-lg flex justify-between">
                             <span>Your Share:</span>
@@ -154,7 +163,7 @@ function Claim() {
                             <Button
                               variant="default"
                               className="w-full"
-                              disabled={points === 0 || claimLoading || !winnerAddress}
+                              disabled={points === 0 || claimLoading || !winnerAddress || isRegistrationPeriodActive}
                               onClick={onClaim}
                             >
                               {claimLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Claim Rewards"}
