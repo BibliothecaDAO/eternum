@@ -257,11 +257,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     openPopup(rewards);
   }, []);
 
-  const openPopup = useUIStore((state) => state.openPopup);
-  useEffect(() => {
-    openPopup(rewards);
-  }, []);
-
   const battleViewContent = useMemo(
     () => (
       <div>
