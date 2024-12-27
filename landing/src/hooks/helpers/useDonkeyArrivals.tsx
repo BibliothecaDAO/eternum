@@ -34,8 +34,7 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
       queryKey: ["donkeyEntityIds", realmId],
       queryFn: () => execute(GET_ETERNUM_ENTITY_OWNERS, { entityOwnerIds: [realmId] }),
       enabled: !!realmId,
-      refetchInterval: 10_000,
-      staleTime: 5000,
+      refetchInterval: 100_000,
     })),
   });
 
@@ -110,7 +109,9 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
   };
 
   const donkeyInfos = useMemo(() => {
-    return donkeysAtBank?.map((donkey) => donkey && getDonkeyInfo(donkey));
+    return donkeysAtBank
+      ?.map((donkey) => donkey && getDonkeyInfo(donkey))
+      .filter((info) => info?.donkeyResourceBalances.some((balance) => Number(balance.amount) > 0));
   }, [donkeysAtBank, donkeyResources]);
 
   return {
