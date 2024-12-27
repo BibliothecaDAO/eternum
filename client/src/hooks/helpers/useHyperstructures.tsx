@@ -172,6 +172,44 @@ export const useGetPlayerEpochs = () => {
   return getEpochs;
 };
 
+export const useGetUnregisteredEpochs = () => {
+  const {
+    account: { account },
+    setup: {
+      components: { LeaderboardRegisterShare },
+    },
+  } = useDojo();
+
+  const getEpochs = useGetPlayerEpochs();
+
+  const getUnregisteredShares = useCallback(() => {
+    const epochs = getEpochs();
+    console.log("epochs", epochs);
+
+    const registeredSharesEntities = runQuery([
+      Has(LeaderboardRegisterShare),
+      HasValue(LeaderboardRegisterShare, { address: ContractAddress(account.address) }),
+    ]);
+    const registeredShares = Array.from(registeredSharesEntities)
+      .map((shareEntityId) => {
+        return getComponentValue(LeaderboardRegisterShare, shareEntityId);
+      })
+      .filter(
+        (share): share is ComponentValue<ClientComponents["LeaderboardRegisterShare"]["schema"]> => share !== undefined,
+      );
+    console.log("registeredShares", registeredShares);
+
+    return epochs.filter(
+      (epoch) =>
+        !registeredShares.some(
+          (share) => share.epoch === epoch.epoch && share.hyperstructure_entity_id === epoch.hyperstructure_entity_id,
+        ),
+    );
+  }, [getEpochs]);
+
+  return getUnregisteredShares;
+};
+
 const getContributions = (hyperstructureEntityId: ID, Contribution: Component) => {
   const contributions = runQuery([
     Has(Contribution),

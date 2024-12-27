@@ -21,6 +21,13 @@ const documents = {
     "\n  query getAccountTokens($accountAddress: String!) {\n    tokenBalances(accountAddress: $accountAddress, limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n": types.GetAccountTokensDocument,
     "\n  query getERC721Mints {\n    tokenTransfers(accountAddress: \"0x0\", limit: 8000) {\n      edges {\n        node {\n          tokenMetadata {\n            __typename\n            ... on ERC721__Token {\n              tokenId\n              metadataDescription\n              imagePath\n              contractAddress\n              metadata\n            }\n          }\n        }\n      }\n    }\n  }\n": types.GetErc721MintsDocument,
     "\n  query eternumStatistics {\n    s0EternumAddressNameModels {\n      totalCount\n    }\n    s0EternumHyperstructureModels {\n      totalCount\n    }\n    s0EternumRealmModels {\n      totalCount\n    }\n    s0EternumFragmentMineDiscoveredModels {\n      totalCount\n    }\n  }\n": types.EternumStatisticsDocument,
+    "\n  query hasGameEnded {\n    s0EternumGameEndedModels {\n      edges {\n        node {\n          winner_address\n        }\n      }\n    }\n  }\n": types.HasGameEndedDocument,
+    "\n  query hasPlayerRegistered($accountAddress: ContractAddress!) {\n    s0EternumOwnerModels(where: { address: $accountAddress }) {\n      totalCount\n    }\n  }\n": types.HasPlayerRegisteredDocument,
+    "\n  query hasPlayerClaimed($accountAddress: ContractAddress!) {\n    s0EternumLeaderboardRewardClaimedModels(where: { address: $accountAddress }) {\n      totalCount\n    }\n  }\n": types.HasPlayerClaimedDocument,
+    "\n  query getLeaderboardEntry($accountAddress: ContractAddress!) {\n    s0EternumLeaderboardEntryModels(where: { address: $accountAddress }) {\n      edges {\n        node {\n          address\n          points\n        }\n      }\n    }\n  }\n": types.GetLeaderboardEntryDocument,
+    "\n  query getLeaderboard {\n    s0EternumLeaderboardModels {\n      edges {\n        node {\n          total_points\n          registration_end_timestamp\n          total_price_pool {\n            Some\n            option\n          }\n          distribution_started\n        }\n      }\n    }\n  }\n": types.GetLeaderboardDocument,
+    "\n  query getHyperstructureContributions($accountAddress: ContractAddress!) {\n    s0EternumContributionModels(where: { player_address: $accountAddress }, limit: 1000) {\n      edges {\n        node {\n          hyperstructure_entity_id\n          amount\n        }\n      }\n    }\n  }\n": types.GetHyperstructureContributionsDocument,
+    "\n  query getEpochs {\n    s0EternumEpochModels(limit: 1000) {\n      edges {\n        node {\n          owners {\n            _0\n            _1\n          }\n          start_timestamp\n          hyperstructure_entity_id\n          index\n        }\n      }\n    }\n  }\n": types.GetEpochsDocument,
     "\n  query getEntityPosition($entityIds: [u32!]!) {\n    s0EternumPositionModels(where: { entity_idIN: $entityIds }) {\n      edges {\n        node {\n          x\n          y\n          entity_id\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n": types.GetEntityPositionDocument,
     "\n  query getEntitiesResources($entityIds: [u32!]!) {\n    s0EternumResourceModels(where: { entity_idIN: $entityIds }, limit: 8000) {\n      edges {\n        node {\n          entity_id\n          resource_type\n          balance\n          entity {\n            __typename\n          }\n        }\n      }\n    }\n  }\n": types.GetEntitiesResourcesDocument,
 };
@@ -49,6 +56,34 @@ export function graphql(source: "\n  query getERC721Mints {\n    tokenTransfers(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query eternumStatistics {\n    s0EternumAddressNameModels {\n      totalCount\n    }\n    s0EternumHyperstructureModels {\n      totalCount\n    }\n    s0EternumRealmModels {\n      totalCount\n    }\n    s0EternumFragmentMineDiscoveredModels {\n      totalCount\n    }\n  }\n"): typeof import('./graphql').EternumStatisticsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query hasGameEnded {\n    s0EternumGameEndedModels {\n      edges {\n        node {\n          winner_address\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').HasGameEndedDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query hasPlayerRegistered($accountAddress: ContractAddress!) {\n    s0EternumOwnerModels(where: { address: $accountAddress }) {\n      totalCount\n    }\n  }\n"): typeof import('./graphql').HasPlayerRegisteredDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query hasPlayerClaimed($accountAddress: ContractAddress!) {\n    s0EternumLeaderboardRewardClaimedModels(where: { address: $accountAddress }) {\n      totalCount\n    }\n  }\n"): typeof import('./graphql').HasPlayerClaimedDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query getLeaderboardEntry($accountAddress: ContractAddress!) {\n    s0EternumLeaderboardEntryModels(where: { address: $accountAddress }) {\n      edges {\n        node {\n          address\n          points\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetLeaderboardEntryDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query getLeaderboard {\n    s0EternumLeaderboardModels {\n      edges {\n        node {\n          total_points\n          registration_end_timestamp\n          total_price_pool {\n            Some\n            option\n          }\n          distribution_started\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetLeaderboardDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query getHyperstructureContributions($accountAddress: ContractAddress!) {\n    s0EternumContributionModels(where: { player_address: $accountAddress }, limit: 1000) {\n      edges {\n        node {\n          hyperstructure_entity_id\n          amount\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetHyperstructureContributionsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query getEpochs {\n    s0EternumEpochModels(limit: 1000) {\n      edges {\n        node {\n          owners {\n            _0\n            _1\n          }\n          start_timestamp\n          hyperstructure_entity_id\n          index\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetEpochsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

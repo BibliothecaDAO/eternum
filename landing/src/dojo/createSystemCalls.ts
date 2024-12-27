@@ -143,6 +143,18 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     return await provider.bridge_finish_withdraw_from_realm(props);
   };
 
+  const register_to_leaderboard = async (props: SystemProps.RegisterToLeaderboardProps) => {
+    await provider.register_to_leaderboard(props);
+  };
+
+  const end_game = async (props: SystemProps.EndGameProps) => {
+    await provider.end_game(props);
+  };
+
+  const claim_leaderboard_rewards = async (props: SystemProps.ClaimLeaderboardRewardsProps) => {
+    await provider.claim_leaderboard_rewards(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -169,6 +181,9 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     bridge_resources_into_realm: withQueueing(withErrorHandling(bridge_resources_into_realm)),
     bridge_start_withdraw_from_realm: withQueueing(withErrorHandling(bridge_start_withdraw_from_realm)),
     bridge_finish_withdraw_from_realm: withQueueing(withErrorHandling(bridge_finish_withdraw_from_realm)),
+    register_to_leaderboard: withQueueing(withErrorHandling(register_to_leaderboard)),
+    end_game: withQueueing(withErrorHandling(end_game)),
+    claim_leaderboard_rewards: withQueueing(withErrorHandling(claim_leaderboard_rewards)),
   };
 
   // TODO: Fix Type
