@@ -7395,7 +7395,7 @@ export const GetCapacitySpeedConfigDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetCapacitySpeedConfigQuery, GetCapacitySpeedConfigQueryVariables>;
 export const GetEternumOwnerRealmIdsDocument = new TypedDocumentString(`
     query getEternumOwnerRealmIds($accountAddress: ContractAddress!) {
-  s0EternumOwnerModels(where: {address: $accountAddress}, limit: 1000) {
+  s0EternumOwnerModels(where: {address: $accountAddress}, limit: 8000) {
     edges {
       node {
         address
@@ -7590,7 +7590,7 @@ export const GetEpochsDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetEpochsQuery, GetEpochsQueryVariables>;
 export const GetEntityPositionDocument = new TypedDocumentString(`
     query getEntityPosition($entityIds: [u32!]!) {
-  s0EternumPositionModels(where: {entity_idIN: $entityIds}) {
+  s0EternumPositionModels(where: {entity_idIN: $entityIds}, limit: 8000) {
     edges {
       node {
         x
@@ -7606,7 +7606,7 @@ export const GetEntityPositionDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetEntityPositionQuery, GetEntityPositionQueryVariables>;
 export const GetEntitiesResourcesDocument = new TypedDocumentString(`
     query getEntitiesResources($entityIds: [u32!]!) {
-  s0EternumResourceModels(where: {entity_idIN: $entityIds}, limit: 100) {
+  s0EternumResourceModels(where: {entity_idIN: $entityIds}, limit: 8000) {
     edges {
       node {
         entity_id

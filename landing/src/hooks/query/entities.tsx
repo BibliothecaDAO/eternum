@@ -2,7 +2,7 @@ import { graphql } from "../gql";
 
 export const GET_ETERNUM_OWNER_REALM_IDS = graphql(`
   query getEternumOwnerRealmIds($accountAddress: ContractAddress!) {
-    s0EternumOwnerModels(where: { address: $accountAddress }, limit: 1000) {
+    s0EternumOwnerModels(where: { address: $accountAddress }, limit: 8000) {
       edges {
         node {
           address
