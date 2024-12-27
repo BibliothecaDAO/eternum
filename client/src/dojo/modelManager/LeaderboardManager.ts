@@ -136,9 +136,10 @@ export class LeaderboardManager {
           getEntityIdFromKeys([BigInt(hyperstructure.entity_id), BigInt(i + 1)]),
         );
 
-        const epochEndTimestamp = season.is_over
-          ? season.ended_at
-          : nextEpoch?.start_timestamp ?? BigInt(currentTimestamp);
+        const epochEndTimestamp =
+          season.is_over && nextEpoch === undefined
+            ? season.ended_at
+            : nextEpoch?.start_timestamp ?? BigInt(currentTimestamp);
         const epochDuration = epochEndTimestamp - epoch.start_timestamp;
 
         const nbOfCycles = Number(epochDuration) / ClientConfigManager.instance().getTick(TickIds.Default);
