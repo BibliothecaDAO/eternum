@@ -12,7 +12,7 @@ import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import Button from "@/ui/elements/Button";
 import { formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
@@ -25,11 +25,10 @@ const BRIDGE_OUT_DELAY = 60 * 60 * 24 * 2; // 2 days
 export const Rewards = () => {
   const {
     account: { account },
-    network: { provider },
     setup: {
       components: {
         AddressName,
-        Leaderboard,
+        LeaderboardEntry,
         LeaderboardRegistered,
         events: { GameEnded },
       },
@@ -52,6 +51,8 @@ export const Rewards = () => {
   const getUnregisteredEpochs = useGetUnregisteredEpochs();
 
   const gameEndedEntityId = useEntityQuery([Has(GameEnded)]);
+
+  const leaderboardEntry = useComponentValue(LeaderboardEntry, getEntityIdFromKeys([ContractAddress(account.address)]));
 
   const gameEnded = useMemo(() => {
     return getComponentValue(GameEnded, gameEndedEntityId[0]);
@@ -159,6 +160,13 @@ export const Rewards = () => {
                 <div className="text-sm font-bold uppercase">Total prize pool</div>
 
                 <div className="text-lg">{Number(formatEther(prizePool)).toFixed(2)} $LORDS</div>
+              </div>
+            </Compartment>
+            <Compartment>
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-sm font-bold uppercase">Your registered points</div>
+
+                <div className="text-lg">{Number(leaderboardEntry?.points ?? 0)}</div>
               </div>
             </Compartment>
           </div>
