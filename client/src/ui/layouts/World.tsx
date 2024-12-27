@@ -231,26 +231,26 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     fetch();
   }, []);
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        setLoading(LoadingStateKey.Hyperstructure, true);
-        console.log("AddToSubscriptionStart - 4");
-        await Promise.all([
-          debouncedAddHyperstructureSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
-            setLoading(LoadingStateKey.Hyperstructure, false),
-          ),
-        ]);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        // Ensure loading states are reset even if there's an error
-        setLoading(LoadingStateKey.Hyperstructure, false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetch = async () => {
+  //     try {
+  //       setLoading(LoadingStateKey.Hyperstructure, true);
+  //       console.log("AddToSubscriptionStart - 4");
+  //       await Promise.all([
+  //         debouncedAddHyperstructureSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
+  //           setLoading(LoadingStateKey.Hyperstructure, false),
+  //         ),
+  //       ]);
+  //     } catch (error) {
+  //       console.error("Fetch failed", error);
+  //     } finally {
+  //       // Ensure loading states are reset even if there's an error
+  //       setLoading(LoadingStateKey.Hyperstructure, false);
+  //     }
+  //   };
 
-    fetch();
-  }, []);
+  //   fetch();
+  // }, []);
 
   const openPopup = useUIStore((state) => state.openPopup);
   useEffect(() => {

@@ -146,6 +146,38 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
   }
 
   // fetch all existing entities from torii
+  setLoading(LoadingStateKey.Hyperstructure, true);
+  await getEntities(
+    network.toriiClient,
+    {
+      Composite: {
+        operator: "Or",
+        clauses: [
+          {
+            Keys: {
+              keys: [undefined, undefined],
+              pattern_matching: "FixedLen",
+              models: ["s0_eternum-Epoch", "s0_eternum-Progress"],
+            },
+          },
+          {
+            Keys: {
+              keys: [undefined, undefined, undefined],
+              pattern_matching: "FixedLen",
+              models: ["s0_eternum-Contribution"],
+            },
+          },
+        ],
+      },
+    },
+    network.contractComponents as any,
+    [],
+    [],
+    40_000,
+    false,
+  ).finally(() => {
+    setLoading(LoadingStateKey.Hyperstructure, false);
+  });
 
   setLoading(LoadingStateKey.SingleKey, true);
   await getEntities(
