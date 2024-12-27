@@ -115,7 +115,7 @@ export const BridgeOutStep2 = () => {
         newSelected.add(BigInt(donkey?.donkeyEntityId || 0));
       }
     });
-  }, [donkeyInfos, selectedDonkeys]);
+  }, [donkeyInfos, updateResourcesFromSelectedDonkeys]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);

@@ -7477,7 +7477,7 @@ export const GetEntityPositionDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetEntityPositionQuery, GetEntityPositionQueryVariables>;
 export const GetEntitiesResourcesDocument = new TypedDocumentString(`
     query getEntitiesResources($entityIds: [u32!]!) {
-  s0EternumResourceModels(where: {entity_idIN: $entityIds}, limit: 100) {
+  s0EternumResourceModels(where: {entity_idIN: $entityIds}, limit: 8000) {
     edges {
       node {
         entity_id
