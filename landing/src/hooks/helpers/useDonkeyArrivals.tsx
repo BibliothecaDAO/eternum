@@ -8,6 +8,8 @@ import { GET_ETERNUM_ENTITY_OWNERS } from "../query/entityOwners";
 import { GET_ENTITY_DISTANCE } from "../query/position";
 import { GET_ENTITIES_RESOURCES } from "../query/resources";
 
+const BATCH_SIZE = 5;
+
 export function useDonkeyArrivals(realmEntityIds: ID[]) {
   const {
     data: entityPositions,
@@ -29,11 +31,20 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
   //   refetchInterval: 10_000,
   // });
 
+  const batchedRealmIds = useMemo(() => {
+    const batches = [];
+    for (let i = 0; i < realmEntityIds.length; i += BATCH_SIZE) {
+      batches.push(realmEntityIds.slice(i, i + BATCH_SIZE));
+    }
+    return batches;
+  }, [realmEntityIds]);
+
+
   const donkeyQueriesResults = useQueries({
-    queries: realmEntityIds.map((realmId) => ({
-      queryKey: ["donkeyEntityIds", realmId],
-      queryFn: () => execute(GET_ETERNUM_ENTITY_OWNERS, { entityOwnerIds: [realmId] }),
-      enabled: !!realmId,
+    queries: batchedRealmIds.map((realmIds) => ({
+      queryKey: ["donkeyEntityIds", realmIds],
+      queryFn: () => execute(GET_ETERNUM_ENTITY_OWNERS, { entityOwnerIds: realmIds }),
+      enabled: !!realmIds,
       staleTime: 5 * 60 * 1000,
     })),
   });
