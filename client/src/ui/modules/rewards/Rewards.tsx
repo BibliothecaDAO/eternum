@@ -1,31 +1,34 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { usePrizePool } from "@/hooks/helpers/use-rewards";
-import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
-import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
+import {
+  useGetHyperstructuresWithContributionsFromPlayer,
+  useGetUnregisteredContributions,
+} from "@/hooks/helpers/useContributions";
+import { useGetPlayerEpochs, useGetUnregisteredEpochs } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { rewards } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import Button from "@/ui/elements/Button";
 import { formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
 import { formatEther } from "viem";
 import { env } from "../../../../env";
 
-const REGISTRATION_DELAY = 1800; // 1 week
+const REGISTRATION_DELAY = 60 * 60 * 24 * 4; // 4 days
+const BRIDGE_OUT_DELAY = 60 * 60 * 24 * 2; // 2 days
 
 export const Rewards = () => {
   const {
     account: { account },
-    network: { provider },
     setup: {
       components: {
         AddressName,
-        Leaderboard,
+        LeaderboardEntry,
         LeaderboardRegistered,
         events: { GameEnded },
       },
@@ -35,6 +38,8 @@ export const Rewards = () => {
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [registrationTimeRemaining, setRegistrationTimeRemaining] = useState<string>("");
+  const [bridgeOutTimeRemaining, setBridgeOutTimeRemaining] = useState<string>("");
 
   const prizePool = usePrizePool();
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -42,34 +47,47 @@ export const Rewards = () => {
 
   const getContributions = useGetHyperstructuresWithContributionsFromPlayer();
   const getEpochs = useGetPlayerEpochs();
+  const getUnregisteredContributions = useGetUnregisteredContributions();
+  const getUnregisteredEpochs = useGetUnregisteredEpochs();
 
   const gameEndedEntityId = useEntityQuery([Has(GameEnded)]);
+
+  const leaderboardEntry = useComponentValue(LeaderboardEntry, getEntityIdFromKeys([ContractAddress(account.address)]));
 
   const gameEnded = useMemo(() => {
     return getComponentValue(GameEnded, gameEndedEntityId[0]);
   }, [gameEndedEntityId]);
 
-  const leaderboard = useComponentValue(Leaderboard, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
   const registerToLeaderboard = useCallback(async () => {
     setIsLoading(true);
-    const contributions = Array.from(getContributions());
-    const epochs = getEpochs();
+    const epochs = getUnregisteredEpochs();
+    const contributions = getUnregisteredContributions();
 
-    await register_to_leaderboard({
-      signer: account,
-      hyperstructure_contributed_to: contributions,
-      hyperstructure_shareholder_epochs: epochs,
-    });
-    setIsLoading(false);
+    try {
+      await register_to_leaderboard({
+        signer: account,
+        hyperstructure_contributed_to: contributions,
+        hyperstructure_shareholder_epochs: epochs,
+      });
+    } catch (error) {
+      console.error("Error registering to leaderboard", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [getContributions, getEpochs]);
 
   const claimRewards = useCallback(async () => {
     setIsLoading(true);
-    await claim_leaderboard_rewards({
-      signer: account,
-      token: env.VITE_LORDS_ADDRESS!,
-    });
+    try {
+      await claim_leaderboard_rewards({
+        signer: account,
+        token: env.VITE_LORDS_ADDRESS!,
+      });
+    } catch (error) {
+      console.error("Error claiming rewards", error);
+    } finally {
+      setIsLoading(false);
+    }
     setIsLoading(false);
   }, [account]);
 
@@ -77,15 +95,24 @@ export const Rewards = () => {
     if (gameEnded) {
       const calculateTimeRemaining = () => {
         const currentTime = Math.floor(Date.now() / 1000);
-        const endTime = Number(gameEnded.timestamp + REGISTRATION_DELAY);
+        const registrationEndTime = Number(gameEnded.timestamp + REGISTRATION_DELAY);
+        const bridgeOutEndTime = Number(gameEnded.timestamp + BRIDGE_OUT_DELAY);
 
-        if (currentTime >= endTime) {
-          setTimeRemaining("Registration Closed");
-          return;
+        // Calculate registration time
+        if (currentTime >= registrationEndTime) {
+          setRegistrationTimeRemaining("Registration Closed");
+        } else {
+          const registrationDifference = registrationEndTime - currentTime;
+          setRegistrationTimeRemaining(formatTime(registrationDifference, undefined));
         }
 
-        const difference = endTime - currentTime;
-        setTimeRemaining(formatTime(difference, undefined));
+        // Calculate bridge out time
+        if (currentTime >= bridgeOutEndTime) {
+          setBridgeOutTimeRemaining("Bridge Out Closed");
+        } else {
+          const bridgeOutDifference = bridgeOutEndTime - currentTime;
+          setBridgeOutTimeRemaining(formatTime(bridgeOutDifference, undefined));
+        }
       };
 
       calculateTimeRemaining();
@@ -137,8 +164,24 @@ export const Rewards = () => {
             </Compartment>
             <Compartment>
               <div className="text-center text-lg font-semibold self-center w-full">
-                <div className="text-sm font-bold uppercase">Time left to register</div>
-                <div className="text-lg">{timeRemaining}</div>
+                <div className="text-sm font-bold uppercase">Your registered points</div>
+
+                <div className="text-lg">{Number(leaderboardEntry?.points ?? 0)}</div>
+              </div>
+            </Compartment>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Compartment isCountdown>
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-md uppercase font-extrabold text-danger">Time left to register</div>
+                <div className="text-lg">{registrationTimeRemaining}</div>
+              </div>
+            </Compartment>
+            <Compartment isCountdown>
+              <div className="text-center text-lg font-semibold self-center w-full">
+                <div className="text-md font-extrabold text-danger uppercase">Time left to bridge out</div>
+                <div className="text-lg">{bridgeOutTimeRemaining}</div>
               </div>
             </Compartment>
           </div>
@@ -165,28 +208,34 @@ export const Rewards = () => {
             </div>
           </Compartment>
 
+          <div className=" flex gap-4">
+            <Button variant="primary" isLoading={isLoading} disabled={!registrationClosed} onClick={claimRewards}>
+              {registrationClosed ? "Claim Rewards" : "Waiting for registration period to end"}
+            </Button>
+
+            <Button
+              disabled={registrationClosed}
+              variant="primary"
+              isLoading={isLoading}
+              onClick={registerToLeaderboard}
+            >
+              Register to Leaderboard
+            </Button>
+          </div>
           {/* Action button */}
-          <Button
-            variant="primary"
-            isLoading={isLoading}
-            disabled={!registrationClosed && registrationStatus === "registered"}
-            onClick={registrationClosed ? claimRewards : registerToLeaderboard}
-          >
-            {registrationClosed
-              ? "Claim Rewards"
-              : registrationStatus === "unregistered"
-                ? "Register to Leaderboard"
-                : "Wait for claim period to start"}
-          </Button>
         </div>
       </div>
     </OSWindow>
   );
 };
 
-const Compartment = ({ children }: { children: React.ReactNode }) => {
+const Compartment = ({ children, isCountdown }: { children: React.ReactNode; isCountdown?: boolean }) => {
   return (
-    <div className="flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md bg-brown/50 bg-hex m-auto h-28">
+    <div
+      className={`flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md ${
+        isCountdown ? "bg-brown/70" : "bg-brown/50"
+      } bg-hex m-auto h-28 ${isCountdown ? "border-2 border-danger/50" : ""}`}
+    >
       {children}
     </div>
   );

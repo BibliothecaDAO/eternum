@@ -146,6 +146,38 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
   }
 
   // fetch all existing entities from torii
+  setLoading(LoadingStateKey.Hyperstructure, true);
+  await getEntities(
+    network.toriiClient,
+    {
+      Composite: {
+        operator: "Or",
+        clauses: [
+          {
+            Keys: {
+              keys: [undefined, undefined],
+              pattern_matching: "FixedLen",
+              models: ["s0_eternum-Epoch", "s0_eternum-Progress", "s0_eternum-LeaderboardRegisterContribution"],
+            },
+          },
+          {
+            Keys: {
+              keys: [undefined, undefined, undefined],
+              pattern_matching: "FixedLen",
+              models: ["s0_eternum-Contribution", "s0_eternum-LeaderboardRegisterShare"],
+            },
+          },
+        ],
+      },
+    },
+    network.contractComponents as any,
+    [],
+    [],
+    40_000,
+    false,
+  ).finally(() => {
+    setLoading(LoadingStateKey.Hyperstructure, false);
+  });
 
   setLoading(LoadingStateKey.SingleKey, true);
   await getEntities(
@@ -167,6 +199,10 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
           "s0_eternum-Structure",
           "s0_eternum-Battle",
           "s0_eternum-Guild",
+          "s0_eternum-LeaderboardRegistered",
+          "s0_eternum-Leaderboard",
+          "s0_eternum-LeaderboardRewardClaimed",
+          "s0_eternum-LeaderboardEntry",
         ],
       },
     },
@@ -183,7 +219,28 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
 
   configManager.setDojo(components);
 
-  setLoading(LoadingStateKey.Events, true);
+  // setLoading(LoadingStateKey.Events, true);
+
+  await getEvents(
+    network.toriiClient,
+    network.contractComponents.events as any,
+    [],
+    [],
+    20000,
+    {
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "VariableLen",
+        models: ["s0_eternum-GameEnded"],
+      },
+    },
+    false,
+    false,
+  );
+  // .finally(() => {
+  //   setLoading(LoadingStateKey.Events, false);
+  // });
+
   const eventSync = getEvents(
     network.toriiClient,
     network.contractComponents.events as any,
@@ -195,7 +252,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
         keys: [undefined],
         pattern_matching: "VariableLen",
         models: [
-          "s0_eternum-GameEnded",
+          // "s0_eternum-GameEnded",
           "s0_eternum-HyperstructureFinished",
           "s0_eternum-BattleClaimData",
           "s0_eternum-BattleJoinData",

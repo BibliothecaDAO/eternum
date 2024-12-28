@@ -113,6 +113,8 @@ export class LeaderboardManager {
         const contribution = getComponentValue(this.dojoResult.setup.components.Contribution, contributionEntityId);
         if (!contribution) return;
 
+        if (this.hasClaimedReward(contribution.player_address)) return;
+
         const effectiveContribution =
           (Number(contribution.amount) * RESOURCE_RARITY[contribution.resource_type as ResourcesIds]!) /
           configManager.getResourcePrecision();
@@ -140,7 +142,9 @@ export class LeaderboardManager {
         );
 
         const epochEndTimestamp =
-          nextEpoch?.start_timestamp ?? season.is_over ? season.ended_at : BigInt(currentTimestamp);
+          season.is_over && nextEpoch === undefined
+            ? season.ended_at
+            : nextEpoch?.start_timestamp ?? BigInt(currentTimestamp);
         const epochDuration = epochEndTimestamp - epoch.start_timestamp;
 
         const nbOfCycles = Number(epochDuration) / ClientConfigManager.instance().getTick(TickIds.Default);
@@ -153,6 +157,8 @@ export class LeaderboardManager {
           owner_address = ContractAddress(owner_address);
           percentage = Number(percentage) / 10_000;
 
+          if (this.hasClaimedReward(owner_address)) return;
+
           const previousPoints = keyPointsMap.get(getKey(owner_address)) || 0;
           const userShare = totalPoints * percentage;
           const newPointsForPlayer = previousPoints + userShare;
@@ -161,7 +167,16 @@ export class LeaderboardManager {
         });
       }
     });
+
     return true;
+  }
+
+  public hasClaimedReward(playerAddress: ContractAddress) {
+    const claimed = getComponentValue(
+      this.dojoResult.setup.components.LeaderboardRewardClaimed,
+      getEntityIdFromKeys([playerAddress]),
+    );
+    return claimed?.claimed;
   }
 
   public getAddressShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {
