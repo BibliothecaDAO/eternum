@@ -34,7 +34,7 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
       queryKey: ["donkeyEntityIds", realmId],
       queryFn: () => execute(GET_ETERNUM_ENTITY_OWNERS, { entityOwnerIds: [realmId] }),
       enabled: !!realmId,
-      refetchInterval: 100_000,
+      staleTime: 5 * 60 * 1000,
     })),
   });
 
