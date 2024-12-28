@@ -7417,7 +7417,7 @@ export const GetEternumEntityOwnerDocument = new TypedDocumentString(`
     query getEternumEntityOwner($entityOwnerIds: [u32!]!) {
   s0EternumEntityOwnerModels(
     where: {entity_owner_idIN: $entityOwnerIds}
-    limit: 200
+    limit: 10000
   ) {
     edges {
       node {
