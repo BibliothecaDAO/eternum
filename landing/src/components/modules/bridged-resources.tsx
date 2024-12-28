@@ -1,7 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { ArrowDownUp, Trophy } from "lucide-react";
+import { ArrowDownUp, Pickaxe } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { TypeH2 } from "../typography/type-h2";
 import { Card, CardHeader } from "../ui/card";
@@ -64,7 +64,7 @@ export const BridgedResources = () => {
       <CardHeader className="border-b border-gray-800">
         <div className="flex items-center justify-between">
           <TypeH2 className="flex items-center gap-3 uppercase text-gold">
-            <Trophy className="w-6 h-6" />
+            <Pickaxe className="w-6 h-6" />
             Bridged Resources
           </TypeH2>
           <div className="flex items-center gap-4">
