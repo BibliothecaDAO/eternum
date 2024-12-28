@@ -1,4 +1,5 @@
 import { AnimatedGrid } from "@/components/modules/animated-grid";
+import { BridgedResources } from "@/components/modules/bridged-resources";
 import { DataCard, DataCardProps } from "@/components/modules/data-card";
 import {
   PRIZE_POOL_ACHIEVEMENTS,
@@ -127,7 +128,14 @@ function Index() {
   return (
     <div className="p-4">
       <AnimatedGrid
-        items={[...dataCards]}
+        items={[
+          ...dataCards,
+          {
+            colSpan: { sm: 2, md: 6, lg: 12 },
+            rowSpan: { sm: 1, md: 1, lg: 2 },
+            data: <BridgedResources />,
+          },
+        ]}
         renderItem={(item) =>
           React.isValidElement(item.data) ? item.data : <DataCard {...(item.data as DataCardProps)} />
         }
