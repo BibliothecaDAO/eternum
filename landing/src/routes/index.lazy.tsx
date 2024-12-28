@@ -1,6 +1,6 @@
 import { AnimatedGrid } from "@/components/modules/animated-grid";
+import { BridgedResources } from "@/components/modules/bridged-resources";
 import { DataCard, DataCardProps } from "@/components/modules/data-card";
-import { Leaderboard } from "@/components/modules/leaderboard";
 import {
   PRIZE_POOL_ACHIEVEMENTS,
   PRIZE_POOL_CONTENT_CREATORS,
@@ -35,7 +35,6 @@ interface GridItemType {
 }
 
 function Index() {
-
   const { data, isLoading } = useQuery({
     queryKey: ["eternumStatistics"],
     queryFn: () => execute(GET_ETERNUM_STATTISTICS),
@@ -134,7 +133,7 @@ function Index() {
           {
             colSpan: { sm: 2, md: 6, lg: 12 },
             rowSpan: { sm: 1, md: 1, lg: 2 },
-            data: <Leaderboard />,
+            data: <BridgedResources />,
           },
         ]}
         renderItem={(item) =>

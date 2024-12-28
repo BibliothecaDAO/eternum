@@ -436,7 +436,7 @@ export const getJSONFile = async (filePath: string) => {
   return data;
 };
 
-interface ResourceAddresses {
+export interface ResourceAddresses {
   [key: string]: [number, string];
 }
 
