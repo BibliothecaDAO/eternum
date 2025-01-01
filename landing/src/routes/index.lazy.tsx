@@ -14,7 +14,7 @@ import { useLordsBridgeBalance } from "@/hooks/use-lords-bridged";
 import { usePlayerCount } from "@/hooks/use-player-count";
 import { usePrizePool } from "@/hooks/use-rewards";
 import { useStructuresNumber } from "@/hooks/use-structures";
-import { currencyFormat, formatNumber } from "@/lib/utils";
+import { formatNumber } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Castle, Coins, CoinsIcon, Flame, Pickaxe, Sparkles, UsersIcon } from "lucide-react";
@@ -107,7 +107,7 @@ function Index() {
         colSpan: { sm: 2, md: 6, lg: 6 },
         data: {
           title: "donkeys burned",
-          value: currencyFormat(donkeysBurned, 0),
+          value: formatNumber(donkeysBurned, 0),
           icon: <Flame />,
           backgroundImage: "/images/jungle-clouds.png",
         },

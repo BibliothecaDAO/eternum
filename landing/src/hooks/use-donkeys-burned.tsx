@@ -1,12 +1,14 @@
-import { defineQuery, getComponentValue, Has, isComponentUpdate } from "@dojoengine/recs";
+import { defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useState } from "react";
 import { useDojo } from "./context/DojoContext";
+
+const BREEDER_TASK_ID = "0x42524545444552" // 'BREEDER' to felt252
 
 export const useDonkeysBurned = () => {
   const {
     setup: {
       components: {
-        events: { BurnDonkey },
+        events: { TrophyProgression },
       },
     },
   } = useDojo();
@@ -14,15 +16,17 @@ export const useDonkeysBurned = () => {
   const [donkeysBurned, setDonkeysBurned] = useState(0);
 
   useEffect(() => {
-    const query = defineQuery([Has(BurnDonkey)], {
+    const query = defineQuery([
+      HasValue(TrophyProgression, { task_id: BigInt(BREEDER_TASK_ID) }),
+    ], {
       runOnInit: true,
     });
 
     const subscription = query.update$.subscribe((update) => {
-      if (isComponentUpdate(update, BurnDonkey)) {
-        const event = getComponentValue(BurnDonkey, update.entity);
+      if (isComponentUpdate(update, TrophyProgression)) {
+        const event = getComponentValue(TrophyProgression, update.entity);
         if (!event) return;
-        setDonkeysBurned((prev) => prev + Number(event.amount));
+        setDonkeysBurned((prev) => prev + Number(event.count));
       }
     });
 
