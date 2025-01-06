@@ -10,13 +10,5 @@
     "deploy::prod": "bun --env-file=.env.production ./deploy_prod"
   },
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "colors": "^1.4.0",
-    "dotenv": "^16.3.1",
-    "starknet": "^6.8.0"
-  },
-  "devDependencies": {
-    "prettier": "3.1.1"
-  }
+  "license": "ISC"
 }
