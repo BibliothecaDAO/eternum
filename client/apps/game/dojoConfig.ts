@@ -1,7 +1,7 @@
 import { createDojoConfig } from "@dojoengine/core";
-import devManifest from "../contracts/manifest_dev.json";
-import mainnetManifest from "../contracts/manifest_mainnet.json";
-import productionManifest from "../contracts/manifest_prod.json";
+import devManifest from "../../../contracts/manifest_dev.json";
+import mainnetManifest from "../../../contracts/manifest_mainnet.json";
+import productionManifest from "../../../contracts/manifest_prod.json";
 
 import { env } from "./env";
 const {
