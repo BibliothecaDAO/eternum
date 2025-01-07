@@ -15,7 +15,6 @@
     "generate-pwa-assets": "pwa-assets-generator"
   },
   "dependencies": {
-    "@dojoengine/torii-wasm": "1.0.4-alpha.3.1.0",
     "three": "^0.166.0",
     "zustand": "^4.5.2",
     "wouter": "^2.12.1",
