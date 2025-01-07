@@ -74,11 +74,7 @@ interface UIStore {
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore & WorldStore;
 
-const getRandomTrackIndex = (tracksLength: number) => {
-  return Math.floor(Math.random() * tracksLength);
-};
-
-const initialTrackIndex = getRandomTrackIndex(tracks.length);
+const initialTrackIndex = Math.floor(Math.random() * tracks.length);
 
 const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
