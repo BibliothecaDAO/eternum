@@ -674,7 +674,6 @@ mod battle_systems {
             caller_army = r_caller_army;
 
             // slash army if battle was not concluded before they left
-            let leaver = starknet::get_caller_address();
             let mut army: Army = world.read_model(army_id);
             if army_left_early {
                 let troop_config = TroopConfigImpl::get(world);

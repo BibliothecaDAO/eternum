@@ -22,7 +22,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          sparse-checkout: discord-bot
+          sparse-checkout: bot/discord
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -32,7 +32,7 @@ jobs:
           components: rustfmt
 
       - name: Run rustfmt
-        run: cd discord-bot && cargo fmt -- --check
+        run: cd bot/discord && cargo fmt -- --check
 
   clippy:
     runs-on: ubuntu-latest
@@ -41,7 +41,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          sparse-checkout: discord-bot
+          sparse-checkout: bot/discord
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -54,4 +54,4 @@ jobs:
         run: sudo apt-get install protobuf-compiler
 
       - name: Run clippy
-        run: cd discord-bot && cargo clippy -- -D warnings
+        run: cd bot/discord && cargo clippy -- -D warnings

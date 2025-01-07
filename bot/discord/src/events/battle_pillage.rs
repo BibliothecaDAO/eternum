@@ -14,7 +14,7 @@ use crate::{
 
 use super::{ToDiscordMessage, UNKNOWN_USER};
 
-const RESOURCE_PRECISION : u128 = 1_000_000_000;
+const RESOURCE_PRECISION: u128 = 1_000_000_000;
 #[derive(CairoSerde, Clone)]
 pub struct BattlePillage {
     pub id: u32,
