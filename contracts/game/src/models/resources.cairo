@@ -175,6 +175,14 @@ impl ResourceImpl of ResourceTrait {
         assert!(resource.entity_id.is_non_zero(), "entity id not found");
 
         resource.harvest(ref world);
+
+        // if resource is labor, we need to update the production
+
+        // how to know if resource is labor?
+        // 255 - resource_type > 200 
+
+        // we check production of resource for 
+
         return resource;
     }
 
@@ -384,7 +392,7 @@ mod tests_resource_traits {
             production_rate: wood_production_rate,
             consumption_rate: wood_consumption_rate,
             last_updated_tick: 0,
-            input_finish_tick: 0
+            labor_finish_tick: 0
         };
         world.write_model_test(@wood_production);
 
@@ -396,7 +404,7 @@ mod tests_resource_traits {
             production_rate: 0,
             consumption_rate: wood_cost_gold_rate,
             last_updated_tick: 0,
-            input_finish_tick: 0
+            labor_finish_tick: 0
         };
 
         // set gold resource balance
@@ -440,7 +448,7 @@ mod tests_resource_traits {
         let gold_resource: Resource = world.read_model((entity_id, ResourceTypes::GOLD));
         let gold_production_end = gold_resource.balance / 3; // wood_cost_gold_rate
         let wood_production: Production = world.read_model((entity_id, ResourceTypes::WOOD));
-        assert_eq!(gold_production_end, wood_production.input_finish_tick.into());
+        assert_eq!(gold_production_end, wood_production.labor_finish_tick.into());
     }
 
 
@@ -478,7 +486,7 @@ mod tests_resource_traits {
         // now we have 104 gold, so wood production should end at tick 34
         // the calculation being, 104 / 3 = 34.66 // 34
         let wood_production: Production = world.read_model((entity_id, ResourceTypes::WOOD));
-        assert_eq!(wood_production.input_finish_tick, 34);
+        assert_eq!(wood_production.labor_finish_tick, 34);
     }
 }
 

@@ -4223,7 +4223,7 @@ export enum S0_Eternum_ProductionOrderField {
   BuildingCount = 'BUILDING_COUNT',
   ConsumptionRate = 'CONSUMPTION_RATE',
   EntityId = 'ENTITY_ID',
-  InputFinishTick = 'INPUT_FINISH_TICK',
+  InputFinishTick = 'LABOR_FINISH_TICK',
   LastUpdatedTick = 'LAST_UPDATED_TICK',
   ProductionRate = 'PRODUCTION_RATE',
   ResourceType = 'RESOURCE_TYPE'
@@ -4310,17 +4310,17 @@ export type S0_Eternum_ProductionWhereInput = {
   entity_idNEQ?: InputMaybe<Scalars['u32']['input']>;
   entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
   entity_idNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
-  input_finish_tick?: InputMaybe<Scalars['u64']['input']>;
-  input_finish_tickEQ?: InputMaybe<Scalars['u64']['input']>;
-  input_finish_tickGT?: InputMaybe<Scalars['u64']['input']>;
-  input_finish_tickGTE?: InputMaybe<Scalars['u64']['input']>;
-  input_finish_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  input_finish_tickLIKE?: InputMaybe<Scalars['u64']['input']>;
-  input_finish_tickLT?: InputMaybe<Scalars['u64']['input']>;
-  input_finish_tickLTE?: InputMaybe<Scalars['u64']['input']>;
-  input_finish_tickNEQ?: InputMaybe<Scalars['u64']['input']>;
-  input_finish_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  input_finish_tickNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tick?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickEQ?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickGT?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickGTE?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  labor_finish_tickLIKE?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickLT?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickLTE?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickNEQ?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  labor_finish_tickNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
   last_updated_tick?: InputMaybe<Scalars['u64']['input']>;
   last_updated_tickEQ?: InputMaybe<Scalars['u64']['input']>;
   last_updated_tickGT?: InputMaybe<Scalars['u64']['input']>;

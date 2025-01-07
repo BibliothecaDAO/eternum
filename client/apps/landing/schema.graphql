@@ -5793,7 +5793,7 @@ type s0_eternum_Production {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
-  input_finish_tick: u64
+  labor_finish_tick: u64
   last_updated_tick: u64
   production_rate: u128
   resource_type: u8
@@ -6030,7 +6030,7 @@ enum s0_eternum_ProductionOrderField {
   BUILDING_COUNT
   CONSUMPTION_RATE
   ENTITY_ID
-  INPUT_FINISH_TICK
+  labor_finish_tick
   LAST_UPDATED_TICK
   PRODUCTION_RATE
   RESOURCE_TYPE
@@ -6136,17 +6136,17 @@ input s0_eternum_ProductionWhereInput {
   entity_idNEQ: u32
   entity_idNOTIN: [u32]
   entity_idNOTLIKE: u32
-  input_finish_tick: u64
-  input_finish_tickEQ: u64
-  input_finish_tickGT: u64
-  input_finish_tickGTE: u64
-  input_finish_tickIN: [u64]
-  input_finish_tickLIKE: u64
-  input_finish_tickLT: u64
-  input_finish_tickLTE: u64
-  input_finish_tickNEQ: u64
-  input_finish_tickNOTIN: [u64]
-  input_finish_tickNOTLIKE: u64
+  labor_finish_tick: u64
+  labor_finish_tickEQ: u64
+  labor_finish_tickGT: u64
+  labor_finish_tickGTE: u64
+  labor_finish_tickIN: [u64]
+  labor_finish_tickLIKE: u64
+  labor_finish_tickLT: u64
+  labor_finish_tickLTE: u64
+  labor_finish_tickNEQ: u64
+  labor_finish_tickNOTIN: [u64]
+  labor_finish_tickNOTLIKE: u64
   last_updated_tick: u64
   last_updated_tickEQ: u64
   last_updated_tickGT: u64

@@ -529,11 +529,21 @@ pub struct ProductionConfig {
     #[key]
     resource_type: u8,
     // production amount per tick
-    amount: u128,
-    // num materials required to produce this resource
-    input_count: u128,
-    // num different resources that this resource can produce
-    output_count: u128
+    produced_amount: u128,
+    // labor cost amount per tick
+    labor_amount: u128,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct LaborConfig {
+    #[key]
+    // e.g when configuring stone labor, resource_type = stone 
+    resource_type: u8,
+    // uuid used to get the ResourceCost
+    input_id: ID,
+    // number of resources required to make labor
+    input_count: u8,
 }
 
 // vrf

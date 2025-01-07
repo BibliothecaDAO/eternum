@@ -13,7 +13,7 @@ use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s0_eternum::models::population::{Population, PopulationTrait};
 use s0_eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
 use s0_eternum::models::production::{
-    Production, ProductionInput, ProductionRateTrait, ProductionInputImpl, ProductionInputTrait
+    Production, ProductionTrait, ProductionLaborImpl, ProductionLaborTrait
 };
 use s0_eternum::models::realm::Realm;
 use s0_eternum::models::resources::ResourceTrait;
@@ -139,156 +139,100 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Storehouse => 0,
         }
     }
+    fn update_production(ref self: Building, ref world: WorldStorage, stop: bool) {
+        // update produced resource balance before updating production
+        let produced_resource_type = self.produced_resource();
+        let mut produced_resource: Resource 
+            = ResourceImpl::get(ref world, (self.outer_entity_id, produced_resource_type));
+        produced_resource.save(ref world);
+
+
+        let mut resource_production: Production 
+            = world.read_model((self.outer_entity_id, produced_resource_type));
+
+        match stop {
+            true => {
+
+                // ensure production amount is gotten BEFORE updating 
+                // bonus received percent so production rate is decreased correctly
+                let production_amount = self.production_amount(ref world);
+
+                // update bonus received percent
+                self.update_bonus_received_percent(ref world, delete: true);
+
+                // decrease building count
+                resource_production.decrease_building_count();
+
+                // decrease production rate
+                resource_production.decrease_production_rate(production_amount);
+
+            },
+            false => {
+
+                // update bonus received percent
+                self.update_bonus_received_percent(ref world, delete: false);
+
+                // ensure production amount is gotten AFTER updating 
+                // bonus received percent so production rate is increased correctly
+                let production_amount = self.production_amount(ref world);
+
+                // increase building count
+                resource_production.increase_building_count();
+
+                // increase production rate
+                resource_production.increase_production_rate(production_amount);
+            }
+        }
+
+        // get labor resource
+        let mut labor_resource_type 
+            = LaborImpl::labor_type_from_resource(produced_resource_type);
+
+        // we expect labor resource to not be produceable so it's okay to 
+        // read it from the world storage rather than the resourceimpl::get() 
+        let mut labor_resource: Resource 
+            = world.read_model((self.outer_entity_id, labor_resource_type));
+    
+        // update production labor finish tick
+        let production_config: ProductionConfig = world.read_model(produced_resource_type);
+        let tick = TickImpl::get_default_tick_config(ref world);
+        ProductionLaborImpl::update_connected_production(
+            ref labor_resource, 
+            ref resource_production, 
+            @tick, @production_config
+        );
+
+        // save production
+        world.write_model(@resource_production);
+
+        // todo add event here
+    }
 
 
     fn start_production(ref self: Building, ref world: WorldStorage) {
         if self.is_resource_producer() {
-            let tick = TickImpl::get_default_tick_config(ref world);
-            let produced_resource_type = self.produced_resource();
-            let mut produced_resource: Resource = ResourceImpl::get(
-                ref world, (self.outer_entity_id, produced_resource_type)
-            );
-
-            let mut resource_production: Production = world.read_model((self.outer_entity_id, produced_resource_type));
-            // increase production building count by 1
-            resource_production.increase_building_count();
-
-            // receive bonuses from surrounding buildings that give bonuses
-            self.update_bonuses_received(ref resource_production, ref produced_resource, ref world, delete: false);
-
-            // add this building's contribution to global production rate
-            resource_production
-                .increase_production_rate(ref produced_resource, @tick, self.production_amount(ref world));
-
-            // make payment for production by increasing input resources consumption rates
-            let production_config: ProductionConfig = world.read_model(produced_resource_type);
-            let mut count = 0;
-            loop {
-                if count == production_config.input_count {
-                    break;
-                }
-
-                let production_input: ProductionInput = world.read_model((produced_resource_type, count));
-                let (input_resource_type, mut input_resource_amount) = (
-                    production_input.input_resource_type, production_input.input_resource_amount
-                );
-
-                /// only 10% of lords cost will be consumed during production of donkey
-                /// if the realm has a wonder
-                if input_resource_type == ResourceTypes::LORDS {
-                    if resource_production.resource_type == ResourceTypes::DONKEY {
-                        let realm: Realm = world.read_model(self.outer_entity_id);
-                        if realm.has_wonder {
-                            input_resource_amount =
-                                ((input_resource_amount * PercentageValueImpl::_10().into())
-                                    / PercentageValueImpl::_100().into())
-                                .try_into()
-                                .unwrap();
-                        }
-                    }
-                }
-
-                let mut input_resource: Resource = ResourceImpl::get(
-                    ref world, (self.outer_entity_id, input_resource_type)
-                );
-                let mut input_production: Production = world.read_model((self.outer_entity_id, input_resource_type));
-
-                input_production.increase_consumption_rate(ref input_resource, @tick, input_resource_amount);
-
-                input_resource.save(ref world);
-                world.write_model(@input_production);
-
-                count += 1;
-            };
-
-            // reset the time that materials used for production will finish
-            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(@resource_production, ref world);
-            resource_production.set__input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
-            produced_resource.save(ref world);
-
-            world.write_model(@resource_production);
+            self.update_production(ref world, stop: false);
         }
 
         if self.is_adjacent_building_booster() {
-            // give out bonuses to surrounding buildings if this building is a bonus supplier
+            // give out bonuses to surrounding buildings
             self.update_bonuses_supplied(ref world, delete: false);
         }
-
         world.write_model(@self);
     }
 
 
     fn stop_production(ref self: Building, ref world: WorldStorage) {
         if self.is_resource_producer() {
-            let tick = TickImpl::get_default_tick_config(ref world);
-            let produced_resource_type = self.produced_resource();
-            let mut produced_resource: Resource = ResourceImpl::get(
-                ref world, (self.outer_entity_id, produced_resource_type)
-            );
-
-            let mut resource_production: Production = world.read_model((self.outer_entity_id, produced_resource_type));
-
-            // remove this building's contribution from global production rate
-            resource_production
-                .decrease_production_rate(ref produced_resource, @tick, self.production_amount(ref world));
-
-            // decrease production building count by 1
-            resource_production.decrease_building_count();
-
-            // stop receiving bonuses from surrounding buildings that give bonuses
-            self.update_bonuses_received(ref resource_production, ref produced_resource, ref world, delete: true);
-
-            // stop payment for production by decreasing input resources consumption rates
-            let production_config: ProductionConfig = world.read_model(produced_resource_type);
-            let mut count = 0;
-            loop {
-                if count == production_config.input_count {
-                    break;
-                }
-
-                let production_input: ProductionInput = world.read_model((produced_resource_type, count));
-                let (input_resource_type, mut input_resource_amount) = (
-                    production_input.input_resource_type, production_input.input_resource_amount
-                );
-
-                /// only 10% of lords cost will be consumed during production of donkey
-                /// if the realm has a wonder
-                if input_resource_type == ResourceTypes::LORDS {
-                    if resource_production.resource_type == ResourceTypes::DONKEY {
-                        let realm: Realm = world.read_model(self.outer_entity_id);
-                        if realm.has_wonder {
-                            input_resource_amount =
-                                ((input_resource_amount * PercentageValueImpl::_10().into())
-                                    / PercentageValueImpl::_100().into())
-                                .try_into()
-                                .unwrap();
-                        }
-                    }
-                }
-
-                let mut input_resource: Resource = ResourceImpl::get(
-                    ref world, (self.outer_entity_id, input_resource_type)
-                );
-                let mut input_production: Production = world.read_model((self.outer_entity_id, input_resource_type));
-
-                input_production.decrease_consumption_rate(ref input_resource, @tick, input_resource_amount);
-
-                count += 1;
-                input_resource.save(ref world);
-                world.write_model(@input_production);
-            };
-
-            // reset the time that materials used for production will finish
-            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(@resource_production, ref world);
-            resource_production.set__input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
-            produced_resource.save(ref world);
-            world.write_model(@resource_production);
+            self.update_production(ref world, stop: true);
         }
 
         if self.is_adjacent_building_booster() {
-            // take back bonuses given to surrounding buildings if this building is a bonus supplier
+            // remove bonuses it gave to surrounding buildings
             self.update_bonuses_supplied(ref world, delete: true);
         }
+
+        world.write_model(@self);
     }
 
     fn production_amount(self: @Building, ref world: WorldStorage) -> u128 {
@@ -299,37 +243,26 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         let produced_resource_type = (*self).produced_resource();
         let production_config: ProductionConfig = world.read_model(produced_resource_type);
 
-        let bonus_amount: u128 = (production_config.amount * (*self.bonus_percent).into())
+        let bonus_amount: u128 = (production_config.produced_amount * (*self.bonus_percent).into())
             / PercentageValueImpl::_100().into();
 
-        production_config.amount + bonus_amount
+        production_config.produced_amount + bonus_amount
     }
 
 
-    fn update_bonuses_received(
+    fn update_bonus_received_percent(
         ref self: Building,
-        ref resource_production: Production,
-        ref produced_resource: Resource,
         ref world: WorldStorage,
         delete: bool
     ) {
-        // get bonuses from all buildings surronding this building if the offer boosts
-        let building_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
-
-        let produced_resource_type = self.produced_resource();
-        let mut produced_resource: Resource = world.read_model((self.outer_entity_id, produced_resource_type));
-        let mut resource_production: Production = world.read_model((self.outer_entity_id, produced_resource_type));
-        let tick_config: TickConfig = TickImpl::get_default_tick_config(ref world);
-
+       
         if delete {
-            // remove this building's contribution from global resource production
-            let building_production_amount: u128 = self.production_amount(ref world);
-            resource_production
-                .decrease_production_rate(ref produced_resource, @tick_config, building_production_amount);
-
             // clear building bonus
             self.bonus_percent = 0;
         } else {
+
+             // get bonuses from all buildings surronding this building if the offer boosts
+            let building_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
             let mut bonus_percent = self.get_bonus_from(building_coord.neighbor(Direction::East), ref world);
             bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::NorthEast), ref world);
             bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::NorthWest), ref world);
@@ -339,11 +272,17 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
             // set new bonus percent
             self.bonus_percent = bonus_percent;
+        }
+    }
 
-            // add this building's contribution to global resource production
-            let building_production_amount: u128 = self.production_amount(ref world);
-            resource_production
-                .increase_production_rate(ref produced_resource, @tick_config, building_production_amount);
+    fn get_bonus_from(ref self: Building, giver_inner_coord: Coord, ref world: WorldStorage) -> u32 {
+        // only get bonuses from buildings that are active (not paused)
+        let bonus_giver_building: Building = world
+            .read_model((self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y));
+        if bonus_giver_building.paused {
+            return 0;
+        } else {
+            return bonus_giver_building.boost_adjacent_building_production_by();
         }
     }
 
@@ -364,53 +303,46 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     }
 
 
-    fn get_bonus_from(ref self: Building, giver_inner_coord: Coord, ref world: WorldStorage) -> u32 {
-        // only get bonuses from buildings that are active (not paused)
-        let bonus_giver_building: Building = world
-            .read_model((self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y));
-        if bonus_giver_building.paused {
-            return 0;
-        } else {
-            return bonus_giver_building.boost_adjacent_building_production_by();
-        }
-    }
-
-
     fn update_bonus_supplied_to(self: Building, receiver_inner_coord: Coord, ref world: WorldStorage, delete: bool) {
-        let mut bonus_receiver_building: Building = world
+        let mut recipient_building: Building = world
             .read_model((self.outer_col, self.outer_row, receiver_inner_coord.x, receiver_inner_coord.y));
-        if bonus_receiver_building.exists()
-            && !bonus_receiver_building.paused // only give bonus to active buildings
-            && bonus_receiver_building.is_resource_producer() {
-            let bonus_receiver_produced_resource_type = bonus_receiver_building.produced_resource();
-            let mut bonus_receiver_produced_resource: Resource = world
-                .read_model((self.outer_entity_id, bonus_receiver_produced_resource_type));
-            let mut bonus_receiver_resource_production: Production = world
-                .read_model((self.outer_entity_id, bonus_receiver_produced_resource_type));
-            let tick_config: TickConfig = TickImpl::get_default_tick_config(ref world);
+        if recipient_building.exists() // only when building exists at the location
+            && !recipient_building.paused // only give bonus to active buildings
+            && recipient_building.is_resource_producer() { // only give bonus to resource producers
 
-            // remove old building's contribution to global resource production
-            let bonus_receiver_old_production_amount: u128 = bonus_receiver_building.production_amount(ref world);
-            bonus_receiver_resource_production
-                .decrease_production_rate(
-                    ref bonus_receiver_produced_resource, @tick_config, bonus_receiver_old_production_amount
-                );
+            // get the resource that the building produces
+            let recipient_produced_resource_type = recipient_building.produced_resource();
+            let mut recipient_building_resource: Resource 
+                = ResourceImpl::get(ref world, (self.outer_entity_id, recipient_produced_resource_type));
+            
+            // ensure harvest is done on the resource before we modify its production
+            recipient_building_resource.save(ref world);
 
+            // get production related to the building
+            let mut recipient_production: Production = world
+                .read_model((self.outer_entity_id, recipient_produced_resource_type));
+
+            // remove the recipient building's contribution from global resource production
+            // first so that we can recalculate and add the new production rate
+            let recipient_production_amount: u128 = recipient_building.production_amount(ref world);
+            recipient_production.decrease_production_rate(recipient_production_amount);
+
+            // update the recipient building's bonus percent
             if delete {
-                bonus_receiver_building.bonus_percent -= self.boost_adjacent_building_production_by();
+                recipient_building.bonus_percent -= self.boost_adjacent_building_production_by();
             } else {
-                bonus_receiver_building.bonus_percent += self.boost_adjacent_building_production_by();
+                recipient_building.bonus_percent += self.boost_adjacent_building_production_by();
             }
-            world.write_model(@bonus_receiver_building);
+            world.write_model(@recipient_building);
 
-            // update building's contribution to global resource production
-            let bonus_receiver_new_production_amount: u128 = bonus_receiver_building.production_amount(ref world);
-            bonus_receiver_resource_production
-                .increase_production_rate(
-                    ref bonus_receiver_produced_resource, @tick_config, bonus_receiver_new_production_amount
-                );
-            bonus_receiver_produced_resource.save(ref world);
-            world.write_model(@bonus_receiver_resource_production);
+            // get the building's new production amount
+            let recipient_building_new_production_amount: u128 
+                = recipient_building.production_amount(ref world);
+
+            // update the global resource production to reflect the new production rate
+            recipient_production
+                .increase_production_rate(recipient_building_new_production_amount);
+            world.write_model(@recipient_production);
         }
     }
 }

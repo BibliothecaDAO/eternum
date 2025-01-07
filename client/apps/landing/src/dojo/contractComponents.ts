@@ -875,7 +875,7 @@ export function defineContractComponents(world: World) {
           production_rate: RecsType.BigInt,
           consumption_rate: RecsType.BigInt,
           last_updated_tick: RecsType.BigInt,
-          input_finish_tick: RecsType.BigInt,
+          labor_finish_tick: RecsType.BigInt,
         },
         {
           metadata: {
