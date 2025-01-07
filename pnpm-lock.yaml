@@ -22,7 +22,7 @@ importers:
         version: 5.7.2
       vite:
         specifier: ^5.4.8
-        version: 5.4.11(@types/node@22.10.5)(terser@5.37.0)
+        version: 5.4.11(@types/node@20.17.12)(terser@5.37.0)
 
   client:
     dependencies:
@@ -101,9 +101,6 @@ importers:
       viem:
         specifier: ^2.21.45
         version: 2.22.3(typescript@5.7.2)(zod@3.24.1)
-      vite:
-        specifier: ^5.4.1
-        version: 5.4.11(@types/node@20.17.12)(terser@5.37.0)
       zod:
         specifier: ^3.23.8
         version: 3.24.1
@@ -123,6 +120,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.1
         version: 4.3.4(vite@5.4.11(@types/node@20.17.12)(terser@5.37.0))
+      autoprefixer:
+        specifier: ^10.4.18
+        version: 10.4.20(postcss@8.4.49)
       eslint:
         specifier: ^9.9.0
         version: 9.17.0(jiti@2.4.2)
@@ -135,6 +135,9 @@ importers:
       typescript:
         specifier: ^5.5.3
         version: 5.7.2
+      vite:
+        specifier: ^5.4.1
+        version: 5.4.11(@types/node@20.17.12)(terser@5.37.0)
       vite-plugin-mkcert:
         specifier: ^1.17.6
         version: 1.17.6(vite@5.4.11(@types/node@20.17.12)(terser@5.37.0))
