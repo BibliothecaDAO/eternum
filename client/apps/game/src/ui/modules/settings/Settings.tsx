@@ -6,13 +6,14 @@ import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useMusicPlayer } from "@/hooks/useMusic";
 import useScreenOrientation from "@/hooks/useScreenOrientation";
 import { settings } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
-import { GraphicsSettings } from "@/ui/config";
+import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import Avatar from "@/ui/elements/Avatar";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
@@ -72,6 +73,39 @@ export const SettingsWindow = () => {
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
 
   const GRAPHICS_SETTING = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
+
+  const { useGuildQuery } = useGuilds();
+  const { guilds } = useGuildQuery();
+  const [selectedGuilds, setSelectedGuilds] = useState<string[]>(() => {
+    const savedGuilds = localStorage.getItem("WHITELIST");
+    return savedGuilds ? savedGuilds.split(",") : [];
+  });
+
+  const handleGuildSelect = (guildId: string) => {
+    setSelectedGuilds((prev) => {
+      const newGuilds = prev.includes(guildId) ? prev.filter((id) => id !== guildId) : [...prev, guildId];
+      localStorage.setItem("WHITELIST", newGuilds.join(","));
+      toast(prev.includes(guildId) ? "Guild removed from whitelist!" : "Guild added to whitelist!");
+      return newGuilds;
+    });
+  };
+
+  const handleClearGuilds = () => {
+    setSelectedGuilds([]);
+    localStorage.removeItem("WHITELIST");
+    toast("Guild whitelist cleared!");
+  };
+
+  const [isFlatMode, setIsFlatMode] = useState<boolean>(() => IS_FLAT_MODE);
+
+  const toggleFlatMode = () => {
+    setIsFlatMode((prev) => {
+      const newFlatMode = !prev;
+      localStorage.setItem("FLAT_MODE", newFlatMode.toString());
+      window.location.reload(); // Reload the page to apply changes
+      return newFlatMode;
+    });
+  };
 
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
@@ -134,8 +168,32 @@ export const SettingsWindow = () => {
             High
           </Button>
         </div>
-        <Headline>Sound</Headline>
+        <div className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold" onClick={toggleFlatMode}>
+          <Checkbox enabled={isFlatMode} />
+          <div>Flat Mode</div>
+        </div>
 
+        <div className="flex flex-col gap-2">
+          <h5>Whitelist guilds</h5>
+          <div className="flex flex-wrap gap-2">
+            {guilds.map((guild) => (
+              <Button
+                size="xs"
+                key={guild.entityId}
+                variant={selectedGuilds.includes(guild.entityId.toString()) ? "success" : "outline"}
+                onClick={() => handleGuildSelect(guild.entityId.toString())}
+              >
+                {guild.name}
+              </Button>
+            ))}
+          </div>
+          {selectedGuilds.length > 0 && (
+            <Button size="xs" variant="danger" onClick={handleClearGuilds} className="self-start">
+              Clear All
+            </Button>
+          )}
+        </div>
+        <Headline>Sound</Headline>
         <div className="flex space-x-2">
           {isSoundOn ? (
             <Button variant="outline" onClick={() => toggleSound()}>

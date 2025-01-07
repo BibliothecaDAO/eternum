@@ -6,7 +6,7 @@ import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import { soundSelector } from "@/hooks/useUISound";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
-import { FELT_CENTER, IS_MOBILE } from "@/ui/config";
+import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
@@ -369,7 +369,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   setup() {
-    this.controls.maxDistance = 20;
+    this.controls.maxDistance = IS_FLAT_MODE ? 40 : 20;
     this.controls.enablePan = true;
     this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
@@ -428,10 +428,15 @@ export default class WorldmapScene extends HexagonScene {
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
     }
 
-    const rotationSeed = this.hashCoordinates(col, row);
-    const rotationIndex = Math.floor(rotationSeed * 6);
-    const randomRotation = (rotationIndex * Math.PI) / 3;
-    dummy.rotation.y = randomRotation;
+    if (!IS_FLAT_MODE) {
+      const rotationSeed = this.hashCoordinates(col, row);
+      const rotationIndex = Math.floor(rotationSeed * 6);
+      const randomRotation = (rotationIndex * Math.PI) / 3;
+      dummy.rotation.y = randomRotation;
+    } else {
+      dummy.position.y += 0.1;
+      dummy.rotation.y = 0;
+    }
 
     const biomePosition = new Position({ x: col, y: row }).getContract();
     const biome = this.biome.getBiome(biomePosition.x, biomePosition.y);
@@ -481,6 +486,23 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
+  }
+
+  getChunksAround(chunkKey: string) {
+    const startRow = parseInt(chunkKey.split(",")[0]);
+    const startCol = parseInt(chunkKey.split(",")[1]);
+    const chunks: string[] = [];
+    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += this.chunkSize) {
+      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += this.chunkSize) {
+        const { x, y, z } = getWorldPositionForHex({ row: startRow + i, col: startCol + j });
+        const { chunkX, chunkZ } = this.worldToChunkCoordinates(x, z);
+        const _chunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
+        if (!chunks.includes(_chunkKey)) {
+          chunks.push(_chunkKey);
+        }
+      }
+    }
+    return chunks;
   }
 
   removeCachedMatricesAroundColRow(col: number, row: number) {
@@ -547,6 +569,7 @@ export default class WorldmapScene extends HexagonScene {
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
+      console.log("cache applied");
       this.computeInteractiveHexes(startRow, startCol, rows, cols);
       return;
     }
@@ -578,6 +601,12 @@ export default class WorldmapScene extends HexagonScene {
     let currentIndex = 0;
     let hashedTiles: string[] = [];
 
+    this.computeTileEntities(this.currentChunk);
+
+    // this.getChunksAround(this.currentChunk).forEach((chunkKey) => {
+    //   console.log("chunkKey", chunkKey);
+    //   this.computeTileEntities(chunkKey);
+    // });
     const processBatch = async () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
 
@@ -620,7 +649,12 @@ export default class WorldmapScene extends HexagonScene {
         const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
         const rotationIndex = Math.floor(rotationSeed * 6);
         const randomRotation = (rotationIndex * Math.PI) / 3;
-        dummy.rotation.y = randomRotation;
+        if (!IS_FLAT_MODE) {
+          dummy.rotation.y = randomRotation;
+        } else {
+          dummy.position.y += 0.1;
+          dummy.rotation.y = 0;
+        }
 
         const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
 
@@ -648,8 +682,6 @@ export default class WorldmapScene extends HexagonScene {
         }
         this.cacheMatricesForChunk(startRow, startCol);
         this.interactiveHexManager.renderHexes();
-
-        await this.computeTileEntities();
       }
     };
 
@@ -658,25 +690,14 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
-  private async computeTileEntities() {
-    const cameraPosition = new THREE.Vector3();
-    cameraPosition.copy(this.controls.target);
+  private async computeTileEntities(chunkKey: string) {
+    const startCol = parseInt(chunkKey.split(",")[1]) + FELT_CENTER;
+    const startRow = parseInt(chunkKey.split(",")[0]) + FELT_CENTER;
 
-    const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
-    const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;
-
-    // Parse current chunk coordinates
-    const { chunkX, chunkZ } = this.worldToChunkCoordinates(adjustedX, adjustedZ);
-
-    const startCol = chunkX * this.chunkSize + FELT_CENTER;
-    const startRow = chunkZ * this.chunkSize + FELT_CENTER;
+    //const range = this.chunkSize / 2;
 
     const { width } = this.renderChunkSize;
     const range = width / 2;
-
-    // Create a unique key for this chunk range
-    const chunkKey = `${startCol - range},${startCol + range},${startRow - range},${startRow + range}`;
-    console.log({ chunkKey });
 
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
