@@ -60,6 +60,11 @@
     "@storybook/react-vite": "^8.3.2",
     "@storybook/test": "^8.3.2",
     "@tanstack/router-devtools": "^1.74.0",
-    "@tanstack/router-plugin": "^1.73.1"
+    "@tanstack/router-plugin": "^1.73.1",
+    "vite": "^5.4.8",
+    "vite-plugin-mkcert": "^1.17.6",
+    "vite-plugin-svgr": "^4.2.0",
+    "vite-plugin-top-level-await": "^1.4.1"
+
   }
 }

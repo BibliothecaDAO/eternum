@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "pnpm --dir ./client/apps/game dev",
     "dev:landing": "pnpm --dir ./client/apps/landing dev",
-    "dev:docs": "cd ./client/apps/docs && vocs dev",
+    "dev:docs": "vocs dev",
     "build": "pnpm --dir ./client/apps/game build",
     "build:landing": "pnpm --dir ./client/apps/landing build",
-    "build:docs": "cd ./client/apps/docs && vocs build",
+    "build:docs": "vocs build",
     "build:packages": "pnpm --dir ./client/sdk/packages/eternum build",
     "lint": "pnpm --recursive run lint",
     "lint:fix": "pnpm --recursive run lint:fix",
@@ -17,20 +17,6 @@
     "knip": "npx knip --exclude binaries,dependencies",
     "test": "pnpm --recursive run test"
   },
-  "dependencies": {
-    "vocs": "latest",
-    "viem": "^2.21.45"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "eslint": "^9.x.x",
-    "prettier": "^3.x.x",
-    "typescript": "^5.x.x",
-    "@bibliothecadao/eternum": "workspace:^",
-    "vite": "^5.x.x",
-    "autoprefixer": "^10.4.18",
-    "postcss": "^8.4.35"
-  },
+ 
   "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee"
 }

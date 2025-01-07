@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "pnpm --dir ./apps/game dev",
     "dev:landing": "pnpm --dir ./apps/landing dev",
-    "dev:docs": "pnpm --dir ./apps/docs dev",
+    "dev:docs": "cd ./apps/docs && vocs dev",
     "build": "pnpm --dir ./apps/game build",
     "build:landing": "pnpm --dir ./apps/landing build",
     "build:docs": "pnpm --dir ./apps/docs build",
@@ -52,7 +52,6 @@
     "eslint": "^9.9.0",
     "typescript": "^5.5.3",
     "leva": "^0.9.35",
-    "vite": "^5.4.1",
     "vite-plugin-svgr": "^4.2.0",
     "@svgr/rollup": "^8.1.0",
     "@vitejs/plugin-react": "^4.3.1",
