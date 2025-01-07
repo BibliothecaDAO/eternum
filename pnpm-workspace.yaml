@@ -1,7 +1,9 @@
 packages:
   - "client/sdk/packages/*"
+  - "client"
   - "client/apps/*"
   - "client/config"
   - "client/balancing"
+  - "contracts"
   - "contracts/season_pass/scripts/deployment"
   - "contracts/season_resources/scripts/deployment"

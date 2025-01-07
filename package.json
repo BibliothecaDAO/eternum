@@ -1,0 +1,40 @@
+{
+  "name": "eternum",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter ./client/apps/game dev",
+    "dev:landing": "pnpm --filter ./client/apps/landing dev",
+    "dev:docs": "pnpm --filter ./client/apps/docs dev",
+    "build": "pnpm --filter ./client/apps/game build",
+    "build:landing": "pnpm --filter ./client/apps/landing build",
+    "build:docs": "pnpm --filter ./client/apps/docs build",
+    "build:packages": "pnpm --filter ./client/sdk/packages/eternum build",
+    "lint": "pnpm --recursive run lint",
+    "lint:fix": "pnpm --recursive run lint:fix",
+    "format": "pnpm prettier --write .",
+    "format:check": "pnpm prettier --check .",
+    "knip": "npx knip --exclude binaries,dependencies",
+    "test": "pnpm --recursive run test",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "eslint": "^9.x.x",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.x.x",
+    "typescript": "^5.x.x"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged && pnpm knip"
+    }
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee"
+}
