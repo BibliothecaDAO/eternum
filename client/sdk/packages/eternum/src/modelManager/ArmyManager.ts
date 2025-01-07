@@ -1,8 +1,9 @@
-import { DojoResult } from "@/hooks/context/DojoContext";
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumProvider, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
+import { Account } from "starknet";
+import { ClientComponents } from "../dojo/components/createClientComponents";
 import { ResourceManager } from "./ResourceManager";
 
 interface Troops {
@@ -15,7 +16,9 @@ export class ArmyManager {
   private readonly realmEntityId: number;
 
   constructor(
-    private readonly dojo: DojoResult,
+    // private readonly dojo: DojoResult,
+    private readonly provider: EternumProvider,
+    private readonly components: ClientComponents,
     private readonly armyEntityId: ID,
   ) {
     this.realmEntityId = this.getRealmEntityId();
@@ -23,7 +26,7 @@ export class ArmyManager {
 
   private getRealmEntityId(): number {
     return (
-      getComponentValue(this.dojo.setup.components.EntityOwner, getEntityIdFromKeys([BigInt(this.armyEntityId)]))
+      getComponentValue(this.components.EntityOwner, getEntityIdFromKeys([BigInt(this.armyEntityId)]))
         ?.entity_owner_id || 0
     );
   }
@@ -31,7 +34,7 @@ export class ArmyManager {
   private _updateResourceBalances(overrideId: string, troops: Troops): void {
     Object.entries(troops).forEach(([troopType, amount]) => {
       const resourceManager = new ResourceManager(
-        this.dojo.setup,
+        this.components,
         this.realmEntityId,
         Number(troopType) as ResourcesIds,
       );
@@ -40,7 +43,7 @@ export class ArmyManager {
   }
 
   private _updateArmyTroops(overrideId: string, army: any, troops: Troops): void {
-    this.dojo.setup.components.Army.addOverride(overrideId, {
+    this.components.Army.addOverride(overrideId, {
       entity: getEntityIdFromKeys([BigInt(this.armyEntityId)]),
       value: {
         ...army,
@@ -55,7 +58,7 @@ export class ArmyManager {
 
   private _optimisticAddTroops(overrideId: string, troops: Troops): void {
     const entity = getEntityIdFromKeys([BigInt(this.armyEntityId)]);
-    const army = getComponentValue(this.dojo.setup.components.Army, entity);
+    const army = getComponentValue(this.components.Army, entity);
 
     if (!army) return;
 
@@ -63,9 +66,9 @@ export class ArmyManager {
     this._updateArmyTroops(overrideId, army, troops);
   }
 
-  public addTroops(troops: Troops): void {
-    this.dojo.setup.systemCalls.army_buy_troops({
-      signer: this.dojo.account.account,
+  public addTroops(signer: Account, troops: Troops): void {
+    this.provider.army_buy_troops({
+      signer,
       payer_id: this.realmEntityId,
       army_id: this.armyEntityId,
       troops: {
@@ -78,20 +81,20 @@ export class ArmyManager {
     this._optimisticAddTroops(uuid(), troops);
   }
 
-  public createArmy(structureEntityId: bigint, isDefensive: boolean): void {
-    this.dojo.setup.systemCalls.create_army({
-      signer: this.dojo.account.account,
+  public createArmy(signer: Account, structureEntityId: bigint, isDefensive: boolean): void {
+    this.provider.create_army({
+      signer,
       is_defensive_army: isDefensive,
       army_owner_id: structureEntityId,
     });
   }
 
-  public async deleteArmy(armyId: ID): Promise<void> {
-    await this.dojo.setup.systemCalls.delete_army({
-      signer: this.dojo.account.account,
+  public async deleteArmy(signer: Account, armyId: ID): Promise<void> {
+    await this.provider.delete_army({
+      signer,
       army_id: armyId,
     });
 
-    this.dojo.network.world.deleteEntity(getEntityIdFromKeys([BigInt(armyId)]));
+    this.components.Army.removeOverride(getEntityIdFromKeys([BigInt(armyId)]));
   }
 }
