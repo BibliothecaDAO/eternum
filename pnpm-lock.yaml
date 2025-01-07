@@ -462,32 +462,6 @@ importers:
         specifier: ^2.0.5
         version: 2.1.8(@types/node@20.17.12)(@vitest/ui@2.1.8)(terser@5.37.0)
 
-  contracts:
-    dependencies:
-      colors:
-        specifier: ^1.4.0
-        version: 1.4.0
-      dotenv:
-        specifier: ^16.3.1
-        version: 16.4.7
-      starknet:
-        specifier: ^6.8.0
-        version: 6.11.0(encoding@0.1.13)
-
-  contracts/season_pass/scripts/deployment: {}
-
-  contracts/season_resources/scripts/deployment:
-    dependencies:
-      '@dojoengine/core':
-        specifier: 1.0.0-alpha.24
-        version: 1.0.0-alpha.24(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.2)
-      eventemitter3:
-        specifier: ^5.0.1
-        version: 5.0.1
-      vitest:
-        specifier: ^2.0.5
-        version: 2.1.8(@types/node@20.17.12)(@vitest/ui@2.1.8)(terser@5.37.0)
-
 packages:
 
   '@0no-co/graphql.web@1.0.13':
@@ -4515,10 +4489,6 @@ packages:
 
   colorette@2.0.20:
     resolution: {integrity: sha512-IfEDxwoWIjkeXL1eXcDiow4UbKjhLdq6/EuSVR9GMN7KVH3r9gQ83e73hsz1Nd1T3ijd5xv1wcWRYO+D6kCI2w==}
-
-  colors@1.4.0:
-    resolution: {integrity: sha512-a+UqTh4kgZg/SlGvfbzDHpgRu7AAQOmmqRHJnxhRZICKFUT91brVhNNt58CMWU9PsBbv3PDCZUHbVxuDiH2mtA==}
-    engines: {node: '>=0.1.90'}
 
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
@@ -12582,8 +12552,6 @@ snapshots:
   colord@2.9.3: {}
 
   colorette@2.0.20: {}
-
-  colors@1.4.0: {}
 
   combined-stream@1.0.8:
     dependencies:
