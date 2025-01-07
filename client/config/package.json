@@ -7,12 +7,10 @@
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "eslint": "^9.9.0"
+    "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0",
-    "@dojoengine/core": "1.0.0-alpha.21",
-    "starknet": "6.11.0"
+    "starknet": "6.11.0",
+    "typescript": "^5.0.0"
   }
 }
