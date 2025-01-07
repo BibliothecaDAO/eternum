@@ -15,7 +15,7 @@ const otherResources = Object.entries(resourceAddresses)
   .map(([_, [__, address]]) => address);
 
 const theme: string = "eternum";
-const slot: string = "realms-world-04";
+const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "eternum";
 const colorMode: ColorMode = "dark";
 
