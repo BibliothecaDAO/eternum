@@ -18,7 +18,6 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ContractComponents } from "../contractComponents";
-import { configManager } from "../setup";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
@@ -481,7 +480,7 @@ export class ClientConfigManager {
   getHyperstructureTotalContributableAmount(hyperstructureId: number) {
     const requiredAmounts = this.getHyperstructureRequiredAmounts(hyperstructureId);
     return requiredAmounts.reduce(
-      (total, { amount, resource }) => total + amount * configManager.getResourceRarity(resource),
+      (total, { amount, resource }) => total + amount * this.getResourceRarity(resource),
       0,
     );
   }
@@ -651,3 +650,5 @@ export class ClientConfigManager {
     );
   }
 }
+
+export const configManager = ClientConfigManager.instance();

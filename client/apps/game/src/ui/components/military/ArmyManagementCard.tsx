@@ -20,12 +20,12 @@ import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { ArmyManager } from "@/dojo/modelManager/ArmyManager";
 import { configManager } from "@/dojo/setup";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ArmyManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 
 type ArmyManagementCardProps = {
@@ -48,7 +48,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 
-  const armyManager = new ArmyManager(dojo, army?.entity_id || 0);
+  const armyManager = new ArmyManager(dojo.setup.network.provider, dojo.setup.components, army?.entity_id || 0);
 
   const isDefendingArmy = Boolean(army?.protectee);
 
@@ -110,7 +110,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     setIsLoading(true);
 
     try {
-      await armyManager.deleteArmy(army?.entity_id || 0);
+      await armyManager.deleteArmy(account, army?.entity_id || 0);
       setSelectedEntity && setSelectedEntity(null);
     } catch (e) {
       console.error(e);
@@ -120,7 +120,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const handleBuyArmy = async () => {
     setIsLoading(true);
-    armyManager.addTroops({
+    armyManager.addTroops(account, {
       [ResourcesIds.Knight]: multiplyByPrecision(troopCounts[ResourcesIds.Knight]),
       [ResourcesIds.Crossbowman]: multiplyByPrecision(troopCounts[ResourcesIds.Crossbowman]),
       [ResourcesIds.Paladin]: multiplyByPrecision(troopCounts[ResourcesIds.Paladin]),

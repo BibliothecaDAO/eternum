@@ -1,9 +1,11 @@
-import { EternumProvider, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { Account } from "starknet";
+import { Account, AccountInterface } from "starknet";
+import { ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo/components/createClientComponents";
+import { EternumProvider } from "../provider";
+import { ID } from "../types";
 import { ResourceManager } from "./ResourceManager";
 
 interface Troops {
@@ -66,7 +68,7 @@ export class ArmyManager {
     this._updateArmyTroops(overrideId, army, troops);
   }
 
-  public addTroops(signer: Account, troops: Troops): void {
+  public addTroops(signer: Account | AccountInterface, troops: Troops): void {
     this.provider.army_buy_troops({
       signer,
       payer_id: this.realmEntityId,
@@ -81,7 +83,7 @@ export class ArmyManager {
     this._optimisticAddTroops(uuid(), troops);
   }
 
-  public createArmy(signer: Account, structureEntityId: bigint, isDefensive: boolean): void {
+  public createArmy(signer: Account | AccountInterface, structureEntityId: bigint, isDefensive: boolean): void {
     this.provider.create_army({
       signer,
       is_defensive_army: isDefensive,
@@ -89,7 +91,7 @@ export class ArmyManager {
     });
   }
 
-  public async deleteArmy(signer: Account, armyId: ID): Promise<void> {
+  public async deleteArmy(signer: Account | AccountInterface, armyId: ID): Promise<void> {
     await this.provider.delete_army({
       signer,
       army_id: armyId,

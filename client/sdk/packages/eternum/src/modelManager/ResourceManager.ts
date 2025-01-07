@@ -1,14 +1,18 @@
-import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, CapacityConfigCategory, ResourcesIds, StructureType, type ID } from "@bibliothecadao/eternum";
+// import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
-import { configManager, type SetupResult } from "../setup";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { BuildingType, CapacityConfigCategory, ResourcesIds, StructureType } from "../constants";
+import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ID } from "../types";
+import { gramToKg, multiplyByPrecision } from "../utils";
+import { configManager } from "./ConfigManager";
 
 export class ResourceManager {
   entityId: ID;
   resourceId: ResourcesIds;
 
   constructor(
-    private readonly setup: SetupResult,
+    private readonly components: ClientComponents,
     entityId: ID,
     resourceId: ResourcesIds,
   ) {
@@ -56,8 +60,8 @@ export class ResourceManager {
 
   public optimisticResourceUpdate = (overrideId: string, change: bigint) => {
     const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(this.resourceId)]);
-    const currentBalance = getComponentValue(this.setup.components.Resource, entity)?.balance || 0n;
-    this.setup.components.Resource.addOverride(overrideId, {
+    const currentBalance = getComponentValue(this.components.Resource, entity)?.balance || 0n;
+    this.components.Resource.addOverride(overrideId, {
       entity,
       value: {
         resource_type: this.resourceId,
@@ -91,16 +95,13 @@ export class ResourceManager {
   }
 
   public getStoreCapacity(): number {
-    const structure = getComponentValue(
-      this.setup.components.Structure,
-      getEntityIdFromKeys([BigInt(this.entityId || 0)]),
-    );
+    const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(this.entityId || 0)]));
     if (structure?.category === StructureType[StructureType.FragmentMine]) return Infinity;
 
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse));
     const quantity =
       getComponentValue(
-        this.setup.components.BuildingQuantityv2,
+        this.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
@@ -254,18 +255,18 @@ export class ResourceManager {
 
   private _getProduction(resourceId: ResourcesIds) {
     return getComponentValue(
-      this.setup.components.Production,
+      this.components.Production,
       getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
     );
   }
 
   private _getProductionDeadline(entityId: ID) {
-    return getComponentValue(this.setup.components.ProductionDeadline, getEntityIdFromKeys([BigInt(entityId)]));
+    return getComponentValue(this.components.ProductionDeadline, getEntityIdFromKeys([BigInt(entityId)]));
   }
 
   private _getResource(resourceId: ResourcesIds) {
     return getComponentValue(
-      this.setup.components.Resource,
+      this.components.Resource,
       getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
     );
   }
