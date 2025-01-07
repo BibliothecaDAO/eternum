@@ -14,6 +14,7 @@ use crate::{
 
 use super::{ToDiscordMessage, UNKNOWN_USER};
 
+const RESOURCE_PRECISION : u128 = 1_000_000_000;
 #[derive(CairoSerde, Clone)]
 pub struct BattlePillage {
     pub id: u32,
@@ -42,7 +43,7 @@ impl ToDiscordMessage for BattlePillage {
             .pillaged_resources
             .iter()
             .map(|(resource_id, amount)| {
-                format!("{} {}", amount / 1000, ResourceIds::from(*resource_id),)
+                format!("{} {}", amount / RESOURCE_PRECISION, ResourceIds::from(*resource_id),)
             })
             .collect::<Vec<String>>()
             .join(", ");

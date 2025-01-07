@@ -10,11 +10,11 @@ export function formatNumberWithSpaces(number: number): string {
 
 export const formatAmount = (amount: number) => {
   if (amount < 1) {
-    return `${amount * 1000}`;
-  } else if (amount < 1000) {
+    return `${amount * EternumGlobalConfig.resources.resourcePrecision}`;
+  } else if (amount < EternumGlobalConfig.resources.resourcePrecision) {
     return `${amount.toFixed(amount % 1 === 0 ? 0 : (amount % 1) % 0.1 === 0 ? 1 : 2)}K`;
   } else {
-    return `${(amount / 1000).toFixed(amount % 1000 === 0 ? 0 : (amount % 1000) % 10 === 0 ? 1 : 2)}M`;
+    return `${(amount / EternumGlobalConfig.resources.resourcePrecision).toFixed(amount % EternumGlobalConfig.resources.resourcePrecision === 0 ? 0 : (amount % EternumGlobalConfig.resources.resourcePrecision) % 10 === 0 ? 1 : 2)}M`;
   }
 };
 

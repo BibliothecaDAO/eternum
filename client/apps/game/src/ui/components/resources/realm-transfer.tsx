@@ -6,7 +6,7 @@ import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { calculateDonkeysNeeded, currencyFormat, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
-import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 
 import { ID } from "@bibliothecadao/eternum";
@@ -64,7 +64,7 @@ export const RealmTransfer = memo(
       const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
         sender_entity_id,
         recipient_entity_id,
-        resources: [resources[0], BigInt(Number(resources[1]) * 1000)],
+        resources: [resources[0], BigInt(Number(resources[1]) * EternumGlobalConfig.resources.resourcePrecision)],
       }));
 
       try {

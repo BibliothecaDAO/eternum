@@ -5,6 +5,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import {
+  EternumGlobalConfig,
   HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
   HYPERSTRUCTURE_CREATION_COSTS,
   ID,
@@ -123,7 +124,7 @@ const StructureInfo = ({
               key={index}
               type="horizontal"
               resourceId={ResourcesIds.AncientFragment}
-              amount={cost[Number(resourceId)].min_amount * 1000}
+              amount={cost[Number(resourceId)].min_amount * EternumGlobalConfig.resources.resourcePrecision}
               balance={balance.balance}
             />
           );

@@ -20,7 +20,7 @@ mod swap_systems {
     use option::OptionTrait;
 
     use s0_eternum::alias::ID;
-    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::constants::{RESOURCE_PRECISION, DEFAULT_NS};
     use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use s0_eternum::models::bank::bank::{Bank};
     use s0_eternum::models::bank::market::{Market, MarketTrait};
@@ -46,7 +46,7 @@ mod swap_systems {
         resource_amount: u128,
         bank_owner_fees: u128,
         lp_fees: u128,
-        // price in lords for 1000 resource
+        // price in lords for 1 * RESOURCE_PRECISION resource
         resource_price: u128,
         buy: bool,
         timestamp: u64,
@@ -98,7 +98,7 @@ mod swap_systems {
                 amount,
                 bank_lords_fee_amount,
                 lps_fee,
-                market.buy(0, 1, 1000),
+                market.buy(0, 1, RESOURCE_PRECISION),
                 true
             );
 
@@ -152,7 +152,7 @@ mod swap_systems {
                 amount,
                 bank_lords_fee_amount,
                 lps_fee,
-                market.buy(0, 1, 1000),
+                market.buy(0, 1, RESOURCE_PRECISION),
                 false
             );
 
@@ -185,7 +185,7 @@ mod swap_systems {
                         resource_amount,
                         bank_owner_fees,
                         lp_fees,
-                        resource_price: market.quote_amount(1000),
+                        resource_price: market.quote_amount(RESOURCE_PRECISION),
                         buy,
                         timestamp: starknet::get_block_timestamp()
                     }
