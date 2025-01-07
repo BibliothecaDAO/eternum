@@ -1,14 +1,14 @@
 {
   "name": "scripts",
   "version": "1.0.0",
-  "type": "module",
   "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "deploy": "source .env && bun --env-file=.env ./deploy && bun --env-file=.env ./config/index.ts",
-    "deploy::sepolia": "source .env.sepolia && bun --env-file=.env.sepolia ./deploy && bun --env-file=.env.sepolia ./config/index.ts",
-    "deploy::mainnet": "source .env.mainnet && bun --env-file=.env.mainnet ./deploy && bun --env-file=.env.mainnet ./config/index.ts"
-  },
-  "author": "",
-  "license": "ISC"
+    "deploy::mainnet": "source .env.mainnet && bun --env-file=.env.mainnet ./deploy && bun --env-file=.env.mainnet ./config/index.ts",
+    "deploy::sepolia": "source .env.sepolia && bun --env-file=.env.sepolia ./deploy && bun --env-file=.env.sepolia ./config/index.ts"
+  }
 }
