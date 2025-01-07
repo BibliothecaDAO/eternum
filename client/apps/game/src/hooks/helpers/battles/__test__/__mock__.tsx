@@ -1,4 +1,4 @@
-import { BattleSide } from "@bibliothecadao/eternum";
+import { BattleSide, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { Components, ComponentValue } from "@dojoengine/recs";
 import { BattleInfo } from "../useBattles";
 
@@ -33,8 +33,14 @@ export const generateMockBattle = (
     },
     attackers_resources_escrow_id: 1n,
     defenders_resources_escrow_id: 1n,
-    attack_army_health: { current: isAttackerAlive ? 1000n : CONSIDERED_AS_DEAD_HEALTH, lifetime: 1000n },
-    defence_army_health: { current: isDefenderAlive ? 1000n : CONSIDERED_AS_DEAD_HEALTH, lifetime: 1000n },
+    attack_army_health: { 
+      current: isAttackerAlive ? EternumGlobalConfig.resources.resourcePrecision : CONSIDERED_AS_DEAD_HEALTH, 
+      lifetime: EternumGlobalConfig.resources.resourcePrecision 
+    },
+    defence_army_health: { 
+      current: isDefenderAlive ? EternumGlobalConfig.resources.resourcePrecision : CONSIDERED_AS_DEAD_HEALTH, 
+      lifetime: EternumGlobalConfig.resources.resourcePrecision 
+    },
     attack_delta: 1n,
     defence_delta: 1n,
     last_updated: 1n,

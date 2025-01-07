@@ -89,10 +89,10 @@ impl HealthImpl of HealthTrait {
 
         /// Ensure that if the deduction makes the health less than one troop,
         /// the troop dies immediately
-        /// e.g if single troop health = 7 * 1000(normalization), then a troop with 3 soldiers will have
-        /// health a total health of 7_000 * 3 =  21_000.
+        /// e.g if single troop health = 7 * RESOURCE_PRECISION(normalization), then a troop with 3 soldiers will have
+        /// health a total health of 7 * 1_000_000_000 (RP) * 3 =  21_000_000_000
         /// if deduction is 80 per second, we want it such that deduction happens
-        /// at the rate of 80 per second till it takes 7_000 * (3 -1) =14_000 health,
+        /// at the rate of 80 per second till it takes 7_000_000_000 * (3 -1) =14_000_000_000 health,
         /// then after that, the next step depletes the health completely. i.e to 0
 
         // note: at this point, we know that

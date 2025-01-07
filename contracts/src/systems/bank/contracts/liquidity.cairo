@@ -21,7 +21,7 @@ mod liquidity_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     // Eternum imports
     use s0_eternum::alias::ID;
-    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::constants::{RESOURCE_PRECISION,DEFAULT_NS};
     use s0_eternum::constants::ResourceTypes;
     use s0_eternum::models::bank::liquidity::{Liquidity};
     use s0_eternum::models::bank::market::{Market, MarketTrait};
@@ -40,7 +40,7 @@ mod liquidity_systems {
         resource_type: u8,
         lords_amount: u128,
         resource_amount: u128,
-        // price in lords for 1000 resource
+        // price in lords for 1 * RESOURCE_PRECISION resource
         resource_price: u128,
         add: bool,
         timestamp: u64,
@@ -146,7 +146,7 @@ mod liquidity_systems {
             ref world: WorldStorage, market: Market, entity_id: ID, lords_amount: u128, resource_amount: u128, add: bool
         ) {
             let resource_price = if market.has_liquidity() {
-                market.quote_amount(1000)
+                market.quote_amount(1 * RESOURCE_PRECISION)
             } else {
                 0
             };

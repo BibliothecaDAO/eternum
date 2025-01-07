@@ -9,7 +9,7 @@ use s0_eternum::alias::ID;
 use s0_eternum::constants::LevelIndex;
 use s0_eternum::constants::{REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 
-use s0_eternum::constants::{ResourceTypes, TickIds};
+use s0_eternum::constants::{ResourceTypes, TickIds, RESOURCE_PRECISION};
 use s0_eternum::models::combat::{Army, BattleSide, Troops};
 use s0_eternum::models::config::{TickConfig, MapConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
 use s0_eternum::models::map::Tile;
@@ -191,8 +191,8 @@ use starknet::contract_address_const;
 
 const TICK_INTERVAL_IN_SECONDS: u64 = 200;
 const MAX_STAMINA: u16 = 30;
-const ORIGINAL_WHEAT_BALANCE: u128 = 1000;
-const ORIGINAL_FISH_BALANCE: u128 = 1000;
+const ORIGINAL_WHEAT_BALANCE: u128 = 1 * RESOURCE_PRECISION;
+const ORIGINAL_FISH_BALANCE: u128 = 1 * RESOURCE_PRECISION;
 
 fn setup_hex_travel() -> (WorldStorage, ID, Position, ITravelSystemsDispatcher) {
     let mut world = spawn_eternum();

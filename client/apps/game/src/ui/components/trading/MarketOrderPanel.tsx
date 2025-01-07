@@ -20,6 +20,7 @@ import {
 } from "@/ui/utils/utils";
 import {
   DONKEY_ENTITY_TYPE,
+  EternumGlobalConfig,
   ONE_MONTH,
   ResourcesIds,
   findResourceById,
@@ -497,7 +498,7 @@ const OrderRow = memo(
 const OrderCreation = memo(
   ({ entityId, resourceId, isBuy = false }: { entityId: ID; resourceId: ResourcesIds; isBuy?: boolean }) => {
     const [loading, setLoading] = useState(false);
-    const [resource, setResource] = useState(1000);
+    const [resource, setResource] = useState(EternumGlobalConfig.resources.resourcePrecision);
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
     const { nextBlockTimestamp } = useNextBlockTimestamp();
