@@ -1,14 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import {
-  BattleManager,
-  BattleStartStatus,
-  ClaimStatus,
-  LeaveStatus,
-  RaidStatus,
-} from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { Structure } from "@/hooks/helpers/useStructures";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ModalContainer } from "@/ui/components/ModalContainer";
@@ -16,7 +8,17 @@ import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  BattleManager,
+  BattleStartStatus,
+  ClaimStatus,
+  ID,
+  LeaveStatus,
+  RaidStatus,
+  Structure,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/eternum";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LeftView } from "../../navigation/LeftNavigationModule";
@@ -62,6 +64,7 @@ export const BattleActions = ({
       components: { TroopConfig },
       systemCalls: { battle_leave, battle_start, battle_claim, battle_leave_and_claim, battle_force_start },
     },
+    network: { world },
   } = dojo;
 
   const { toggleModal } = useModalStore();
@@ -92,7 +95,11 @@ export const BattleActions = ({
   const defenderArmy = useMemo(() => {
     const defender = structure?.protector ?? defenderArmies[0];
 
-    const battleManager = new BattleManager(defender?.battle_id || battleAdjusted?.entity_id || 0, dojo);
+    const battleManager = new BattleManager(
+      dojo.setup.components,
+      dojo.network.provider,
+      defender?.battle_id || battleAdjusted?.entity_id || 0,
+    );
     return battleManager.getUpdatedArmy(defender, battleManager.getUpdatedBattle(currentTimestamp!));
   }, [defenderArmies, localSelectedUnit, isActive, currentTimestamp, battleAdjusted]);
 
@@ -105,7 +112,7 @@ export const BattleActions = ({
     setLoading(Loading.Raid);
     setRaidWarning(false);
     try {
-      await battleManager.pillageStructure(selectedArmy!, structure!.entity_id);
+      await battleManager.pillageStructure(account, selectedArmy!, structure!.entity_id);
       toggleModal(
         <ModalContainer size="half">
           <Headline>Pillage History</Headline>
@@ -189,7 +196,7 @@ export const BattleActions = ({
         ? defenderArmies.length - 1
         : defenderArmies.length;
       if (attackerArmiesLength === 0 && defenderArmiesLength === 0) {
-        battleManager.deleteBattle();
+        world.deleteEntity(getEntityIdFromKeys([BigInt(battleManager?.battleEntityId || 0)]));
       }
     });
     setLoading(Loading.None);

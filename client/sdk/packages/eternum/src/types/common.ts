@@ -8,6 +8,8 @@ import {
   TroopFoodConsumption,
 } from "../constants";
 
+export type HexPosition = { col: number; row: number };
+
 export enum Winner {
   Attacker = "Attacker",
   Target = "Target",
@@ -46,6 +48,11 @@ export enum Access {
 export enum TravelTypes {
   Explore,
   Travel,
+}
+
+export interface Health {
+  current: bigint;
+  lifetime: bigint;
 }
 
 export interface CombatResultInterface {

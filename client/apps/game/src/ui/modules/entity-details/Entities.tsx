@@ -1,9 +1,10 @@
 import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
-import { ArmyInfo, useEnemyArmiesByPosition } from "@/hooks/helpers/useArmies";
+import { useEnemyArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Position } from "@/types/Position";
 import { StructureCard } from "@/ui/components/structures/worldmap/StructureCard";
 import { Checkbox } from "@/ui/elements/Checkbox";
+import { ArmyInfo } from "@bibliothecadao/eternum";
 import { useState } from "react";
 import { Battles } from "./Battles";
 import { EnemyArmies } from "./EnemyArmies";

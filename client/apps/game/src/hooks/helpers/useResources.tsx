@@ -1,9 +1,15 @@
 import { configManager } from "@/dojo/setup";
-import { CapacityConfigCategory, ID, ResourcesIds, resources, type Resource } from "@bibliothecadao/eternum";
+import {
+  CapacityConfigCategory,
+  ID,
+  ResourceManager,
+  ResourcesIds,
+  resources,
+  type Resource,
+} from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue, runQuery, type Entity } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
-import { ResourceManager } from "../../dojo/modelManager/ResourceManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
@@ -30,7 +36,7 @@ export function useResourcesUtils() {
 
       return resources
         .map(({ id }) => {
-          const resourceManager = new ResourceManager(setup, entityId, id);
+          const resourceManager = new ResourceManager(setup.components, entityId, id);
           const balance = resourceManager.balance(currentDefaultTick);
           return { resourceId: id, amount: balance };
         })
@@ -50,7 +56,7 @@ export function useResourcesUtils() {
     const resourceIds = resources.map((r) => r.id);
     return resourceIds
       .map((id) => {
-        const resourceManager = new ResourceManager(setup, entityId, id);
+        const resourceManager = new ResourceManager(setup.components, entityId, id);
         const balance = resourceManager.balance(currentDefaultTick);
         return { resourceId: id, amount: balance };
       })
@@ -77,7 +83,7 @@ export function useResourcesUtils() {
     const realmsWithResource = allRealms
       .map((id: Entity) => {
         const realm = getComponentValue(Realm, id);
-        const resourceManager = realm ? new ResourceManager(setup, realm.entity_id, resourceId) : undefined;
+        const resourceManager = realm ? new ResourceManager(setup.components, realm.entity_id, resourceId) : undefined;
         const resource = resourceManager
           ? {
               balance: resourceManager.balance(currentDefaultTick),
@@ -110,8 +116,12 @@ export function useResourceBalance() {
 
   const getFoodResources = (entityId: ID): Resource[] => {
     const currentDefaultTick = useUIStore.getState().currentDefaultTick;
-    const wheatBalance = new ResourceManager(dojo.setup, entityId, ResourcesIds.Wheat).balance(currentDefaultTick);
-    const fishBalance = new ResourceManager(dojo.setup, entityId, ResourcesIds.Fish).balance(currentDefaultTick);
+    const wheatBalance = new ResourceManager(dojo.setup.components, entityId, ResourcesIds.Wheat).balance(
+      currentDefaultTick,
+    );
+    const fishBalance = new ResourceManager(dojo.setup.components, entityId, ResourcesIds.Fish).balance(
+      currentDefaultTick,
+    );
 
     return [
       { resourceId: ResourcesIds.Wheat, amount: wheatBalance },
@@ -120,13 +130,13 @@ export function useResourceBalance() {
   };
 
   const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds) => {
-    const resourceManager = new ResourceManager(dojo.setup, entityId, resourceId);
+    const resourceManager = new ResourceManager(dojo.setup.components, entityId, resourceId);
     return resourceManager.getProduction();
   };
 
   const getBalance = (entityId: ID, resourceId: ResourcesIds) => {
     const currentDefaultTick = useUIStore.getState().currentDefaultTick;
-    const resourceManager = new ResourceManager(dojo.setup, entityId, resourceId);
+    const resourceManager = new ResourceManager(dojo.setup.components, entityId, resourceId);
     return { balance: resourceManager.balance(currentDefaultTick), resourceId };
   };
 
@@ -145,7 +155,7 @@ export function useResourceBalance() {
     const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
 
     useEffect(() => {
-      const resourceManager = new ResourceManager(dojo.setup, entityId, resourceId);
+      const resourceManager = new ResourceManager(dojo.setup.components, entityId, resourceId);
       setResourceBalance({ amount: resourceManager.balance(currentDefaultTick), resourceId });
     }, []);
 
@@ -169,7 +179,7 @@ export const useResourceManager = (entityId: ID, resourceId: ResourcesIds) => {
   );
 
   const resourceManager = useMemo(() => {
-    return new ResourceManager(dojo.setup, entityId, resourceId);
+    return new ResourceManager(dojo.setup.components, entityId, resourceId);
   }, [dojo.setup, entityId, resourceId, production]);
 
   return resourceManager;

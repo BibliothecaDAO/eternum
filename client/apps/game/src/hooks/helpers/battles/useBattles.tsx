@@ -1,6 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
+import { BattleManager, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import {
   Component,
@@ -62,7 +61,7 @@ export const useBattleManager = (battleEntityId: ID) => {
   const battle = useComponentValue(dojo.setup.components.Battle, getEntityIdFromKeys([BigInt(battleEntityId)]));
 
   const battleManager = useMemo(() => {
-    return new BattleManager(battleEntityId, dojo);
+    return new BattleManager(dojo.setup.components, dojo.network.provider, battleEntityId);
   }, [battleEntityId, battle]);
 
   return battleManager;

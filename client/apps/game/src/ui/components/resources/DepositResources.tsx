@@ -1,5 +1,3 @@
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { ResourceInventoryManager } from "@/dojo/modelManager/ResourceInventoryManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
 import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
@@ -7,7 +5,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ID, Resource } from "@bibliothecadao/eternum";
+import { BattleManager, ID, Resource, ResourceInventoryManager } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 
@@ -31,7 +29,11 @@ export const DepositResources = ({ arrival, resources, armyInBattle }: DepositRe
       return false;
     }
     const currentTimestamp = useUIStore.getState().nextBlockTimestamp;
-    const battleManager = new BattleManager(structureAtPosition.protector.battle_id, dojo);
+    const battleManager = new BattleManager(
+      dojo.setup.components,
+      dojo.network.provider,
+      structureAtPosition.protector.battle_id,
+    );
 
     const battleOngoing = battleManager.isBattleOngoing(currentTimestamp!);
     return battleOngoing && !battleManager.isSiege(currentTimestamp!);
@@ -43,14 +45,14 @@ export const DepositResources = ({ arrival, resources, armyInBattle }: DepositRe
     useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(arrival.entityId)]))?.value || 0n;
 
   const depositManager = useMemo(() => {
-    return new ResourceInventoryManager(dojo.setup, arrival.entityId);
+    return new ResourceInventoryManager(dojo.setup.components, dojo.network.provider, arrival.entityId);
   }, [dojo.setup, arrival.entityId]);
 
   const onOffload = async (receiverEntityId: ID) => {
     if (resources.length > 0) {
       playDeposit();
       setIsLoading(true);
-      await depositManager.onOffloadAll(receiverEntityId, resources).then(() => {
+      await depositManager.onOffloadAll(dojo.account.account, receiverEntityId, resources).then(() => {
         setIsLoading(false);
       });
     }

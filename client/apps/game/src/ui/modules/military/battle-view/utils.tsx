@@ -1,7 +1,14 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
 import { roundDownToPrecision, roundUpToPrecision } from "@/ui/utils/utils";
-import { Battle, Health, Percentage, ResourcesIds, Troops as SdkTroops, TroopConfig } from "@bibliothecadao/eternum";
+import {
+  Battle,
+  HealthSimulator,
+  Percentage,
+  ResourcesIds,
+  Troops as SdkTroops,
+  TroopConfig,
+} from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { getTotalTroops } from "./BattleHistory";
 
@@ -92,8 +99,8 @@ export const getTroopLossOnRaidPerTroopType = (
   const battle = new Battle(
     attackerArmy.troops,
     defenderArmy.troops,
-    new Health(attackerArmy.health),
-    new Health(defenderArmy.health),
+    new HealthSimulator(attackerArmy.health),
+    new HealthSimulator(defenderArmy.health),
     new TroopConfig(
       troopConfig.health,
       troopConfig.knight_strength,

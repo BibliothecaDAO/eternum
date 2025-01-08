@@ -2,9 +2,8 @@ import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
 import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
 import { ReactComponent as Compass } from "@/assets/icons/Compass.svg";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, getArmiesByPosition } from "@/hooks/helpers/useArmies";
+import { getArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { armyHasTroops } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
@@ -12,7 +11,7 @@ import { Position as PositionInterface } from "@/types/Position";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
-import { Position } from "@bibliothecadao/eternum";
+import { ArmyInfo, BattleManager, Position } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -76,7 +75,10 @@ export const ArmyChip = ({
 
   const [editMode, setEditMode] = useState(false);
 
-  const battleManager = useMemo(() => new BattleManager(army.battle_id, dojo), [army.battle_id]);
+  const battleManager = useMemo(
+    () => new BattleManager(dojo.setup.components, dojo.network.provider, army.battle_id),
+    [army.battle_id],
+  );
 
   const isHome = army.isHome;
 

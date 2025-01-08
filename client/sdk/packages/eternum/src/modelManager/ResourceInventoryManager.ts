@@ -1,15 +1,17 @@
-import { useAccountStore } from "@/hooks/context/accountStore";
-import { Resource, type ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { type SetupResult } from "../setup";
+import { ClientComponents } from "../dojo/components/createClientComponents";
+import { EternumProvider } from "../provider";
+import { type ID, type Resource } from "../types";
+import { DojoAccount } from "./types";
 
 export class ResourceInventoryManager {
   carrierEntityId: ID;
 
   constructor(
-    private readonly setup: SetupResult,
+    private readonly components: ClientComponents,
+    private readonly provider: EternumProvider,
     carrierEntityId: ID,
   ) {
     this.carrierEntityId = carrierEntityId;
@@ -22,10 +24,10 @@ export class ResourceInventoryManager {
   ) => {
     inventoryResources.forEach((resource) => {
       const receiveResourceEntity = getEntityIdFromKeys([BigInt(receiverEntityId), BigInt(resource.resourceId)]);
-      const receiverBalance = getComponentValue(this.setup.components.Resource, receiveResourceEntity)?.balance || 0n;
+      const receiverBalance = getComponentValue(this.components.Resource, receiveResourceEntity)?.balance || 0n;
 
       // optimistically update the balance of the receiver
-      this.setup.components.Resource.addOverride(overrideId, {
+      this.components.Resource.addOverride(overrideId, {
         entity: receiveResourceEntity,
         value: {
           entity_id: receiverEntityId,
@@ -37,7 +39,7 @@ export class ResourceInventoryManager {
 
     const carrierEntity = getEntityIdFromKeys([BigInt(this.carrierEntityId)]);
 
-    this.setup.components.Weight.addOverride(overrideId, {
+    this.components.Weight.addOverride(overrideId, {
       entity: carrierEntity,
       value: {
         entity_id: this.carrierEntityId,
@@ -46,7 +48,7 @@ export class ResourceInventoryManager {
     });
 
     // need to update this for the arrivals list to get updated
-    this.setup.components.OwnedResourcesTracker.addOverride(overrideId, {
+    this.components.OwnedResourcesTracker.addOverride(overrideId, {
       entity: carrierEntity,
       value: {
         entity_id: this.carrierEntityId,
@@ -55,22 +57,22 @@ export class ResourceInventoryManager {
     });
   };
 
-  public onOffloadAll = async (receiverEntityId: ID, inventoryResources: Resource[]) => {
+  public onOffloadAll = async (signer: DojoAccount, receiverEntityId: ID, inventoryResources: Resource[]) => {
     const overrideId = uuid();
     this._optimisticOffloadAll(overrideId, receiverEntityId, inventoryResources);
 
     if (inventoryResources.length > 0) {
-      await this.setup.systemCalls
+      await this.provider
         .send_resources({
+          signer,
           sender_entity_id: this.carrierEntityId,
           recipient_entity_id: receiverEntityId,
           resources: inventoryResources.flatMap((resource) => [resource.resourceId, resource.amount]),
-          signer: useAccountStore.getState().account!,
         })
         .finally(() => {
-          this.setup.components.Resource.removeOverride(overrideId);
-          this.setup.components.Weight.removeOverride(overrideId);
-          this.setup.components.OwnedResourcesTracker.removeOverride(overrideId);
+          this.components.Resource.removeOverride(overrideId);
+          this.components.Weight.removeOverride(overrideId);
+          this.components.OwnedResourcesTracker.removeOverride(overrideId);
         });
     }
   };

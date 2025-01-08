@@ -21,11 +21,10 @@ import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { configManager } from "@/dojo/setup";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ArmyManager } from "@bibliothecadao/eternum";
+import { ArmyInfo, ArmyManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 
 type ArmyManagementCardProps = {

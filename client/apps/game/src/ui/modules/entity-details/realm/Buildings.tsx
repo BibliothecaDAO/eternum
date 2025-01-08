@@ -1,5 +1,4 @@
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
-import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { Building, useBuildings } from "@/hooks/helpers/use-buildings";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
@@ -8,7 +7,7 @@ import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { toHexString } from "@/ui/utils/utils";
-import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, ResourcesIds, TileManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useState } from "react";
 
@@ -46,13 +45,13 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
   const handlePauseResumeProduction = (paused: boolean, innerCol: number, innerRow: number) => {
     setIsLoading({ isLoading: true, innerCol, innerRow });
-    const tileManager = new TileManager(dojo.setup, {
+    const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
       col: structure.position!.x,
       row: structure.position!.y,
     });
 
     const action = paused ? tileManager.resumeProduction : tileManager.pauseProduction;
-    action(innerCol, innerRow).then(() => {
+    action(dojo.account.account, innerCol, innerRow).then(() => {
       setIsLoading({ isLoading: false, innerCol, innerRow });
     });
   };

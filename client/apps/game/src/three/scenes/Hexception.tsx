@@ -1,9 +1,9 @@
 import * as THREE from "three";
 
-import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
+import { useAccountStore } from "@/hooks/context/accountStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
+import { ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -15,10 +15,13 @@ import {
   getWorldPositionForHex,
 } from "@/ui/utils/utils";
 import {
+  BUILDINGS_CENTER,
   BuildingType,
+  HexPosition,
   RealmLevels,
   ResourcesIds,
   StructureType,
+  TileManager,
   findResourceById,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
@@ -36,7 +39,6 @@ import { playBuildingSound } from "../sound/utils";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import {
-  BUILDINGS_CENTER,
   HEX_SIZE,
   MinesMaterialsParams,
   StructureProgress,
@@ -144,7 +146,7 @@ export default class HexceptionScene extends HexagonScene {
     this.loadBuildingModels();
     this.loadBiomeModels(900);
 
-    this.tileManager = new TileManager(this.dojo, { col: 0, row: 0 });
+    this.tileManager = new TileManager(this.dojo.components, this.dojo.network.provider, { col: 0, row: 0 });
 
     this.setup();
 
@@ -308,7 +310,12 @@ export default class HexceptionScene extends HexagonScene {
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
         this.clearBuildingMode();
         try {
-          await this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
+          await this.tileManager.placeBuilding(
+            useAccountStore.getState().account!,
+            buildingType.type,
+            normalizedCoords,
+            buildingType.resource,
+          );
         } catch (error) {
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
         }
@@ -404,7 +411,7 @@ export default class HexceptionScene extends HexagonScene {
   updateCastleLevel() {
     const structureType = this.tileManager.structureType();
     if (structureType === StructureType.Realm) {
-      this.structureStage = this.tileManager.getRealmLevel();
+      this.structureStage = this.tileManager.getRealmLevel(this.state.structureEntityId);
     } else if (structureType === StructureType.Hyperstructure) {
       this.structureStage = this.systemManager.getStructureStage(
         structureType,
@@ -471,7 +478,7 @@ export default class HexceptionScene extends HexagonScene {
 
           if (parseInt(buildingType) === BuildingType.Castle) {
             buildingType = castleLevelToRealmCastle[this.structureStage];
-            if (this.tileManager.getWonder()) {
+            if (this.tileManager.getWonder(this.state.structureEntityId)) {
               buildingType = WONDER_REALM;
             }
           }

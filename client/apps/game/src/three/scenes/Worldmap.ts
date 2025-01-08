@@ -1,16 +1,24 @@
-import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
-import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
+import { useAccountStore } from "@/hooks/context/accountStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import { soundSelector } from "@/hooks/useUISound";
-import { HexPosition, SceneName } from "@/types";
+import { SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { BiomeType, ID, getNeighborOffsets } from "@bibliothecadao/eternum";
+import {
+  ArmyMovementManager,
+  BiomeType,
+  DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  HexPosition,
+  ID,
+  TileManager,
+  TravelPaths,
+  getNeighborOffsets,
+} from "@bibliothecadao/eternum";
 import { getEntities } from "@dojoengine/state";
 import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
@@ -28,7 +36,7 @@ import { StructurePreview } from "../components/StructurePreview";
 import { playSound } from "../sound/utils";
 import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
-import { DUMMY_HYPERSTRUCTURE_ENTITY_ID, HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
+import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -80,7 +88,7 @@ export default class WorldmapScene extends HexagonScene {
     this.biome = new Biome();
 
     this.structurePreview = new StructurePreview(this.scene);
-    this.tileManager = new TileManager(this.dojo, { col: 0, row: 0 });
+    this.tileManager = new TileManager(this.dojo.components, this.dojo.network.provider, { col: 0, row: 0 });
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
@@ -295,12 +303,19 @@ export default class WorldmapScene extends HexagonScene {
     this.clearCache();
     this.totalStructures = this.structureManager.getTotalStructures() + 1;
 
-    this.tileManager.placeStructure(this.structureEntityId, buildingType.type, contractHexPosition).catch(() => {
-      this.structureManager.structures.removeStructureFromPosition(hexCoords);
-      this.structureManager.structureHexCoords.get(hexCoords.col)?.delete(hexCoords.row);
-      this.clearCache();
-      this.updateVisibleChunks(true);
-    });
+    this.tileManager
+      .placeStructure(
+        useAccountStore.getState().account!,
+        this.structureEntityId,
+        buildingType.type,
+        contractHexPosition,
+      )
+      .catch(() => {
+        this.structureManager.structures.removeStructureFromPosition(hexCoords);
+        this.structureManager.structureHexCoords.get(hexCoords.col)?.delete(hexCoords.row);
+        this.clearCache();
+        this.updateVisibleChunks(true);
+      });
     this.clearEntitySelection();
   }
 
@@ -333,9 +348,19 @@ export default class WorldmapScene extends HexagonScene {
         const selectedPath = travelPath.path;
         const isExplored = travelPath.isExplored ?? false;
         if (selectedPath.length > 0) {
-          const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
+          const armyMovementManager = new ArmyMovementManager(
+            this.dojo.components,
+            this.dojo.network.provider,
+            selectedEntityId,
+          );
           playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-          armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
+          armyMovementManager.moveArmy(
+            useAccountStore.getState().account!,
+            selectedPath,
+            isExplored,
+            this.state.nextBlockTimestamp || 0,
+            this.state.currentArmiesTick,
+          );
           this.state.updateHoveredHex(null);
         }
       }
@@ -348,7 +373,11 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
+    const armyMovementManager = new ArmyMovementManager(
+      this.dojo.components,
+      this.dojo.network.provider,
+      selectedEntityId,
+    );
     const travelPaths = armyMovementManager.findPaths(
       this.exploredTiles,
       this.state.currentDefaultTick,

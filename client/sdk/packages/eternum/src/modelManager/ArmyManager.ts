@@ -18,7 +18,6 @@ export class ArmyManager {
   private readonly realmEntityId: number;
 
   constructor(
-    // private readonly dojo: DojoResult,
     private readonly provider: EternumProvider,
     private readonly components: ClientComponents,
     private readonly armyEntityId: ID,

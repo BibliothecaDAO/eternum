@@ -75,7 +75,7 @@ export const Castle = () => {
                   </p>
                   <div className="mb-2 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
                   <div className="flex gap-4">
-                    {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a) => (
+                    {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a: any) => (
                       <ResourceCost
                         key={a.resource}
                         className="!text-gold"

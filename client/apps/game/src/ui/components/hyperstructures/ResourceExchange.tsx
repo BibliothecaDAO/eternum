@@ -1,11 +1,10 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useResourcesUtils } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 

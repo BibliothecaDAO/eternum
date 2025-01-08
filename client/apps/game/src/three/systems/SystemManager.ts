@@ -1,9 +1,8 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager, SetupResult } from "@/dojo/setup";
-import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { ID, RealmLevels, StructureType } from "@bibliothecadao/eternum";
+import { ID, RealmLevels, StructureType, type HexPosition } from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,

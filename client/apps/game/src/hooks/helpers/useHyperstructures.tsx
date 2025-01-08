@@ -1,8 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
-import { DUMMY_HYPERSTRUCTURE_ENTITY_ID } from "@/three/scenes/constants";
 import { divideByPrecision, toHexString, toInteger } from "@/ui/utils/utils";
-import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ContractAddress, DUMMY_HYPERSTRUCTURE_ENTITY_ID, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";

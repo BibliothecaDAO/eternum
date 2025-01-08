@@ -1,26 +1,26 @@
-import { ID, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ClientComponents } from "../createClientComponents";
-import { SetupResult } from "../setup";
+import { ResourcesIds, WORLD_CONFIG_ID } from "../constants";
+import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ID } from "../types";
 
 export class StaminaManager {
   constructor(
-    private setup: SetupResult,
+    private components: ClientComponents,
     private armyEntityId: ID,
   ) {}
 
   public getStaminaConfig() {
     const knightConfig = getComponentValue(
-      this.setup.components.StaminaConfig,
+      this.components.StaminaConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Knight)]),
     );
     const crossbowmanConfig = getComponentValue(
-      this.setup.components.StaminaConfig,
+      this.components.StaminaConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowman)]),
     );
     const paladinConfig = getComponentValue(
-      this.setup.components.StaminaConfig,
+      this.components.StaminaConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Paladin)]),
     );
 
@@ -33,17 +33,14 @@ export class StaminaManager {
 
   public getStamina(currentArmiesTick: number) {
     let armyOnchainStamina = getComponentValue(
-      this.setup.components.Stamina,
+      this.components.Stamina,
       getEntityIdFromKeys([BigInt(this.armyEntityId)]),
     );
     if (!armyOnchainStamina) {
       return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
     }
 
-    const armyEntityId = getComponentValue(
-      this.setup.components.Army,
-      getEntityIdFromKeys([BigInt(this.armyEntityId)]),
-    );
+    const armyEntityId = getComponentValue(this.components.Army, getEntityIdFromKeys([BigInt(this.armyEntityId)]));
     if (!armyEntityId) {
       return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
     }
@@ -87,7 +84,7 @@ export class StaminaManager {
     const totalStaminaSinceLastTick = numTicksPassed * staminaPerTick;
 
     const maxStamina = this.getMaxStamina(
-      getComponentValue(this.setup.components.Army, getEntityIdFromKeys([BigInt(this.armyEntityId)]))?.troops,
+      getComponentValue(this.components.Army, getEntityIdFromKeys([BigInt(this.armyEntityId)]))?.troops,
     );
     const newAmount = Math.min(amount + totalStaminaSinceLastTick, maxStamina);
 
@@ -100,7 +97,7 @@ export class StaminaManager {
 
   private getRefillPerTick() {
     const staminaRefillConfig = getComponentValue(
-      this.setup.components.StaminaRefillConfig,
+      this.components.StaminaRefillConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID]),
     );
     return staminaRefillConfig?.amount_per_tick || 0;
