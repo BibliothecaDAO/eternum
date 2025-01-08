@@ -13,7 +13,7 @@ use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s0_eternum::models::population::{Population, PopulationTrait};
 use s0_eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
 use s0_eternum::models::production::{
-    Production, ProductionTrait, ProductionLaborImpl, ProductionLaborTrait
+    Production, ProductionTrait
 };
 use s0_eternum::models::realm::Realm;
 use s0_eternum::models::resources::ResourceTrait;
@@ -175,6 +175,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 // ensure production amount is gotten AFTER updating 
                 // bonus received percent so production rate is increased correctly
                 let production_amount = self.production_amount(ref world);
+                assert!(production_amount.is_non_zero(), "resource cannot be produced");
 
                 // increase building count
                 resource_production.increase_building_count();
@@ -183,22 +184,6 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 resource_production.increase_production_rate(production_amount);
             }
         }
-
-        // get labor resource
-        let mut labor_resource_type 
-            = LaborImpl::labor_resource_from_regular(produced_resource_type);
-        let mut labor_resource: Resource 
-            = ResourceImpl::get(ref world, (self.outer_entity_id, labor_resource_type));
-    
-        // update production labor finish tick
-        let production_config: ProductionConfig = world.read_model(produced_resource_type);
-        let tick = TickImpl::get_default_tick_config(ref world);
-        ProductionLaborImpl::update_connected_production(
-            ref labor_resource, 
-            ref resource_production, 
-            @tick, @production_config
-        );
-
         // save production
         world.write_model(@resource_production);
 
@@ -228,7 +213,6 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             // remove bonuses it gave to surrounding buildings
             self.update_bonuses_supplied(ref world, delete: true);
         }
-
         world.write_model(@self);
     }
 
@@ -239,7 +223,6 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
         let produced_resource_type = (*self).produced_resource();
         let production_config: ProductionConfig = world.read_model(produced_resource_type);
-
         let bonus_amount: u128 = (production_config.produced_amount * (*self.bonus_percent).into())
             / PercentageValueImpl::_100().into();
 

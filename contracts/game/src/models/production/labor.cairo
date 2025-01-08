@@ -24,9 +24,9 @@ impl LaborImpl LaborTrait {
 
     fn make_labor(ref world: WorldStorage, entity_id: ID, resource_type: u8, labor_amount: u128) {
 
-        assert!(resource_type.is_non_zero(), "can't make labor for 0 resource");
-        assert!(labor_amount.is_non_zero(), "can't make 0 labor");
-        assert!(entity_id.is_non_zero(), "can't make labor for 0 entity");
+        assert!(resource_type.is_non_zero(), "wrong labor resource type");
+        assert!(labor_amount.is_non_zero(), "zero labor amount");
+        assert!(entity_id.is_non_zero(), "zero entity id");
 
         // ensure there is a config for this labor resource
         let labor_config: LaborConfig = world.read_model(resource_type);
@@ -47,9 +47,36 @@ impl LaborImpl LaborTrait {
 
         // make labor resource
         let labor_resource_type = Self::labor_resource_from_regular(resource_type);
-        let labor_resource = ResourceImpl::get(ref world, (entity_id, labor_resource_type));
+        let mut labor_resource = ResourceImpl::get(ref world, (entity_id, labor_resource_type));
         labor_resource.add(labor_amount);
         labor_resource.save(ref world);
+
+        // todo add event here
+    }
+
+    fn add_production_labor(ref world: WorldStorage, entity_id: ID, resource_type: u8, labor_amount: u128) {
+
+        assert!(resource_type.is_non_zero(), "wrong labor resource type");
+        assert!(labor_amount.is_non_zero(), "zero labor amount");
+        assert!(entity_id.is_non_zero(), "zero entity id");
+
+        // ensure entity is a structure
+        let entity_structure: Structure = world.read_model(self.entity_id);
+        assert!(entity_structure.is_structure(), "entity is not a structure");
+        
+        // ** ADD LABOR AMOUNT TO PRODUCTION ** //
+
+        let resource: Resource = ResourceImpl::get(ref world, (entity_id, resource_type));
+        let mut resource_production: Production = world.read_model((entity_id, resource_type));
+        resource_production.add_labor(labor_amount);
+        world.write_model(resource_production);
+
+        // ** BURN LABOR AMOUNT FROM LABOR RESOURCE ** //
+
+        let labor_resource_type = Self::labor_resource_from_regular(resource_type);
+        let mut labor_resource = ResourceImpl::get(ref world, (entity_id, labor_resource_type));
+        labor_resource.burn(labor_amount);
+        labor_resource.save(ref world);   
 
         // todo add event here
     }

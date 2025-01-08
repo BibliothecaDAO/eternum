@@ -184,18 +184,7 @@ impl ResourceImpl of ResourceTrait {
         let entity_structure: Structure = world.read_model(self.entity_id);
         let entity_is_structure = entity_structure.is_structure();
         if entity_is_structure {
-            if LaborImpl::is_labor(resource.resource_type) {
-                let regular_resource_type = LaborImpl::resource_from_labor(resource.resource_type);
-                let mut regular_resource: Resource
-                    =  world.read_model((resource.entity_id, regular_resource_type));
-                let labor_resource = resource;
-                regular_resource.update(ref labor_resource, ref world);
-            } else {
-                let labor_resource_type = LaborImpl::labor_resource_from_regular(self.resource_type);
-                let mut labor_resource: Resource = world.read_model((self.entity_id, labor_resource_type));
-                let regular_resource = resource;
-                regular_resource.update(ref labor_resource, ref world);
-            }
+            resource.update_balance(ref world);
         }
         
 
@@ -231,32 +220,7 @@ impl ResourceImpl of ResourceTrait {
         let entity_structure: Structure = world.read_model(self.entity_id);
         if entity_structure.is_structure() {
             // limit balance by storehouse capacity
-            self.limit_balance_by_storehouse_capacity(ref world);
-
-            // update the related production when labor resource is updated
-            if LaborImpl::is_labor(self.resource_type) {
-                let regular_resource_type = LaborImpl::resource_from_labor(resource.resource_type);
-                let mut regular_resource_production: Production
-                    =  world.read_model((self.entity_id, regular_resource_type));
-
-                if regular_resource_production.has_building() {
-                    // check that the connected resource has already harvested production
-                    let tick = TickImpl::get_default_tick_config(ref world);
-                    assert!(
-                        regular_resource_production.last_updated_tick == tick.current(), 
-                        "{} production has not been harvested", resource_type_name(regular_resource_type)
-                    );
-
-                    // update labor finish time
-                    let production_config: ProductionConfig = world.read_model(regular_resource_type);
-                    ProductionLaborImpl::update_connected_production(
-                        ref labor_resource, 
-                        ref regular_resource_production, 
-                        @tick, @production_config
-                    );
-                    world.write_model(@regular_resource_production);    
-                }
-            }
+            self.limit_balance_by_storehouse_capacity(ref world);            
         }
 
         // save the updated resource
@@ -309,23 +273,21 @@ impl ResourceImpl of ResourceTrait {
         self.balance = max_balance
     }
 
-    fn update(ref self: Resource, ref labor_resource: Resource, ref world: WorldStorage) {
+    fn update_balance(ref self: Resource, ref world: WorldStorage) {
         let mut production: Production = world.read_model((self.entity_id, self.resource_type));
         let tick = TickImpl::get_default_tick_config(ref world);
         if production.has_building() && production.last_updated_tick != tick.current() {
 
             // harvest the production
             let production_config: ProductionConfig = world.read_model(produced_resource_type);
-            production.harvest(ref self, ref labor_resource, @tick, @production_config);
+            production.harvest(ref self, @tick, @production_config);
             
             // limit balance by storehouse capacity
             self.limit_balance_by_storehouse_capacity(ref world);
-            labor_resource.limit_balance_by_storehouse_capacity(ref world);
 
             // save the updated resources
             world.write_model(@self);
             world.write_model(@production);
-            world.write_model(@labor_resource);
         }
     }
 }
