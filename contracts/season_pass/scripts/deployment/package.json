@@ -1,14 +1,14 @@
 {
   "name": "scripts",
   "version": "1.0.0",
-  "type": "module",
   "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "deploy": "source .env && bun --env-file=.env ./deploy_dev",
-    "deploy::sepolia": "bun --env-file=.env.sepolia ./deploy_dev",
-    "deploy::prod": "bun --env-file=.env.production ./deploy_prod"
-  },
-  "author": "",
-  "license": "ISC"
+    "deploy::prod": "bun --env-file=.env.production ./deploy_prod",
+    "deploy::sepolia": "bun --env-file=.env.sepolia ./deploy_dev"
+  }
 }
