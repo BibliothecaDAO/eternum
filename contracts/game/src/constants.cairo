@@ -113,6 +113,7 @@ mod ResourceTypes {
     // e.g Stone labor = 255 - 1 = 254
 }
 
+const LAST_REGULAR_RESOURCE_ID: u8 = 31;
 fn resource_type_name(resource_type: u8) -> ByteArray {
     if resource_type == 1 {
         "STONE"
@@ -174,7 +175,7 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
         "LORDS"
     } else if resource_type == 30 {
         "WHEAT"
-    } else if resource_type == 31 {
+    } else if resource_type == LAST_REGULAR_RESOURCE_ID  {
         "FISH"
 
     // LABOR

@@ -13,7 +13,8 @@ use s0_eternum::models::config::{
 };
 use s0_eternum::models::config::{WeightConfigImpl, WeightConfig};
 
-use s0_eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
+use s0_eternum::models::production::{Production, ProductionTrait, ProductionLaborImpl};
+use s0_eternum::models::production::labor::{LaborImpl, LaborTrait};
 use s0_eternum::models::realm::Realm;
 use s0_eternum::models::structure::StructureTrait;
 use s0_eternum::models::structure::{Structure, StructureCategory};
@@ -171,17 +172,32 @@ impl ResourceFoodImpl of ResourceFoodTrait {
 impl ResourceImpl of ResourceTrait {
     fn get(ref world: WorldStorage, key: (ID, u8)) -> Resource {
         let mut resource: Resource = world.read_model(key);
-        assert!(resource.resource_type.is_non_zero(), "resource type not found");
         assert!(resource.entity_id.is_non_zero(), "entity id not found");
-
-        resource.harvest(ref world);
-
-        // if resource is labor, we need to update the production
-
-        // how to know if resource is labor?
-        // 255 - resource_type > 200 
-
-        // we check production of resource for 
+        assert!(
+            resource.resource_type != 0,
+            && resource.resource_type != 255,
+            && resource.resource_type <= LAST_REGULAR_RESOURCE_ID, // regular resources
+            && resource.resource_type >= 255 - LAST_LABOR_RESOURCE_ID, // labor resources
+            "resource type not found"
+        );
+        
+        let entity_structure: Structure = world.read_model(self.entity_id);
+        let entity_is_structure = entity_structure.is_structure();
+        if entity_is_structure {
+            if LaborImpl::is_labor(resource.resource_type) {
+                let regular_resource_type = LaborImpl::resource_from_labor(resource.resource_type);
+                let mut regular_resource: Resource
+                    =  world.read_model((resource.entity_id, regular_resource_type));
+                let labor_resource = resource;
+                regular_resource.update(ref labor_resource, ref world);
+            } else {
+                let labor_resource_type = LaborImpl::labor_resource_from_regular(self.resource_type);
+                let mut labor_resource: Resource = world.read_model((self.entity_id, labor_resource_type));
+                let regular_resource = resource;
+                regular_resource.update(ref labor_resource, ref world);
+            }
+        }
+        
 
         return resource;
     }
@@ -212,27 +228,42 @@ impl ResourceImpl of ResourceTrait {
             return;
         };
 
-        // ensure realm has enough store houses to keep resource balance
         let entity_structure: Structure = world.read_model(self.entity_id);
-        let entity_is_structure = entity_structure.is_structure();
-        if entity_is_structure {
+        if entity_structure.is_structure() {
+            // limit balance by storehouse capacity
             self.limit_balance_by_storehouse_capacity(ref world);
+
+            // update the related production when labor resource is updated
+            if LaborImpl::is_labor(self.resource_type) {
+                let regular_resource_type = LaborImpl::resource_from_labor(resource.resource_type);
+                let mut regular_resource_production: Production
+                    =  world.read_model((self.entity_id, regular_resource_type));
+
+                if regular_resource_production.has_building() {
+                    // check that the connected resource has already harvested production
+                    let tick = TickImpl::get_default_tick_config(ref world);
+                    assert!(
+                        regular_resource_production.last_updated_tick == tick.current(), 
+                        "{} production has not been harvested", resource_type_name(regular_resource_type)
+                    );
+
+                    // update labor finish time
+                    let production_config: ProductionConfig = world.read_model(regular_resource_type);
+                    ProductionLaborImpl::update_connected_production(
+                        ref labor_resource, 
+                        ref regular_resource_production, 
+                        @tick, @production_config
+                    );
+                    world.write_model(@regular_resource_production);    
+                }
+            }
         }
 
         // save the updated resource
         world.write_model(@self);
 
-        if entity_is_structure {
-            // sync end ticks of resources that use this resource in their production
-            // e.g `self` may be wheat resource and is stone, coal and gold are used
-            // in production of wheat, we update their exhaustion ticks
-            ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@self, ref world);
-        }
-
-        // Update the entity's owned resources tracker
-
+        // update the entity's resource tracker
         let mut entity_owned_resources: OwnedResourcesTracker = world.read_model(self.entity_id);
-
         if self.balance == 0 {
             if entity_owned_resources.owns_resource_type(self.resource_type) {
                 entity_owned_resources.set_resource_ownership(self.resource_type, false);
@@ -273,20 +304,28 @@ impl ResourceImpl of ResourceTrait {
         let storehouse_capacity_grams_with_precision = storehouse_capacity_grams * RESOURCE_PRECISION;
 
         let max_weight_grams = min(resource_weight_grams_with_precision, storehouse_capacity_grams_with_precision);
-
         let max_balance = max_weight_grams / resource_weight_config.weight_gram;
 
         self.balance = max_balance
     }
 
-    fn harvest(ref self: Resource, ref world: WorldStorage) {
+    fn update(ref self: Resource, ref labor_resource: Resource, ref world: WorldStorage) {
         let mut production: Production = world.read_model((self.entity_id, self.resource_type));
         let tick = TickImpl::get_default_tick_config(ref world);
-        if production.is_active() && production.last_updated_tick != tick.current() {
-            production.harvest(ref self, @tick);
+        if production.has_building() && production.last_updated_tick != tick.current() {
+
+            // harvest the production
+            let production_config: ProductionConfig = world.read_model(produced_resource_type);
+            production.harvest(ref self, ref labor_resource, @tick, @production_config);
+            
+            // limit balance by storehouse capacity
             self.limit_balance_by_storehouse_capacity(ref world);
+            labor_resource.limit_balance_by_storehouse_capacity(ref world);
+
+            // save the updated resources
             world.write_model(@self);
             world.write_model(@production);
+            world.write_model(@labor_resource);
         }
     }
 }

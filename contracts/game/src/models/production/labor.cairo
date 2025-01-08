@@ -1,6 +1,7 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s0_eternum::alias::ID;
+use s0_eternum::constants::{LAST_REGULAR_RESOURCE_ID};
 use s0_eternum::models::config::{LaborConfig};
 use s0_eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use s0_eternum::models::resources::{Resource, ResourceImpl};
@@ -9,8 +10,16 @@ use s0_eternum::models::resources::{Resource, ResourceImpl};
 #[generate_trait]
 impl LaborImpl LaborTrait {
 
-    fn labor_type_from_resource(resource_type: u8) -> u8 {
+    fn labor_resource_from_regular(resource_type: u8) -> u8 {
         return 255 - resource_type;
+    }
+
+    fn resource_from_labor(labor_type: u8) -> u8 {
+        return 255 - labor_type;
+    }
+
+    fn is_labor(resource_type: u8) -> bool {
+        return resource_type != 255 && resource_type >= 255 - LAST_LABOR_RESOURCE_ID;
     }
 
     fn make_labor(ref world: WorldStorage, entity_id: ID, resource_type: u8, labor_amount: u128) {
@@ -37,7 +46,7 @@ impl LaborImpl LaborTrait {
         }
 
         // make labor resource
-        let labor_resource_type = Self::labor_type_from_resource(resource_type);
+        let labor_resource_type = Self::labor_resource_from_regular(resource_type);
         let labor_resource = ResourceImpl::get(ref world, (entity_id, labor_resource_type));
         labor_resource.add(labor_amount);
         labor_resource.save(ref world);

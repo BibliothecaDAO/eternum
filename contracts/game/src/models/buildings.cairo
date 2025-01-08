@@ -186,12 +186,9 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
         // get labor resource
         let mut labor_resource_type 
-            = LaborImpl::labor_type_from_resource(produced_resource_type);
-
-        // we expect labor resource to not be produceable so it's okay to 
-        // read it from the world storage rather than the resourceimpl::get() 
+            = LaborImpl::labor_resource_from_regular(produced_resource_type);
         let mut labor_resource: Resource 
-            = world.read_model((self.outer_entity_id, labor_resource_type));
+            = ResourceImpl::get(ref world, (self.outer_entity_id, labor_resource_type));
     
         // update production labor finish tick
         let production_config: ProductionConfig = world.read_model(produced_resource_type);

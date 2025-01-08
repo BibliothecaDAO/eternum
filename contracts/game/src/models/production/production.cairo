@@ -132,7 +132,7 @@ impl ProductionLaborImpl of ProductionLaborTrait {
                 let labor_cost_per_tick = (*production_config).labor_amount;
                 assert!(labor_cost_per_tick.is_non_zero(), "labor cost amount not set");
 
-                let labor_tick_amount = labor.balance / labor_cost_per_tick;
+                let labor_tick_amount = labor.balance / (labor_cost_per_tick * connected_production.building_count.into());
                 connected_production.labor_finish_tick = (*tick).current() + labor_tick_amount;
                 connected_production.last_updated_tick = (*tick).current();
             }
