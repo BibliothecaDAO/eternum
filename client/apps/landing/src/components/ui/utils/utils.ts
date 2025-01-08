@@ -1,4 +1,4 @@
-import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
+import { ClientConfigManager } from "@bibliothecadao/eternum";
 import { env } from "../../../../env";
 
 import {

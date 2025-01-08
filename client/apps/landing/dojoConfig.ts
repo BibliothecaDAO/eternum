@@ -1,7 +1,7 @@
 import { createDojoConfig } from "@dojoengine/core";
-import devManifest from "../contracts/manifest_dev.json";
-import productionManifest from "../contracts/manifest_mainnet.json";
-import sepoliaManifest from "../contracts/manifest_prod.json";
+import devManifest from "../../common/manifests/manifest_dev.json";
+import productionManifest from "../../common/manifests/manifest_mainnet.json";
+import sepoliaManifest from "../../common/manifests/manifest_prod.json";
 import { env } from "./env";
 
 const {
@@ -11,7 +11,6 @@ const {
   VITE_PUBLIC_MASTER_ADDRESS,
   VITE_PUBLIC_MASTER_PRIVATE_KEY,
   VITE_PUBLIC_ACCOUNT_CLASS_HASH,
-  VITE_PUBLIC_DEV,
   VITE_PUBLIC_FEE_TOKEN_ADDRESS,
   VITE_PUBLIC_CHAIN,
 } = env;
