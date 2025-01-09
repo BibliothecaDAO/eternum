@@ -614,7 +614,7 @@ mod config_systems {
 
             let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
             resource_production_config.produced_amount = produced_amount;
-            resource_production_config.labor_amount = labor_amount;
+            resource_production_config.labor_cost = labor_amount;
             world.write_model(@resource_production_config);
         }
     }

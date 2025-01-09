@@ -531,7 +531,7 @@ pub struct ProductionConfig {
     // production amount per tick
     produced_amount: u128,
     // labor cost amount per tick
-    labor_amount: u128,
+    labor_cost: u128,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

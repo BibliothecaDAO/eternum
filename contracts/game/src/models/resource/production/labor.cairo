@@ -2,7 +2,7 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s0_eternum::alias::ID;
 use s0_eternum::constants::{FIRST_LABOR_RESOURCE_ID, LAST_LABOR_RESOURCE_ID};
-use s0_eternum::models::config::{LaborConfig};
+use s0_eternum::models::config::{LaborConfig, ProductionConfig};
 use s0_eternum::models::structure::{Structure, StructureImpl};
 use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
 use s0_eternum::models::resource::production::production::{Production, ProductionImpl};
@@ -26,7 +26,7 @@ impl LaborImpl of LaborTrait {
         );
     }
 
-    fn make_labor(ref world: WorldStorage, entity_id: ID, resource_type: u8, labor_amount: u128) {
+    fn mould_labor(ref world: WorldStorage, entity_id: ID, resource_type: u8, labor_amount: u128) {
 
         assert!(resource_type.is_non_zero(), "wrong labor resource type");
         assert!(labor_amount.is_non_zero(), "zero labor amount");
@@ -76,7 +76,8 @@ impl LaborImpl of LaborTrait {
         
         // add labor to production
         let mut resource_production: Production = world.read_model((entity_id, resource_type));
-        resource_production.add_labor(labor_amount);
+        let resource_production_config: ProductionConfig = world.read_model(resource_type);
+        resource_production.use_labor(@resource_production_config, labor_amount);
         world.write_model(@resource_production);
 
         // ** BURN LABOR AMOUNT FROM LABOR RESOURCE ** //

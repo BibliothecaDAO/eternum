@@ -165,8 +165,8 @@ mod map_generation_systems {
             )[0];
             let min_production_amount: u128 = 100_000 * RESOURCE_PRECISION;
             let actual_production_amount: u128 = min_production_amount * random_multiplier;
-            let mut labor_amount_required: u128 = actual_production_amount / shards_production_config.labor_amount;
-            if actual_production_amount % shards_production_config.labor_amount != 0 {
+            let mut labor_amount_required: u128 = actual_production_amount / shards_production_config.labor_cost;
+            if actual_production_amount % shards_production_config.labor_cost != 0 {
                 labor_amount_required += 1;
             }
 

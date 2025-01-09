@@ -7,7 +7,7 @@ use dojo::world::WorldStorage;
 use s0_eternum::alias::ID;
 use s0_eternum::models::config::{ProductionConfig};
 use s0_eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use s0_eternum::models::resource::resource::{Resource, ResourceImpl};
+use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTypes};
 use starknet::get_block_timestamp;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -17,9 +17,13 @@ pub struct Production {
     entity_id: ID,
     #[key]
     resource_type: u8,
+    // active building count
     building_count: u8,
+    // production rate per tick
     production_rate: u128,
-    labor_amount_left: u128,
+    // labor units left for production
+    labor_units_left: u64,
+    // last tick updated
     last_updated_tick: u32,
 }
 
@@ -50,8 +54,13 @@ impl ProductionImpl of ProductionTrait {
         self.production_rate -= production_rate;
     }
 
-    fn add_labor(ref self: Production, labor_amount: u128) {
-        self.labor_amount_left += labor_amount;
+    fn use_labor(ref self: Production, production_config: @ProductionConfig, labor_amount: u128) {
+        assert!(self.resource_type == *production_config.resource_type, "mismatched resource type when using labor");
+        assert!(labor_amount.is_non_zero(), "zero labor amount");
+        assert!(labor_amount % (*production_config).labor_cost == 0, "labor amount not exactly divisible by labor cost");
+
+        let additional_labor_units: u64 = (labor_amount / (*production_config).labor_cost).try_into().unwrap();
+        self.labor_units_left += additional_labor_units;
     }
     
     // function must be called on every resource before querying their balance
@@ -70,33 +79,30 @@ impl ProductionImpl of ProductionTrait {
 
         // check production duration
         let current_tick = (*tick).current();
-        if self.labor_amount_left.is_non_zero() {
+        if self.labor_units_left.is_non_zero() {
 
-            // get total labor cost
-            let labor_cost_per_tick: u128 = (*production_config).labor_amount;
-            let ticks_left: u128 = self.labor_amount_left / (labor_cost_per_tick * self.building_count.into());
-            let ticks_passed: u128 = current_tick.into() - self.last_updated_tick.into();
-            let duration_passed: u64 = core::cmp::min(ticks_passed, ticks_left).try_into().unwrap();
+            // total units produced by all buildings
+            let mut labor_units_burned: u128 
+                = (current_tick.into() - self.last_updated_tick.into()) 
+                    * self.building_count.into();
 
-            let total_labor_cost: u128 
-                = (duration_passed.into() 
-                    * labor_cost_per_tick * self.building_count.into());
+            // limit units produced to labor units left
+            if labor_units_burned > self.labor_units_left.into() {
+                labor_units_burned = self.labor_units_left.into();
+            }
 
             // get total produced amount
             let total_produced_amount: u128 
-                = duration_passed.into() * self.production_rate;
+                = labor_units_burned * self.production_rate;
 
-            // ensure that labor cost is set
-            if total_produced_amount.is_non_zero() {
-                assert!(total_labor_cost.is_non_zero(), 
-                    "labor cost amount not set. cannot produce resource");
-            }
+            // ensure lords can not be produced by any means
+            assert!(self.resource_type != ResourceTypes::LORDS, "lords can not be produced");
 
             // update resource balance
             resource.balance += total_produced_amount;
 
-            // update labor amount left
-            self.labor_amount_left -= total_labor_cost;
+            // update labor cycles left
+            self.labor_units_left -= labor_units_burned.try_into().unwrap();
 
             // update last updated tick
             self.last_updated_tick = current_tick.try_into().unwrap();

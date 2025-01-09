@@ -125,7 +125,7 @@ mod production_systems {
             let entity_owner: EntityOwner = world.read_model(entity_id);
             entity_owner.assert_caller_owner(world);
 
-            LaborImpl::make_labor(ref world, entity_id, resource_type, labor_amount);
+            LaborImpl::mould_labor(ref world, entity_id, resource_type, labor_amount);
         }
 
         // Burn production labor resource and add to production
