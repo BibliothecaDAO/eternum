@@ -1,6 +1,6 @@
 import { type ID } from "@bibliothecadao/eternum";
 import { type Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import realmsJson from "../../../../client/src/data/geodata/realms.json";
+import realmsJson from "../../../../../apps/game/src/data/geodata/realms.json";
 import { useDojo } from "../context/DojoContext";
 
 export function useRealm() {

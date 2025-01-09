@@ -4,12 +4,11 @@
   "type": "module",
   "scripts": {
     "build": "pnpm --dir ./client/apps/game build",
-    "build:docs": "cd ./client/apps/docs && vocs build",
+    "build:docs": "vocs build",
     "build:landing": "pnpm --dir ./client/apps/landing build",
     "build:packages": "pnpm --dir ./client/sdk/packages/eternum build",
-    "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",
     "dev": "pnpm --dir ./client/apps/game dev",
-    "dev:docs": "cd ./client/apps/docs && vocs dev",
+    "dev:docs": "vocs dev",
     "dev:landing": "pnpm --dir ./client/apps/landing dev",
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
@@ -17,27 +16,6 @@
     "lint": "pnpm --recursive run lint",
     "lint:fix": "pnpm --recursive run lint:fix",
     "test": "pnpm --recursive run test"
-  },
-  "dependencies": {
-    "colors": "^1.4.0",
-    "dotenv": "^16.3.1",
-    "eventemitter3": "^5.0.1",
-    "starknet": "^6.8.0",
-    "viem": "^2.21.45",
-    "vocs": "latest"
-  },
-  "devDependencies": {
-    "@bibliothecadao/eternum": "workspace:^",
-    "@dojoengine/core": "1.0.4-alpha.3.1.0",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "autoprefixer": "^10.4.18",
-    "eslint": "^9.9.0",
-    "postcss": "^8.4.35",
-    "prettier": "^3.x.x",
-    "typescript": "^5.x.x",
-    "vite": "^5.x.x",
-    "vitest": "^2.0.5"
   },
   "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee"
 }
