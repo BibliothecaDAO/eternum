@@ -22,7 +22,6 @@ mod map_generation_systems {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use s0_eternum::alias::ID;
     use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
-    use s0_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
     use s0_eternum::models::capacity::{CapacityCategory};
     use s0_eternum::models::combat::{
         Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
@@ -37,10 +36,10 @@ mod map_generation_systems {
     use s0_eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use s0_eternum::models::quantity::Quantity;
     use s0_eternum::models::realm::{Realm};
+    use s0_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
     use s0_eternum::models::resource::production::labor::{LaborImpl};
     use s0_eternum::models::resource::resource::{
-        Resource, ResourceImpl, ResourceCost, ResourceTrait,
-        ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
+        Resource, ResourceImpl, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };
 
     use s0_eternum::models::season::SeasonImpl;
@@ -199,19 +198,20 @@ mod map_generation_systems {
                     ref world, 0, mine_structure_entity_id, mercenaries_config.rewards, 0, false, false
                 );
 
-                let labor_amount_required 
-                    = Self::get_shards_reward(ref world, vrf_seed, mine_structure_entity_id);
+                let labor_amount_required = Self::get_shards_reward(ref world, vrf_seed, mine_structure_entity_id);
 
                 // add earthenshard labor to mine balance
                 let shards_labor_resource_type = LaborImpl::labor_resource_from_regular(ResourceTypes::EARTHEN_SHARD);
-                let mut shards_labor_resource = ResourceImpl::get(ref world, (mine_structure_entity_id, shards_labor_resource_type));
+                let mut shards_labor_resource = ResourceImpl::get(
+                    ref world, (mine_structure_entity_id, shards_labor_resource_type)
+                );
                 shards_labor_resource.add(labor_amount_required);
-                shards_labor_resource.save(ref world);   
+                shards_labor_resource.save(ref world);
 
                 // add labor to production machine
                 LaborImpl::burn_labor(
-                    ref world, mine_structure_entity_id, 
-                    ResourceTypes::EARTHEN_SHARD, labor_amount_required);
+                    ref world, mine_structure_entity_id, ResourceTypes::EARTHEN_SHARD, labor_amount_required
+                );
 
                 // create shards production building
                 BuildingImpl::create(

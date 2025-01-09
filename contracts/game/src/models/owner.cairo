@@ -77,14 +77,7 @@ mod tests {
 
         world
             .write_model_test(
-                @Realm {
-                    entity_id: 1,
-                    realm_id: 3,
-                    produced_resources: 0,
-                    order: 0,
-                    level: 0,
-                    has_wonder: false,
-                }
+                @Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0, has_wonder: false, }
             );
         world.write_model_test(@EntityOwner { entity_id: 2, entity_owner_id: 1 });
 

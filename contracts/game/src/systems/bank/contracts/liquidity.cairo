@@ -21,8 +21,8 @@ mod liquidity_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     // Eternum imports
     use s0_eternum::alias::ID;
-    use s0_eternum::constants::{RESOURCE_PRECISION,DEFAULT_NS};
     use s0_eternum::constants::ResourceTypes;
+    use s0_eternum::constants::{RESOURCE_PRECISION, DEFAULT_NS};
     use s0_eternum::models::bank::liquidity::{Liquidity};
     use s0_eternum::models::bank::market::{Market, MarketTrait};
     use s0_eternum::models::owner::{Owner, OwnerTrait};

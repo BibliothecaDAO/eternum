@@ -12,10 +12,8 @@ use s0_eternum::models::config::{
 use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s0_eternum::models::population::{Population, PopulationTrait};
 use s0_eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
-use s0_eternum::models::resource::production::production::{
-    Production, ProductionTrait
-};
 use s0_eternum::models::realm::Realm;
+use s0_eternum::models::resource::production::production::{Production, ProductionTrait};
 use s0_eternum::models::resource::resource::ResourceTrait;
 use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
 use s0_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
@@ -142,18 +140,16 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     fn update_production(ref self: Building, ref world: WorldStorage, stop: bool) {
         // update produced resource balance before updating production
         let produced_resource_type = self.produced_resource();
-        let mut produced_resource: Resource 
-            = ResourceImpl::get(ref world, (self.outer_entity_id, produced_resource_type));
+        let mut produced_resource: Resource = ResourceImpl::get(
+            ref world, (self.outer_entity_id, produced_resource_type)
+        );
         produced_resource.save(ref world);
 
-
-        let mut resource_production: Production 
-            = world.read_model((self.outer_entity_id, produced_resource_type));
+        let mut resource_production: Production = world.read_model((self.outer_entity_id, produced_resource_type));
 
         match stop {
             true => {
-
-                // ensure production amount is gotten BEFORE updating 
+                // ensure production amount is gotten BEFORE updating
                 // bonus received percent so production rate is decreased correctly
                 let production_amount = self.production_amount(ref world);
 
@@ -165,14 +161,12 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
                 // decrease production rate
                 resource_production.decrease_production_rate(production_amount);
-
             },
             false => {
-
                 // update bonus received percent
                 self.update_bonus_received_percent(ref world, delete: false);
 
-                // ensure production amount is gotten AFTER updating 
+                // ensure production amount is gotten AFTER updating
                 // bonus received percent so production rate is increased correctly
                 let production_amount = self.production_amount(ref world);
                 assert!(production_amount.is_non_zero(), "resource cannot be produced");
@@ -186,7 +180,6 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         }
         // save production
         world.write_model(@resource_production);
-
         // todo add event here
     }
 
@@ -230,18 +223,12 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     }
 
 
-    fn update_bonus_received_percent(
-        ref self: Building,
-        ref world: WorldStorage,
-        delete: bool
-    ) {
-       
+    fn update_bonus_received_percent(ref self: Building, ref world: WorldStorage, delete: bool) {
         if delete {
             // clear building bonus
             self.bonus_percent = 0;
         } else {
-
-             // get bonuses from all buildings surronding this building if the offer boosts
+            // get bonuses from all buildings surronding this building if the offer boosts
             let building_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
             let mut bonus_percent = self.get_bonus_from(building_coord.neighbor(Direction::East), ref world);
             bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::NorthEast), ref world);
@@ -289,12 +276,12 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         if recipient_building.exists() // only when building exists at the location
             && !recipient_building.paused // only give bonus to active buildings
             && recipient_building.is_resource_producer() { // only give bonus to resource producers
-
             // get the resource that the building produces
             let recipient_produced_resource_type = recipient_building.produced_resource();
-            let mut recipient_building_resource: Resource 
-                = ResourceImpl::get(ref world, (self.outer_entity_id, recipient_produced_resource_type));
-            
+            let mut recipient_building_resource: Resource = ResourceImpl::get(
+                ref world, (self.outer_entity_id, recipient_produced_resource_type)
+            );
+
             // ensure harvest is done on the resource before we modify its production
             recipient_building_resource.save(ref world);
 
@@ -316,12 +303,10 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             world.write_model(@recipient_building);
 
             // get the building's new production amount
-            let recipient_building_new_production_amount: u128 
-                = recipient_building.production_amount(ref world);
+            let recipient_building_new_production_amount: u128 = recipient_building.production_amount(ref world);
 
             // update the global resource production to reflect the new production rate
-            recipient_production
-                .increase_production_rate(recipient_building_new_production_amount);
+            recipient_production.increase_production_rate(recipient_building_new_production_amount);
             world.write_model(@recipient_production);
         }
     }

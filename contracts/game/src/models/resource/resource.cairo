@@ -5,18 +5,18 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s0_eternum::alias::ID;
 use s0_eternum::constants::{
-    LAST_REGULAR_RESOURCE_ID, FIRST_LABOR_RESOURCE_ID,
-    get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG, ResourceTypes, resource_type_name, WORLD_CONFIG_ID
+    LAST_REGULAR_RESOURCE_ID, FIRST_LABOR_RESOURCE_ID, get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG,
+    ResourceTypes, resource_type_name, WORLD_CONFIG_ID
 };
-use s0_eternum::models::resource::production::building::{Building, BuildingTrait, BuildingCategory, BuildingQuantityv2};
 use s0_eternum::models::config::{
     ProductionConfig, TickConfig, TickImpl, TickTrait, CapacityConfig, CapacityConfigCategory, CapacityConfigTrait
 };
 use s0_eternum::models::config::{WeightConfigImpl, WeightConfig};
+use s0_eternum::models::realm::Realm;
+use s0_eternum::models::resource::production::building::{Building, BuildingTrait, BuildingCategory, BuildingQuantityv2};
+use s0_eternum::models::resource::production::labor::{LaborImpl, LaborTrait};
 
 use s0_eternum::models::resource::production::production::{Production, ProductionTrait};
-use s0_eternum::models::resource::production::labor::{LaborImpl, LaborTrait};
-use s0_eternum::models::realm::Realm;
 use s0_eternum::models::structure::StructureTrait;
 use s0_eternum::models::structure::{Structure, StructureCategory};
 use s0_eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
@@ -174,19 +174,21 @@ impl ResourceImpl of ResourceTrait {
     fn get(ref world: WorldStorage, key: (ID, u8)) -> Resource {
         let mut resource: Resource = world.read_model(key);
         assert!(resource.entity_id.is_non_zero(), "entity id not found");
-        assert!(resource.resource_type != 0 && resource.resource_type != Bounded::MAX, "invalid resource specified (1)");
+        assert!(
+            resource.resource_type != 0 && resource.resource_type != Bounded::MAX, "invalid resource specified (1)"
+        );
         assert!(
             resource.resource_type <= LAST_REGULAR_RESOURCE_ID // regular resources
-            || resource.resource_type >= FIRST_LABOR_RESOURCE_ID, // labor resources
+                || resource.resource_type >= FIRST_LABOR_RESOURCE_ID, // labor resources
             "invalid resource specified (2)"
         );
-        
+
         let entity_structure: Structure = world.read_model(resource.entity_id);
         let entity_is_structure = entity_structure.is_structure();
         if entity_is_structure {
             resource.update_balance(ref world);
         }
-        
+
         return resource;
     }
 
@@ -219,7 +221,7 @@ impl ResourceImpl of ResourceTrait {
         let entity_structure: Structure = world.read_model(self.entity_id);
         if entity_structure.is_structure() {
             // limit balance by storehouse capacity
-            self.limit_balance_by_storehouse_capacity(ref world);            
+            self.limit_balance_by_storehouse_capacity(ref world);
         }
 
         // save the updated resource
@@ -276,11 +278,10 @@ impl ResourceImpl of ResourceTrait {
         let mut production: Production = world.read_model((self.entity_id, self.resource_type));
         let tick = TickImpl::get_default_tick_config(ref world);
         if production.has_building() && production.last_updated_tick != tick.current().try_into().unwrap() {
-
             // harvest the production
             let production_config: ProductionConfig = world.read_model(self.resource_type);
             production.harvest(ref self, @tick, @production_config);
-            
+
             // limit balance by storehouse capacity
             self.limit_balance_by_storehouse_capacity(ref world);
 

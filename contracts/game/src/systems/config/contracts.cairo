@@ -1,12 +1,12 @@
 use dojo::world::IWorldDispatcher;
 use s0_eternum::alias::ID;
-use s0_eternum::models::resource::production::building::BuildingCategory;
 use s0_eternum::models::combat::{Troops};
 use s0_eternum::models::config::{
     TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonAddressesConfig
 };
 use s0_eternum::models::position::Coord;
+use s0_eternum::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
 trait IWorldConfig<T> {
@@ -226,7 +226,6 @@ mod config_systems {
         POPULATION_CONFIG_ID, DEFAULT_NS
     };
     use s0_eternum::models::bank::bank::{Bank};
-    use s0_eternum::models::resource::production::building::{BuildingCategory};
     use s0_eternum::models::combat::{Troops};
 
     use s0_eternum::models::config::{
@@ -235,11 +234,11 @@ mod config_systems {
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig,
-        LaborConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig, LaborConfig
     };
 
     use s0_eternum::models::position::{Position, PositionTrait, Coord};
+    use s0_eternum::models::resource::production::building::{BuildingCategory};
     use s0_eternum::models::resource::resource::{ResourceCost, DetachedResource};
     use s0_eternum::models::season::{Season};
     use s0_eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
@@ -608,7 +607,9 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
-        fn set_production_config(ref self: ContractState, resource_type: u8, produced_amount: u128, labor_amount: u128) {
+        fn set_production_config(
+            ref self: ContractState, resource_type: u8, produced_amount: u128, labor_amount: u128
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
@@ -627,40 +628,38 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             let resource_cost_id = world.dispatcher.uuid();
-            for i in 0..cost.len() {
-                let (resource_type, resource_amount) = *cost.at(i);
-                world
-                    .write_model(
-                        @ResourceCost { 
-                            entity_id: resource_cost_id, 
-                            index: i, 
-                            resource_type, 
-                            amount: resource_amount 
-                        }
-                    );
-            };
+            for i in 0
+                ..cost
+                    .len() {
+                        let (resource_type, resource_amount) = *cost.at(i);
+                        world
+                            .write_model(
+                                @ResourceCost {
+                                    entity_id: resource_cost_id, index: i, resource_type, amount: resource_amount
+                                }
+                            );
+                    };
 
-            world.write_model(
-                @LaborConfig { 
-                    resource_type, 
-                    input_id: resource_cost_id, 
-                    input_count: cost.len().try_into().unwrap()
-            });
+            world
+                .write_model(
+                    @LaborConfig {
+                        resource_type, input_id: resource_cost_id, input_count: cost.len().try_into().unwrap()
+                    }
+                );
         }
     }
 
-// #[derive(IntrospectPacked, Copy, Drop, Serde)]
-// #[dojo::model]
-// pub struct LaborConfig {
-//     #[key]
-//     // e.g when configuring stone labor, resource_type = stone 
-//     resource_type: u8,
-//     // uuid used to get the ResourceCost
-//     input_id: ID,
-//     // number of resources required to make labor
-//     input_count: u8,
-// }
-
+    // #[derive(IntrospectPacked, Copy, Drop, Serde)]
+    // #[dojo::model]
+    // pub struct LaborConfig {
+    //     #[key]
+    //     // e.g when configuring stone labor, resource_type = stone
+    //     resource_type: u8,
+    //     // uuid used to get the ResourceCost
+    //     input_id: ID,
+    //     // number of resources required to make labor
+    //     input_count: u8,
+    // }
 
     #[abi(embed_v0)]
     impl TransportConfigImpl of super::ITransportConfig<ContractState> {

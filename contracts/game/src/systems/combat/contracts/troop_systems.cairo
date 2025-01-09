@@ -124,7 +124,6 @@ mod troop_systems {
     use s0_eternum::alias::ID;
     use s0_eternum::constants::{ResourceTypes};
     use s0_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
-    use s0_eternum::models::resource::production::building::{BuildingCategory, BuildingQuantityv2,};
     use s0_eternum::models::capacity::{CapacityCategory};
     use s0_eternum::models::combat::{ProtectorTrait};
     use s0_eternum::models::config::{
@@ -138,6 +137,7 @@ mod troop_systems {
     use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
+    use s0_eternum::models::resource::production::building::{BuildingCategory, BuildingQuantityv2,};
     use s0_eternum::models::resource::resource::{ResourceImpl, ResourceCost};
     use s0_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
 

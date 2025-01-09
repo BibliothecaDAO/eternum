@@ -57,21 +57,19 @@ impl ProductionImpl of ProductionTrait {
     fn use_labor(ref self: Production, production_config: @ProductionConfig, labor_amount: u128) {
         assert!(self.resource_type == *production_config.resource_type, "mismatched resource type when using labor");
         assert!(labor_amount.is_non_zero(), "zero labor amount");
-        assert!(labor_amount % (*production_config).labor_cost == 0, "labor amount not exactly divisible by labor cost");
+        assert!(
+            labor_amount % (*production_config).labor_cost == 0, "labor amount not exactly divisible by labor cost"
+        );
 
         let additional_labor_units: u64 = (labor_amount / (*production_config).labor_cost).try_into().unwrap();
         self.labor_units_left += additional_labor_units;
     }
-    
+
     // function must be called on every resource before querying their balance
     // to ensure that the balance is accurate
     fn harvest(
-        ref self: Production, 
-        ref resource: Resource, 
-        tick: @TickConfig, 
-        production_config: @ProductionConfig
+        ref self: Production, ref resource: Resource, tick: @TickConfig, production_config: @ProductionConfig
     ) -> bool {
-
         // return false if production is not active
         if !self.has_building() {
             return false;
@@ -80,11 +78,9 @@ impl ProductionImpl of ProductionTrait {
         // check production duration
         let current_tick = (*tick).current();
         if self.labor_units_left.is_non_zero() {
-
             // total units produced by all buildings
-            let mut labor_units_burned: u128 
-                = (current_tick.into() - self.last_updated_tick.into()) 
-                    * self.building_count.into();
+            let mut labor_units_burned: u128 = (current_tick.into() - self.last_updated_tick.into())
+                * self.building_count.into();
 
             // limit units produced to labor units left
             if labor_units_burned > self.labor_units_left.into() {
@@ -92,8 +88,7 @@ impl ProductionImpl of ProductionTrait {
             }
 
             // get total produced amount
-            let total_produced_amount: u128 
-                = labor_units_burned * self.production_rate;
+            let total_produced_amount: u128 = labor_units_burned * self.production_rate;
 
             // ensure lords can not be produced by any means
             assert!(self.resource_type != ResourceTypes::LORDS, "lords can not be produced");

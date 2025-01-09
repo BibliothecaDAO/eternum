@@ -29,8 +29,8 @@ mod bank {
 mod resource {
     mod resource;
     mod production {
-        mod production;
-        mod labor;
         mod building;
+        mod labor;
+        mod production;
     }
 }

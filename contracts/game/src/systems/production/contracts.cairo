@@ -4,7 +4,6 @@ use s0_eternum::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
 trait IProductionContract<TContractState> {
-
     /// Create and Destroy Buildings
     fn create_building(
         ref self: TContractState,
@@ -21,7 +20,7 @@ trait IProductionContract<TContractState> {
 
     /// Make Production Labor from Input Resources
     fn make_production_labor(ref self: TContractState, entity_id: ID, resource_type: u8, labor_amount: u128);
-    
+
     /// Burn Labor from balance and add to production
     fn burn_production_labor(ref self: TContractState, entity_id: ID, resource_type: u8, labor_amount: u128);
 }
@@ -38,9 +37,8 @@ mod production_systems {
     use s0_eternum::models::{
         resource::resource::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerTrait}, order::Orders,
         position::{Coord, CoordTrait, Position, PositionTrait, Direction},
-        resource::production::building::{BuildingCategory, Building, BuildingImpl}, 
-        resource::production::production::{Production, ProductionTrait},
-        resource::production::labor::{LaborImpl},
+        resource::production::building::{BuildingCategory, Building, BuildingImpl},
+        resource::production::production::{Production, ProductionTrait}, resource::production::labor::{LaborImpl},
         realm::{Realm, RealmImpl, RealmResourcesTrait}
     };
 

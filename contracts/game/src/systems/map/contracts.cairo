@@ -18,7 +18,6 @@ mod map_systems {
 
     use s0_eternum::alias::ID;
     use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
-    use s0_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
     use s0_eternum::models::capacity::{CapacityCategory};
     use s0_eternum::models::combat::{
         Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
@@ -33,6 +32,7 @@ mod map_systems {
     use s0_eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use s0_eternum::models::quantity::Quantity;
     use s0_eternum::models::realm::{Realm};
+    use s0_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
     use s0_eternum::models::resource::resource::{
         Resource, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };

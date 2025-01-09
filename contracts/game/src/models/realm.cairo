@@ -332,14 +332,7 @@ mod test_realm_resources_impl {
     use super::{RealmResourcesImpl, RealmResourcesTrait, Realm};
 
     fn mock_realm() -> Realm {
-        Realm {
-            entity_id: 1,
-            realm_id: 1,
-            order: 0,
-            level: 0,
-            produced_resources: 0,
-            has_wonder: false,
-        }
+        Realm { entity_id: 1, realm_id: 1, order: 0, level: 0, produced_resources: 0, has_wonder: false, }
     }
 
 

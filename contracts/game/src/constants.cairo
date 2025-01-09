@@ -108,9 +108,8 @@ mod ResourceTypes {
     const LORDS: u8 = 29;
     const WHEAT: u8 = 30;
     const FISH: u8 = 31;
-
     // note: resource labor is max u8  - resource_type
-    // e.g Stone labor = 255 - 1 = 254
+// e.g Stone labor = 255 - 1 = 254
 }
 
 const FIRST_REGULAR_RESOURCE_ID: u8 = 1;
@@ -181,10 +180,9 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
         "LORDS"
     } else if resource_type == 30 {
         "WHEAT"
-    } else if resource_type == LAST_REGULAR_RESOURCE_ID  {
+    } else if resource_type == LAST_REGULAR_RESOURCE_ID {
         "FISH"
-
-    // LABOR
+        // LABOR
     } else if resource_type == 255 - 1 {
         "STONE LABOR"
     } else if resource_type == 255 - 2 {

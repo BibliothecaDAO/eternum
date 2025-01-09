@@ -42,13 +42,13 @@ mod realm_systems {
     use s0_eternum::models::name::{AddressName};
     use s0_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
     use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resource::production::labor::{LaborImpl};
     use s0_eternum::models::quantity::QuantityTracker;
     use s0_eternum::models::quest::{Quest, QuestBonus};
     use s0_eternum::models::realm::{
         Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl, RealmNameAndAttrsDecodingTrait,
         RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
     };
+    use s0_eternum::models::resource::production::labor::{LaborImpl};
     use s0_eternum::models::resource::resource::{
         DetachedResource, Resource, ResourceImpl, ResourceTrait, ResourceFoodImpl, ResourceFoodTrait
     };
