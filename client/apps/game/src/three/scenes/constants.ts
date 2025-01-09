@@ -73,8 +73,8 @@ export const buildingModelPaths: Record<
   [WONDER_REALM]: "/models/buildings-opt/wonder.glb",
 };
 
-const BASE_PATH = "/models/biomes-opt/";
-const FLAT_PATH = "/models/biomes-flat-opt/";
+const BASE_PATH = "/models/biomes/";
+const FLAT_PATH = "/models/biomes-flat/";
 const MODELS_PATH = IS_FLAT_MODE ? FLAT_PATH : BASE_PATH;
 
 export enum BiomeFilenames {
