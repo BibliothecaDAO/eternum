@@ -15,7 +15,7 @@ mod donkey_systems {
     use s0_eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
     use s0_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction, PositionTrait};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{Resource, ResourceImpl};
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s0_eternum::models::weight::Weight;
 
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{

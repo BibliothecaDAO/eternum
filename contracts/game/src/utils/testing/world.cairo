@@ -7,8 +7,8 @@ use s0_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR};
 use s0_eternum::models::bank::bank::{m_Bank};
 use s0_eternum::models::bank::liquidity::m_Liquidity;
 use s0_eternum::models::bank::market::m_Market;
-use s0_eternum::models::buildings::m_BuildingQuantityv2;
-use s0_eternum::models::buildings::{m_Building};
+use s0_eternum::models::resource::production::building::m_BuildingQuantityv2;
+use s0_eternum::models::resource::production::building::{m_Building};
 use s0_eternum::models::capacity::{m_CapacityCategory};
 use s0_eternum::models::combat::m_Army;
 use s0_eternum::models::combat::m_Battle;
@@ -34,16 +34,16 @@ use s0_eternum::models::owner::m_EntityOwner;
 use s0_eternum::models::owner::{m_Owner};
 use s0_eternum::models::population::m_Population;
 use s0_eternum::models::position::{m_Position};
-use s0_eternum::models::production::{m_Production, m_ProductionInput, m_ProductionOutput, m_ProductionDeadline};
+use s0_eternum::models::resource::production::production::{m_Production, m_ProductionInput, m_ProductionOutput, m_ProductionDeadline};
 use s0_eternum::models::quantity::{m_Quantity, m_QuantityTracker};
 use s0_eternum::models::quest::{m_Quest, m_QuestBonus};
 use s0_eternum::models::realm::{m_Realm};
-use s0_eternum::models::resources::m_DetachedResource;
-use s0_eternum::models::resources::m_OwnedResourcesTracker;
-use s0_eternum::models::resources::m_ResourceAllowance;
-use s0_eternum::models::resources::m_ResourceTransferLock;
-use s0_eternum::models::resources::{m_ResourceCost};
-use s0_eternum::models::resources::{m_Resource};
+use s0_eternum::models::resource::resource::m_DetachedResource;
+use s0_eternum::models::resource::resource::m_OwnedResourcesTracker;
+use s0_eternum::models::resource::resource::m_ResourceAllowance;
+use s0_eternum::models::resource::resource::m_ResourceTransferLock;
+use s0_eternum::models::resource::resource::{m_ResourceCost};
+use s0_eternum::models::resource::resource::{m_Resource};
 use s0_eternum::models::season::m_Leaderboard;
 use s0_eternum::models::season::m_LeaderboardEntry;
 use s0_eternum::models::season::m_LeaderboardRegisterContribution;
@@ -62,7 +62,7 @@ use s0_eternum::systems::bank::contracts::liquidity::liquidity_systems;
 use s0_eternum::systems::bank::contracts::swap::swap_systems;
 
 
-use s0_eternum::systems::buildings::contracts::building_systems;
+use s0_eternum::systems::buildings::contracts::production_systems;
 use s0_eternum::systems::combat::contracts::battle_systems::{
     battle_systems, battle_pillage_systems, battle_utils_systems
 };
@@ -211,7 +211,7 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Contract(bank_systems::TEST_CLASS_HASH),
             TestResource::Contract(liquidity_systems::TEST_CLASS_HASH),
             TestResource::Contract(swap_systems::TEST_CLASS_HASH),
-            TestResource::Contract(building_systems::TEST_CLASS_HASH),
+            TestResource::Contract(production_systems::TEST_CLASS_HASH),
             TestResource::Contract(battle_systems::TEST_CLASS_HASH),
             TestResource::Contract(battle_utils_systems::TEST_CLASS_HASH),
             TestResource::Contract(battle_pillage_systems::TEST_CLASS_HASH),
@@ -247,7 +247,7 @@ fn contract_defs() -> Span<ContractDef> {
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"swap_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
-        ContractDefTrait::new(DEFAULT_NS(), @"building_systems")
+        ContractDefTrait::new(DEFAULT_NS(), @"production_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"battle_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),

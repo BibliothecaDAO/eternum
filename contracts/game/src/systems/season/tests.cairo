@@ -7,7 +7,7 @@ use s0_eternum::constants::{ResourceTypes, get_hyperstructure_construction_resou
 use s0_eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure};
 use s0_eternum::models::owner::Owner;
 use s0_eternum::models::position::{Position, Coord};
-use s0_eternum::models::resources::Resource;
+use s0_eternum::models::resource::resource::Resource;
 use s0_eternum::models::season::{Leaderboard, LeaderboardEntry, LeaderboardEntryImpl};
 use s0_eternum::models::structure::{Structure, StructureCount, StructureCountTrait, StructureCategory};
 use s0_eternum::systems::config::contracts::{

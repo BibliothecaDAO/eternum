@@ -313,7 +313,7 @@ mod battle_systems {
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
     use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::resource::production::building::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
     use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
@@ -331,8 +331,8 @@ mod battle_systems {
     use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
+    use s0_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
 
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::stamina::{Stamina, StaminaTrait};
@@ -814,7 +814,7 @@ mod battle_pillage_systems {
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
     use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::resource::production::building::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
     use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
@@ -832,8 +832,8 @@ mod battle_pillage_systems {
     use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
+    use s0_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
 
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::stamina::{Stamina, StaminaTrait};
@@ -1234,7 +1234,7 @@ mod battle_utils_systems {
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
     use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::resource::production::building::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
     use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
@@ -1252,8 +1252,8 @@ mod battle_utils_systems {
     use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
+    use s0_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
 
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::stamina::{Stamina, StaminaTrait};

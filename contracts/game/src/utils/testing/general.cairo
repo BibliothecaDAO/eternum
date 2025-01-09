@@ -8,7 +8,7 @@ use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use s0_eternum::alias::ID;
 
 use s0_eternum::constants::{MAX_REALMS_PER_ADDRESS};
-use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
+use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait};
 use s0_eternum::models::{map::Tile, position::{Position, Coord, CoordTrait}, combat::Troops};
 use s0_eternum::systems::{
     hyperstructure::contracts::{IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait},

@@ -198,7 +198,7 @@ mod resource_bridge_systems {
     use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeImpl};
     use s0_eternum::models::owner::{EntityOwner, Owner, EntityOwnerTrait};
     use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resources::{Resource, ResourceImpl, RESOURCE_PRECISION};
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, RESOURCE_PRECISION};
     use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use s0_eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl, min};

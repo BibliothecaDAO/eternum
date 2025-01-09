@@ -12,12 +12,12 @@ use s0_eternum::models::config::{
 use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s0_eternum::models::population::{Population, PopulationTrait};
 use s0_eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
-use s0_eternum::models::production::{
+use s0_eternum::models::resource::production::production::{
     Production, ProductionTrait
 };
 use s0_eternum::models::realm::Realm;
-use s0_eternum::models::resources::ResourceTrait;
-use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+use s0_eternum::models::resource::resource::ResourceTrait;
+use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
 use s0_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //todo we need to define border of innner hexes

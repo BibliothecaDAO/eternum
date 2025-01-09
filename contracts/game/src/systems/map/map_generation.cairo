@@ -22,7 +22,7 @@ mod map_generation_systems {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use s0_eternum::alias::ID;
     use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
-    use s0_eternum::models::buildings::{BuildingCategory, Building, BuildingImpl};
+    use s0_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
     use s0_eternum::models::capacity::{CapacityCategory};
     use s0_eternum::models::combat::{
         Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
@@ -35,11 +35,12 @@ mod map_generation_systems {
     use s0_eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
     use s0_eternum::models::owner::{Owner, EntityOwner, OwnerTrait, EntityOwnerTrait};
     use s0_eternum::models::position::{Coord, CoordTrait, Direction, Position};
-    use s0_eternum::models::production::ProductionDeadline;
     use s0_eternum::models::quantity::Quantity;
     use s0_eternum::models::realm::{Realm};
-    use s0_eternum::models::resources::{
-        Resource, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
+    use s0_eternum::models::resource::production::labor::{LaborImpl};
+    use s0_eternum::models::resource::resource::{
+        Resource, ResourceImpl, ResourceCost, ResourceTrait,
+        ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };
 
     use s0_eternum::models::season::SeasonImpl;
@@ -79,8 +80,6 @@ mod map_generation_systems {
         entity_owner_id: ID,
         #[key]
         mine_entity_id: ID,
-        #[key]
-        production_deadline_tick: u64,
         discovered_at: u64
     }
 
@@ -154,10 +153,8 @@ mod map_generation_systems {
             army_entity_id
         }
 
-        fn add_production_deadline(ref world: WorldStorage, randomness: u256, mine_entity_id: ID) -> u64 {
-            let earthen_shard_production_config: ProductionConfig = world.read_model(ResourceTypes::EARTHEN_SHARD);
-
-            let earthen_shard_production_amount_per_tick: u128 = earthen_shard_production_config.amount;
+        fn get_shards_reward(ref world: WorldStorage, randomness: u256, mine_entity_id: ID) -> u128 {
+            let shards_production_config: ProductionConfig = world.read_model(ResourceTypes::EARTHEN_SHARD);
             let random_multiplier: u128 = *random::choices(
                 array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span(),
                 array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span(),
@@ -168,15 +165,12 @@ mod map_generation_systems {
             )[0];
             let min_production_amount: u128 = 100_000 * RESOURCE_PRECISION;
             let actual_production_amount: u128 = min_production_amount * random_multiplier;
-            let num_ticks_to_full_production: u64 = (actual_production_amount
-                / earthen_shard_production_amount_per_tick)
-                .try_into()
-                .unwrap();
-            let tick = TickImpl::get_default_tick_config(ref world);
-            let deadline_tick = tick.current() + num_ticks_to_full_production;
+            let mut labor_amount_required: u128 = actual_production_amount / shards_production_config.labor_amount;
+            if actual_production_amount % shards_production_config.labor_amount != 0 {
+                labor_amount_required += 1;
+            }
 
-            world.write_model(@ProductionDeadline { entity_id: mine_entity_id, deadline_tick });
-            deadline_tick
+            labor_amount_required
         }
 
 
@@ -205,7 +199,19 @@ mod map_generation_systems {
                     ref world, 0, mine_structure_entity_id, mercenaries_config.rewards, 0, false, false
                 );
 
-                let deadline = Self::add_production_deadline(ref world, vrf_seed, mine_structure_entity_id);
+                let labor_amount_required 
+                    = Self::get_shards_reward(ref world, vrf_seed, mine_structure_entity_id);
+
+                // add earthenshard labor to mine balance
+                let shards_labor_resource_type = LaborImpl::labor_resource_from_regular(ResourceTypes::EARTHEN_SHARD);
+                let mut shards_labor_resource = ResourceImpl::get(ref world, (mine_structure_entity_id, shards_labor_resource_type));
+                shards_labor_resource.add(labor_amount_required);
+                shards_labor_resource.save(ref world);   
+
+                // add labor to production machine
+                LaborImpl::burn_labor(
+                    ref world, mine_structure_entity_id, 
+                    ResourceTypes::EARTHEN_SHARD, labor_amount_required);
 
                 // create shards production building
                 BuildingImpl::create(
@@ -221,7 +227,6 @@ mod map_generation_systems {
                         @FragmentMineDiscovered {
                             entity_owner_id: unit_entity_owner.entity_owner_id,
                             mine_entity_id: mine_structure_entity_id,
-                            production_deadline_tick: deadline,
                             discovered_at: starknet::get_block_timestamp(),
                         }
                     );

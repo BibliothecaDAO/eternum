@@ -188,14 +188,14 @@ const useQuestDependencies = () => {
 export const useQuestClaimStatus = () => {
   const {
     setup: {
-      components: { Quest, Realm },
+      components: { Quest, Owner },
     },
     account: { account },
   } = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const realmSettler = useComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]))?.settler_address;
-  const isNotSettler = realmSettler !== ContractAddress(account.address);
+  const realmOwner = useComponentValue(Owner, getEntityIdFromKeys([BigInt(structureEntityId)]))?.address;
+  const isNotOwner = realmOwner !== ContractAddress(account.address);
 
   const prizeUpdate = useEntityQuery([HasValue(Quest, { entity_id: structureEntityId || 0 })]);
 
@@ -210,11 +210,11 @@ export const useQuestClaimStatus = () => {
     return Array.from(questDetails.keys()).reduce(
       (acc, questName) => ({
         ...acc,
-        [questName]: isNotSettler || checkPrizesClaimed(questDetails.get(questName)?.prizes || []),
+        [questName]: isNotOwner || checkPrizesClaimed(questDetails.get(questName)?.prizes || []),
       }),
       {} as Record<QuestType, boolean>,
     );
-  }, [structureEntityId, isNotSettler, prizeUpdate, Quest]);
+  }, [structureEntityId, isNotOwner, prizeUpdate, Quest]);
 
   return { questClaimStatus };
 };

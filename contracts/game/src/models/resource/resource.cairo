@@ -5,16 +5,17 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s0_eternum::alias::ID;
 use s0_eternum::constants::{
+    LAST_REGULAR_RESOURCE_ID, FIRST_LABOR_RESOURCE_ID,
     get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG, ResourceTypes, resource_type_name, WORLD_CONFIG_ID
 };
-use s0_eternum::models::buildings::{Building, BuildingTrait, BuildingCategory, BuildingQuantityv2};
+use s0_eternum::models::resource::production::building::{Building, BuildingTrait, BuildingCategory, BuildingQuantityv2};
 use s0_eternum::models::config::{
     ProductionConfig, TickConfig, TickImpl, TickTrait, CapacityConfig, CapacityConfigCategory, CapacityConfigTrait
 };
 use s0_eternum::models::config::{WeightConfigImpl, WeightConfig};
 
-use s0_eternum::models::production::{Production, ProductionTrait, ProductionLaborImpl};
-use s0_eternum::models::production::labor::{LaborImpl, LaborTrait};
+use s0_eternum::models::resource::production::production::{Production, ProductionTrait};
+use s0_eternum::models::resource::production::labor::{LaborImpl, LaborTrait};
 use s0_eternum::models::realm::Realm;
 use s0_eternum::models::structure::StructureTrait;
 use s0_eternum::models::structure::{Structure, StructureCategory};
@@ -173,21 +174,19 @@ impl ResourceImpl of ResourceTrait {
     fn get(ref world: WorldStorage, key: (ID, u8)) -> Resource {
         let mut resource: Resource = world.read_model(key);
         assert!(resource.entity_id.is_non_zero(), "entity id not found");
+        assert!(resource.resource_type != 0 && resource.resource_type != Bounded::MAX, "invalid resource specified (1)");
         assert!(
-            resource.resource_type != 0,
-            && resource.resource_type != 255,
-            && resource.resource_type <= LAST_REGULAR_RESOURCE_ID, // regular resources
-            && resource.resource_type >= 255 - LAST_LABOR_RESOURCE_ID, // labor resources
-            "resource type not found"
+            resource.resource_type <= LAST_REGULAR_RESOURCE_ID // regular resources
+            || resource.resource_type >= FIRST_LABOR_RESOURCE_ID, // labor resources
+            "invalid resource specified (2)"
         );
         
-        let entity_structure: Structure = world.read_model(self.entity_id);
+        let entity_structure: Structure = world.read_model(resource.entity_id);
         let entity_is_structure = entity_structure.is_structure();
         if entity_is_structure {
             resource.update_balance(ref world);
         }
         
-
         return resource;
     }
 
@@ -276,10 +275,10 @@ impl ResourceImpl of ResourceTrait {
     fn update_balance(ref self: Resource, ref world: WorldStorage) {
         let mut production: Production = world.read_model((self.entity_id, self.resource_type));
         let tick = TickImpl::get_default_tick_config(ref world);
-        if production.has_building() && production.last_updated_tick != tick.current() {
+        if production.has_building() && production.last_updated_tick != tick.current().try_into().unwrap() {
 
             // harvest the production
-            let production_config: ProductionConfig = world.read_model(produced_resource_type);
+            let production_config: ProductionConfig = world.read_model(self.resource_type);
             production.harvest(ref self, @tick, @production_config);
             
             // limit balance by storehouse capacity
@@ -337,8 +336,8 @@ mod tests_resource_traits {
     use s0_eternum::alias::ID;
     use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
     use s0_eternum::models::config::{TickConfig, TickImpl, TickTrait};
-    use s0_eternum::models::production::ProductionRateTrait;
-    use s0_eternum::models::resources::ResourceTrait;
+    use s0_eternum::models::resource::production::production::ProductionRateTrait;
+    use s0_eternum::models::resource::resource::ResourceTrait;
     use s0_eternum::models::structure::{Structure, StructureCategory};
     use s0_eternum::systems::config::contracts::config_systems;
     use s0_eternum::systems::config::contracts::{IProductionConfigDispatcher, IProductionConfigDispatcherTrait};
@@ -499,7 +498,7 @@ mod owned_resources_tracker_tests {
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
     use s0_eternum::constants::ResourceTypes;
-    use s0_eternum::models::resources::{Resource, ResourceImpl};
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s0_eternum::models::structure::{Structure, StructureCategory};
     use s0_eternum::systems::config::contracts::config_systems;
     use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};

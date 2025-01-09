@@ -26,7 +26,7 @@ mod liquidity_systems {
     use s0_eternum::models::bank::liquidity::{Liquidity};
     use s0_eternum::models::bank::market::{Market, MarketTrait};
     use s0_eternum::models::owner::{Owner, OwnerTrait};
-    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait};
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 

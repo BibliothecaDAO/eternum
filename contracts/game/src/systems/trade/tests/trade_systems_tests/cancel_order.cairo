@@ -13,7 +13,7 @@ use s0_eternum::models::config::CapacityConfigCategory;
 use s0_eternum::models::movable::{Movable, ArrivalTime};
 use s0_eternum::models::owner::Owner;
 use s0_eternum::models::position::{Position};
-use s0_eternum::models::resources::Resource;
+use s0_eternum::models::resource::resource::Resource;
 use s0_eternum::models::trade::{Trade, Status, TradeStatus};
 use s0_eternum::models::weight::Weight;
 

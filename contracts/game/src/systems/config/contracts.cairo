@@ -1,6 +1,6 @@
 use dojo::world::IWorldDispatcher;
 use s0_eternum::alias::ID;
-use s0_eternum::models::buildings::BuildingCategory;
+use s0_eternum::models::resource::production::building::BuildingCategory;
 use s0_eternum::models::combat::{Troops};
 use s0_eternum::models::config::{
     TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
@@ -132,7 +132,12 @@ trait IMapConfig<T> {
 
 #[starknet::interface]
 trait IProductionConfig<T> {
-    fn set_production_config(ref self: T, resource_type: u8, amount: u128, cost: Span<(u8, u128)>);
+    fn set_production_config(ref self: T, resource_type: u8, produced_amount: u128, labor_amount: u128);
+}
+
+#[starknet::interface]
+trait ILaborConfig<T> {
+    fn set_labor_config(ref self: T, resource_type: u8, cost: Span<(u8, u128)>);
 }
 
 #[starknet::interface]
@@ -221,7 +226,7 @@ mod config_systems {
         POPULATION_CONFIG_ID, DEFAULT_NS
     };
     use s0_eternum::models::bank::bank::{Bank};
-    use s0_eternum::models::buildings::{BuildingCategory};
+    use s0_eternum::models::resource::production::building::{BuildingCategory};
     use s0_eternum::models::combat::{Troops};
 
     use s0_eternum::models::config::{
@@ -230,12 +235,12 @@ mod config_systems {
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig,
+        LaborConfig
     };
 
     use s0_eternum::models::position::{Position, PositionTrait, Coord};
-    use s0_eternum::models::production::{ProductionInput, ProductionOutput};
-    use s0_eternum::models::resources::{ResourceCost, DetachedResource};
+    use s0_eternum::models::resource::resource::{ResourceCost, DetachedResource};
     use s0_eternum::models::season::{Season};
     use s0_eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
 
@@ -603,15 +608,58 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
-        fn set_production_config(ref self: ContractState, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>) {
+        fn set_production_config(ref self: ContractState, resource_type: u8, produced_amount: u128, labor_amount: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
-            resource_production_config.amount = amount;
+            resource_production_config.produced_amount = produced_amount;
+            resource_production_config.labor_amount = labor_amount;
             world.write_model(@resource_production_config);
         }
     }
+
+
+    #[abi(embed_v0)]
+    impl LaborConfigImpl of super::ILaborConfig<ContractState> {
+        fn set_labor_config(ref self: ContractState, resource_type: u8, cost: Span<(u8, u128)>) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let resource_cost_id = world.dispatcher.uuid();
+            for i in 0..cost.len() {
+                let (resource_type, resource_amount) = *cost.at(i);
+                world
+                    .write_model(
+                        @ResourceCost { 
+                            entity_id: resource_cost_id, 
+                            index: i, 
+                            resource_type, 
+                            amount: resource_amount 
+                        }
+                    );
+            };
+
+            world.write_model(
+                @LaborConfig { 
+                    resource_type, 
+                    input_id: resource_cost_id, 
+                    input_count: cost.len().try_into().unwrap()
+            });
+        }
+    }
+
+// #[derive(IntrospectPacked, Copy, Drop, Serde)]
+// #[dojo::model]
+// pub struct LaborConfig {
+//     #[key]
+//     // e.g when configuring stone labor, resource_type = stone 
+//     resource_type: u8,
+//     // uuid used to get the ResourceCost
+//     input_id: ID,
+//     // number of resources required to make labor
+//     input_count: u8,
+// }
 
 
     #[abi(embed_v0)]

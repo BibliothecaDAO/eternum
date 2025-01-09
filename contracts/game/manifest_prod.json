@@ -2481,7 +2481,7 @@
         },
         {
           "type": "enum",
-          "name": "s0_eternum::models::buildings::BuildingCategory",
+          "name": "s0_eternum::models::resource::production::building::BuildingCategory",
           "variants": [
             {
               "name": "None",
@@ -2587,7 +2587,7 @@
                 },
                 {
                   "name": "building_category",
-                  "type": "s0_eternum::models::buildings::BuildingCategory"
+                  "type": "s0_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
                   "name": "produce_resource_type",
@@ -3618,7 +3618,7 @@
         },
         {
           "type": "enum",
-          "name": "s0_eternum::models::buildings::BuildingCategory",
+          "name": "s0_eternum::models::resource::production::building::BuildingCategory",
           "variants": [
             {
               "name": "None",
@@ -3688,7 +3688,7 @@
               "inputs": [
                 {
                   "name": "building_category",
-                  "type": "s0_eternum::models::buildings::BuildingCategory"
+                  "type": "s0_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
                   "name": "population",
@@ -3754,7 +3754,7 @@
               "inputs": [
                 {
                   "name": "building_category",
-                  "type": "s0_eternum::models::buildings::BuildingCategory"
+                  "type": "s0_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
                   "name": "building_resource_type",

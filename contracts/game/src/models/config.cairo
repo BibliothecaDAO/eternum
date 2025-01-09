@@ -9,14 +9,14 @@ use s0_eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
     split_resources_and_probs, ResourceTypes, ResourceTiers
 };
-use s0_eternum::models::buildings::BuildingCategory;
+use s0_eternum::models::resource::production::building::BuildingCategory;
 use s0_eternum::models::capacity::{CapacityCategory, CapacityCategoryImpl, CapacityCategoryTrait};
 use s0_eternum::models::combat::Troops;
 use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s0_eternum::models::position::{Coord};
 use s0_eternum::models::quantity::Quantity;
 
-use s0_eternum::models::resources::{ResourceFoodImpl};
+use s0_eternum::models::resource::resource::{ResourceFoodImpl};
 use s0_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
 use s0_eternum::models::weight::Weight;
 use s0_eternum::utils::map::constants::fixed_constants as fc;

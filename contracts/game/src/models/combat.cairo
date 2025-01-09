@@ -14,10 +14,10 @@ use s0_eternum::models::config::{
 use s0_eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
 use s0_eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType};
-use s0_eternum::models::resources::OwnedResourcesTrackerTrait;
-use s0_eternum::models::resources::ResourceTrait;
-use s0_eternum::models::resources::ResourceTransferLockTrait;
-use s0_eternum::models::resources::{
+use s0_eternum::models::resource::resource::OwnedResourcesTrackerTrait;
+use s0_eternum::models::resource::resource::ResourceTrait;
+use s0_eternum::models::resource::resource::ResourceTransferLockTrait;
+use s0_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceCost, ResourceTransferLock, OwnedResourcesTracker, OwnedResourcesTrackerImpl
 };
 use s0_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
@@ -1231,9 +1231,9 @@ mod tests {
     use s0_eternum::models::config::BattleConfigTrait;
     use s0_eternum::models::config::CapacityConfigCategory;
     use s0_eternum::models::quantity::{Quantity};
-    use s0_eternum::models::resources::ResourceTrait;
-    use s0_eternum::models::resources::ResourceTransferLockTrait;
-    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTransferLock};
+    use s0_eternum::models::resource::resource::ResourceTrait;
+    use s0_eternum::models::resource::resource::ResourceTransferLockTrait;
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTransferLock};
     use s0_eternum::utils::testing::world::spawn_eternum;
     use super::{Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyImpl, Protectee};
 

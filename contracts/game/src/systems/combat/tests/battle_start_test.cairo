@@ -16,7 +16,7 @@ use s0_eternum::models::movable::{Movable};
 use s0_eternum::models::owner::{Owner, EntityOwner};
 use s0_eternum::models::position::{Coord, Position};
 
-use s0_eternum::models::resources::{
+use s0_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceTrait, ResourceTypes, ResourceTransferLock, ResourceTransferLockTrait,
     RESOURCE_PRECISION
 };

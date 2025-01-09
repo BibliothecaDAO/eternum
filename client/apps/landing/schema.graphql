@@ -3100,7 +3100,6 @@ type s0_eternum_FragmentMineDiscovered {
   entity_owner_id: u32
   eventMessage: World__EventMessage
   mine_entity_id: u32
-  production_deadline_tick: u64
 }
 
 type s0_eternum_FragmentMineDiscoveredConnection {
@@ -3160,17 +3159,6 @@ input s0_eternum_FragmentMineDiscoveredWhereInput {
   mine_entity_idNEQ: u32
   mine_entity_idNOTIN: [u32]
   mine_entity_idNOTLIKE: u32
-  production_deadline_tick: u64
-  production_deadline_tickEQ: u64
-  production_deadline_tickGT: u64
-  production_deadline_tickGTE: u64
-  production_deadline_tickIN: [u64]
-  production_deadline_tickLIKE: u64
-  production_deadline_tickLT: u64
-  production_deadline_tickLTE: u64
-  production_deadline_tickNEQ: u64
-  production_deadline_tickNOTIN: [u64]
-  production_deadline_tickNOTLIKE: u64
 }
 
 type s0_eternum_GameEnded {
@@ -6700,7 +6688,6 @@ type s0_eternum_Realm {
   order: u8
   produced_resources: u128
   realm_id: u32
-  settler_address: ContractAddress
 }
 
 type s0_eternum_RealmConnection {
@@ -6905,17 +6892,6 @@ input s0_eternum_RealmWhereInput {
   realm_idNEQ: u32
   realm_idNOTIN: [u32]
   realm_idNOTLIKE: u32
-  settler_address: ContractAddress
-  settler_addressEQ: ContractAddress
-  settler_addressGT: ContractAddress
-  settler_addressGTE: ContractAddress
-  settler_addressIN: [ContractAddress]
-  settler_addressLIKE: ContractAddress
-  settler_addressLT: ContractAddress
-  settler_addressLTE: ContractAddress
-  settler_addressNEQ: ContractAddress
-  settler_addressNOTIN: [ContractAddress]
-  settler_addressNOTLIKE: ContractAddress
 }
 
 type s0_eternum_Resource {

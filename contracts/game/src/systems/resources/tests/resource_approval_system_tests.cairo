@@ -14,7 +14,7 @@ mod resource_approval_system_tests {
     use s0_eternum::models::owner::{Owner, EntityOwner};
     use s0_eternum::models::position::Position;
     use s0_eternum::models::quantity::Quantity;
-    use s0_eternum::models::resources::{Resource, ResourceAllowance};
+    use s0_eternum::models::resource::resource::{Resource, ResourceAllowance};
 
     use s0_eternum::systems::resources::contracts::resource_systems::{
         resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait

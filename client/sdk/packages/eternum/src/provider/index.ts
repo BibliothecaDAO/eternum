@@ -1024,8 +1024,8 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Create a wood production building at coordinates determined by directions [1,2]
    * {
-   *   contractAddress: "<s0_eternum-building_systems>",
-   *   entrypoint: "create",
+   *   contractAddress: "<s0_eternum-production_systems>",
+   *   entrypoint: "create_building",
    *   calldata: [
    *     123,     // entity_id
    *     [1, 2],  // directions array
@@ -1040,8 +1040,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     ["62", "1", "0", "4", "1"];
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "create",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "create_building",
       calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
     });
 
@@ -1063,8 +1063,8 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Destroy building at coordinates (10, 20)
    * {
-   *   contractAddress: "<s0_eternum-building_systems>",
-   *   entrypoint: "destroy",
+   *   contractAddress: "<s0_eternum-production_systems>",
+   *   entrypoint: "destroy_building",
    *   calldata: [
    *     123,     // entity_id
    *     10,      // building_coord.x
@@ -1077,8 +1077,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, building_coord, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "destroy",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "destroy_building",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
 
@@ -1110,8 +1110,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, building_coord, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "pause_production",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "pause_building_production",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
 
@@ -1143,8 +1143,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, building_coord, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "resume_production",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "resume_building_production",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
 

@@ -85,16 +85,16 @@ trait IBuildingContract<TContractState> {
     fn create(
         entity_id: ID,
         building_coord: s0_eternum::models::position::Coord,
-        building_category: s0_eternum::models::buildings::BuildingCategory,
+        building_category: s0_eternum::models::resource::production::building::BuildingCategory,
         produce_resource_type: Option<u8>
     );
 }
 
 #[dojo::contract]
-mod building_systems {
+mod production_systems {
     use s0_eternum::alias::ID;
     use s0_eternum::models::{
-        resources::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
+        resource::resource::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
         order::Orders, position::{Coord, Position, PositionTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingImpl},
         production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}

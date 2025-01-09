@@ -1,21 +1,33 @@
 use s0_eternum::alias::ID;
+use s0_eternum::models::position::{Coord, Direction};
+use s0_eternum::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
-trait IBuildingContract<TContractState> {
-    fn create(
+trait IProductionContract<TContractState> {
+
+    /// Create and Destroy Buildings
+    fn create_building(
         ref self: TContractState,
         entity_id: ID,
-        directions: Span<s0_eternum::models::position::Direction>,
-        building_category: s0_eternum::models::buildings::BuildingCategory,
+        directions: Span<Direction>,
+        building_category: BuildingCategory,
         produce_resource_type: Option<u8>
     );
-    fn pause_production(ref self: TContractState, entity_id: ID, building_coord: s0_eternum::models::position::Coord);
-    fn resume_production(ref self: TContractState, entity_id: ID, building_coord: s0_eternum::models::position::Coord);
-    fn destroy(ref self: TContractState, entity_id: ID, building_coord: s0_eternum::models::position::Coord);
+    fn destroy_building(ref self: TContractState, entity_id: ID, building_coord: Coord);
+
+    /// Pause and Resume Building Production
+    fn pause_building_production(ref self: TContractState, entity_id: ID, building_coord: Coord);
+    fn resume_building_production(ref self: TContractState, entity_id: ID, building_coord: Coord);
+
+    /// Make Production Labor from Input Resources
+    fn make_production_labor(ref self: TContractState, entity_id: ID, resource_type: u8, labor_amount: u128);
+    
+    /// Burn Labor from balance and add to production
+    fn burn_production_labor(ref self: TContractState, entity_id: ID, resource_type: u8, labor_amount: u128);
 }
 
 #[dojo::contract]
-mod building_systems {
+mod production_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -24,15 +36,17 @@ mod building_systems {
     use s0_eternum::constants::DEFAULT_NS;
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::{
-        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerTrait}, order::Orders,
+        resource::resource::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerTrait}, order::Orders,
         position::{Coord, CoordTrait, Position, PositionTrait, Direction},
-        buildings::{BuildingCategory, Building, BuildingImpl}, production::{Production, ProductionRateTrait},
+        resource::production::building::{BuildingCategory, Building, BuildingImpl}, 
+        resource::production::production::{Production, ProductionTrait},
+        resource::production::labor::{LaborImpl},
         realm::{Realm, RealmImpl, RealmResourcesTrait}
     };
 
     #[abi(embed_v0)]
-    impl BuildingContractImpl of super::IBuildingContract<ContractState> {
-        fn create(
+    impl ProductionContractImpl of super::IProductionContract<ContractState> {
+        fn create_building(
             ref self: ContractState,
             entity_id: ID,
             mut directions: Span<s0_eternum::models::position::Direction>,
@@ -81,25 +95,48 @@ mod building_systems {
             building.make_payment(building_quantity, ref world);
         }
 
-        fn pause_production(ref self: ContractState, entity_id: ID, building_coord: Coord) {
+
+        fn destroy_building(ref self: ContractState, entity_id: ID, building_coord: Coord) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            BuildingImpl::destroy(ref world, entity_id, building_coord);
+        }
+
+        fn pause_building_production(ref self: ContractState, entity_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
             BuildingImpl::pause_production(ref world, entity_id, building_coord);
         }
 
-        fn resume_production(ref self: ContractState, entity_id: ID, building_coord: Coord) {
+        fn resume_building_production(ref self: ContractState, entity_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
             BuildingImpl::resume_production(ref world, entity_id, building_coord);
         }
 
-        fn destroy(ref self: ContractState, entity_id: ID, building_coord: Coord) {
+        /// Make production labor resource from input resources
+        fn make_production_labor(ref self: ContractState, entity_id: ID, resource_type: u8, labor_amount: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
-            BuildingImpl::destroy(ref world, entity_id, building_coord);
+            let entity_owner: EntityOwner = world.read_model(entity_id);
+            entity_owner.assert_caller_owner(world);
+
+            LaborImpl::make_labor(ref world, entity_id, resource_type, labor_amount);
+        }
+
+        // Burn production labor resource and add to production
+        fn burn_production_labor(ref self: ContractState, entity_id: ID, resource_type: u8, labor_amount: u128) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            let entity_owner: EntityOwner = world.read_model(entity_id);
+            entity_owner.assert_caller_owner(world);
+
+            LaborImpl::burn_labor(ref world, entity_id, resource_type, labor_amount);
         }
     }
 }

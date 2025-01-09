@@ -17,7 +17,7 @@ mod resource_transfer_system_tests {
     use s0_eternum::models::owner::{Owner, EntityOwner};
     use s0_eternum::models::position::Position;
     use s0_eternum::models::quantity::Quantity;
-    use s0_eternum::models::resources::{Resource, ResourceAllowance};
+    use s0_eternum::models::resource::resource::{Resource, ResourceAllowance};
 
     use s0_eternum::systems::config::contracts::{config_systems, IWeightConfigDispatcher, IWeightConfigDispatcherTrait};
 

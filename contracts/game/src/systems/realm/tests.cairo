@@ -11,8 +11,8 @@ use s0_eternum::models::owner::Owner;
 
 use s0_eternum::models::position::{Position, Coord};
 use s0_eternum::models::realm::{Realm, RealmTrait};
-use s0_eternum::models::resources::DetachedResource;
-use s0_eternum::models::resources::Resource;
+use s0_eternum::models::resource::resource::DetachedResource;
+use s0_eternum::models::resource::resource::Resource;
 
 use s0_eternum::systems::config::contracts::{config_systems, IQuestConfigDispatcher, IQuestConfigDispatcherTrait};
 use s0_eternum::systems::realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};

@@ -8,7 +8,7 @@ use s0_eternum::alias::ID;
 use s0_eternum::constants::{ResourceTypes, DONKEY_ENTITY_TYPE};
 
 use s0_eternum::models::{
-    movable::{Movable, ArrivalTime}, owner::Owner, position::Position, resources::{Resource, ResourceImpl},
+    movable::{Movable, ArrivalTime}, owner::Owner, position::Position, resource::resource::{Resource, ResourceImpl},
     trade::{Trade, Status, TradeStatus}, weight::Weight, config::CapacityConfig, config::CapacityConfigCategory
 };
 

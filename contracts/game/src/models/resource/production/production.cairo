@@ -7,7 +7,7 @@ use dojo::world::WorldStorage;
 use s0_eternum::alias::ID;
 use s0_eternum::models::config::{ProductionConfig};
 use s0_eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use s0_eternum::models::resources::{Resource, ResourceImpl};
+use s0_eternum::models::resource::resource::{Resource, ResourceImpl};
 use starknet::get_block_timestamp;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -64,7 +64,7 @@ impl ProductionImpl of ProductionTrait {
     ) -> bool {
 
         // return false if production is not active
-        if !(*self).has_building() {
+        if !self.has_building() {
             return false;
         }
 
@@ -73,17 +73,18 @@ impl ProductionImpl of ProductionTrait {
         if self.labor_amount_left.is_non_zero() {
 
             // get total labor cost
-            let labor_cost_per_tick = (*production_config).labor_amount;
-            let ticks_left = self.labor_amount_left / (labor_cost_per_tick * self.building_count.into());
-            let ticks_passed = current_tick - self.last_updated_tick;
-            let duration_passed = core::cmp::min(ticks_passed, ticks_left);
+            let labor_cost_per_tick: u128 = (*production_config).labor_amount;
+            let ticks_left: u128 = self.labor_amount_left / (labor_cost_per_tick * self.building_count.into());
+            let ticks_passed: u128 = current_tick.into() - self.last_updated_tick.into();
+            let duration_passed: u64 = core::cmp::min(ticks_passed, ticks_left).try_into().unwrap();
 
-            let total_labor_cost 
+            let total_labor_cost: u128 
                 = (duration_passed.into() 
                     * labor_cost_per_tick * self.building_count.into());
 
             // get total produced amount
-            let total_produced_amount = duration_passed.into() * self.production_rate;
+            let total_produced_amount: u128 
+                = duration_passed.into() * self.production_rate;
 
             // ensure that labor cost is set
             if total_produced_amount.is_non_zero() {
@@ -98,7 +99,7 @@ impl ProductionImpl of ProductionTrait {
             self.labor_amount_left -= total_labor_cost;
 
             // update last updated tick
-            self.last_updated_tick = current_tick;
+            self.last_updated_tick = current_tick.try_into().unwrap();
 
             // todo add event here
             return true;

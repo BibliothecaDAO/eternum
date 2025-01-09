@@ -32,10 +32,10 @@ mod resource_systems {
     use s0_eternum::models::position::{Position, Coord};
     use s0_eternum::models::quantity::{Quantity,};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{
+    use s0_eternum::models::resource::resource::{
         Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceTransferLock, ResourceTransferLockTrait
     };
-    use s0_eternum::models::resources::{DetachedResource};
+    use s0_eternum::models::resource::resource::{DetachedResource};
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s0_eternum::models::weight::Weight;

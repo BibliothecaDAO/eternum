@@ -13,7 +13,7 @@ use s0_eternum::models::movable::{Movable};
 use s0_eternum::models::owner::{Owner, EntityOwner};
 use s0_eternum::models::position::{Coord, Position};
 
-use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION};
+use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION};
 use s0_eternum::models::stamina::Stamina;
 use s0_eternum::systems::config::contracts::config_systems;
 use s0_eternum::systems::{

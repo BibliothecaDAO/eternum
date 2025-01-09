@@ -6,10 +6,9 @@ use s0_eternum::{
     constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_contributable_resources_with_rarity, RESOURCE_PRECISION},
     models::{
         owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
-        resources::{Resource, ResourceImpl, ResourceCost},
+        resource::resource::{Resource, ResourceImpl, ResourceCost},
         structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember}
     },
-    systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
 };
 
 use s0_eternum::{constants::WORLD_CONFIG_ID};

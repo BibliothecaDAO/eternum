@@ -18,7 +18,7 @@ website = "https://alpha-eternum.realms.world/"
     "s0_eternum-bank_systems",
     "s0_eternum-battle_pillage_systems",
     "s0_eternum-battle_systems",
-    "s0_eternum-building_systems",
+    "s0_eternum-production_systems",
     "s0_eternum-config_systems",
     "s0_eternum-dev_bank_systems",
     "s0_eternum-dev_realm_systems",

@@ -25,7 +25,7 @@ mod bank_systems {
     use s0_eternum::models::config::{BankConfig, CapacityConfigCategory};
     use s0_eternum::models::owner::{Owner, EntityOwner};
     use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resources::{Resource, ResourceImpl};
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};

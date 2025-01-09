@@ -31,7 +31,7 @@ pub mod hyperstructure {
     #[cfg(test)]
     mod tests;
 }
-pub mod buildings {
+pub mod production {
     pub mod contracts;
     #[cfg(test)]
     mod tests;

@@ -14,7 +14,7 @@ use s0_eternum::models::order::{Orders, OrdersTrait};
 use s0_eternum::models::owner::Owner;
 use s0_eternum::models::position::{Position, Coord};
 use s0_eternum::models::realm::Realm;
-use s0_eternum::models::resources::Resource;
+use s0_eternum::models::resource::resource::Resource;
 
 use s0_eternum::models::trade::{Trade, Status, TradeStatus};
 use s0_eternum::models::weight::Weight;

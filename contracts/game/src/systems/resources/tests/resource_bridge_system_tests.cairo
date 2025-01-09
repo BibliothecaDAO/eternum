@@ -15,7 +15,7 @@ mod resource_bridge_system_tests {
     use s0_eternum::models::movable::{ArrivalTime};
     use s0_eternum::models::owner::{Owner, EntityOwner};
     use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resources::{Resource, RESOURCE_PRECISION};
+    use s0_eternum::models::resource::resource::{Resource, RESOURCE_PRECISION};
     use s0_eternum::models::structure::{Structure, StructureCategory};
     use s0_eternum::systems::config::contracts::config_systems;
     use s0_eternum::systems::resources::contracts::resource_bridge_systems::{

@@ -1,4 +1,4 @@
-use s0_eternum::models::buildings::BuildingCategory;
+use s0_eternum::models::resource::production::building::BuildingCategory;
 use s0_eternum::{alias::ID, models::combat::{BattleSide, Troops}, models::structure::StructureCategory};
 use starknet::ContractAddress;
 

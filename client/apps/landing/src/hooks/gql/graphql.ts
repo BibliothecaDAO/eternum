@@ -2129,17 +2129,6 @@ export type S0_Eternum_FragmentMineDiscoveredWhereInput = {
   mine_entity_idNEQ?: InputMaybe<Scalars['u32']['input']>;
   mine_entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
   mine_entity_idNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
-  production_deadline_tick?: InputMaybe<Scalars['u64']['input']>;
-  production_deadline_tickEQ?: InputMaybe<Scalars['u64']['input']>;
-  production_deadline_tickGT?: InputMaybe<Scalars['u64']['input']>;
-  production_deadline_tickGTE?: InputMaybe<Scalars['u64']['input']>;
-  production_deadline_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  production_deadline_tickLIKE?: InputMaybe<Scalars['u64']['input']>;
-  production_deadline_tickLT?: InputMaybe<Scalars['u64']['input']>;
-  production_deadline_tickLTE?: InputMaybe<Scalars['u64']['input']>;
-  production_deadline_tickNEQ?: InputMaybe<Scalars['u64']['input']>;
-  production_deadline_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  production_deadline_tickNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
 };
 
 export type S0_Eternum_GameEndedOrder = {
@@ -4853,17 +4842,6 @@ export type S0_Eternum_RealmWhereInput = {
   realm_idNEQ?: InputMaybe<Scalars['u32']['input']>;
   realm_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
   realm_idNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
-  settler_address?: InputMaybe<Scalars['ContractAddress']['input']>;
-  settler_addressEQ?: InputMaybe<Scalars['ContractAddress']['input']>;
-  settler_addressGT?: InputMaybe<Scalars['ContractAddress']['input']>;
-  settler_addressGTE?: InputMaybe<Scalars['ContractAddress']['input']>;
-  settler_addressIN?: InputMaybe<Array<InputMaybe<Scalars['ContractAddress']['input']>>>;
-  settler_addressLIKE?: InputMaybe<Scalars['ContractAddress']['input']>;
-  settler_addressLT?: InputMaybe<Scalars['ContractAddress']['input']>;
-  settler_addressLTE?: InputMaybe<Scalars['ContractAddress']['input']>;
-  settler_addressNEQ?: InputMaybe<Scalars['ContractAddress']['input']>;
-  settler_addressNOTIN?: InputMaybe<Array<InputMaybe<Scalars['ContractAddress']['input']>>>;
-  settler_addressNOTLIKE?: InputMaybe<Scalars['ContractAddress']['input']>;
 };
 
 export type S0_Eternum_ResourceAllowanceOrder = {

@@ -18,7 +18,7 @@ mod dev_resource_systems {
     use s0_eternum::constants::ResourceTypes;
     use s0_eternum::constants::{WORLD_CONFIG_ID};
     use s0_eternum::models::config::{WorldConfig};
-    use s0_eternum::models::resources::{Resource, ResourceTrait, ResourceImpl};
+    use s0_eternum::models::resource::resource::{Resource, ResourceTrait, ResourceImpl};
     use s0_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
 
 

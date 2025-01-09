@@ -2369,7 +2369,7 @@
       "abi": [
         {
           "type": "impl",
-          "name": "building_systems__ContractImpl",
+          "name": "production_systems__ContractImpl",
           "interface_name": "dojo::contract::interface::IContract"
         },
         {
@@ -2379,7 +2379,7 @@
         },
         {
           "type": "impl",
-          "name": "building_systems__DeployedContractImpl",
+          "name": "production_systems__DeployedContractImpl",
           "interface_name": "dojo::meta::interface::IDeployedResource"
         },
         {
@@ -2464,7 +2464,7 @@
         },
         {
           "type": "enum",
-          "name": "s0_eternum::models::buildings::BuildingCategory",
+          "name": "s0_eternum::models::resource::production::building::BuildingCategory",
           "variants": [
             {
               "name": "None",
@@ -2570,7 +2570,7 @@
                 },
                 {
                   "name": "building_category",
-                  "type": "s0_eternum::models::buildings::BuildingCategory"
+                  "type": "s0_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
                   "name": "produce_resource_type",
@@ -2729,7 +2729,7 @@
         },
         {
           "type": "event",
-          "name": "s0_eternum::systems::buildings::contracts::building_systems::Event",
+          "name": "s0_eternum::systems::buildings::contracts::production_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -2746,7 +2746,7 @@
         }
       ],
       "init_calldata": [],
-      "tag": "s0_eternum-building_systems",
+      "tag": "s0_eternum-production_systems",
       "selector": "0x5f7b231f89cc7ec90785783e2484266d4b35e7f1488ec406ffea0cf92fac777",
       "systems": [
         "create",
@@ -3601,7 +3601,7 @@
         },
         {
           "type": "enum",
-          "name": "s0_eternum::models::buildings::BuildingCategory",
+          "name": "s0_eternum::models::resource::production::building::BuildingCategory",
           "variants": [
             {
               "name": "None",
@@ -3671,7 +3671,7 @@
               "inputs": [
                 {
                   "name": "building_category",
-                  "type": "s0_eternum::models::buildings::BuildingCategory"
+                  "type": "s0_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
                   "name": "population",
@@ -3737,7 +3737,7 @@
               "inputs": [
                 {
                   "name": "building_category",
-                  "type": "s0_eternum::models::buildings::BuildingCategory"
+                  "type": "s0_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
                   "name": "building_resource_type",

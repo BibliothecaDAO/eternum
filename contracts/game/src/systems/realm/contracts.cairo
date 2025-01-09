@@ -42,14 +42,14 @@ mod realm_systems {
     use s0_eternum::models::name::{AddressName};
     use s0_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
     use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::production::{ProductionOutput};
+    use s0_eternum::models::resource::production::labor::{LaborImpl};
     use s0_eternum::models::quantity::QuantityTracker;
     use s0_eternum::models::quest::{Quest, QuestBonus};
     use s0_eternum::models::realm::{
         Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl, RealmNameAndAttrsDecodingTrait,
         RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
     };
-    use s0_eternum::models::resources::{
+    use s0_eternum::models::resource::resource::{
         DetachedResource, Resource, ResourceImpl, ResourceTrait, ResourceFoodImpl, ResourceFoodTrait
     };
 
@@ -194,11 +194,12 @@ mod realm_systems {
             let realm: Realm = world.read_model(entity_id);
             realm.assert_is_set();
 
+            let entity_owner: EntityOwner = world.read_model(entity_id);
+            entity_owner.assert_caller_owner(world);
+
             // ensure quest is not already completed
             let mut quest: Quest = world.read_model((entity_id, quest_id));
             assert(!quest.completed, 'quest already completed');
-
-            assert(realm.settler_address == starknet::get_caller_address(), 'Caller not settler');
 
             // ensure quest has rewards
             let quest_config: QuestConfig = world.read_model(WORLD_CONFIG_ID);
@@ -220,29 +221,19 @@ mod realm_systems {
                 let mut quest_bonus: QuestBonus = world.read_model((entity_id, reward_resource_type));
 
                 // scale reward resource amount by quest production multiplier
-                // if the reward resource is used to produce another resource in the realm.
-                // it will only be scaled if the quest bonus has not been claimed yet and
+                // if the reward resource is used to produce another resource in the realm (labor).
+                // it should only be scaled if the quest bonus has not been claimed yet and
                 // the reward resource is not food.
                 if !quest_bonus.claimed && !ResourceFoodImpl::is_food(reward_resource_type) {
-                    let reward_resource_production_config: ProductionConfig = world.read_model(reward_resource_type);
-                    let mut jndex = 0;
-                    loop {
-                        if jndex == reward_resource_production_config.output_count {
-                            break;
-                        }
-
-                        let output_resource_type: ProductionOutput = world.read_model((reward_resource_type, jndex));
-                        if realm.produces_resource(output_resource_type.output_resource_type) {
+                    if LaborImpl::is_labor(reward_resource_type) {
+                        if realm.produces_resource(reward_resource_type) {
                             // scale reward resource amount by quest production multiplier
                             reward_resource_amount *= quest_config.production_material_multiplier.into();
                             // set quest bonus as claimed
                             quest_bonus.claimed = true;
                             world.write_model(@quest_bonus);
-
                             break;
                         }
-
-                        jndex += 1;
                     }
                 }
 
@@ -312,7 +303,6 @@ mod realm_systems {
                         order,
                         level,
                         has_wonder,
-                        settler_address: owner,
                     }
                 );
             world.write_model(@Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, });

@@ -19,7 +19,7 @@ use s0_eternum::models::owner::{Owner, EntityOwner};
 use s0_eternum::models::position::CoordTrait;
 use s0_eternum::models::position::{Coord, Position, Direction};
 use s0_eternum::models::realm::Realm;
-use s0_eternum::models::resources::{Resource, ResourceCost};
+use s0_eternum::models::resource::resource::{Resource, ResourceCost};
 
 use s0_eternum::systems::config::contracts::{config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait};
 

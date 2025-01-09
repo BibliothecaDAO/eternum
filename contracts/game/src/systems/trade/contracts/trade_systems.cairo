@@ -47,9 +47,9 @@ mod trade_systems {
     use s0_eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{DetachedResource};
+    use s0_eternum::models::resource::resource::{DetachedResource};
 
-    use s0_eternum::models::resources::{Resource, ResourceImpl};
+    use s0_eternum::models::resource::resource::{Resource, ResourceImpl};
 
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::trade::{Trade, Status, TradeStatus};

@@ -8,7 +8,7 @@ use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use s0_eternum::constants::ResourceTypes;
 use s0_eternum::models::config::LevelingConfig;
 use s0_eternum::models::position::{Position, Coord};
-use s0_eternum::models::resources::ResourceCost;
+use s0_eternum::models::resource::resource::ResourceCost;
 use s0_eternum::systems::config::contracts::config_systems;
 
 use s0_eternum::systems::config::contracts::{

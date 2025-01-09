@@ -1089,13 +1089,12 @@ export function defineContractComponents(world: World) {
           order: RecsType.Number,
           level: RecsType.Number,
           has_wonder: RecsType.Boolean,
-          settler_address: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8", "bool", "contractaddress"],
+            types: ["u32", "u32", "u128", "u8", "u8", "bool"],
             customTypes: [],
           },
         },
@@ -1967,14 +1966,13 @@ const eventsComponents = (world: World) => {
           {
             entity_owner_id: RecsType.Number,
             mine_entity_id: RecsType.Number,
-            production_deadline_tick: RecsType.BigInt,
             discovered_at: RecsType.BigInt,
           },
           {
             metadata: {
               namespace: "s0_eternum",
               name: "FragmentMineDiscovered",
-              types: ["u32", "u32", "u64", "u64"],
+              types: ["u32", "u32", "u64"],
               customTypes: [],
             },
           },

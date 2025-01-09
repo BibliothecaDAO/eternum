@@ -64,7 +64,7 @@ mod hyperstructure_systems {
             hyperstructure::{Progress, Contribution, Hyperstructure, HyperstructureImpl, Epoch, Access},
             owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait}, season::{Leaderboard},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
-            resources::{Resource, ResourceImpl, ResourceCost},
+            resource::resource::{Resource, ResourceImpl, ResourceCost},
             structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember},
             name::{AddressName}
         },

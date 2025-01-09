@@ -13,7 +13,7 @@ use s0_eternum::models::bank::market::{Market};
 
 use s0_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
 use s0_eternum::models::position::{Coord};
-use s0_eternum::models::resources::{Resource, ResourceImpl};
+use s0_eternum::models::resource::resource::{Resource, ResourceImpl};
 use s0_eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
 use s0_eternum::systems::bank::contracts::bank::{bank_systems::InternalBankSystemsImpl, bank_systems};
 

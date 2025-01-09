@@ -84,7 +84,6 @@ mod tests {
                     order: 0,
                     level: 0,
                     has_wonder: false,
-                    settler_address: contract_address_const::<'Settler'>()
                 }
             );
         world.write_model_test(@EntityOwner { entity_id: 2, entity_owner_id: 1 });

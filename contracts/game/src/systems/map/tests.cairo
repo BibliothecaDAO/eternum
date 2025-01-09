@@ -17,11 +17,11 @@ use s0_eternum::models::map::Tile;
 use s0_eternum::models::movable::{Movable};
 use s0_eternum::models::owner::{EntityOwner, Owner};
 use s0_eternum::models::position::{Position, Coord, CoordTrait, Direction};
-use s0_eternum::models::production::{Production, ProductionDeadline};
+use s0_eternum::models::resource::production::production::{Production, ProductionDeadline};
 use s0_eternum::models::quantity::Quantity;
 
 use s0_eternum::models::realm::Realm;
-use s0_eternum::models::resources::{Resource, RESOURCE_PRECISION, ResourceFoodImpl};
+use s0_eternum::models::resource::resource::{Resource, RESOURCE_PRECISION, ResourceFoodImpl};
 use s0_eternum::models::stamina::Stamina;
 use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount,};
 use s0_eternum::models::weight::Weight;

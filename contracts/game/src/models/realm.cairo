@@ -19,7 +19,6 @@ pub struct Realm {
     order: u8,
     level: u8,
     has_wonder: bool,
-    settler_address: ContractAddress,
 }
 
 
@@ -340,7 +339,6 @@ mod test_realm_resources_impl {
             level: 0,
             produced_resources: 0,
             has_wonder: false,
-            settler_address: contract_address_const::<'Settler'>(),
         }
     }
 
