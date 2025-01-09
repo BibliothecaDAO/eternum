@@ -87,7 +87,7 @@ export enum StructureProgress {
   STAGE_3 = 2,
 }
 
-export const hyperstructureStageToModel: Record<StructureProgress, string> = {
+export const hyperstructureStageToModel: Record<StructureProgress, HyperstructureTypesNames> = {
   [StructureProgress.STAGE_1]: HyperstructureTypesNames.STAGE_1,
   [StructureProgress.STAGE_2]: HyperstructureTypesNames.STAGE_2,
   [StructureProgress.STAGE_3]: HyperstructureTypesNames.STAGE_3,
@@ -95,38 +95,60 @@ export const hyperstructureStageToModel: Record<StructureProgress, string> = {
 
 export const WONDER_REALM = "Wonder";
 
-export const buildingModelPaths: Record<
-  BuildingType | ResourceMiningTypes | RealmLevelNames | HyperstructureTypesNames | typeof WONDER_REALM,
-  string
-> = {
-  [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
-  [BuildingType.Bank]: BUILDINGS_MODELS_PATH + BuildingFilenames.Bank,
-  [BuildingType.ArcheryRange]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-  [BuildingType.Barracks]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-  [BuildingType.Castle]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
-  [BuildingType.Farm]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
-  [BuildingType.FishingVillage]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
-  [BuildingType.FragmentMine]: BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
-  [BuildingType.Market]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
-  [BuildingType.Resource]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
-  [BuildingType.Stable]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-  [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
-  [BuildingType.TradingPost]: BUILDINGS_MODELS_PATH + BuildingFilenames.TradingPost,
-  [BuildingType.Walls]: BUILDINGS_MODELS_PATH + BuildingFilenames.Walls,
-  [BuildingType.WatchTower]: BUILDINGS_MODELS_PATH + BuildingFilenames.WatchTower,
-  [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
-  [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,
-  [ResourceMiningTypes.Mine]: BUILDINGS_MODELS_PATH + BuildingFilenames.Mine,
-  [ResourceMiningTypes.LumberMill]: BUILDINGS_MODELS_PATH + BuildingFilenames.LumberMill,
-  [ResourceMiningTypes.Dragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
-  [RealmLevelNames.Settlement]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
-  [RealmLevelNames.City]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
-  [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
-  [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
-  [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-  [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
-  [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
-  [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
+export enum BUILDINGS_GROUPS {
+  BUILDINGS = "buildings",
+  RESOURCES_MINING = "resources_mining",
+  HYPERSTRUCTURE = "hyperstructure",
+  REALMS = "realms",
+  WONDER = "wonder",
+}
+
+export type BUILDINGS_CATEGORIES_TYPES =
+  | BuildingType
+  | ResourceMiningTypes
+  | RealmLevelNames
+  | HyperstructureTypesNames
+  | typeof WONDER_REALM;
+
+export const buildingModelPaths = {
+  [BUILDINGS_GROUPS.BUILDINGS]: {
+    [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
+    [BuildingType.Bank]: BUILDINGS_MODELS_PATH + BuildingFilenames.Bank,
+    [BuildingType.ArcheryRange]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+    [BuildingType.Barracks]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+    [BuildingType.Castle]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
+    [BuildingType.Farm]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
+    [BuildingType.FishingVillage]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
+    [BuildingType.FragmentMine]: BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
+    [BuildingType.Market]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
+    [BuildingType.Resource]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.Stable]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+    [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
+    [BuildingType.TradingPost]: BUILDINGS_MODELS_PATH + BuildingFilenames.TradingPost,
+    [BuildingType.Walls]: BUILDINGS_MODELS_PATH + BuildingFilenames.Walls,
+    [BuildingType.WatchTower]: BUILDINGS_MODELS_PATH + BuildingFilenames.WatchTower,
+    [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
+  },
+  [BUILDINGS_GROUPS.RESOURCES_MINING]: {
+    [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,
+    [ResourceMiningTypes.Mine]: BUILDINGS_MODELS_PATH + BuildingFilenames.Mine,
+    [ResourceMiningTypes.LumberMill]: BUILDINGS_MODELS_PATH + BuildingFilenames.LumberMill,
+    [ResourceMiningTypes.Dragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
+  },
+  [BUILDINGS_GROUPS.REALMS]: {
+    [RealmLevelNames.Settlement]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
+    [RealmLevelNames.City]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
+    [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
+    [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
+  },
+  [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
+    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
+    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+    [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+  },
+  [BUILDINGS_GROUPS.WONDER]: {
+    [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
+  },
 };
 
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {

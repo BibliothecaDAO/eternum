@@ -4,13 +4,13 @@ import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { gltfLoader } from "../helpers/utils";
-import { buildingModelPaths, PREVIEW_BUILD_COLOR_VALID } from "../scenes/constants";
+import { buildingModelPaths, BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "../scenes/constants";
 import { HoverSound } from "../sound/HoverSound";
 
 export class BuildingPreview {
   private previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null = null;
   private modelLoadPromises: Promise<void>[] = [];
-  private buildingModels: Map<BuildingType | ResourceMiningTypes, THREE.Group> = new Map();
+  private buildingModels: Map<BUILDINGS_GROUPS, Map<BuildingType | ResourceMiningTypes, THREE.Group>> = new Map();
   private currentHexHovered: THREE.Vector3 | null = null;
   private hoverSound: HoverSound;
 
@@ -21,38 +21,51 @@ export class BuildingPreview {
 
   private loadBuildingModels() {
     const loader = gltfLoader;
-    for (const [building, path] of Object.entries(buildingModelPaths)) {
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        loader.load(
-          path,
-          (gltf) => {
-            const model = gltf.scene as THREE.Group;
-            model.position.set(0, -100, 0);
-            gltf.scene.traverse((child: any) => {
-              if (child.isMesh) {
-                child.material.color.set(PREVIEW_BUILD_COLOR_VALID);
-                child.material.transparent = true;
-                child.material.opacity = 0.75;
-              }
-            });
-            this.buildingModels.set((building + "") as any, model);
-            resolve();
-          },
-          undefined,
-          (error) => {
-            console.error(`Error loading ${building} model:`, error);
-            reject(error);
-          },
-        );
-      });
-      this.modelLoadPromises.push(loadPromise);
+    for (const category of Object.values(BUILDINGS_GROUPS)) {
+      const categoryPaths = buildingModelPaths[category];
+      if (!this.buildingModels.has(category)) {
+        this.buildingModels.set(category, new Map());
+      }
+      const categoryMap = this.buildingModels.get(category)!;
+
+      for (const [building, path] of Object.entries(categoryPaths)) {
+        const loadPromise = new Promise<void>((resolve, reject) => {
+          loader.load(
+            path,
+            (gltf) => {
+              const model = gltf.scene as THREE.Group;
+              model.position.set(0, -100, 0);
+              gltf.scene.traverse((child: any) => {
+                if (child.isMesh) {
+                  child.material.color.set(PREVIEW_BUILD_COLOR_VALID);
+                  child.material.transparent = true;
+                  child.material.opacity = 0.75;
+                }
+              });
+              categoryMap.set(building as any, model);
+              resolve();
+            },
+            undefined,
+            (error) => {
+              console.error(`Error loading ${building} model:`, error);
+              reject(error);
+            },
+          );
+        });
+        this.modelLoadPromises.push(loadPromise);
+      }
     }
 
     Promise.all(this.modelLoadPromises).then(() => {});
   }
 
   public getBuildingModel(building: BuildingType | ResourceMiningTypes): THREE.Group | null {
-    return this.buildingModels.get((building + "") as any) || null;
+    for (const categoryMap of this.buildingModels.values()) {
+      if (categoryMap.has(building)) {
+        return categoryMap.get(building) || null;
+      }
+    }
+    return null;
   }
 
   public getBuildingType() {
