@@ -1,12 +1,10 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
+import { useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { Structure } from "@/hooks/helpers/useStructures";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import Button from "@/ui/elements/Button";
-import { BattleSide, ID } from "@bibliothecadao/eternum";
+import { ArmyInfo, BattleManager, BattleSide, ID, Structure } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 import { BattleHistory } from "./BattleHistory";

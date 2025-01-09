@@ -1,4 +1,3 @@
-import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useTravel } from "@/hooks/helpers/useTravel";
@@ -6,7 +5,7 @@ import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, EntityType, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, EntityType, ID, MarketManager, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/TravelInfo";
@@ -49,7 +48,7 @@ export const LiquidityResourceRow = ({
   const marketManager = useMemo(
     () =>
       new MarketManager(
-        dojoContext.setup,
+        dojoContext.setup.components,
         bankEntityId,
         ContractAddress(dojoContext.account.account.address),
         resourceId,
@@ -352,7 +351,7 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
   const totalPrice =
     inputResources.reduce((sum, resource) => {
       const price = new MarketManager(
-        setup,
+        setup.components,
         marketManager.bankEntityId,
         marketManager.player,
         resource.resource,

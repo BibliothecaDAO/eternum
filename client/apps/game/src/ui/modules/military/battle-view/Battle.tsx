@@ -1,12 +1,8 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Structure } from "@/hooks/helpers/useStructures";
-import { Health } from "@/types";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import Button from "@/ui/elements/Button";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { BattleSide, ID } from "@bibliothecadao/eternum";
+import { ArmyInfo, BattleManager, BattleSide, ID, Structure, type Health } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";

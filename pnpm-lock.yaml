@@ -430,6 +430,9 @@ importers:
       '@dojoengine/core':
         specifier: 1.0.0-alpha.24
         version: 1.0.0-alpha.24(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.2)
+      '@latticexyz/utils':
+        specifier: ^2.0.0-next.12
+        version: 2.2.14
       '@scure/starknet':
         specifier: ^1.1.0
         version: 1.1.0

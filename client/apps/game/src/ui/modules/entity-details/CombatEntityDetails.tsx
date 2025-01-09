@@ -1,5 +1,7 @@
 import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
-import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
+import { useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
+import { ArmyInfo } from "@bibliothecadao/eternum";
+
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";

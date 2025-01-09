@@ -1,22 +1,13 @@
-import { DojoResult } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Structure } from "@/hooks/helpers/useStructures";
-import { Health } from "@/types";
-import { multiplyByPrecision } from "@/ui/utils/utils";
-import { BattleSide, EternumGlobalConfig, ID, MIN_TROOPS_BATTLE } from "@bibliothecadao/eternum";
-import {
-  ComponentValue,
-  Components,
-  Has,
-  HasValue,
-  getComponentValue,
-  removeComponent,
-  runQuery,
-} from "@dojoengine/recs";
+import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ClientComponents } from "../createClientComponents";
-import { ClientConfigManager } from "./ConfigManager";
+import { EternumGlobalConfig, MIN_TROOPS_BATTLE } from "../constants";
+import { ClientComponents } from "../dojo/components/createClientComponents";
+import { EternumProvider } from "../provider";
+import { BattleSide, Health, ID } from "../types";
+import { multiplyByPrecision } from "../utils";
+import { configManager } from "./ConfigManager";
 import { StaminaManager } from "./StaminaManager";
+import { ArmyInfo, DojoAccount, Structure } from "./types";
 
 export enum BattleType {
   Hex,
@@ -67,17 +58,13 @@ export enum ClaimStatus {
 }
 
 export class BattleManager {
-  battleEntityId: ID;
-  dojo: DojoResult;
   battleType: BattleType | undefined;
-  private battleIsClaimable: ClaimStatus | undefined;
-  private configManager: ClientConfigManager;
 
-  constructor(battleEntityId: ID, dojo: DojoResult) {
-    this.battleEntityId = battleEntityId;
-    this.dojo = dojo;
-    this.configManager = ClientConfigManager.instance();
-  }
+  constructor(
+    private readonly components: ClientComponents,
+    private readonly provider: EternumProvider,
+    public readonly battleEntityId: ID,
+  ) {}
 
   public getUpdatedBattle(currentTimestamp: number) {
     const battle = this.getBattle();
@@ -180,11 +167,12 @@ export class BattleManager {
     return date;
   }
 
-  public deleteBattle() {
-    removeComponent(this.dojo.setup.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
-    this.dojo.network.world.deleteEntity(getEntityIdFromKeys([BigInt(this.battleEntityId)]));
-    this.battleEntityId = 0;
-  }
+  // todo: used deleteEntity directly in the react app, check if works there
+  // public deleteBattle() {
+  //   removeComponent(this.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
+  //   this.dojo.network.world.deleteEntity(getEntityIdFromKeys([BigInt(this.battleEntityId)]));
+  //   this.battleEntityId = 0;
+  // }
 
   public isBattleOngoing(currentTimestamp: number): boolean {
     const battle = this.getBattle();
@@ -199,7 +187,7 @@ export class BattleManager {
   }
 
   public getBattle(): ComponentValue<ClientComponents["Battle"]["schema"]> | undefined {
-    return getComponentValue(this.dojo.setup.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
+    return getComponentValue(this.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
   }
 
   public getUpdatedArmy(
@@ -321,7 +309,7 @@ export class BattleManager {
 
     if (totalTroops < MIN_TROOPS_BATTLE) return RaidStatus.MinTroops;
 
-    const staminaManager = new StaminaManager(this.dojo.setup, selectedArmy.entity_id);
+    const staminaManager = new StaminaManager(this.components, selectedArmy.entity_id);
     if (staminaManager.getStamina(currentArmiesTick).amount === 0) return RaidStatus.NoStamina;
 
     return RaidStatus.isRaidable;
@@ -369,24 +357,22 @@ export class BattleManager {
 
   public isEmpty(): boolean {
     return (
-      runQuery([
-        Has(this.dojo.setup.components.Army),
-        HasValue(this.dojo.setup.components.Army, { battle_id: this.battleEntityId }),
-      ]).size === 0
+      runQuery([Has(this.components.Army), HasValue(this.components.Army, { battle_id: this.battleEntityId })]).size ===
+      0
     );
   }
 
-  public async pillageStructure(raider: ArmyInfo, structureEntityId: ID) {
+  public async pillageStructure(signer: DojoAccount, raider: ArmyInfo, structureEntityId: ID) {
     if (this.battleEntityId !== 0 && this.battleEntityId === raider.battle_id) {
-      await this.dojo.setup.systemCalls.battle_leave_and_pillage({
-        signer: this.dojo.account.account,
+      await this.provider.battle_leave_and_pillage({
+        signer,
         army_id: raider.entity_id,
         battle_id: this.battleEntityId,
         structure_id: structureEntityId,
       });
     } else {
-      await this.dojo.setup.systemCalls.battle_pillage({
-        signer: this.dojo.account.account,
+      await this.provider.battle_pillage({
+        signer,
         army_id: raider.entity_id,
         structure_id: structureEntityId,
       });
@@ -425,7 +411,7 @@ export class BattleManager {
   }
 
   private getTroopFullHealth(troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]>): bigint {
-    const troopHealth = this.configManager.getTroopConfig().health;
+    const troopHealth = configManager.getTroopConfig().health;
 
     let totalKnightHealth = troopHealth * Number(troops.knight_count);
     let totalPaladinHealth = troopHealth * Number(troops.paladin_count);
@@ -484,7 +470,7 @@ export class BattleManager {
   private updateHealth(battle: ComponentValue<ClientComponents["Battle"]["schema"]>, currentTimestamp: number) {
     const durationPassed: number = this.getElapsedTime(currentTimestamp);
 
-    const troopHealth = this.configManager.getTroopConfig().health;
+    const troopHealth = configManager.getTroopConfig().health;
 
     const attackDelta = this.attackingDelta(battle);
     const defenceDelta = this.defendingDelta(battle);

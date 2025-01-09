@@ -2,6 +2,7 @@ import { AppStore } from "@/hooks/store/useUIStore";
 import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+  ClientConfigManager,
   HYPERSTRUCTURE_CONFIG_ID,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
@@ -12,7 +13,6 @@ import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client"
 import { debounce } from "lodash";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
-import { ClientConfigManager } from "./modelManager/ConfigManager";
 import { setupNetwork } from "./setupNetwork";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;

@@ -1,7 +1,6 @@
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { Tabs } from "@/ui/elements/tab";
-import { ID } from "@bibliothecadao/eternum";
+import { ID, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { CoOwners } from "./CoOwners";
 import { Leaderboard } from "./Leaderboard";
@@ -10,7 +9,9 @@ export const HyperstructureDetails = ({ hyperstructureEntityId }: { hyperstructu
   const dojo = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const latestChangeEvent = LeaderboardManager.instance(dojo).getCurrentCoOwners(hyperstructureEntityId);
+  const latestChangeEvent = LeaderboardManager.instance(dojo.setup.components).getCurrentCoOwners(
+    hyperstructureEntityId,
+  );
 
   const coOwners = latestChangeEvent?.coOwners || [];
   const timestamp = latestChangeEvent?.timestamp || 0;

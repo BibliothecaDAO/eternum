@@ -1,4 +1,3 @@
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
@@ -17,7 +16,14 @@ import { Checkbox } from "@/ui/elements/Checkbox";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { BattleSide, ContractAddress, ID, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import {
+  BattleSide,
+  ContractAddress,
+  ID,
+  LeaderboardManager,
+  ResourcesIds,
+  findResourceById,
+} from "@bibliothecadao/eternum";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
@@ -231,15 +237,18 @@ const HyperStructureExtraContent = ({
   y: number;
 }) => {
   const {
+    setup: { components },
     account: { account },
   } = useDojo();
 
   const progress = useHyperstructureProgress(hyperstructureEntityId);
-  const latestChangeEvent = LeaderboardManager.instance(useDojo()).getCurrentCoOwners(hyperstructureEntityId);
+  const latestChangeEvent = LeaderboardManager.instance(components).getCurrentCoOwners(hyperstructureEntityId);
   const needTosetCoOwners = !latestChangeEvent && progress.percentage === 100;
   const shares =
-    LeaderboardManager.instance(useDojo()).getAddressShares(ContractAddress(account.address), hyperstructureEntityId) ||
-    0;
+    LeaderboardManager.instance(components).getAddressShares(
+      ContractAddress(account.address),
+      hyperstructureEntityId,
+    ) || 0;
 
   return (
     <BaseStructureExtraContent x={x} y={y} entityId={hyperstructureEntityId}>

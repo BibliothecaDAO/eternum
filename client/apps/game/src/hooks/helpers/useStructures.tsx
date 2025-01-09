@@ -1,26 +1,22 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { configManager } from "@/dojo/setup";
 import { currentTickCount } from "@/ui/utils/utils";
-import { ContractAddress, ID, Position, StructureType, TickIds } from "@bibliothecadao/eternum";
-import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import {
+  BattleManager,
+  ContractAddress,
+  ID,
+  Position,
+  Structure,
+  StructureType,
+  TickIds,
+} from "@bibliothecadao/eternum";
+import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import useNextBlockTimestamp from "../useNextBlockTimestamp";
-import { ArmyInfo, getArmyByEntityId } from "./useArmies";
+import { getArmyByEntityId } from "./useArmies";
 import { useEntitiesUtils } from "./useEntities";
-
-export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
-  isMine: boolean;
-  isMercenary: boolean;
-  name: string;
-  ownerName?: string;
-  protector: ArmyInfo | undefined;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
-  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
-};
 
 export const useStructureAtPosition = ({ x, y }: Position): Structure | undefined => {
   const {
@@ -251,7 +247,11 @@ export const useIsResourcesLocked = (structureEntityId: ID) => {
   const structure = getStructureByEntityId(structureEntityId);
 
   return useMemo(() => {
-    const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
+    const battleManager = new BattleManager(
+      dojo.setup.components,
+      dojo.network.provider,
+      structure?.protector?.battle_id || 0,
+    );
     return battleManager.isResourcesLocked(nextBlockTimestamp!);
   }, [structure, nextBlockTimestamp]);
 };

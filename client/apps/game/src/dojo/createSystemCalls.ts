@@ -1,7 +1,6 @@
 import type * as SystemProps from "@bibliothecadao/eternum";
-import { type SetupNetworkResult } from "./setupNetwork";
 
-export function createSystemCalls({ provider }: SetupNetworkResult) {
+export function createSystemCalls({ provider }: { provider: SystemProps.EternumProvider }) {
   const uuid = async () => {
     return await provider.uuid();
   };

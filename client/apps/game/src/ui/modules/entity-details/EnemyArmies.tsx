@@ -1,13 +1,12 @@
 import { ReactComponent as Swords } from "@/assets/icons/common/cross-swords.svg";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useIsStructureImmune, useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { Position } from "@/types/Position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
+import { ArmyInfo, BattleManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useCallback, useMemo } from "react";
 
@@ -74,7 +73,7 @@ export const EnemyArmies = ({
       );
       const armyClone = army.protectee ? structuredClone(army) : army;
       armyClone.name = army.protectee ? `${structureAtPosition?.name}` : army.name;
-      const battleManager = new BattleManager(army.battle_id, dojo);
+      const battleManager = new BattleManager(dojo.setup.components, dojo.network.provider, army.battle_id);
       if (
         battleManager.isBattleOngoing(nextBlockTimestamp!) ||
         battleManager.getUpdatedArmy(army, battleManager.getUpdatedBattle(nextBlockTimestamp!))!.health.current <= 0

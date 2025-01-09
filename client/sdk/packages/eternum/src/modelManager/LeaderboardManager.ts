@@ -1,41 +1,34 @@
-import { DojoResult } from "@/hooks/context/DojoContext";
-import { CoOwnersWithTimestamp } from "@/ui/components/hyperstructures/types";
-import {
-  ContractAddress,
-  GuildInfo,
-  ID,
-  RESOURCE_RARITY,
-  ResourcesIds,
-  TickIds,
-  WORLD_CONFIG_ID,
-} from "@bibliothecadao/eternum";
-import { Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { configManager } from "../setup";
-import { ClientConfigManager } from "./ConfigManager";
+import { RESOURCE_RARITY, ResourcesIds, WORLD_CONFIG_ID } from "../constants";
+import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ContractAddress, GuildInfo, ID, TickIds } from "../types";
+import { configManager } from "./ConfigManager";
 
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;
 
-  private constructor(private dojoResult: DojoResult) {}
+  constructor(private readonly components: ClientComponents) {}
 
-  public static instance(dojoResult: DojoResult) {
+  public static instance(components: ClientComponents) {
     if (!LeaderboardManager._instance) {
-      LeaderboardManager._instance = new LeaderboardManager(dojoResult);
+      LeaderboardManager._instance = new LeaderboardManager(components);
     }
     return LeaderboardManager._instance;
   }
 
-  public getCurrentCoOwners(hyperstructureEntityId: ID): CoOwnersWithTimestamp | undefined {
+  public getCurrentCoOwners(
+    hyperstructureEntityId: ID,
+  ): { coOwners: { address: ContractAddress; percentage: number }[]; timestamp: number } | undefined {
     const hyperstructure = getComponentValue(
-      this.dojoResult.setup.components.Hyperstructure,
+      this.components.Hyperstructure,
       getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
     );
     if (!hyperstructure) return;
 
     const epochIndex = hyperstructure.current_epoch - 1 >= 0 ? hyperstructure.current_epoch - 1 : 0;
     const currentEpoch = getComponentValue(
-      this.dojoResult.setup.components.Epoch,
+      this.components.Epoch,
       getEntityIdFromKeys([BigInt(hyperstructureEntityId), BigInt(epochIndex)]),
     );
     if (!currentEpoch) return;
@@ -54,11 +47,9 @@ export class LeaderboardManager {
   ): [ID, number][] {
     const pointsPerGuild = new Map<ID, number>();
 
-    const season = getComponentValue(this.dojoResult.setup.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const season = getComponentValue(this.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
     if (!season) return [];
-    const finishedHyperstructuresEntityIds = runQuery([
-      HasValue(this.dojoResult.setup.components.Hyperstructure, { completed: true }),
-    ]);
+    const finishedHyperstructuresEntityIds = runQuery([HasValue(this.components.Hyperstructure, { completed: true })]);
 
     this.getPoints(
       Array.from(finishedHyperstructuresEntityIds),
@@ -74,7 +65,7 @@ export class LeaderboardManager {
 
     const finishedHyperstructuresEntityIds = hyperstructureEntityId
       ? [getEntityIdFromKeys([BigInt(hyperstructureEntityId)])]
-      : Array.from(runQuery([HasValue(this.dojoResult.setup.components.Hyperstructure, { completed: true })]));
+      : Array.from(runQuery([HasValue(this.components.Hyperstructure, { completed: true })]));
 
     this.getPoints(finishedHyperstructuresEntityIds, currentTimestamp, (address) => address, pointsPerPlayer);
 
@@ -84,16 +75,16 @@ export class LeaderboardManager {
   public getPoints(
     hyperstructuresEntityIds: Entity[],
     currentTimestamp: number,
-    getKey: (identifier: any) => any,
+    getKey: (identifier: ContractAddress) => any,
     keyPointsMap: Map<any, number>,
   ): boolean {
-    const season = getComponentValue(this.dojoResult.setup.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const season = getComponentValue(this.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
     if (!season) return false;
 
-    const pointsOnCompletion = ClientConfigManager.instance().getHyperstructureConfig().pointsOnCompletion;
+    const pointsOnCompletion = configManager.getHyperstructureConfig().pointsOnCompletion;
 
     hyperstructuresEntityIds.forEach((entityId) => {
-      const hyperstructure = getComponentValue(this.dojoResult.setup.components.Hyperstructure, entityId);
+      const hyperstructure = getComponentValue(this.components.Hyperstructure, entityId);
       if (!hyperstructure || hyperstructure.completed === false) return;
 
       const totalContributableAmount = configManager.getHyperstructureTotalContributableAmount(
@@ -101,13 +92,13 @@ export class LeaderboardManager {
       );
 
       const contributions = runQuery([
-        HasValue(this.dojoResult.setup.components.Contribution, {
+        HasValue(this.components.Contribution, {
           hyperstructure_entity_id: hyperstructure.entity_id,
         }),
       ]);
 
       contributions.forEach((contributionEntityId) => {
-        const contribution = getComponentValue(this.dojoResult.setup.components.Contribution, contributionEntityId);
+        const contribution = getComponentValue(this.components.Contribution, contributionEntityId);
         if (!contribution) return;
 
         const effectiveContribution =
@@ -126,13 +117,13 @@ export class LeaderboardManager {
 
       for (let i = 0; i < hyperstructure.current_epoch; i++) {
         const epoch = getComponentValue(
-          this.dojoResult.setup.components.Epoch,
+          this.components.Epoch,
           getEntityIdFromKeys([BigInt(hyperstructure.entity_id), BigInt(i)]),
         );
         if (!epoch) return false;
 
         const nextEpoch = getComponentValue(
-          this.dojoResult.setup.components.Epoch,
+          this.components.Epoch,
           getEntityIdFromKeys([BigInt(hyperstructure.entity_id), BigInt(i + 1)]),
         );
 
@@ -142,9 +133,9 @@ export class LeaderboardManager {
             : nextEpoch?.start_timestamp ?? BigInt(currentTimestamp);
         const epochDuration = epochEndTimestamp - epoch.start_timestamp;
 
-        const nbOfCycles = Number(epochDuration) / ClientConfigManager.instance().getTick(TickIds.Default);
+        const nbOfCycles = Number(epochDuration) / configManager.getTick(TickIds.Default);
 
-        const totalPoints = nbOfCycles * ClientConfigManager.instance().getHyperstructureConfig().pointsPerCycle;
+        const totalPoints = nbOfCycles * configManager.getHyperstructureConfig().pointsPerCycle;
 
         epoch.owners.forEach((owner) => {
           let [owner_address, percentage] = (owner as any).value.map((value: any) => value.value);
@@ -165,12 +156,12 @@ export class LeaderboardManager {
 
   public getAddressShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {
     const hyperstructure = getComponentValue(
-      this.dojoResult.setup.components.Hyperstructure,
+      this.components.Hyperstructure,
       getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
     );
     if (!hyperstructure) return 0;
     const currentEpoch = getComponentValue(
-      this.dojoResult.setup.components.Epoch,
+      this.components.Epoch,
       getEntityIdFromKeys([BigInt(hyperstructureEntityId), BigInt(hyperstructure.current_epoch)]),
     );
     if (!currentEpoch) return 0;

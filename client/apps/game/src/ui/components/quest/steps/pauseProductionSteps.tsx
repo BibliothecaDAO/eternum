@@ -1,7 +1,7 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
+import { BUILDINGS_CENTER } from "@bibliothecadao/eternum";
 import { StepOptions } from "shepherd.js";
 import { StepButton, waitForElement } from "./utils";
 

@@ -1,14 +1,13 @@
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
+import { getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures";
-import { Structure, useIsStructureImmune } from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
-import { StructureType } from "@bibliothecadao/eternum";
+import { ArmyInfo, BattleManager, Structure, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { TroopDisplay } from "../../military/TroopChip";
@@ -52,7 +51,10 @@ export const StructureListItem = ({
       ? getHyperstructureProgress(structure.entity_id)
       : undefined;
 
-  const battleManager = useMemo(() => new BattleManager(structure.protector?.battle_id || 0, dojo), [structure]);
+  const battleManager = useMemo(
+    () => new BattleManager(dojo.setup.components, dojo.network.provider, structure.protector?.battle_id || 0),
+    [structure],
+  );
 
   const { updatedBattle } = useMemo(() => {
     if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
