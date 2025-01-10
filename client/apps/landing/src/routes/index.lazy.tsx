@@ -57,7 +57,7 @@ function Index() {
           title: "players",
           value: formatNumber(data?.s0EternumAddressNameModels?.totalCount ?? 0, 0),
           icon: <UsersIcon />,
-          backgroundImage: "/images/avatars/Armor.png",
+          backgroundImage: "/images/avatars/12.png",
         },
       },
       {
@@ -66,7 +66,7 @@ function Index() {
           title: "realms settled",
           value: formatNumber(data?.s0EternumRealmModels?.totalCount ?? 0, 0),
           icon: <Castle />,
-          backgroundImage: "/images/avatars/Blade.png",
+          backgroundImage: "/images/avatars/09.png",
         },
       },
       {
@@ -75,7 +75,7 @@ function Index() {
           title: "hyperstructures",
           value: formatNumber(data?.s0EternumHyperstructureModels?.totalCount ?? 0, 0),
           icon: <Sparkles />,
-          backgroundImage: "/images/avatars/Hidden.png",
+          backgroundImage: "/images/avatars/06.png",
         },
       },
       {
@@ -84,7 +84,7 @@ function Index() {
           title: "mines discovered",
           value: formatNumber(data?.s0EternumFragmentMineDiscoveredModels?.totalCount ?? 0, 0),
           icon: <Pickaxe />,
-          backgroundImage: "/images/jungle-clouds.png",
+          backgroundImage: "/images/covers/03.png",
         },
       },
       {
@@ -100,7 +100,7 @@ function Index() {
             0,
           ),
           icon: <Coins />,
-          backgroundImage: "/images/avatars/Hidden.png",
+          backgroundImage: "/images/avatars/06.png",
         },
       },
       {
@@ -109,7 +109,7 @@ function Index() {
           title: "donkeys burned",
           value: currencyFormat(donkeysBurned, 0),
           icon: <Flame />,
-          backgroundImage: "/images/jungle-clouds.png",
+          backgroundImage: "/images/covers/03.png",
         },
       },
       {
@@ -118,7 +118,7 @@ function Index() {
           title: "Bridge Lords Balance",
           value: formatNumber(lordsBalance, 0),
           icon: <CoinsIcon />,
-          backgroundImage: "/images/hidden-castle.png",
+          backgroundImage: "/images/covers/04.png",
         },
       },
     ],
