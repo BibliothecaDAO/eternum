@@ -1,13 +1,13 @@
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
 import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { Structure, useStructureByPosition } from "@/hooks/helpers/useStructures";
+import { useStructureByPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { DurationLeft, ProgressBar } from "@/ui/modules/military/battle-view/BattleProgress";
 import { divideByPrecision } from "@/ui/utils/utils";
+import { BattleManager, Structure } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const BattleInfoLabel = () => {
@@ -58,7 +58,10 @@ const BattleInfo = ({
   currentTimestamp: number;
   structure: Structure | undefined;
 }) => {
-  const battleManager = useMemo(() => new BattleManager(battleEntityId, dojo), [battleEntityId, dojo]);
+  const battleManager = useMemo(
+    () => new BattleManager(dojo.setup.components, dojo.network.provider, battleEntityId),
+    [battleEntityId, dojo],
+  );
 
   const { attackerHealth, defenderHealth, isOngoing, isSiege } = useMemo(() => {
     const adjustedBattle = battleManager.getUpdatedBattle(currentTimestamp);

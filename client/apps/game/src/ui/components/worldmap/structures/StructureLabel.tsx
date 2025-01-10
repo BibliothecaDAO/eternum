@@ -1,16 +1,11 @@
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import {
-  Structure,
-  useIsStructureImmune,
-  useStructureImmunityTimer,
-  useStructures,
-} from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/useStructures";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { ContractAddress, Structure } from "@bibliothecadao/eternum";
 import { memo, useMemo } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { StructureListItem } from "./StructureListItem";

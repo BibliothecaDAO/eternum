@@ -1,11 +1,10 @@
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattleManager } from "@/hooks/helpers/battles/useBattles";
 import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
-import { Structure, useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/useStructures";
+import { useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
-import { BattleSide } from "@bibliothecadao/eternum";
+import { BattleManager, BattleSide, Structure } from "@bibliothecadao/eternum";
 import { memo, useMemo } from "react";
 import { Battle } from "./Battle";
 
@@ -28,7 +27,11 @@ export const BattleView = memo(() => {
   );
 
   const targetArmy = useMemo(() => {
-    const tempBattleManager = new BattleManager(updatedTarget?.battle_id || 0, dojo);
+    const tempBattleManager = new BattleManager(
+      dojo.setup.components,
+      dojo.network.provider,
+      updatedTarget?.battle_id || 0,
+    );
     const updatedBattle = tempBattleManager.getUpdatedBattle(currentTimestamp!);
     return tempBattleManager.getUpdatedArmy(updatedTarget, updatedBattle);
   }, [updatedTarget, battleView?.targetArmy]);

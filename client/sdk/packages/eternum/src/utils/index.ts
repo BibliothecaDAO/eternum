@@ -144,3 +144,15 @@ export const HYPERSTRUCTURE_TOTAL_COSTS_SCALED: { resource: number; amount: numb
   HYPERSTRUCTURE_TOTAL_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
+
+export function multiplyByPrecision(value: number): number {
+  return Math.floor(value * EternumGlobalConfig.resources.resourcePrecision);
+}
+
+export function divideByPrecision(value: number): number {
+  return value / EternumGlobalConfig.resources.resourcePrecision;
+}
+
+export function gramToKg(grams: number): number {
+  return Number(grams) / 1000;
+}

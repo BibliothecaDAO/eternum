@@ -1,4 +1,4 @@
-import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
+import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -7,8 +7,8 @@ import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { BattleSimulation } from "@/ui/modules/simulation/BattleSimulation";
 import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
-import { divideByPrecision, divideByPrecisionFormatted } from "@/ui/utils/utils";
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { divideByPrecisionFormatted } from "@/ui/utils/utils";
+import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { HintSection } from "../hints/HintModal";
 import { battleSimulation, pillageSimulation } from "../navigation/Config";
 import { ArmyChip } from "./ArmyChip";

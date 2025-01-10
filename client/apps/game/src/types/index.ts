@@ -1,15 +1,10 @@
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { Position } from "./Position";
-export type HexPosition = { col: number; row: number };
 
 export enum SceneName {
   WorldMap = "map",
   Hexception = "hex",
-}
-export interface Health {
-  current: bigint;
-  lifetime: bigint;
 }
 
 export enum ResourceMiningTypes {

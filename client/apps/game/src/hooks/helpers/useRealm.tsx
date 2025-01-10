@@ -10,7 +10,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue, runQuery, type ComponentValue, type Entity } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { shortString } from "starknet";
-import realmIdsByOrder from "../../data/realmids_by_order.json";
+import realmIdsByOrder from "../../../../../common/data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
 import { getRealmNameById } from "../../ui/utils/realms";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";

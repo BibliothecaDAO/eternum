@@ -1,6 +1,5 @@
-import { DUMMY_HYPERSTRUCTURE_ENTITY_ID } from "@/three/scenes/constants";
 import Button from "@/ui/elements/Button";
-import { ID } from "@bibliothecadao/eternum";
+import { DUMMY_HYPERSTRUCTURE_ENTITY_ID, ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useEffect, useState } from "react";
 

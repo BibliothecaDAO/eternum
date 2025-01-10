@@ -1,16 +1,11 @@
-import {
-  Structure,
-  useIsStructureImmune,
-  useStructureByEntityId,
-  useStructureImmunityTimer,
-} from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructureByEntityId, useStructureImmunityTimer } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Tabs } from "@/ui/elements/tab";
 import { copyPlayerAddressToClipboard, displayAddress, formatTime, toHexString } from "@/ui/utils/utils";
-import { StructureType } from "@bibliothecadao/eternum";
+import { Structure, StructureType } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { Buildings } from "./Buildings";
 import { Castle } from "./Castle";

@@ -1,6 +1,6 @@
 import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { BattleListItem } from "@/ui/components/battles/BattleListItem";
+import { ArmyInfo } from "@bibliothecadao/eternum";
 
 export const Battles = ({ ownArmy, battles }: { ownArmy: ArmyInfo | undefined; battles: BattleInfo[] }) => {
   return (

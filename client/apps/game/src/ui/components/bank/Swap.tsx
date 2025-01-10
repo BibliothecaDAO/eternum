@@ -1,5 +1,4 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
-import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
@@ -14,6 +13,7 @@ import {
   ContractAddress,
   DONKEY_ENTITY_TYPE,
   ID,
+  MarketManager,
   RESOURCE_TIERS,
   Resources,
   ResourcesIds,
@@ -59,7 +59,7 @@ export const ResourceSwap = ({
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
 
   const marketManager = useMemo(
-    () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
+    () => new MarketManager(setup.components, bankEntityId, ContractAddress(account.address), resourceId),
     [setup, bankEntityId, resourceId, account.address],
   );
 

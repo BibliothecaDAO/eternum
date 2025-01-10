@@ -2,6 +2,9 @@ import { ResourceInputs } from "../types";
 import { ResourcesIds } from "./index";
 import { BuildingType } from "./structures";
 
+export const BUILDINGS_CENTER = [10, 10];
+export const DUMMY_HYPERSTRUCTURE_ENTITY_ID = 99999999n;
+
 export const BUILDING_INFORMATION: {
   [key: number]: string;
 } = {
