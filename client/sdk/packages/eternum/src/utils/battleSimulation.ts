@@ -88,7 +88,7 @@ export class TroopsSimulator {
   }
 }
 
-export class Health {
+export class HealthSimulator {
   current: bigint;
   lifetime: bigint;
 
@@ -131,8 +131,8 @@ export class Health {
 export class Battle {
   attackArmy: TroopsSimulator;
   defenceArmy: TroopsSimulator;
-  attackHealth: Health;
-  defenceHealth: Health;
+  attackHealth: HealthSimulator;
+  defenceHealth: HealthSimulator;
   config: TroopConfig;
 
   constructor(
@@ -152,8 +152,8 @@ export class Battle {
       defenceArmy.paladin_count,
       defenceArmy.crossbowman_count,
     );
-    this.attackHealth = new Health(attackHealth);
-    this.defenceHealth = new Health(defenceHealth);
+    this.attackHealth = new HealthSimulator(attackHealth);
+    this.defenceHealth = new HealthSimulator(defenceHealth);
     this.config = config;
   }
 
@@ -332,7 +332,7 @@ export class Battle {
   }
 
   private getUpdatedTroops = (
-    health: Health,
+    health: HealthSimulator,
     currentTroops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint },
   ): { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint } => {
     if (health.current > health.lifetime) {
@@ -382,11 +382,11 @@ export class Battle {
     const [attackDelta, defenceDelta] = this.computeDelta();
 
     const duration = this.calculateDuration();
-    const attackerHealth = new Health({
+    const attackerHealth = new HealthSimulator({
       current: this.attackHealth.current - BigInt(defenceDelta) * BigInt(duration),
       lifetime: this.attackHealth.lifetime,
     });
-    const defenderHealth = new Health({
+    const defenderHealth = new HealthSimulator({
       current: this.defenceHealth.current - BigInt(attackDelta) * BigInt(duration),
       lifetime: this.defenceHealth.lifetime,
     });

@@ -1,9 +1,6 @@
-import { BattleManager, BattleStatus, BattleType } from "@/dojo/modelManager/BattleManager";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Structure } from "@/hooks/helpers/useStructures";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
-import { Health } from "@/types";
+import { ArmyInfo, BattleManager, BattleStatus, BattleType, Structure, type Health } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 

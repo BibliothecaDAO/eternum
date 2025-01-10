@@ -1,49 +1,36 @@
-import { useAccountStore } from "@/hooks/context/accountStore";
-import useUIStore from "@/hooks/store/useUIStore";
-import { BUILDINGS_CENTER, DUMMY_HYPERSTRUCTURE_ENTITY_ID } from "@/three/scenes/constants";
-import { playBuildingSound } from "@/three/sound/utils";
-import { HexPosition } from "@/types";
-import { FELT_CENTER } from "@/ui/config";
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
+import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { uuid } from "@latticexyz/utils";
+import { CairoOption, CairoOptionVariant } from "starknet";
 import {
+  BUILDINGS_CENTER,
   BuildingType,
+  DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   Direction,
-  ID,
-  Position,
+  FELT_CENTER,
   RealmLevels,
   ResourcesIds,
   StructureType,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
-} from "@bibliothecadao/eternum";
-import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { uuid } from "@latticexyz/utils";
-import { AccountInterface, CairoOption, CairoOptionVariant } from "starknet";
-import { SetupResult, configManager } from "../setup";
+} from "../constants";
+import { ClientComponents } from "../dojo/components/createClientComponents";
+import { EternumProvider } from "../provider";
+import { ContractAddress, HexPosition, ID, Position } from "../types";
+import { configManager } from "./ConfigManager";
+import { DojoAccount } from "./types";
 
 export class TileManager {
   private col: number;
   private row: number;
-  private address: bigint;
-  private account: AccountInterface | null;
 
   constructor(
-    private setup: SetupResult,
+    private readonly components: ClientComponents,
+    private readonly provider: EternumProvider,
     hexCoords: HexPosition,
   ) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
-
-    this.account = null;
-    this.address = BigInt(useAccountStore.getState().account?.address || 0n);
-
-    useAccountStore.subscribe((state) => {
-      const account = state.account;
-      if (account) {
-        this.address = BigInt(account.address);
-        this.account = account;
-      }
-    });
   }
 
   getHexCoords = () => {
@@ -55,29 +42,27 @@ export class TileManager {
     this.row = hexCoords.row + FELT_CENTER;
   }
 
-  getRealmLevel = (): RealmLevels => {
-    const realmEntityId = useUIStore.getState().structureEntityId;
-    const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  getRealmLevel = (realmEntityId: number): RealmLevels => {
+    const realm = getComponentValue(this.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
     return (realm?.level || RealmLevels.Settlement) as RealmLevels;
   };
 
-  getWonder = () => {
-    const realmEntityId = useUIStore.getState().structureEntityId;
-    const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  getWonder = (realmEntityId: number) => {
+    const realm = getComponentValue(this.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
     return realm?.has_wonder || false;
   };
 
   existingBuildings = () => {
     const builtBuildings = Array.from(
       runQuery([
-        Has(this.setup.components.Building),
-        HasValue(this.setup.components.Building, { outer_col: this.col, outer_row: this.row }),
-        NotValue(this.setup.components.Building, { entity_id: 0 }),
+        Has(this.components.Building),
+        HasValue(this.components.Building, { outer_col: this.col, outer_row: this.row }),
+        NotValue(this.components.Building, { entity_id: 0 }),
       ]),
     );
 
     const buildings = builtBuildings.map((entity) => {
-      const productionModelValue = getComponentValue(this.setup.components.Building, entity);
+      const productionModelValue = getComponentValue(this.components.Building, entity);
       const category = productionModelValue!.category;
 
       return {
@@ -95,7 +80,7 @@ export class TileManager {
 
   getBuilding = (hexCoords: HexPosition) => {
     const building = getComponentValue(
-      this.setup.components.Building,
+      this.components.Building,
       getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
     );
     return building;
@@ -103,7 +88,7 @@ export class TileManager {
 
   isHexOccupied = (hexCoords: HexPosition) => {
     const building = getComponentValue(
-      this.setup.components.Building,
+      this.components.Building,
       getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
     );
     return building !== undefined && building.category !== BuildingType[BuildingType.None];
@@ -111,29 +96,26 @@ export class TileManager {
 
   structureType = () => {
     const structures = Array.from(
-      runQuery([
-        Has(this.setup.components.Structure),
-        HasValue(this.setup.components.Position, { x: this.col, y: this.row }),
-      ]),
+      runQuery([Has(this.components.Structure), HasValue(this.components.Position, { x: this.col, y: this.row })]),
     );
     if (structures?.length === 1) {
-      const structure = getComponentValue(this.setup.components.Structure, structures[0])!;
+      const structure = getComponentValue(this.components.Structure, structures[0])!;
       let category = structure.category;
       return StructureType[category as keyof typeof StructureType];
     }
   };
 
-  private _getOwnerEntityId = () => {
+  private _getOwnerEntityId = (address: ContractAddress) => {
     const entities = Array.from(
       runQuery([
-        Has(this.setup.components.Owner),
-        HasValue(this.setup.components.Owner, { address: this.address }),
-        HasValue(this.setup.components.Position, { x: this.col, y: this.row }),
+        Has(this.components.Owner),
+        HasValue(this.components.Owner, { address }),
+        HasValue(this.components.Position, { x: this.col, y: this.row }),
       ]),
     );
 
     if (entities.length === 1) {
-      return getComponentValue(this.setup.components.Owner, entities[0])!.entity_id;
+      return getComponentValue(this.components.Owner, entities[0])!.entity_id;
     }
   };
 
@@ -143,7 +125,7 @@ export class TileManager {
     let bonusPercent = 0;
     neighborBuildingCoords.map((coord) => {
       const building = getComponentValue(
-        this.setup.components.Building,
+        this.components.Building,
         getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(coord.col), BigInt(coord.row)]),
       );
 
@@ -190,7 +172,7 @@ export class TileManager {
     let overrideId = uuid();
     const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
 
-    this.setup.components.Building.addOverride(overrideId, {
+    this.components.Building.addOverride(overrideId, {
       entity,
       value: {
         outer_col: this.col,
@@ -210,14 +192,14 @@ export class TileManager {
 
     const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
 
-    this.setup.components.Population.addOverride(populationOverrideId, {
+    this.components.Population.addOverride(populationOverrideId, {
       entity: realmEntity,
       value: {
         population:
-          (getComponentValue(this.setup.components.Population, realmEntity)?.population || 0) +
+          (getComponentValue(this.components.Population, realmEntity)?.population || 0) +
           configManager.getBuildingPopConfig(buildingType).population,
         capacity:
-          (getComponentValue(this.setup.components.Population, realmEntity)?.capacity || 0) +
+          (getComponentValue(this.components.Population, realmEntity)?.capacity || 0) +
           configManager.getBuildingPopConfig(buildingType).capacity,
       },
     });
@@ -226,9 +208,9 @@ export class TileManager {
     const buildingQuantityEntity = getEntityIdFromKeys([BigInt(entityId), BigInt(buildingType)]);
 
     const storehouseQuantity =
-      getComponentValue(this.setup.components.BuildingQuantityv2, buildingQuantityEntity)?.value || 0;
+      getComponentValue(this.components.BuildingQuantityv2, buildingQuantityEntity)?.value || 0;
 
-    this.setup.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
+    this.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
       entity: buildingQuantityEntity,
       value: {
         value: storehouseQuantity + 1,
@@ -244,9 +226,9 @@ export class TileManager {
   };
 
   private _overrideResource = (entity: Entity, resourceType: number, change: bigint) => {
-    const currentBalance = getComponentValue(this.setup.components.Resource, entity)?.balance || 0n;
+    const currentBalance = getComponentValue(this.components.Resource, entity)?.balance || 0n;
     const resourceOverrideId = uuid();
-    this.setup.components.Resource.addOverride(resourceOverrideId, {
+    this.components.Resource.addOverride(resourceOverrideId, {
       entity,
       value: {
         resource_type: resourceType,
@@ -257,15 +239,15 @@ export class TileManager {
 
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
     const overrideId = uuid();
-    const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+    const realmPosition = getComponentValue(this.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
     const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
     const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
 
-    const currentBuilding = getComponentValue(this.setup.components.Building, entity);
+    const currentBuilding = getComponentValue(this.components.Building, entity);
 
     console.log(currentBuilding);
 
-    this.setup.components.Building.addOverride(overrideId, {
+    this.components.Building.addOverride(overrideId, {
       entity,
       value: {
         outer_col: outercol,
@@ -286,14 +268,14 @@ export class TileManager {
 
     const type = BuildingType[currentBuilding?.category as keyof typeof BuildingType];
 
-    this.setup.components.Population.addOverride(populationOverrideId, {
+    this.components.Population.addOverride(populationOverrideId, {
       entity: realmEntityId,
       value: {
         population:
-          (getComponentValue(this.setup.components.Population, realmEntityId)?.population || 0) -
+          (getComponentValue(this.components.Population, realmEntityId)?.population || 0) -
           configManager.getBuildingPopConfig(type).population,
         capacity:
-          (getComponentValue(this.setup.components.Population, realmEntityId)?.capacity || 0) -
+          (getComponentValue(this.components.Population, realmEntityId)?.capacity || 0) -
           configManager.getBuildingPopConfig(type).capacity,
       },
     });
@@ -304,8 +286,8 @@ export class TileManager {
   private _optimisticPause = (col: number, row: number) => {
     let overrideId = uuid();
     const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
-    const building = getComponentValue(this.setup.components.Building, entity);
-    this.setup.components.Building.addOverride(overrideId, {
+    const building = getComponentValue(this.components.Building, entity);
+    this.components.Building.addOverride(overrideId, {
       entity,
       value: {
         outer_col: building?.outer_col,
@@ -326,8 +308,8 @@ export class TileManager {
   private _optimisticResume = (col: number, row: number) => {
     let overrideId = uuid();
     const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
-    const building = getComponentValue(this.setup.components.Building, entity);
-    this.setup.components.Building.addOverride(overrideId, {
+    const building = getComponentValue(this.components.Building, entity);
+    this.components.Building.addOverride(overrideId, {
       entity,
       value: {
         outer_col: building?.outer_col,
@@ -349,7 +331,7 @@ export class TileManager {
     const overrideId = DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString();
     const entity: Entity = getEntityIdFromKeys([BigInt(DUMMY_HYPERSTRUCTURE_ENTITY_ID)]);
 
-    this.setup.components.Position.addOverride(overrideId, {
+    this.components.Position.addOverride(overrideId, {
       entity,
       value: {
         entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
@@ -358,7 +340,7 @@ export class TileManager {
       },
     });
 
-    this.setup.components.Structure.addOverride(overrideId, {
+    this.components.Structure.addOverride(overrideId, {
       entity,
       value: {
         category: StructureType[structureType],
@@ -370,8 +352,13 @@ export class TileManager {
     return { overrideId };
   };
 
-  placeBuilding = async (buildingType: BuildingType, hexCoords: HexPosition, resourceType?: number) => {
-    const entityId = this._getOwnerEntityId();
+  placeBuilding = async (
+    signer: DojoAccount,
+    buildingType: BuildingType,
+    hexCoords: HexPosition,
+    resourceType?: number,
+  ) => {
+    const entityId = this._getOwnerEntityId(ContractAddress(signer.address));
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
     const { col, row } = hexCoords;
 
@@ -387,13 +374,13 @@ export class TileManager {
       buildingType,
       resourceType,
     );
-    const { isSoundOn, effectsLevel } = useUIStore.getState();
 
-    playBuildingSound(buildingType, isSoundOn, effectsLevel);
+    // const { isSoundOn, effectsLevel } = useUIStore.getState();
+    // playBuildingSound(buildingType, isSoundOn, effectsLevel);
 
     try {
-      await this.setup.systemCalls.create_building({
-        signer: useAccountStore.getState().account!,
+      await this.provider.create_building({
+        signer,
         entity_id: entityId,
         directions: directions,
         building_category: buildingType,
@@ -403,24 +390,24 @@ export class TileManager {
             : new CairoOption<Number>(CairoOptionVariant.None, 0),
       });
     } catch (error) {
-      this.setup.components.Building.removeOverride(overrideId);
-      this.setup.components.Population.removeOverride(populationOverrideId);
-      this.setup.components.BuildingQuantityv2.removeOverride(quantityOverrideId);
+      this.components.Building.removeOverride(overrideId);
+      this.components.Population.removeOverride(populationOverrideId);
+      this.components.BuildingQuantityv2.removeOverride(quantityOverrideId);
 
       console.error(error);
       throw error;
     }
   };
 
-  destroyBuilding = async (col: number, row: number) => {
-    const entityId = this._getOwnerEntityId();
+  destroyBuilding = async (signer: DojoAccount, col: number, row: number) => {
+    const entityId = this._getOwnerEntityId(ContractAddress(signer.address));
 
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
     // add optimistic rendering
     this._optimisticDestroy(entityId, col, row);
 
-    await this.setup.systemCalls.destroy_building({
-      signer: useAccountStore.getState().account!,
+    await this.provider.destroy_building({
+      signer,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -429,14 +416,14 @@ export class TileManager {
     });
   };
 
-  pauseProduction = async (col: number, row: number) => {
-    const entityId = this._getOwnerEntityId();
+  pauseProduction = async (signer: DojoAccount, col: number, row: number) => {
+    const entityId = this._getOwnerEntityId(ContractAddress(signer.address));
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
 
     this._optimisticPause(col, row);
 
-    await this.setup.systemCalls.pause_production({
-      signer: useAccountStore.getState().account!,
+    await this.provider.pause_production({
+      signer,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -445,14 +432,14 @@ export class TileManager {
     });
   };
 
-  resumeProduction = async (col: number, row: number) => {
-    const entityId = this._getOwnerEntityId();
+  resumeProduction = async (signer: DojoAccount, col: number, row: number) => {
+    const entityId = this._getOwnerEntityId(ContractAddress(signer.address));
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
 
     this._optimisticResume(col, row);
 
-    await this.setup.systemCalls.resume_production({
-      signer: useAccountStore.getState().account!,
+    await this.provider.resume_production({
+      signer,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -461,19 +448,19 @@ export class TileManager {
     });
   };
 
-  placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
+  placeStructure = async (signer: DojoAccount, entityId: ID, structureType: StructureType, coords: Position) => {
     const { overrideId } = this._optimisticStructure(coords, structureType);
     try {
       if (structureType == StructureType.Hyperstructure) {
-        return await this.setup.systemCalls.create_hyperstructure({
-          signer: useAccountStore.getState().account!,
+        return await this.provider.create_hyperstructure({
+          signer,
           creator_entity_id: entityId,
           coords,
         });
       }
     } catch (error) {
-      this.setup.components.Structure.removeOverride(overrideId);
-      this.setup.components.Position.removeOverride(overrideId);
+      this.components.Structure.removeOverride(overrideId);
+      this.components.Position.removeOverride(overrideId);
       console.error(error);
       throw error;
     }

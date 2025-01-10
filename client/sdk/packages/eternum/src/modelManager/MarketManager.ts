@@ -1,23 +1,28 @@
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { ComponentValue, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { ClientComponents } from "../createClientComponents";
-import { configManager, SetupResult } from "../setup";
+import { getComponentValue, HasValue, runQuery, type ComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { ResourcesIds } from "../constants";
+import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ContractAddress, ID } from "../types";
+import { configManager } from "./ConfigManager";
 
 export class MarketManager {
-  bankEntityId: ID;
-  player: ContractAddress;
-  resourceId: ResourcesIds;
-
   constructor(
-    private setup: SetupResult,
-    bankEntityId: ID,
-    player: ContractAddress,
-    resourceId: ResourcesIds,
-  ) {
-    this.bankEntityId = bankEntityId;
-    this.resourceId = resourceId;
-    this.player = player;
+    private readonly components: ClientComponents,
+    private readonly _bankEntityId: ID,
+    private readonly _player: ContractAddress,
+    private readonly _resourceId: ResourcesIds,
+  ) {}
+
+  get bankEntityId() {
+    return this._bankEntityId;
+  }
+
+  get player() {
+    return this._player;
+  }
+
+  get resourceId() {
+    return this._resourceId;
   }
 
   public hasReserves() {
@@ -32,14 +37,14 @@ export class MarketManager {
 
   public getPlayerLiquidity() {
     return getComponentValue(
-      this.setup.components.Liquidity,
+      this.components.Liquidity,
       getEntityIdFromKeys([BigInt(this.bankEntityId), this.player, BigInt(this.resourceId)]),
     );
   }
 
   public getMarket() {
     return getComponentValue(
-      this.setup.components.Market,
+      this.components.Market,
       getEntityIdFromKeys([BigInt(this.bankEntityId), BigInt(this.resourceId)]),
     );
   }
@@ -271,7 +276,7 @@ export class MarketManager {
 
     playerStructureIds.forEach((structureId) => {
       const liquidityEvents = runQuery([
-        HasValue(this.setup.components.events.LiquidityEvent, {
+        HasValue(this.components.events.LiquidityEvent, {
           bank_entity_id: this.bankEntityId,
           entity_id: structureId,
           resource_type: this.resourceId,
@@ -279,7 +284,7 @@ export class MarketManager {
       ]);
 
       liquidityEvents.forEach((event) => {
-        const eventInfo = getComponentValue(this.setup.components.events.LiquidityEvent, event);
+        const eventInfo = getComponentValue(this.components.events.LiquidityEvent, event);
         if (eventInfo && (!mostRecentEvent || eventInfo.timestamp > mostRecentEvent.timestamp)) {
           mostRecentEvent = eventInfo;
         }

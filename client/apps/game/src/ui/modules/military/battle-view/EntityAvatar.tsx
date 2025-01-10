@@ -1,6 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { Structure } from "@/hooks/helpers/useStructures";
-import { ID, RealmLevels } from "@bibliothecadao/eternum";
+import { ID, RealmLevels, Structure } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";

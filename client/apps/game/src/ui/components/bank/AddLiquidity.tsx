@@ -1,4 +1,3 @@
-import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
@@ -6,7 +5,7 @@ import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, MarketManager, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
@@ -40,7 +39,7 @@ const AddLiquidity = ({
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const marketManager = useMemo(
-    () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
+    () => new MarketManager(setup.components, bankEntityId, ContractAddress(account.address), resourceId),
     [setup, bankEntityId, resourceId, account.address],
   );
 

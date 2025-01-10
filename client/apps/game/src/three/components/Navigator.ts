@@ -1,5 +1,5 @@
-import { type HexPosition } from "@/types";
 import { calculateDistanceInHexes, getWorldPositionForHex } from "@/ui/utils/utils";
+import { type HexPosition } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";

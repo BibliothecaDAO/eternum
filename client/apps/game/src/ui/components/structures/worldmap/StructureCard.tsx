@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useIsStructureImmune, useStructureAtPosition, useStructureImmunityTimer } from "@/hooks/helpers/useStructures";
@@ -15,7 +15,7 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/Tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
-import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ArmyInfo, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";

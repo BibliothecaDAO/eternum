@@ -1,4 +1,3 @@
-import { TileManager } from "@/dojo/modelManager/TileManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
@@ -7,7 +6,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { BuildingType, StructureType } from "@bibliothecadao/eternum";
+import { BuildingType, StructureType, TileManager } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 import { ArmyChip } from "./ArmyChip";
@@ -24,7 +23,10 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const dojo = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const tileManager = new TileManager(dojo.setup, { col: structure.position.x, row: structure.position.y });
+  const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
+    col: structure.position.x,
+    row: structure.position.y,
+  });
   const existingBuildings = tileManager.existingBuildings();
 
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({

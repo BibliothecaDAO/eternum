@@ -1,5 +1,3 @@
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
-import { calculateCompletionPoints } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
@@ -16,7 +14,13 @@ import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat, getEntityIdFromKeys, multiplyByPrecision, separateCamelCase } from "@/ui/utils/utils";
-import { Access, ContractAddress, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import {
+  Access,
+  calculateCompletionPoints,
+  ContractAddress,
+  LeaderboardManager,
+  MAX_NAME_LENGTH,
+} from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 import { ContributionSummary } from "./ContributionSummary";
@@ -140,7 +144,10 @@ export const HyperstructurePanel = ({ entity }: any) => {
   }, [myContributions, updates]);
 
   const myShares = useMemo(() => {
-    return LeaderboardManager.instance(dojo).getAddressShares(ContractAddress(account.address), entity.entity_id);
+    return LeaderboardManager.instance(dojo.setup.components).getAddressShares(
+      ContractAddress(account.address),
+      entity.entity_id,
+    );
   }, [myContributions, updates]);
 
   const setAccess = async (access: bigint) => {

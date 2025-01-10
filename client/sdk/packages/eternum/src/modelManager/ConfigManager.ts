@@ -1,3 +1,5 @@
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
@@ -10,14 +12,10 @@ import {
   ResourcesIds,
   ResourceTier,
   StructureType,
-  TickIds,
-  TravelTypes,
   WORLD_CONFIG_ID,
-} from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ContractComponents } from "../contractComponents";
-import { configManager } from "../setup";
+} from "../constants";
+import { ContractComponents } from "../dojo/components/contractComponents";
+import { TickIds, TravelTypes } from "../types";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
@@ -508,7 +506,7 @@ export class ClientConfigManager {
   getHyperstructureTotalContributableAmount(hyperstructureId: number) {
     const requiredAmounts = this.getHyperstructureRequiredAmounts(hyperstructureId);
     return requiredAmounts.reduce(
-      (total, { amount, resource }) => total + amount * configManager.getResourceRarity(resource),
+      (total, { amount, resource }) => total + amount * this.getResourceRarity(resource),
       0,
     );
   }
@@ -694,3 +692,5 @@ export class ClientConfigManager {
     }, []);
   }
 }
+
+export const configManager = ClientConfigManager.instance();
