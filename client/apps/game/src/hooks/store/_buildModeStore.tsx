@@ -1,6 +1,5 @@
-import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { BUILDINGS_CENTER, BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { Entity } from "@dojoengine/recs";
-import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 
 export interface BuildModeStore {
   previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null;

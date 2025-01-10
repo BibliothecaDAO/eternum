@@ -1,13 +1,12 @@
-import { TileManager } from "@/dojo/modelManager/TileManager";
 import { questDetails } from "@/ui/components/quest/questDetails";
-import { BuildingType, ContractAddress, ID, QuestType } from "@bibliothecadao/eternum";
+import { ArmyInfo, BuildingType, ContractAddress, ID, QuestType, TileManager } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
-import { ArmyInfo, useArmiesByEntityOwnerWithPositionAndQuantity } from "./useArmies";
+import { useArmiesByEntityOwnerWithPositionAndQuantity } from "./useArmies";
 import { useEntitiesUtils } from "./useEntities";
 import { useGetMyOffers } from "./useTrade";
 
@@ -82,7 +81,7 @@ const useQuestDependencies = () => {
     [structureEntityId, getEntityInfo],
   );
 
-  const tileManager = new TileManager(setup, {
+  const tileManager = new TileManager(setup.components, setup.network.provider, {
     col: structurePosition.x,
     row: structurePosition.y,
   });

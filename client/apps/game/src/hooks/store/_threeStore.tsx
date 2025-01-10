@@ -1,5 +1,5 @@
-import { HexPosition, StructureInfo } from "@/types";
-import { BuildingType, ID, Position } from "@bibliothecadao/eternum";
+import { StructureInfo } from "@/types";
+import { BuildingType, HexPosition, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
   navigationTarget: HexPosition | null;

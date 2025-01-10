@@ -1,4 +1,3 @@
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useHyperstructureUpdates } from "@/hooks/helpers/useHyperstructures";
 import { useRealm } from "@/hooks/helpers/useRealm";
@@ -7,7 +6,7 @@ import Button from "@/ui/elements/Button";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, LeaderboardManager } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 
@@ -31,7 +30,10 @@ export const Leaderboard = ({
   const { getAddressName } = useRealm();
 
   const playerPointsLeaderboard = useMemo(() => {
-    return LeaderboardManager.instance(dojo).getPlayersByRank(nextBlockTimestamp || 0, hyperstructureEntityId);
+    return LeaderboardManager.instance(dojo.setup.components).getPlayersByRank(
+      nextBlockTimestamp || 0,
+      hyperstructureEntityId,
+    );
   }, [hyperstructureEntityId, nextBlockTimestamp]);
 
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);

@@ -1,20 +1,16 @@
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { currencyFormat } from "../../../utils/utils";
 
-import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import {
-  Structure,
-  useIsStructureImmune,
-  useStructureImmunityTimer,
-  useStructures,
-} from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/useStructures";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { ArmyInfo, Structure } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";

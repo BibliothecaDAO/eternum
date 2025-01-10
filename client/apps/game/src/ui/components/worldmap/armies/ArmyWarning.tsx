@@ -1,10 +1,8 @@
-import { ArmyMovementManager } from "@/dojo/modelManager/ArmyMovementManager";
-import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
-import { computeExploreFoodCosts, currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
+import { ArmyInfo, ArmyMovementManager, computeExploreFoodCosts, StaminaManager } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 interface ArmyWarningProps {
@@ -12,10 +10,10 @@ interface ArmyWarningProps {
 }
 
 export const ArmyWarning = ({ army }: ArmyWarningProps) => {
-  const { setup } = useDojo();
+  const dojo = useDojo();
   const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
   const armyManager = useMemo(() => {
-    return new ArmyMovementManager(setup, army.entity_id);
+    return new ArmyMovementManager(dojo.setup.components, dojo.network.provider, army.entity_id);
   }, [army]);
   const food = armyManager.getFood(useUIStore.getState().currentDefaultTick);
 
@@ -29,7 +27,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
 
   const stamina = useMemo(() => {
-    const staminaManager = new StaminaManager(setup, army.entity_id);
+    const staminaManager = new StaminaManager(dojo.setup.components, army.entity_id);
     return staminaManager.getStamina(useUIStore.getState().currentArmiesTick);
   }, [army]);
 

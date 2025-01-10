@@ -3,7 +3,6 @@ import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
 import { ReactComponent as Scroll } from "@/assets/icons/Scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/Sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
@@ -23,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { formatTimeDifference } from "@/ui/modules/military/battle-view/BattleProgress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { BattleManager, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 import { ModalContainer } from "../ModalContainer";
@@ -72,7 +71,10 @@ export const MarketModal = () => {
       .sort((a, b) => Number(a.last_updated || 0) - Number(b.last_updated || 0))[0];
   }, [battles]);
 
-  const battleManager = useMemo(() => new BattleManager(battle?.entity_id || 0, dojo), [battle?.entity_id, dojo]);
+  const battleManager = useMemo(
+    () => new BattleManager(dojo.setup.components, dojo.network.provider, battle?.entity_id || 0),
+    [battle?.entity_id],
+  );
 
   // initial entity id
   const selectedEntityId = useUIStore((state) => state.structureEntityId);

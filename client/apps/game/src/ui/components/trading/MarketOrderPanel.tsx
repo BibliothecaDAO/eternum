@@ -1,4 +1,3 @@
-import { ResourceManager } from "@/dojo/modelManager/ResourceManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
@@ -22,6 +21,7 @@ import {
   DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
   ONE_MONTH,
+  ResourceManager,
   ResourcesIds,
   findResourceById,
   type ID,
@@ -256,7 +256,7 @@ const OrderRow = memo(
 
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
-    const lordsManager = new ResourceManager(dojo.setup, entityId, ResourcesIds.Lords);
+    const lordsManager = new ResourceManager(dojo.setup.components, entityId, ResourcesIds.Lords);
     const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [entityId, updateBalance]);
 
     const resourceManager = useResourceManager(entityId, offer.makerGets[0].resourceId);

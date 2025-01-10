@@ -1,11 +1,10 @@
-import { WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { ClientConfigManager, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
+import { getEvents } from "@dojoengine/state";
 import { Clause } from "@dojoengine/torii-client";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
-import { ClientConfigManager } from "./modelManager/ConfigManager";
 import { setupNetwork } from "./setupNetwork";
-import { getEvents } from "@dojoengine/state";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 export const configManager = ClientConfigManager.instance();

@@ -1,9 +1,8 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { configManager } from "@/dojo/setup";
-import { divideByPrecision } from "@/ui/utils/utils";
-import { Resource } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
-import { ClientConfigManager } from "../ConfigManager";
+import { ClientComponents } from "../../dojo/components/createClientComponents";
+import { Resource } from "../../types";
+import { divideByPrecision } from "../../utils";
+import { ClientConfigManager, configManager } from "../ConfigManager";
 
 function computeInitialContributionPoints(
   hyperstructureId: number,

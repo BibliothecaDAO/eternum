@@ -1,6 +1,6 @@
 import { highlightHexMaterial } from "@/three/shaders/highlightHexMaterial";
-import { HexPosition } from "@/types";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { HexPosition } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { HEX_SIZE } from "../scenes/constants";

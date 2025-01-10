@@ -1,6 +1,5 @@
-import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ID, MarketInterface, RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, MarketInterface, MarketManager, RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { MarketResource } from "./MarketOrderPanel";
 
@@ -21,7 +20,7 @@ export const MarketResourceSidebar = ({
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
-  const { setup } = useDojo();
+  const dojo = useDojo();
 
   const filteredResources = useMemo(() => {
     return Object.entries(RESOURCE_TIERS).flatMap(([_, resourceIds]) => {
@@ -33,7 +32,9 @@ export const MarketResourceSidebar = ({
     return filteredResources
       .filter((resourceId) => resourceId !== ResourcesIds.Lords)
       .map((resourceId) => {
-        const marketManager = bankEntityId ? new MarketManager(setup, bankEntityId, 0n, resourceId) : undefined;
+        const marketManager = bankEntityId
+          ? new MarketManager(dojo.setup.components, bankEntityId, 0n, resourceId)
+          : undefined;
 
         const askPrice = resourceBidOffers
           .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
@@ -58,8 +59,16 @@ export const MarketResourceSidebar = ({
           />
         );
       });
-  }, [filteredResources, bankEntityId, setup, resourceBidOffers, resourceAskOffers, selectedResource, entityId, onClick]);
-
+  }, [
+    filteredResources,
+    bankEntityId,
+    dojo.setup,
+    resourceBidOffers,
+    resourceAskOffers,
+    selectedResource,
+    entityId,
+    onClick,
+  ]);
 
   return (
     <div className="market-resource-bar-selector px-1 bg-brown rounded-2xl p-1">
@@ -72,9 +81,7 @@ export const MarketResourceSidebar = ({
         </div>
       </div>
 
-      <div className="flex flex-col h-full gap-[0.1]">
-      {resourceList}
-      </div>
+      <div className="flex flex-col h-full gap-[0.1]">{resourceList}</div>
     </div>
   );
 };

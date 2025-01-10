@@ -1,13 +1,12 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
+import { ArmyInfo, BattleManager } from "@bibliothecadao/eternum";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 import { ViewOnMapIcon } from "../military/ArmyManagementCard";
@@ -32,7 +31,10 @@ export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }:
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const battleManager = useMemo(() => new BattleManager(battle.entity_id, dojo), [battle]);
+  const battleManager = useMemo(
+    () => new BattleManager(dojo.setup.components, dojo.network.provider, battle.entity_id),
+    [battle],
+  );
 
   const updatedBattle = useMemo(() => {
     const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);

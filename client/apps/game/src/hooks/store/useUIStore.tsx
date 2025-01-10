@@ -4,6 +4,7 @@ import { ContractAddress } from "@bibliothecadao/eternum";
 import React from "react";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
+import { tracks } from "../useMusic";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 import { PopupsStore, createPopupsSlice } from "./_popupsStore";
 import { ThreeStore, createThreeStoreSlice } from "./_threeStore";
@@ -73,6 +74,8 @@ interface UIStore {
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore & WorldStore;
 
+const initialTrackIndex = Math.floor(Math.random() * tracks.length);
+
 const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
     theme: "light",
@@ -84,9 +87,9 @@ const useUIStore = create(
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
     isSoundOn: localStorage.getItem("soundEnabled") ? localStorage.getItem("soundEnabled") === "true" : true,
-    trackName: "Day Break",
+    trackName: tracks[initialTrackIndex].name,
     setTrackName: (name) => set({ trackName: name }),
-    trackIndex: 1,
+    trackIndex: initialTrackIndex,
     setTrackIndex: (index) => set({ trackIndex: index }),
     toggleSound: () =>
       set((state) => {

@@ -1,10 +1,11 @@
 import { type SetupResult } from "@/dojo/setup";
 import useUIStore, { type AppStore } from "@/hooks/store/useUIStore";
-import { type HexPosition, type SceneName } from "@/types";
+import { type SceneName } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { type HexPosition } from "@bibliothecadao/eternum";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
 import * as THREE from "three";

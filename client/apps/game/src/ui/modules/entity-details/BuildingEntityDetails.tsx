@@ -1,15 +1,13 @@
-import { TileManager } from "@/dojo/modelManager/TileManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
-import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { ResourceMiningTypes } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
 import Button from "@/ui/elements/Button";
 import { ResourceIdToMiningType, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BuildingType, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { BUILDINGS_CENTER, BuildingType, ID, ResourcesIds, StructureType, TileManager } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -82,12 +80,12 @@ export const BuildingEntityDetails = () => {
 
   const handlePauseResumeProduction = useCallback(() => {
     setIsLoading(true);
-    const tileManager = new TileManager(dojo.setup, {
+    const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
       col: selectedBuildingHex.outerCol,
       row: selectedBuildingHex.outerRow,
     });
     const action = !isPaused ? tileManager.pauseProduction : tileManager.resumeProduction;
-    action(selectedBuildingHex.innerCol, selectedBuildingHex.innerRow).then(() => {
+    action(dojo.account.account, selectedBuildingHex.innerCol, selectedBuildingHex.innerRow).then(() => {
       setIsLoading(false);
     });
   }, [selectedBuildingHex, isPaused]);
@@ -98,11 +96,11 @@ export const BuildingEntityDetails = () => {
       return;
     }
 
-    const tileManager = new TileManager(dojo.setup, {
+    const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
       col: selectedBuildingHex.outerCol,
       row: selectedBuildingHex.outerRow,
     });
-    tileManager.destroyBuilding(selectedBuildingHex.innerCol, selectedBuildingHex.innerRow);
+    tileManager.destroyBuilding(dojo.account.account, selectedBuildingHex.innerCol, selectedBuildingHex.innerRow);
     if (
       buildingState.buildingType === BuildingType.Resource &&
       (ResourceIdToMiningType[buildingState.resource!] === ResourceMiningTypes.Forge ||

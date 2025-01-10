@@ -1,9 +1,10 @@
 import { type ClientComponents } from "@/dojo/createClientComponents";
-import { getArmyTotalCapacity } from "@/dojo/modelManager/utils/ArmyMovementUtils";
 import {
+  ArmyInfo,
   CapacityConfigCategory,
   ContractAddress,
   EternumGlobalConfig,
+  getArmyTotalCapacity,
   type ID,
   type Position,
 } from "@bibliothecadao/eternum";
@@ -16,7 +17,6 @@ import {
   getComponentValue,
   runQuery,
   type Component,
-  type ComponentValue,
   type Entity,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -24,27 +24,6 @@ import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { type PlayerStructure } from "./useEntities";
-
-export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
-  name: string;
-  isMine: boolean;
-  isMercenary: boolean;
-  isHome: boolean;
-  offset: Position;
-  health: ComponentValue<ClientComponents["Health"]["schema"]>;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
-  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
-  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
-  protectee: ComponentValue<ClientComponents["Protectee"]["schema"]> | undefined;
-  movable: ComponentValue<ClientComponents["Movable"]["schema"]> | undefined;
-  totalCapacity: bigint;
-  weight: bigint;
-  arrivalTime: ComponentValue<ClientComponents["ArrivalTime"]["schema"]> | undefined;
-  stamina: ComponentValue<ClientComponents["Stamina"]["schema"]> | undefined;
-  realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
-  homePosition: ComponentValue<ClientComponents["Position"]["schema"]> | undefined;
-};
 
 const formatArmies = (
   armies: Entity[],

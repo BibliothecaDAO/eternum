@@ -9,7 +9,7 @@ type Track = {
 };
 
 // Your tracks list
-const tracks: Track[] = [
+export const tracks: Track[] = [
   { name: "Day Break", url: "/sound/music/DayBreak.mp3" },
   { name: "Morning Ember", url: "/sound/music/MorningEmber.mp3" },
   { name: "Beyond The Horizon", url: "/sound/music/BeyondTheHorizon.mp3" },
@@ -22,6 +22,7 @@ const tracks: Track[] = [
   { name: "Strangers Arrival", url: "/sound/music/StrangersArrival.mp3" },
   { name: "Twilight Harvest", url: "/sound/music/TwilightHarvest.mp3" },
   { name: "Wanderers Chronicle", url: "/sound/music/WanderersChronicle.mp3" },
+  { name: "Happy Realm", url: "/sound/music/happy_realm.mp3" },
 ];
 
 export const useMusicPlayer = () => {
