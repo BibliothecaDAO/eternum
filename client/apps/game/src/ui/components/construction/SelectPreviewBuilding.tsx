@@ -1,5 +1,4 @@
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
 import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
@@ -27,6 +26,7 @@ import {
   BuildingEnumToString,
   BuildingType,
   CapacityConfigCategory,
+  ClientComponents,
   ID,
   ResourceCost as ResourceCostType,
   ResourcesIds,

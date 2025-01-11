@@ -1,5 +1,5 @@
-**/*/target
-**/*/dist
+**/target
+**/dist
 
 # ignore lock files
 **/*-lock.yaml
@@ -8,8 +8,8 @@
 **/node_modules
 
 # ignore manifests
-**/*/manifests
-**/*/manifest*.json
+**/manifests
+**/manifest*.json
 
 # ignore eliza folder
 **/eliza

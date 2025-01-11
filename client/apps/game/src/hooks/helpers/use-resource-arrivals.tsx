@@ -73,7 +73,6 @@ const usePlayerArrivals = () => {
         ownedResourceTracker?.resource_types === LORDS_RESOURCE_TRACKER ||
         ownedResourceTracker?.resource_types === LORDS_AND_DONKEY_RESOURCE_TRACKER;
 
-
       // Determine if entity meets weight requirements
       const meetsWeightRequirement = hasSpecialResources || hasMinWeight(id);
 

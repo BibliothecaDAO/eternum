@@ -1,6 +1,6 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
+import { ClientComponents } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 
 export const TroopDisplay = ({

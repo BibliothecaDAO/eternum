@@ -1,0 +1,23 @@
+**/*/target
+**/*/dist
+
+# ignore lock files
+**/*-lock.yaml
+
+# ignore node_modules
+**/node_modules
+
+# ignore manifests
+**/*/manifests
+**/*/manifest*.json
+
+# ignore eliza folder
+**/eliza
+
+# ignore draco files
+**/draco
+
+# ignore generated files
+**/gql
+**/*.graphql
+**/*.gen.ts

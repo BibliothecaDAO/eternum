@@ -1,11 +1,10 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import TwitterShareButton from "@/ui/elements/TwitterShareButton";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { divideByPrecision, formatNumber, formatResources, formatTime } from "@/ui/utils/utils";
-import { BattleSide, ID, Resource, resources } from "@bibliothecadao/eternum";
+import { BattleSide, ClientComponents, ID, Resource, resources } from "@bibliothecadao/eternum";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
@@ -38,9 +37,9 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
         resources: formattedResources
           .map(
             (pillagedResource) =>
-              `${formatNumber(divideByPrecision(pillagedResource.amount), 0)} ${resources.find(
-                (resource) => resource.id === pillagedResource.resourceId,
-              )?.trait}`,
+              `${formatNumber(divideByPrecision(pillagedResource.amount), 0)} ${
+                resources.find((resource) => resource.id === pillagedResource.resourceId)?.trait
+              }`,
           )
           .join(", "),
         url: env.VITE_SOCIAL_LINK,

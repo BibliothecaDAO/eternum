@@ -1,7 +1,6 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { ContractAddress, ID, Resource } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, ID, Resource } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback } from "react";
