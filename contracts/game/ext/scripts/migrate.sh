@@ -34,6 +34,9 @@
 # =============================================================================
 
 
+# Import colors
+source "$(dirname "$0")/colors.sh"
+
 
 #==============================================================================
 # ERROR HANDLING
@@ -55,14 +58,6 @@ trap 'error_handler ${LINENO}' ERR
 
 PROFILE="local"
 WORLD_CONTRACT=""
-
-# Color definitions
-GREEN=$(echo -e '\033[0;32m')
-BLUE=$(echo -e '\033[0;34m')
-YELLOW=$(echo -e '\033[1;33m')
-RED=$(echo -e '\033[0;31m')
-BOLD=$(echo -e '\033[1m')
-NC=$(echo -e '\033[0m') # No Color
 
 #==============================================================================
 # ARGUMENT PARSING

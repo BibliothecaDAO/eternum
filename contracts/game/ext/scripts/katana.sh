@@ -36,6 +36,9 @@
 # =============================================================================
 
 
+# Import colors
+source "$(dirname "$0")/colors.sh"
+
 #==============================================================================
 # ERROR HANDLING
 #==============================================================================
@@ -65,14 +68,6 @@ PORT=5050
 KATANA_MAX_INVOKE_STEPS=25000000 # 25,000,000
 KATANA_BLOCK_TIME=2500 # 2.5 seconds
 
-# Color definitions
-GREEN=$(echo -e '\033[0;32m')
-BLUE=$(echo -e '\033[0;34m')
-YELLOW=$(echo -e '\033[1;33m')
-RED=$(echo -e '\033[0;31m')
-BOLD=$(echo -e '\033[1m')
-NC=$(echo -e '\033[0m') # No Color
-
 #==============================================================================
 # UTILITY FUNCTIONS
 #==============================================================================
@@ -81,12 +76,14 @@ NC=$(echo -e '\033[0m') # No Color
 free_port() {
     if lsof -i :$PORT > /dev/null 2>&1; then
         echo -e "${YELLOW}► Port $PORT is in use. Attempting to free it...${NC}"
-        PORT_PID=$(lsof -t -i :$PORT)
-        if [ ! -z "$PORT_PID" ]; then
-            echo -e "${RED}► Killing process using port $PORT (PID: ${BOLD}$PORT_PID${NC}${RED})${NC}"
-            kill -9 "$PORT_PID"
-            sleep 1
-        fi
+        # Get all PIDs and handle them one by one
+        lsof -t -i :$PORT | while read -r PORT_PID; do
+            if [ ! -z "$PORT_PID" ]; then
+                echo -e "${RED}► Killing process using port $PORT (PID: ${BOLD}$PORT_PID${NC}${RED})${NC}"
+                kill -9 "$PORT_PID"
+            fi
+        done
+        sleep 1
     fi
 }
 
@@ -134,9 +131,13 @@ mkdir -p $PID_DIR $LOG_DIR
 
 # Add kill-only functionality
 if [ "$1" == "--kill" ]; then
-    stop_katana
-    free_port
-    echo -e "${GREEN}✔ Katana stopped successfully${NC}"
+    if [ -f "$PID_FILE" ]; then
+        stop_katana
+        free_port
+        echo -e "${GREEN}✔ Katana stopped successfully${NC}"
+    else
+        echo -e "${YELLOW}► No Katana process found (no PID file)${NC}"
+    fi
     exit 0
 fi
 
