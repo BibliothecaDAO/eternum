@@ -4,7 +4,7 @@ version = 1
 [[package]]
 name = "achievement"
 version = "0.0.0"
-source = "git+https://github.com/cartridge-gg/arcade?tag=v1.0.5#75fbf3f8a9ce46d7f72f15cfd0d0f484034fd41d"
+source = "git+https://github.com/cartridge-gg/arcade?tag=v1.0.9#b8ca8eb64c7e44637402f577b1cc608ea7b7d014"
 dependencies = [
  "dojo",
 ]
@@ -78,8 +78,8 @@ source = "git+https://github.com/dojoengine/cubit?branch=cairo_2.7#53020b6320a10
 
 [[package]]
 name = "dojo"
-version = "1.0.5"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.5#c5e7d6b537d9c1e4a1df7367b5ace37ffd172015"
+version = "1.0.9"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.0.9#04b5f025d998eee19cd21d33bd8a992498a73160"
 dependencies = [
  "dojo_plugin",
 ]
@@ -87,7 +87,7 @@ dependencies = [
 [[package]]
 name = "dojo_cairo_test"
 version = "1.0.0-rc.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.5#c5e7d6b537d9c1e4a1df7367b5ace37ffd172015"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.0.9#04b5f025d998eee19cd21d33bd8a992498a73160"
 dependencies = [
  "dojo",
 ]
@@ -95,7 +95,7 @@ dependencies = [
 [[package]]
 name = "dojo_plugin"
 version = "2.8.4"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.5#c5e7d6b537d9c1e4a1df7367b5ace37ffd172015"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.0.9#04b5f025d998eee19cd21d33bd8a992498a73160"
 
 [[package]]
 name = "openzeppelin"

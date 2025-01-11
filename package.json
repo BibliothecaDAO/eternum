@@ -11,6 +11,7 @@
     "dev": "pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
     "dev:landing": "pnpm --dir ./client/apps/landing dev",
+    "contract:start": "cd ./contracts/game && ./ext/scripts/katana.sh && ./ext/scripts/migrate.sh",
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
     "knip": "npx knip --exclude binaries,dependencies",

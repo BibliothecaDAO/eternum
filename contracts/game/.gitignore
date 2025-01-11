@@ -9,6 +9,8 @@ manifests/prod/deployment/abis/*
 manifests/prod/deployment/base/*
 manifests/prod/abis/*
 manifests/prod/base/*
+logs/*
+pids/*
 .DS_Store
 
 torii.db-wal

@@ -17,7 +17,11 @@ dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.0.
 sort-module-level-items = true
 max-line-length = 120
 
-[profile.prod]
+[profile.local]
+
+[profile.sepolia]
+
+[profile.mainnet]
 
 [[target.starknet-contract]]
 sierra = true
