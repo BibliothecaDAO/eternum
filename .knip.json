@@ -22,8 +22,6 @@
     "client/apps/game/src/three/components/FogManager.ts",
     "client/apps/game/src/hooks/useUISound.tsx",
 
-    "client/apps/balancing/**",
-
     "client/apps/landing/src/routeTree.gen.ts",
     "client/apps/landing/src/components/ui/**",
     "client/apps/landing/src/components/typography/**",
