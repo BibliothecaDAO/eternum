@@ -19,3 +19,5 @@
 
 # ignore generated files
 **/gql
+**/*.graphql
+**/*.gen.ts
