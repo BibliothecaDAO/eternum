@@ -1,5 +1,5 @@
 import { ComponentValue } from "@dojoengine/recs";
-import { ClientComponents } from "../../dojo/components/createClientComponents";
+import { ClientComponents } from "../../dojo/createClientComponents";
 import { Resource } from "../../types";
 import { divideByPrecision } from "../../utils";
 import { ClientConfigManager, configManager } from "../ConfigManager";

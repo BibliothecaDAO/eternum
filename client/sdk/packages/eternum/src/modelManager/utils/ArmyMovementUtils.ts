@@ -1,6 +1,6 @@
 import { type ComponentValue } from "@dojoengine/recs";
 import { EternumGlobalConfig, ResourcesIds } from "../../constants";
-import { ClientComponents } from "../../dojo/components/createClientComponents";
+import { ClientComponents } from "../../dojo/createClientComponents";
 import { divideByPrecision, gramToKg } from "../../utils";
 import { configManager } from "../ConfigManager";
 

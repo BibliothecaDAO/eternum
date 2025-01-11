@@ -1,7 +1,7 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ClientComponents } from "../dojo/createClientComponents";
 import { EternumProvider } from "../provider";
 import { type ID, type Resource } from "../types";
 import { DojoAccount } from "./types";

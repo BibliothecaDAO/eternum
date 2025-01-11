@@ -14,7 +14,7 @@ import {
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
 } from "../constants";
-import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ClientComponents } from "../dojo/createClientComponents";
 import { EternumProvider } from "../provider";
 import { ContractAddress, HexPosition, ID, Position } from "../types";
 import { configManager } from "./ConfigManager";

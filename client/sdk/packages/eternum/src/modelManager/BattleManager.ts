@@ -1,7 +1,7 @@
 import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { EternumGlobalConfig, MIN_TROOPS_BATTLE } from "../constants";
-import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ClientComponents } from "../dojo/createClientComponents";
 import { EternumProvider } from "../provider";
 import { BattleSide, Health, ID } from "../types";
 import { multiplyByPrecision } from "../utils";

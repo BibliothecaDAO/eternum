@@ -9,7 +9,7 @@ import {
   getNeighborHexes,
   ResourcesIds,
 } from "../constants";
-import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ClientComponents } from "../dojo/createClientComponents";
 import { EternumProvider } from "../provider";
 import { ContractAddress, ID, TravelTypes, type HexPosition } from "../types";
 import { multiplyByPrecision } from "../utils";

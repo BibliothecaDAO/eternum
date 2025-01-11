@@ -1,0 +1,42 @@
+{
+  "ignore": [
+    "eliza/**",
+
+    ".trunk/**",
+    "**/*.js",
+    "bot/**",
+    "**/vitest**",
+    "client/apps/game/src/setupTests.ts",
+
+    "client/apps/game-docs/vocs.config.ts",
+
+    "client/sdk/packages/eternum/global.d.ts",
+    "client/config/bank/index.ts",
+    "client/config/speed.ts",
+
+    "**/**__test__**/**",
+    "**/**__tests__**/**",
+
+    "contracts/season_resources/scripts/deployment/config/index.ts",
+    "contracts/season_resources/scripts/deployment/config/provider/index.ts",
+
+    "client/apps/game/src/three/components/FogManager.ts",
+    "client/apps/game/src/hooks/useUISound.tsx",
+    "client/apps/balancing/**",
+    "client/apps/landing/**",
+    "client/pwa-assets.config.ts",
+
+    "client/apps/game-docs/docs/components/**",
+    "client/apps/game-docs/docs/utils/**",
+    "client/apps/game-docs/vocs.config.ts",
+
+    "client/apps/game/src/ui/modules/chat/types.tsx",
+    "client/apps/game/src/ui/modules/chat/constants.tsx",
+    "client/apps/game/src/ui/modules/chat/ChatTab.tsx",
+    "client/apps/game/src/hooks/helpers/useGetAllPlayers.tsx",
+    "client/apps/game/src/ui/modules/chat/InputField.tsx",
+    "client/apps/game/src/ui/modules/chat/Chat.tsx",
+    "client/sdk/packages/eternum/src/scripts/extract.ts",
+    "client/sdk/packages/eternum/src/scripts/extractBuildings.ts"
+  ]
+}
