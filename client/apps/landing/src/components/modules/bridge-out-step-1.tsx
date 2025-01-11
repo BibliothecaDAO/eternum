@@ -315,7 +315,7 @@ export const BridgeOutStep1 = () => {
   );
 };
 
-export const SelectResourceRow = ({
+const SelectResourceRow = ({
   realmEntityId,
   selectedResourceIds,
   setSelectedResourceIds,

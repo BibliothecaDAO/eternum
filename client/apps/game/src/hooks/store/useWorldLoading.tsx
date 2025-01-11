@@ -17,7 +17,7 @@ export enum LoadingStateKey {
   Events = "events",
 }
 
-export type LoadingState = {
+type LoadingState = {
   [key in LoadingStateKey]: boolean;
 };
 

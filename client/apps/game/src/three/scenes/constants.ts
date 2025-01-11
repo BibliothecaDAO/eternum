@@ -77,7 +77,7 @@ const BASE_PATH = "/models/biomes-opt/";
 const FLAT_PATH = "/models/biomes-flat-opt/";
 const MODELS_PATH = IS_FLAT_MODE ? FLAT_PATH : BASE_PATH;
 
-export enum BiomeFilenames {
+enum BiomeFilenames {
   Bare = "bare.glb",
   Beach = "beach.glb",
   TemperateDeciduousForest = "deciduousForest.glb",

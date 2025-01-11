@@ -19,7 +19,7 @@ export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
 export const configManager = ClientConfigManager.instance();
 
-export const syncEntitiesDebounced = async <S extends Schema>(
+const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityKeyClause: EntityKeysClause[],

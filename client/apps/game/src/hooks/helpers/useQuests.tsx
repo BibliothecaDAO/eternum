@@ -10,17 +10,6 @@ import { useArmiesByEntityOwnerWithPositionAndQuantity } from "./useArmies";
 import { useEntitiesUtils } from "./useEntities";
 import { useGetMyOffers } from "./useTrade";
 
-export interface Quest {
-  id: QuestType;
-  view: string;
-  name: string;
-  description: string | React.ReactNode;
-  steps: (string | React.ReactNode)[];
-  prizes: Prize[];
-  depth: number;
-  status: QuestStatus;
-}
-
 export interface Prize {
   id: QuestType;
   title: string;
@@ -184,7 +173,7 @@ const useQuestDependencies = () => {
   );
 };
 
-export const useQuestClaimStatus = () => {
+const useQuestClaimStatus = () => {
   const {
     setup: {
       components: { Quest, Realm },

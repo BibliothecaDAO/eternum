@@ -7,8 +7,6 @@ import {
   addMarketSubscription,
   addToSubscription,
   addToSubscriptionOneKeyModelbyRealmEntityId,
-  addToSubscriptionTwoKeyModelbyRealmEntityId,
-  syncPosition,
 } from "./queries";
 
 // Queue class to manage requests
@@ -52,40 +50,9 @@ class RequestQueue {
   }
 }
 
-// Create separate queues for different types of requests
-const positionQueue = new RequestQueue();
 const subscriptionQueue = new RequestQueue();
 const marketQueue = new RequestQueue();
 const hyperstructureQueue = new RequestQueue();
-// Debounced functions that add to queues
-export const debouncedSyncPosition = debounce(
-  async <S extends Schema>(
-    client: ToriiClient,
-    components: Component<S, Metadata, undefined>[],
-    entityID: string,
-    onComplete?: () => void,
-  ) => {
-    await positionQueue.add(() => syncPosition(client, components, entityID), onComplete);
-  },
-  100,
-  { leading: true }, // Add leading: true to execute immediately on first call
-);
-
-export const debouncedAddToSubscriptionTwoKey = debounce(
-  async <S extends Schema>(
-    client: ToriiClient,
-    components: Component<S, Metadata, undefined>[],
-    entityID: string[],
-    onComplete?: () => void,
-  ) => {
-    await subscriptionQueue.add(
-      () => addToSubscriptionTwoKeyModelbyRealmEntityId(client, components, entityID),
-      onComplete,
-    );
-  },
-  250,
-  { leading: true },
-);
 
 export const debouncedAddToSubscriptionOneKey = debounce(
   async <S extends Schema>(
@@ -153,11 +120,3 @@ export const debouncedAddHyperstructureSubscription = debounce(
   500,
   { leading: true },
 );
-
-// Utility function to clear all queues if needed
-export const clearAllQueues = () => {
-  positionQueue.clear();
-  subscriptionQueue.clear();
-  marketQueue.clear();
-  hyperstructureQueue.clear();
-};

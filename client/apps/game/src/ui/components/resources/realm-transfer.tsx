@@ -163,7 +163,7 @@ export const RealmTransfer = memo(
   },
 );
 
-export const RealmTransferBalance = memo(
+const RealmTransferBalance = memo(
   ({
     resource,
     structure,
