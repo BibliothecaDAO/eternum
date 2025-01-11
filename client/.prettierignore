@@ -13,3 +13,9 @@
 
 # ignore eliza folder
 **/eliza
+
+# ignore draco files
+**/draco
+
+# ignore generated files
+**/gql
