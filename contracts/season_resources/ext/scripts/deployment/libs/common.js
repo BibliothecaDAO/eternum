@@ -134,11 +134,20 @@ export const getDeployedAddress = async (contractName) => {
 
 export const saveResourceAddressesToFile = async (resourceAddresses) => {
   try {
-    const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
+    const folderPath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "..",
+      "common",
+      "addresses",
+      "erc20s",
+    );
     await mkdirAsync(folderPath, { recursive: true });
 
-    const fileName = path.join(folderPath, `resource_addresses.json`);
-
+    const fileName = path.join(folderPath, `${process.env.STARKNET_NETWORK}.json`);
     const data = resourceAddresses;
 
     const jsonString = JSON.stringify(data);
@@ -152,29 +161,19 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
 };
 
 export const getResourceAddressesFromFile = async () => {
-  const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
-  const fileName = path.join(folderPath, `resource_addresses.json`);
+  const folderPath = path.join(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "..",
+    "..",
+    "common",
+    "addresses",
+    "erc20s",
+  );
+  const fileName = path.join(folderPath, `${process.env.STARKNET_NETWORK}.json`);
   const data = await readFileAsync(fileName, "utf8");
   return JSON.parse(data);
 };
 
-export const saveResourceAddressesToLanding = async (resourceAddresses, environment) => {
-  try {
-    const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
-    await mkdirAsync(folderPath, { recursive: true });
-
-    const fileName = path.join(
-      folderPath,
-      `../../../../../landing/public/resource_addresses/${environment}/resource_addresses.json`,
-    );
-
-    const data = resourceAddresses;
-    const jsonString = JSON.stringify(data);
-    await writeFileAsync(fileName, jsonString);
-
-    console.log(`"${fileName}" has been saved or overwritten`);
-  } catch (err) {
-    console.error("Error writing file", err);
-    throw err; // Re-throw the error so the caller knows something went wrong
-  }
-};

@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # =============================================================================
-#     Season Pass Deployment Script
+#     Season Resources Deployment Script
 # =============================================================================
 #
 # DESCRIPTION:
-#   This script handles the deployment process for the Season Pass smart 
+#   This script handles the deployment process for the Season Resources ERC20 smart 
 #   contracts. It manages the build process using Scarb and executes the 
 #   deployment using Bun.
 #
 # USAGE:
-#   ./deploy.sh  - Builds and deploys the Season Pass contracts
+#   ./deploy.sh  - Builds and deploys the Season Resources ERC20 contracts
 #
 # PROCESS:
 #   1. Builds the contracts using Scarb in release mode
@@ -53,28 +53,28 @@ trap 'error_handler ${LINENO}' ERR
 
 echo -e "\n"
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║               Building Season Pass Contracts             ║${NC}"
+echo -e "${BLUE}║          Building Season Resources ERC20 Contracts       ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
 echo -e "\n"
 
 # Navigate to root contract directory
-echo -e "${GREEN}► Navigating to season pass contract root directory...${NC}"
+echo -e "${GREEN}► Navigating to season resources contract root directory...${NC}"
 cd ../../
 
 # Build contracts
-echo -e "${GREEN}► Building season pass contracts with Scarb...${NC}"
+echo -e "${GREEN}► Building season resources contracts with Scarb...${NC}"
 scarb --release build
 
 # Return to script directory
 cd - > /dev/null
 
 # Navigate to deployment directory
-echo -e "${GREEN}► Installing season pass deployment dependencies...${NC}"
+echo -e "${GREEN}► Installing season resources deployment dependencies...${NC}"
 cd deployment
 bun install
 
 # Execute deployment
-echo -e "${GREEN}► Executing season pass deployment script...${NC}"
+echo -e "${GREEN}► Executing season resources deployment script...${NC}"
 bun run deploy
 
-echo -e "\n${GREEN}✔ Season Pass deployment process completed${NC}\n"
+echo -e "\n${GREEN}✔ Season Resources deployment process completed${NC}\n"

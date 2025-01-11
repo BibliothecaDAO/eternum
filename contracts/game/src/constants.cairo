@@ -105,9 +105,9 @@ mod ResourceTypes {
     const KNIGHT: u8 = 26;
     const CROSSBOWMAN: u8 = 27;
     const PALADIN: u8 = 28;
-    const LORDS: u8 = 29;
-    const WHEAT: u8 = 30;
-    const FISH: u8 = 31;
+    const WHEAT: u8 = 29;
+    const FISH: u8 = 30;
+    const LORDS: u8 = 31;
     // note: resource labor is max u8  - resource_type
 // e.g Stone labor = 255 - 1 = 254
 }
@@ -177,11 +177,11 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
     } else if resource_type == 28 {
         "PALADIN"
     } else if resource_type == 29 {
-        "LORDS"
-    } else if resource_type == 30 {
         "WHEAT"
-    } else if resource_type == LAST_REGULAR_RESOURCE_ID {
+    } else if resource_type == 30 {
         "FISH"
+    } else if resource_type == LAST_REGULAR_RESOURCE_ID {
+        "LORDS"
         // LABOR
     } else if resource_type == 255 - 1 {
         "STONE LABOR"
@@ -240,11 +240,11 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
     } else if resource_type == 255 - 28 {
         "PALADIN LABOR"
     } else if resource_type == 255 - 29 {
-        "LORDS LABOR"
-    } else if resource_type == 255 - 30 {
         "WHEAT LABOR"
-    } else if resource_type == 255 - 31 {
+    } else if resource_type == 255 - 30 {
         "FISH LABOR"
+    } else if resource_type == 255 - 31 {
+        "LORDS LABOR"
     } else {
         format!("{} (unknown resource name)", resource_type)
     }

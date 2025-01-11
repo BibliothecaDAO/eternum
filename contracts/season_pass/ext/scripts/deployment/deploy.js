@@ -64,5 +64,12 @@ await saveRelevantAddressesToCommonFolder(
   realmsContractAddress, 
   lordsContractAddress
 );
+
+console.log("\n\n");
+console.log(`╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗`.yellow);
+console.log("      Season Pass Contract: ".yellow + toHex(seasonPassAddress).bgMagenta);
+console.log("      Lords Contract: ".yellow + toHex(lordsContractAddress).bgMagenta);
+console.log("      Realms Contract: ".yellow + toHex(realmsContractAddress).bgMagenta);
+console.log(`╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝`.yellow);
 console.log(`\n\n 💾 Saved contract addresses to common folder (contracts/common/addresses/${process.env.STARKNET_NETWORK}.json)`);
 console.log("\n\n\n");

@@ -11,7 +11,7 @@
     "dev": "pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
     "dev:landing": "pnpm --dir ./client/apps/landing dev",
-    "contract:start": "cd ./contracts/game && ./ext/scripts/katana.sh && ./ext/scripts/migrate.sh && ./ext/scripts/indexer.sh && cd ../season_pass/ext/scripts && ./deploy.sh",
+    "contract:start": "cd ./contracts/game && ./ext/scripts/katana.sh && ./ext/scripts/migrate.sh && ./ext/scripts/indexer.sh && cd ../season_pass/ext/scripts && ./deploy.sh && cd - && ../season_resources/ext/scripts && ./deploy.sh",
     "contract:katana:start": "cd ./contracts/game && ./ext/scripts/katana.sh",
     "contract:katana:stop": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",
     "contract:indexer:start": "cd ./contracts/game && ./ext/scripts/indexer.sh",
