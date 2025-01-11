@@ -1,6 +1,5 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ClientComponents, ResourcesIds } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 
 export const TroopRow = ({

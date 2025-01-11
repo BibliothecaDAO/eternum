@@ -1,6 +1,5 @@
-import { EternumProvider } from "@bibliothecadao/eternum";
+import { defineContractComponents, EternumProvider } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { defineContractComponents } from "./contractComponents";
 import { world } from "./world";
 
 import { BurnerManager } from "@dojoengine/create-burner";

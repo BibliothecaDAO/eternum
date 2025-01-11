@@ -3,6 +3,7 @@ import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   ClientConfigManager,
+  createClientComponents,
   HYPERSTRUCTURE_CONFIG_ID,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
@@ -11,7 +12,6 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
-import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
 import { setupNetwork } from "./setupNetwork";
 

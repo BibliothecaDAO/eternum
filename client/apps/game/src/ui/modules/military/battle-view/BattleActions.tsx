@@ -1,4 +1,3 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useModalStore } from "@/hooks/store/useModalStore";
@@ -13,6 +12,7 @@ import {
   BattleManager,
   BattleStartStatus,
   ClaimStatus,
+  ClientComponents,
   ID,
   LeaveStatus,
   RaidStatus,

@@ -3,7 +3,7 @@ import { ContractComponents } from "./contractComponents";
 
 export type ClientComponents = ReturnType<typeof createClientComponents>;
 
-export function createClientComponents(contractComponents: ContractComponents) {
+export function createClientComponents({ contractComponents }: { contractComponents: ContractComponents }) {
   return {
     ...contractComponents,
     Building: overridableComponent(contractComponents.Building),

@@ -1,9 +1,9 @@
-import { type ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
 import {
   ContractAddress,
   getOrderName,
   getQuestResources as getStartingResources,
+  type ClientComponents,
   type ID,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";

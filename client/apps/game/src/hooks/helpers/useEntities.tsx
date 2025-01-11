@@ -1,4 +1,3 @@
-import { type ClientComponents } from "@/dojo/createClientComponents";
 import { getRealmName, getRealmNameById } from "@/ui/utils/realms";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
@@ -6,6 +5,7 @@ import {
   ContractAddress,
   EntityType,
   StructureType,
+  type ClientComponents,
   type ID,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";

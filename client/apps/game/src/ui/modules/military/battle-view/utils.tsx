@@ -1,8 +1,8 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
 import { roundDownToPrecision, roundUpToPrecision } from "@/ui/utils/utils";
 import {
   Battle,
+  ClientComponents,
   HealthSimulator,
   Percentage,
   ResourcesIds,

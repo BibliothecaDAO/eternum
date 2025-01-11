@@ -1,8 +1,7 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useBattleJoin, useBattleLeave, useBattleStart } from "@/hooks/helpers/useBattleEvents";
 import { currencyFormat, formatTime } from "@/ui/utils/utils";
-import { BattleSide, ID } from "@bibliothecadao/eternum";
+import { BattleSide, ClientComponents, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo } from "react";
 import { shortString } from "starknet";

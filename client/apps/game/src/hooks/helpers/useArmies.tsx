@@ -1,10 +1,10 @@
-import { type ClientComponents } from "@/dojo/createClientComponents";
 import {
   ArmyInfo,
   CapacityConfigCategory,
   ContractAddress,
   EternumGlobalConfig,
   getArmyTotalCapacity,
+  type ClientComponents,
   type ID,
   type Position,
 } from "@bibliothecadao/eternum";

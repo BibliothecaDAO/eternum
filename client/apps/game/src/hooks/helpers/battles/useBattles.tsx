@@ -1,5 +1,4 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { BattleManager, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
+import { BattleManager, ClientComponents, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import {
   Component,
