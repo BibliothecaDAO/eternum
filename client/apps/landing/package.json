@@ -9,6 +9,8 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "dev": "vite",
     "dev::sepolia": "vite --mode sepolia",
+    "format": "npx prettier --write . --root=..",
+    "format:check": "npx prettier --check . --root=..",
     "lint": "eslint .",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006"

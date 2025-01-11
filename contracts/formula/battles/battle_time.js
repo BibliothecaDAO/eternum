@@ -39,8 +39,14 @@ function runBattle(attacker, defender, config, testCase) {
   console.log("Defender:", defender);
 
   // Calculate full health for both armies
-  const attackHealth = new Health({ current: attacker.fullHealth(config), lifetime: attacker.fullHealth(config) });
-  const defenceHealth = new Health({ current: defender.fullHealth(config), lifetime: defender.fullHealth(config) });
+  const attackHealth = new Health({
+    current: attacker.fullHealth(config),
+    lifetime: attacker.fullHealth(config),
+  });
+  const defenceHealth = new Health({
+    current: defender.fullHealth(config),
+    lifetime: defender.fullHealth(config),
+  });
 
   // Initialize Battle
   const battle = new Battle(attacker, defender, attackHealth, defenceHealth, config);
