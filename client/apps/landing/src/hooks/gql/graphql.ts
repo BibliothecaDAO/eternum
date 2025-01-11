@@ -7308,20 +7308,6 @@ export type HasGameEndedQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type HasGameEndedQuery = { __typename?: 'World__Query', s0EternumGameEndedModels?: { __typename?: 's0_eternum_GameEndedConnection', edges?: Array<{ __typename?: 's0_eternum_GameEndedEdge', node?: { __typename?: 's0_eternum_GameEnded', winner_address?: any | null } | null } | null> | null } | null };
 
-export type HasPlayerRegisteredQueryVariables = Exact<{
-  accountAddress: Scalars['ContractAddress']['input'];
-}>;
-
-
-export type HasPlayerRegisteredQuery = { __typename?: 'World__Query', s0EternumOwnerModels?: { __typename?: 's0_eternum_OwnerConnection', totalCount: number } | null };
-
-export type HasPlayerClaimedQueryVariables = Exact<{
-  accountAddress: Scalars['ContractAddress']['input'];
-}>;
-
-
-export type HasPlayerClaimedQuery = { __typename?: 'World__Query', s0EternumLeaderboardRewardClaimedModels?: { __typename?: 's0_eternum_LeaderboardRewardClaimedConnection', totalCount: number } | null };
-
 export type GetLeaderboardEntryQueryVariables = Exact<{
   accountAddress: Scalars['ContractAddress']['input'];
 }>;
@@ -7513,20 +7499,6 @@ export const HasGameEndedDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<HasGameEndedQuery, HasGameEndedQueryVariables>;
-export const HasPlayerRegisteredDocument = new TypedDocumentString(`
-    query hasPlayerRegistered($accountAddress: ContractAddress!) {
-  s0EternumOwnerModels(where: {address: $accountAddress}) {
-    totalCount
-  }
-}
-    `) as unknown as TypedDocumentString<HasPlayerRegisteredQuery, HasPlayerRegisteredQueryVariables>;
-export const HasPlayerClaimedDocument = new TypedDocumentString(`
-    query hasPlayerClaimed($accountAddress: ContractAddress!) {
-  s0EternumLeaderboardRewardClaimedModels(where: {address: $accountAddress}) {
-    totalCount
-  }
-}
-    `) as unknown as TypedDocumentString<HasPlayerClaimedQuery, HasPlayerClaimedQueryVariables>;
 export const GetLeaderboardEntryDocument = new TypedDocumentString(`
     query getLeaderboardEntry($accountAddress: ContractAddress!) {
   s0EternumLeaderboardEntryModels(where: {address: $accountAddress}) {
