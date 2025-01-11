@@ -1,18 +1,18 @@
 import { env } from "../env";
 
-export enum Chain {
+enum Chain {
   MAINNET = "mainnet",
   SEPOLIA = "sepolia",
   LOCAL = "local",
 }
 
-export enum Token {
+enum Token {
   LORDS = "LORDS",
   SEASON_PASS = "SEASON_PASS",
   REALMS = "REALMS",
 }
 
-export const tokens: {
+const tokens: {
   [key in Chain]: {
     [Token.LORDS]?: {
       address: string;
@@ -65,7 +65,7 @@ export const tokens: {
   },
 };
 
-export const chain = import.meta.env.VITE_PUBLIC_CHAIN as Chain | Chain.LOCAL;
+const chain = import.meta.env.VITE_PUBLIC_CHAIN as Chain | Chain.LOCAL;
 
 export const seasonPassAddress = tokens[chain][Token.SEASON_PASS]?.address as `0x${string}`;
 export const lordsAddress = tokens[chain][Token.LORDS]?.address as `0x${string}`;
