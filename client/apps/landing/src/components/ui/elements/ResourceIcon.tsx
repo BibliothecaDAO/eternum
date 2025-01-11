@@ -1,10 +1,10 @@
-import { ReactComponent as People } from "@/assets/icons/common/people.svg";
-import { ReactComponent as Cloth } from "@/assets/icons/resources/Cloth.svg";
-import { ReactComponent as DemonHide } from "@/assets/icons/resources/DemonHide.svg";
-import { ReactComponent as DesertGlass } from "@/assets/icons/resources/DesertGlass.svg";
-import { ReactComponent as Lords } from "@/assets/icons/resources/Lords.svg";
-import { ReactComponent as Ore } from "@/assets/icons/resources/Ore.svg";
-import { ReactComponent as Spores } from "@/assets/icons/resources/Spores.svg";
+import People from "@/assets/icons/common/people.svg?react";
+import Cloth from "@/assets/icons/resources/Cloth.svg?react";
+import DemonHide from "@/assets/icons/resources/DemonHide.svg?react";
+import DesertGlass from "@/assets/icons/resources/DesertGlass.svg?react";
+import Lords from "@/assets/icons/resources/Lords.svg?react";
+import Ore from "@/assets/icons/resources/Ore.svg?react";
+import Spores from "@/assets/icons/resources/Spores.svg?react";
 import clsx from "clsx";
 import type { ReactElement } from "react";
 

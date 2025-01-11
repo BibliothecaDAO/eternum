@@ -37,7 +37,7 @@ export const WorldLoading = () => {
     >
       {anyLoading && (
         <div className="flex flex-row items-center justify-center h-full p-2">
-          <img src="/images/eternumloader.png" className="w-10" />
+          <img src="/images/logos/eternum-loader.png" className="w-10" />
           <div className="ml-4">Loading: {getLoadingItems()}</div>
         </div>
       )}

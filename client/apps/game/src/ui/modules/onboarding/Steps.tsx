@@ -215,7 +215,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
             }`}
           >
             {loading ? (
-              <img src="/images/eternum-logo_animated.png" className="w-7" />
+              <img src="/images/logos/eternum-animated.png" className="w-7" />
             ) : (
               <div className="text-lg !font-normal">{`Settle ${
                 selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""
