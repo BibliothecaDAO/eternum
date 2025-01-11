@@ -5,7 +5,7 @@ const NETWORKS = {
   mainnet: {
     name: "mainnet",
     explorer_url: "https://voyager.online",
-    rpc_url: `${process.env.RPC_API_KEY}`,
+    rpc_url: `${process.env.STARKNET_RPC}`,
     feeder_gateway_url: "https://alpha-mainnet.starknet.io/feeder_gateway",
     gateway_url: "https://alpha-mainnet.starknet.io/gateway",
   },
@@ -26,9 +26,9 @@ const NETWORKS = {
   katana: {
     name: "katana",
     explorer_url: "https://katana.voyager.online",
-    rpc_url: process.env.RPC_API_KEY,
-    feeder_gateway_url: process.env.RPC_API_KEY + "/feeder_gateway",
-    gateway_url: process.env.RPC_API_KEY + "/gateway",
+    rpc_url: process.env.STARKNET_RPC,
+    feeder_gateway_url: process.env.STARKNET_RPC + "/feeder_gateway",
+    gateway_url: process.env.STARKNET_RPC + "/gateway",
   },
 };
 

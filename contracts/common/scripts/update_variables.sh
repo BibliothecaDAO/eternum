@@ -63,7 +63,7 @@ update_variable_in_toml "rpc_url" "https://api.cartridge.gg/x/$VITE_PUBLIC_NODE_
 # Update the season_pass .env.production file with the new values
 update_variable_in_file "STARKNET_ACCOUNT_ADDRESS" "$VITE_PUBLIC_MASTER_ADDRESS" "$SEASON_PASS_ENV_PRODUCTION_FILE"
 update_variable_in_file "STARKNET_ACCOUNT_PRIVATE_KEY" "$VITE_PUBLIC_MASTER_PRIVATE_KEY" "$SEASON_PASS_ENV_PRODUCTION_FILE"
-update_variable_in_file "RPC_API_KEY" "https://api.cartridge.gg/x/$VITE_PUBLIC_NODE_URL/katana" "$SEASON_PASS_ENV_PRODUCTION_FILE"
+update_variable_in_file "STARKNET_RPC" "https://api.cartridge.gg/x/$VITE_PUBLIC_NODE_URL/katana" "$SEASON_PASS_ENV_PRODUCTION_FILE"
 update_variable_in_file "SEASON_PASS_ADMIN" "$VITE_PUBLIC_MASTER_ADDRESS" "$SEASON_PASS_ENV_PRODUCTION_FILE"
 
 export STARKNET_RPC_URL="https://api.cartridge.gg/x/$VITE_PUBLIC_NODE_URL/katana"

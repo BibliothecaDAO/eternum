@@ -7,8 +7,6 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "deploy": "source .env && bun --env-file=.env ./deploy_dev",
-    "deploy::prod": "bun --env-file=.env.production ./deploy_prod",
-    "deploy::sepolia": "bun --env-file=.env.sepolia ./deploy_dev"
+    "deploy": "source ../../../../common/.env && bun --env-file=../../../../common/.env ./deploy"
   }
 }

@@ -169,6 +169,9 @@ if [ -f "$LOG_FILE" ]; then
 fi
 
 # Run torii in the background with log handling
+echo -e ""
+echo -e "${GREEN}Starting Torii Indexer with world address: ${BOLD}${BLUE}$WORLD_ADDRESS${NC}"
+echo -e ""
 torii --world $WORLD_ADDRESS \
     --http.cors_origins "*" \
     --config torii.toml 2>&1 | setup_log_handling &
@@ -188,4 +191,7 @@ fi
 echo -e "${GREEN}✔ Indexer started with PID: ${BOLD}$(cat $PID_FILE)${NC}"
 echo -e "${GREEN}✔ PID file: ${BOLD}$PID_FILE${NC}"
 echo -e "${GREEN}✔ Log file: ${BOLD}$LOG_FILE${NC}"
+echo -e ""
+
+echo -e "${GREEN}✔ torii indexer started successfully${NC}"
 echo -e ""

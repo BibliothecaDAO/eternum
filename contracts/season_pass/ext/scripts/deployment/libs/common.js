@@ -9,6 +9,7 @@ import { getAccount, getNetwork } from "./network.js";
 colors.america;
 export const getContracts = (TARGET_PATH) => {
   if (!fs.existsSync(TARGET_PATH)) {
+    console.error(TARGET_PATH);
     throw new Error(`Target directory not found at path: ${TARGET_PATH}`);
   }
   const contracts = fs.readdirSync(TARGET_PATH).filter((contract) => contract.includes(".contract_class.json"));
@@ -119,26 +120,6 @@ export const getDeployedAddress = async (contractName) => {
     const data = await readFileAsync(fileName, "utf8");
     const jsonData = JSON.parse(data);
     return jsonData.address;
-  } catch (err) {
-    if (err.code === "ENOENT") {
-      console.error(`File not found: ${fileName}`);
-    } else if (err instanceof SyntaxError) {
-      console.error("Error parsing JSON:", err);
-    } else {
-      console.error("Error reading file:", err);
-    }
-    throw err; // Re-throw the error so the caller knows something went wrong
-  }
-};
-
-export const getProxyAddress = async (contractName) => {
-  const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
-  const fileName = path.join(folderPath, `${contractName}.json`);
-
-  try {
-    const data = await readFileAsync(fileName, "utf8");
-    const jsonData = JSON.parse(data);
-    return jsonData.data.proxy_address;
   } catch (err) {
     if (err.code === "ENOENT") {
       console.error(`File not found: ${fileName}`);
