@@ -1,5 +1,5 @@
 import React from "react";
-import { soundSelector, useUiSounds } from "../../hooks/useUISound";
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 
 type ButtonProps = {
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;

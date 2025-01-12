@@ -2,7 +2,7 @@ import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.sv
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
-import { soundSelector, useUiSounds } from "../../hooks/useUISound";
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 
 type NumberInputProps = {
   value: number;

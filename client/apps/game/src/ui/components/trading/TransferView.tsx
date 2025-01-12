@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { PlayerStructure, RealmWithPosition, useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useGuilds } from "@/hooks/helpers/useGuilds";
+import { PlayerStructure, RealmWithPosition, useEntities, useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";

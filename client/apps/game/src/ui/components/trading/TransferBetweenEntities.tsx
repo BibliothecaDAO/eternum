@@ -1,8 +1,8 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import { useTravel } from "@/hooks/helpers/useTravel";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import { useRealm } from "@/hooks/helpers/use-realm";
+import { useTravel } from "@/hooks/helpers/use-travel";
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";

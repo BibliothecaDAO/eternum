@@ -1,5 +1,5 @@
 import useUIStore from "@/hooks/store/use-ui-store";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import clsx from "clsx";
 
 type CircleButtonProps = {

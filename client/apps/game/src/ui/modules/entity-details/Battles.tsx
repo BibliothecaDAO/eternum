@@ -1,4 +1,4 @@
-import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
+import { BattleInfo } from "@/hooks/helpers/battles/use-battles";
 import { BattleListItem } from "@/ui/components/battles/BattleListItem";
 import { ArmyInfo } from "@bibliothecadao/eternum";
 

@@ -1,4 +1,6 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
+// import CartridgeSmall from '@/assets/icons/cartridge-small.svg?react';
+// import CartridgeSmall from '../../../../common/public/assets/icons/cartridge-small.svg?react';
 import { SetupResult } from "@/dojo/setup";
 import { SetupNetworkResult } from "@/dojo/setup-network";
 import { useAccountStore } from "@/hooks/context/account-store";

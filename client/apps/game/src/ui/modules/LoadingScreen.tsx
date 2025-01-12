@@ -1,4 +1,4 @@
-import { useSeasonStart } from "@/hooks/useSeasonStart";
+import { useSeasonStart } from "@/hooks/use-season-start";
 import { useEffect, useState } from "react";
 import "../../index.css";
 import { OnboardingContainer, StepContainer } from "../layouts/Onboarding";

@@ -1,7 +1,7 @@
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { Tab as HeadlessTab } from "@headlessui/react";
 import clsx from "clsx";
 import type { ReactNode } from "react";
-import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import { TabList } from "./TabList";
 import { TabPanel } from "./TabPanel";
 import { TabPanels } from "./TabPanels";

@@ -1,4 +1,4 @@
-import { useModalStore } from "@/hooks/store/useModalStore";
+import { useModalStore } from "@/hooks/store/use-modal-store";
 import { HintModal } from "../components/hints/HintModal";
 import { BuildingThumbs } from "../config";
 import CircleButton from "./CircleButton";

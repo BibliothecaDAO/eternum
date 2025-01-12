@@ -3,7 +3,7 @@ import { type ArmyManager } from "@/three/managers/army-manager";
 import { type BattleManager } from "@/three/managers/battle-manager";
 import { type Biome, BIOME_COLORS } from "@/three/managers/biome";
 import { type StructureManager } from "@/three/managers/structure-manager";
-import type WorldmapScene from "@/three/scenes/Worldmap";
+import type WorldmapScene from "@/three/scenes/worldmap";
 import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
 import { StructureType } from "@bibliothecadao/eternum";

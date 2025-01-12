@@ -12,11 +12,11 @@ import { env } from "../env";
 import App from "./App";
 import { setup } from "./dojo/setup";
 import { DojoProvider } from "./hooks/context/DojoContext";
-import { StarknetProvider } from "./hooks/context/starknet-provider";
-import useUIStore from "./hooks/store/useUIStore";
+import { StarknetProvider } from "./hooks/context/StarknetProvider";
+import useUIStore from "./hooks/store/use-ui-store";
 import "./index.css";
-import GameRenderer from "./three/GameRenderer";
-import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
+import GameRenderer from "./three/game-renderer";
+import { PWAUpdatePopup } from "./ui/components/PWAUpdatePopup";
 import { LoadingScreen } from "./ui/modules/LoadingScreen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 
