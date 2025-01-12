@@ -1,4 +1,4 @@
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import TwitterShareButton from "@/ui/elements/TwitterShareButton";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";

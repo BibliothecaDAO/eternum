@@ -1,6 +1,6 @@
+import { BattleInfo } from "@/hooks/helpers/battles/use-battles";
 import { BattleSide } from "@bibliothecadao/eternum";
 import { Components, ComponentValue } from "@dojoengine/recs";
-import { BattleInfo } from "../useBattles";
 
 const CONSIDERED_AS_DEAD_HEALTH = 0n;
 

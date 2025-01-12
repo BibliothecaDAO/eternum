@@ -1,5 +1,5 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";

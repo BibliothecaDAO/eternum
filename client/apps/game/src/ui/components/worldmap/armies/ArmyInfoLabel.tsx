@@ -1,22 +1,22 @@
-import useUIStore from "../../../../hooks/store/useUIStore";
-import { currencyFormat } from "../../../utils/utils";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { currencyFormat } from "@/ui/utils/utils";
 
-import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/useStructures";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
+import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useRealm } from "@/hooks/helpers/use-realm";
+import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/use-structures";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
+import { ArmyWarning } from "@/ui/components/worldmap/armies/ArmyWarning";
+import { ImmunityTimer } from "@/ui/components/worldmap/structures/StructureLabel";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { getRealmNameById } from "@/ui/utils/realms";
 import { ArmyInfo, Structure } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
-import { getRealmNameById } from "../../../utils/realms";
-import { ImmunityTimer } from "../structures/StructureLabel";
-import { ArmyWarning } from "./ArmyWarning";
 
 export const ArmyInfoLabel = () => {
   const { isMapView } = useQuery();

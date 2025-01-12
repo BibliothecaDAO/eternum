@@ -1,4 +1,5 @@
-import { useGuilds } from "@/hooks/helpers/useGuilds";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { PRIZE_POOL_GUILDS } from "@/ui/constants";
 import Button from "@/ui/elements/Button";
 import { SortInterface } from "@/ui/elements/SortButton";
@@ -7,7 +8,6 @@ import { sortItems } from "@/ui/utils/utils";
 import { calculateGuildLordsPrize, ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useDojo } from "../../../../hooks/context/DojoContext";
 import { CreateGuildButton } from "./CreateGuildButton";
 import { GuildListHeader, GuildRow } from "./GuildList";
 

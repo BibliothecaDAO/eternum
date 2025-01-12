@@ -1,9 +1,9 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
-import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
-import { useLeaderBoardStore } from "@/hooks/store/useLeaderBoardStore";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/use-contributions";
+import { useGetPlayerEpochs } from "@/hooks/helpers/use-hyperstructures";
+import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
+import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/Button";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import clsx from "clsx";

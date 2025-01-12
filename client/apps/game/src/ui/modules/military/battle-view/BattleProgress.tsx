@@ -1,5 +1,5 @@
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { ArmyInfo, BattleManager, BattleStatus, BattleType, Structure, type Health } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";

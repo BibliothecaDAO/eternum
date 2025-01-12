@@ -1,12 +1,12 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
+import { ResourceChip } from "@/ui/components/resources/ResourceChip";
 import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { ResourceChip } from "./ResourceChip";
 
 export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();

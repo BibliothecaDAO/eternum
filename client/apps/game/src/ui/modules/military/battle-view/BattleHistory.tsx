@@ -1,5 +1,5 @@
-import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { useBattleJoin, useBattleLeave, useBattleStart } from "@/hooks/helpers/useBattleEvents";
+import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useBattleJoin, useBattleLeave, useBattleStart } from "@/hooks/helpers/use-battle-events";
 import { currencyFormat, formatTime } from "@/ui/utils/utils";
 import { BattleSide, ClientComponents, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";

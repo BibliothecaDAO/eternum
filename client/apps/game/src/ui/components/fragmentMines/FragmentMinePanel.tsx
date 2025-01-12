@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";

@@ -1,10 +1,10 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
+import { useRealm } from "@/hooks/helpers/use-realm";
+import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
+import useUIStore from "@/hooks/store/use-ui-store";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { SelectAddress } from "@/ui/elements/SelectAddress";

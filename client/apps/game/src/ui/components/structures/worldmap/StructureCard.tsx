@@ -1,12 +1,15 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { useGuilds } from "@/hooks/helpers/useGuilds";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import { useIsStructureImmune, useStructureAtPosition, useStructureImmunityTimer } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
-import { Position } from "@/types/Position";
+import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useGuilds } from "@/hooks/helpers/use-guilds";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useIsStructureImmune, useStructureAtPosition, useStructureImmunityTimer } from "@/hooks/helpers/use-structures";
+import useUIStore from "@/hooks/store/use-ui-store";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
+import { Position } from "@/types/position";
+import { ResourceExchange } from "@/ui/components/hyperstructures/ResourceExchange";
+import { ImmunityTimer } from "@/ui/components/worldmap/structures/StructureLabel";
+import { StructureListItem } from "@/ui/components/worldmap/structures/StructureListItem";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
@@ -21,9 +24,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { ResourceExchange } from "../../hyperstructures/ResourceExchange";
-import { ImmunityTimer } from "../../worldmap/structures/StructureLabel";
-import { StructureListItem } from "../../worldmap/structures/StructureListItem";
 
 export const StructureCard = ({
   className,

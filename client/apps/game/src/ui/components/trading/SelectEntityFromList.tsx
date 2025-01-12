@@ -1,4 +1,4 @@
-import { useRealm } from "@/hooks/helpers/useRealm";
+import { useRealm } from "@/hooks/helpers/use-realm";
 import Button from "@/ui/elements/Button";
 import { ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";

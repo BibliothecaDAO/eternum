@@ -1,7 +1,7 @@
-import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
-import { useEnemyArmiesByPosition } from "@/hooks/helpers/useArmies";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { Position } from "@/types/Position";
+import { BattleInfo } from "@/hooks/helpers/battles/use-battles";
+import { useEnemyArmiesByPosition } from "@/hooks/helpers/use-armies";
+import { useEntities } from "@/hooks/helpers/use-entities";
+import { Position } from "@/types/position";
 import { StructureCard } from "@/ui/components/structures/worldmap/StructureCard";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { ArmyInfo } from "@bibliothecadao/eternum";

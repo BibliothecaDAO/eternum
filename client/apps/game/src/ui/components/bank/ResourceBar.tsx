@@ -1,4 +1,5 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import { HintSection } from "@/ui/components/hints/HintModal";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -6,7 +7,6 @@ import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
 import { memo, useEffect, useRef, useState } from "react";
-import { HintSection } from "../hints/HintModal";
 
 export const ResourceBar = memo(
   ({

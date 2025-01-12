@@ -1,5 +1,5 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { usePlayResourceSound } from "@/hooks/useUISound";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import { usePlayResourceSound } from "@/hooks/use-ui-sound";
 import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";

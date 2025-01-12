@@ -1,6 +1,6 @@
-import { useIsStructureImmune, useStructureByEntityId, useStructureImmunityTimer } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
+import { useIsStructureImmune, useStructureByEntityId, useStructureImmunityTimer } from "@/hooks/helpers/use-structures";
+import useUIStore from "@/hooks/store/use-ui-store";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Tabs } from "@/ui/elements/tab";

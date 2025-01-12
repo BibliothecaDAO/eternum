@@ -1,8 +1,7 @@
 import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-checked.svg";
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
-
 import { useDojo } from "@/hooks/context/DojoContext";
-import { RealmInfo, usePlayerRealms } from "@/hooks/helpers/useRealm";
+import { RealmInfo, usePlayerRealms } from "@/hooks/helpers/use-realm";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";

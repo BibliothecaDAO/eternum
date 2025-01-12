@@ -1,4 +1,4 @@
-import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
+import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";

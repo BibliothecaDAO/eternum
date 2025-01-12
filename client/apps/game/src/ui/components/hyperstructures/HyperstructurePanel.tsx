@@ -1,15 +1,18 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useContributions } from "@/hooks/helpers/useContributions";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useGuilds } from "@/hooks/helpers/useGuilds";
+import { useContributions } from "@/hooks/helpers/use-contributions";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import { useGuilds } from "@/hooks/helpers/use-guilds";
 import {
   ProgressWithPercentage,
   useHyperstructureProgress,
   useHyperstructureUpdates,
-} from "@/hooks/helpers/useHyperstructures";
-import { useHyperstructureData } from "@/hooks/store/useLeaderBoardStore";
-import useUIStore from "@/hooks/store/useUIStore";
+} from "@/hooks/helpers/use-hyperstructures";
+import { useHyperstructureData } from "@/hooks/store/use-leaderboard-store";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { ContributionSummary } from "@/ui/components/hyperstructures/ContributionSummary";
+import { HyperstructureDetails } from "@/ui/components/hyperstructures/HyperstructureDetails";
+import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/HyperstructureResourceChip";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import TextInput from "@/ui/elements/TextInput";
@@ -23,9 +26,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
-import { ContributionSummary } from "./ContributionSummary";
-import { HyperstructureDetails } from "./HyperstructureDetails";
-import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
 
 export enum DisplayedAccess {
   Public = "Public",

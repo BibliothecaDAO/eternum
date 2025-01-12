@@ -1,10 +1,4 @@
 import People from "@/assets/icons/common/people.svg?react";
-import Cloth from "@/assets/icons/resources/Cloth.svg?react";
-import DemonHide from "@/assets/icons/resources/DemonHide.svg?react";
-import DesertGlass from "@/assets/icons/resources/DesertGlass.svg?react";
-import Lords from "@/assets/icons/resources/Lords.svg?react";
-import Ore from "@/assets/icons/resources/Ore.svg?react";
-import Spores from "@/assets/icons/resources/Spores.svg?react";
 import clsx from "clsx";
 import type { ReactElement } from "react";
 
@@ -25,48 +19,43 @@ type Resource = {
 };
 
 const Components: { [key: string]: Resource } = Object.freeze({
-  Adamantine: {
-    component: <img src={`/images/resources/20.png`} />,
-    name: "Adamantine",
-  },
+  Wood: { component: <img src={`/images/resources/1.png`} />, name: "Wood" },
+  Stone: { component: <img src={`/images/resources/2.png`} />, name: "Stone" },
+  Coal: { component: <img src={`/images/resources/3.png`} />, name: "Coal" },
+  Copper: { component: <img src={`/images/resources/4.png`} />, name: "Copper" },
+  Obsidian: { component: <img src={`/images/resources/5.png`} />, name: "Obsidian" },
+  Silver: { component: <img src={`/images/resources/6.png`} />, name: "Silver" },
+  Ironwood: { component: <img src={`/images/resources/7.png`} />, name: "Ironwood" },
+  ColdIron: { component: <img src={`/images/resources/8.png`} />, name: "Cold Iron" },
+  Gold: { component: <img src={`/images/resources/9.png`} />, name: "Gold" },
+  Hartwood: { component: <img src={`/images/resources/10.png`} />, name: "Hartwood" },
+  Diamonds: { component: <img src={`/images/resources/11.png`} />, name: "Diamonds" },
+  Sapphire: { component: <img src={`/images/resources/12.png`} />, name: "Sapphire" },
+  Ruby: { component: <img src={`/images/resources/13.png`} />, name: "Ruby" },
+  DeepCrystal: { component: <img src={`/images/resources/14.png`} />, name: "Deep Crystal" },
+  Ignium: { component: <img src={`/images/resources/15.png`} />, name: "Ignium" },
+  EtherealSilica: { component: <img src={`/images/resources/16.png`} />, name: "Ethereal Silica" },
+  TrueIce: { component: <img src={`/images/resources/17.png`} />, name: "TrueIce" },
+  TwilightQuartz: { component: <img src={`/images/resources/18.png`} />, name: "Twilight Quartz" },
   AlchemicalSilver: {
     component: <img src={`/images/resources/19.png`} />,
     name: "Alchemical Silver",
   },
-  Coal: { component: <img src={`/images/resources/3.png`} />, name: "Coal" },
-  ColdIron: { component: <img src={`/images/resources/8.png`} />, name: "Cold Iron" },
-  Copper: { component: <img src={`/images/resources/4.png`} />, name: "Copper" },
-  DeepCrystal: { component: <img src={`/images/resources/14.png`} />, name: "Deep Crystal" },
-  Diamonds: { component: <img src={`/images/resources/11.png`} />, name: "Diamonds" },
-  Dragonhide: { component: <img src={`/images/resources/22.png`} />, name: "Dragonhide" },
-  EtherealSilica: { component: <img src={`/images/resources/16.png`} />, name: "Ethereal Silica" },
-  Gold: { component: <img src={`/images/resources/9.png`} />, name: "Gold" },
-  Hartwood: { component: <img src={`/images/resources/10.png`} />, name: "Hartwood" },
-  Ignium: { component: <img src={`/images/resources/15.png`} />, name: "Ignium" },
-  Ironwood: { component: <img src={`/images/resources/7.png`} />, name: "Ironwood" },
+  Adamantine: {
+    component: <img src={`/images/resources/20.png`} />,
+    name: "Adamantine",
+  },
   Mithral: { component: <img src={`/images/resources/21.png`} />, name: "Mithral" },
-  Obsidian: { component: <img src={`/images/resources/5.png`} />, name: "Obsidian" },
-  Ruby: { component: <img src={`/images/resources/13.png`} />, name: "Ruby" },
-  Sapphire: { component: <img src={`/images/resources/12.png`} />, name: "Sapphire" },
-  Silver: { component: <img src={`/images/resources/6.png`} />, name: "Silver" },
-  Stone: { component: <img src={`/images/resources/2.png`} />, name: "Stone" },
-  TrueIce: { component: <img src={`/images/resources/17.png`} />, name: "TrueIce" },
-  TwilightQuartz: { component: <img src={`/images/resources/18.png`} />, name: "Twilight Quartz" },
-  Wood: { component: <img src={`/images/resources/1.png`} />, name: "Wood" },
-  EmbersGlow: { component: <DemonHide className="w-full h-full" />, name: "Demon Hide" },
-  StoneTemple: { component: <Cloth className="w-full h-full" />, name: "Cloth" },
-  DesertOasis: { component: <DesertGlass className="w-full h-full" />, name: "Desert Glass" },
-  MountainDeep: { component: <Ore className="w-full h-full" />, name: "Ore" },
-  UnderwaterKeep: { component: <Lords className="w-full h-full" />, name: "Lords" },
-  ForestRuins: { component: <Spores className="w-full h-full" />, name: "Spores" },
-  Lords: { component: <img src={`/images/resources/coin.png`} />, name: "Lords" },
-  Fish: { component: <img src={`/images/resources/255.png`} />, name: "Fish" },
-  Wheat: { component: <img src={`/images/resources/254.png`} />, name: "Wheat" },
-  Donkey: { component: <img src={`/images/buildings/thumb/trade.png`} />, name: "Donkey" },
+  Dragonhide: { component: <img src={`/images/resources/22.png`} />, name: "Dragonhide" },
+  AncientFragment: { component: <img src={`/images/resources/29.png`} />, name: "Ancient Fragment" },
   Knight: { component: <img src={`/images/icons/250.png`} />, name: "Knight" },
   Crossbowman: { component: <img src={`/images/icons/251.png`} />, name: "Crossbowman" },
   Paladin: { component: <img src={`/images/icons/252.png`} />, name: "Paladin" },
-  AncientFragment: { component: <img src={`/images/resources/29.png`} />, name: "Ancient Fragment" },
+  Lords: { component: <img src={`/images/resources/coin.png`} />, name: "Lords" },
+  Wheat: { component: <img src={`/images/resources/254.png`} />, name: "Wheat" },
+  Fish: { component: <img src={`/images/resources/255.png`} />, name: "Fish" },
+
+  Donkey: { component: <img src={`/images/buildings/thumb/trade.png`} />, name: "Donkey" },
   House: { component: <img src={`/images/buildings/thumb/house.png`} />, name: "House" },
   Silo: { component: <img src={`/images/buildings/thumb/silo.png`} />, name: "Silo" },
   Timeglass: { component: <img src={`/images/buildings/thumb/timeglass.png`} />, name: "Timeglass" },

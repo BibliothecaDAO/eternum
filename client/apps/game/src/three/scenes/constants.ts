@@ -1,8 +1,8 @@
+import { BiomeType } from "@/three/managers/biome";
 import { HyperstructureTypesNames, ResourceMiningTypes } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { BuildingType, RealmLevelNames, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { BiomeType } from "../components/Biome";
 
 export const HEX_SIZE = 1;
 

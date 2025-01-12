@@ -1,8 +1,8 @@
-import { useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import useUIStore from "@/hooks/store/useUIStore";
-import { Position } from "@/types/Position";
+import { useOwnArmiesByPosition } from "@/hooks/helpers/use-armies";
+import { useEntities } from "@/hooks/helpers/use-entities";
+import { useQuery } from "@/hooks/helpers/use-query";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { InventoryResources } from "@/ui/components/resources/InventoryResources";
 import { useCallback, useEffect, useMemo, useState } from "react";

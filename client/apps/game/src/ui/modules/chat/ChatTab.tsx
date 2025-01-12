@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useMemo } from "react";
-import { useChatStore } from "./ChatState";
+import { useChatStore } from "./use-chat-store";
 import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
 
 export const DEFAULT_TAB: Tab = {

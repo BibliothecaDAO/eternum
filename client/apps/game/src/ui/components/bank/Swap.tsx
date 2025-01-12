@@ -1,11 +1,13 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useIsResourcesLocked, useStructures } from "@/hooks/helpers/useStructures";
-import { useTravel } from "@/hooks/helpers/useTravel";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import { useIsResourcesLocked, useStructures } from "@/hooks/helpers/use-structures";
+import { useTravel } from "@/hooks/helpers/use-travel";
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
+import { ConfirmationPopup } from "@/ui/components/bank/ConfirmationPopup";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
+import { TravelInfo } from "@/ui/components/resources/TravelInfo";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
@@ -20,8 +22,6 @@ import {
   resources,
 } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TravelInfo } from "../resources/TravelInfo";
-import { ConfirmationPopup } from "./ConfirmationPopup";
 
 export const ResourceSwap = ({
   bankEntityId,

@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";

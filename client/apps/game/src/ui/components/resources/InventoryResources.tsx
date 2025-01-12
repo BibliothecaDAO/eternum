@@ -1,6 +1,6 @@
-import { debouncedAddToSubscription } from "@/dojo/debouncedQueries";
+import { debouncedAddToSubscription } from "@/dojo/debounced-queries";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useResourceBalance, useResourcesUtils } from "@/hooks/helpers/useResources";
+import { useResourceBalance, useResourcesUtils } from "@/hooks/helpers/use-resources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";

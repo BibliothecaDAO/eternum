@@ -1,10 +1,10 @@
 import { ReactComponent as Swords } from "@/assets/icons/common/cross-swords.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useIsStructureImmune, useStructureAtPosition } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
-import { Position } from "@/types/Position";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import { useIsStructureImmune, useStructureAtPosition } from "@/hooks/helpers/use-structures";
+import useUIStore from "@/hooks/store/use-ui-store";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
+import { Position } from "@/types/position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { ArmyInfo, BattleManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";

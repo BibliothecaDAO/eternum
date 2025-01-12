@@ -1,7 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
-import { useResourceManager } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
+import { PlayerStructure, useEntities } from "@/hooks/helpers/use-entities";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
+import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";

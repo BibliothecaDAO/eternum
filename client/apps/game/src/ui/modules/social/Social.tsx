@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useHyperstructureData, useLeaderBoardStore } from "@/hooks/store/useLeaderBoardStore";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useHyperstructureData, useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { social } from "@/ui/components/navigation/Config";
 import { ExpandableOSWindow } from "@/ui/components/navigation/OSWindow";

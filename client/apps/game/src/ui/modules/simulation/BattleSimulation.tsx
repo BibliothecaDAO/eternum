@@ -1,6 +1,6 @@
+import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { BattleSimulationPanel } from "@/ui/components/worldmap/battles/BattleSimulationPanel";
-import useUIStore from "../../../hooks/store/useUIStore";
 import { battleSimulation } from "../../components/navigation/Config";
 import { OSWindow } from "../../components/navigation/OSWindow";
 

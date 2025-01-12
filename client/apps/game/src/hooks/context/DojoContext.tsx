@@ -1,10 +1,16 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
-import { SetupNetworkResult } from "@/dojo/setupNetwork";
-import { Position } from "@/types/Position";
+import { SetupResult } from "@/dojo/setup";
+import { SetupNetworkResult } from "@/dojo/setup-network";
+import { useAccountStore } from "@/hooks/context/account-store";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useAddressStore } from "@/hooks/store/use-address-store";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/Onboarding";
 import { OnboardingButton } from "@/ui/layouts/OnboardingButton";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/LoadingScreen";
 import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/Steps";
+import { displayAddress } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import ControllerConnector from "@cartridge/connector/controller";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
@@ -14,12 +20,6 @@ import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
-import { SetupResult } from "../../dojo/setup";
-import { displayAddress } from "../../ui/utils/utils";
-import { useQuery } from "../helpers/useQuery";
-import { useAddressStore } from "../store/useAddressStore";
-import useUIStore from "../store/useUIStore";
-import { useAccountStore } from "./accountStore";
 
 interface DojoAccount {
   create: () => void;

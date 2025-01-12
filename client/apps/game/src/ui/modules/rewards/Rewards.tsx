@@ -1,11 +1,11 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { usePrizePool } from "@/hooks/helpers/use-rewards";
 import {
   useGetHyperstructuresWithContributionsFromPlayer,
   useGetUnregisteredContributions,
-} from "@/hooks/helpers/useContributions";
-import { useGetPlayerEpochs, useGetUnregisteredEpochs } from "@/hooks/helpers/useHyperstructures";
-import useUIStore from "@/hooks/store/useUIStore";
+} from "@/hooks/helpers/use-contributions";
+import { useGetPlayerEpochs, useGetUnregisteredEpochs } from "@/hooks/helpers/use-hyperstructures";
+import { usePrizePool } from "@/hooks/helpers/use-rewards";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { rewards } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";

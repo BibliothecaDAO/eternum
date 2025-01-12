@@ -47,6 +47,20 @@ Please adhere to the following guidelines when writing code for the Eternum proj
 - Ensure your code is compatible with the existing codebase and follows the project's coding conventions.
 - Include tests to verify the functionality of your changes.
 
+### Naming Conventions
+
+| Entity Type | Naming Convention | Examples |
+|------------|-------------------|----------|
+| Components | PascalCase | `UserProfile`, `NavigationMenu` |
+| Component Files | PascalCase | `UserProfile.tsx`, `NavigationMenu.tsx` |
+| Other Files | kebab-case | `user-service.ts`, `api-utils.ts` |
+| Functions | camelCase | `getUserData()`, `calculateTotal()` |
+| Variables | camelCase | `userCount`, `totalPrice` |
+| Constants | UPPER_SNAKE_CASE | `MAX_USERS`, `API_ENDPOINT` |
+| Enums | PascalCase | `UserRole`, `PaymentStatus` |
+| Types & Interfaces | PascalCase | `UserProfile`, `ApiResponse` |
+
+
 ## Review Process
 
 Once you submit a pull request, maintainers will review your changes and provide feedback. Your pull request may be

@@ -1,9 +1,9 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useGetRealm } from "@/hooks/helpers/use-realm";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";

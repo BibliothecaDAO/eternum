@@ -1,6 +1,6 @@
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useTrade } from "@/hooks/helpers/useTrade";
+import { useTrade } from "@/hooks/helpers/use-trade";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { SelectResource } from "@/ui/elements/SelectResource";
 import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";

@@ -1,8 +1,8 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import useUIStore from "@/hooks/store/useUIStore";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import { useEntities, useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { ResourceMiningTypes } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
 import Button from "@/ui/elements/Button";

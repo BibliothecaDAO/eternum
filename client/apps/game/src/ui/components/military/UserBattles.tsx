@@ -1,5 +1,5 @@
-import { useUserBattles } from "@/hooks/helpers/battles/useBattles";
-import { BattleListItem } from "../battles/BattleListItem";
+import { useUserBattles } from "@/hooks/helpers/battles/use-battles";
+import { BattleListItem } from "@/ui/components/battles/BattleListItem";
 
 export const UserBattles = () => {
   const battles = useUserBattles();

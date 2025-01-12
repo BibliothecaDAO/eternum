@@ -1,7 +1,7 @@
 import { addToSubscription } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";

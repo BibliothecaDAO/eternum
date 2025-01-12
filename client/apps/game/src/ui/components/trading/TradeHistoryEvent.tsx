@@ -1,4 +1,4 @@
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { Resource, ResourcesIds } from "@bibliothecadao/eternum";

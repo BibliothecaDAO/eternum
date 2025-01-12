@@ -1,11 +1,11 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { PlayerStructure, useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import useUIStore from "@/hooks/store/useUIStore";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
-import { Position } from "@/types/Position";
+import { PlayerStructure, useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import { useQuery } from "@/hooks/helpers/use-query";
+import useUIStore from "@/hooks/store/use-ui-store";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
+import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { IS_MOBILE } from "@/ui/config";

@@ -2,11 +2,15 @@ import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
 
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import {
   currencyFormat,
@@ -16,16 +20,10 @@ import {
   getEntityIdFromKeys,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
-import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
+import { ArmyInfo, ArmyManager, ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-
-import { configManager } from "@/dojo/setup";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import { Position as PositionInterface } from "@/types/Position";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ArmyInfo, ArmyManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;

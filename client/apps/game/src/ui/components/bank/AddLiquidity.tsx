@@ -1,16 +1,16 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
+import { useEntities } from "@/hooks/helpers/use-entities";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
+import { ConfirmationPopup } from "@/ui/components/bank/ConfirmationPopup";
+import { LiquidityResourceRow } from "@/ui/components/bank/LiquidityResourceRow";
+import { LiquidityTableHeader } from "@/ui/components/bank/LiquidityTable";
+import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, ID, MarketManager, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
-import { ConfirmationPopup } from "./ConfirmationPopup";
-import { LiquidityResourceRow } from "./LiquidityResourceRow";
-import { LiquidityTableHeader } from "./LiquidityTable";
-import { ResourceBar } from "./ResourceBar";
 
 const AddLiquidity = ({
   bankEntityId,

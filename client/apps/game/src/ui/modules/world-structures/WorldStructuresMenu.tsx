@@ -1,11 +1,11 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getArmiesByPosition } from "@/hooks/helpers/useArmies";
-import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
-import { useGuilds } from "@/hooks/helpers/useGuilds";
-import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getArmiesByPosition } from "@/hooks/helpers/use-armies";
+import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/use-contributions";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import { useFragmentMines } from "@/hooks/helpers/use-fragment-mines";
+import { useGuilds } from "@/hooks/helpers/use-guilds";
+import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/use-hyperstructures";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";

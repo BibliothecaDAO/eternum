@@ -1,7 +1,7 @@
-import { useAccountStore } from "@/hooks/context/accountStore";
+import { useAccountStore } from "@/hooks/context/account-store";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useModalStore } from "@/hooks/store/useModalStore";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { useModalStore } from "@/hooks/store/use-modal-store";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { rewards, settings } from "@/ui/components/navigation/Config";
 import { BuildingThumbs } from "@/ui/config";

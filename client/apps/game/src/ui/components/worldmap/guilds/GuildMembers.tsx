@@ -1,5 +1,6 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { useGuilds } from "@/hooks/helpers/useGuilds";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useGuilds } from "@/hooks/helpers/use-guilds";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import TwitterShareButton from "@/ui/elements/TwitterShareButton";
@@ -7,7 +8,6 @@ import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
 import { env } from "../../../../../env";
-import { useDojo } from "../../../../hooks/context/DojoContext";
 import { GuildInviteList } from "./GuildInvitesList";
 import { GuildMemberList } from "./GuildMemberList";
 

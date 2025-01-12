@@ -1,8 +1,8 @@
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { Building, useBuildings } from "@/hooks/helpers/use-buildings";
-import { useGetRealm } from "@/hooks/helpers/useRealm";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useGetRealm } from "@/hooks/helpers/use-realm";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";

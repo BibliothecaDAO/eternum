@@ -1,4 +1,4 @@
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import CircleButton from "@/ui/elements/CircleButton";

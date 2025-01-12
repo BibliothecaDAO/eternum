@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useGuilds } from "@/hooks/helpers/useGuilds";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import { useGuilds } from "@/hooks/helpers/use-guilds";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks, toHexString } from "@/ui/utils/utils";

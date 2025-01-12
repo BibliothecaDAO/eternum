@@ -1,23 +1,22 @@
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
+import { useGuilds } from "@/hooks/helpers/use-guilds";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import TextInput from "@/ui/elements/TextInput";
+import { toHexString } from "@/ui/utils/utils";
+import { ContractAddress, Player } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
-
-import { useGuilds } from "@/hooks/helpers/useGuilds";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import TextInput from "@/ui/elements/TextInput";
-import { toHexString } from "@/ui/utils/utils";
-import { ContractAddress, Player } from "@bibliothecadao/eternum";
 import { EventStream } from "../stream/EventStream";
-import { useChatStore } from "./ChatState";
 import { ChatTab, DEFAULT_TAB } from "./ChatTab";
 import { CHAT_COLORS, GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
 import { InputField } from "./InputField";
 import { ChatMetadata, Tab } from "./types";
+import { useChatStore } from "./use-chat-store";
 import { getMessageKey } from "./utils";
 
 export const Chat = () => {

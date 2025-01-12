@@ -1,5 +1,5 @@
-import { AppStore } from "@/hooks/store/useUIStore";
-import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
+import { AppStore } from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   ClientConfigManager,
@@ -12,8 +12,8 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
-import { createSystemCalls } from "./createSystemCalls";
-import { setupNetwork } from "./setupNetwork";
+import { createSystemCalls } from "./create-system-calls";
+import { setupNetwork } from "./setup-network";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 

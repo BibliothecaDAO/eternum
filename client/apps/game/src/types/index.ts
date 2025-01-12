@@ -1,6 +1,6 @@
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { Position } from "./Position";
+import { Position } from "./position";
 
 export enum SceneName {
   WorldMap = "map",

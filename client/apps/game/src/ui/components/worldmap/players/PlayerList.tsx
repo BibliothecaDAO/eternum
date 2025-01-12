@@ -1,6 +1,6 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";

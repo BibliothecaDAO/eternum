@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import TwitterShareButton from "@/ui/elements/TwitterShareButton";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";

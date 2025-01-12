@@ -1,7 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useHyperstructureUpdates } from "@/hooks/helpers/useHyperstructures";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
+import { useHyperstructureUpdates } from "@/hooks/helpers/use-hyperstructures";
+import { useRealm } from "@/hooks/helpers/use-realm";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import Button from "@/ui/elements/Button";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";

@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
 import { ArmyInfo, ArmyMovementManager, computeExploreFoodCosts, StaminaManager } from "@bibliothecadao/eternum";
 import { useMemo } from "react";

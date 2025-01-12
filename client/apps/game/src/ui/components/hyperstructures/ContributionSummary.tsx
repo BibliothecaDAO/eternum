@@ -1,5 +1,5 @@
-import { useContributions } from "@/hooks/helpers/useContributions";
-import { useRealm } from "@/hooks/helpers/useRealm";
+import { useContributions } from "@/hooks/helpers/use-contributions";
+import { useRealm } from "@/hooks/helpers/use-realm";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { SelectResource } from "@/ui/elements/SelectResource";
 import { copyPlayerAddressToClipboard, currencyIntlFormat, divideByPrecision, formatNumber } from "@/ui/utils/utils";

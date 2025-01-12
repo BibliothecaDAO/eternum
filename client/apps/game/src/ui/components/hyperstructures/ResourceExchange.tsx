@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useResourcesUtils } from "@/hooks/helpers/useResources";
+import { useResourcesUtils } from "@/hooks/helpers/use-resources";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";

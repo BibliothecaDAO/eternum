@@ -1,8 +1,8 @@
 import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
-import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import { useStructureByPosition } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useBattlesByPosition } from "@/hooks/helpers/battles/use-battles";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useStructureByPosition } from "@/hooks/helpers/use-structures";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { DurationLeft, ProgressBar } from "@/ui/modules/military/battle-view/BattleProgress";

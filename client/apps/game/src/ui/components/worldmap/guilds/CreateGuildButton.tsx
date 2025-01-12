@@ -1,6 +1,6 @@
 import { ReactComponent as LockClosed } from "@/assets/icons/common/lock-closed.svg";
 import { ReactComponent as LockOpen } from "@/assets/icons/common/lock-open.svg";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";

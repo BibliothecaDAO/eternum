@@ -1,5 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { useGetRealm } from "@/hooks/helpers/useRealm";
+import { useGetRealm } from "@/hooks/helpers/use-realm";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { ID, ResourcesIds } from "@bibliothecadao/eternum";

@@ -1,13 +1,12 @@
-import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
-
-import { ProgressWithPercentage } from "@/hooks/helpers/useHyperstructures";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
+import { ProgressWithPercentage } from "@/hooks/helpers/use-hyperstructures";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
-import { ResourceIcon } from "../../elements/ResourceIcon";
 
 type HyperstructureResourceChipProps = {
   structureEntityId: ID;

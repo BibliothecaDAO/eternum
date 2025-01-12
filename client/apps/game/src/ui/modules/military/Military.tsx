@@ -1,5 +1,5 @@
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuery } from "@/hooks/helpers/useQuery";
+import { useEntities } from "@/hooks/helpers/use-entities";
+import { useQuery } from "@/hooks/helpers/use-query";
 import { EntityArmyList } from "@/ui/components/military/ArmyList";
 import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
 import { UserBattles } from "@/ui/components/military/UserBattles";

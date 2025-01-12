@@ -1,7 +1,7 @@
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { useEntities } from "@/hooks/helpers/use-entities";
+import { LiquidityResourceRow } from "@/ui/components/bank/LiquidityResourceRow";
 import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useState } from "react";
-import { LiquidityResourceRow } from "./LiquidityResourceRow";
 
 type LiquidityTableProps = {
   bankEntityId: ID | undefined;

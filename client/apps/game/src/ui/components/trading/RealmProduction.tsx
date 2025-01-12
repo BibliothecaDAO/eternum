@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { getRealms } from "@/hooks/helpers/useRealm";
-import useUIStore from "@/hooks/store/useUIStore";
+import { getRealms } from "@/hooks/helpers/use-realm";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { SelectResource } from "@/ui/elements/SelectResource";
 import { unpackResources } from "@/ui/utils/packedData";
 import { ResourcesIds } from "@bibliothecadao/eternum";

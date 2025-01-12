@@ -1,8 +1,7 @@
-import { findResourceById, getIconResourceId, ID, TickIds } from "@bibliothecadao/eternum";
-
 import { configManager } from "@/dojo/setup";
-import { useResourceManager } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { findResourceById, getIconResourceId, ID, TickIds } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { currencyFormat, currencyIntlFormat, formatTime, gramToKg, TimeFormat } from "../../utils/utils";

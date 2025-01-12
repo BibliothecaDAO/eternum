@@ -1,11 +1,11 @@
-import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { configManager } from "@/dojo/setup";
 import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
-import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
-import { usePlayResourceSound } from "@/hooks/useUISound";
+import { useGetRealm } from "@/hooks/helpers/use-realm";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { usePlayResourceSound } from "@/hooks/use-ui-sound";
 import { ResourceMiningTypes } from "@/types";
+import { HintSection } from "@/ui/components/hints/HintModal";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -35,8 +35,8 @@ import {
 } from "@bibliothecadao/eternum";
 import { Component, getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
+import { InfoIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import { HintSection } from "../hints/HintModal";
 
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();

@@ -1,4 +1,4 @@
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";

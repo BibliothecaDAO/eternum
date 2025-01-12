@@ -1,27 +1,25 @@
-import { Leva } from "leva";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { Redirect } from "wouter";
-import useUIStore from "../../hooks/store/useUIStore";
-
 import {
   debounceAddDonkeysAndArmiesSubscription,
-  debouncedAddHyperstructureSubscription,
   debouncedAddMarketSubscription,
   debouncedAddToSubscription,
-  debouncedAddToSubscriptionOneKey,
-} from "@/dojo/debouncedQueries";
+  debouncedAddToSubscriptionOneKey
+} from "@/dojo/debounced-queries";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
-import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
-import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
-import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
+import { PlayerStructure, useEntities } from "@/hooks/helpers/use-entities";
+import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
+import { useFetchBlockchainData } from "@/hooks/store/use-blockchain-store";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { ADMIN_BANK_ENTITY_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { Leva } from "leva";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Redirect } from "wouter";
 import { env } from "../../../env";
 import { rewards } from "../components/navigation/Config";
 import { IS_MOBILE } from "../config";
-import { LoadingOroborus } from "../modules/loading-oroborus";
+import { LoadingOroborus } from "../modules/LoadingOroborus";
 import { LoadingScreen } from "../modules/LoadingScreen";
 // Lazy load components
 

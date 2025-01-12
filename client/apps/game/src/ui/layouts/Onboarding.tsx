@@ -1,11 +1,11 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum_words_logo.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
 import { ReactComponent as LordsIcon } from "@/assets/icons/resources/LordsSimple.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { usePlayerRealms } from "@/hooks/helpers/useRealm";
-import useUIStore from "@/hooks/store/useUIStore";
+import { usePlayerRealms } from "@/hooks/helpers/use-realm";
+import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/Button";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";

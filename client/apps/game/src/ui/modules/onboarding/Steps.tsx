@@ -5,10 +5,10 @@ import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import { usePlayerRealms } from "@/hooks/helpers/useRealm";
-import useUIStore from "@/hooks/store/useUIStore";
-import { Position } from "@/types/Position";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { usePlayerRealms } from "@/hooks/helpers/use-realm";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/SettleRealmComponent";
 import Button from "@/ui/elements/Button";
 import { useEffect, useMemo, useState } from "react";

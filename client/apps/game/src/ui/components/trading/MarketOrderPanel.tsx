@@ -1,11 +1,11 @@
-import { configManager } from "@/dojo/setup";
+
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import { useResourceManager } from "@/hooks/helpers/useResources";
-import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
-import { useTravel } from "@/hooks/helpers/useTravel";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import { useRealm } from "@/hooks/helpers/use-realm";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
+import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
+import { useTravel } from "@/hooks/helpers/use-travel";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
+import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -22,6 +22,7 @@ import {
   ONE_MONTH,
   ResourceManager,
   ResourcesIds,
+  configManager,
   findResourceById,
   type ID,
   type MarketInterface,

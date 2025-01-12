@@ -1,8 +1,7 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { ReactComponent as Disconnect } from "@/assets/icons/disconnect.svg";
-import { useAccountStore } from "@/hooks/context/accountStore";
-import useUIStore from "@/hooks/store/useUIStore";
-
+import { useAccountStore } from "@/hooks/context/account-store";
+import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/Button";
 import { useConnect, useDisconnect } from "@starknet-react/core";
 import { useCallback, useEffect, useState } from "react";

@@ -1,6 +1,6 @@
+import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { PillageSimulationPanel } from "@/ui/components/worldmap/battles/PillageSimulationPanel";
-import useUIStore from "../../../hooks/store/useUIStore";
 import { pillageSimulation } from "../../components/navigation/Config";
 import { OSWindow } from "../../components/navigation/OSWindow";
 

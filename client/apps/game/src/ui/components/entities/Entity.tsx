@@ -1,9 +1,10 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
-import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useResourcesUtils } from "@/hooks/helpers/useResources";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
+import { useResourcesUtils } from "@/hooks/helpers/use-resources";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
+import { DepositResources } from "@/ui/components/resources/DepositResources";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision, formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -11,7 +12,6 @@ import { EntityType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import React, { useMemo } from "react";
-import { DepositResources } from "../resources/DepositResources";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",

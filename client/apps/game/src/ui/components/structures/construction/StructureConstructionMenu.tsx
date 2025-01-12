@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { multiplyByPrecision } from "@/ui/utils/utils";

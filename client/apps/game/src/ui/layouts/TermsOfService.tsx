@@ -1,4 +1,4 @@
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { useMemo, useRef, useState } from "react";
 import Button from "../elements/Button";
 

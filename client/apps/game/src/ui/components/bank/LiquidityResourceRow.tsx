@@ -1,6 +1,8 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useTravel } from "@/hooks/helpers/useTravel";
+import { useTravel } from "@/hooks/helpers/use-travel";
+import { ConfirmationPopup } from "@/ui/components/bank/ConfirmationPopup";
+import { TravelInfo } from "@/ui/components/resources/TravelInfo";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -8,8 +10,6 @@ import { divideByPrecision, formatNumber, getEntityIdFromKeys } from "@/ui/utils
 import { ContractAddress, EntityType, ID, MarketManager, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";
-import { TravelInfo } from "../resources/TravelInfo";
-import { ConfirmationPopup } from "./ConfirmationPopup";
 
 type LiquidityResourceRowProps = {
   playerStructureIds: ID[];

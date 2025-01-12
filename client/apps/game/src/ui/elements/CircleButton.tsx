@@ -1,4 +1,4 @@
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import clsx from "clsx";
 

@@ -1,11 +1,11 @@
-import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
-import { useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
+import { useBattlesByPosition } from "@/hooks/helpers/battles/use-battles";
+import { useOwnArmiesByPosition } from "@/hooks/helpers/use-armies";
 import { ArmyInfo } from "@bibliothecadao/eternum";
 
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useStructureAtPosition } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
-import { Position } from "@/types/Position";
+import { useEntities } from "@/hooks/helpers/use-entities";
+import { useStructureAtPosition } from "@/hooks/helpers/use-structures";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { PillageHistory } from "@/ui/components/military/PillageHistory";

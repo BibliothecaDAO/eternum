@@ -1,7 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { Prize, QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/Button";

@@ -1,8 +1,8 @@
 import { configManager } from "@/dojo/setup";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ResourceCost, ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../context/DojoContext";
 
 export interface Building {
   name: string;

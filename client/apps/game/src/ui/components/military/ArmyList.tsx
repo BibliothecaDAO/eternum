@@ -1,8 +1,8 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
-import { type PlayerStructure } from "@/hooks/helpers/useEntities";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useArmiesByEntityOwner } from "@/hooks/helpers/use-armies";
+import { type PlayerStructure } from "@/hooks/helpers/use-entities";
+import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";

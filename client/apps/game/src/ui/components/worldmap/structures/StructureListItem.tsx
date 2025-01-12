@@ -2,11 +2,11 @@ import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg"
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getUserArmyInBattle } from "@/hooks/helpers/useArmies";
-import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures";
-import { useIsStructureImmune } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
-import useNextBlockTimestamp from "@/hooks/useNextBlockTimestamp";
+import { getUserArmyInBattle } from "@/hooks/helpers/use-armies";
+import { useGetHyperstructureProgress } from "@/hooks/helpers/use-hyperstructures";
+import { useIsStructureImmune } from "@/hooks/helpers/use-structures";
+import useUIStore from "@/hooks/store/use-ui-store";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { ArmyInfo, BattleManager, Structure, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";

@@ -1,6 +1,6 @@
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { ContractAddress } from "@bibliothecadao/eternum";
@@ -9,7 +9,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useState } from "react";
 import { MessageIcon } from "../social/PlayerId";
 import { EVENT_NOTIF_STORAGE_KEY, EVENT_STREAM_SIZE } from "./constants";
-import { eventDetails } from "./eventDetails";
+import { eventDetails } from "./event-details";
 import { EventData, EventType } from "./types";
 
 export const EventStream = () => {

@@ -1,4 +1,4 @@
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/use-ui-store";
 import { IS_MOBILE } from "@/ui/config";
 
 export const ActionInstructions = () => {
