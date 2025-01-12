@@ -109,7 +109,7 @@ export const debouncedAddMarketSubscription = debounce(
   { leading: true },
 );
 
-export const debouncedAddHyperstructureSubscription = debounce(
+const debouncedAddHyperstructureSubscription = debounce(
   async <S extends Schema>(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
