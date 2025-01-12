@@ -17,7 +17,7 @@ interface Config {
 const shortHexAddress = (address: string | undefined | null): string => {
   if (!address) return 'Not set';
   if (!address.startsWith('0x')) {
-    address = BigInt(address).toString(16);
+    address = '0x' + BigInt(address).toString(16);
   }
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
