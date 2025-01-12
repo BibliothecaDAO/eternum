@@ -2,7 +2,10 @@
   "name": "eternum-config",
   "module": "index.ts",
   "scripts": {
-    "dev": "bun run index.ts",
+    "local": "bun --env-file=../apps/game/.env.local run index.ts",
+    "slot": "bun --env-file=../apps/game/.env.slot run index.ts",
+    "sepolia": "bun --env-file=../apps/game/.env.sepolia run index.ts",
+    "mainnet": "bun --env-file=../apps/game/.env.mainnet run index.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

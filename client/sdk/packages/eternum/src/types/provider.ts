@@ -563,10 +563,13 @@ export interface SetSeasonBridgeConfigProps extends SystemSigner {
 }
 
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
+  resource_whitelist_configs: ResourceWhitelistConfig[];
+}
+
+export interface ResourceWhitelistConfig {
   token: num.BigNumberish;
   resource_type: num.BigNumberish;
 }
-
 export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
   velords_fee_on_dpt_percent: num.BigNumberish;
   velords_fee_on_wtdr_percent: num.BigNumberish;

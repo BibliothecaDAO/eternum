@@ -11,13 +11,25 @@
     "dev": "pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
     "dev:landing": "pnpm --dir ./client/apps/landing dev",
-    "contract:start": "cd ./contracts/game && ./ext/scripts/katana.sh && ./ext/scripts/migrate.sh && ./ext/scripts/indexer.sh && cd ../season_pass/ext/scripts && ./deploy.sh && cd - && ../season_resources/ext/scripts && ./deploy.sh",
-    "contract:katana:start": "cd ./contracts/game && ./ext/scripts/katana.sh",
-    "contract:katana:stop": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",
-    "contract:indexer:start": "cd ./contracts/game && ./ext/scripts/indexer.sh",
-    "contract:indexer:stop": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill",
-    "contract:seasonpass:deploy": "cd ./contracts/season_pass/ext/script && ./deploy.sh",
-    "contract:migrate": "cd ./contracts/game && ./ext/scripts/indexer.sh",
+
+    "katana:start": "cd ./contracts/game && ./ext/scripts/katana.sh",
+    "katana:stop": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",
+
+    "indexer:start:local": "cd ./contracts/game && ./ext/scripts/indexer.sh",
+    "indexer:stop:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill",
+
+    "seasonpass:deploy:local": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh",
+    "seasonresources:deploy:local": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh",
+
+    "game:migrate:local": "cd ./contracts/game && ./ext/scripts/migrate.sh",
+
+    "config:local": "pnpm run build:packages && pnpm --dir ./client/config run local",
+    "config:slot": "pnpm run build:packages && pnpm --dir ./client/config run slot",
+    "config:sepolia": "pnpm run build:packages && pnpm --dir ./client/config run sepolia",
+    "config:mainnet": "pnpm run build:packages && pnpm --dir ./client/config run mainnet",
+
+    "contract:start:local": "pnpm run katana:start && pnpm run game:migrate:local && pnpm run indexer:start:local && pnpm run seasonpass:deploy:local && pnpm run seasonresources:deploy:local && pnpm run config:local",
+
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
     "knip": "npx knip --exclude binaries,dependencies",

@@ -1,7 +1,6 @@
 import { createDojoConfig } from "@dojoengine/core";
-import devManifest from "../../common/manifests/manifest_dev.json";
-import productionManifest from "../../common/manifests/manifest_mainnet.json";
-import sepoliaManifest from "../../common/manifests/manifest_prod.json";
+import { getGameManifest } from "../../common/utils";
+
 import { env } from "./env";
 
 const {
@@ -15,20 +14,7 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-// const isLocal = VITE_PUBLIC_CHAIN === "local" || VITE_PUBLIC_CHAIN === "testnet";
-// const manifest = VITE_PUBLIC_DEV === true && isLocal ? devManifest : productionManifest;
-
-const manifestMap = {
-  local: devManifest,
-  mainnet: productionManifest,
-  sepolia: sepoliaManifest,
-} as const;
-
-const manifest = manifestMap[VITE_PUBLIC_CHAIN as keyof typeof manifestMap] ?? sepoliaManifest;
-
-export const getManifest = () => {
-  return manifest;
-};
+const manifest = getGameManifest(VITE_PUBLIC_CHAIN!);
 
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,

@@ -1,3 +1,4 @@
+import { SeasonAddresses } from "../../../../../common/utils";
 import {
   BuildingType,
   CapacityConfigCategory,
@@ -366,9 +367,6 @@ export interface Config {
     current_point_on_side: number;
   };
   season: {
-    seasonPassAddress: string;
-    realmsAddress: string;
-    lordsAddress: string;
     startAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
   };
@@ -407,6 +405,13 @@ export interface Config {
   questResources: { [key in QuestType]: ResourceCost[] };
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
+
+  // Config for calling the setup function
+  setup?: {
+    chain: string;
+    addresses: SeasonAddresses;
+    manifest: any;
+  }
 }
 
 export interface Player {

@@ -8,12 +8,12 @@ import * as torii from "@dojoengine/torii-client";
 import { Account } from "starknet";
 
 import { env } from "./../../env";
-const { VITE_VRF_PROVIDER_ADDRESS, VITE_PUBLIC_DEV } = env;
+const { VITE_PUBLIC_VRF_PROVIDER_ADDRESS, VITE_PUBLIC_DEV } = env;
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
 export async function setupNetwork({ ...config }: DojoConfig) {
-  const provider = new EternumProvider(config.manifest, config.rpcUrl, VITE_VRF_PROVIDER_ADDRESS);
+  const provider = new EternumProvider(config.manifest, config.rpcUrl, VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
 
   const toriiClient = await torii.createClient({
     rpcUrl: config.rpcUrl,

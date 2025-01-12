@@ -143,14 +143,27 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
       "..",
       "common",
       "addresses",
-      "erc20s",
     );
     await mkdirAsync(folderPath, { recursive: true });
 
     const fileName = path.join(folderPath, `${process.env.STARKNET_NETWORK}.json`);
-    const data = resourceAddresses;
+    
+    // Try to read existing data
+    let existingData = {};
+    try {
+      const fileContent = await readFileAsync(fileName, 'utf8');
+      existingData = JSON.parse(fileContent);
+    } catch (error) {
+      // File doesn't exist or is invalid JSON, start with empty object
+    }
 
-    const jsonString = JSON.stringify(data);
+    // Merge new resources with existing data
+    const updatedData = {
+      ...existingData,
+      resources: resourceAddresses
+    };
+
+    const jsonString = JSON.stringify(updatedData, null, 2);
 
     await writeFileAsync(fileName, jsonString);
     console.log(`"${fileName}" has been saved or overwritten`);
@@ -170,10 +183,9 @@ export const getResourceAddressesFromFile = async () => {
     "..",
     "common",
     "addresses",
-    "erc20s",
   );
   const fileName = path.join(folderPath, `${process.env.STARKNET_NETWORK}.json`);
   const data = await readFileAsync(fileName, "utf8");
-  return JSON.parse(data);
+  return JSON.parse(data).resources;
 };
 

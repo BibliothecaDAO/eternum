@@ -893,62 +893,32 @@ export function defineContractComponents(world: World) {
         world,
         {
           resource_type: RecsType.Number,
-          amount: RecsType.BigInt,
-          input_count: RecsType.BigInt,
-          output_count: RecsType.BigInt,
+          produced_amount: RecsType.BigInt,
+          labor_cost: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "ProductionConfig",
-            types: ["u8", "u128", "u128", "u128"],
+            types: ["u8", "u128", "u128"],
             customTypes: [],
           },
         },
       );
     })(),
-    ProductionDeadline: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, deadline_tick: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "ProductionDeadline",
-            types: ["u32", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    ProductionInput: (() => {
+    LaborConfig: (() => {
       return defineComponent(
         world,
         {
-          output_resource_type: RecsType.Number,
-          index: RecsType.Number,
-          input_resource_type: RecsType.Number,
-          input_resource_amount: RecsType.BigInt,
+          resource_type: RecsType.Number,
+          input_id: RecsType.Number,
+          input_count: RecsType.Number,
         },
         {
           metadata: {
             namespace: "s0_eternum",
-            name: "ProductionInput",
-            types: ["u8", "u8", "u8", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    ProductionOutput: (() => {
-      return defineComponent(
-        world,
-        { input_resource_type: RecsType.Number, index: RecsType.Number, output_resource_type: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "ProductionOutput",
-            types: ["u8", "u8", "u8"],
+            name: "LaborConfig",
+            types: ["u8", "u32", "u8"],
             customTypes: [],
           },
         },

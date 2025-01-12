@@ -105,7 +105,7 @@ export class ClientConfigManager {
 
       this.resourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
-        amount: this.divideByPrecision(Number(productionConfig?.amount)),
+        amount: this.divideByPrecision(Number(productionConfig?.produced_amount)),
       };
     }
   }
@@ -577,7 +577,7 @@ export class ClientConfigManager {
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
 
-      return Number(productionConfig?.amount ?? 0);
+      return Number(productionConfig?.produced_amount ?? 0);
     }, 0);
   }
 

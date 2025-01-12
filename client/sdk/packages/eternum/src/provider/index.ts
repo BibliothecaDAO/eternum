@@ -244,7 +244,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     if (isMultipleTransactions) {
       // For multiple calls, use the first call's entrypoint
-      console.log({ entrypoint: transactionDetails[0].entrypoint });
+      // console.log({ entrypoint: transactionDetails[0].entrypoint });
       txType =
         TransactionType[
           transactionDetails
@@ -1876,16 +1876,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
-    const { token, resource_type, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_resource_bridge_whitelist_config",
-      calldata: [token, resource_type],
-    });
-  }
-
   public async set_resource_bridge_fees_config(props: SystemProps.SetResourceBridgeFeesConfigProps) {
     const {
       velords_fee_on_dpt_percent,
@@ -1967,21 +1957,31 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_production_config(props: SystemProps.SetProductionConfigProps) {
     const { signer, calls } = props;
 
-    return await this.executeAndCheckTransaction(
-      signer,
-      calls.map((call) => {
-        return {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_production_config",
-          calldata: [
-            call.resource_type,
-            call.amount,
-            call.cost.length,
-            ...call.cost.flatMap(({ resource, amount }) => [resource, amount]),
-          ],
-        };
-      }),
-    );
+    const productionCalldataArray = calls.map((call) => {
+      return {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+        entrypoint: "set_production_config",
+        calldata: [
+          call.resource_type,
+          call.amount,
+          call.amount
+        ],
+      };
+    });
+
+    const laborCalldataArray = calls.map((call) => {
+      return {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+        entrypoint: "set_labor_config",
+        calldata: [
+          call.resource_type,
+          call.cost.length,
+          ...call.cost.flatMap(({ resource, amount }) => [resource, amount]),
+        ],
+      };
+    });
+    const calldataArray = [...productionCalldataArray, ...laborCalldataArray];
+    return await this.executeAndCheckTransaction(signer, calldataArray);
   }
 
   public async set_bank_config(props: SystemProps.SetBankConfigProps) {
@@ -1992,6 +1992,18 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "set_bank_config",
       calldata: [lords_cost, lp_fee_num, lp_fee_denom],
     });
+  }
+
+  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
+    const { resource_whitelist_configs, signer } = props;
+
+    const calldata = resource_whitelist_configs.map(({ token, resource_type }) => ({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_resource_bridge_whitelist_config",
+      calldata: [token, resource_type],
+    }));
+
+    return await this.executeAndCheckTransaction(signer, calldata);
   }
 
   public async set_troop_config(props: SystemProps.SetTroopConfigProps) {

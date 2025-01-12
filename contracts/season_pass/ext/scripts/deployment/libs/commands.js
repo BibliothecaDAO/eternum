@@ -104,27 +104,39 @@ export const saveRelevantAddressesToCommonFolder = async (seasonPassAddress, rea
     await mkdirAsync(folderPath, { recursive: true });
     const network = process.env.STARKNET_NETWORK;
     const fileName = path.join(folderPath, `${network}.json`);
-    const data = {
+
+    // Try to read existing data
+    let existingData = {};
+    try {
+      const fileContent = await fs.promises.readFile(fileName, 'utf8');
+      existingData = JSON.parse(fileContent);
+    } catch (error) {
+      // File doesn't exist or is invalid JSON, start with empty object
+    }
+
+    // Merge new addresses with existing data
+    const updatedData = {
+      ...existingData,
       seasonPass: seasonPassAddress,
       realms: realmsAddress,
       lords: lordsAddress,
     };
 
     const jsonString = JSON.stringify(
-      data,
+      updatedData,
       (key, value) => {
         if (typeof value === "bigint") {
           return "0x" + value.toString(16);
         }
         return value;
       },
-      2,
+      2
     );
 
     await writeFileAsync(fileName, jsonString);
     console.log(`"${fileName}" has been saved or overwritten`);
   } catch (err) {
     console.error("Error writing file", err);
-    throw err; // Re-throw the error so the caller knows something went wrong
+    throw err;
   }
 };

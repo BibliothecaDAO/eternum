@@ -257,9 +257,6 @@ export const EternumGlobalConfig: Config = {
     hyperstructurePointsForWin: HYPERSTRUCTURE_POINTS_FOR_WIN,
   },
   season: {
-    seasonPassAddress: SEASON_PASS_ADDRESS,
-    realmsAddress: REALMS_ADDRESS,
-    lordsAddress: LORDS_ADDRESS,
     startAfterSeconds: SEASON_START_AFTER_SECONDS,
     bridgeCloseAfterEndSeconds: SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS,
   },

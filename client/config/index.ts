@@ -1,7 +1,4 @@
 import type { Config } from "@bibliothecadao/eternum";
-import devManifest from "../contracts/manifest_dev.json";
-import productionManifest from "../contracts/manifest_mainnet.json";
-
 import {
   EternumConfig,
   EternumGlobalConfig,
@@ -10,6 +7,7 @@ import {
   NAMESPACE,
 } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
+import { getGameManifest, getSeasonAddresses } from "../common/utils";
 
 if (
   !process.env.VITE_PUBLIC_MASTER_ADDRESS ||
@@ -25,10 +23,8 @@ const {
   VITE_PUBLIC_DEV,
   VITE_PUBLIC_NODE_URL,
   VITE_PUBLIC_CHAIN,
-  VITE_VRF_PROVIDER_ADDRESS,
+  VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
 } = process.env;
-
-const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 
 // Bug in bun we have to use http://127.0.0.1:5050/
 const nodeUrl = VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : VITE_PUBLIC_NODE_URL;
@@ -44,43 +40,49 @@ if (!VITE_PUBLIC_DEV) {
 }
 
 console.log("Provider set up");
-const provider = new EternumProvider(manifest, nodeUrl, VITE_VRF_PROVIDER_ADDRESS);
+const manifest = await getGameManifest(VITE_PUBLIC_CHAIN!);
+const provider = new EternumProvider(manifest, nodeUrl, VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
 
 console.log("Account set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
+// =============== SETUP ETERNUM CONFIG ===============
+
+
 const setupConfig: Config = EternumGlobalConfig;
-
-// const setupConfig: Config = EternumGlobalConfig;
-
-setupConfig.vrf.vrfProviderAddress = VITE_VRF_PROVIDER_ADDRESS!;
-
 // Bridge
-(setupConfig.bridge = {
+setupConfig.bridge = {
   ...EternumGlobalConfig.bridge,
   velords_fee_recipient: BigInt("0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5"), // burner
   season_pool_fee_recipient: BigInt(getContractByName(manifest, `${NAMESPACE}-season_systems`)),
-}),
-  // Season Pass
-  (setupConfig.season = {
-    ...EternumGlobalConfig.season,
-    startAfterSeconds: 60 * 60, // 60 minutes
-    // bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 2 hours
-    seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
-    realmsAddress: process.env.VITE_REALMS_ADDRESS!,
-    lordsAddress: process.env.VITE_LORDS_ADDRESS!,
-  });
+};
 
-console.log(setupConfig.season);
+// Season Pass
+setupConfig.season = {
+  ...EternumGlobalConfig.season,
+  startAfterSeconds: 60 * 60, // 60 minutes
+  // bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 2 hours
+};
 
+// Setup
+setupConfig.setup = {
+  chain: VITE_PUBLIC_CHAIN!,
+  addresses: await getSeasonAddresses(VITE_PUBLIC_CHAIN!),
+  manifest: manifest,
+};
+
+// VRF
+setupConfig.vrf.vrfProviderAddress = VITE_PUBLIC_VRF_PROVIDER_ADDRESS!;
+
+// Export
 export const config = new EternumConfig(setupConfig);
 
 console.log("Setting up config...");
 await config.setup(account, provider);
 
 // Add a 20-second delay before setting up the bank
-console.log("Waiting for 20 seconds before setting up the bank...");
-await new Promise((resolve) => setTimeout(resolve, 20000));
+// console.log("Waiting for 20 seconds before setting up the bank...");
+// await new Promise((resolve) => setTimeout(resolve, 20000));
 
-console.log("Setting up bank...");
-await config.setupBank(account, provider);
+// console.log("Setting up bank...");
+// await config.setupBank(account, provider);

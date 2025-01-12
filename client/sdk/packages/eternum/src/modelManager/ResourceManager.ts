@@ -171,9 +171,13 @@ export class ResourceManager {
     const productionDeadline = this._getProductionDeadline(this.entityId);
     const production = this._getProduction(this.resourceId);
     if (!productionDeadline || !production) {
-      return Number(production?.labor_finish_tick || 0);
+      // todo@credence0x fix this
+      // return Number(production?.labor_finish_tick || 0); 
+      return Number(0);
     } else {
-      return Math.min(Number(productionDeadline.deadline_tick), Number(production.labor_finish_tick));
+      // todo@credence0x fix this
+      // return Math.min(Number(productionDeadline.deadline_tick), Number(production.labor_finish_tick));
+      return Math.min(Number(0), Number(0));
     }
   }
 
@@ -261,7 +265,7 @@ export class ResourceManager {
   }
 
   private _getProductionDeadline(entityId: ID) {
-    return getComponentValue(this.components.ProductionDeadline, getEntityIdFromKeys([BigInt(entityId)]));
+    return {}
   }
 
   private _getResource(resourceId: ResourcesIds) {
