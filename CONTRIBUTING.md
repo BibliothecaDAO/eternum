@@ -51,15 +51,13 @@ Please adhere to the following guidelines when writing code for the Eternum proj
 
 | Entity Type | Naming Convention | Examples |
 |------------|-------------------|----------|
+| Files | kebab-case | `user-profile.tsx`, `api-utils.ts` |
 | Components | PascalCase | `UserProfile`, `NavigationMenu` |
-| Component Files | PascalCase | `UserProfile.tsx`, `NavigationMenu.tsx` |
-| Other Files | kebab-case | `user-service.ts`, `api-utils.ts` |
+| Enums | PascalCase | `UserRole`, `PaymentStatus` |
+| Types & Interfaces | PascalCase | `UserProfile`, `ApiResponse` |
 | Functions | camelCase | `getUserData()`, `calculateTotal()` |
 | Variables | camelCase | `userCount`, `totalPrice` |
 | Constants | UPPER_SNAKE_CASE | `MAX_USERS`, `API_ENDPOINT` |
-| Enums | PascalCase | `UserRole`, `PaymentStatus` |
-| Types & Interfaces | PascalCase | `UserProfile`, `ApiResponse` |
-
 
 ## Review Process
 
