@@ -1,14 +1,18 @@
-import { useIsStructureImmune, useStructureByEntityId, useStructureImmunityTimer } from "@/hooks/helpers/use-structures";
+import {
+  useIsStructureImmune,
+  useStructureByEntityId,
+  useStructureImmunityTimer,
+} from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { HintSection } from "@/ui/components/hints/hint-modal";
+import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { Tabs } from "@/ui/elements/tab";
+import { Buildings } from "@/ui/modules/entity-details/realm/buildings";
+import { Castle } from "@/ui/modules/entity-details/realm/castle";
 import { copyPlayerAddressToClipboard, displayAddress, formatTime, toHexString } from "@/ui/utils/utils";
 import { Structure, StructureType } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { Buildings } from "./Buildings";
-import { Castle } from "./Castle";
 
 export const RealmDetails = () => {
   const { nextBlockTimestamp } = useNextBlockTimestamp();

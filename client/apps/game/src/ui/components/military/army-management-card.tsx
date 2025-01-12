@@ -1,17 +1,16 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
-
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
-import Button from "@/ui/elements/Button";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import TextInput from "@/ui/elements/TextInput";
+import Button from "@/ui/elements/button";
+import { NumberInput } from "@/ui/elements/number-input";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import TextInput from "@/ui/elements/text-input";
 import {
   currencyFormat,
   divideByPrecision,

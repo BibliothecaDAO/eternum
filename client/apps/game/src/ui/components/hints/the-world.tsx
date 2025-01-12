@@ -1,4 +1,4 @@
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 
 export const TheWorld = () => {
   const chapters = [

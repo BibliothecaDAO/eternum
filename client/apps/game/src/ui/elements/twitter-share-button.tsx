@@ -1,6 +1,6 @@
 import { ReactComponent as TwitterIcon } from "@/assets/icons/twitter.svg";
+import Button from "@/ui/elements/button";
 import React from "react";
-import Button from "./Button";
 
 interface Props {
   text: string;

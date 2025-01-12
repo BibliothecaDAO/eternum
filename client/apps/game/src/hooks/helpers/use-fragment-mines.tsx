@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { toHexString } from "@/ui/utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";

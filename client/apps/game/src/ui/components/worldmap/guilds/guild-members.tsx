@@ -1,15 +1,15 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
-import Button from "@/ui/elements/Button";
-import TextInput from "@/ui/elements/TextInput";
-import TwitterShareButton from "@/ui/elements/TwitterShareButton";
+import { GuildInviteList } from "@/ui/components/worldmap/guilds/guild-invites-list";
+import { GuildMemberList } from "@/ui/components/worldmap/guilds/guild-member-list";
+import Button from "@/ui/elements/button";
+import TextInput from "@/ui/elements/text-input";
+import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
 import { env } from "../../../../../env";
-import { GuildInviteList } from "./GuildInvitesList";
-import { GuildMemberList } from "./GuildMemberList";
 
 interface GuildMembersProps {
   players: Player[];

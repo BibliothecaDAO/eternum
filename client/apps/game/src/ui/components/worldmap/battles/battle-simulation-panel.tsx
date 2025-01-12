@@ -1,5 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
+import { Troops } from "@/ui/components/worldmap/battles/troops";
 import { formatTime } from "@/ui/utils/utils";
 import {
   Battle,
@@ -11,7 +12,6 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
-import { Troops } from "./Troops";
 
 export const BattleSimulationPanel = () => {
   const {

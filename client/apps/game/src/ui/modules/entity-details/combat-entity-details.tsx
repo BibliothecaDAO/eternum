@@ -1,20 +1,18 @@
 import { useBattlesByPosition } from "@/hooks/helpers/battles/use-battles";
 import { useOwnArmiesByPosition } from "@/hooks/helpers/use-armies";
-import { ArmyInfo } from "@bibliothecadao/eternum";
-
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { useStructureAtPosition } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { ArmyChip } from "@/ui/components/military/ArmyChip";
-import { PillageHistory } from "@/ui/components/military/PillageHistory";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { HintSection } from "@/ui/components/hints/hint-modal";
+import { ArmyChip } from "@/ui/components/military/army-chip";
+import { PillageHistory } from "@/ui/components/military/pillage-history";
+import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { Tabs } from "@/ui/elements/tab";
-import { ID } from "@bibliothecadao/eternum";
+import { Entities } from "@/ui/modules/entity-details/entities";
+import { ArmyInfo, ID } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { Entities } from "./Entities";
 
 export const CombatEntityDetails = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);

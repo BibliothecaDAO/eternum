@@ -2,14 +2,17 @@ import {
   debounceAddDonkeysAndArmiesSubscription,
   debouncedAddMarketSubscription,
   debouncedAddToSubscription,
-  debouncedAddToSubscriptionOneKey
+  debouncedAddToSubscriptionOneKey,
 } from "@/dojo/debounced-queries";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { PlayerStructure, useEntities } from "@/hooks/helpers/use-entities";
 import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
 import { useFetchBlockchainData } from "@/hooks/store/use-blockchain-store";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { rewards } from "@/ui/components/navigation/config";
+import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
+import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { ADMIN_BANK_ENTITY_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -17,77 +20,80 @@ import { Leva } from "leva";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import { env } from "../../../env";
-import { rewards } from "../components/navigation/Config";
 import { IS_MOBILE } from "../config";
-import { LoadingOroborus } from "../modules/LoadingOroborus";
-import { LoadingScreen } from "../modules/LoadingScreen";
 // Lazy load components
 
 const SelectedArmy = lazy(() =>
-  import("../components/worldmap/armies/SelectedArmy").then((module) => ({ default: module.SelectedArmy })),
+  import("@/ui/components/worldmap/armies/selected-army").then((module) => ({ default: module.SelectedArmy })),
 );
 
 const ActionInfo = lazy(() =>
-  import("../components/worldmap/armies/ActionInfo").then((module) => ({ default: module.ActionInfo })),
+  import("@/ui/components/worldmap/armies/action-info").then((module) => ({ default: module.ActionInfo })),
 );
 
 const ActionInstructions = lazy(() =>
-  import("../components/worldmap/armies/ActionInstructions").then((module) => ({ default: module.ActionInstructions })),
+  import("@/ui/components/worldmap/armies/action-instructions").then((module) => ({
+    default: module.ActionInstructions,
+  })),
 );
 
 const ArmyInfoLabel = lazy(() =>
-  import("../components/worldmap/armies/ArmyInfoLabel").then((module) => ({ default: module.ArmyInfoLabel })),
+  import("@/ui/components/worldmap/armies/army-info-label").then((module) => ({ default: module.ArmyInfoLabel })),
 );
 
 const BattleInfoLabel = lazy(() =>
-  import("../components/worldmap/battles/BattleLabel").then((module) => ({ default: module.BattleInfoLabel })),
+  import("@/ui/components/worldmap/battles/battle-label").then((module) => ({ default: module.BattleInfoLabel })),
 );
 
 const BlankOverlayContainer = lazy(() =>
-  import("../containers/BlankOverlayContainer").then((module) => ({ default: module.BlankOverlayContainer })),
+  import("@/ui/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
 );
 const StructureInfoLabel = lazy(() =>
-  import("../components/worldmap/structures/StructureLabel").then((module) => ({ default: module.StructureInfoLabel })),
+  import("@/ui/components/worldmap/structures/structure-label").then((module) => ({
+    default: module.StructureInfoLabel,
+  })),
 );
 const BattleContainer = lazy(() =>
-  import("../containers/BattleContainer").then((module) => ({ default: module.BattleContainer })),
+  import("@/ui/containers/battle-container").then((module) => ({ default: module.BattleContainer })),
 );
-const TopCenterContainer = lazy(() => import("../containers/TopCenterContainer"));
+const TopCenterContainer = lazy(() => import("@/ui/containers/top-center-container"));
 const BottomRightContainer = lazy(() =>
-  import("../containers/BottomRightContainer").then((module) => ({ default: module.BottomRightContainer })),
+  import("@/ui/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
 );
-const LeftMiddleContainer = lazy(() => import("../containers/LeftMiddleContainer"));
-const RightMiddleContainer = lazy(() => import("../containers/RightMiddleContainer"));
-const TopLeftContainer = lazy(() => import("../containers/TopLeftContainer"));
-const Tooltip = lazy(() => import("../elements/Tooltip").then((module) => ({ default: module.Tooltip })));
+const LeftMiddleContainer = lazy(() => import("@/ui/containers/left-middle-container"));
+const RightMiddleContainer = lazy(() => import("@/ui/containers/right-middle-container"));
+const TopLeftContainer = lazy(() => import("@/ui/containers/top-left-container"));
+const Tooltip = lazy(() => import("@/ui/elements/tooltip").then((module) => ({ default: module.Tooltip })));
 const BattleView = lazy(() =>
-  import("../modules/military/battle-view/BattleView").then((module) => ({ default: module.BattleView })),
+  import("@/ui/modules/military/battle-view/battle-view").then((module) => ({ default: module.BattleView })),
 );
 const TopMiddleNavigation = lazy(() =>
-  import("../modules/navigation/TopNavigation").then((module) => ({ default: module.TopMiddleNavigation })),
+  import("@/ui/modules/navigation/top-navigation").then((module) => ({ default: module.TopMiddleNavigation })),
 );
 const BottomMiddleContainer = lazy(() =>
-  import("../containers/BottomMiddleContainer").then((module) => ({ default: module.BottomMiddleContainer })),
+  import("@/ui/containers/bottom-middle-container").then((module) => ({ default: module.BottomMiddleContainer })),
 );
 const LeftNavigationModule = lazy(() =>
-  import("../modules/navigation/LeftNavigationModule").then((module) => ({ default: module.LeftNavigationModule })),
+  import("@/ui/modules/navigation/left-navigation-module").then((module) => ({ default: module.LeftNavigationModule })),
 );
 const RightNavigationModule = lazy(() =>
-  import("../modules/navigation/RightNavigationModule").then((module) => ({ default: module.RightNavigationModule })),
+  import("@/ui/modules/navigation/right-navigation-module").then((module) => ({
+    default: module.RightNavigationModule,
+  })),
 );
 const TopLeftNavigation = lazy(() =>
-  import("../modules/navigation/TopLeftNavigation").then((module) => ({ default: module.TopLeftNavigation })),
+  import("@/ui/modules/navigation/top-left-navigation").then((module) => ({ default: module.TopLeftNavigation })),
 );
 const EventStream = lazy(() =>
-  import("../modules/stream/EventStream").then((module) => ({ default: module.EventStream })),
+  import("@/ui/modules/stream/event-stream").then((module) => ({ default: module.EventStream })),
 );
-const Onboarding = lazy(() => import("./Onboarding").then((module) => ({ default: module.Onboarding })));
+const Onboarding = lazy(() => import("./onboarding").then((module) => ({ default: module.Onboarding })));
 const OrientationOverlay = lazy(() =>
-  import("../components/overlays/OrientationOverlay").then((module) => ({ default: module.OrientationOverlay })),
+  import("@/ui/components/overlays/orientation-overlay").then((module) => ({ default: module.OrientationOverlay })),
 );
 
 const MiniMapNavigation = lazy(() =>
-  import("../modules/navigation/MiniMapNavigation").then((module) => ({ default: module.MiniMapNavigation })),
+  import("@/ui/modules/navigation/mini-map-navigation").then((module) => ({ default: module.MiniMapNavigation })),
 );
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {

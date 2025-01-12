@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
-import { Headline } from "@/ui/elements/Headline";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { Headline } from "@/ui/elements/headline";
+import { ResourceCost } from "@/ui/elements/resource-cost";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { CapacityConfigCategory, EternumGlobalConfig, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { useMemo } from "react";

@@ -1,22 +1,26 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { useIsStructureImmune, useStructureAtPosition, useStructureImmunityTimer } from "@/hooks/helpers/use-structures";
+import {
+  useIsStructureImmune,
+  useStructureAtPosition,
+  useStructureImmunityTimer,
+} from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { Position } from "@/types/position";
-import { ResourceExchange } from "@/ui/components/hyperstructures/ResourceExchange";
-import { ImmunityTimer } from "@/ui/components/worldmap/structures/StructureLabel";
-import { StructureListItem } from "@/ui/components/worldmap/structures/StructureListItem";
-import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
-import Button from "@/ui/elements/Button";
-import { Headline } from "@/ui/elements/Headline";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/Tabs";
-import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
+import { ResourceExchange } from "@/ui/components/hyperstructures/resource-exchange";
+import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
+import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
+import { ArmyCapacity } from "@/ui/elements/army-capacity";
+import Button from "@/ui/elements/button";
+import { Headline } from "@/ui/elements/headline";
+import { NumberInput } from "@/ui/elements/number-input";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/tabs";
+import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
 import { ArmyInfo, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";

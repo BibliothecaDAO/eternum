@@ -1,10 +1,10 @@
+import Button from "@/ui/elements/button";
+import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Draggable from "react-draggable";
-import Button from "./Button";
-import { HintModalButton } from "./HintModalButton";
 
 type FilterPopupProps = {
   children: React.ReactNode;

@@ -1,9 +1,9 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { Tabs } from "@/ui/elements/tab";
 import { ID, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { CoOwners } from "./CoOwners";
-import { Leaderboard } from "./Leaderboard";
+import { CoOwners } from "./co-owners";
+import { Leaderboard } from "./leaderboard";
 
 export const HyperstructureDetails = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID }) => {
   const dojo = useDojo();

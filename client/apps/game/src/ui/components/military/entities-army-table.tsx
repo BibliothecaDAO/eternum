@@ -1,17 +1,17 @@
 import { useArmiesByEntityOwner } from "@/hooks/helpers/use-armies";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import useUIStore from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/Button";
-import { Headline } from "@/ui/elements/Headline";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { BattleSimulation } from "@/ui/modules/simulation/BattleSimulation";
+import { HintSection } from "@/ui/components/hints/hint-modal";
+import { ArmyChip } from "@/ui/components/military/army-chip";
+import { battleSimulation, pillageSimulation } from "@/ui/components/navigation/config";
+import Button from "@/ui/elements/button";
+import { Headline } from "@/ui/elements/headline";
+import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { BattleSimulation } from "@/ui/modules/simulation/battle-simulation";
 import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { HintSection } from "../hints/HintModal";
-import { battleSimulation, pillageSimulation } from "../navigation/Config";
-import { ArmyChip } from "./ArmyChip";
 
 export const EntitiesArmyTable = () => {
   const { playerStructures } = useEntities();

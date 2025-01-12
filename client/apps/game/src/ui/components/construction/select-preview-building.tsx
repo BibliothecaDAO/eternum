@@ -1,18 +1,18 @@
 import { configManager } from "@/dojo/setup";
-import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
+import { DojoResult, useDojo } from "@/hooks/context/dojo-context";
 import { useGetRealm } from "@/hooks/helpers/use-realm";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { usePlayResourceSound } from "@/hooks/use-ui-sound";
 import { ResourceMiningTypes } from "@/types";
-import { HintSection } from "@/ui/components/hints/HintModal";
+import { HintSection } from "@/ui/components/hints/hint-modal";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { Headline } from "@/ui/elements/Headline";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { Headline } from "@/ui/elements/headline";
+import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import { ResourceCost } from "@/ui/elements/resource-cost";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs } from "@/ui/elements/tab";
-import { unpackResources } from "@/ui/utils/packedData";
+import { unpackResources } from "@/ui/utils/packed-data";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import {
   ResourceIdToMiningType,

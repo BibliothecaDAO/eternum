@@ -1,8 +1,8 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import TextInput from "@/ui/elements/text-input";
 import { ContractAddress, Player } from "@bibliothecadao/eternum";
 import React, { useMemo, useRef, useState } from "react";
 import { displayAddress, toHexString } from "../utils/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./Select";
-import TextInput from "./TextInput";
 
 interface SelectAddressProps {
   initialSelectedAddress: ContractAddress;

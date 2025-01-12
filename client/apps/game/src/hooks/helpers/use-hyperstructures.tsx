@@ -1,13 +1,13 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { divideByPrecision, toHexString, toInteger } from "@/ui/utils/utils";
 import {
-  ClientComponents,
-  ContractAddress,
-  DUMMY_HYPERSTRUCTURE_ENTITY_ID,
-  ID,
-  ResourcesIds,
+    ClientComponents,
+    ContractAddress,
+    DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+    ID,
+    ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";

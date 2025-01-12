@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { ResourceChip } from "@/ui/components/resources/ResourceChip";
+import { ResourceChip } from "@/ui/components/resources/resource-chip";
 import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";

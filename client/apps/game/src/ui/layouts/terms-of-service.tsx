@@ -1,6 +1,6 @@
 import useUIStore from "@/hooks/store/use-ui-store";
+import Button from "@/ui/elements/button";
 import { useMemo, useRef, useState } from "react";
-import Button from "../elements/Button";
 
 export const TermsOfService = () => {
   const setHasAcceptedToS = useUIStore((state) => state.setHasAcceptedToS);

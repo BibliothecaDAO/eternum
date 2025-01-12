@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useArmiesByEntityOwnerWithPositionAndQuantity } from "@/hooks/helpers/use-armies";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useGetMyOffers } from "@/hooks/helpers/use-trade";

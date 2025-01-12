@@ -1,7 +1,7 @@
 import { debouncedAddToSubscription } from "@/dojo/debounced-queries";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useResourceBalance, useResourcesUtils } from "@/hooks/helpers/use-resources";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";

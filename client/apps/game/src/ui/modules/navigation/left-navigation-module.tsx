@@ -1,39 +1,39 @@
-import { usePlayerArrivalsNotifications } from "@/hooks/helpers/use-resource-arrivals";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useQuery } from "@/hooks/helpers/use-query";
-import useUIStore from "@/hooks/store/use-ui-store";
+import { usePlayerArrivalsNotifications } from "@/hooks/helpers/use-resource-arrivals";
 import { useModalStore } from "@/hooks/store/use-modal-store";
-import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
-import { MarketModal } from "@/ui/components/trading/MarketModal";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { EntityResourceTable } from "@/ui/components/resources/entity-resource-table";
+import { MarketModal } from "@/ui/components/trading/market-modal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
-import { BaseContainer } from "@/ui/containers/BaseContainer";
-import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
+import { BaseContainer } from "@/ui/containers/base-container";
+import CircleButton from "@/ui/elements/circle-button";
+import { KeyBoardKey } from "@/ui/elements/keyboard-key";
+import { Chat } from "@/ui/modules/chat/chat";
 import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
-import { construction, military, trade, worldStructures } from "../../components/navigation/Config";
-import CircleButton from "../../elements/CircleButton";
-import { Chat } from "../chat/Chat";
+import { construction, military, trade, worldStructures } from "../../components/navigation/config";
 
 const EntityDetails = lazy(() =>
-  import("../entity-details/EntityDetails").then((module) => ({ default: module.EntityDetails })),
+  import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
 );
-const Military = lazy(() => import("../military/Military").then((module) => ({ default: module.Military })));
+const Military = lazy(() => import("@/ui/modules/military/military").then((module) => ({ default: module.Military })));
 const SelectPreviewBuildingMenu = lazy(() =>
-  import("../../components/construction/SelectPreviewBuilding").then((module) => ({
+  import("@/ui/components/construction/select-preview-building").then((module) => ({
     default: module.SelectPreviewBuildingMenu,
   })),
 );
 const StructureConstructionMenu = lazy(() =>
-  import("../../components/structures/construction/StructureConstructionMenu").then((module) => ({
+  import("@/ui/components/structures/construction/structure-construction-menu").then((module) => ({
     default: module.StructureConstructionMenu,
   })),
 );
 const WorldStructuresMenu = lazy(() =>
-  import("../world-structures/WorldStructuresMenu").then((module) => ({ default: module.WorldStructuresMenu })),
+  import("@/ui/modules/world-structures/world-structures-menu").then((module) => ({ default: module.WorldStructuresMenu })),
 );
 
 const AllResourceArrivals = lazy(() =>
-  import("../../components/trading/ResourceArrivals").then((module) => ({ default: module.AllResourceArrivals })),
+  import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
 );
 
 export enum LeftView {

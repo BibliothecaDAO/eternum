@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";

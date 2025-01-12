@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import {
   useGetHyperstructuresWithContributionsFromPlayer,
   useGetUnregisteredContributions,
@@ -6,10 +6,10 @@ import {
 import { useGetPlayerEpochs, useGetUnregisteredEpochs } from "@/hooks/helpers/use-hyperstructures";
 import { usePrizePool } from "@/hooks/helpers/use-rewards";
 import useUIStore from "@/hooks/store/use-ui-store";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { rewards } from "@/ui/components/navigation/Config";
-import { OSWindow } from "@/ui/components/navigation/OSWindow";
-import Button from "@/ui/elements/Button";
+import { HintSection } from "@/ui/components/hints/hint-modal";
+import { rewards } from "@/ui/components/navigation/config";
+import { OSWindow } from "@/ui/components/navigation/os-window";
+import Button from "@/ui/elements/button";
 import { formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";

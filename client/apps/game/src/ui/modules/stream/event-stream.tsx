@@ -1,13 +1,13 @@
 import { world } from "@/dojo/world";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
-import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
+import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
+import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { Component, defineComponentSystem, Entity, getComponentValue, World } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useState } from "react";
-import { MessageIcon } from "../social/PlayerId";
+import { MessageIcon } from "../social/player-id";
 import { EVENT_NOTIF_STORAGE_KEY, EVENT_STREAM_SIZE } from "./constants";
 import { eventDetails } from "./event-details";
 import { EventData, EventType } from "./types";

@@ -1,7 +1,7 @@
-import { useDojo } from "@/hooks/context/DojoContext";
-import AddLiquidity from "@/ui/components/bank/AddLiquidity";
-import { LiquidityTable } from "@/ui/components/bank/LiquidityTable";
-import { ResourceSwap } from "@/ui/components/bank/Swap";
+import { useDojo } from "@/hooks/context/dojo-context";
+import AddLiquidity from "@/ui/components/bank/add-liquidity";
+import { LiquidityTable } from "@/ui/components/bank/liquidity-table";
+import { ResourceSwap } from "@/ui/components/bank/swap";
 import { Tabs } from "@/ui/elements/tab";
 import { ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";

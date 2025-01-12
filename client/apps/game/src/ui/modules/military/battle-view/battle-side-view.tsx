@@ -1,14 +1,14 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import Button from "@/ui/elements/Button";
+import Button from "@/ui/elements/button";
+import { BattleHistory } from "@/ui/modules/military/battle-view/battle-history";
+import { EntityAvatar } from "@/ui/modules/military/battle-view/entity-avatar";
+import { TroopRow } from "@/ui/modules/military/battle-view/troops";
 import { ArmyInfo, BattleManager, BattleSide, ClientComponents, ID, Structure } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
-import { BattleHistory } from "./BattleHistory";
-import { EntityAvatar } from "./EntityAvatar";
-import { TroopRow } from "./Troops";
 
 export const BattleSideView = ({
   battleManager,

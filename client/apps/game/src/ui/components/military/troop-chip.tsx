@@ -1,4 +1,4 @@
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ClientComponents } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";

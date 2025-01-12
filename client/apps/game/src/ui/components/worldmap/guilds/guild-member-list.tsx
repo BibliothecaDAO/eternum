@@ -1,7 +1,7 @@
-import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import { SortButton, SortInterface } from "@/ui/elements/SortButton";
-import { SortPanel } from "@/ui/elements/SortPanel";
+import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
+import { SortButton, SortInterface } from "@/ui/elements/sort-button";
+import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/eternum";
 import clsx from "clsx";

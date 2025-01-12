@@ -1,12 +1,12 @@
 import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
+import { Tab } from "@/ui/elements/tab/tab";
+import { TabList } from "@/ui/elements/tab/tab-list";
+import { TabPanel } from "@/ui/elements/tab/tab-panel";
+import { TabPanels } from "@/ui/elements/tab/tab-panels";
+import { TabProvider } from "@/ui/elements/tab/tab-provider";
 import { Tab as HeadlessTab } from "@headlessui/react";
 import clsx from "clsx";
 import type { ReactNode } from "react";
-import { TabList } from "./TabList";
-import { TabPanel } from "./TabPanel";
-import { TabPanels } from "./TabPanels";
-import { TabProvider } from "./TabProvider";
-import { Tab } from "./tab";
 
 export const VARIANTS: any = {
   default: {

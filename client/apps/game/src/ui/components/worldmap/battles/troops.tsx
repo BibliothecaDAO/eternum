@@ -1,5 +1,5 @@
-import { NumberInput } from "@/ui/elements/NumberInput";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { NumberInput } from "@/ui/elements/number-input";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 

@@ -1,20 +1,20 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useRealm } from "@/hooks/helpers/use-realm";
 import { useTravel } from "@/hooks/helpers/use-travel";
 import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
-import Button from "@/ui/elements/Button";
-import { Checkbox } from "@/ui/elements/Checkbox";
-import { Headline } from "@/ui/elements/Headline";
-import TextInput from "@/ui/elements/TextInput";
+import { TravelInfo } from "@/ui/components/resources/travel-info";
+import { ToggleComponent } from "@/ui/components/toggle/toggle-component";
+import { SelectEntityFromList } from "@/ui/components/trading/select-entity-from-list";
+import { SelectResources } from "@/ui/components/trading/select-resources";
+import Button from "@/ui/elements/button";
+import { Checkbox } from "@/ui/elements/checkbox";
+import { Headline } from "@/ui/elements/headline";
+import TextInput from "@/ui/elements/text-input";
 import { multiplyByPrecision, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { DONKEY_ENTITY_TYPE, ID } from "@bibliothecadao/eternum";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
-import { TravelInfo } from "../resources/TravelInfo";
-import { ToggleComponent } from "../toggle/ToggleComponent";
-import { SelectEntityFromList } from "./SelectEntityFromList";
-import { SelectResources } from "./SelectResources";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,

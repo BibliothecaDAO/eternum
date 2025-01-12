@@ -1,13 +1,13 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
-import Button from "@/ui/elements/Button";
-import TextInput from "@/ui/elements/TextInput";
+import { PlayerCustom, PlayerList } from "@/ui/components/worldmap/players/player-list";
+import Button from "@/ui/elements/button";
+import TextInput from "@/ui/elements/text-input";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks, toHexString } from "@/ui/utils/utils";
 import { ContractAddress, Player } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { KeyboardEvent, useMemo, useState } from "react";
-import { PlayerCustom, PlayerList } from "./PlayerList";
 
 export const PlayersPanel = ({
   players,

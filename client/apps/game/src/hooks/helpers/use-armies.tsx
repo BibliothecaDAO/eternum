@@ -1,25 +1,25 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { type PlayerStructure } from "@/hooks/helpers/use-entities";
 import {
-  ArmyInfo,
-  CapacityConfigCategory,
-  ContractAddress,
-  EternumGlobalConfig,
-  getArmyTotalCapacity,
-  type ClientComponents,
-  type ID,
-  type Position,
+    ArmyInfo,
+    CapacityConfigCategory,
+    ContractAddress,
+    EternumGlobalConfig,
+    getArmyTotalCapacity,
+    type ClientComponents,
+    type ID,
+    type Position,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
-  Has,
-  HasValue,
-  Not,
-  NotValue,
-  getComponentValue,
-  runQuery,
-  type Component,
-  type Entity,
+    Has,
+    HasValue,
+    Not,
+    NotValue,
+    getComponentValue,
+    runQuery,
+    type Component,
+    type Entity,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";

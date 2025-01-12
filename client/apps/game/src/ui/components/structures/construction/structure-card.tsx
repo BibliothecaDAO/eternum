@@ -1,9 +1,9 @@
 import useUIStore from "@/hooks/store/use-ui-store";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
-import { STRUCTURE_IMAGE_PATHS } from "./StructureConstructionMenu";
+import { STRUCTURE_IMAGE_PATHS } from "./structure-construction-menu";
 
 export const StructureCard = ({
   structureId,

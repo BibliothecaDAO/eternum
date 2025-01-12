@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { getArmiesByPosition } from "@/hooks/helpers/use-armies";
 import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/use-contributions";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
@@ -6,15 +6,15 @@ import { useFragmentMines } from "@/hooks/helpers/use-fragment-mines";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/use-hyperstructures";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
-import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
-import { EntityList } from "@/ui/components/list/EntityList";
-import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
-import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
-import { Checkbox } from "@/ui/elements/Checkbox";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { FragmentMinePanel } from "@/ui/components/fragmentMines/fragment-mine-panel";
+import { HintSection } from "@/ui/components/hints/hint-modal";
+import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/hyperstructure-panel";
+import { EntityList } from "@/ui/components/list/entity-list";
+import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
+import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
+import { Checkbox } from "@/ui/elements/checkbox";
+import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import {
   BattleSide,

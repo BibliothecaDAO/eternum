@@ -1,5 +1,5 @@
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import TwitterShareButton from "@/ui/elements/TwitterShareButton";
+import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ArmyInfo, BattleSide, ClientComponents, Structure } from "@bibliothecadao/eternum";

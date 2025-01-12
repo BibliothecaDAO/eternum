@@ -1,14 +1,14 @@
 import useUIStore from "@/hooks/store/use-ui-store";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
-import Button from "@/ui/elements/Button";
-import CircleButton from "@/ui/elements/CircleButton";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import Button from "@/ui/elements/button";
+import CircleButton from "@/ui/elements/circle-button";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
-import { BaseContainer } from "../../containers/BaseContainer";
+import { BaseContainer } from "../../containers/base-container";
 
 const EntityResourceTable = lazy(() =>
-  import("../../components/resources/EntityResourceTable").then((module) => ({ default: module.EntityResourceTable })),
+  import("@/ui/components/resources/entity-resource-table").then((module) => ({ default: module.EntityResourceTable })),
 );
 
 export enum RightView {

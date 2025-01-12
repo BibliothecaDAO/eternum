@@ -1,8 +1,8 @@
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { EntityArmyList } from "@/ui/components/military/ArmyList";
-import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
-import { UserBattles } from "@/ui/components/military/UserBattles";
+import { EntityArmyList } from "@/ui/components/military/army-list";
+import { EntitiesArmyTable } from "@/ui/components/military/entities-army-table";
+import { UserBattles } from "@/ui/components/military/user-battles";
 import { Tabs } from "@/ui/elements/tab";
 import { ID } from "@bibliothecadao/eternum";
 import { useState } from "react";

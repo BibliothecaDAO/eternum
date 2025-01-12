@@ -1,14 +1,15 @@
 
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useRealm } from "@/hooks/helpers/use-realm";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
 import { useTravel } from "@/hooks/helpers/use-travel";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
-import Button from "@/ui/elements/Button";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
+import Button from "@/ui/elements/button";
+import { NumberInput } from "@/ui/elements/number-input";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
   calculateDonkeysNeeded,
   currencyFormat,
@@ -29,7 +30,6 @@ import {
 } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ConfirmationPopup } from "../bank/ConfirmationPopup";
 
 export const MarketResource = memo(
   ({

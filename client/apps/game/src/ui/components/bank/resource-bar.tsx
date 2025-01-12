@@ -1,9 +1,9 @@
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import TextInput from "@/ui/elements/TextInput";
+import { HintSection } from "@/ui/components/hints/hint-modal";
+import { NumberInput } from "@/ui/elements/number-input";
+import { ResourceCost } from "@/ui/elements/resource-cost";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import TextInput from "@/ui/elements/text-input";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
 import { memo, useEffect, useRef, useState } from "react";

@@ -2,12 +2,12 @@ import { BattleInfo } from "@/hooks/helpers/battles/use-battles";
 import { useEnemyArmiesByPosition } from "@/hooks/helpers/use-armies";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { Position } from "@/types/position";
-import { StructureCard } from "@/ui/components/structures/worldmap/StructureCard";
-import { Checkbox } from "@/ui/elements/Checkbox";
+import { StructureCard } from "@/ui/components/structures/worldmap/structure-card";
+import { Checkbox } from "@/ui/elements/checkbox";
+import { Battles } from "@/ui/modules/entity-details/battles";
+import { EnemyArmies } from "@/ui/modules/entity-details/enemy-armies";
 import { ArmyInfo } from "@bibliothecadao/eternum";
 import { useState } from "react";
-import { Battles } from "./Battles";
-import { EnemyArmies } from "./EnemyArmies";
 
 export const Entities = ({
   position,

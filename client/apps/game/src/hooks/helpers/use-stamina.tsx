@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { ID, StaminaManager } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

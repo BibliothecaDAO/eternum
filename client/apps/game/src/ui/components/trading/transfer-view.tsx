@@ -1,12 +1,12 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { PlayerStructure, RealmWithPosition, useEntities, useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
+import { TransferBetweenEntities } from "@/ui/components/trading/transfer-between-entities";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { TransferBetweenEntities } from "./TransferBetweenEntities";
 
 export const TransferView = () => {
   const {

@@ -2,16 +2,17 @@ import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
 import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
 import { ReactComponent as Castle } from "@/assets/icons/castle.svg";
 import { ReactComponent as Flag } from "@/assets/icons/flag.svg";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useModalStore } from "@/hooks/store/use-modal-store";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { ModalContainer } from "@/ui/components/ModalContainer";
-import { PillageHistory } from "@/ui/components/military/PillageHistory";
-import Button from "@/ui/elements/Button";
-import { Headline } from "@/ui/elements/Headline";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { PillageHistory } from "@/ui/components/military/pillage-history";
+import { ModalContainer } from "@/ui/components/modal-container";
+import Button from "@/ui/elements/button";
+import { Headline } from "@/ui/elements/headline";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
   ArmyInfo,
@@ -28,7 +29,6 @@ import {
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { LeftView } from "../../navigation/LeftNavigationModule";
 import { getChancesOfSuccess, getMaxResourceAmountStolen, getTroopLossOnRaid } from "./utils";
 
 enum Loading {

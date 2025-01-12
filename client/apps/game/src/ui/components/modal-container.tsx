@@ -1,7 +1,7 @@
 import { useModalStore } from "@/hooks/store/use-modal-store";
+import Button from "@/ui/elements/button";
 import { X } from "lucide-react";
 import { useCallback, useEffect } from "react";
-import Button from "../elements/Button";
 
 interface ModalContainerProps {
   children: React.ReactNode;

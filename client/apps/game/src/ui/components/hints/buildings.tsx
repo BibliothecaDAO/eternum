@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { Headline } from "@/ui/elements/Headline";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { Headline } from "@/ui/elements/headline";
+import { ResourceCost } from "@/ui/elements/resource-cost";
 import { BuildingEnumToString, BuildingType } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 

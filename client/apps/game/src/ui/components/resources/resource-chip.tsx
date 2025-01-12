@@ -1,10 +1,10 @@
 import { configManager } from "@/dojo/setup";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import useUIStore from "@/hooks/store/use-ui-store";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { currencyFormat, currencyIntlFormat, formatTime, gramToKg, TimeFormat } from "@/ui/utils/utils";
 import { findResourceById, getIconResourceId, ID, TickIds } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, currencyIntlFormat, formatTime, gramToKg, TimeFormat } from "../../utils/utils";
 import { RealmTransfer } from "./realm-transfer";
 
 export const ResourceChip = ({

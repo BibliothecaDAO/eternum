@@ -3,17 +3,17 @@ import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
 import { ReactComponent as LordsIcon } from "@/assets/icons/resources/LordsSimple.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { usePlayerRealms } from "@/hooks/helpers/use-realm";
 import useUIStore from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/Button";
+import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview/realm/settle-realm-component";
+import Button from "@/ui/elements/button";
+import { TermsOfService } from "@/ui/layouts/terms-of-service";
+import { Controller } from "@/ui/modules/controller/controller";
+import { SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
-import { SeasonPassRealm, getUnusedSeasonPasses } from "../components/cityview/realm/SettleRealmComponent";
-import { Controller } from "../modules/controller/Controller";
-import { SettleRealm, StepOne } from "../modules/onboarding/Steps";
-import { TermsOfService } from "./TermsOfService";
 
 interface OnboardingOverlayProps {
   controller?: boolean;
@@ -113,7 +113,10 @@ export const StepContainer = ({
             <div className="w-full text-center">
               <div className="mx-auto flex mb-4 sm:mb-4 lg:mb-8 xl:mb-8 2xl:mb-10">
                 {loading ? (
-                  <img src="/images/logos/eternum-loader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
+                  <img
+                    src="/images/logos/eternum-loader.png"
+                    className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
+                  />
                 ) : (
                   <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-64 xl:w-64 stroke-current mx-auto" />
                 )}

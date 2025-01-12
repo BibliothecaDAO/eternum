@@ -1,4 +1,4 @@
-import { InventoryResources } from "@/ui/components/resources/InventoryResources";
+import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { ID } from "@bibliothecadao/eternum";
 
 export const LockedResources = ({

@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";

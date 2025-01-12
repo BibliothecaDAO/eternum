@@ -1,18 +1,18 @@
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { getUserArmyInBattle } from "@/hooks/helpers/use-armies";
 import { useGetHyperstructureProgress } from "@/hooks/helpers/use-hyperstructures";
 import { useIsStructureImmune } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
+import { TroopDisplay } from "@/ui/components/military/troop-chip";
+import { InventoryResources } from "@/ui/components/resources/inventory-resources";
+import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import { ArmyInfo, BattleManager, Structure, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
-import { TroopDisplay } from "../../military/TroopChip";
-import { InventoryResources } from "../../resources/InventoryResources";
-import { RealmResourcesIO } from "../../resources/RealmResourcesIO";
 
 type StructureListItemProps = {
   structure: Structure;

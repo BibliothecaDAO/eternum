@@ -1,5 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ClientComponents, ContractAddress, ID, Resource } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";

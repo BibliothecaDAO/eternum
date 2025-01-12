@@ -1,15 +1,15 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { useIsResourcesLocked, useStructures } from "@/hooks/helpers/use-structures";
 import { useTravel } from "@/hooks/helpers/use-travel";
 import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
-import { ConfirmationPopup } from "@/ui/components/bank/ConfirmationPopup";
-import { ResourceBar } from "@/ui/components/bank/ResourceBar";
-import { TravelInfo } from "@/ui/components/resources/TravelInfo";
-import Button from "@/ui/elements/Button";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
+import { ResourceBar } from "@/ui/components/bank/resource-bar";
+import { TravelInfo } from "@/ui/components/resources/travel-info";
+import Button from "@/ui/elements/button";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   ContractAddress,

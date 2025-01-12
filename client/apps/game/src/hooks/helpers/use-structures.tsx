@@ -1,17 +1,17 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { currentTickCount } from "@/ui/utils/utils";
 import {
-  BattleManager,
-  ContractAddress,
-  ID,
-  Position,
-  Structure,
-  StructureType,
-  TickIds,
+    BattleManager,
+    ContractAddress,
+    ID,
+    Position,
+    Structure,
+    StructureType,
+    TickIds,
 } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

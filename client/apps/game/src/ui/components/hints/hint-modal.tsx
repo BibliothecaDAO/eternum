@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { ModalContainer } from "../ModalContainer";
-import { Buildings } from "./Buildings";
-import { Combat } from "./Combat";
-import { GettingStarted } from "./GettingStarted";
-import { Guilds } from "./Guilds";
-import { Points } from "./Points";
-import { Realm } from "./Realm";
-import { Resources } from "./Resources";
-import { TheMap } from "./TheMap";
-import { TheWorld } from "./TheWorld";
-import { Trading } from "./Trading";
-import { Transfers } from "./Transfers";
-import { WorldStructures } from "./WorldStructures";
+import { ModalContainer } from "../modal-container";
+import { Buildings } from "./buildings";
+import { Combat } from "./combat";
+import { GettingStarted } from "./getting-started";
+import { Guilds } from "./guilds";
+import { Points } from "./points";
+import { Realm } from "./realm";
+import { Resources } from "./resources";
+import { TheMap } from "./the-map";
+import { TheWorld } from "./the-world";
+import { Trading } from "./trading";
+import { Transfers } from "./transfers";
+import { WorldStructures } from "./world-structures";
 
 export enum HintSection {
   TheWorld = "The World",

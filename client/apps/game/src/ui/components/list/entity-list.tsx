@@ -1,4 +1,4 @@
-import Button from "@/ui/elements/Button";
+import Button from "@/ui/elements/button";
 import { DUMMY_HYPERSTRUCTURE_ENTITY_ID, ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useEffect, useState } from "react";

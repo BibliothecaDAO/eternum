@@ -1,8 +1,8 @@
+import { useDojo } from "@/hooks/context/dojo-context";
 import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useDojo } from "@/hooks/context/DojoContext";
 
 export const useGetBanks = (onlyMine?: boolean) => {
   const {

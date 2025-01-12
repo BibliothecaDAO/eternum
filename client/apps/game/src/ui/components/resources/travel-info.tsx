@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { GRAMS_PER_KG } from "@/ui/constants";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
   calculateDonkeysNeeded,
   currencyFormat,

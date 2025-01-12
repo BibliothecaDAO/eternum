@@ -1,18 +1,18 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { ResourceMiningTypes } from "@/types";
-import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
-import Button from "@/ui/elements/Button";
+import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/select-preview-building";
+import Button from "@/ui/elements/button";
+import { RealmDetails } from "@/ui/modules/entity-details/realm/realm-details";
+import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
 import { ResourceIdToMiningType, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { BUILDINGS_CENTER, BuildingType, ID, ResourcesIds, StructureType, TileManager } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { LeftView } from "../navigation/LeftNavigationModule";
-import { RealmDetails } from "./realm/RealmDetails";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();

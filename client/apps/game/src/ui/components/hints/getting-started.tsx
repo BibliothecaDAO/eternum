@@ -1,5 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { Headline } from "@/ui/elements/Headline";
+import { Headline } from "@/ui/elements/headline";
 import { TickIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 

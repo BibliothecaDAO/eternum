@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { usePrizePool } from "@/hooks/helpers/use-rewards";
 import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";

@@ -1,7 +1,7 @@
 import { useSeasonStart } from "@/hooks/use-season-start";
+import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { useEffect, useState } from "react";
 import "../../index.css";
-import { OnboardingContainer, StepContainer } from "../layouts/Onboarding";
 
 export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) => {
   const statements = [

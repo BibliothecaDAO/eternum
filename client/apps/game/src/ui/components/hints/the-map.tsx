@@ -1,5 +1,5 @@
-import { Headline } from "@/ui/elements/Headline";
-import { ExplorationTable } from "./ExplorationTable";
+import { ExplorationTable } from "@/ui/components/hints/exploration-table";
+import { Headline } from "@/ui/elements/headline";
 import { tableOfContents } from "./utils";
 
 export const TheMap = () => {

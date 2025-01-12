@@ -1,7 +1,7 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import Button from "@/ui/elements/Button";
-import TextInput from "@/ui/elements/TextInput";
+import Button from "@/ui/elements/button";
+import TextInput from "@/ui/elements/text-input";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { useState } from "react";
 

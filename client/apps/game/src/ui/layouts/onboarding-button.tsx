@@ -1,4 +1,4 @@
-import Button from "@/ui/elements/Button";
+import Button from "@/ui/elements/button";
 import { ReactNode } from "react";
 
 export const OnboardingButton = ({

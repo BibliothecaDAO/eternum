@@ -1,5 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ResourceCost, ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";

@@ -1,20 +1,20 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useHyperstructureData, useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
 import useUIStore from "@/hooks/store/use-ui-store";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { social } from "@/ui/components/navigation/Config";
-import { ExpandableOSWindow } from "@/ui/components/navigation/OSWindow";
-import { GuildMembers } from "@/ui/components/worldmap/guilds/GuildMembers";
-import { Guilds } from "@/ui/components/worldmap/guilds/Guilds";
-import { PlayersPanel } from "@/ui/components/worldmap/players/PlayersPanel";
-import Button from "@/ui/elements/Button";
+import { HintSection } from "@/ui/components/hints/hint-modal";
+import { social } from "@/ui/components/navigation/config";
+import { ExpandableOSWindow } from "@/ui/components/navigation/os-window";
+import { GuildMembers } from "@/ui/components/worldmap/guilds/guild-members";
+import { Guilds } from "@/ui/components/worldmap/guilds/guilds";
+import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
+import Button from "@/ui/elements/button";
 import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
-import { EndSeasonButton } from "./EndSeasonButton";
-import { PlayerId } from "./PlayerId";
+import { EndSeasonButton } from "./end-season-button";
+import { PlayerId } from "./player-id";
 
 export const Social = ({ getPlayers }: { getPlayers: () => Player[] }) => {
   const {

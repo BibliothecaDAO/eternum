@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";

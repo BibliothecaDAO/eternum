@@ -1,5 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 
 export const ExplorationTable = () => {

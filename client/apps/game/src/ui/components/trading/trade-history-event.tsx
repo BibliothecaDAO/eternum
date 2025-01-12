@@ -1,8 +1,8 @@
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { Resource, ResourcesIds } from "@bibliothecadao/eternum";
-import { TradeEvent } from "./MarketTradingHistory";
+import { TradeEvent } from "./market-trading-history";
 
 export enum EventType {
   SWAP = "AMM Swap",

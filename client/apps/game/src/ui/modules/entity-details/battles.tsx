@@ -1,5 +1,5 @@
 import { BattleInfo } from "@/hooks/helpers/battles/use-battles";
-import { BattleListItem } from "@/ui/components/battles/BattleListItem";
+import { BattleListItem } from "@/ui/components/battles/battle-list-item";
 import { ArmyInfo } from "@bibliothecadao/eternum";
 
 export const Battles = ({ ownArmy, battles }: { ownArmy: ArmyInfo | undefined; battles: BattleInfo[] }) => {

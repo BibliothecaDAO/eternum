@@ -1,14 +1,14 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { BattleInfo } from "@/hooks/helpers/battles/use-battles";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
-import { TroopDisplay } from "@/ui/components/military/TroopChip";
-import { InventoryResources } from "@/ui/components/resources/InventoryResources";
+import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
+import { TroopDisplay } from "@/ui/components/military/troop-chip";
+import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { ArmyInfo, BattleManager } from "@bibliothecadao/eternum";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";

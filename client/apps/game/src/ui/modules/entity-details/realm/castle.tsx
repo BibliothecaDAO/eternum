@@ -1,12 +1,12 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useGetRealm } from "@/hooks/helpers/use-realm";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
-import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
-import Button from "@/ui/elements/Button";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
+import Button from "@/ui/elements/button";
+import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, toHexString } from "@/ui/utils/utils";
 import { LEVEL_DESCRIPTIONS, REALM_MAX_LEVEL, RealmLevels, StructureType } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";

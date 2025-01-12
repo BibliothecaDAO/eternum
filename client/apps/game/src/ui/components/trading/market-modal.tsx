@@ -4,7 +4,7 @@ import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useBattlesByPosition } from "@/hooks/helpers/battles/use-battles";
 import { useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
 import { useGetBanks } from "@/hooks/helpers/use-banks";
@@ -14,38 +14,46 @@ import { useSetMarket } from "@/hooks/helpers/use-trade";
 import useMarketStore from "@/hooks/store/use-market-store";
 import { useModalStore } from "@/hooks/store/use-modal-store";
 import useUIStore from "@/hooks/store/use-ui-store";
+import { HintModal } from "@/ui/components/hints/hint-modal";
+import { TroopDisplay } from "@/ui/components/military/troop-chip";
+import { ModalContainer } from "@/ui/components/modal-container";
 import { BuildingThumbs } from "@/ui/config";
-import CircleButton from "@/ui/elements/CircleButton";
-import { LoadingAnimation } from "@/ui/elements/LoadingAnimation";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import CircleButton from "@/ui/elements/circle-button";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { Tabs } from "@/ui/elements/tab";
-import { formatTimeDifference } from "@/ui/modules/military/battle-view/BattleProgress";
+import { formatTimeDifference } from "@/ui/modules/military/battle-view/battle-progress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { BattleManager, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
-import { ModalContainer } from "../ModalContainer";
-import { HintModal } from "../hints/HintModal";
-import { TroopDisplay } from "../military/TroopChip";
 
 const MarketResourceSidebar = lazy(() =>
-  import("./MarketResourceSideBar").then((module) => ({ default: module.MarketResourceSidebar })),
+  import("@/ui/components/trading/market-resource-sidebar").then((module) => ({
+    default: module.MarketResourceSidebar,
+  })),
 );
 
 const MarketOrderPanel = lazy(() =>
-  import("./MarketOrderPanel").then((module) => ({ default: module.MarketOrderPanel })),
+  import("./market-order-panel").then((module) => ({ default: module.MarketOrderPanel })),
 );
 
-const BankPanel = lazy(() => import("../bank/BankList").then((module) => ({ default: module.BankPanel })));
+const BankPanel = lazy(() =>
+  import("@/ui/components/bank/bank-list").then((module) => ({ default: module.BankPanel })),
+);
 
 const MarketTradingHistory = lazy(() =>
-  import("./MarketTradingHistory").then((module) => ({ default: module.MarketTradingHistory })),
+  import("@/ui/components/trading/market-trading-history").then((module) => ({ default: module.MarketTradingHistory })),
 );
 
-const RealmProduction = lazy(() => import("./RealmProduction").then((module) => ({ default: module.RealmProduction })));
+const RealmProduction = lazy(() =>
+  import("@/ui/components/trading/realm-production").then((module) => ({ default: module.RealmProduction })),
+);
 
-const TransferView = lazy(() => import("./TransferView").then((module) => ({ default: module.TransferView })));
+const TransferView = lazy(() =>
+  import("@/ui/components/trading/transfer-view").then((module) => ({ default: module.TransferView })),
+);
 
 export const MarketModal = () => {
   const dojo = useDojo();

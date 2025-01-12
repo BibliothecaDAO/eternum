@@ -1,16 +1,16 @@
 import { useAccountStore } from "@/hooks/context/account-store";
-import { useDojo } from "@/hooks/context/DojoContext";
-import useUIStore from "@/hooks/store/use-ui-store";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useModalStore } from "@/hooks/store/use-modal-store";
-import { HintModal } from "@/ui/components/hints/HintModal";
-import { rewards, settings } from "@/ui/components/navigation/Config";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { HintModal } from "@/ui/components/hints/hint-modal";
+import { rewards, settings } from "@/ui/components/navigation/config";
 import { BuildingThumbs } from "@/ui/config";
-import CircleButton from "@/ui/elements/CircleButton";
+import CircleButton from "@/ui/elements/circle-button";
+import { Controller } from "@/ui/modules/controller/controller";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
-import { social } from "../../components/navigation/Config";
-import { Controller } from "../controller/Controller";
+import { social } from "../../components/navigation/config";
 
 export const SecondaryMenuItems = () => {
   const {

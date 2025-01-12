@@ -1,5 +1,5 @@
 import { useEntities } from "@/hooks/helpers/use-entities";
-import { LiquidityResourceRow } from "@/ui/components/bank/LiquidityResourceRow";
+import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
 import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useState } from "react";
 

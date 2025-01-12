@@ -19,7 +19,7 @@ import { SceneName } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import {
   ArmyMovementManager,

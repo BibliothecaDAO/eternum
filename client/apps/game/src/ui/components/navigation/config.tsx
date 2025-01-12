@@ -1,4 +1,4 @@
-import { HintSection } from "../hints/HintModal";
+import { HintSection } from "../hints/hint-modal";
 
 type OSWindows =
   | "World Structures"

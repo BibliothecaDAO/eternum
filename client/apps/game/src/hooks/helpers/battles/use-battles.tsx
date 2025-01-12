@@ -1,17 +1,17 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { BattleManager, ClientComponents, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import {
-  Component,
-  ComponentValue,
-  Components,
-  Entity,
-  Has,
-  HasValue,
-  NotValue,
-  getComponentValue,
-  runQuery,
+    Component,
+    ComponentValue,
+    Components,
+    Entity,
+    Has,
+    HasValue,
+    NotValue,
+    getComponentValue,
+    runQuery,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";

@@ -1,7 +1,7 @@
 import { IS_MOBILE } from "@/ui/config";
 import { motion } from "framer-motion";
-import { SecondaryPopup } from "../../elements/SecondaryPopup";
-import { ExpandableOSInterface, OSInterface } from "./Config";
+import { SecondaryPopup } from "../../elements/secondary-popup";
+import { ExpandableOSInterface, OSInterface } from "./config";
 
 export const OSWindow = ({
   onClick,

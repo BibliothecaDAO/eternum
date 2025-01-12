@@ -1,4 +1,4 @@
-import { Headline } from "@/ui/elements/Headline";
+import { Headline } from "@/ui/elements/headline";
 import { tableOfContents } from "./utils";
 
 export const Trading = () => {

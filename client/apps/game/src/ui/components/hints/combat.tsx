@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { Headline } from "@/ui/elements/Headline";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { Headline } from "@/ui/elements/headline";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 

@@ -1,13 +1,13 @@
-import { useDojo } from "@/hooks/context/DojoContext";
-import TextInput from "@/ui/elements/TextInput";
+import { useDojo } from "@/hooks/context/dojo-context";
+import TextInput from "@/ui/elements/text-input";
+import { scrollToElement } from "@/ui/modules/chat/chat";
+import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "@/ui/modules/chat/constants";
+import { Tab } from "@/ui/modules/chat/types";
 import { toHexString, toValidAscii } from "@/ui/utils/utils";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useRef } from "react";
 import { Signature } from "starknet";
 import { env } from "../../../../env";
-import { scrollToElement } from "./Chat";
-import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
-import { Tab } from "./types";
 
 export const InputField = ({
   currentTab,

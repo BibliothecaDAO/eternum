@@ -1,8 +1,8 @@
+import { DEFAULT_TAB, EVENT_STREAM_TAB } from "@/ui/modules/chat/chat-tab";
+import { CHAT_STORAGE_KEY, GLOBAL_CHANNEL_KEY } from "@/ui/modules/chat/constants";
+import { Tab } from "@/ui/modules/chat/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { DEFAULT_TAB, EVENT_STREAM_TAB } from "./ChatTab";
-import { CHAT_STORAGE_KEY, GLOBAL_CHANNEL_KEY } from "./constants";
-import { Tab } from "./types";
 
 interface ChatState {
   tabs: Tab[];

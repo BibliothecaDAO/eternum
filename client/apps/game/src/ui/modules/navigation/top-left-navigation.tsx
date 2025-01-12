@@ -1,17 +1,19 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { PlayerStructure, useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useQuery } from "@/hooks/helpers/use-query";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { Position } from "@/types/position";
-import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
-import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
+import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
+import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { IS_MOBILE } from "@/ui/config";
-import Button from "@/ui/elements/Button";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import Button from "@/ui/elements/button";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
+import { QuestsMenu } from "@/ui/modules/navigation/quest-menu";
 import { formatTime, gramToKg, kgToGram } from "@/ui/utils/utils";
 import { BuildingType, CapacityConfigCategory, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
@@ -20,8 +22,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { QuestsMenu } from "./QuestMenu";
-import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
   hidden: { y: "-100%" },

@@ -1,8 +1,9 @@
 import { configManager } from "@/dojo/setup";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import useUIStore from "@/hooks/store/use-ui-store";
-import { Headline } from "@/ui/elements/Headline";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { StructureCard } from "@/ui/components/structures/construction/structure-card";
+import { Headline } from "@/ui/elements/headline";
+import { ResourceCost } from "@/ui/elements/resource-cost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import {
   HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
@@ -13,7 +14,6 @@ import {
   StructureType,
 } from "@bibliothecadao/eternum";
 import React from "react";
-import { StructureCard } from "./StructureCard";
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {

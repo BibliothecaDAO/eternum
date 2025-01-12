@@ -1,6 +1,6 @@
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { SortButton, SortInterface } from "@/ui/elements/SortButton";
-import { SortPanel } from "@/ui/elements/SortPanel";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { SortButton, SortInterface } from "@/ui/elements/sort-button";
+import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { GuildInfo, ResourcesIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";

@@ -1,7 +1,7 @@
 import { useContributions } from "@/hooks/helpers/use-contributions";
 import { useRealm } from "@/hooks/helpers/use-realm";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { SelectResource } from "@/ui/elements/SelectResource";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { SelectResource } from "@/ui/elements/select-resource";
 import { copyPlayerAddressToClipboard, currencyIntlFormat, divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";

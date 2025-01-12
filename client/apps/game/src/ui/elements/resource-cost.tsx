@@ -1,8 +1,8 @@
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { findResourceById } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { currencyFormat, divideByPrecision } from "../utils/utils";
-import { ResourceIcon } from "./ResourceIcon";
 
 type ResourceCostProps = {
   isLabor?: boolean;

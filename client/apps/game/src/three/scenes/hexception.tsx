@@ -13,8 +13,8 @@ import { BuildingSystemUpdate, RealmSystemUpdate } from "@/three/systems/types";
 import { ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/position";
 import { IS_FLAT_MODE } from "@/ui/config";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
 import {
   ResourceIdToMiningType,
   getEntityIdFromKeys,

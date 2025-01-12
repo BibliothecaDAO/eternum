@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { Headline } from "@/ui/elements/Headline";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { Headline } from "@/ui/elements/headline";
+import { ResourceCost } from "@/ui/elements/resource-cost";
 import { LEVEL_DESCRIPTIONS, RealmLevels } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 

@@ -1,7 +1,7 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import useUIStore from "@/hooks/store/use-ui-store";
-import { SortButton, SortInterface } from "@/ui/elements/SortButton";
-import { SortPanel } from "@/ui/elements/SortPanel";
+import { SortButton, SortInterface } from "@/ui/elements/sort-button";
+import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildWhitelistInfo } from "@bibliothecadao/eternum";
 import clsx from "clsx";

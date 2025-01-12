@@ -1,11 +1,11 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { Prize, QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/use-quests";
 import { useRealm } from "@/hooks/helpers/use-realm";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
-import Button from "@/ui/elements/Button";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
+import Button from "@/ui/elements/button";
+import { ResourceCost } from "@/ui/elements/resource-cost";
 import { QuestType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { memo, useState } from "react";

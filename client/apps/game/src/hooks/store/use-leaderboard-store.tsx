@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { ContractAddress, ID, LeaderboardManager } from "@bibliothecadao/eternum";

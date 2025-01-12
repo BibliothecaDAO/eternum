@@ -1,6 +1,12 @@
-import { HintSection } from "@/ui/components/hints/HintModal";
-import Button from "@/ui/elements/Button";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { HintSection } from "@/ui/components/hints/hint-modal";
+import Button from "@/ui/elements/button";
+import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import { BattleActions } from "@/ui/modules/military/battle-view/battle-actions";
+import { BattleProgress } from "@/ui/modules/military/battle-view/battle-progress";
+import { BattleSideView } from "@/ui/modules/military/battle-view/battle-side-view";
+import { BattleTwitterShareButton } from "@/ui/modules/military/battle-view/battle-twitter-share-button";
+import { LockedResources } from "@/ui/modules/military/battle-view/locked-resources";
+import { TopScreenView } from "@/ui/modules/military/battle-view/top-screen-view";
 import {
   ArmyInfo,
   BattleManager,
@@ -13,12 +19,6 @@ import {
 import { ComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
-import { BattleActions } from "./BattleActions";
-import { BattleProgress } from "./BattleProgress";
-import { BattleSideView } from "./BattleSideView";
-import { LockedResources } from "./LockedResources";
-import { TopScreenView } from "./TopScreenView";
-import { BattleTwitterShareButton } from "./battle-twitter-share-button";
 
 export const Battle = memo(
   ({

@@ -3,10 +3,10 @@ import { useEntities } from "@/hooks/helpers/use-entities";
 import { useQuery } from "@/hooks/helpers/use-query";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import { ArmyChip } from "@/ui/components/military/ArmyChip";
-import { InventoryResources } from "@/ui/components/resources/InventoryResources";
+import { ArmyChip } from "@/ui/components/military/army-chip";
+import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArmyWarning } from "./ArmyWarning";
+import { ArmyWarning } from "./army-warning";
 
 export const SelectedArmy = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
