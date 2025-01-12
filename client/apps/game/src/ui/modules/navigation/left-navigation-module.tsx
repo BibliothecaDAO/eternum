@@ -29,7 +29,9 @@ const StructureConstructionMenu = lazy(() =>
   })),
 );
 const WorldStructuresMenu = lazy(() =>
-  import("@/ui/modules/world-structures/world-structures-menu").then((module) => ({ default: module.WorldStructuresMenu })),
+  import("@/ui/modules/world-structures/world-structures-menu").then((module) => ({
+    default: module.WorldStructuresMenu,
+  })),
 );
 
 const AllResourceArrivals = lazy(() =>

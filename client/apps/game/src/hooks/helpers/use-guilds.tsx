@@ -5,13 +5,13 @@ import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { formatTime, toHexString } from "@/ui/utils/utils";
 import {
-    ClientComponents,
-    ContractAddress,
-    GuildInfo,
-    GuildMemberInfo,
-    GuildWhitelistInfo,
-    ID,
-    Player,
+  ClientComponents,
+  ContractAddress,
+  GuildInfo,
+  GuildMemberInfo,
+  GuildWhitelistInfo,
+  ID,
+  Player,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";

@@ -4,12 +4,12 @@ import useUIStore from "@/hooks/store/use-ui-store";
 import { getRealmName, getRealmNameById } from "@/ui/utils/realms";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
-    CAPACITY_CONFIG_CATEGORY_STRING_MAP,
-    ContractAddress,
-    EntityType,
-    StructureType,
-    type ClientComponents,
-    type ID,
+  CAPACITY_CONFIG_CATEGORY_STRING_MAP,
+  ContractAddress,
+  EntityType,
+  StructureType,
+  type ClientComponents,
+  type ID,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue, type ComponentValue } from "@dojoengine/recs";

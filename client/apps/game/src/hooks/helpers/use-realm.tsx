@@ -5,11 +5,11 @@ import { unpackResources } from "@/ui/utils/packed-data";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
-    ContractAddress,
-    getOrderName,
-    getQuestResources as getStartingResources,
-    type ClientComponents,
-    type ID,
+  ContractAddress,
+  getOrderName,
+  getQuestResources as getStartingResources,
+  type ClientComponents,
+  type ID,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue, runQuery, type ComponentValue, type Entity } from "@dojoengine/recs";

@@ -3,12 +3,12 @@ import { useDojo } from "@/hooks/context/dojo-context";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import {
-    CapacityConfigCategory,
-    ID,
-    ResourceManager,
-    ResourcesIds,
-    resources,
-    type Resource,
+  CapacityConfigCategory,
+  ID,
+  ResourceManager,
+  ResourcesIds,
+  resources,
+  type Resource,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue, runQuery, type Entity } from "@dojoengine/recs";

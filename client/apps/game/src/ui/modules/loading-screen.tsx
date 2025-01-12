@@ -74,7 +74,10 @@ export function CountdownTimer({ backgroundImage }: { backgroundImage: string })
         <div className="absolute inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-xl" />
           <div className="relative flex flex-col items-center">
-            <img src="/images/logos/eternum-loader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
+            <img
+              src="/images/logos/eternum-loader.png"
+              className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
+            />
             <h1 className="tracking-wider">Eternum is Launching in</h1>
             <div className="flex gap-4 text-center mt-4 mx-auto">
               <TimeUnit value={days} label="Days" />

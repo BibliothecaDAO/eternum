@@ -1,4 +1,3 @@
-
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useRealm } from "@/hooks/helpers/use-realm";
 import { useResourceManager } from "@/hooks/helpers/use-resources";

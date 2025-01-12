@@ -5,13 +5,13 @@ import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { currentTickCount } from "@/ui/utils/utils";
 import {
-    BattleManager,
-    ContractAddress,
-    ID,
-    Position,
-    Structure,
-    StructureType,
-    TickIds,
+  BattleManager,
+  ContractAddress,
+  ID,
+  Position,
+  Structure,
+  StructureType,
+  TickIds,
 } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
