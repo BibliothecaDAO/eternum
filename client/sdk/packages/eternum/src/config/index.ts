@@ -6,7 +6,7 @@ import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, Resourc
 import { scaleResourceCostMinMax, scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
 import chalk from 'chalk';
-import { EternumGlobalConfig as DefaultConfig, FELT_CENTER } from "../constants/global";
+import { BRIDGE_FEE_DENOMINATOR, EternumGlobalConfig as DefaultConfig, FELT_CENTER } from "../constants/global";
 import { ResourceTier } from "../constants/resources";
 interface Config {
   account: Account;
@@ -23,7 +23,9 @@ const shortHexAddress = (address: string | undefined | null): string => {
 };
 
 const inGameAmount = (amount: number, config: EternumGlobalConfig) => {
-  return amount / config.resources.resourcePrecision;
+  amount = amount / config.resources.resourcePrecision;
+  // add commas to the amount
+  return amount.toLocaleString();
 };
 
 export class EternumConfig {
@@ -140,19 +142,19 @@ export const setQuestRewardConfig = async (config: Config) => {
   ═══════════════════════════════`));
 
   const calldataArray = [];
-  let QUEST_RESOURCES_SCALED = scaleResourceInputs(
+  let scaledQuestResources = scaleResourceInputs(
     config.config.questResources,
-    config.config.resources.resourceMultiplier * config.config.resources.resourcePrecision,
+    config.config.resources.resourcePrecision,
   );
 
-  for (const questId of Object.keys(QUEST_RESOURCES_SCALED) as unknown as QuestType[]) {
-    const resources = QUEST_RESOURCES_SCALED[questId];
+  for (const questId of Object.keys(scaledQuestResources) as unknown as QuestType[]) {
+    const resources = scaledQuestResources[questId];
     
     console.log(chalk.cyan(`
     ✧ Quest ${chalk.yellow(questId)} Rewards:`));
     
     resources.forEach(r => {
-      console.log(chalk.cyan(`      ∙ ${chalk.cyan(inGameAmount(inGameAmount(r.amount, config.config), config.config))} ${chalk.yellow(ResourcesIds[r.resource])}`));
+      console.log(chalk.cyan(`      ∙ ${chalk.cyan(inGameAmount(r.amount, config.config))} ${chalk.yellow(ResourcesIds[r.resource])}`));
     });
 
     calldataArray.push({
@@ -175,35 +177,24 @@ export const setProductionConfig = async (config: Config) => {
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`));
 
   const calldataArray = [];
+  const scaledResourceInputs = scaleResourceInputs(config.config.resources.resourceInputs, config.config.resources.resourceMultiplier);
+  const scaledResourceOutputs = scaleResourceOutputs(config.config.resources.resourceOutputs, config.config.resources.resourceMultiplier);
 
-  for (const resourceId of Object.keys(
-    scaleResourceInputs(config.config.resources.resourceInputs, config.config.resources.resourceMultiplier),
-  ) as unknown as ResourcesIds[]) {
-    const outputAmount = scaleResourceOutputs(
-      config.config.resources.resourceOutputs,
-      config.config.resources.resourceMultiplier
-    )[resourceId];
-    
-    const costs = scaleResourceInputs(
-      config.config.resources.resourceInputs,
-      config.config.resources.resourceMultiplier
-    )[resourceId].map((cost) => ({
-      ...cost,
-      amount: cost.amount * config.config.resources.resourcePrecision,
-    }));
-
+  for (const resourceId of Object.keys(scaledResourceInputs) as unknown as ResourcesIds[]) {
+    const outputAmountPerLabor = scaledResourceOutputs[resourceId];
+    const resourceCostPerLabor = scaledResourceInputs[resourceId];
     calldataArray.push({
-      amount: outputAmount,
+      amount: outputAmountPerLabor,
       resource_type: resourceId,
-      cost: costs,
+      cost: resourceCostPerLabor,
     });
 
     console.log(chalk.cyan(`
     ┌─ ${chalk.yellow(ResourcesIds[resourceId])}
-    │  ${chalk.gray('Production:')} ${chalk.white(`${inGameAmount(outputAmount, config.config)} per tick`)}
-    │  ${chalk.gray('Requirements:')}${costs.map(c => `
+    │  ${chalk.gray(`${ResourcesIds[resourceId]} produced per labor:`)} ${chalk.white(`${inGameAmount(outputAmountPerLabor, config.config)} ${chalk.yellow(ResourcesIds[resourceId])}`)}
+    │  ${chalk.gray(`Cost of producing 1 ${ResourcesIds[resourceId]} labor:`)} ${resourceCostPerLabor.length > 0 ? resourceCostPerLabor.map(c => `
     │     ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`)
-       .join('')}
+       .join('') : chalk.blue('Can\'t be produced')}
     └────────────────────────────────`));
   }
 
@@ -215,6 +206,7 @@ export const setProductionConfig = async (config: Config) => {
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   `));
 };
+
 
 export const setResourceBridgeWhitelistConfig = async (config: Config) => {
   console.log(chalk.cyan('\n⚡ BRIDGE WHITELIST CONFIGURATION'));
@@ -323,28 +315,37 @@ export const setBuildingConfig = async (config: Config) => {
   const calldataArray = [];
   const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
   const buildingCosts = config.config.buildings.buildingCosts;
+  const scaledBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourceMultiplier);
 
   for (const buildingId of Object.keys(buildingResourceProduced) as unknown as BuildingType[]) {
-    if (scaleResourceInputs(buildingCosts, config.config.resources.resourceMultiplier)[buildingId].length !== 0) {
-      const costs = scaleResourceInputs(buildingCosts, config.config.resources.resourceMultiplier)[buildingId];
+    if (scaledBuildingCosts[buildingId].length !== 0) {
+      const costs = scaledBuildingCosts[buildingId];
+      const calldata = {
+        building_category: buildingId,
+        building_resource_type: buildingResourceProduced[buildingId] as ResourcesIds,
+        cost_of_building: costs
+      };
+      calldataArray.push(calldata);
       
       console.log(chalk.cyan(`
     ┌─ ${chalk.yellow(BuildingType[buildingId])}
     │  ${chalk.gray('Produces:')} ${chalk.white(ResourcesIds[buildingResourceProduced[buildingId] as ResourcesIds])}
-    │  ${chalk.gray('Cost of making building:')}${costs.map(c => `
-    │     ${chalk.white(`${inGameAmount(c.amount * config.config.resources.resourcePrecision, config.config)} ${ResourcesIds[c.resource]}`)}`)
-       .join('')}
+    │  ${chalk.gray('Building Costs (with ')}${chalk.white(config.config.buildings.buildingFixedCostScalePercent / 10_000 * 100 + '%')}${chalk.gray(' increase per building):')}
+    │  
+    │  ${chalk.gray('┌──────────')}${costs.map(c => '─'.repeat(12)).join('')}
+    │  ${chalk.gray('│')} Building ${costs.map(c => chalk.white(ResourcesIds[c.resource].padEnd(12))).join('')}
+    │  ${chalk.gray('├──────────')}${costs.map(c => '─'.repeat(12)).join('')}${Array.from({length: 12}, (_, i) => {
+        const buildingNum = i + 1;
+        const costsStr = costs.map(c => {
+          const multiplier = Math.pow(1 + config.config.buildings.buildingFixedCostScalePercent / 10_000, buildingNum - 1);
+          return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
+        }).join('');
+        return `
+    │  ${chalk.yellow(('#' + buildingNum).padEnd(8))}${chalk.gray('│')} ${costsStr}`;
+      }).join('')}
+    │  ${chalk.gray('└──────────')}${costs.map(c => '─'.repeat(12)).join('')}
     └────────────────────────────────`));
 
-      const calldata = {
-        building_category: buildingId,
-        building_resource_type: buildingResourceProduced[buildingId] as ResourcesIds,
-        cost_of_building: costs.map((cost) => ({
-          ...cost,
-          amount: cost.amount * config.config.resources.resourcePrecision,
-        })),
-      };
-      calldataArray.push(calldata);
     }
   }
 
@@ -717,14 +718,14 @@ export const setResourceBridgeFeesConfig = async (config: Config) => {
   ══════════════════════════`));
 
   const fees = {
-    'veLORDS Deposit': config.config.bridge.velords_fee_on_dpt_percent + '%',
-    'veLORDS Withdraw': config.config.bridge.velords_fee_on_wtdr_percent + '%',
-    'Season Pool Deposit': config.config.bridge.season_pool_fee_on_dpt_percent + '%',
-    'Season Pool Withdraw': config.config.bridge.season_pool_fee_on_wtdr_percent + '%',
-    'Client Deposit': config.config.bridge.client_fee_on_dpt_percent + '%',
-    'Client Withdraw': config.config.bridge.client_fee_on_wtdr_percent + '%',
-    'Max Bank Deposit': config.config.bridge.max_bank_fee_dpt_percent + '%',
-    'Max Bank Withdraw': config.config.bridge.max_bank_fee_wtdr_percent + '%'
+    'veLORDS Deposit': config.config.bridge.velords_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%',
+    'veLORDS Withdraw': config.config.bridge.velords_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%',
+    'Season Pool Deposit': config.config.bridge.season_pool_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%',
+    'Season Pool Withdraw': config.config.bridge.season_pool_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%',
+    'Client Deposit': config.config.bridge.client_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%',
+    'Client Withdraw': config.config.bridge.client_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%',
+    'Max Bank Fee on Deposit': config.config.bridge.max_bank_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%',
+    'Max Bank Fee on Withdraw': config.config.bridge.max_bank_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%'
   };
 
   console.log(chalk.cyan(`
