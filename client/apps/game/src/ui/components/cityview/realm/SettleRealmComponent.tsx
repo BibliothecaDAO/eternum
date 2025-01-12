@@ -86,7 +86,7 @@ const SettleRealmComponent = ({ setSettledRealmId }: { setSettledRealmId: (id: n
         </div>
         <div className="flex flex-row justify-center">
           <Button variant="primary" size="md" disabled={loading} onClick={() => settleRealms(selectedRealms)}>
-            {loading ? <img src="/images/eternum-logo_animated.png" className="invert w-6 h-4" /> : "settle"}
+            {loading ? <img src="/images/logos/eternum-animated.png" className="invert w-6 h-4" /> : "settle"}
           </Button>
         </div>
       </div>

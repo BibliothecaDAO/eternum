@@ -18,7 +18,7 @@ export function CountdownTimer() {
 
       {/* Timer container */}
       <div className="relative flex flex-col items-center">
-        <img src="/images/eternumloader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
+        <img src="/images/logos/eternum-loader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
 
         <TypeH1 className="tracking-wider">Eternum is Launching in</TypeH1>
         <div className="flex gap-4 text-center mt-4 mx-auto">

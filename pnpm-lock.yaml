@@ -206,8 +206,6 @@ importers:
         specifier: ^8.0.1
         version: 8.19.1(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)
 
-  client/apps/docs: {}
-
   client/apps/game:
     dependencies:
       "@latticexyz/utils":
@@ -286,6 +284,8 @@ importers:
       workbox-window:
         specifier: ^7.3.0
         version: 7.3.0
+
+  client/apps/game-docs: {}
 
   client/apps/landing:
     dependencies:

@@ -9,7 +9,6 @@ export const soundSelector = {
   hoverClick: "ui/ui-click-1.wav",
   click: "ui/click-2.wav",
   sign: "ui/sign.mp3",
-  harvest: "ui/harvest.mp3",
   fly: "ui/whoosh.mp3",
   levelUp: "ui/level-up.mp3",
   explore: "ui/explore.mp3",
