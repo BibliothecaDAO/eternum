@@ -1,6 +1,7 @@
+import { SignMessagePolicy } from "@cartridge/controller";
 import { env } from "../../../env";
 
-export const signingPolicy = [
+export const signingPolicy: SignMessagePolicy[] = [
   {
     types: {
       StarknetDomain: [
