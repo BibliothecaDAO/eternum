@@ -9,8 +9,8 @@ import { policies } from "./policies";
 import { signingPolicy } from "./signing-policy";
 
 enum StarknetChainId {
-  SN_MAIN = "0x534e5f4d41494e",// encodeShortString('SN_MAIN'),
-  SN_SEPOLIA = "0x534e5f5345504f4c4941"
+  SN_MAIN = "0x534e5f4d41494e", // encodeShortString('SN_MAIN'),
+  SN_SEPOLIA = "0x534e5f5345504f4c4941",
 }
 
 const resourceAddresses = await getSeasonAddresses();
@@ -29,8 +29,8 @@ const colorMode: ColorMode = "dark";
 const controller =
   env.VITE_PUBLIC_CHAIN === "mainnet"
     ? new ControllerConnector({
-        chains: [{rpcUrl: env.VITE_PUBLIC_NODE_URL}],
-        defaultChainId:StarknetChainId.SN_MAIN,
+        chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
+        defaultChainId: StarknetChainId.SN_MAIN,
         namespace,
         slot,
         preset,
@@ -40,12 +40,12 @@ const controller =
         colorMode,
       })
     : new ControllerConnector({
-      chains: [{rpcUrl: env.VITE_PUBLIC_NODE_URL}],
-      defaultChainId: StarknetChainId.SN_SEPOLIA,
+        chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
+        defaultChainId: StarknetChainId.SN_SEPOLIA,
         namespace,
         slot,
         preset,
-        policies: {contracts: policies, messages: signingPolicy},
+        policies: { contracts: policies, messages: signingPolicy },
         theme,
         tokens: {
           erc20: [LORDS, ...otherResources],
