@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { useQuery } from "@/hooks/helpers/use-query";
 import {
@@ -212,7 +212,7 @@ const TroopExchange = ({
     },
   } = useDojo();
 
-  const { getArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 

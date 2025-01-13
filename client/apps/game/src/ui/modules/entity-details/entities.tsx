@@ -1,5 +1,4 @@
-import { useEnemyArmiesByPosition } from "@/hooks/helpers/use-armies";
-import { useEntities } from "@/hooks/helpers/use-entities";
+import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
 import { Position } from "@/types/position";
 import { StructureCard } from "@/ui/components/structures/worldmap/structure-card";
 import { Checkbox } from "@/ui/elements/checkbox";
@@ -20,11 +19,9 @@ export const Entities = ({
   const [showStructure, setShowStructure] = useState(true);
   const [showBattles, setShowBattles] = useState(true);
   const [showArmies, setShowArmies] = useState(true);
-  const { playerStructures } = useEntities();
 
-  const enemyArmies = useEnemyArmiesByPosition({
+  const armiesAtPosition = useArmiesAtPosition({
     position: position.getContract(),
-    playerStructures: playerStructures(),
   });
 
   return (
@@ -36,8 +33,8 @@ export const Entities = ({
       </div>
       {showStructure && <StructureCard position={position} ownArmySelected={ownArmy} />}
       {showBattles && <Battles ownArmy={ownArmy} battles={battleEntityIds} />}
-      {showArmies && enemyArmies.length > 0 && (
-        <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmy} position={position} />
+      {showArmies && armiesAtPosition.length > 0 && (
+        <EnemyArmies armies={armiesAtPosition} ownArmySelected={ownArmy} position={position} />
       )}
     </div>
   );

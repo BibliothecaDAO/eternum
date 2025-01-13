@@ -3,7 +3,7 @@ import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
 import { ReactComponent as Castle } from "@/assets/icons/castle.svg";
 import { ReactComponent as Flag } from "@/assets/icons/flag.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useModalStore } from "@/hooks/store/use-modal-store";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
@@ -67,7 +67,7 @@ export const BattleActions = ({
   } = dojo;
 
   const { toggleModal } = useModalStore();
-  const { getAliveArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { nextBlockTimestamp: currentTimestamp, currentArmiesTick } = useNextBlockTimestamp();
@@ -88,7 +88,7 @@ export const BattleActions = ({
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
   const selectedArmy = useMemo(() => {
-    return getAliveArmy(localSelectedUnit || 0);
+    return getArmy(localSelectedUnit || 0);
   }, [localSelectedUnit, isActive, userArmiesInBattle]);
 
   const defenderArmy = useMemo(() => {

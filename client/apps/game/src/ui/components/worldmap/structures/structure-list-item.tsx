@@ -2,7 +2,7 @@ import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg"
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { getUserArmyInBattle } from "@/hooks/helpers/use-armies";
+import { useArmiesInBattle } from "@/hooks/helpers/use-armies";
 import { useGetHyperstructureProgress } from "@/hooks/helpers/use-hyperstructures";
 import { useIsStructureImmune } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
@@ -62,7 +62,12 @@ export const StructureListItem = ({
     return { updatedBattle };
   }, [nextBlockTimestamp]);
 
-  const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0);
+  const armiesInBattle = useArmiesInBattle(updatedBattle?.entity_id || 0);
+
+  // Filter out only the player's armies
+  const playerArmiesInBattle = useMemo(() => {
+    return armiesInBattle.filter((army) => army.isMine);
+  }, [armiesInBattle]);
 
   const isImmune = useIsStructureImmune(structure, nextBlockTimestamp!);
 
@@ -129,7 +134,7 @@ export const StructureListItem = ({
       if (structure.isMine) {
         return [shieldButton];
       }
-      if (userArmyInBattle) {
+      if (playerArmiesInBattle.length > 0) {
         return [eyeButton];
       }
       return [
@@ -160,7 +165,14 @@ export const StructureListItem = ({
         />,
       ];
     }
-  }, [nextBlockTimestamp, userArmyInBattle, ownArmySelected, updatedBattle, setBattleView, setShowMergeTroopsPopup]);
+  }, [
+    nextBlockTimestamp,
+    playerArmiesInBattle,
+    ownArmySelected,
+    updatedBattle,
+    setBattleView,
+    setShowMergeTroopsPopup,
+  ]);
 
   return (
     <div className="flex justify-between flex-row mt-2 ">

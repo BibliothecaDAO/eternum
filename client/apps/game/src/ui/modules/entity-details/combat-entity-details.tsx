@@ -1,6 +1,5 @@
-import { useOwnArmiesByPosition } from "@/hooks/helpers/use-armies";
+import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
 import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
-import { useEntities } from "@/hooks/helpers/use-entities";
 import { useStructureAtPosition } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
@@ -23,22 +22,20 @@ export const CombatEntityDetails = () => {
     () => new Position({ x: selectedHex?.col || 0, y: selectedHex?.row || 0 }),
     [selectedHex],
   );
-  const { playerStructures } = useEntities();
 
-  const ownArmiesAtPosition = useOwnArmiesByPosition({
+  const armiesAtPosition = useArmiesAtPosition({
     position: hexPosition.getContract(),
-    inBattle: false,
-    playerStructures: playerStructures(),
   });
 
-  const userArmies = useMemo(
-    () => ownArmiesAtPosition.filter((army) => army.health.current > 0),
-    [ownArmiesAtPosition],
+  // player armies that are not in battle
+  const playerArmies = useMemo(
+    () => armiesAtPosition.filter((army) => army.isMine && army.battle_id === 0),
+    [armiesAtPosition],
   );
 
   const ownArmy = useMemo(() => {
-    return ownArmiesAtPosition.find((army) => army.entity_id === selectedEntityId);
-  }, [ownArmiesAtPosition, selectedEntityId]);
+    return playerArmies.find((army) => army.entity_id === selectedEntityId);
+  }, [playerArmies, selectedEntityId]);
 
   const structure = useStructureAtPosition(hexPosition.getContract());
   const battles = useBattlesAtPosition(hexPosition.getContract());
@@ -85,11 +82,11 @@ export const CombatEntityDetails = () => {
                 <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
               ))}
             </Tabs.List>
-            {selectedTab !== 2 && userArmies.length > 0 && (
+            {selectedTab !== 2 && playerArmies.length > 0 && (
               <SelectActiveArmy
                 selectedEntity={selectedEntityId || 0}
                 setOwnArmySelected={setSelectedEntityId}
-                userAttackingArmies={userArmies}
+                userAttackingArmies={playerArmies}
               />
             )}
 

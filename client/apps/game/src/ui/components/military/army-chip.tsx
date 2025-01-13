@@ -3,7 +3,7 @@ import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
 import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
 import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { getArmiesByPosition } from "@/hooks/helpers/use-armies";
+import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
 import { armyHasTroops } from "@/hooks/helpers/use-quests";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
@@ -227,13 +227,11 @@ const ArmyMergeTroopsPanel = ({
 }) => {
   const [selectedReceiverArmy, setSelectedReceiverArmy] = useState<ArmyInfo | null>(null);
 
-  const getArmies = getArmiesByPosition();
+  const armiesAtPosition = useArmiesAtPosition({ position: giverArmy.position });
 
   const armies = useMemo(() => {
-    return getArmies({ x: giverArmy.position.x, y: giverArmy.position.y }).filter(
-      (army) => army.entity_id !== giverArmy.entity_id,
-    );
-  }, [giverArmy]);
+    return armiesAtPosition.filter((army) => army.entity_id !== giverArmy.entity_id);
+  }, [giverArmy, armiesAtPosition]);
 
   return (
     <div className="py-2">

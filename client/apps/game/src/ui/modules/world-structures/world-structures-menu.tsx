@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { getArmiesByPosition } from "@/hooks/helpers/use-armies";
+import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
 import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/use-contributions";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useFragmentMines } from "@/hooks/helpers/use-fragment-mines";
@@ -174,9 +174,8 @@ const BaseStructureExtraContent = ({
 }) => {
   const { getGuildFromPlayerAddress } = useGuilds();
   const { getAddressNameFromEntity, getPlayerAddressFromEntity } = useEntitiesUtils();
-  const getArmies = getArmiesByPosition();
 
-  const armies = useMemo(() => getArmies({ x, y }), [x, y]);
+  const armies = useArmiesAtPosition({ position: { x, y } });
 
   const structureOwner = useMemo(() => {
     const ownerName = getAddressNameFromEntity(entityId);

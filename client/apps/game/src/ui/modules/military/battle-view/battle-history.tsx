@@ -1,4 +1,4 @@
-import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useBattleJoin, useBattleLeave, useBattleStart } from "@/hooks/helpers/use-battle-events";
 import { currencyFormat, formatTime } from "@/ui/utils/utils";
 import { BattleSide, ClientComponents, ID } from "@bibliothecadao/eternum";
@@ -29,7 +29,7 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
   const battleJoinData = useBattleJoin(battleId, battleSide);
   const battleLeaveData = useBattleLeave(battleId, battleSide);
 
-  const { getArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const events = useMemo(() => {
     return [...battleStartData, ...battleJoinData, ...battleLeaveData].sort(
