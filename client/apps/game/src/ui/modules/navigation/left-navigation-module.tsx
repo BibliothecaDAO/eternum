@@ -9,10 +9,10 @@ import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
-import { Chat } from "@/ui/modules/chat/chat";
 import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
+import { Chat } from "../chat/chat";
 
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
