@@ -9,7 +9,6 @@ import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
-import { Chat } from "@/ui/modules/chat/chat";
 import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
@@ -261,7 +260,7 @@ export const LeftNavigationModule = memo(() => {
       </div>
       {!IS_MOBILE && (
         <div className="flex">
-          <Chat />
+          {/* <Chat /> */}
           {/* <EventStream /> */}
         </div>
       )}
