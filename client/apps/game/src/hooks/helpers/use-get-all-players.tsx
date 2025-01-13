@@ -1,14 +1,12 @@
-import { Player } from "@bibliothecadao/eternum";
+import { useDojo } from "@/hooks/context/dojo-context";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import { usePrizePool } from "@/hooks/helpers/use-rewards";
+import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
+import { calculateLordsShare, calculatePlayerSharePercentage } from "@/ui/utils/leaderboard";
+import { Player, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
-import { useDojo } from "../context/DojoContext";
-import { useEntitiesUtils } from "./useEntities";
-
-import { calculateLordsShare, calculatePlayerSharePercentage } from "@/ui/utils/leaderboard";
-import { StructureType } from "@bibliothecadao/eternum";
 import { formatEther } from "viem";
-import { useLeaderBoardStore } from "../store/useLeaderBoardStore";
-import { usePrizePool } from "./use-rewards";
 
 export const useGetAllPlayers = () => {
   const dojo = useDojo();

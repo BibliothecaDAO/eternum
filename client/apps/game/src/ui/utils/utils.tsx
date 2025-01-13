@@ -1,5 +1,6 @@
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { ResourceMiningTypes } from "@/types";
+import { SortInterface } from "@/ui/elements/sort-button";
 import {
   BuildingType,
   CapacityConfigCategory,
@@ -17,7 +18,6 @@ import {
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { env } from "../../../env";
-import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 

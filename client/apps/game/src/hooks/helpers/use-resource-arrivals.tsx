@@ -1,10 +1,10 @@
+import { useDojo } from "@/hooks/context/dojo-context";
+import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, NotValue, defineQuery, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDojo } from "../context/DojoContext";
-import useNextBlockTimestamp from "../useNextBlockTimestamp";
 
 const DONKEY_RESOURCE_TRACKER = 452312848583266388373324160190187140051835877600158453279131187530910662656n;
 const LORDS_RESOURCE_TRACKER = 7237005577332262213973186563042994240829374041602535252466099000494570602496n;

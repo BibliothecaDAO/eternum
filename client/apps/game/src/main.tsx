@@ -9,15 +9,15 @@ import "shepherd.js/dist/css/shepherd.css";
 import { registerSW } from "virtual:pwa-register";
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
-import App from "./App";
+import App from "./app";
 import { setup } from "./dojo/setup";
-import { DojoProvider } from "./hooks/context/DojoContext";
+import { DojoProvider } from "./hooks/context/dojo-context";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
-import useUIStore from "./hooks/store/useUIStore";
+import useUIStore from "./hooks/store/use-ui-store";
 import "./index.css";
-import GameRenderer from "./three/GameRenderer";
+import GameRenderer from "./three/game-renderer";
 import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
-import { LoadingScreen } from "./ui/modules/LoadingScreen";
+import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 
 declare global {

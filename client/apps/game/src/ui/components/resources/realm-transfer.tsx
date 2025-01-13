@@ -1,18 +1,16 @@
-import { useDojo } from "@/hooks/context/DojoContext";
-import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
-import { useResourceManager } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
-import Button from "@/ui/elements/Button";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { useDojo } from "@/hooks/context/dojo-context";
+import { PlayerStructure, useEntities } from "@/hooks/helpers/use-entities";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { OSWindow } from "@/ui/components/navigation/os-window";
+import Button from "@/ui/elements/button";
+import { NumberInput } from "@/ui/elements/number-input";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { calculateDonkeysNeeded, currencyFormat, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
-import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
-import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
-
-import { ID } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
-import { OSWindow } from "../navigation/OSWindow";
 
 type transferCall = {
   structureId: ID;
