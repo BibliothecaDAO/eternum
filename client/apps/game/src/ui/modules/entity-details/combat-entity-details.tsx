@@ -1,5 +1,5 @@
-import { useBattlesByPosition } from "@/hooks/helpers/battles/use-battles";
 import { useOwnArmiesByPosition } from "@/hooks/helpers/use-armies";
+import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { useStructureAtPosition } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
@@ -41,7 +41,7 @@ export const CombatEntityDetails = () => {
   }, [ownArmiesAtPosition, selectedEntityId]);
 
   const structure = useStructureAtPosition(hexPosition.getContract());
-  const battles = useBattlesByPosition(hexPosition.getContract());
+  const battles = useBattlesAtPosition(hexPosition.getContract());
 
   const tabs = useMemo(
     () => [
@@ -52,7 +52,7 @@ export const CombatEntityDetails = () => {
             <div>Entities</div>
           </div>
         ),
-        component: selectedHex && <Entities position={hexPosition} ownArmy={ownArmy} battles={battles} />,
+        component: selectedHex && <Entities position={hexPosition} ownArmy={ownArmy} battleEntityIds={battles} />,
       },
       ...(structure
         ? [

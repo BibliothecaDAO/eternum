@@ -5,9 +5,9 @@ import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useBattlesByPosition } from "@/hooks/helpers/battles/use-battles";
 import { useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
 import { useGetBanks } from "@/hooks/helpers/use-banks";
+import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { useStructureByPosition } from "@/hooks/helpers/use-structures";
 import { useSetMarket } from "@/hooks/helpers/use-trade";
@@ -65,23 +65,21 @@ export const MarketModal = () => {
   const { bidOffers, askOffers } = useSetMarket();
 
   const bank = banks.length === 1 ? banks[0] : null;
-  const battles = useBattlesByPosition(bank?.position || { x: 0, y: 0 });
+  const battles = useBattlesAtPosition(bank?.position || { x: 0, y: 0 });
 
   const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
   const getStructure = useStructureByPosition();
   const bankStructure = getStructure(bank?.position || { x: 0, y: 0 });
 
-  const battle = useMemo(() => {
+  const battleEntityId = useMemo(() => {
     if (battles.length === 0) return null;
-    return battles
-      .filter((battle) => battle.isStructureBattle)
-      .sort((a, b) => Number(a.last_updated || 0) - Number(b.last_updated || 0))[0];
+    return battles[0];
   }, [battles]);
 
   const battleManager = useMemo(
-    () => new BattleManager(dojo.setup.components, dojo.network.provider, battle?.entity_id || 0),
-    [battle?.entity_id],
+    () => new BattleManager(dojo.setup.components, dojo.network.provider, battleEntityId || 0),
+    [battleEntityId],
   );
 
   // initial entity id

@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useBattleManager } from "@/hooks/helpers/battles/use-battles";
 import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
+import { useBattleManager } from "@/hooks/helpers/use-battles";
 import { useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
