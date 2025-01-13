@@ -12,6 +12,7 @@ import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
+import { Chat } from "../chat/chat";
 
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
@@ -260,7 +261,7 @@ export const LeftNavigationModule = memo(() => {
       </div>
       {!IS_MOBILE && (
         <div className="flex">
-          {/* <Chat /> */}
+          <Chat />
           {/* <EventStream /> */}
         </div>
       )}
