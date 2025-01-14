@@ -11,34 +11,37 @@
 #   and process management.
 #
 # USAGE:
-#   ./indexer.sh                          - Starts a new Torii indexer instance
-#   ./indexer.sh --kill                   - Stops any running indexer instance
-#   ./indexer.sh --world <world_address>  - Starts indexer with custom world address
+#   ./indexer.sh [options]
+#
+# OPTIONS:
+#   --kill                    Stops any running indexer instance
+#   --world <world_address>   Starts indexer with custom world address
+#   --rpc <url>              Sets custom RPC URL
+#   --network <name>         Sets network name (default: devnet)
+#   --help                   Shows usage information
 #
 # CONFIGURATION:
-#   The script starts Torii with the following settings:
-#   - Default World address: 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f
+#   The script starts Torii with the following default settings:
+#   - World address: 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f
+#   - RPC URL: http://localhost:5050
+#   - Network: devnet
 #   - CORS: Enabled for all origins
 #   - Config file: torii.toml
 #
 # FILES:
-#   - PID file: ./pids/indexer.pid
-#   - Log file: ./logs/indexer.log
-#   - Database: ./torii-db
-#
-# REQUIREMENTS:
-#   - Torii must be installed and available in PATH
-#   - Basic Unix commands
+#   - PID file: contracts/game/pids/indexer.<network>.pid
+#   - Log file: contracts/game/logs/indexer.<network>.log
+#   - Database: contracts/game/torii-db
 #
 # EXAMPLES:
 #   Start with default settings:
 #     ./indexer.sh
 #
-#   Start with custom world address:
-#     ./indexer.sh --world 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+#   Start with custom settings:
+#     ./indexer.sh --world 0x123... --rpc http://localhost:5050 --network testnet
 #
-#   Stop running instance:
-#     ./indexer.sh --kill
+#   Stop specific network instance:
+#     ./indexer.sh --kill --network testnet
 #
 # =============================================================================
 
@@ -67,15 +70,81 @@ trap 'error_handler ${LINENO}' ERR
 # File paths
 LOG_DIR="logs"
 PID_DIR="pids"
-LOG_FILE="$LOG_DIR/indexer.log"
-PID_FILE="$PID_DIR/indexer.pid"
-DB_DIR="torii-db"
+DEFAULT_NETWORK="local" # just a name when saving log and pid files
+NETWORK=${NETWORK:-$DEFAULT_NETWORK}
+LOG_FILE="$LOG_DIR/indexer.$NETWORK.log"
+PID_FILE="$PID_DIR/indexer.$NETWORK.pid"
+DB_DIR="torii.db"
+TORII_CONFIG="torii.toml"
 
 # Torii settings
 DEFAULT_WORLD_ADDRESS="0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f"
-WORLD_ADDRESS=${2:-$DEFAULT_WORLD_ADDRESS}  # Use provided address or default
-PORT=8080  # Default Torii port
+DEFAULT_RPC_URL="http://localhost:5050"
+WORLD_ADDRESS=$DEFAULT_WORLD_ADDRESS  # Will be overridden by args if provided
+RPC_URL=${RPC_URL:-$DEFAULT_RPC_URL}  # Use env var or default
+PORT=8080
 
+#==============================================================================
+# ARGUMENT PARSING
+#==============================================================================
+
+print_usage() {
+    echo -e "${BLUE}Usage:${NC}"
+    echo -e "  ./indexer.sh [options]"
+    echo -e ""
+    echo -e "${BLUE}Options:${NC}"
+    echo -e "  --kill              Stop the running indexer instance"
+    echo -e "  --world <address>   Set the World contract address"
+    echo -e "  --rpc <url>        Set the RPC URL"
+    echo -e "  --network <name>    Set the network name (default: devnet)"
+    echo -e "  --help             Show this help message"
+    echo -e ""
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --kill)
+            KILL_MODE=true
+            shift
+            ;;
+        --world)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo -e "${RED}► Error: World address must be provided with --world flag${NC}"
+                exit 1
+            fi
+            WORLD_ADDRESS="$2"
+            shift 2
+            ;;
+        --rpc)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo -e "${RED}► Error: RPC URL must be provided with --rpc flag${NC}"
+                exit 1
+            fi
+            RPC_URL="$2"
+            shift 2
+            ;;
+        --network)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo -e "${RED}► Error: Network name must be provided with --network flag${NC}"
+                exit 1
+            fi
+            NETWORK="$2"
+            LOG_FILE="$LOG_DIR/indexer.$NETWORK.log"
+            PID_FILE="$PID_DIR/indexer.$NETWORK.pid"
+            shift 2
+            ;;
+        --help)
+            print_usage
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}► Error: Unknown option: $1${NC}"
+            print_usage
+            exit 1
+            ;;
+    esac
+done
 
 #==============================================================================
 # UTILITY FUNCTIONS
@@ -120,17 +189,22 @@ free_port() {
 # MAIN EXECUTION
 #==============================================================================
 
+DISPLAY_TITLE="Starting up Torii Indexer"
+if [ "$KILL_MODE" = true ]; then
+    DISPLAY_TITLE="Stopping Torii Indexer"
+fi
+
 echo -e ""
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║                Starting up Torii Indexer                 ║${NC}"
+echo -e "${BLUE}║                $DISPLAY_TITLE                 ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
 echo -e ""
 
 # Create required directories if they don't exist
 mkdir -p $PID_DIR $LOG_DIR
 
-# Handle command line arguments
-if [ "$1" == "--kill" ]; then
+# Handle kill mode
+if [ "$KILL_MODE" = true ]; then
     if [ -f "$PID_FILE" ]; then
         stop_indexer
         echo -e "${GREEN}✔ Indexer stopped successfully${NC}"
@@ -138,12 +212,6 @@ if [ "$1" == "--kill" ]; then
         echo -e "${YELLOW}► No indexer process found (no PID file)${NC}"
     fi
     exit 0
-elif [ "$1" == "--world" ]; then
-    if [ -z "$2" ]; then
-        echo -e "${RED}► Error: World address must be provided with --world flag${NC}"
-        exit 1
-    fi
-    WORLD_ADDRESS="$2"
 fi
 
 #==============================================================================
@@ -170,11 +238,16 @@ fi
 
 # Run torii in the background with log handling
 echo -e ""
-echo -e "${GREEN}Starting Torii Indexer with world address: ${BOLD}${BLUE}$WORLD_ADDRESS${NC}"
+echo -e "${GREEN}Starting Torii Indexer with:${NC}"
+echo -e "${GREEN}- World address: ${BOLD}${BLUE}$WORLD_ADDRESS${NC}"
+echo -e "${GREEN}- RPC URL: ${BOLD}${BLUE}$RPC_URL${NC}"
+echo -e "${GREEN}- Network: ${BOLD}${BLUE}$NETWORK${NC}"
 echo -e ""
 torii --world $WORLD_ADDRESS \
     --http.cors_origins "*" \
-    --config torii.toml 2>&1 | setup_log_handling &
+    --rpc $RPC_URL \
+    --db-dir $DB_DIR \
+    --config $TORII_CONFIG 2>&1 | setup_log_handling &
 
 # Store the PID
 echo $! > "$PID_FILE"
@@ -189,8 +262,8 @@ if ! kill -0 $(cat "$PID_FILE") 2>/dev/null; then
 fi
 
 echo -e "${GREEN}✔ Indexer started with PID: ${BOLD}$(cat $PID_FILE)${NC}"
-echo -e "${GREEN}✔ PID file: ${BOLD}$PID_FILE${NC}"
-echo -e "${GREEN}✔ Log file: ${BOLD}$LOG_FILE${NC}"
+echo -e "${GREEN}✔ PID file: contracts/game/${BOLD}$PID_FILE${NC}"
+echo -e "${GREEN}✔ Log file: contracts/game/${BOLD}$LOG_FILE${NC}"
 echo -e ""
 
 echo -e "${GREEN}✔ torii indexer started successfully${NC}"

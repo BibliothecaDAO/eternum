@@ -10,13 +10,19 @@
 #   deployment using Bun.
 #
 # USAGE:
-#   ./deploy.sh  - Builds and deploys the Season Resources ERC20 contracts
+#   ./deploy.sh [network]  - Builds and deploys the Season Resources ERC20 contracts
+#                           where [network] is optional and defaults to 'local'
+#   Examples:
+#   ./deploy.sh local     - Deploys to local
+#   ./deploy.sh slot      - Deploys to slot
+#   ./deploy.sh sepolia   - Deploys to sepolia
+#   ./deploy.sh mainnet   - Deploys to mainnet
 #
 # PROCESS:
 #   1. Builds the contracts using Scarb in release mode
 #   2. Changes to deployment directory
 #   3. Installs dependencies using Bun
-#   4. Executes the deployment script
+#   4. Executes the deployment script for specified network
 #
 # REQUIREMENTS:
 #   - Scarb (Starknet contract compiler)
@@ -73,8 +79,13 @@ echo -e "${GREEN}► Installing season resources deployment dependencies...${NC}
 cd deployment
 bun install
 
+# Get network parameter, default to 'local' if not provided
+NETWORK=${1:-local}
+
+echo -e "${BLUE}► Deploying to ${NETWORK}${NC}"
+
 # Execute deployment
 echo -e "${GREEN}► Executing season resources deployment script...${NC}"
-bun run deploy
+bun run deploy:${NETWORK}
 
-echo -e "\n${GREEN}✔ Season Resources deployment process completed${NC}\n"
+echo -e "\n${GREEN}✔ Season Resources deployment process completed on ${NETWORK}${NC}\n"

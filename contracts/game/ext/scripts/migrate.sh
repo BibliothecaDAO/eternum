@@ -63,25 +63,22 @@ WORLD_CONTRACT=""
 # ARGUMENT PARSING
 #==============================================================================
 
-# Check if the "--profile" flag is provided
-if [[ "$*" == *"--profile"* ]]; then
-    for ((i=1; i<=$#; i++)); do
-        if [[ "${!i}" == "--profile" ]] && [ $((i+1)) -le $# ]; then
-            PROFILE="${!((i+1))}"
-            break
-        fi
-    done
-fi
-
-# Check if the "--world" flag is provided
-if [[ "$*" == *"--world"* ]]; then
-    for ((i=1; i<=$#; i++)); do
-        if [[ "${!i}" == "--world" ]] && [ $((i+1)) -le $# ]; then
-            WORLD_CONTRACT="--world ${!((i+1))}"
-            break
-        fi
-    done
-fi
+# Parse arguments using a while loop
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --profile)
+            PROFILE="$2"
+            shift 2
+            ;;
+        --world)
+            WORLD_CONTRACT="--world $2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
 
 #==============================================================================
 # CONTRACT COMPILATION
@@ -93,9 +90,8 @@ echo -e "${BLUE}║           Game Contract Compilation                 ║${NC}
 echo -e "${BLUE}╚═════════════════════════════════════════════════════╝${NC}"
 echo -e ""
 
-echo -e "${YELLOW}► Building Game contracts with ${BOLD}${PROFILE}${YELLOW}"\
-       "and world contract: ${BOLD}${WORLD_CONTRACT:-(unspecified)}${YELLOW}${NC}"
-COMMAND="sozo build --profile $PROFILE $WORLD_CONTRACT"
+echo -e "${YELLOW}► Building Game contracts with --profile ${BOLD}${PROFILE}${YELLOW}"
+COMMAND="sozo build --profile $PROFILE"
 echo -e ""
 echo -e "${BLUE}► Running command: ${BOLD}${COMMAND}${BLUE}${NC}"
 echo -e ""
@@ -111,7 +107,7 @@ echo -e "${BLUE}║                Game Contract Migration              ║${NC}
 echo -e "${BLUE}╚═════════════════════════════════════════════════════╝${NC}"
 echo -e ""
 
-echo -e "${YELLOW}► Migrating Game contracts with ${BOLD}${PROFILE}${YELLOW}"\
+echo -e "${YELLOW}► Migrating Game contracts with --profile ${BOLD}${PROFILE}${YELLOW}"\
        "and world contract: ${BOLD}${WORLD_CONTRACT:-(unspecified)}${YELLOW}${NC}"
 COMMAND="sozo migrate --profile $PROFILE $WORLD_CONTRACT"
 echo -e ""

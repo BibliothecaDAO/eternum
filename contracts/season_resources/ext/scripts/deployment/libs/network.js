@@ -24,8 +24,8 @@ const NETWORKS = {
     gateway_url: "http://127.0.0.1:5050/gateway",
   },
   katana: {
-    name: "katana",
-    explorer_url: "https://katana.voyager.online",
+    name: "slot",
+    explorer_url: "https://slot.voyager.online",
     rpc_url: process.env.STARKNET_RPC,
     feeder_gateway_url: process.env.STARKNET_RPC + "/feeder_gateway",
     gateway_url: process.env.STARKNET_RPC + "/gateway",

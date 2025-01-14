@@ -25,8 +25,8 @@
 #   - Default port: 5050
 #
 # FILES:
-#   - PID file: ./pids/katana.pid
-#   - Log file: ./logs/katana.log
+#   - PID file: contracts/game/pids/katana.pid
+#   - Log file: contracts/game/logs/katana.log
 #
 # REQUIREMENTS:
 #   - Katana must be installed and available in PATH
@@ -120,9 +120,14 @@ setup_log_handling() {
 # MAIN EXECUTION
 #==============================================================================
 
+DISPLAY_TITLE="Starting up Katana"
+if [ "$1" == "--kill" ]; then
+    DISPLAY_TITLE="Stopping Katana"
+fi
+
 echo -e ""
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║          Starting up Local $(katana --version)        ║${NC}"
+echo -e "${BLUE}║          $DISPLAY_TITLE                 ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
 echo -e ""
 
@@ -167,6 +172,6 @@ katana --invoke-max-steps $KATANA_MAX_INVOKE_STEPS \
 # Store the PID
 echo $! > "$PID_FILE"
 echo -e "${GREEN}✔ Katana started with PID: ${BOLD}$(cat $PID_FILE)${NC}"
-echo -e "${GREEN}✔ PID file: ${BOLD}$PID_FILE${NC}"
-echo -e "${GREEN}✔ Log file: ${BOLD}$LOG_FILE${NC}"
+echo -e "${GREEN}✔ PID file: contracts/game/${BOLD}$PID_FILE${NC}"
+echo -e "${GREEN}✔ Log file: contracts/game/${BOLD}$LOG_FILE${NC}"
 echo -e ""
