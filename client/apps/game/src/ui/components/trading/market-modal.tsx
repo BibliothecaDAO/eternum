@@ -6,7 +6,7 @@ import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
-import { useGetBanks } from "@/hooks/helpers/use-banks";
+import { useBank } from "@/hooks/helpers/use-banks";
 import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { useStructureByPosition } from "@/hooks/helpers/use-structures";
@@ -61,10 +61,9 @@ export const MarketModal = () => {
 
   const { playerStructures } = useEntities();
   const { toggleModal } = useModalStore();
-  const banks = useGetBanks();
+  const bank = useBank();
   const { bidOffers, askOffers } = useSetMarket();
 
-  const bank = banks.length === 1 ? banks[0] : null;
   const battles = useBattlesAtPosition(bank?.position || { x: 0, y: 0 });
 
   const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
