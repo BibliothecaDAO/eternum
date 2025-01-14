@@ -2,7 +2,9 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ResourceCost, ResourcesIds } from "@bibliothecadao/eternum";
-import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { useMemo } from "react";
 
 export interface Building {
   name: string;
@@ -15,19 +17,19 @@ export interface Building {
   innerRow: number;
 }
 
-export const useBuildings = () => {
+export const useBuildings = (outerCol: number, outerRow: number) => {
   const {
     setup: {
       components: { Building },
     },
   } = useDojo();
 
-  const getBuildings = (outerCol: number, outerRow: number): Building[] => {
-    const buildingEntities = runQuery([
-      Has(Building),
-      HasValue(Building, { outer_col: outerCol, outer_row: outerRow }),
-    ]);
+  const buildingEntities = useEntityQuery([
+    Has(Building),
+    HasValue(Building, { outer_col: outerCol, outer_row: outerRow }),
+  ]);
 
+  const buildings = useMemo(() => {
     return Array.from(buildingEntities)
       .map((entity) => {
         const building = getComponentValue(Building, entity);
@@ -60,7 +62,7 @@ export const useBuildings = () => {
         };
       })
       .filter((building) => building != null);
-  };
+  }, [buildingEntities]);
 
-  return { getBuildings };
+  return buildings as Building[];
 };

@@ -6,7 +6,7 @@ import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
-import { useBank } from "@/hooks/helpers/use-banks";
+import { useBank } from "@/hooks/helpers/use-bank";
 import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { useStructureByPosition } from "@/hooks/helpers/use-structures";

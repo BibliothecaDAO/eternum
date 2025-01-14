@@ -23,8 +23,7 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
   const realm = useGetRealm(structureEntityId).realm;
 
-  const { getBuildings } = useBuildings();
-  const buildings = getBuildings(realm.position.x, realm.position.y);
+  const buildings = useBuildings(realm.position.x, realm.position.y);
 
   const economyBuildings = buildings.filter(
     (building) =>
