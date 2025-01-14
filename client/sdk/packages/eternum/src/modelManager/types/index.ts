@@ -1,9 +1,14 @@
 import { ComponentValue } from "@dojoengine/recs";
 import { Account, AccountInterface } from "starknet";
-import { ClientComponents } from "../../dojo/components/createClientComponents";
+import { ClientComponents } from "../../dojo/createClientComponents";
 import { Position } from "../../types";
 
 export type DojoAccount = Account | AccountInterface;
+
+export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
+  isStructureBattle: boolean;
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+};
 
 export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   name: string;

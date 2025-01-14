@@ -6,9 +6,8 @@ import { displayAddress } from "@/lib/utils";
 import { ADMIN_BANK_ENTITY_ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { ChevronDown, ChevronUp, Loader } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { TypeP } from "../typography/type-p";
-import { ShowSingleResource } from "../ui/SelectResources";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Input } from "../ui/input";
@@ -332,31 +331,5 @@ export const BridgeOutStep2 = () => {
         </Button>
       </div>
     </>
-  );
-};
-
-export const SelectResourceRow = ({
-  selectedResourceIds,
-  setSelectedResourceIds,
-  selectedResourceAmounts,
-  setSelectedResourceAmounts,
-}: {
-  selectedResourceIds: number[];
-  setSelectedResourceIds: (value: number[]) => void;
-  selectedResourceAmounts: { [key: string]: number };
-  setSelectedResourceAmounts: (value: { [key: string]: number }) => void;
-}) => {
-  return (
-    <div className="grid grid-cols-0 gap-8 px-8 h-full">
-      <div className=" bg-gold/10  h-auto border border-gold/40">
-        <ShowSingleResource
-          selectedResourceIds={selectedResourceIds}
-          setSelectedResourceIds={setSelectedResourceIds}
-          selectedResourceAmounts={selectedResourceAmounts}
-          setSelectedResourceAmounts={setSelectedResourceAmounts}
-          entity_id={0}
-        />
-      </div>
-    </div>
   );
 };

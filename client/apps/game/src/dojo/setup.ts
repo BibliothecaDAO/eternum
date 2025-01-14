@@ -1,8 +1,9 @@
-import { AppStore } from "@/hooks/store/useUIStore";
-import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
+import { AppStore } from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   ClientConfigManager,
+  createClientComponents,
   HYPERSTRUCTURE_CONFIG_ID,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
@@ -11,15 +12,14 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
-import { createClientComponents } from "./createClientComponents";
-import { createSystemCalls } from "./createSystemCalls";
-import { setupNetwork } from "./setupNetwork";
+import { createSystemCalls } from "./create-system-calls";
+import { setupNetwork } from "./setup-network";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
 export const configManager = ClientConfigManager.instance();
 
-export const syncEntitiesDebounced = async <S extends Schema>(
+const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityKeyClause: EntityKeysClause[],

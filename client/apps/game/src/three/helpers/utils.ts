@@ -1,6 +1,7 @@
-import { useAccountStore } from "@/hooks/context/accountStore";
+import { useAccountStore } from "@/hooks/context/account-store";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { DRACOLoader, GLTFLoader, MeshoptDecoder } from "three-stdlib";
+
 export function createPausedLabel() {
   const div = document.createElement("div");
   div.classList.add("rounded-md", "bg-brown/50", "text-gold", "p-1", "-translate-x-1/2", "text-xs");

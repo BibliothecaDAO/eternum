@@ -1445,10 +1445,7 @@
       "init_calldata": [],
       "tag": "world_0-world",
       "selector": "0x53c554ac832aace5a7c71baf9977fb56ab535ad1e87955a5929f78e45a07ebd",
-      "systems": [
-        "world",
-        "upgrade"
-      ]
+      "systems": ["world", "upgrade"]
     }
   ],
   "models": [],

@@ -1,5 +1,6 @@
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { ResourceMiningTypes } from "@/types";
+import { SortInterface } from "@/ui/elements/sort-button";
 import {
   BuildingType,
   CapacityConfigCategory,
@@ -17,7 +18,6 @@ import {
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { env } from "../../../env";
-import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
@@ -441,10 +441,10 @@ export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
   return cost.map((item) => (item.resource === ResourcesIds.Lords ? { ...item, amount: item.amount * 0.1 } : item));
 };
 
-export const getSeasonAddressesPath = () => {
+const getSeasonAddressesPath = () => {
   return `/resource_addresses/${env.VITE_PUBLIC_CHAIN}/resource_addresses.json`;
 };
-export const getJSONFile = async (filePath: string) => {
+const getJSONFile = async (filePath: string) => {
   const response = await fetch(filePath);
   const data = await response.json();
   return data;

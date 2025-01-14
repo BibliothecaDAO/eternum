@@ -1,9 +1,8 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import TwitterShareButton from "@/ui/elements/TwitterShareButton";
+import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ArmyInfo, BattleSide, Structure } from "@bibliothecadao/eternum";
+import { ArmyInfo, BattleSide, ClientComponents, Structure } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { env } from "../../../../../env";

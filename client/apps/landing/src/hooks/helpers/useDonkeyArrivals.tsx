@@ -39,7 +39,6 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
     return batches;
   }, [realmEntityIds]);
 
-
   const donkeyQueriesResults = useQueries({
     queries: batchedRealmIds.map((realmIds) => ({
       queryKey: ["donkeyEntityIds", realmIds],

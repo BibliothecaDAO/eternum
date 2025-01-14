@@ -1,7 +1,7 @@
 import { Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { RESOURCE_RARITY, ResourcesIds, WORLD_CONFIG_ID } from "../constants";
-import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ClientComponents } from "../dojo/createClientComponents";
 import { ContractAddress, GuildInfo, ID, TickIds } from "../types";
 import { configManager } from "./ConfigManager";
 
@@ -130,7 +130,7 @@ export class LeaderboardManager {
         const epochEndTimestamp =
           season.is_over && nextEpoch === undefined
             ? season.ended_at
-            : nextEpoch?.start_timestamp ?? BigInt(currentTimestamp);
+            : (nextEpoch?.start_timestamp ?? BigInt(currentTimestamp));
         const epochDuration = epochEndTimestamp - epoch.start_timestamp;
 
         const nbOfCycles = Number(epochDuration) / configManager.getTick(TickIds.Default);
