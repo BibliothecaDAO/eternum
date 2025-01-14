@@ -1055,8 +1055,8 @@ export const createAdminBank = async (config: Config) => {
     │  ${chalk.gray('Name:')}              ${chalk.white(calldata.name)}
     │  ${chalk.gray('Location:')}          ${chalk.white(`(${FELT_CENTER}, ${FELT_CENTER})`)}
     │  ${chalk.gray('Owner Fee Rate:')}    ${chalk.white(`${calldata.owner_fee_num}/${calldata.owner_fee_denom}`)}
-    │  ${chalk.gray('Bridge Fee (In):')}   ${chalk.white(calldata.owner_bridge_fee_dpt_percent + '%')}
-    │  ${chalk.gray('Bridge Fee (Out):')}  ${chalk.white(calldata.owner_bridge_fee_wtdr_percent + '%')}
+    │  ${chalk.gray('Bridge Fee (In):')}   ${chalk.white(calldata.owner_bridge_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%')}
+    │  ${chalk.gray('Bridge Fee (Out):')}  ${chalk.white(calldata.owner_bridge_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR * 100 + '%')}
     └────────────────────────────────`));
 
   const tx = await config.provider.create_admin_bank(calldata);

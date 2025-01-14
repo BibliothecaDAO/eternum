@@ -226,8 +226,12 @@ export const grantMinterRoleToInGameBridge = async () => {
 };
 
 export const revokeMinterRoleFromAllSeasonResourceContracts = async () => {
-  ////// Revoke MINTER ROLE TO ALL SEASON RESOURCE CONTRACTS //////
-  console.log(`\n Revoking minter role from all season resource contracts ... \n\n`.green);
+  console.log(`\n${colors.title}🔒 Revoking Minter Role from Season Resource Contracts${colors.reset}\n`);
+  
+  console.log(`${colors.info}╔════════════════════════════════════════════════════════════════════════════════════════${colors.reset}`);
+  console.log(`${colors.info}  In-Game Bridge System${colors.reset} : ${colors.address}${RESOURCE_BRIDGE_SYSTEMS_CONTRACT}${colors.reset}`);
+  console.log(`${colors.info}═════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`);
+  console.log(`\n`);
 
   let resourceAddresses = await getResourceAddressesFromFile();
   let resourceAddressesArray = Object.values(resourceAddresses)
@@ -256,8 +260,8 @@ export const revokeMinterRoleFromAllSeasonResourceContracts = async () => {
 
   // Wait for transaction
   let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  console.log(`${colors.info}Transaction Hash${colors.reset} : ${colors.hash}${network.explorer_url}/tx/${contract.transaction_hash}${colors.reset}\n`);
   await account.waitForTransaction(contract.transaction_hash);
 
-  console.log(`Successfully revoked minter role from all season resource contracts`.green, "\n\n");
+  console.log(`${colors.success}✨ Successfully revoked minter role from all season resource contracts!${colors.reset}\n`);
 };

@@ -77,6 +77,17 @@
     "config:mainnet": "pnpm run build:packages && pnpm --dir ./client/config run mainnet",
     "indexer:stop:mainnet": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network mainnet",
 
+
+    "_comment_seasonresources_revoke_": "_______________________________________________",
+    "_comment_seasonresources_revoke1": "Revoke the minter role of the in-game bridge system from all season resource contracts",
+    "_comment_seasonresources_revoke2": "Commands will be executed using `.env.{network}` in contracts/common/",
+    "_comment_seasonresources_revoke__": "_______________________________________________",
+
+    "seasonresources:revoke:local": "cd ./contracts/season_resources/ext/scripts/deployment && bun run revoke:local",
+    "seasonresources:revoke:slot": "cd ./contracts/season_resources/ext/scripts/deployment && bun run revoke:slot",
+    "seasonresources:revoke:sepolia": "cd ./contracts/season_resources/ext/scripts/deployment && bun run revoke:sepolia",
+    "seasonresources:revoke:mainnet": "cd ./contracts/season_resources/ext/scripts/deployment && bun run revoke:mainnet",
+
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
     "knip": "npx knip --exclude binaries,dependencies",
