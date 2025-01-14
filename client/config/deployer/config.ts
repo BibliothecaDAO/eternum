@@ -1,55 +1,45 @@
+import {
+  ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE,
+  BRIDGE_FEE_DENOMINATOR,
+  BuildingType, CapacityConfigCategory,
+  EternumGlobalConfig as DefaultConfig,
+  DONKEY_ENTITY_TYPE,
+  EternumProvider,
+  FELT_CENTER,
+  QuestType, ResourcesIds,
+  ResourceTier,
+  scaleResourceCostMinMax, scaleResourceInputs, scaleResourceOutputs, scaleResources,
+  SHARDS_MINES_WIN_PROBABILITY,
+  TickIds,
+  TravelTypes,
+  type Config as EternumGlobalConfig, type ResourceInputs, type ResourceOutputs, type ResourceWhitelistConfig,
+} from "@bibliothecadao/eternum";
 import { Account } from "starknet";
-import { ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, QuestType, ResourcesIds } from "../constants";
-import { BuildingType, CapacityConfigCategory } from "../constants/structures";
-import { EternumProvider } from "../provider";
-import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, ResourceWhitelistConfig, TickIds, TravelTypes } from "../types";
-import { scaleResourceCostMinMax, scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
 import chalk from 'chalk';
-import { BRIDGE_FEE_DENOMINATOR, EternumGlobalConfig as DefaultConfig, FELT_CENTER, SHARDS_MINES_WIN_PROBABILITY } from "../constants/global";
-import { ResourceTier } from "../constants/resources";
+import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
+
 interface Config {
   account: Account;
   provider: EternumProvider;
   config: EternumGlobalConfig;
 }
 
-const shortHexAddress = (address: string | undefined | null): string => {
-  if (!address) return 'Not set';
-  if (!address.startsWith('0x')) {
-    address = '0x' + BigInt(address).toString(16);
-  }
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-};
 
-const addCommas = (amount: number | bigint) => {
-  try {
-    return BigInt(amount).toLocaleString();
-  } catch (e) {
-    return amount.toString();
-  }
-};
-
-const inGameAmount = (amount: number, config: EternumGlobalConfig) => {
-  amount = amount / config.resources.resourcePrecision;
-  return addCommas(amount);
-};
-
-const hourMinutesSeconds = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
-  return `${hours}h ${minutes}m ${remainingSeconds}s`;
-};
-
-export class EternumConfig {
+export class GameConfigDeployer {
   public globalConfig: EternumGlobalConfig;
 
   constructor(config?: EternumGlobalConfig) {
     this.globalConfig = config || DefaultConfig;
   }
 
-  async setup(account: Account, provider: EternumProvider) {
+
+  async setupAll(account: Account, provider: EternumProvider) {
+    await this.setupNonBank(account, provider);
+    await this.setupBank(account, provider);
+  }
+
+  async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setProductionConfig(config);
     await setResourceBridgeWhitelistConfig(config);
@@ -75,6 +65,7 @@ export class EternumConfig {
     await setMercenariesConfig(config);
     await setBuildingGeneralConfig(config);
     await setSettlementConfig(config);
+
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
