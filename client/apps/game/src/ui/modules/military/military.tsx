@@ -1,16 +1,20 @@
-import { useEntities } from "@/hooks/helpers/use-entities";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { EntityArmyList } from "@/ui/components/military/army-list";
 import { EntitiesArmyTable } from "@/ui/components/military/entities-army-table";
 import { UserBattles } from "@/ui/components/military/user-battles";
 import { Tabs } from "@/ui/elements/tab";
+import { getStructure } from "@/utils/entities";
 import { ID } from "@bibliothecadao/eternum";
 import { useState } from "react";
 
 export const Military = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
+  const {
+    setup: { components },
+  } = useDojo();
+
   const { isMapView } = useQuery();
-  const { playerStructures } = useEntities();
-  const selectedStructure = playerStructures().find((structure) => structure.entity_id === entityId);
+  const selectedStructure = entityId ? getStructure(entityId, components) : undefined;
 
   const [selectedTab, setSelectedTab] = useState(0);
 

@@ -1,9 +1,8 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import { useRealm } from "@/hooks/helpers/use-realm";
 import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { formatTime, toHexString } from "@/ui/utils/utils";
+import { getAddressName, getEntityName } from "@/utils/entities";
 import {
   ClientComponents,
   ContractAddress,
@@ -170,19 +169,18 @@ export const useGuilds = () => {
 
   const {
     setup: {
-      components: {
-        Guild,
-        GuildMember,
-        GuildWhitelist,
-        Owner,
-        AddressName,
-        events: { CreateGuild, JoinGuild },
-      },
+      components,
       account: { account },
     },
   } = dojo;
-  const { getEntityName } = useEntitiesUtils();
-  const { getAddressName } = useRealm();
+  const {
+    Guild,
+    GuildMember,
+    GuildWhitelist,
+    Owner,
+    AddressName,
+    events: { CreateGuild, JoinGuild },
+  } = components;
 
   const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
 
@@ -196,7 +194,7 @@ export const useGuilds = () => {
         guilds,
         nextBlockTimestamp,
         account.address,
-        (entityId: number) => getEntityName(entityId) || "Unknown",
+        (entityId: number) => getEntityName(entityId, components) || "Unknown",
         Guild,
         Owner,
         GuildMember,
@@ -205,25 +203,28 @@ export const useGuilds = () => {
     };
   };
 
-  const getGuildFromEntityId = useCallback((entityId: ID, accountAddress: ContractAddress) => {
-    const guildsRanked = useLeaderBoardStore.getState().guildsByRank;
-    const guild = formatGuilds(
-      guildsRanked,
-      [getEntityIdFromKeys([BigInt(entityId)])],
-      nextBlockTimestamp,
-      account.address,
-      (entityId: number) => getEntityName(entityId) || "Unknown",
-      Guild,
-      Owner,
-      GuildMember,
-      CreateGuild,
-    )[0];
-    if (!guild) return;
+  const getGuildFromEntityId = useCallback(
+    (entityId: ID, accountAddress: ContractAddress, components: ClientComponents) => {
+      const guildsRanked = useLeaderBoardStore.getState().guildsByRank;
+      const guild = formatGuilds(
+        guildsRanked,
+        [getEntityIdFromKeys([BigInt(entityId)])],
+        nextBlockTimestamp,
+        account.address,
+        (entityId: number) => getEntityName(entityId, components) || "Unknown",
+        Guild,
+        Owner,
+        GuildMember,
+        CreateGuild,
+      )[0];
+      if (!guild) return;
 
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(guild.entityId)]));
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(guild.entityId)]));
 
-    return { guild, isOwner: owner?.address === ContractAddress(accountAddress), name: guild.name };
-  }, []);
+      return { guild, isOwner: owner?.address === ContractAddress(accountAddress), name: guild.name };
+    },
+    [],
+  );
 
   const getGuildFromPlayerAddress = useCallback((accountAddress: ContractAddress): GuildInfo | undefined => {
     const guildMember = getComponentValue(GuildMember, getEntityIdFromKeys([accountAddress]));
@@ -232,7 +233,9 @@ export const useGuilds = () => {
     const guild = getComponentValue(Guild, getEntityIdFromKeys([BigInt(guildMember.guild_entity_id)]));
     const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(guildMember.guild_entity_id)]));
 
-    const name = guildMember.guild_entity_id ? getEntityName(guildMember.guild_entity_id) || "Unknown" : "Unknown";
+    const name = guildMember.guild_entity_id
+      ? getEntityName(guildMember.guild_entity_id, components) || "Unknown"
+      : "Unknown";
 
     return {
       entityId: guildMember?.guild_entity_id,
@@ -251,7 +254,7 @@ export const useGuilds = () => {
         players,
         nextBlockTimestamp,
         account.address,
-        getAddressName,
+        (address: ContractAddress) => getAddressName(address, components),
         GuildMember,
         Owner,
         JoinGuild,
@@ -268,15 +271,19 @@ export const useGuilds = () => {
       whitelist,
       players,
       GuildWhitelist,
-      getAddressName,
-      (entityId: number) => getEntityName(entityId) || "Unknown",
+      (address: ContractAddress) => getAddressName(address, components) || "Unknown",
+      (entityId: number) => getEntityName(entityId, components) || "Unknown",
     );
   };
 
   const usePlayerWhitelist = (address: ContractAddress) => {
     const whitelist = useEntityQuery([HasValue(GuildWhitelist, { address, is_whitelisted: true })]);
 
-    return formatPlayerWhitelist(whitelist, GuildWhitelist, (entityId: number) => getEntityName(entityId) || "Unknown");
+    return formatPlayerWhitelist(
+      whitelist,
+      GuildWhitelist,
+      (entityId: number) => getEntityName(entityId, components) || "Unknown",
+    );
   };
 
   const getPlayersInPlayersGuild = useCallback((accountAddress: ContractAddress) => {

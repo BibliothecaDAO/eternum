@@ -1,6 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useFragmentMines } from "@/hooks/helpers/use-fragment-mines";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/use-hyperstructures";
@@ -15,6 +14,7 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { getAddressNameFromEntity, getPlayerAddressFromEntity } from "@/utils/entities";
 import {
   BattleSide,
   ContractAddress,
@@ -179,14 +179,17 @@ const BaseStructureExtraContent = ({
   entityId: ID;
   children: React.ReactNode;
 }) => {
+  const {
+    setup: { components },
+  } = useDojo();
+
   const { getGuildFromPlayerAddress } = useGuilds();
-  const { getAddressNameFromEntity, getPlayerAddressFromEntity } = useEntitiesUtils();
 
   const armies = useArmiesAtPosition({ position: { x, y } });
 
   const structureOwner = useMemo(() => {
-    const ownerName = getAddressNameFromEntity(entityId);
-    const address = getPlayerAddressFromEntity(entityId);
+    const ownerName = getAddressNameFromEntity(entityId, components);
+    const address = getPlayerAddressFromEntity(entityId, components);
     const guildName = getGuildFromPlayerAddress(address || 0n)?.name;
     return { name: ownerName, guildName };
   }, [entityId, getAddressNameFromEntity, getPlayerAddressFromEntity, getGuildFromPlayerAddress]);
@@ -199,7 +202,7 @@ const BaseStructureExtraContent = ({
 
     const getArmyInfo = (army?: any) => {
       if (!army) return;
-      const ownerName = getAddressNameFromEntity(army.entity_id || 0);
+      const ownerName = getAddressNameFromEntity(army.entity_id || 0, components);
       const guildName = getGuildFromPlayerAddress(army.owner?.address || 0n)?.name;
       const totalTroops =
         (army.troops?.knight_count || 0n) + (army.troops?.paladin_count || 0n) + (army.troops?.crossbowman_count || 0n);

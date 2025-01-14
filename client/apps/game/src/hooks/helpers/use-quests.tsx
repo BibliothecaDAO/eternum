@@ -1,9 +1,9 @@
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useArmiesByStructure } from "@/hooks/helpers/use-armies";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useGetMyOffers } from "@/hooks/helpers/use-trade";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { questDetails } from "@/ui/components/quest/quest-details";
+import { getEntityInfo } from "@/utils/entities";
 import { ArmyInfo, BuildingType, ContractAddress, ID, QuestType, TileManager } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue, getComponentValue } from "@dojoengine/recs";
@@ -63,10 +63,13 @@ const useQuestDependencies = () => {
     structureEntityId: structureEntityId || 0,
   });
   const orders = useGetMyOffers();
-  const { getEntityInfo } = useEntitiesUtils();
 
   const structurePosition = useMemo(
-    () => getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 },
+    () =>
+      getEntityInfo(structureEntityId, ContractAddress(setup.account.account.address), setup.components)?.position || {
+        x: 0,
+        y: 0,
+      },
     [structureEntityId, getEntityInfo],
   );
 

@@ -1,9 +1,9 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useResourcesUtils } from "@/hooks/helpers/use-resources";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { getResourcesFromBalance } from "@/utils/resources";
 import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -25,12 +25,11 @@ export const ResourceExchange = ({
 }: ResourceExchangeProps) => {
   const {
     setup: {
+      components,
       account: { account },
       systemCalls: { send_resources },
     },
   } = useDojo();
-
-  const { getResourcesFromBalance } = useResourcesUtils();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [transferDirection, setTransferDirection] = useState<"to" | "from">("to");
@@ -46,8 +45,8 @@ export const ResourceExchange = ({
       ),
   );
 
-  const giverArmyResources = useMemo(() => getResourcesFromBalance(giverArmyEntityId), [loading]);
-  const takerArmyResources = useMemo(() => getResourcesFromBalance(takerArmy?.entity_id!), [loading]);
+  const giverArmyResources = useMemo(() => getResourcesFromBalance(giverArmyEntityId, components), [loading]);
+  const takerArmyResources = useMemo(() => getResourcesFromBalance(takerArmy?.entity_id!, components), [loading]);
 
   const handleResourceGivenChange = (resourceId: number, amount: number) => {
     setResourcesGiven({ ...resourcesGiven, [resourceId]: amount });

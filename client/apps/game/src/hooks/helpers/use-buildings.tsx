@@ -1,21 +1,10 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { ResourceIdToMiningType } from "@/ui/utils/utils";
-import { BuildingType, ResourceCost, ResourcesIds } from "@bibliothecadao/eternum";
+import { Building, BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-
-export interface Building {
-  name: string;
-  category: string;
-  paused: boolean;
-  produced: ResourceCost;
-  consumed: ResourceCost[];
-  bonusPercent: number;
-  innerCol: number;
-  innerRow: number;
-}
 
 export const useBuildings = (outerCol: number, outerRow: number) => {
   const {

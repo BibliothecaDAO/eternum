@@ -1,7 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { usePlayerContributions } from "@/hooks/helpers/use-contributions";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import {
   ProgressWithPercentage,
@@ -17,6 +16,7 @@ import Button from "@/ui/elements/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
 import { currencyIntlFormat, getEntityIdFromKeys, multiplyByPrecision, separateCamelCase } from "@/ui/utils/utils";
+import { getAddressNameFromEntity } from "@/utils/entities";
 import {
   Access,
   calculateCompletionPoints,
@@ -48,7 +48,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
     network: { provider },
     setup: {
       systemCalls: { contribute_to_construction, set_access },
-      components: { Hyperstructure },
+      components,
     },
   } = dojo;
 
@@ -72,10 +72,9 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const [newContributions, setNewContributions] = useState<Record<number, number>>({});
 
-  const { getAddressNameFromEntity } = useEntitiesUtils();
-  const ownerName = getAddressNameFromEntity(entity.entity_id);
+  const ownerName = getAddressNameFromEntity(entity.entity_id, components);
 
-  const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
+  const hyperstructure = useComponentValue(components.Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
 
   const playerGuild = useMemo(() => getGuildFromPlayerAddress(ContractAddress(account.address)), []);
 

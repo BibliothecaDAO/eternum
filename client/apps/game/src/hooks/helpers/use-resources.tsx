@@ -44,25 +44,6 @@ export function useResourcesUtils() {
     }, [weight, entityId, currentDefaultTick]);
   };
 
-  const getResourcesFromBalance = (entityId: ID): Resource[] => {
-    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
-
-    const weight = getComponentValue(Weight, getEntityIdFromKeys([BigInt(entityId)]));
-    const hasWeightlessResources = weightLessResources.some(
-      (resourceId) =>
-        (getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)]))?.balance ?? 0n) > 0n,
-    );
-    if (!weight?.value && !hasWeightlessResources) return [];
-    const resourceIds = resources.map((r) => r.id);
-    return resourceIds
-      .map((id) => {
-        const resourceManager = new ResourceManager(setup.components, entityId, id);
-        const balance = resourceManager.balance(currentDefaultTick);
-        return { resourceId: id, amount: balance };
-      })
-      .filter((r) => r.amount > 0);
-  };
-
   const getResourceCosts = (costUuid: bigint, count: number) => {
     const resourceCosts = [];
     for (let i = 0; i < count; i++) {
@@ -105,7 +86,6 @@ export function useResourcesUtils() {
 
   return {
     getRealmsWithSpecificResource,
-    getResourcesFromBalance,
     getResourceCosts,
     useResourcesFromBalance,
   };

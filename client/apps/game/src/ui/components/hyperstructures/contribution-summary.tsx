@@ -1,8 +1,8 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useRealm } from "@/hooks/helpers/use-realm";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { copyPlayerAddressToClipboard, currencyIntlFormat, divideByPrecision, formatNumber } from "@/ui/utils/utils";
+import { getAddressName } from "@/utils/entities";
 import { ContractAddress, ID, LeaderboardManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
@@ -20,8 +20,6 @@ export const ContributionSummary = ({
   const leaderboardManager = useMemo(() => {
     return LeaderboardManager.instance(components);
   }, [components]);
-
-  const { getAddressName } = useRealm();
 
   const [showContributions, setShowContributions] = useState(false);
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
@@ -102,7 +100,7 @@ export const ContributionSummary = ({
           <SelectResource onSelect={(resourceId) => setSelectedResource(resourceId)} />
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {sortedContributors.map(({ playerAddress, resources, percentage }) => {
-              const addressName = getAddressName(ContractAddress(playerAddress)) || "Unknown";
+              const addressName = getAddressName(ContractAddress(playerAddress), components) || "Unknown";
 
               return (
                 <div key={playerAddress} className="bg-gold/10 p-1 rounded">

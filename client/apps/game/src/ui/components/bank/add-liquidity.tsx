@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntities } from "@/hooks/helpers/use-entities";
+import { usePlayerStructures } from "@/hooks/helpers/use-entities";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
@@ -28,9 +28,9 @@ const AddLiquidity = ({
 
   const { getBalance } = useResourceBalance();
 
-  const { playerStructures } = useEntities();
+  const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
-  const playerStructureIds = playerStructures().map((structure) => structure.entity_id);
+  const playerStructureIds = playerStructures.map((structure) => structure.entity_id);
 
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<ResourcesIds>(ResourcesIds.Wood);

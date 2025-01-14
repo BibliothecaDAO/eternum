@@ -7,7 +7,6 @@ import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.s
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
-import { useRealm } from "@/hooks/helpers/use-realm";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { useMusicPlayer } from "@/hooks/use-music";
 import useScreenOrientation from "@/hooks/use-screen-orientation";
@@ -20,6 +19,7 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import { RangeInput } from "@/ui/elements/range-input";
 import { addressToNumber, currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import { getAddressName } from "@/utils/entities";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -27,13 +27,12 @@ import { toast } from "sonner";
 export const SettingsWindow = () => {
   const {
     account: { account },
+    setup: { components },
   } = useDojo();
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
-  const { getAddressName } = useRealm();
-
-  const addressName = getAddressName(ContractAddress(account.address));
+  const addressName = getAddressName(ContractAddress(account.address), components);
 
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);

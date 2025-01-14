@@ -1,6 +1,5 @@
 import { configManager } from "@/dojo/setup";
-import { ClientComponents, findResourceIdByTrait, ID, orders, RealmInterface } from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
+import { findResourceIdByTrait, ID, orders, RealmInterface } from "@bibliothecadao/eternum";
 import realmsJson from "../../../../../common/data/realms.json";
 import { packResources } from "./packed-data";
 
@@ -75,9 +74,4 @@ export const hasEnoughPopulationForBuilding = (realm: any, building: number) => 
   const basePopulationCapacity = configManager.getBasePopulationCapacity();
 
   return (realm?.population || 0) + buildingPopulation <= basePopulationCapacity + (realm?.capacity || 0);
-};
-
-export const getRealmName = (realm: ComponentValue<ClientComponents["Realm"]["schema"]>) => {
-  const baseName = getRealmNameById(realm.realm_id);
-  return realm.has_wonder ? `WONDER - ${baseName}` : baseName;
 };

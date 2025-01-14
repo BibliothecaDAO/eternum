@@ -147,12 +147,6 @@ export function useRealm() {
     }
   };
 
-  const getAddressName = (address: ContractAddress): string | undefined => {
-    const addressName = getComponentValue(AddressName, getEntityIdFromKeys([address]));
-
-    return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
-  };
-
   const getAddressOrder = (address: ContractAddress) => {
     const ownedRealms = runQuery([Has(Realm), HasValue(Owner, { address })]);
     if (ownedRealms.size > 0) {
@@ -190,7 +184,6 @@ export function useRealm() {
     getEntityOwner,
     isRealmIdSettled,
     getNextRealmIdForOrder,
-    getAddressName,
     getAddressOrder,
     getRealmAddressName,
     getRealmIdForOrderAfter,

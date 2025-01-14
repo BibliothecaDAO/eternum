@@ -1,8 +1,8 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { usePrizePool } from "@/hooks/helpers/use-rewards";
 import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
 import { calculateLordsShare, calculatePlayerSharePercentage } from "@/ui/utils/leaderboard";
+import { getEntityName } from "@/utils/entities";
 import { Player, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
@@ -12,11 +12,11 @@ export const useGetAllPlayers = () => {
   const dojo = useDojo();
 
   const {
-    setup: {
-      components: { Realm, Owner, GuildMember, AddressName, Hyperstructure, Structure },
-    },
+    setup: { components },
   } = dojo;
-  const { getEntityName } = useEntitiesUtils();
+
+  const { Realm, Owner, GuildMember, AddressName, Hyperstructure, Structure } = components;
+
   const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
 
   const prizePool = usePrizePool();
@@ -34,7 +34,7 @@ export const useGetAllPlayers = () => {
         const isAlive = !!runQuery([HasValue(Owner, { address: addressName.address })]).size;
 
         const guildMember = getComponentValue(GuildMember, id);
-        const guildName = guildMember ? getEntityName(guildMember.guild_entity_id) : "";
+        const guildName = guildMember ? getEntityName(guildMember.guild_entity_id, components) : "";
 
         return {
           address: addressName.address,

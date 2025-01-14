@@ -1,11 +1,11 @@
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useHyperstructureUpdates } from "@/hooks/helpers/use-hyperstructures";
-import { useRealm } from "@/hooks/helpers/use-realm";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import Button from "@/ui/elements/button";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getAddressName } from "@/utils/entities";
 import { ContractAddress, ID, LeaderboardManager } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
@@ -20,14 +20,10 @@ export const Leaderboard = ({
   const dojo = useDojo();
   const {
     account: { account },
-    setup: {
-      components: { Owner },
-    },
+    setup: { components },
   } = dojo;
 
   const { nextBlockTimestamp } = useNextBlockTimestamp();
-
-  const { getAddressName } = useRealm();
 
   const playerPointsLeaderboard = useMemo(() => {
     return LeaderboardManager.instance(dojo.setup.components).getPlayersByRank(
@@ -52,7 +48,7 @@ export const Leaderboard = ({
   });
 
   const isOwner = useMemo(() => {
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]));
+    const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]));
     if (!owner) return false;
     return ContractAddress(owner.address) === ContractAddress(account.address);
   }, [hyperstructureEntityId]);
@@ -77,7 +73,7 @@ export const Leaderboard = ({
         ))}
       </SortPanel>
       {playerPointsLeaderboard.map(([address, points], index) => {
-        const playerName = getAddressName(address) || "Player not found";
+        const playerName = getAddressName(address, components) || "Player not found";
 
         const isOwner = address === ContractAddress(account.address);
 

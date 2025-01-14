@@ -23,6 +23,7 @@ interface GuildMembersProps {
 export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, setIsExpanded }: GuildMembersProps) => {
   const {
     setup: {
+      components,
       systemCalls: { join_guild, remove_guild_member, disband_guild, remove_player_from_whitelist, set_entity_name },
     },
     account: { account },
@@ -35,7 +36,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   const invitedPlayers = useGuildWhitelist(selectedGuildEntityId, players);
   const userWhitelist = usePlayerWhitelist(ContractAddress(account.address));
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
-  const selectedGuild = getGuildFromEntityId(selectedGuildEntityId, ContractAddress(account.address));
+  const selectedGuild = getGuildFromEntityId(selectedGuildEntityId, ContractAddress(account.address), components);
 
   const playerName = players.find((player) => player.address === ContractAddress(account?.address))?.name;
 

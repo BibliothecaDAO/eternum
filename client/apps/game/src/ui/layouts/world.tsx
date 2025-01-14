@@ -5,7 +5,7 @@ import {
   debouncedAddToSubscriptionOneKey,
 } from "@/dojo/debounced-queries";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { PlayerStructure, useEntities } from "@/hooks/helpers/use-entities";
+import { usePlayerStructures } from "@/hooks/helpers/use-entities";
 import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
 import { useFetchBlockchainData } from "@/hooks/store/use-blockchain-store";
 import useUIStore from "@/hooks/store/use-ui-store";
@@ -13,7 +13,7 @@ import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { rewards } from "@/ui/components/navigation/config";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { ADMIN_BANK_ENTITY_ID } from "@bibliothecadao/eternum";
+import { ADMIN_BANK_ENTITY_ID, PlayerStructure } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Leva } from "leva";
@@ -114,12 +114,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const { playerStructures } = useEntities();
-  const structures = playerStructures();
+  const playerStructures = usePlayerStructures();
 
   const filteredStructures = useMemo(
-    () => structures.filter((structure: PlayerStructure) => !subscriptions[structure.entity_id.toString()]),
-    [structures, subscriptions],
+    () => playerStructures.filter((structure: PlayerStructure) => !subscriptions[structure.entity_id.toString()]),
+    [playerStructures, subscriptions],
   );
 
   useEffect(() => {
@@ -194,7 +193,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         await debounceAddDonkeysAndArmiesSubscription(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
-          [...structures.map((structure) => structure.entity_id)],
+          [...playerStructures.map((structure) => structure.entity_id)],
           () => setLoading(LoadingStateKey.DonkeysAndArmies, false),
         );
       } catch (error) {
@@ -203,7 +202,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, [structures.length]);
+  }, [playerStructures.length]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -336,7 +335,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           )}
 
           <TopLeftContainer>
-            <TopLeftNavigation structures={structures} />
+            <TopLeftNavigation structures={playerStructures} />
           </TopLeftContainer>
         </div>
 
