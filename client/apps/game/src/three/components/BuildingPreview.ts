@@ -10,7 +10,7 @@ import { HoverSound } from "../sound/HoverSound";
 export class BuildingPreview {
   private previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null = null;
   private modelLoadPromises: Promise<void>[] = [];
-  private buildingModels: Map<BUILDINGS_GROUPS, Map<BuildingType | ResourceMiningTypes, THREE.Group>> = new Map();
+  private buildingModels: Map<BUILDINGS_GROUPS, Map<string, THREE.Group>> = new Map();
   private currentHexHovered: THREE.Vector3 | null = null;
   private hoverSound: HoverSound;
 
@@ -21,14 +21,14 @@ export class BuildingPreview {
 
   private loadBuildingModels() {
     const loader = gltfLoader;
-    for (const category of Object.values(BUILDINGS_GROUPS)) {
-      const categoryPaths = buildingModelPaths[category];
-      if (!this.buildingModels.has(category)) {
-        this.buildingModels.set(category, new Map());
+    for (const group of Object.values(BUILDINGS_GROUPS)) {
+      const groupPaths = buildingModelPaths[group];
+      if (!this.buildingModels.has(group)) {
+        this.buildingModels.set(group, new Map());
       }
-      const categoryMap = this.buildingModels.get(category)!;
+      const groupMap = this.buildingModels.get(group)!;
 
-      for (const [building, path] of Object.entries(categoryPaths)) {
+      for (const [building, path] of Object.entries(groupPaths)) {
         const loadPromise = new Promise<void>((resolve, reject) => {
           loader.load(
             path,
@@ -42,7 +42,7 @@ export class BuildingPreview {
                   child.material.opacity = 0.75;
                 }
               });
-              categoryMap.set(building as any, model);
+              groupMap.set(building as any, model);
               resolve();
             },
             undefined,
@@ -59,20 +59,29 @@ export class BuildingPreview {
     Promise.all(this.modelLoadPromises).then(() => {});
   }
 
-  public getBuildingModel(building: BuildingType | ResourceMiningTypes): THREE.Group | null {
-    for (const categoryMap of this.buildingModels.values()) {
-      if (categoryMap.has(building)) {
-        return categoryMap.get(building) || null;
-      }
+  public getBuildingModel(
+    group: BUILDINGS_GROUPS | null,
+    building: BuildingType | ResourceMiningTypes | null,
+  ): THREE.Group | null {
+    if (!group || !building) return null;
+    const categoryMap = this.buildingModels.get(group);
+    console.log("categoryMap", categoryMap);
+    if (categoryMap) {
+      console.log("building", categoryMap.get(building + ""));
+      return categoryMap.get(building + "") || null;
     }
     return null;
   }
 
-  public getBuildingType() {
+  public getBuildingType(): {
+    buildingGroup: BUILDINGS_GROUPS | null;
+    buildingType: BuildingType | ResourceMiningTypes | null;
+  } {
     const building = this.previewBuilding;
-    if (!building) return null;
-    const buildingType = building.resource ? ResourceIdToMiningType[building.resource as ResourcesIds] : building.type;
-    return buildingType;
+    if (!building) return { buildingGroup: null, buildingType: null };
+    const buildingGroup = building.resource ? BUILDINGS_GROUPS.RESOURCES_MINING : BUILDINGS_GROUPS.BUILDINGS;
+    const buildingType = building.resource ? ResourceIdToMiningType[building.resource as ResourcesIds]! : building.type;
+    return { buildingGroup, buildingType };
   }
 
   public setPreviewBuilding(building: { type: BuildingType; resource?: ResourcesIds }) {
@@ -80,9 +89,8 @@ export class BuildingPreview {
       this.clearPreviewBuilding();
     }
     this.previewBuilding = building;
-    const buildingType = building.resource ? ResourceIdToMiningType[building.resource as ResourcesIds] : building.type;
-    const model = this.getBuildingModel(buildingType as BuildingType | ResourceMiningTypes);
-
+    const { buildingGroup, buildingType } = this.getBuildingType();
+    const model = this.getBuildingModel(buildingGroup, buildingType as BuildingType | ResourceMiningTypes);
     if (model) {
       this.scene.add(model);
     }
@@ -94,7 +102,8 @@ export class BuildingPreview {
 
   public clearPreviewBuilding() {
     if (this.previewBuilding) {
-      const model = this.getBuildingModel(this.getBuildingType() as BuildingType | ResourceMiningTypes);
+      const { buildingGroup, buildingType } = this.getBuildingType();
+      const model = this.getBuildingModel(buildingGroup, buildingType as BuildingType | ResourceMiningTypes);
       if (model) {
         this.scene.remove(model);
         this.previewBuilding = null;
@@ -109,8 +118,8 @@ export class BuildingPreview {
         this.hoverSound.play(isSoundOn, effectsLevel);
         this.currentHexHovered = position;
       }
-
-      const model = this.getBuildingModel(this.getBuildingType() as BuildingType | ResourceMiningTypes);
+      const { buildingGroup, buildingType } = this.getBuildingType();
+      const model = this.getBuildingModel(buildingGroup, buildingType as BuildingType | ResourceMiningTypes);
       if (model) {
         model.position.copy(position);
         model.updateMatrixWorld();
@@ -120,7 +129,8 @@ export class BuildingPreview {
 
   public setBuildingColor(color: THREE.Color) {
     if (this.previewBuilding) {
-      const model = this.getBuildingModel(this.getBuildingType() as BuildingType | ResourceMiningTypes);
+      const { buildingGroup, buildingType } = this.getBuildingType();
+      const model = this.getBuildingModel(buildingGroup, buildingType as BuildingType | ResourceMiningTypes);
       if (model) {
         model.traverse((child: any) => {
           if (child.isMesh) {
