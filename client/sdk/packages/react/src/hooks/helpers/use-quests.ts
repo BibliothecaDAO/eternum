@@ -4,9 +4,9 @@ import { HasValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { useArmiesByStructure, useDojo, useEntitiesUtils, useUIStore } from "../";
-import { Prize, questDetails } from "../../constants";
+import { QUEST_DETAILS } from "../../constants";
+import { Prize } from "../../types/quest";
 import { useGetMyOffers } from "./use-trade";
-
 
 export enum QuestStatus {
   InProgress,
@@ -22,7 +22,7 @@ export const useQuests = () => {
     return useMemo(
       () => ({
         id: QuestType,
-        ...questDetails.get(QuestType)!,
+        ...QUEST_DETAILS[QuestType],
         status: dependency.status,
       }),
       [questDependencies[QuestType]],
@@ -183,16 +183,19 @@ const useQuestClaimStatus = () => {
   const questClaimStatus = useMemo(() => {
     const entityBigInt = BigInt(structureEntityId || 0);
 
-    const checkPrizesClaimed = (prizes: Prize[]) =>
+    const checkPrizesClaimed = (prizes: ReadonlyArray<Prize>) =>
       prizes.every(
         (prize) => getComponentValue(Quest, getEntityIdFromKeys([entityBigInt, BigInt(prize.id)]))?.completed,
       );
 
-    return Array.from(questDetails.keys()).reduce(
-      (acc, questName) => ({
-        ...acc,
-        [questName]: isNotSettler || checkPrizesClaimed(questDetails.get(questName)?.prizes || []),
-      }),
+    return Object.keys(QUEST_DETAILS).reduce(
+      (acc, questName) => {
+        const questType = Number(questName) as QuestType;
+        return {
+          ...acc,
+          [questType]: isNotSettler || checkPrizesClaimed(QUEST_DETAILS[questType].prizes),
+        };
+      },
       {} as Record<QuestType, boolean>,
     );
   }, [structureEntityId, isNotSettler, prizeUpdate, Quest]);
