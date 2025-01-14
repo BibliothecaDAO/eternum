@@ -21,11 +21,12 @@ import {
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import {
-  getArmyByEntityId, LeftView,
+  LeftView,
   useDojo,
+  useGetArmyByEntityId,
   useModalStore,
   useNextBlockTimestamp,
-  useUIStore
+  useUIStore,
 } from "@bibliothecadao/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -68,7 +69,7 @@ export const BattleActions = ({
   } = dojo;
 
   const { toggleModal } = useModalStore();
-  const { getAliveArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { nextBlockTimestamp: currentTimestamp, currentArmiesTick } = useNextBlockTimestamp();
@@ -89,7 +90,7 @@ export const BattleActions = ({
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
   const selectedArmy = useMemo(() => {
-    return getAliveArmy(localSelectedUnit || 0);
+    return getArmy(localSelectedUnit || 0);
   }, [localSelectedUnit, isActive, userArmiesInBattle]);
 
   const defenderArmy = useMemo(() => {

@@ -11,11 +11,16 @@ import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
 import { ArmyInfo, configManager, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import {
-  getArmyByEntityId, Position, useDojo, useGuilds,
+  Position,
+  useDojo,
+  useGetArmyByEntityId,
+  useGuilds,
   useIsStructureImmune,
-  useNextBlockTimestamp, useQuery, useStructureAtPosition,
+  useNextBlockTimestamp,
+  useQuery,
+  useStructureAtPosition,
   useStructureImmunityTimer,
-  useUIStore
+  useUIStore,
 } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -206,7 +211,7 @@ const TroopExchange = ({
     },
   } = useDojo();
 
-  const { getArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 

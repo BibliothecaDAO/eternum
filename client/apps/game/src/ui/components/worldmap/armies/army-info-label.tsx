@@ -7,14 +7,23 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ArmyInfo, getRealmNameById, Structure } from "@bibliothecadao/eternum";
-import { getArmyByEntityId, useIsStructureImmune, useNextBlockTimestamp, useQuery, useRealm, useStructureImmunityTimer, useStructures, useUIStore } from "@bibliothecadao/react";
+import {
+  useGetArmyByEntityId,
+  useIsStructureImmune,
+  useNextBlockTimestamp,
+  useQuery,
+  useRealm,
+  useStructureImmunityTimer,
+  useStructures,
+  useUIStore,
+} from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 
 export const ArmyInfoLabel = () => {
   const { isMapView } = useQuery();
   const hoveredArmyEntityId = useUIStore((state) => state.hoveredArmyEntityId);
-  const { getArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const army = useMemo(() => {
     if (hoveredArmyEntityId) return getArmy(hoveredArmyEntityId);

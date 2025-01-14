@@ -5,6 +5,11 @@ import { Position } from "../../types";
 
 export type DojoAccount = Account | AccountInterface;
 
+export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
+  isStructureBattle: boolean;
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+};
+
 export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   name: string;
   isMine: boolean;

@@ -15,7 +15,18 @@ import { Tabs } from "@/ui/elements/tab";
 import { formatTimeDifference } from "@/ui/modules/military/battle-view/battle-progress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { BattleManager, ID, ResourcesIds, configManager } from "@bibliothecadao/eternum";
-import { useArmyByArmyEntityId, useBattlesByPosition, useDojo, useEntities, useGetBanks, useMarketStore, useModalStore, useSetMarket, useStructureByPosition, useUIStore } from "@bibliothecadao/react";
+import {
+  useArmyByArmyEntityId,
+  useBank,
+  useBattlesAtPosition,
+  useDojo,
+  useEntities,
+  useMarketStore,
+  useModalStore,
+  useSetMarket,
+  useStructureByPosition,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 
@@ -51,27 +62,24 @@ export const MarketModal = () => {
 
   const { playerStructures } = useEntities();
   const { toggleModal } = useModalStore();
-  const banks = useGetBanks();
+  const bank = useBank();
   const { bidOffers, askOffers } = useSetMarket();
 
-  const bank = banks.length === 1 ? banks[0] : null;
-  const battles = useBattlesByPosition(bank?.position || { x: 0, y: 0 });
+  const battles = useBattlesAtPosition(bank?.position || { x: 0, y: 0 });
 
   const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
   const getStructure = useStructureByPosition();
   const bankStructure = getStructure(bank?.position || { x: 0, y: 0 });
 
-  const battle = useMemo(() => {
+  const battleEntityId = useMemo(() => {
     if (battles.length === 0) return null;
-    return battles
-      .filter((battle) => battle.isStructureBattle)
-      .sort((a, b) => Number(a.last_updated || 0) - Number(b.last_updated || 0))[0];
+    return battles[0];
   }, [battles]);
 
   const battleManager = useMemo(
-    () => new BattleManager(dojo.setup.components, dojo.network.provider, battle?.entity_id || 0),
-    [battle?.entity_id],
+    () => new BattleManager(dojo.setup.components, dojo.network.provider, battleEntityId || 0),
+    [battleEntityId],
   );
 
   // initial entity id

@@ -9,7 +9,7 @@ import { BattleSimulation } from "@/ui/modules/simulation/battle-simulation";
 import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { useArmiesByEntityOwner, useEntities, useUIStore } from "@bibliothecadao/react";
+import { useArmiesByStructure, useEntities, useUIStore } from "@bibliothecadao/react";
 
 export const EntitiesArmyTable = () => {
   const { playerStructures } = useEntities();
@@ -50,7 +50,7 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
   if (!structureEntityId) {
     return <div>Entity not found</div>;
   }
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId });
+  const { entityArmies } = useArmiesByStructure({ structureEntityId });
 
   const totalTroops = entityArmies.reduce(
     (acc, army: ArmyInfo) => {

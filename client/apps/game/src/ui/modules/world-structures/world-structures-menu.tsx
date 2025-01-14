@@ -16,7 +16,17 @@ import {
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
-import { getArmiesByPosition, useDojo, useEntitiesUtils, useFragmentMines, useGetHyperstructuresWithContributionsFromPlayer, useGuilds, useHyperstructureProgress, useHyperstructures, useResourceBalance } from "@bibliothecadao/react";
+import {
+  useArmiesAtPosition,
+  useDojo,
+  useEntitiesUtils,
+  useFragmentMines,
+  useGetHyperstructuresWithContributionsFromPlayer,
+  useGuilds,
+  useHyperstructureProgress,
+  useHyperstructures,
+  useResourceBalance,
+} from "@bibliothecadao/react";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
@@ -167,9 +177,8 @@ const BaseStructureExtraContent = ({
 }) => {
   const { getGuildFromPlayerAddress } = useGuilds();
   const { getAddressNameFromEntity, getPlayerAddressFromEntity } = useEntitiesUtils();
-  const getArmies = getArmiesByPosition();
 
-  const armies = useMemo(() => getArmies({ x, y }), [x, y]);
+  const armies = useArmiesAtPosition({ position: { x, y } });
 
   const structureOwner = useMemo(() => {
     const ownerName = getAddressNameFromEntity(entityId);

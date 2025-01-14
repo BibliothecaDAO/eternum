@@ -8,6 +8,54 @@ import {
   TroopFoodConsumption,
 } from "../constants";
 
+export enum BattleType {
+  Hex,
+  Structure,
+}
+
+export enum BattleStatus {
+  BattleStart = "Start battle",
+  BattleOngoing = "",
+  UserWon = "Victory",
+  UserLost = "Defeat",
+  BattleEnded = "Battle has ended",
+}
+
+export enum RaidStatus {
+  isRaidable = "Raid!",
+  NoStamina = "Not enough stamina",
+  NoStructureToClaim = "No structure to raid",
+  OwnStructure = "Can't raid your own structure",
+  NoArmy = "No army selected",
+  ArmyNotInBattle = "Selected army not in this battle",
+  MinTroops = "Minimum 100 troops required",
+}
+
+export enum LeaveStatus {
+  Leave = "Leave",
+  NoBattleToLeave = "No battle to leave",
+  DefenderCantLeaveOngoing = "A defender can't leave an ongoing battle",
+  NoArmyInBattle = "Your armies aren't in this battle",
+}
+
+export enum BattleStartStatus {
+  MinTroops = "Minimum 100 troops required",
+  BattleStart = "Start battle",
+  ForceStart = "Force start",
+  NothingToAttack = "Nothing to attack",
+  CantStart = "Can't start a battle now.",
+}
+
+export enum ClaimStatus {
+  Claimable = "Claim",
+  NoSelectedArmy = "No selected army",
+  BattleOngoing = "Battle ongoing",
+  DefenderPresent = "An army's defending the structure",
+  NoStructureToClaim = "No structure to claim",
+  StructureIsMine = "Can't claim your own structure",
+  SelectedArmyIsDead = "Selected army is dead",
+}
+
 export type HexPosition = { col: number; row: number };
 
 export enum Winner {

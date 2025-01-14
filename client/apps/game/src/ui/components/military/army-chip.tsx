@@ -10,7 +10,14 @@ import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { ArmyInfo, BattleManager, Position } from "@bibliothecadao/eternum";
-import { armyHasTroops, getArmiesByPosition, Position as PositionInterface, useDojo, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
+import {
+  armyHasTroops,
+  Position as PositionInterface,
+  useArmiesAtPosition,
+  useDojo,
+  useNextBlockTimestamp,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -222,13 +229,11 @@ const ArmyMergeTroopsPanel = ({
 }) => {
   const [selectedReceiverArmy, setSelectedReceiverArmy] = useState<ArmyInfo | null>(null);
 
-  const getArmies = getArmiesByPosition();
+  const armiesAtPosition = useArmiesAtPosition({ position: giverArmy.position });
 
   const armies = useMemo(() => {
-    return getArmies({ x: giverArmy.position.x, y: giverArmy.position.y }).filter(
-      (army) => army.entity_id !== giverArmy.entity_id,
-    );
-  }, [giverArmy]);
+    return armiesAtPosition.filter((army) => army.entity_id !== giverArmy.entity_id);
+  }, [giverArmy, armiesAtPosition]);
 
   return (
     <div className="py-2">

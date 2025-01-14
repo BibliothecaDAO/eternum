@@ -1,6 +1,6 @@
 import { currencyFormat } from "@/ui/utils/utils";
 import { BattleSide, ClientComponents, ID, formatTime } from "@bibliothecadao/eternum";
-import { getArmyByEntityId, useBattleJoin, useBattleLeave, useBattleStart } from "@bibliothecadao/react";
+import { useBattleJoin, useBattleLeave, useBattleStart, useGetArmyByEntityId } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo } from "react";
 import { shortString } from "starknet";
@@ -28,7 +28,7 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
   const battleJoinData = useBattleJoin(battleId, battleSide);
   const battleLeaveData = useBattleLeave(battleId, battleSide);
 
-  const { getArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const events = useMemo(() => {
     return [...battleStartData, ...battleJoinData, ...battleLeaveData].sort(

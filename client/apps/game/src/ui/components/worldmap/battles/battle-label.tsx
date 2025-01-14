@@ -4,20 +4,16 @@ import { Headline } from "@/ui/elements/headline";
 import { DurationLeft, ProgressBar } from "@/ui/modules/military/battle-view/battle-progress";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { BattleManager, Structure } from "@bibliothecadao/eternum";
-import { DojoResult, useBattlesByPosition, useQuery, useStructureByPosition, useUIStore } from "@bibliothecadao/react";
+import { useBattlesAtPosition, useQuery, useStructureByPosition, useUIStore } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 export const BattleInfoLabel = () => {
-  const dojo = useDojo();
   const { isMapView } = useQuery();
   const getStructure = useStructureByPosition();
   const hoveredBattlePosition = useUIStore((state) => state.hoveredBattle);
   const currentTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
-  const battles = useBattlesByPosition({ x: hoveredBattlePosition?.x || 0, y: hoveredBattlePosition?.y || 0 }).filter(
-    (battle) => battle.duration_left > 0,
-  );
-
+  const battles = useBattlesAtPosition({ x: hoveredBattlePosition?.x || 0, y: hoveredBattlePosition?.y || 0 });
   const structure = getStructure({ x: hoveredBattlePosition?.x || 0, y: hoveredBattlePosition?.y || 0 });
 
   return (
@@ -30,9 +26,8 @@ export const BattleInfoLabel = () => {
             </Headline>
             {battles.map((battle) => (
               <BattleInfo
-                key={battle.entity_id}
-                battleEntityId={battle.entity_id}
-                dojo={dojo}
+                key={battle}
+                battleEntityId={battle}
                 currentTimestamp={currentTimestamp}
                 structure={structure as Structure}
               />
@@ -46,15 +41,15 @@ export const BattleInfoLabel = () => {
 
 const BattleInfo = ({
   battleEntityId,
-  dojo,
   currentTimestamp,
   structure,
 }: {
   battleEntityId: number;
-  dojo: DojoResult;
   currentTimestamp: number;
   structure: Structure | undefined;
 }) => {
+  const dojo = useDojo();
+
   const battleManager = useMemo(
     () => new BattleManager(dojo.setup.components, dojo.network.provider, battleEntityId),
     [battleEntityId, dojo],

@@ -204,7 +204,6 @@ const DojoContextProvider = ({
       }
     } else {
       if (controllerAccount) {
-        // console.log("Setting account from controllerAccount:", controllerAccount);
         useAccountStore.getState().setAccount(controllerAccount);
 
         const addressName = runQuery([
@@ -217,7 +216,6 @@ const DojoContextProvider = ({
 
         setAccountsInitialized(true);
       } else {
-        // console.log("ControllerAccount is null in production or not connected.");
         setTimeout(() => {
           setRetries((prevRetries) => {
             if (prevRetries < 10) {

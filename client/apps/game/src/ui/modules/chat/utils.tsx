@@ -1,4 +1,5 @@
 import { starknetKeccak } from "@dojoengine/torii-client";
+import { Buffer } from "buffer";
 
 export const getMessageKey = (addressOne: string | bigint, addressTwo: string | bigint) => {
   if (typeof addressOne === "string") {

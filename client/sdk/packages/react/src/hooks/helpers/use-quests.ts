@@ -3,10 +3,10 @@ import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
-import { useDojo, useEntitiesUtils, useUIStore } from "../";
+import { useArmiesByStructure, useDojo, useEntitiesUtils, useUIStore } from "../";
 import { Prize, questDetails } from "../../constants";
-import { useArmiesByEntityOwnerWithPositionAndQuantity } from "./use-armies";
 import { useGetMyOffers } from "./use-trade";
+
 
 export enum QuestStatus {
   InProgress,
@@ -52,8 +52,8 @@ const useQuestDependencies = () => {
     HasValue(setup.components.EntityOwner, { entity_owner_id: structureEntityId || 0 }),
   ]);
   const buildingQuantities = useBuildingQuantities(structureEntityId);
-  const { entityArmies } = useArmiesByEntityOwnerWithPositionAndQuantity({
-    entity_owner_entity_id: structureEntityId || 0,
+  const { entityArmies } = useArmiesByStructure({
+    structureEntityId: structureEntityId || 0,
   });
   const orders = useGetMyOffers();
   const { getEntityInfo } = useEntitiesUtils();

@@ -3,7 +3,14 @@ import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { EntityType, formatTime } from "@bibliothecadao/eternum";
-import { ArrivalInfo, getArmyByEntityId, useDojo, useEntitiesUtils, useNextBlockTimestamp, useResourcesUtils } from "@bibliothecadao/react";
+import {
+  ArrivalInfo,
+  useDojo,
+  useEntitiesUtils,
+  useGetArmyByEntityId,
+  useNextBlockTimestamp,
+  useResourcesUtils,
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import React, { useMemo } from "react";
@@ -33,7 +40,7 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   const { getEntityInfo, getEntityName } = useEntitiesUtils();
   const { getResourcesFromBalance } = useResourcesUtils();
   const { nextBlockTimestamp } = useNextBlockTimestamp();
-  const { getArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const weight = useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(arrival.entityId)]));
 

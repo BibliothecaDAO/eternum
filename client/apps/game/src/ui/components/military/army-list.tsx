@@ -4,7 +4,7 @@ import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { BuildingType, configManager, StructureType, TileManager } from "@bibliothecadao/eternum";
-import { useArmiesByEntityOwner, useDojo, useUIStore, type PlayerStructure } from "@bibliothecadao/react";
+import { useArmiesByStructure, useDojo, useUIStore, type PlayerStructure } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
@@ -25,8 +25,8 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   });
   const existingBuildings = tileManager.existingBuildings();
 
-  const { entityArmies: structureArmies } = useArmiesByEntityOwner({
-    entity_owner_entity_id: structure?.entity_id || 0,
+  const { entityArmies: structureArmies } = useArmiesByStructure({
+    structureEntityId: structure?.entity_id || 0,
   });
 
   const {

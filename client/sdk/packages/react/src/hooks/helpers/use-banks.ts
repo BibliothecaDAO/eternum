@@ -1,45 +1,32 @@
-import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { ADMIN_BANK_ENTITY_ID } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { useDojo } from "../";
 
-export const useGetBanks = (onlyMine?: boolean) => {
+export const useBank = () => {
   const {
-    account: { account },
     setup: {
       components: { Bank, Position, Owner, AddressName },
     },
   } = useDojo();
 
-  const query = onlyMine ? [Has(Bank), HasValue(Owner, { address: ContractAddress(account.address) })] : [Has(Bank)];
-  const entityIds = useEntityQuery(query);
+  const entity = getEntityIdFromKeys([BigInt(ADMIN_BANK_ENTITY_ID)]);
 
-  return entityIds
-    .map((entityId) => {
-      const position = getComponentValue(Position, entityId);
-      if (!position) return;
+  const position = getComponentValue(Position, entity);
+  if (!position) return;
 
-      const owner = getComponentValue(Owner, entityId);
-      const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(owner?.address || "0x0")]));
+  const owner = getComponentValue(Owner, entity);
+  const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(owner?.address || "0x0")]));
 
-      const bank = getComponentValue(Bank, entityId);
+  const bank = getComponentValue(Bank, entity);
 
-      return {
-        entityId: position.entity_id,
-        position: { x: position.x, y: position.y },
-        owner: addressName?.name || "Bandits",
-        ownerFee: bank ? Number(bank.owner_fee_num) / Number(bank.owner_fee_denom) : 0,
-        depositFee: bank ? Number(bank.owner_bridge_fee_dpt_percent) : 0,
-        withdrawFee: bank ? Number(bank.owner_bridge_fee_wtdr_percent) : 0,
-      };
-    })
-    .filter(Boolean) as {
-    entityId: ID;
-    position: Position;
-    owner: string;
-    ownerFee: number;
-    depositFee: number;
-    withdrawFee: number;
-  }[];
+  return {
+    entityId: position.entity_id,
+    position: { x: position.x, y: position.y },
+    owner: addressName?.name ? shortString.decodeShortString(addressName.name.toString()) : "Bandits",
+    ownerFee: bank ? Number(bank.owner_fee_num) / Number(bank.owner_fee_denom) : 0,
+    depositFee: bank ? Number(bank.owner_bridge_fee_dpt_percent) : 0,
+    withdrawFee: bank ? Number(bank.owner_bridge_fee_wtdr_percent) : 0,
+  };
 };

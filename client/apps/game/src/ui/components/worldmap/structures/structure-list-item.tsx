@@ -5,7 +5,14 @@ import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import { ArmyInfo, BattleManager, Structure, StructureType } from "@bibliothecadao/eternum";
-import { getUserArmyInBattle, useDojo, useGetHyperstructureProgress, useIsStructureImmune, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
+import {
+  useArmiesInBattle,
+  useDojo,
+  useGetHyperstructureProgress,
+  useIsStructureImmune,
+  useNextBlockTimestamp,
+  useUIStore,
+} from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -57,7 +64,12 @@ export const StructureListItem = ({
     return { updatedBattle };
   }, [nextBlockTimestamp]);
 
-  const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0);
+  const armiesInBattle = useArmiesInBattle(updatedBattle?.entity_id || 0);
+
+  // Filter out only the player's armies
+  const playerArmiesInBattle = useMemo(() => {
+    return armiesInBattle.filter((army) => army.isMine);
+  }, [armiesInBattle]);
 
   const isImmune = useIsStructureImmune(structure, nextBlockTimestamp!);
 
@@ -124,7 +136,7 @@ export const StructureListItem = ({
       if (structure.isMine) {
         return [shieldButton];
       }
-      if (userArmyInBattle) {
+      if (playerArmiesInBattle.length > 0) {
         return [eyeButton];
       }
       return [
@@ -155,7 +167,14 @@ export const StructureListItem = ({
         />,
       ];
     }
-  }, [nextBlockTimestamp, userArmyInBattle, ownArmySelected, updatedBattle, setBattleView, setShowMergeTroopsPopup]);
+  }, [
+    nextBlockTimestamp,
+    playerArmiesInBattle,
+    ownArmySelected,
+    updatedBattle,
+    setBattleView,
+    setShowMergeTroopsPopup,
+  ]);
 
   return (
     <div className="flex justify-between flex-row mt-2 ">

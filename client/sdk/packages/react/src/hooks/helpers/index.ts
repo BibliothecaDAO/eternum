@@ -1,7 +1,7 @@
-export * from "./battles";
 export * from "./use-armies";
 export * from "./use-banks";
 export * from "./use-battle-events";
+export * from "./use-battles";
 export * from "./use-buildings";
 export * from "./use-contributions";
 export * from "./use-entities";
@@ -27,3 +27,4 @@ export * from "./use-trade";
 export * from "./use-travel";
 export * from "./use-tutorial";
 export * from "./use-ui-sound";
+
