@@ -25,7 +25,7 @@
 
     "katana:start:local": "cd ./contracts/game && ./ext/scripts/katana.sh",
     "game:migrate:local": "cd ./contracts/game && ./ext/scripts/migrate.sh",
-    "indexer:start:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --network local --rpc http://localhost:5050",
+    "indexer:start:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --network local --rpc http://127.0.0.1:8080",
     "seasonpass:deploy:local": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh",
     "seasonresources:deploy:local": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh",
     "config:local": "pnpm run build:packages && pnpm --dir ./client/config run local",

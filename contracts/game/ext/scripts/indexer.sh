@@ -22,9 +22,9 @@
 #
 # CONFIGURATION:
 #   The script starts Torii with the following default settings:
-#   - World address: 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f
-#   - RPC URL: http://localhost:5050
-#   - Network: devnet
+#   - World address: 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f
+#   - RPC URL: http://localhost:8080
+#   - Network: local
 #   - CORS: Enabled for all origins
 #   - Config file: torii.toml
 #
@@ -38,10 +38,10 @@
 #     ./indexer.sh
 #
 #   Start with custom settings:
-#     ./indexer.sh --world 0x123... --rpc http://localhost:5050 --network testnet
+#     ./indexer.sh --world 0x123... --rpc http://localhost:8080 --network local
 #
 #   Stop specific network instance:
-#     ./indexer.sh --kill --network testnet
+#     ./indexer.sh --kill --network local
 #
 # =============================================================================
 
@@ -74,12 +74,12 @@ DEFAULT_NETWORK="local" # just a name when saving log and pid files
 NETWORK=${NETWORK:-$DEFAULT_NETWORK}
 LOG_FILE="$LOG_DIR/indexer.$NETWORK.log"
 PID_FILE="$PID_DIR/indexer.$NETWORK.pid"
-DB_DIR="torii.db"
-TORII_CONFIG="torii.toml"
+DB_DIR="torii.$NETWORK.db"
+TORII_CONFIG="torii-$NETWORK.toml"
 
 # Torii settings
-DEFAULT_WORLD_ADDRESS="0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f"
-DEFAULT_RPC_URL="http://localhost:5050"
+DEFAULT_WORLD_ADDRESS="0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f"
+DEFAULT_RPC_URL="http://localhost:8080"
 WORLD_ADDRESS=$DEFAULT_WORLD_ADDRESS  # Will be overridden by args if provided
 RPC_URL=${RPC_URL:-$DEFAULT_RPC_URL}  # Use env var or default
 PORT=8080
@@ -243,11 +243,20 @@ echo -e "${GREEN}- World address: ${BOLD}${BLUE}$WORLD_ADDRESS${NC}"
 echo -e "${GREEN}- RPC URL: ${BOLD}${BLUE}$RPC_URL${NC}"
 echo -e "${GREEN}- Network: ${BOLD}${BLUE}$NETWORK${NC}"
 echo -e ""
-torii --world $WORLD_ADDRESS \
-    --http.cors_origins "*" \
-    --rpc $RPC_URL \
-    --db-dir $DB_DIR \
-    --config $TORII_CONFIG 2>&1 | setup_log_handling &
+
+# if RPC url is localhost, dont set --rpc
+if [ "$RPC_URL" != "http://localhost:8080" ] && [ "$RPC_URL" != "http://127.0.0.1:8080" ]; then
+    torii --world $WORLD_ADDRESS \
+        --http.cors_origins "*" \
+        --rpc $RPC_URL \
+        --db-dir $DB_DIR \
+        --config $TORII_CONFIG 2>&1 | setup_log_handling &
+else
+    torii --world $WORLD_ADDRESS \
+        --http.cors_origins "*" \
+        --db-dir $DB_DIR \
+        --config $TORII_CONFIG 2>&1 | setup_log_handling &
+fi
 
 # Store the PID
 echo $! > "$PID_FILE"
