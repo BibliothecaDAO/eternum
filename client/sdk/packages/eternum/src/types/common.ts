@@ -1,4 +1,4 @@
-import { ComponentValue } from "@dojoengine/recs";
+import { ComponentValue, Entity } from "@dojoengine/recs";
 import {
   BuildingType,
   CapacityConfigCategory,
@@ -483,7 +483,8 @@ export interface Config {
   realmMaxLevel: number;
 }
 
-export interface Player {
+export interface PlayerInfo {
+  entity: Entity;
   rank: number;
   address: bigint;
   name: string;
@@ -495,6 +496,12 @@ export interface Player {
   hyperstructures: number;
   isAlive: boolean;
   guildName: string;
+}
+
+export interface Player {
+  entity: Entity;
+  address: ContractAddress;
+  name: string;
 }
 
 export type GuildInfo = {

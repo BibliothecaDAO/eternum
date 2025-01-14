@@ -5,7 +5,7 @@ import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks, toHexString } from "@/ui/utils/utils";
 import { getEntityName } from "@/utils/entities";
-import { ContractAddress, Player } from "@bibliothecadao/eternum";
+import { ContractAddress, PlayerInfo } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { KeyboardEvent, useMemo, useState } from "react";
 
@@ -13,7 +13,7 @@ export const PlayersPanel = ({
   players,
   viewPlayerInfo,
 }: {
-  players: Player[];
+  players: PlayerInfo[];
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
 }) => {
   const {

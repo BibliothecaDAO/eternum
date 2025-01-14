@@ -7,12 +7,12 @@ import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, PlayerInfo } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
 import { env } from "../../../../../env";
 
 interface GuildMembersProps {
-  players: Player[];
+  players: PlayerInfo[];
   selectedGuildEntityId: number;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   setIsExpanded: (isExpanded: boolean) => void;

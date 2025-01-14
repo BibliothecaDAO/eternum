@@ -1,6 +1,6 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
+import { usePlayers } from "@/hooks/helpers/use-players";
 import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
@@ -176,7 +176,7 @@ const ChangeCoOwners = ({
     },
   } = useDojo();
 
-  const getPlayers = useGetAllPlayers();
+  const players = usePlayers();
   const [isLoading, setIsLoading] = useState(false);
   const [newCoOwners, setNewCoOwners] = useState<
     {
@@ -234,10 +234,6 @@ const ChangeCoOwners = ({
       .filter((owner) => owner.percentage > 0)
       .some((coOwner) => coOwner.address === ContractAddress(account.address));
   }, [newCoOwners, account.address]);
-
-  const players = useMemo(() => {
-    return getPlayers();
-  }, []);
 
   return (
     <div className="h-full flex flex-col justify-between">

@@ -10,7 +10,7 @@ import {
   GuildMemberInfo,
   GuildWhitelistInfo,
   ID,
-  Player,
+  PlayerInfo,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -72,7 +72,7 @@ const formatGuilds = (
 
 const formatGuildMembers = (
   guildMembers: Entity[],
-  players: Player[],
+  players: PlayerInfo[],
   nextBlockTimestamp: number | undefined,
   userAddress: string,
   getAddressName: (address: ContractAddress) => string | undefined,
@@ -117,7 +117,7 @@ const formatGuildMembers = (
 
 const formatGuildWhitelist = (
   whitelist: Entity[],
-  players: Player[],
+  players: PlayerInfo[],
   GuildWhitelist: Component<ClientComponents["GuildWhitelist"]["schema"]>,
   getAddressName: (address: ContractAddress) => string | undefined,
   getEntityName: (entityId: ID) => string,
@@ -245,7 +245,7 @@ export const useGuilds = () => {
     };
   }, []);
 
-  const useGuildMembers = (guildEntityId: ID, players: Player[]) => {
+  const useGuildMembers = (guildEntityId: ID, players: PlayerInfo[]) => {
     const guildMembers = useEntityQuery([HasValue(GuildMember, { guild_entity_id: guildEntityId })]);
 
     return {
@@ -262,7 +262,7 @@ export const useGuilds = () => {
     };
   };
 
-  const useGuildWhitelist = (guildEntityId: ID, players: Player[]) => {
+  const useGuildWhitelist = (guildEntityId: ID, players: PlayerInfo[]) => {
     const whitelist = useEntityQuery([
       HasValue(GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: true }),
     ]);

@@ -1,7 +1,7 @@
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
+import { usePlayers } from "@/hooks/helpers/use-players";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
 import { ChatTab, DEFAULT_TAB } from "@/ui/modules/chat/chat-tab";
@@ -44,11 +44,7 @@ export const Chat = () => {
 
   const addTab = useChatStore((state) => state.addTab);
 
-  const getPlayers = useGetAllPlayers();
-
-  const players = useMemo(() => {
-    return getPlayers().filter((player) => player.address !== BigInt(account.address));
-  }, []);
+  const players = usePlayers();
 
   useEffect(() => {
     scrollToElement(bottomChatRef);

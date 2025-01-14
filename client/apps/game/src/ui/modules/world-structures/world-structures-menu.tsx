@@ -37,7 +37,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const { hyperstructures } = useHyperstructures();
-  const { fragmentMines } = useFragmentMines();
+  const fragmentMines = useFragmentMines();
 
   const myHyperstructures = useMemo(
     () =>
