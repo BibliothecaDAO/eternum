@@ -28,9 +28,7 @@ export const config = new GameConfigDeployer(configuration);
 
 // Deploy configurations
 logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
-await config.setupNonBank(account, provider);
-// await config.setupBank(account, provider);
-// await config.setupAll(account, provider);
+await config.setupAll(account, provider);
 logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
 
 

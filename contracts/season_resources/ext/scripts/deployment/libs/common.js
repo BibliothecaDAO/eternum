@@ -162,8 +162,9 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
       ...existingData,
       resources: resourceAddresses
     };
+    
 
-    const jsonString = JSON.stringify(updatedData, null, 2);
+    const jsonString = customStringify(updatedData);
 
     await writeFileAsync(fileName, jsonString);
     console.log(`"${fileName}" has been saved or overwritten`);
@@ -189,3 +190,19 @@ export const getResourceAddressesFromFile = async () => {
   return JSON.parse(data).resources;
 };
 
+
+  // Custom replacer function to keep arrays on one line
+  const customStringify = (obj) => {
+    // First convert to JSON string with standard formatting
+    const initialString = JSON.stringify(obj, null, 2);
+    
+    // Replace arrays with single-line version, handling multiple lines and whitespace
+    return initialString.replace(
+      /\[\n\s+(.+?)\n\s+\]/gs,
+      (match, content) => {
+        // Remove newlines and extra spaces between array elements
+        const singleLine = content.replace(/\n\s+/g, '');
+        return `[${singleLine}]`;
+      }
+    );
+  };

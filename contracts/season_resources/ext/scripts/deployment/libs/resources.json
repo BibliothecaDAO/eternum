@@ -109,11 +109,6 @@
     "name": "Dragonhide",
     "symbol": "DRAGONHIDE"
   },
-  "DEMONHIDE": {
-    "id": 23,
-    "name": "Demonhide",
-    "symbol": "DEMONHIDE"
-  },
   "ANCIENT_FRAGMENT": {
     "id": 24,
     "name": "Ancient Fragment",
