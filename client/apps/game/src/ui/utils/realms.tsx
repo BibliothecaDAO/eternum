@@ -1,9 +1,8 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
-import { findResourceIdByTrait, ID, orders, RealmInterface } from "@bibliothecadao/eternum";
+import { ClientComponents, findResourceIdByTrait, ID, orders, RealmInterface } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import realmsJson from "../../../../../common/data/realms.json";
-import { packResources } from "./packedData";
+import { packResources } from "./packed-data";
 
 interface Attribute {
   trait_type: string;

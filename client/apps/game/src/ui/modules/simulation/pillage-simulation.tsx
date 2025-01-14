@@ -1,8 +1,8 @@
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { PillageSimulationPanel } from "@/ui/components/worldmap/battles/PillageSimulationPanel";
-import useUIStore from "../../../hooks/store/useUIStore";
-import { pillageSimulation } from "../../components/navigation/Config";
-import { OSWindow } from "../../components/navigation/OSWindow";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { HintSection } from "@/ui/components/hints/hint-modal";
+import { pillageSimulation } from "@/ui/components/navigation/config";
+import { OSWindow } from "@/ui/components/navigation/os-window";
+import { PillageSimulationPanel } from "@/ui/components/worldmap/battles/pillage-simulation-panel";
 
 export const PillageSimulation = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);

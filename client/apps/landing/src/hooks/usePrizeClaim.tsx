@@ -6,7 +6,6 @@ import {
   GET_HYPERSTRUCTURE_EPOCHS,
   GET_LEADERBOARD,
   GET_LEADERBOARD_ENTRY,
-  GET_PLAYER_HAS_CLAIMED,
   GET_PLAYER_HYPERSTRUCTURE_CONTRIBUTIONS,
 } from "./query/leaderboard";
 
@@ -32,18 +31,6 @@ export const useLeaderboardStatus = () => {
   const leaderboard = data?.s0EternumLeaderboardModels?.edges?.[0]?.node ?? null;
 
   return { leaderboard, isLoading };
-};
-
-export const useHasPlayerClaimed = (playerAddress: string) => {
-  const { data, isLoading } = useQuery({
-    queryKey: ["address", playerAddress],
-    queryFn: () => execute(GET_PLAYER_HAS_CLAIMED, { accountAddress: playerAddress }),
-    refetchInterval: 10_000,
-  });
-
-  const hasClaimed = (data?.s0EternumLeaderboardRewardClaimedModels?.totalCount || 0) > 0;
-
-  return { hasClaimed, isLoading };
 };
 
 export const useGameWinner = () => {

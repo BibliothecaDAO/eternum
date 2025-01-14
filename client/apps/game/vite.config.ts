@@ -98,4 +98,5 @@ export default defineConfig({
       "@bibliothecadao/eternum", // Add your dependency here
     ],
   },
+  publicDir: "../../common/public",
 });

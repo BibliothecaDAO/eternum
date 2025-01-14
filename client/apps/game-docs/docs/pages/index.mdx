@@ -1,0 +1,31 @@
+---
+layout: landing
+---
+
+import { HomePage } from "vocs/components";
+
+<HomePage.Root>
+  <div className="absolute inset-0 -z-10">
+    <img 
+      src="/03.png"
+      alt="Eternum Cover"
+      className="w-full h-full object-cover"
+    />
+  </div>
+
+{" "}
+
+<img src="/eternum-words-logo.svg" alt="Eternum Logo" />
+<HomePage.Description>
+  Eternum is a decentralized, open-source, and community-driven 4x MMO game built on the Dojo framework.
+</HomePage.Description>
+<HomePage.Buttons>
+  <HomePage.Button href="/overview/introduction" variant="primary">
+    Get started
+  </HomePage.Button>
+  <HomePage.Button href="https://eternum.realms.world" variant="outline">
+    Play Now
+  </HomePage.Button>
+</HomePage.Buttons>
+
+</HomePage.Root>

@@ -1,7 +1,7 @@
 import { getComponentValue, HasValue, runQuery, type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ResourcesIds } from "../constants";
-import { ClientComponents } from "../dojo/components/createClientComponents";
+import { ClientComponents } from "../dojo/createClientComponents";
 import { ContractAddress, ID } from "../types";
 import { configManager } from "./ConfigManager";
 

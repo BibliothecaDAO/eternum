@@ -1,4 +1,4 @@
-import { dir, soundSelector } from "@/hooks/useUISound";
+import { dir, soundSelector } from "@/hooks/use-ui-sound";
 import { BuildingType } from "@bibliothecadao/eternum";
 
 export const playSound = (sound: string, hasSound: boolean, volume: number) => {
@@ -30,7 +30,7 @@ export const playBuildingSound = (buildingType: BuildingType | undefined, hasSou
   const soundFile =
     buildingType === undefined
       ? soundSelector.buildCastle
-      : buildingSounds[buildingType as BuildingType] ?? soundSelector.buildMine;
+      : (buildingSounds[buildingType as BuildingType] ?? soundSelector.buildMine);
 
   playSound(soundFile, hasSound, volume);
 };

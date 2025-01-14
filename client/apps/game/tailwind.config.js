@@ -107,7 +107,7 @@ export default {
         },
       },
       backgroundImage: {
-        map: "url(/map.svg)",
+        map: "url(/images/map.svg)",
         // "hex-bg": "url(/hex-bg.png)",
         "old-map": "url(/textures/paper/worldmap-bg.png)",
       },
@@ -115,11 +115,11 @@ export default {
         xxs: ".625rem",
       },
       cursor: {
-        fancy: "url(/cursor.png), pointer",
-        pointer: "url(/cursor.png), pointer",
-        grab: "url(/grab.png), grab",
-        crosshair: "url(/cursor-cross.png), crosshair",
-        wait: "url(/images/eternum-logo_animated.png), wait",
+        fancy: "url(/images/icons/cursor.png), pointer",
+        pointer: "url(/images/icons/cursor.png), pointer",
+        grab: "url(/images/icons/grab.png), grab",
+        crosshair: "url(/images/icons/cursor-cross.png), crosshair",
+        wait: "url(/images/logos/eternum-animated.png), wait",
       },
       strokeWidth: {
         8: "8px",

@@ -104,7 +104,7 @@ export const BridgedResources = () => {
   );
 };
 
-export const BridgeResource = ({
+const BridgeResource = ({
   name,
   resourceId,
   contractAddress,
