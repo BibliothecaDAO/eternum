@@ -1,13 +1,71 @@
+import * as THREE from "three";
+
 import { BiomeType } from "@/three/managers/biome";
 import { HyperstructureTypesNames, ResourceMiningTypes } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { BuildingType, RealmLevelNames, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
-import * as THREE from "three";
 
 export const HEX_SIZE = 1;
 
 export const PREVIEW_BUILD_COLOR_VALID = 0x00a300;
 export const PREVIEW_BUILD_COLOR_INVALID = 0xff0000;
+
+const BIOMES_BASE_PATH = "/models/biomes/";
+const BIOMES_FLAT_PATH = "/models/biomes-flat/";
+const BIOMES_MODELS_PATH = IS_FLAT_MODE ? BIOMES_FLAT_PATH : BIOMES_BASE_PATH;
+
+const BUILDINGS_MODELS_PATH = "/models/buildings/";
+
+export enum BiomeFilenames {
+  Bare = "bare.glb",
+  Beach = "beach.glb",
+  TemperateDeciduousForest = "deciduousForest.glb",
+  DeepOcean = "deepOcean.glb",
+  Grassland = "grassland.glb",
+  Ocean = "ocean.glb",
+  Outline = "outline.glb",
+  Scorched = "scorched.glb",
+  Tundra = "tundra.glb",
+  TemperateDesert = "temperateDesert.glb",
+  Shrubland = "shrubland.glb",
+  Snow = "snow.glb",
+  Taiga = "taiga.glb",
+  TemperateRainForest = "temperateRainforest.glb",
+  SubtropicalDesert = "subtropicalDesert.glb",
+  TropicalRainForest = "tropicalRainforest.glb",
+  TropicalSeasonalForest = "tropicalSeasonalForest.glb",
+}
+
+export enum BuildingFilenames {
+  Bank = "bank.glb",
+  ArcheryRange = "archerrange.glb",
+  Barracks = "barracks.glb",
+  Castle = "castle1.glb",
+  Farm = "farm.glb",
+  FishingVillage = "fishery.glb",
+  FragmentMine = "mine.glb",
+  Market = "market.glb",
+  Resource = "mine.glb",
+  Stable = "stable.glb",
+  Storehouse = "storehouse.glb",
+  TradingPost = "market.glb",
+  Walls = "market.glb",
+  WatchTower = "market.glb",
+  WorkersHut = "workers_hut.glb",
+  Forge = "forge.glb",
+  Mine = "mine.glb",
+  LumberMill = "lumber_mill.glb",
+  Dragonhide = "dragonhide.glb",
+  Wonder = "wonder.glb",
+  HyperstructureInit = "hyperstructure_init.glb",
+  HyperstructureHalf = "hyperstructure_half.glb",
+  Hyperstructure = "hyperstructure.glb",
+  Realm0 = "castle0.glb",
+  Realm1 = "castle1.glb",
+  Realm2 = "castle2.glb",
+  Realm3 = "castle3.glb",
+  WonderAnimated = "wonder2.glb",
+}
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.Bank,
@@ -30,7 +88,7 @@ export enum StructureProgress {
   STAGE_3 = 2,
 }
 
-export const hyperstructureStageToModel: Record<StructureProgress, string> = {
+export const hyperstructureStageToModel: Record<StructureProgress, HyperstructureTypesNames> = {
   [StructureProgress.STAGE_1]: HyperstructureTypesNames.STAGE_1,
   [StructureProgress.STAGE_2]: HyperstructureTypesNames.STAGE_2,
   [StructureProgress.STAGE_3]: HyperstructureTypesNames.STAGE_3,
@@ -38,83 +96,80 @@ export const hyperstructureStageToModel: Record<StructureProgress, string> = {
 
 export const WONDER_REALM = "Wonder";
 
-export const buildingModelPaths: Record<
-  BuildingType | ResourceMiningTypes | RealmLevelNames | HyperstructureTypesNames | typeof WONDER_REALM,
-  string
-> = {
-  // placeholder for now
-  [BuildingType.None]: "/models/buildings-opt/farm.glb",
-  [BuildingType.Bank]: "/models/buildings-opt/bank.glb",
-  [BuildingType.ArcheryRange]: "/models/buildings-opt/archerrange.glb",
-  [BuildingType.Barracks]: "/models/buildings-opt/barracks.glb",
-  [BuildingType.Castle]: "/models/buildings-opt/castle1.glb",
-  [BuildingType.Farm]: "/models/buildings-opt/farm.glb",
-  [BuildingType.FishingVillage]: "/models/buildings-opt/fishery.glb",
-  [BuildingType.FragmentMine]: "/models/buildings-opt/mine.glb",
-  [BuildingType.Market]: "/models/buildings-opt/market.glb",
-  [BuildingType.Resource]: "/models/buildings-opt/mine.glb",
-  [BuildingType.Stable]: "/models/buildings-opt/stable.glb",
-  [BuildingType.Storehouse]: "/models/buildings-opt/storehouse.glb",
-  [BuildingType.TradingPost]: "/models/buildings-opt/market.glb",
-  [BuildingType.Walls]: "/models/buildings-opt/market.glb",
-  [BuildingType.WatchTower]: "/models/buildings-opt/market.glb",
-  [BuildingType.WorkersHut]: "/models/buildings-opt/workers_hut.glb",
-  [ResourceMiningTypes.Forge]: "/models/buildings-opt/forge.glb",
-  [ResourceMiningTypes.Mine]: "/models/buildings-opt/mine.glb",
-  [ResourceMiningTypes.LumberMill]: "/models/buildings-opt/lumber_mill.glb",
-  [ResourceMiningTypes.Dragonhide]: "/models/buildings-opt/dragonhide.glb",
-  [RealmLevelNames.Settlement]: "/models/buildings-opt/castle0.glb",
-  [RealmLevelNames.City]: "/models/buildings-opt/castle1.glb",
-  [RealmLevelNames.Kingdom]: "/models/buildings-opt/castle2.glb",
-  [RealmLevelNames.Empire]: "/models/buildings-opt/castle3.glb",
-  [HyperstructureTypesNames.STAGE_1]: "/models/buildings-opt/hyperstructure_init.glb",
-  [HyperstructureTypesNames.STAGE_2]: "/models/buildings-opt/hyperstructure_half.glb",
-  [HyperstructureTypesNames.STAGE_3]: "/models/buildings-opt/hyperstructure.glb",
-  [WONDER_REALM]: "/models/buildings-opt/wonder.glb",
-};
-
-const BASE_PATH = "/models/biomes-opt/";
-const FLAT_PATH = "/models/biomes-flat-opt/";
-const MODELS_PATH = IS_FLAT_MODE ? FLAT_PATH : BASE_PATH;
-
-enum BiomeFilenames {
-  Bare = "bare.glb",
-  Beach = "beach.glb",
-  TemperateDeciduousForest = "deciduousForest.glb",
-  DeepOcean = "deepOcean.glb",
-  Grassland = "grassland.glb",
-  Ocean = "ocean.glb",
-  Outline = "outline.glb",
-  Scorched = "scorched.glb",
-  Tundra = "tundra.glb",
-  TemperateDesert = "temperateDesert.glb",
-  Shrubland = "shrubland.glb",
-  Snow = "snow.glb",
-  Taiga = "taiga.glb",
-  TemperateRainForest = "temperateRainforest.glb",
-  SubtropicalDesert = "subtropicalDesert.glb",
-  TropicalRainForest = "tropicalRainforest.glb",
-  TropicalSeasonalForest = "tropicalSeasonalForest.glb",
+export enum BUILDINGS_GROUPS {
+  BUILDINGS = "buildings",
+  RESOURCES_MINING = "resources_mining",
+  HYPERSTRUCTURE = "hyperstructure",
+  REALMS = "realms",
+  WONDER = "wonder",
 }
 
+export type BUILDINGS_CATEGORIES_TYPES =
+  | BuildingType
+  | ResourceMiningTypes
+  | RealmLevelNames
+  | HyperstructureTypesNames
+  | typeof WONDER_REALM;
+
+export const buildingModelPaths = {
+  [BUILDINGS_GROUPS.BUILDINGS]: {
+    [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
+    [BuildingType.Bank]: BUILDINGS_MODELS_PATH + BuildingFilenames.Bank,
+    [BuildingType.ArcheryRange]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+    [BuildingType.Barracks]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+    [BuildingType.Castle]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
+    [BuildingType.Farm]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
+    [BuildingType.FishingVillage]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
+    [BuildingType.FragmentMine]: BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
+    [BuildingType.Market]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
+    [BuildingType.Resource]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.Stable]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+    [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
+    [BuildingType.TradingPost]: BUILDINGS_MODELS_PATH + BuildingFilenames.TradingPost,
+    [BuildingType.Walls]: BUILDINGS_MODELS_PATH + BuildingFilenames.Walls,
+    [BuildingType.WatchTower]: BUILDINGS_MODELS_PATH + BuildingFilenames.WatchTower,
+    [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
+  },
+  [BUILDINGS_GROUPS.RESOURCES_MINING]: {
+    [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,
+    [ResourceMiningTypes.Mine]: BUILDINGS_MODELS_PATH + BuildingFilenames.Mine,
+    [ResourceMiningTypes.LumberMill]: BUILDINGS_MODELS_PATH + BuildingFilenames.LumberMill,
+    [ResourceMiningTypes.Dragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
+  },
+  [BUILDINGS_GROUPS.REALMS]: {
+    [RealmLevelNames.Settlement]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
+    [RealmLevelNames.City]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
+    [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
+    [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
+  },
+  [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
+    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
+    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+    [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+  },
+  [BUILDINGS_GROUPS.WONDER]: {
+    [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
+  },
+};
+
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
-  Bare: MODELS_PATH + BiomeFilenames.Bare,
-  Beach: MODELS_PATH + BiomeFilenames.Beach,
-  TemperateDeciduousForest: MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  DeepOcean: MODELS_PATH + BiomeFilenames.DeepOcean,
-  Grassland: MODELS_PATH + BiomeFilenames.Grassland,
-  Ocean: MODELS_PATH + BiomeFilenames.Ocean,
-  Outline: BASE_PATH + BiomeFilenames.Outline,
-  Scorched: MODELS_PATH + BiomeFilenames.Scorched,
-  Tundra: MODELS_PATH + BiomeFilenames.Tundra,
-  TemperateDesert: MODELS_PATH + BiomeFilenames.TemperateDesert,
-  Shrubland: MODELS_PATH + BiomeFilenames.Shrubland,
-  Snow: MODELS_PATH + BiomeFilenames.Snow,
-  Taiga: MODELS_PATH + BiomeFilenames.Taiga,
-  TemperateRainForest: MODELS_PATH + BiomeFilenames.TemperateRainForest,
-  SubtropicalDesert: MODELS_PATH + BiomeFilenames.SubtropicalDesert,
-  TropicalRainForest: MODELS_PATH + BiomeFilenames.TropicalRainForest,
-  TropicalSeasonalForest: MODELS_PATH + BiomeFilenames.TropicalSeasonalForest,
+  Bare: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
+  Beach: BIOMES_MODELS_PATH + BiomeFilenames.Beach,
+  TemperateDeciduousForest: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
+  DeepOcean: BIOMES_MODELS_PATH + BiomeFilenames.DeepOcean,
+  Grassland: BIOMES_MODELS_PATH + BiomeFilenames.Grassland,
+  Ocean: BIOMES_MODELS_PATH + BiomeFilenames.Ocean,
+  Outline: BIOMES_BASE_PATH + BiomeFilenames.Outline,
+  Scorched: BIOMES_MODELS_PATH + BiomeFilenames.Scorched,
+  Tundra: BIOMES_MODELS_PATH + BiomeFilenames.Tundra,
+  TemperateDesert: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDesert,
+  Shrubland: BIOMES_MODELS_PATH + BiomeFilenames.Shrubland,
+  Snow: BIOMES_MODELS_PATH + BiomeFilenames.Snow,
+  Taiga: BIOMES_MODELS_PATH + BiomeFilenames.Taiga,
+  TemperateRainForest: BIOMES_MODELS_PATH + BiomeFilenames.TemperateRainForest,
+  SubtropicalDesert: BIOMES_MODELS_PATH + BiomeFilenames.SubtropicalDesert,
+  TropicalRainForest: BIOMES_MODELS_PATH + BiomeFilenames.TropicalRainForest,
+  TropicalSeasonalForest: BIOMES_MODELS_PATH + BiomeFilenames.TropicalSeasonalForest,
 };
 
 export const PROGRESS_HALF_THRESHOLD = 50;
@@ -122,31 +177,27 @@ export const PROGRESS_FINAL_THRESHOLD = 100;
 
 export const StructureModelPaths: Record<StructureType, string[]> = {
   [StructureType.Realm]: [
-    "models/buildings-opt/castle0.glb",
-    "models/buildings-opt/castle1.glb",
-    "models/buildings-opt/castle2.glb",
-    "models/buildings-opt/castle3.glb",
-    "models/buildings-opt/wonder2.glb",
+    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
   ],
-  // Order follows StructureProgress
   [StructureType.Hyperstructure]: [
-    "models/buildings-opt/hyperstructure_init.glb",
-    "models/buildings-opt/hyperstructure_half.glb",
-    "models/buildings-opt/hyperstructure.glb",
+    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
   ],
-  [StructureType.Bank]: ["/models/buildings-opt/bank.glb"],
-  [StructureType.FragmentMine]: ["models/buildings-opt/mine.glb"],
-  // placeholder for now
-  [StructureType.Settlement]: ["models/buildings-opt/castle2.glb"],
+  [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
+  [StructureType.FragmentMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
+  [StructureType.Settlement]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2],
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Realm]: "textures/realm_label.png",
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
   [StructureType.FragmentMine]: "textures/fragment_mine_label.png",
-  // placeholder for now
   [StructureType.Bank]: "",
-  // placeholder for now
   [StructureType.Settlement]: "textures/fragment_mine_label.png",
 };
 
@@ -154,13 +205,6 @@ export const MinesMaterialsParams: Record<
   number,
   { color: THREE.Color; emissive: THREE.Color; emissiveIntensity: number }
 > = {
-  // [ResourcesIds.Copper]: ResourceMiningTypes.Forge,
-  // [ResourcesIds.ColdIron]: ResourceMiningTypes.Forge,
-  // [ResourcesIds.Ignium]: ResourceMiningTypes.Forge,
-  // [ResourcesIds.Gold]: ResourceMiningTypes.Forge,
-  // [ResourcesIds.Silver]: ResourceMiningTypes.Forge,
-  // [ResourcesIds.AlchemicalSilver]: ResourceMiningTypes.Forge,
-  // [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
   [ResourcesIds.Copper]: {
     color: new THREE.Color(0.86, 0.26, 0.0),
     emissive: new THREE.Color(6.71, 0.25, 0.08),
