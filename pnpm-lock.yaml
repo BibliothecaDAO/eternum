@@ -39,6 +39,9 @@ importers:
       '@dojoengine/core':
         specifier: 1.0.4-alpha.3.1.0
         version: 1.0.4-alpha.3.1.0(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)
+      '@types/node':
+        specifier: ^20.11.10
+        version: 20.17.12
       '@types/react':
         specifier: ^18.3.12
         version: 18.3.18

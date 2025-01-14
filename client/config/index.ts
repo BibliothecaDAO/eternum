@@ -1,6 +1,5 @@
+import { manifestLocal, manifestMainnet } from "@bibliothecadao/assets";
 import type { Config } from "@bibliothecadao/eternum";
-import devManifest from "../contracts/manifest_dev.json";
-import productionManifest from "../contracts/manifest_mainnet.json";
 
 import {
   EternumConfig,
@@ -28,7 +27,7 @@ const {
   VITE_VRF_PROVIDER_ADDRESS,
 } = process.env;
 
-const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
+const manifest = VITE_PUBLIC_DEV === "true" ? manifestLocal : manifestMainnet;
 
 // Bug in bun we have to use http://127.0.0.1:5050/
 const nodeUrl = VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : VITE_PUBLIC_NODE_URL;

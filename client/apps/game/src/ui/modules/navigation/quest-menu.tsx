@@ -1,7 +1,18 @@
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { QuestType } from "@bibliothecadao/eternum";
-import { Prize, QuestStatus, questSteps, useDojo, useQuests, useRealm, useStartingTutorial, useTutorial, useUIStore, useUnclaimedQuestsCount } from "@bibliothecadao/react";
+import {
+  Prize,
+  QuestStatus,
+  questSteps,
+  useDojo,
+  useQuests,
+  useRealm,
+  useStartingTutorial,
+  useTutorial,
+  useUIStore,
+  useUnclaimedQuestsCount,
+} from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo, useState } from "react";
 
@@ -196,7 +207,7 @@ export const QuestsMenu = memo(() => {
   );
 });
 
-const QuestRewards = ({ prizes }: { prizes: Prize[] | undefined }) => {
+const QuestRewards = ({ prizes }: { prizes: Readonly<Prize[]> | undefined }) => {
   const { getQuestResources } = useRealm();
 
   return (
