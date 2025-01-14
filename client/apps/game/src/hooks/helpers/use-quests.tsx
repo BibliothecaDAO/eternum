@@ -3,23 +3,14 @@ import { useArmiesByStructure } from "@/hooks/helpers/use-armies";
 import { useGetMyOffers } from "@/hooks/helpers/use-trade";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { questDetails } from "@/ui/components/quest/quest-details";
+import { armyHasTraveled } from "@/utils/army";
 import { getEntityInfo } from "@/utils/entities";
-import { ArmyInfo, BuildingType, ContractAddress, ID, QuestType, TileManager } from "@bibliothecadao/eternum";
+import { ContractAddress, Prize, QuestStatus, QuestType, TileManager } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
-
-export interface Prize {
-  id: QuestType;
-  title: string;
-}
-
-export enum QuestStatus {
-  InProgress,
-  Completed,
-  Claimed,
-}
+import { useBuildingQuantities } from "./use-buildings";
 
 export const useQuests = () => {
   const questDependencies = useQuestDependencies();
@@ -219,42 +210,4 @@ export const useUnclaimedQuestsCount = () => {
   );
 
   return { unclaimedQuestsCount };
-};
-
-const useBuildingQuantities = (structureEntityId: ID | undefined) => {
-  const {
-    setup: {
-      components: { BuildingQuantityv2 },
-    },
-  } = useDojo();
-  const entityUpdate = useEntityQuery([HasValue(BuildingQuantityv2, { entity_id: structureEntityId || 0 })]);
-  const getBuildingQuantity = (buildingType: BuildingType) =>
-    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(buildingType)]))
-      ?.value || 0;
-
-  return useMemo(
-    () => ({
-      food: getBuildingQuantity(BuildingType.Farm) + getBuildingQuantity(BuildingType.FishingVillage),
-      resource: getBuildingQuantity(BuildingType.Resource),
-      workersHut: getBuildingQuantity(BuildingType.WorkersHut),
-      markets: getBuildingQuantity(BuildingType.Market),
-    }),
-    [structureEntityId, entityUpdate],
-  );
-};
-
-export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
-  return entityArmies.some(
-    (army) =>
-      army &&
-      (Number(army.troops.knight_count) !== 0 ||
-        Number(army.troops.crossbowman_count) !== 0 ||
-        Number(army.troops.paladin_count) !== 0),
-  );
-};
-
-const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: number; y: number }) => {
-  return entityArmies.some(
-    (army) => army && realmPosition && (army.position.x !== realmPosition.x || army.position.y !== realmPosition.y),
-  );
 };

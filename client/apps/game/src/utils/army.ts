@@ -104,3 +104,19 @@ export const formatArmies = (armies: Entity[], playerAddress: string, components
     })
     .filter((army): army is ArmyInfo => army !== undefined);
 };
+
+export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
+  return entityArmies.some(
+    (army) =>
+      army &&
+      (Number(army.troops.knight_count) !== 0 ||
+        Number(army.troops.crossbowman_count) !== 0 ||
+        Number(army.troops.paladin_count) !== 0),
+  );
+};
+
+export const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: number; y: number }) => {
+  return entityArmies.some(
+    (army) => army && realmPosition && (army.position.x !== realmPosition.x || army.position.y !== realmPosition.y),
+  );
+};

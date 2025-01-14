@@ -22,6 +22,16 @@ export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema
   name: string;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
 };
+export interface Prize {
+  id: QuestType;
+  title: string;
+}
+
+export enum QuestStatus {
+  InProgress,
+  Completed,
+  Claimed,
+}
 
 export interface Building {
   name: string;

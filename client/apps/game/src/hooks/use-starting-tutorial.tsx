@@ -1,7 +1,7 @@
-import { QuestStatus, useQuests } from "@/hooks/helpers/use-quests";
+import { useQuests } from "@/hooks/helpers/use-quests";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
-import { QuestType } from "@bibliothecadao/eternum";
+import { QuestStatus, QuestType } from "@bibliothecadao/eternum";
 import { useEffect } from "react";
 
 export const useStartingTutorial = () => {
