@@ -1,8 +1,9 @@
-import { Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { ComponentValue, Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { RESOURCE_RARITY, ResourcesIds, WORLD_CONFIG_ID } from "../constants";
 import { ClientComponents } from "../dojo/createClientComponents";
-import { ContractAddress, GuildInfo, ID, TickIds } from "../types";
+import { ContractAddress, GuildInfo, ID, Resource, TickIds } from "../types";
+import { divideByPrecision } from "../utils";
 import { configManager } from "./ConfigManager";
 
 export class LeaderboardManager {
@@ -177,4 +178,49 @@ export class LeaderboardManager {
 
     return 0;
   }
+
+  public getContributions = (hyperstructureEntityId: ID) => {
+    const contributionsToHyperstructure = Array.from(
+      runQuery([HasValue(this.components.Contribution, { hyperstructure_entity_id: hyperstructureEntityId })]),
+    ).map((id) => getComponentValue(this.components.Contribution, id));
+
+    return contributionsToHyperstructure as ComponentValue<ClientComponents["Contribution"]["schema"]>[];
+  };
+
+  public getHyperstructuresWithContributionsFromPlayer = (address: ContractAddress) => {
+    const entityIds = runQuery([HasValue(this.components.Contribution, { player_address: address })]);
+    const hyperstructureEntityIds = Array.from(entityIds).map(
+      (entityId) => getComponentValue(this.components.Contribution, entityId)?.hyperstructure_entity_id ?? 0,
+    );
+    return new Set(hyperstructureEntityIds);
+  };
+
+  public getPlayerUnregistredContributions = (address: ContractAddress) => {
+    const registeredContributionsEntities = runQuery([
+      HasValue(this.components.LeaderboardRegisterContribution, { address: address }),
+    ]);
+    const registeredContributions = Array.from(registeredContributionsEntities)
+      .map(
+        (entityId) =>
+          getComponentValue(this.components.LeaderboardRegisterContribution, entityId)?.hyperstructure_entity_id,
+      )
+      .filter((x): x is number => x !== undefined);
+    const hyperstructuresContributedTo = Array.from(this.getHyperstructuresWithContributionsFromPlayer(address));
+    return hyperstructuresContributedTo.filter(
+      (hyperstructureEntityId) =>
+        !registeredContributions.some((contribution) => contribution === hyperstructureEntityId),
+    );
+  };
+
+  public getContributionsTotalPercentage = (hyperstructureId: number, contributions: Resource[]) => {
+    const totalPlayerContribution = divideByPrecision(
+      contributions.reduce((acc, { amount, resourceId }) => {
+        return acc + amount * configManager.getResourceRarity(resourceId);
+      }, 0),
+    );
+
+    const totalHyperstructureContribution = configManager.getHyperstructureTotalContributableAmount(hyperstructureId);
+
+    return totalPlayerContribution / totalHyperstructureContribution;
+  };
 }

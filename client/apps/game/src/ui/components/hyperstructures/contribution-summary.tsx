@@ -1,9 +1,9 @@
-import { useContributions } from "@/hooks/helpers/use-contributions";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useRealm } from "@/hooks/helpers/use-realm";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { copyPlayerAddressToClipboard, currencyIntlFormat, divideByPrecision, formatNumber } from "@/ui/utils/utils";
-import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, LeaderboardManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
 export const ContributionSummary = ({
@@ -13,7 +13,14 @@ export const ContributionSummary = ({
   hyperstructureEntityId: ID;
   className?: string;
 }) => {
-  const { getContributions, getContributionsTotalPercentage } = useContributions();
+  const {
+    setup: { components },
+  } = useDojo();
+
+  const leaderboardManager = useMemo(() => {
+    return LeaderboardManager.instance(components);
+  }, [components]);
+
   const { getAddressName } = useRealm();
 
   const [showContributions, setShowContributions] = useState(false);
@@ -24,7 +31,10 @@ export const ContributionSummary = ({
     resourceId: number;
   };
 
-  const contributions = getContributions(hyperstructureEntityId);
+  const contributions = useMemo(() => {
+    return leaderboardManager.getContributions(hyperstructureEntityId);
+  }, [leaderboardManager, hyperstructureEntityId]);
+
   const groupedContributions = contributions.reduce<Record<string, Record<number, bigint>>>((acc, contribution) => {
     const { player_address, resource_type, amount } = contribution;
     const playerAddressString = player_address.toString();
@@ -59,7 +69,10 @@ export const ContributionSummary = ({
           playerAddress,
           resources,
           percentage:
-            getContributionsTotalPercentage(hyperstructureEntityId, resourceContributions[playerAddress]) * 100,
+            leaderboardManager.getContributionsTotalPercentage(
+              hyperstructureEntityId,
+              resourceContributions[playerAddress],
+            ) * 100,
         }))
         .filter(({ resources }) =>
           selectedResource ? resources[selectedResource] > 0n : Object.values(resources).some((amount) => amount > 0n),

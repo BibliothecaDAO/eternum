@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useContributions } from "@/hooks/helpers/use-contributions";
+import { usePlayerContributions } from "@/hooks/helpers/use-contributions";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import {
@@ -66,9 +66,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const progresses = useHyperstructureProgress(entity.entity_id);
 
-  const { useContributionsByPlayerAddress } = useContributions();
-
-  const myContributions = useContributionsByPlayerAddress(BigInt(account.address), entity.entity_id);
+  const myContributions = usePlayerContributions(BigInt(account.address), entity.entity_id);
 
   const updates = useHyperstructureUpdates(entity.entity_id);
 

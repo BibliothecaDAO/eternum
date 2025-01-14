@@ -1,6 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
-import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/use-contributions";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useFragmentMines } from "@/hooks/helpers/use-fragment-mines";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
@@ -30,6 +29,7 @@ import { Tabs } from "../../elements/tab";
 
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   const {
+    setup: { components },
     account: { account },
   } = useDojo();
 
@@ -38,7 +38,14 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
 
   const { hyperstructures } = useHyperstructures();
   const { fragmentMines } = useFragmentMines();
-  const myHyperstructures = useGetHyperstructuresWithContributionsFromPlayer();
+
+  const myHyperstructures = useMemo(
+    () =>
+      LeaderboardManager.instance(components).getHyperstructuresWithContributionsFromPlayer(
+        ContractAddress(account.address),
+      ),
+    [components, account.address],
+  );
 
   const renderExtraContent = useCallback(
     (entityId: ID, type: "hyperstructure" | "fragmentMine") => {
@@ -86,7 +93,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
                   position: { x: h.x, y: h.y },
                   ...h,
                 }))}
-              filterEntityIds={showOnlyMine ? Array.from(myHyperstructures()) : undefined}
+              filterEntityIds={showOnlyMine ? Array.from(myHyperstructures) : undefined}
             />
           </>
         ),
