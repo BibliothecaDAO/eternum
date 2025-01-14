@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
 import { useResourcesUtils } from "@/hooks/helpers/use-resources";
@@ -38,7 +38,7 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   const { getEntityInfo, getEntityName } = useEntitiesUtils();
   const { getResourcesFromBalance } = useResourcesUtils();
   const { nextBlockTimestamp } = useNextBlockTimestamp();
-  const { getArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const weight = useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(arrival.entityId)]));
 

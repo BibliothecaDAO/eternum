@@ -3,59 +3,21 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { EternumGlobalConfig, MIN_TROOPS_BATTLE } from "../constants";
 import { ClientComponents } from "../dojo/createClientComponents";
 import { EternumProvider } from "../provider";
-import { BattleSide, Health, ID } from "../types";
+import {
+  BattleSide,
+  BattleStartStatus,
+  BattleStatus,
+  BattleType,
+  ClaimStatus,
+  Health,
+  ID,
+  LeaveStatus,
+  RaidStatus,
+} from "../types";
 import { multiplyByPrecision } from "../utils";
 import { configManager } from "./ConfigManager";
 import { StaminaManager } from "./StaminaManager";
 import { ArmyInfo, DojoAccount, Structure } from "./types";
-
-export enum BattleType {
-  Hex,
-  Structure,
-}
-
-export enum BattleStatus {
-  BattleStart = "Start battle",
-  BattleOngoing = "",
-  UserWon = "Victory",
-  UserLost = "Defeat",
-  BattleEnded = "Battle has ended",
-}
-
-export enum RaidStatus {
-  isRaidable = "Raid!",
-  NoStamina = "Not enough stamina",
-  NoStructureToClaim = "No structure to raid",
-  OwnStructure = "Can't raid your own structure",
-  NoArmy = "No army selected",
-  ArmyNotInBattle = "Selected army not in this battle",
-  MinTroops = "Minimum 100 troops required",
-}
-
-export enum LeaveStatus {
-  Leave = "Leave",
-  NoBattleToLeave = "No battle to leave",
-  DefenderCantLeaveOngoing = "A defender can't leave an ongoing battle",
-  NoArmyInBattle = "Your armies aren't in this battle",
-}
-
-export enum BattleStartStatus {
-  MinTroops = "Minimum 100 troops required",
-  BattleStart = "Start battle",
-  ForceStart = "Force start",
-  NothingToAttack = "Nothing to attack",
-  CantStart = "Can't start a battle now.",
-}
-
-export enum ClaimStatus {
-  Claimable = "Claim",
-  NoSelectedArmy = "No selected army",
-  BattleOngoing = "Battle ongoing",
-  DefenderPresent = "An army's defending the structure",
-  NoStructureToClaim = "No structure to claim",
-  StructureIsMine = "Can't claim your own structure",
-  SelectedArmyIsDead = "Selected army is dead",
-}
 
 export class BattleManager {
   battleType: BattleType | undefined;
@@ -65,6 +27,11 @@ export class BattleManager {
     private readonly provider: EternumProvider,
     public readonly battleEntityId: ID,
   ) {}
+
+  public getArmiesInBattle(): ID[] {
+    const armiesEntityIds = runQuery([HasValue(this.components.Army, { battle_id: this.battleEntityId })]);
+    return Array.from(armiesEntityIds).map((entityId) => getComponentValue(this.components.Army, entityId)!.entity_id);
+  }
 
   public getUpdatedBattle(currentTimestamp: number) {
     const battle = this.getBattle();
@@ -167,13 +134,6 @@ export class BattleManager {
     return date;
   }
 
-  // todo: used deleteEntity directly in the react app, check if works there
-  // public deleteBattle() {
-  //   removeComponent(this.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
-  //   this.dojo.network.world.deleteEntity(getEntityIdFromKeys([BigInt(this.battleEntityId)]));
-  //   this.battleEntityId = 0;
-  // }
-
   public isBattleOngoing(currentTimestamp: number): boolean {
     const battle = this.getBattle();
 
@@ -188,6 +148,10 @@ export class BattleManager {
 
   public getBattle(): ComponentValue<ClientComponents["Battle"]["schema"]> | undefined {
     return getComponentValue(this.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
+  }
+
+  public getPosition(): ComponentValue<ClientComponents["Position"]["schema"]> | undefined {
+    return getComponentValue(this.components.Position, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
   }
 
   public getUpdatedArmy(
@@ -362,23 +326,6 @@ export class BattleManager {
     );
   }
 
-  public async pillageStructure(signer: DojoAccount, raider: ArmyInfo, structureEntityId: ID) {
-    if (this.battleEntityId !== 0 && this.battleEntityId === raider.battle_id) {
-      await this.provider.battle_leave_and_pillage({
-        signer,
-        army_id: raider.entity_id,
-        battle_id: this.battleEntityId,
-        structure_id: structureEntityId,
-      });
-    } else {
-      await this.provider.battle_pillage({
-        signer,
-        army_id: raider.entity_id,
-        structure_id: structureEntityId,
-      });
-    }
-  }
-
   public getBattleType(structure: Structure | undefined): BattleType {
     if (this.battleType) return this.battleType;
 
@@ -389,6 +336,13 @@ export class BattleManager {
 
     this.battleType = BattleType.Structure;
     return this.battleType;
+  }
+
+  public getEscrowIds(): { attacker: ID; defender: ID } {
+    const battle = this.getBattle();
+    if (!battle) return { attacker: 0, defender: 0 };
+
+    return { attacker: battle.attackers_resources_escrow_id, defender: battle.defenders_resources_escrow_id };
   }
 
   public getWinner(currentTimestamp: number, ownArmySide: string): BattleStatus {
@@ -518,5 +472,22 @@ export class BattleManager {
   private getRemainingPercentageOfTroops(current_troops: bigint, lifetime_troops: bigint): number {
     if (lifetime_troops === 0n) return 0;
     return Number(current_troops) / Number(lifetime_troops);
+  }
+
+  public async pillageStructure(signer: DojoAccount, raider: ArmyInfo, structureEntityId: ID) {
+    if (this.battleEntityId !== 0 && this.battleEntityId === raider.battle_id) {
+      await this.provider.battle_leave_and_pillage({
+        signer,
+        army_id: raider.entity_id,
+        battle_id: this.battleEntityId,
+        structure_id: structureEntityId,
+      });
+    } else {
+      await this.provider.battle_pillage({
+        signer,
+        army_id: raider.entity_id,
+        structure_id: structureEntityId,
+      });
+    }
   }
 }

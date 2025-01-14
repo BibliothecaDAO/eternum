@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useArmiesByEntityOwnerWithPositionAndQuantity } from "@/hooks/helpers/use-armies";
+import { useArmiesByStructure } from "@/hooks/helpers/use-armies";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useGetMyOffers } from "@/hooks/helpers/use-trade";
 import useUIStore from "@/hooks/store/use-ui-store";
@@ -59,8 +59,8 @@ const useQuestDependencies = () => {
     HasValue(setup.components.EntityOwner, { entity_owner_id: structureEntityId || 0 }),
   ]);
   const buildingQuantities = useBuildingQuantities(structureEntityId);
-  const { entityArmies } = useArmiesByEntityOwnerWithPositionAndQuantity({
-    entity_owner_entity_id: structureEntityId || 0,
+  const { entityArmies } = useArmiesByStructure({
+    structureEntityId: structureEntityId || 0,
   });
   const orders = useGetMyOffers();
   const { getEntityInfo } = useEntitiesUtils();

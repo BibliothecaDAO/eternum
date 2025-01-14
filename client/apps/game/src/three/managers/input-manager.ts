@@ -7,7 +7,6 @@ type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mouse
 export class InputManager {
   private listeners: Array<{ event: ListenerTypes; handler: (e: MouseEvent) => void }> = [];
   private isDragged = false;
-  private clickTimer: NodeJS.Timeout | null = null; // Add this property
 
   constructor(
     private sceneName: SceneName,

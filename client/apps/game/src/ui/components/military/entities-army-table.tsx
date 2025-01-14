@@ -1,4 +1,4 @@
-import { useArmiesByEntityOwner } from "@/hooks/helpers/use-armies";
+import { useArmiesByStructure } from "@/hooks/helpers/use-armies";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
@@ -52,7 +52,7 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
   if (!structureEntityId) {
     return <div>Entity not found</div>;
   }
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId });
+  const { entityArmies } = useArmiesByStructure({ structureEntityId });
 
   const totalTroops = entityArmies.reduce(
     (acc, army: ArmyInfo) => {

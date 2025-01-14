@@ -2,24 +2,22 @@ import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { BattleInfo } from "@/hooks/helpers/battles/use-battles";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
-import { ArmyInfo, BattleManager } from "@bibliothecadao/eternum";
-import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { ArmyInfo, BattleManager, ID } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 
 type BattleListItemProps = {
-  battle: BattleInfo;
-  ownArmySelected: ArmyInfo | undefined;
+  battleEntityId: ID;
+  ownArmySelected?: ArmyInfo;
   showCompass?: boolean;
 };
 
-export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }: BattleListItemProps) => {
+export const BattleListItem = ({ battleEntityId, ownArmySelected, showCompass = false }: BattleListItemProps) => {
   const dojo = useDojo();
 
   const { getAddressNameFromEntity } = useEntitiesUtils();
@@ -32,22 +30,25 @@ export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }:
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const battleManager = useMemo(
-    () => new BattleManager(dojo.setup.components, dojo.network.provider, battle.entity_id),
-    [battle],
+    () => new BattleManager(dojo.setup.components, dojo.network.provider, battleEntityId),
+    [battleEntityId],
   );
 
   const updatedBattle = useMemo(() => {
     const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     return updatedBattle;
-  }, [nextBlockTimestamp]);
+  }, [nextBlockTimestamp, battleManager]);
 
   const armiesInBattle = useMemo(() => {
-    const armiesEntityIds = runQuery([
-      HasValue(dojo.setup.components.Army, { battle_id: battleManager.battleEntityId }),
-    ]);
-    return Array.from(armiesEntityIds).map(
-      (entityId) => getComponentValue(dojo.setup.components.Army, entityId)!.entity_id,
-    );
+    return battleManager.getArmiesInBattle();
+  }, [battleManager]);
+
+  const escrowIds = useMemo(() => {
+    return battleManager.getEscrowIds();
+  }, [battleManager]);
+
+  const battlePosition = useMemo(() => {
+    return battleManager.getPosition();
   }, [battleManager]);
 
   const buttons = useMemo(() => {
@@ -100,7 +101,7 @@ export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }:
                 <TroopDisplay troops={updatedBattle?.attack_army?.troops} />
               </div>
               <div className="flex flex-col font-bold m-auto relative">
-                {showCompass && <ViewOnMapIcon hideTooltip={true} position={battle?.position} />}
+                {showCompass && battlePosition && <ViewOnMapIcon hideTooltip={true} position={battlePosition} />}
                 <div
                   className="font-bold m-auto animate-pulse"
                   onMouseEnter={() =>
@@ -128,12 +129,12 @@ export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }:
             {showInventory && (
               <div>
                 <InventoryResources
-                  entityId={battle.attackers_resources_escrow_id}
+                  entityId={escrowIds.attacker}
                   className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
                   resourcesIconSize="xs"
                 />
                 <InventoryResources
-                  entityId={battle.defenders_resources_escrow_id}
+                  entityId={escrowIds.defender}
                   className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
                   resourcesIconSize="xs"
                 />

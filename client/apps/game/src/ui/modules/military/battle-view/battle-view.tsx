@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useBattleManager } from "@/hooks/helpers/battles/use-battles";
-import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
+import { useArmiesInBattle, useArmyByArmyEntityId, useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useBattleManager } from "@/hooks/helpers/use-battles";
 import { useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
@@ -11,8 +11,7 @@ import { memo, useMemo } from "react";
 export const BattleView = memo(() => {
   const dojo = useDojo();
   const getStructure = useStructureByPosition();
-  const armiesByBattleId = getArmiesByBattleId();
-  const { getAliveArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const { nextBlockTimestamp: currentTimestamp } = useNextBlockTimestamp();
   const battleView = useUIStore((state) => state.battleView);
@@ -40,49 +39,45 @@ export const BattleView = memo(() => {
     battleView?.battleEntityId ? battleView?.battleEntityId : battleView?.engage ? 0 : targetArmy?.battle_id || 0,
   );
 
-  const armies = useMemo(() => {
-    if (!battleManager.isBattle()) {
-      return { armiesInBattle: [], userArmiesInBattle: [] };
-    }
-    const armiesInBattle = armiesByBattleId(battleManager?.battleEntityId || 0);
+  const armiesInBattle = useArmiesInBattle(battleManager.battleEntityId);
 
-    const userArmiesInBattle = armiesInBattle.filter((army) => army.isMine);
-    return { armiesInBattle, userArmiesInBattle };
-  }, [battleManager, battleView]);
+  const playerArmiesInBattle = useMemo(() => {
+    return armiesInBattle.filter((army) => army.isMine);
+  }, [armiesInBattle]);
 
   const ownArmySide = useMemo(
     () =>
       battleManager.isBattle()
-        ? armies.userArmiesInBattle?.[0]?.battle_side || BattleSide[BattleSide.None]
+        ? playerArmiesInBattle?.[0]?.battle_side || BattleSide[BattleSide.None]
         : BattleSide[BattleSide.Attack],
-    [battleManager, armies.userArmiesInBattle],
+    [battleManager, playerArmiesInBattle],
   );
 
   const ownArmyBattleStarter = useMemo(
-    () => getAliveArmy(battleView?.ownArmyEntityId || 0),
+    () => getArmy(battleView?.ownArmyEntityId || 0),
     [battleView?.ownArmyEntityId || 0],
   );
 
   const attackerArmies = useMemo(
     () =>
-      armies.armiesInBattle.length > 0
-        ? armies.armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Attack])
+      armiesInBattle.length > 0
+        ? armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Attack])
         : [ownArmyBattleStarter!],
-    [armies.armiesInBattle, ownArmyBattleStarter],
+    [armiesInBattle, ownArmyBattleStarter],
   );
 
   const defenderArmies = useMemo(
     () =>
-      armies.armiesInBattle.length > 0
-        ? armies.armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Defence])
+      armiesInBattle.length > 0
+        ? armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Defence])
         : [targetArmy],
-    [armies.armiesInBattle, targetArmy],
+    [armiesInBattle, targetArmy],
   );
 
   const battleAdjusted = useMemo(() => {
     if (!battleManager) return undefined;
     return battleManager!.getUpdatedBattle(currentTimestamp!);
-  }, [currentTimestamp, battleManager, battleManager?.battleEntityId, armies.armiesInBattle, battleView]);
+  }, [currentTimestamp, battleManager, battleManager?.battleEntityId, battleView]);
 
   const attackerHealth = useMemo(() => {
     if (battleAdjusted) {
@@ -147,7 +142,7 @@ export const BattleView = memo(() => {
       defenderArmies={defenderArmies}
       defenderHealth={defenderHealth}
       defenderTroops={defenderTroops}
-      userArmiesInBattle={armies.userArmiesInBattle}
+      userArmiesInBattle={playerArmiesInBattle}
       structure={structure as Structure}
     />
   );

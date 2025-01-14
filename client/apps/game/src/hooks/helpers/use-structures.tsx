@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { currentTickCount } from "@/ui/utils/utils";
@@ -26,7 +26,7 @@ export const useStructureAtPosition = ({ x, y }: Position): Structure | undefine
     },
   } = useDojo();
 
-  const { getAliveArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const { getEntityName } = useEntitiesUtils();
 
@@ -43,7 +43,7 @@ export const useStructureAtPosition = ({ x, y }: Position): Structure | undefine
     const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
 
     const protectorArmy = getComponentValue(Protector, structureEntityId);
-    const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
+    const protector = protectorArmy ? getArmy(protectorArmy.army_id) : undefined;
 
     const name = getEntityName(structure.entity_id) || "";
 
@@ -73,7 +73,7 @@ export const useStructureByPosition = () => {
     },
   } = useDojo();
 
-  const { getAliveArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const { getEntityName } = useEntitiesUtils();
 
@@ -90,7 +90,7 @@ export const useStructureByPosition = () => {
     const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
 
     const protectorArmy = getComponentValue(Protector, structureEntityId);
-    const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
+    const protector = protectorArmy ? getArmy(protectorArmy.army_id) : undefined;
 
     const name = getEntityName(structure.entity_id);
 
@@ -118,7 +118,7 @@ export const useStructureByEntityId = (entityId: ID) => {
 
   const { getEntityName } = useEntitiesUtils();
 
-  const { getAliveArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const structure = useMemo(() => {
     const structureEntityId = getEntityIdFromKeys([BigInt(entityId)]);
@@ -132,7 +132,7 @@ export const useStructureByEntityId = (entityId: ID) => {
     const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
 
     const protectorArmy = getComponentValue(Protector, structureEntityId);
-    const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
+    const protector = protectorArmy ? getArmy(protectorArmy.army_id) : undefined;
 
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
     const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
@@ -165,7 +165,7 @@ export const useStructures = () => {
     },
   } = useDojo();
 
-  const { getAliveArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
   const { getEntityName } = useEntitiesUtils();
 
   const getStructureByEntityId = (entityId: ID) => {
@@ -180,7 +180,7 @@ export const useStructures = () => {
     const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
 
     const protectorArmy = getComponentValue(Protector, structureEntityId);
-    const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
+    const protector = protectorArmy ? getArmy(protectorArmy.army_id) : undefined;
 
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
     const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";

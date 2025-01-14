@@ -1,5 +1,4 @@
-import { useOwnArmiesByPosition } from "@/hooks/helpers/use-armies";
-import { useEntities } from "@/hooks/helpers/use-entities";
+import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
 import { useQuery } from "@/hooks/helpers/use-query";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
@@ -20,39 +19,36 @@ export const SelectedArmy = () => {
     if (!selectedHex) updateSelectedEntityId(null);
   }, [selectedHex, updateSelectedEntityId]);
 
-  const { playerStructures } = useEntities();
-
-  const rawArmies = useOwnArmiesByPosition({
+  const armies = useArmiesAtPosition({
     position: new Position({ x: selectedHex?.col || 0, y: selectedHex?.row || 0 }).getContract(),
-    inBattle: false,
-    playerStructures: playerStructures(),
   });
 
-  const userArmies = useMemo(() => rawArmies.filter((army) => army.health.current > 0), [rawArmies]);
+  // player armies that are not in battle
+  const playerArmies = useMemo(() => armies.filter((army) => army.isMine && army.battle_id === 0), [armies]);
 
   useEffect(() => {
     setSelectedArmyIndex(0);
-  }, [userArmies]);
+  }, [playerArmies]);
 
   useEffect(() => {
     if (selectedHex) {
-      updateSelectedEntityId(userArmies[selectedArmyIndex]?.entity_id || 0);
+      updateSelectedEntityId(playerArmies[selectedArmyIndex]?.entity_id || 0);
     }
-  }, [selectedArmyIndex, userArmies, updateSelectedEntityId, selectedHex]);
+  }, [selectedArmyIndex, playerArmies, updateSelectedEntityId, selectedHex]);
 
   const ownArmy = useMemo(
-    () => userArmies.find((army) => army.entity_id === selectedEntityId),
-    [userArmies, selectedEntityId],
+    () => playerArmies.find((army) => army.entity_id === selectedEntityId),
+    [playerArmies, selectedEntityId],
   );
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === "Tab") {
         event.preventDefault();
-        setSelectedArmyIndex((prevIndex) => (prevIndex + 1) % userArmies.length);
+        setSelectedArmyIndex((prevIndex) => (prevIndex + 1) % playerArmies.length);
       }
     },
-    [userArmies.length],
+    [playerArmies.length],
   );
 
   useEffect(() => {
@@ -74,11 +70,11 @@ export const SelectedArmy = () => {
     >
       {showTooltip && (
         <div>
-          {userArmies.length > 1 && (
+          {playerArmies.length > 1 && (
             <div className="flex flex-row justify-between mt-2">
               <div className="px-2 py-1 text-sm rounded-tl animate-pulse">Press Tab to cycle through armies</div>
               <div className="px-2 py-1 text-sm rounded-bl ">
-                Army {selectedArmyIndex + 1}/{userArmies.length}
+                Army {selectedArmyIndex + 1}/{playerArmies.length}
               </div>
             </div>
           )}

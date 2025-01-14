@@ -1,31 +1,27 @@
-import { BattleInfo } from "@/hooks/helpers/battles/use-battles";
-import { useEnemyArmiesByPosition } from "@/hooks/helpers/use-armies";
-import { useEntities } from "@/hooks/helpers/use-entities";
+import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
 import { Position } from "@/types/position";
 import { StructureCard } from "@/ui/components/structures/worldmap/structure-card";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { Battles } from "@/ui/modules/entity-details/battles";
 import { EnemyArmies } from "@/ui/modules/entity-details/enemy-armies";
-import { ArmyInfo } from "@bibliothecadao/eternum";
+import { ArmyInfo, ID } from "@bibliothecadao/eternum";
 import { useState } from "react";
 
 export const Entities = ({
   position,
   ownArmy,
-  battles,
+  battleEntityIds,
 }: {
   position: Position;
   ownArmy: ArmyInfo | undefined;
-  battles: BattleInfo[];
+  battleEntityIds: ID[];
 }) => {
   const [showStructure, setShowStructure] = useState(true);
   const [showBattles, setShowBattles] = useState(true);
   const [showArmies, setShowArmies] = useState(true);
-  const { playerStructures } = useEntities();
 
-  const enemyArmies = useEnemyArmiesByPosition({
+  const armiesAtPosition = useArmiesAtPosition({
     position: position.getContract(),
-    playerStructures: playerStructures(),
   });
 
   return (
@@ -36,9 +32,9 @@ export const Entities = ({
         <Checkbox enabled={showArmies} onClick={() => setShowArmies((prev) => !prev)} text="Show armies" />
       </div>
       {showStructure && <StructureCard position={position} ownArmySelected={ownArmy} />}
-      {showBattles && <Battles ownArmy={ownArmy} battles={battles} />}
-      {showArmies && enemyArmies.length > 0 && (
-        <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmy} position={position} />
+      {showBattles && <Battles ownArmy={ownArmy} battles={battleEntityIds} />}
+      {showArmies && armiesAtPosition.length > 0 && (
+        <EnemyArmies armies={armiesAtPosition} ownArmySelected={ownArmy} position={position} />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
+import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useRealm } from "@/hooks/helpers/use-realm";
 import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/use-structures";
@@ -20,7 +20,7 @@ import { useMemo } from "react";
 export const ArmyInfoLabel = () => {
   const { isMapView } = useQuery();
   const hoveredArmyEntityId = useUIStore((state) => state.hoveredArmyEntityId);
-  const { getArmy } = getArmyByEntityId();
+  const { getArmy } = useGetArmyByEntityId();
 
   const army = useMemo(() => {
     if (hoveredArmyEntityId) return getArmy(hoveredArmyEntityId);

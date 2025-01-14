@@ -1,6 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useArmiesByEntityOwner } from "@/hooks/helpers/use-armies";
+import { useArmiesByStructure } from "@/hooks/helpers/use-armies";
 import { type PlayerStructure } from "@/hooks/helpers/use-entities";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
@@ -29,8 +29,8 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   });
   const existingBuildings = tileManager.existingBuildings();
 
-  const { entityArmies: structureArmies } = useArmiesByEntityOwner({
-    entity_owner_entity_id: structure?.entity_id || 0,
+  const { entityArmies: structureArmies } = useArmiesByStructure({
+    structureEntityId: structure?.entity_id || 0,
   });
 
   const {
