@@ -1,14 +1,14 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
 import { Troops } from "@/ui/components/worldmap/battles/troops";
-import { formatTime } from "@/ui/utils/utils";
 import {
   Battle,
+  configManager,
+  formatTime,
   ResourcesIds,
   TroopConfig as TroopConfigClass,
   TroopsSimulator,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";

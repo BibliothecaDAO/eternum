@@ -1,5 +1,5 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import { TransactionType } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 

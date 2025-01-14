@@ -1,8 +1,8 @@
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ArmyInfo, BattleSide, ClientComponents, Structure } from "@bibliothecadao/eternum";
+import { useEntitiesUtils } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { env } from "../../../../../env";

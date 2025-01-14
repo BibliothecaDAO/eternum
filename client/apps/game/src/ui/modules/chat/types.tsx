@@ -20,7 +20,9 @@ export interface Tab {
   name: string;
   key: string;
   address: string;
+  numberOfMessages?: number;
   displayed: boolean;
   lastSeen: Date;
   lastMessage?: Date;
+  mandatory?: boolean;
 }

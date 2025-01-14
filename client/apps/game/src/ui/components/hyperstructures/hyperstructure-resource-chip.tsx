@@ -1,11 +1,9 @@
-import { ProgressWithPercentage } from "@/hooks/helpers/use-hyperstructures";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
-import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
+import { ProgressWithPercentage, useResourceBalance, useUIStore } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 
 type HyperstructureResourceChipProps = {

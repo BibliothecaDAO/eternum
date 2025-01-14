@@ -1,9 +1,3 @@
-import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
-import { useQuery } from "@/hooks/helpers/use-query";
-import { useRealm } from "@/hooks/helpers/use-realm";
-import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/use-structures";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { ArmyWarning } from "@/ui/components/worldmap/armies/army-warning";
 import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
@@ -11,9 +5,9 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
-import { getRealmNameById } from "@/ui/utils/realms";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ArmyInfo, Structure } from "@bibliothecadao/eternum";
+import { ArmyInfo, getRealmNameById, Structure } from "@bibliothecadao/eternum";
+import { getArmyByEntityId, useIsStructureImmune, useNextBlockTimestamp, useQuery, useRealm, useStructureImmunityTimer, useStructures, useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 

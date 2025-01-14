@@ -3,17 +3,6 @@ import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useBattlesByPosition } from "@/hooks/helpers/battles/use-battles";
-import { useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
-import { useGetBanks } from "@/hooks/helpers/use-banks";
-import { useEntities } from "@/hooks/helpers/use-entities";
-import { useStructureByPosition } from "@/hooks/helpers/use-structures";
-import { useSetMarket } from "@/hooks/helpers/use-trade";
-import useMarketStore from "@/hooks/store/use-market-store";
-import { useModalStore } from "@/hooks/store/use-modal-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { HintModal } from "@/ui/components/hints/hint-modal";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { ModalContainer } from "@/ui/components/modal-container";
@@ -25,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { formatTimeDifference } from "@/ui/modules/military/battle-view/battle-progress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BattleManager, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { BattleManager, ID, ResourcesIds, configManager } from "@bibliothecadao/eternum";
+import { useArmyByArmyEntityId, useBattlesByPosition, useDojo, useEntities, useGetBanks, useMarketStore, useModalStore, useSetMarket, useStructureByPosition, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 

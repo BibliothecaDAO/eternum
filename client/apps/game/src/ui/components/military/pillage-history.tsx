@@ -1,10 +1,9 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { divideByPrecision, formatNumber, formatResources, formatTime } from "@/ui/utils/utils";
-import { BattleSide, ClientComponents, ID, Resource, resources } from "@bibliothecadao/eternum";
+import { divideByPrecision, formatNumber, formatResources } from "@/ui/utils/utils";
+import { BattleSide, ClientComponents, formatTime, ID, Resource, resources } from "@bibliothecadao/eternum";
+import { useDojo, useEntitiesUtils } from "@bibliothecadao/react";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";

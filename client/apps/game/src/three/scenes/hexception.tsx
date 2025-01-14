@@ -1,6 +1,3 @@
-import { SetupResult } from "@/dojo/setup";
-import { useAccountStore } from "@/hooks/context/account-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { createPausedLabel, gltfLoader } from "@/three/helpers/utils";
 import { BIOME_COLORS, Biome, BiomeType } from "@/three/managers/biome";
@@ -9,29 +6,33 @@ import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
-import { BuildingSystemUpdate, RealmSystemUpdate } from "@/three/systems/types";
-import { ResourceMiningTypes, SceneName } from "@/types";
-import { Position } from "@/types/position";
+import { SceneName } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
-import {
-  ResourceIdToMiningType,
-  getEntityIdFromKeys,
-  getHexForWorldPosition,
-  getWorldPositionForHex,
-} from "@/ui/utils/utils";
+import { getEntityIdFromKeys, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
 import {
   BUILDINGS_CENTER,
   BuildingType,
   HexPosition,
   RealmLevels,
+  ResourceIdToMiningType,
+  ResourceMiningTypes,
   ResourcesIds,
   StructureType,
   TileManager,
   findResourceById,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
+import {
+  BuildingSystemUpdate,
+  LeftView,
+  Position,
+  RealmSystemUpdate,
+  SetupResult,
+  StructureProgress,
+  useAccountStore,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import * as THREE from "three";
@@ -40,7 +41,6 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import {
   HEX_SIZE,
   MinesMaterialsParams,
-  StructureProgress,
   WONDER_REALM,
   buildingModelPaths,
   castleLevelToRealmCastle,
@@ -476,13 +476,13 @@ export default class HexceptionScene extends HexagonScene {
               : (BuildingType[building.category].toString() as any);
 
           if (parseInt(buildingType) === BuildingType.Castle) {
-            buildingType = castleLevelToRealmCastle[this.structureStage];
+            buildingType = castleLevelToRealmCastle[this.structureStage as keyof typeof castleLevelToRealmCastle];
             if (this.tileManager.getWonder(this.state.structureEntityId)) {
               buildingType = WONDER_REALM;
             }
           }
           if (building.structureType === StructureType.Hyperstructure) {
-            buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
+            buildingType = hyperstructureStageToModel[this.structureStage as keyof typeof hyperstructureStageToModel];
           }
           const buildingData = this.buildingModels.get(buildingType);
 

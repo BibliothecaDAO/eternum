@@ -1,10 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useRealm } from "@/hooks/helpers/use-realm";
-import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
-import { useTravel } from "@/hooks/helpers/use-travel";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
@@ -27,6 +20,7 @@ import {
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/eternum";
+import { soundSelector, useDojo, useIsResourcesLocked, useNextBlockTimestamp, useRealm, useResourceManager, useTravel, useUiSounds } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 

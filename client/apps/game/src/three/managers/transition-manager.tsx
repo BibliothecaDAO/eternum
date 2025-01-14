@@ -1,4 +1,4 @@
-import useUIStore from "@/hooks/store/use-ui-store";
+import { useUIStore } from "@bibliothecadao/react";
 import * as THREE from "three";
 
 const FADE_DURATION = 300;

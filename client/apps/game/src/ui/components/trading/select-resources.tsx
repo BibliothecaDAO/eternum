@@ -1,11 +1,10 @@
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
-import { usePlayResourceSound } from "@/hooks/use-ui-sound";
 import Button from "@/ui/elements/button";
 import ListSelect from "@/ui/elements/list-select";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { usePlayResourceSound, useResourceBalance } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 export const SelectResources = ({

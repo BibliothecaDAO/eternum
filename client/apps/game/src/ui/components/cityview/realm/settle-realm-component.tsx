@@ -1,12 +1,9 @@
 import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-checked.svg";
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { RealmInfo, usePlayerRealms } from "@/hooks/helpers/use-realm";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { unpackResources } from "@/ui/utils/packed-data";
-import { getRealm } from "@/ui/utils/realms";
-import { RealmInterface, ResourcesIds } from "@bibliothecadao/eternum";
+import { getRealm, RealmInterface, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
+import { RealmInfo, useDojo, usePlayerRealms } from "@bibliothecadao/react";
 import { gql } from "graphql-request";
 import { useEffect, useState } from "react";
 import { addAddressPadding } from "starknet";

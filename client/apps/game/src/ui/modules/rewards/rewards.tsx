@@ -1,17 +1,17 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import {
-  useGetHyperstructuresWithContributionsFromPlayer,
-  useGetUnregisteredContributions,
-} from "@/hooks/helpers/use-contributions";
-import { useGetPlayerEpochs, useGetUnregisteredEpochs } from "@/hooks/helpers/use-hyperstructures";
-import { usePrizePool } from "@/hooks/helpers/use-rewards";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { rewards } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
-import { formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { ContractAddress, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import {
+  useDojo,
+  useGetHyperstructuresWithContributionsFromPlayer,
+  useGetPlayerEpochs,
+  useGetUnregisteredContributions,
+  useGetUnregisteredEpochs,
+  usePrizePool,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -41,7 +41,7 @@ export const Rewards = () => {
   const [registrationTimeRemaining, setRegistrationTimeRemaining] = useState<string>("");
   const [bridgeOutTimeRemaining, setBridgeOutTimeRemaining] = useState<string>("");
 
-  const prizePool = usePrizePool();
+  const prizePool = usePrizePool({ viteLordsAddress: env.VITE_LORDS_ADDRESS });
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(rewards));
 

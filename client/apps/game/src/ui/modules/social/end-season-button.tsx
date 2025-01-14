@@ -1,11 +1,6 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/use-contributions";
-import { useGetPlayerEpochs } from "@/hooks/helpers/use-hyperstructures";
-import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { configManager, ContractAddress } from "@bibliothecadao/eternum";
+import { useDojo, useGetHyperstructuresWithContributionsFromPlayer, useGetPlayerEpochs, useLeaderBoardStore, useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useCallback, useMemo } from "react";
 

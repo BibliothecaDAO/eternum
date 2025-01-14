@@ -1,7 +1,17 @@
-import { configManager, SetupResult } from "@/dojo/setup";
-import { Position } from "@/types/position";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ClientComponents, ID, RealmLevels, StructureType, type HexPosition } from "@bibliothecadao/eternum";
+import {
+  ArmySystemUpdate,
+  BattleSystemUpdate,
+  BuildingSystemUpdate,
+  configManager,
+  Position,
+  RealmSystemUpdate,
+  SetupResult,
+  StructureProgress,
+  StructureSystemUpdate,
+  TileSystemUpdate,
+} from "@bibliothecadao/react";
 import {
   Component,
   ComponentValue,
@@ -15,15 +25,7 @@ import {
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
-import {
-  ArmySystemUpdate,
-  BattleSystemUpdate,
-  BuildingSystemUpdate,
-  RealmSystemUpdate,
-  StructureSystemUpdate,
-  TileSystemUpdate,
-} from "./types";
+import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/constants";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.

@@ -1,10 +1,7 @@
-import { configManager } from "@/dojo/setup";
-import { getRealms } from "@/hooks/helpers/use-realm";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import { SelectResource } from "@/ui/elements/select-resource";
-import { unpackResources } from "@/ui/utils/packed-data";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
+import { getRealms, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const RealmProduction = () => {

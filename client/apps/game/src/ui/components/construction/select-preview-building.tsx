@@ -1,10 +1,4 @@
-import { configManager } from "@/dojo/setup";
-import { DojoResult, useDojo } from "@/hooks/context/dojo-context";
-import { useGetRealm } from "@/hooks/helpers/use-realm";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { usePlayResourceSound } from "@/hooks/use-ui-sound";
-import { ResourceMiningTypes } from "@/types";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/headline";
@@ -12,10 +6,7 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs } from "@/ui/elements/tab";
-import { unpackResources } from "@/ui/utils/packed-data";
-import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import {
-  ResourceIdToMiningType,
   adjustWonderLordsCost,
   divideByPrecision,
   getEntityIdFromKeys,
@@ -29,10 +20,16 @@ import {
   ClientComponents,
   ID,
   ResourceCost as ResourceCostType,
+  ResourceIdToMiningType,
+  ResourceMiningTypes,
   ResourcesIds,
   WORLD_CONFIG_ID,
+  configManager,
   findResourceById,
+  hasEnoughPopulationForBuilding,
+  unpackResources,
 } from "@bibliothecadao/eternum";
+import { DojoResult, useGetRealm, usePlayResourceSound, useResourceBalance, useUIStore } from "@bibliothecadao/react";
 import { Component, getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";

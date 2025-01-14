@@ -1,11 +1,6 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useBattleManager } from "@/hooks/helpers/battles/use-battles";
-import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
-import { useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/use-structures";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { Battle } from "@/ui/modules/military/battle-view/battle";
 import { BattleManager, BattleSide, Structure } from "@bibliothecadao/eternum";
+import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId, useBattleManager, useDojo, useNextBlockTimestamp, useStructureByEntityId, useStructureByPosition, useUIStore } from "@bibliothecadao/react";
 import { memo, useMemo } from "react";
 
 export const BattleView = memo(() => {

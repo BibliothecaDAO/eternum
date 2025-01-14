@@ -1,22 +1,25 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
-import { useRealm } from "@/hooks/helpers/use-realm";
-import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { SelectAddress } from "@/ui/elements/select-address";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
-import { displayAddress, formatTime } from "@/ui/utils/utils";
-import { ContractAddress, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
+import { displayAddress } from "@/ui/utils/utils";
+import { ContractAddress, formatTime, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
+import {
+  useDojo,
+  useGetAllPlayers,
+  useNextBlockTimestamp,
+  useRealm,
+  useStructureByEntityId,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { env } from "../../../../env";
 import { CoOwnersWithTimestamp } from "./types";
 
 export const CoOwners = ({
@@ -178,7 +181,7 @@ const ChangeCoOwners = ({
     },
   } = useDojo();
 
-  const getPlayers = useGetAllPlayers();
+  const getPlayers = useGetAllPlayers({ viteLordsAddress: env.VITE_LORDS_ADDRESS });
   const [isLoading, setIsLoading] = useState(false);
   const [newCoOwners, setNewCoOwners] = useState<
     {

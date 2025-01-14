@@ -1,15 +1,14 @@
-import { configManager } from "@/dojo/setup";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
-  calculateDonkeysNeeded,
-  currencyFormat,
-  divideByPrecision,
-  getTotalResourceWeight,
-  multiplyByPrecision,
+    calculateDonkeysNeeded,
+    currencyFormat,
+    divideByPrecision,
+    getTotalResourceWeight,
+    multiplyByPrecision,
 } from "@/ui/utils/utils";
-import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
+import { configManager, ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
+import { useResourceBalance } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 export const TravelInfo = ({

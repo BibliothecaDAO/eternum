@@ -1,16 +1,3 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { getArmyByEntityId } from "@/hooks/helpers/use-armies";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import { useQuery } from "@/hooks/helpers/use-query";
-import {
-  useIsStructureImmune,
-  useStructureAtPosition,
-  useStructureImmunityTimer,
-} from "@/hooks/helpers/use-structures";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { Position } from "@/types/position";
 import { ResourceExchange } from "@/ui/components/hyperstructures/resource-exchange";
 import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
@@ -22,7 +9,14 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
-import { ArmyInfo, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ArmyInfo, configManager, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  getArmyByEntityId, Position, useDojo, useGuilds,
+  useIsStructureImmune,
+  useNextBlockTimestamp, useQuery, useStructureAtPosition,
+  useStructureImmunityTimer,
+  useUIStore
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";

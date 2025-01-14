@@ -1,6 +1,5 @@
-import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/headline";
-import { TickIds } from "@bibliothecadao/eternum";
+import { configManager, TickIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const GettingStarted = () => {

@@ -1,9 +1,8 @@
-import { useContributions } from "@/hooks/helpers/use-contributions";
-import { useRealm } from "@/hooks/helpers/use-realm";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { copyPlayerAddressToClipboard, currencyIntlFormat, divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { useContributions, useRealm } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const ContributionSummary = ({

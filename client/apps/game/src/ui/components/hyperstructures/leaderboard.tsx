@@ -1,12 +1,9 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useHyperstructureUpdates } from "@/hooks/helpers/use-hyperstructures";
-import { useRealm } from "@/hooks/helpers/use-realm";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import Button from "@/ui/elements/button";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, ID, LeaderboardManager } from "@bibliothecadao/eternum";
+import { useDojo, useHyperstructureUpdates, useNextBlockTimestamp, useRealm } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 

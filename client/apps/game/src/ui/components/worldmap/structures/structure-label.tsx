@@ -1,13 +1,8 @@
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import { useQuery } from "@/hooks/helpers/use-query";
-import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/use-structures";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
-import { formatTime } from "@/ui/utils/utils";
-import { ContractAddress, Structure } from "@bibliothecadao/eternum";
+import { ContractAddress, formatTime, Structure } from "@bibliothecadao/eternum";
+import { useGuilds, useIsStructureImmune, useNextBlockTimestamp, useQuery, useStructureImmunityTimer, useStructures, useUIStore } from "@bibliothecadao/react";
 import { memo, useMemo } from "react";
 
 export const ImmunityTimer = ({

@@ -1,6 +1,3 @@
-import { useArmiesByEntityOwner } from "@/hooks/helpers/use-armies";
-import { useEntities } from "@/hooks/helpers/use-entities";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
 import { battleSimulation, pillageSimulation } from "@/ui/components/navigation/config";
@@ -12,6 +9,7 @@ import { BattleSimulation } from "@/ui/modules/simulation/battle-simulation";
 import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { useArmiesByEntityOwner, useEntities, useUIStore } from "@bibliothecadao/react";
 
 export const EntitiesArmyTable = () => {
   const { playerStructures } = useEntities();

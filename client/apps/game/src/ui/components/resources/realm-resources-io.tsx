@@ -1,8 +1,6 @@
-import { configManager } from "@/dojo/setup";
-import { useGetRealm } from "@/hooks/helpers/use-realm";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { unpackResources } from "@/ui/utils/packed-data";
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager, ID, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
+import { useGetRealm } from "@bibliothecadao/react";
 
 export const RealmResourcesIO = ({
   realmEntityId,

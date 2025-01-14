@@ -1,23 +1,21 @@
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetAllPlayers } from "@/hooks/helpers/use-get-all-players";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
-import { ChatTab, DEFAULT_TAB } from "@/ui/modules/chat/chat-tab";
-import { CHAT_COLORS, GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "@/ui/modules/chat/constants";
+import { ChatTab } from "@/ui/modules/chat/chat-tab";
+import { CHAT_COLORS, DEFAULT_TAB, GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "@/ui/modules/chat/constants";
 import { InputField } from "@/ui/modules/chat/input-field";
 import { ChatMetadata, Tab } from "@/ui/modules/chat/types";
 import { useChatStore } from "@/ui/modules/chat/use-chat-store";
 import { getMessageKey } from "@/ui/modules/chat/utils";
 import { EventStream } from "@/ui/modules/stream/event-stream";
-import { toHexString } from "@/ui/utils/utils";
-import { ContractAddress, Player } from "@bibliothecadao/eternum";
+import { ContractAddress, Player, toHexString } from "@bibliothecadao/eternum";
+import { useDojo, useGetAllPlayers, useGuilds } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
+import { env } from "../../../../env";
 
 export const Chat = () => {
   const {
@@ -44,7 +42,7 @@ export const Chat = () => {
 
   const addTab = useChatStore((state) => state.addTab);
 
-  const getPlayers = useGetAllPlayers();
+  const getPlayers = useGetAllPlayers({ viteLordsAddress: env.VITE_LORDS_ADDRESS });
 
   const players = useMemo(() => {
     return getPlayers().filter((player) => player.address !== BigInt(account.address));

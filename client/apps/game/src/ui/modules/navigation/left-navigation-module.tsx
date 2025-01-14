@@ -1,8 +1,3 @@
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import { useQuery } from "@/hooks/helpers/use-query";
-import { usePlayerArrivalsNotifications } from "@/hooks/helpers/use-resource-arrivals";
-import { useModalStore } from "@/hooks/store/use-modal-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { EntityResourceTable } from "@/ui/components/resources/entity-resource-table";
 import { MarketModal } from "@/ui/components/trading/market-modal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
@@ -10,6 +5,7 @@ import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { Chat } from "@/ui/modules/chat/chat";
+import { LeftView, useEntitiesUtils, useModalStore, usePlayerArrivalsNotifications, useQuery, useUIStore } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
@@ -37,16 +33,6 @@ const WorldStructuresMenu = lazy(() =>
 const AllResourceArrivals = lazy(() =>
   import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
 );
-
-export enum LeftView {
-  None,
-  MilitaryView,
-  EntityView,
-  ConstructionView,
-  WorldStructuresView,
-  ResourceArrivals,
-  ResourceTable,
-}
 
 export const LeftNavigationModule = memo(() => {
   const view = useUIStore((state) => state.leftNavigationView);

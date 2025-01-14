@@ -1,10 +1,4 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
-import { useIsResourcesLocked, useStructures } from "@/hooks/helpers/use-structures";
-import { useTravel } from "@/hooks/helpers/use-travel";
-import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import { TravelInfo } from "@/ui/components/resources/travel-info";
@@ -18,9 +12,9 @@ import {
   MarketManager,
   RESOURCE_TIERS,
   Resources,
-  ResourcesIds,
-  resources,
+  ResourcesIds, configManager, resources
 } from "@bibliothecadao/eternum";
+import { soundSelector, useDojo, useIsResourcesLocked, useResourceBalance, useStructures, useTravel, useUiSounds } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({

@@ -1,13 +1,10 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { StaminaResourceCost } from "@/ui/elements/stamina-resource-cost";
-import { computeExploreFoodCosts, computeTravelFoodCosts, ResourcesIds } from "@bibliothecadao/eternum";
+import { computeExploreFoodCosts, computeTravelFoodCosts, configManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { useDojo, useResourceBalance, useUIStore } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useCallback, useMemo } from "react";

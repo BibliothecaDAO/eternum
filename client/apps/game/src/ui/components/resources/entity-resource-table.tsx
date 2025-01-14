@@ -1,9 +1,14 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
 import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS, StructureType } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  CapacityConfigCategory,
+  configManager,
+  ID,
+  RESOURCE_TIERS,
+  StructureType,
+} from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";

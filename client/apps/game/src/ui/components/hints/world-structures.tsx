@@ -1,14 +1,12 @@
-import { configManager } from "@/dojo/setup";
 import { STRUCTURE_IMAGE_PATHS } from "@/ui/components/structures/construction/structure-construction-menu";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { formatTime } from "@/ui/utils/utils";
+import { } from "@/ui/utils/utils";
 import {
-  findResourceById,
-  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+  configManager, findResourceById, formatTime, GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
   ResourcesIds,
-  StructureType,
+  StructureType
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";

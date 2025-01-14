@@ -1,5 +1,5 @@
-import { Position } from "@/types/position";
 import { ID, StructureType } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/react";
 import * as THREE from "three";
 
 export enum SceneName {
@@ -7,12 +7,7 @@ export enum SceneName {
   Hexception = "hex",
 }
 
-export enum ResourceMiningTypes {
-  Forge = "forge",
-  Mine = "mine",
-  LumberMill = "lumber_mill",
-  Dragonhide = "dragonhide",
-}
+
 
 export enum HyperstructureTypesNames {
   STAGE_1 = "hyperstructure_stage0",

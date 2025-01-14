@@ -1,4 +1,3 @@
-import useUIStore from "@/hooks/store/use-ui-store";
 import { type ArmyManager } from "@/three/managers/army-manager";
 import { type BattleManager } from "@/three/managers/battle-manager";
 import { type Biome, BIOME_COLORS } from "@/three/managers/biome";
@@ -7,6 +6,7 @@ import type WorldmapScene from "@/three/scenes/worldmap";
 import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
 import { StructureType } from "@bibliothecadao/eternum";
+import { useUIStore } from "@bibliothecadao/react";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 

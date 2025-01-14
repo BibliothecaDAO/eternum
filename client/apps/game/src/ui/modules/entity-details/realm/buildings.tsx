@@ -1,13 +1,9 @@
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { Building, useBuildings } from "@/hooks/helpers/use-buildings";
-import { useGetRealm } from "@/hooks/helpers/use-realm";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { toHexString } from "@/ui/utils/utils";
-import { BuildingType, ResourcesIds, TileManager } from "@bibliothecadao/eternum";
+import { BuildingType, ResourcesIds, TileManager, toHexString } from "@bibliothecadao/eternum";
+import { Building, useBuildings, useDojo, useGetRealm, useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useState } from "react";
 

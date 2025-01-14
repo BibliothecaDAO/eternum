@@ -1,4 +1,3 @@
-import { configManager } from "@/dojo/setup";
 import { execute } from "@/hooks/gql/execute";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
@@ -7,7 +6,7 @@ import { useLords } from "@/hooks/use-lords";
 import { useBridgeAsset } from "@/hooks/useBridge";
 import { useTravel } from "@/hooks/useTravel";
 import { displayAddress, divideByPrecision, multiplyByPrecision } from "@/lib/utils";
-import { ADMIN_BANK_ENTITY_ID, DONKEY_ENTITY_TYPE, Resources, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ADMIN_BANK_ENTITY_ID, DONKEY_ENTITY_TYPE, Resources, ResourcesIds, configManager, resources } from "@bibliothecadao/eternum";
 import { useAccount, useBalance } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, Loader, Plus } from "lucide-react";

@@ -1,4 +1,4 @@
-import { configManager } from "@/dojo/setup";
+import { configManager } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { useEffect, useState } from "react";
 import { env } from "../../env";

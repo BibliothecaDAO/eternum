@@ -1,19 +1,18 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
 import { Troops } from "@/ui/components/worldmap/battles/troops";
 import {
-  calculateRemainingTroops,
-  getChancesOfSuccess,
-  getMaxResourceAmountStolen,
-  getTroopLossOnRaidPerTroopType,
+    calculateRemainingTroops,
+    getChancesOfSuccess,
+    getMaxResourceAmountStolen,
+    getTroopLossOnRaidPerTroopType,
 } from "@/ui/modules/military/battle-view/utils";
 import { currencyFormat, roundUpToPrecision } from "@/ui/utils/utils";
 import {
-  ResourcesIds,
-  TroopConfig as TroopConfigClass,
-  TroopsSimulator,
-  WORLD_CONFIG_ID,
+    configManager, ResourcesIds,
+    TroopConfig as TroopConfigClass,
+    TroopsSimulator,
+    WORLD_CONFIG_ID
 } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
