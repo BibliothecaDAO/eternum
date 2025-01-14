@@ -493,6 +493,22 @@ export interface Config {
   realmMaxLevel: number;
 }
 
+export interface RealmInfo {
+  realmId: ID;
+  entityId: ID;
+  name: string;
+  resourceTypesPacked: bigint;
+  order: number;
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  population?: number | undefined;
+  capacity?: number;
+  hasCapacity: boolean;
+  owner: ContractAddress;
+  ownerName: string;
+  hasWonder: boolean;
+  level: number;
+}
+
 export interface PlayerInfo {
   entity: Entity;
   rank: number;

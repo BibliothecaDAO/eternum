@@ -1,12 +1,10 @@
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/use-quests";
-import { useRealm } from "@/hooks/helpers/use-realm";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/button";
-import { ResourceCost } from "@/ui/elements/resource-cost";
-import { Prize, QuestStatus, QuestType } from "@bibliothecadao/eternum";
+import { QuestStatus, QuestType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { memo, useState } from "react";
 
@@ -22,7 +20,7 @@ export const QuestsMenu = memo(() => {
 
   useStartingTutorial();
 
-  const { quests } = useQuests();
+  const quests = useQuests();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -33,7 +31,7 @@ export const QuestsMenu = memo(() => {
 
   const { handleStart } = useTutorial(questSteps.get(currentQuest?.id || QuestType.Settle));
 
-  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
+  const unclaimedQuestsCount = useUnclaimedQuestsCount();
 
   const [isLoading, setIsLoading] = useState(false);
   const [skipQuest, setSkipQuest] = useState(false);
@@ -93,7 +91,7 @@ export const QuestsMenu = memo(() => {
     }
 
     setTooltip({
-      content: <QuestRewards prizes={currentQuest?.prizes} />,
+      content: <QuestRewards realmEntityId={structureEntityId} prizes={currentQuest?.prizes} />,
       position: "bottom",
       fixed: {
         x: x,
@@ -200,22 +198,3 @@ export const QuestsMenu = memo(() => {
     )
   );
 });
-
-const QuestRewards = ({ prizes }: { prizes: Prize[] | undefined }) => {
-  const { getQuestResources } = useRealm();
-
-  return (
-    <div className="w-full max-w-xs py-2">
-      {prizes &&
-        prizes.map((prize, index) => (
-          <div key={index} className="flex flex-wrap gap-1.5 mb-1.5">
-            {getQuestResources()[prize.id].map((resource, i) => (
-              <div key={i} className="flex-grow-0">
-                <ResourceCost resourceId={resource.resource} amount={resource.amount} />
-              </div>
-            ))}
-          </div>
-        ))}
-    </div>
-  );
-};

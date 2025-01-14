@@ -7,7 +7,7 @@ import { armyHasTraveled } from "@/utils/army";
 import { getEntityInfo } from "@/utils/entities";
 import { ContractAddress, Prize, QuestStatus, QuestType, TileManager } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { HasValue, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { useBuildingQuantities } from "./use-buildings";
@@ -15,30 +15,26 @@ import { useBuildingQuantities } from "./use-buildings";
 export const useQuests = () => {
   const questDependencies = useQuestDependencies();
 
-  const createQuest = (QuestType: QuestType) => {
-    const dependency = questDependencies[QuestType];
-    return useMemo(
-      () => ({
-        id: QuestType,
-        ...questDetails.get(QuestType)!,
-        status: dependency.status,
-      }),
-      [questDependencies[QuestType]],
-    );
-  };
-
-  const quests = [
-    createQuest(QuestType.Settle),
-    createQuest(QuestType.BuildFood),
-    createQuest(QuestType.BuildResource),
-    createQuest(QuestType.PauseProduction),
-    createQuest(QuestType.CreateDefenseArmy),
-    createQuest(QuestType.CreateAttackArmy),
-    createQuest(QuestType.Travel),
-    createQuest(QuestType.CreateTrade),
+  const questTypes = [
+    QuestType.Settle,
+    QuestType.BuildFood,
+    QuestType.BuildResource,
+    QuestType.PauseProduction,
+    QuestType.CreateDefenseArmy,
+    QuestType.CreateAttackArmy,
+    QuestType.Travel,
+    QuestType.CreateTrade,
   ];
 
-  return { quests };
+  const quests = useMemo(() => {
+    return questTypes.map((type) => ({
+      id: type,
+      ...questDetails.get(type)!,
+      status: questDependencies[type].status,
+    }));
+  }, [questDependencies]);
+
+  return quests;
 };
 
 const useQuestDependencies = () => {
@@ -90,7 +86,7 @@ const useQuestDependencies = () => {
   );
 
   const { questClaimStatus } = useQuestClaimStatus();
-  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
+  const unclaimedQuestsCount = useUnclaimedQuestsCount();
 
   return useMemo(
     () => ({
@@ -209,5 +205,5 @@ export const useUnclaimedQuestsCount = () => {
     [questClaimStatus],
   );
 
-  return { unclaimedQuestsCount };
+  return unclaimedQuestsCount;
 };
