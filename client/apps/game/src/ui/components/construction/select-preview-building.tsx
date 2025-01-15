@@ -1,6 +1,5 @@
 import { configManager } from "@/dojo/setup";
 import { DojoResult, useDojo } from "@/hooks/context/dojo-context";
-import { useGetRealm } from "@/hooks/helpers/use-realm";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { usePlayResourceSound } from "@/hooks/use-ui-sound";
@@ -22,6 +21,7 @@ import {
   gramToKg,
   isResourceProductionBuilding,
 } from "@/ui/utils/utils";
+import { getRealmInfo } from "@/utils/realm";
 import {
   BuildingEnumToString,
   BuildingType,
@@ -44,7 +44,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
-  const { realm } = useGetRealm(entityId);
+  const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
 
   const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
@@ -234,7 +234,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const hasBalance = checkBalance(buildingCost);
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
-                const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
+                const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
                 const isBarracks = building === BuildingType.Barracks;
                 const isArcheryRange = building === BuildingType.ArcheryRange;
@@ -274,7 +274,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
       },
     ],
-    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound, realm.population],
+    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (

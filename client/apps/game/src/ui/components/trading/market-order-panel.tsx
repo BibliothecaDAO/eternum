@@ -1,5 +1,4 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useRealm } from "@/hooks/helpers/use-realm";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
 import { useTravel } from "@/hooks/helpers/use-travel";
@@ -17,6 +16,7 @@ import {
   getTotalResourceWeight,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
+import { getRealmAddressName } from "@/utils/realm";
 import {
   DONKEY_ENTITY_TYPE,
   ONE_MONTH,
@@ -265,8 +265,6 @@ const OrderRow = memo(
       [entityId, updateBalance],
     );
 
-    const { getRealmAddressName } = useRealm();
-
     const isMakerResourcesLocked = useIsResourcesLocked(offer.makerId);
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
@@ -359,7 +357,7 @@ const OrderRow = memo(
     }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
 
     const accountName = useMemo(() => {
-      return getRealmAddressName(offer.makerId);
+      return getRealmAddressName(offer.makerId, dojo.setup.components);
     }, [offer.originName]);
 
     const onAccept = async () => {

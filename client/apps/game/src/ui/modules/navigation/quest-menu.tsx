@@ -4,7 +4,9 @@ import useUIStore from "@/hooks/store/use-ui-store";
 import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/button";
-import { QuestStatus, QuestType } from "@bibliothecadao/eternum";
+import { ResourceCost } from "@/ui/elements/resource-cost";
+import { getQuestResources } from "@/utils/resources";
+import { ID, Prize, QuestStatus, QuestType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { memo, useState } from "react";
 
@@ -198,3 +200,24 @@ export const QuestsMenu = memo(() => {
     )
   );
 });
+
+const QuestRewards = ({ realmEntityId, prizes }: { realmEntityId: ID; prizes: Prize[] | undefined }) => {
+  const {
+    setup: { components },
+  } = useDojo();
+
+  return (
+    <div className="w-full max-w-xs py-2">
+      {prizes &&
+        prizes.map((prize, index) => (
+          <div key={index} className="flex flex-wrap gap-1.5 mb-1.5">
+            {getQuestResources(realmEntityId, components)[prize.id].map((resource, i) => (
+              <div key={i} className="flex-grow-0">
+                <ResourceCost resourceId={resource.resource} amount={resource.amount} />
+              </div>
+            ))}
+          </div>
+        ))}
+    </div>
+  );
+};

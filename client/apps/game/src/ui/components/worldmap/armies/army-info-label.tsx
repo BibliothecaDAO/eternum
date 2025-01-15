@@ -1,6 +1,6 @@
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { useRealm } from "@/hooks/helpers/use-realm";
 import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
@@ -13,6 +13,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { currencyFormat } from "@/ui/utils/utils";
+import { getRealmAddressName } from "@/utils/realm";
 import { ArmyInfo, Structure } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
@@ -35,12 +36,15 @@ interface ArmyInfoLabelProps {
 }
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
-  const { getRealmAddressName } = useRealm();
+  const {
+    setup: { components },
+  } = useDojo();
+
   const { realm, entity_id, entityOwner, troops } = army;
 
   const realmId = realm?.realm_id || 0;
 
-  const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
+  const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id, components) : "";
 
   const { getStructureByEntityId } = useStructures();
 

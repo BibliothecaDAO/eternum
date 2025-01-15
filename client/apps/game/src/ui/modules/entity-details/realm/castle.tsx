@@ -1,14 +1,20 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetRealm } from "@/hooks/helpers/use-realm";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision, toHexString } from "@/ui/utils/utils";
-import { LEVEL_DESCRIPTIONS, REALM_MAX_LEVEL, RealmLevels, StructureType } from "@bibliothecadao/eternum";
+import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getRealmInfo } from "@/utils/realm";
+import {
+  ContractAddress,
+  LEVEL_DESCRIPTIONS,
+  REALM_MAX_LEVEL,
+  RealmLevels,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
 export const Castle = () => {
@@ -20,16 +26,18 @@ export const Castle = () => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const realm = useGetRealm(structureEntityId).realm;
-
-  const isOwner = toHexString(realm.owner) === dojo.account.account.address;
+  const realmInfo = useMemo(
+    () => getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), dojo.setup.components),
+    [structureEntityId, dojo.setup.components],
+  );
 
   const structure = useStructureByEntityId(structureEntityId);
 
   const getNextRealmLevel = useMemo(() => {
-    const nextLevel = realm.level + 1;
+    if (!realmInfo) return null;
+    const nextLevel = realmInfo.level + 1;
     return nextLevel < REALM_MAX_LEVEL ? nextLevel : null;
-  }, [realm.level]);
+  }, [realmInfo]);
 
   const checkBalance = useMemo(() => {
     if (!getNextRealmLevel) return false;
@@ -45,13 +53,17 @@ export const Castle = () => {
 
   const levelUpRealm = async () => {
     setIsLoading(true);
+    if (!realmInfo) return;
 
     await dojo.setup.systemCalls.upgrade_realm({
       signer: dojo.account.account,
-      realm_entity_id: realm.entityId,
+      realm_entity_id: realmInfo.entityId,
     });
     setIsLoading(false);
   };
+
+  if (!realmInfo) return null;
+  const isOwner = realmInfo.owner === ContractAddress(dojo.account.account.address);
 
   return (
     structure && (
@@ -60,7 +72,7 @@ export const Castle = () => {
           <div className="flex justify-between items-start gap-4">
             <div>
               <div className="flex items-center gap-4">
-                <div className="text-2xl">{RealmLevels[realm.level]}</div>
+                <div className="text-2xl">{RealmLevels[realmInfo.level]}</div>
                 {getNextRealmLevel && isOwner && (
                   <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
                     {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
@@ -70,10 +82,10 @@ export const Castle = () => {
               {getNextRealmLevel && isOwner && (
                 <div className="mt-4">
                   <p className="text-sm mb-4">
-                    Next Level: {RealmLevels[realm.level + 1]},{" "}
-                    {LEVEL_DESCRIPTIONS[(realm.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
+                    Next Level: {RealmLevels[realmInfo.level + 1]},{" "}
+                    {LEVEL_DESCRIPTIONS[(realmInfo.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
                   </p>
-                  <div className="mb-2 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
+                  <div className="mb-2 font-semibold uppercase">Upgrade Cost to {RealmLevels[realmInfo.level + 1]}</div>
                   <div className="flex gap-4">
                     {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a: any) => (
                       <ResourceCost

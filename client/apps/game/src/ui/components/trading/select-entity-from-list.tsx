@@ -1,5 +1,6 @@
-import { useRealm } from "@/hooks/helpers/use-realm";
+import { useDojo } from "@/hooks/context/dojo-context";
 import Button from "@/ui/elements/button";
+import { getRealmAddressName } from "@/utils/realm";
 import { ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { memo } from "react";
@@ -18,14 +19,16 @@ interface SelectEntityFromListProps {
 
 export const SelectEntityFromList = memo(
   ({ onSelect, selectedEntityId, selectedCounterpartyId, entities }: SelectEntityFromListProps) => {
-    const { getRealmAddressName } = useRealm();
+    const {
+      setup: { components },
+    } = useDojo();
 
     return (
       <div className="overflow-y-scroll max-h-72 border border-gold/10 gap-2 flex-col">
         {entities.map((entity) => {
           const isSelected = selectedEntityId === entity.entity_id;
           const isDisabled = isSelected || selectedCounterpartyId === entity.entity_id;
-          const realmName = getRealmAddressName(entity.entity_id);
+          const realmName = getRealmAddressName(entity.entity_id, components);
 
           return (
             <div

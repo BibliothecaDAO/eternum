@@ -1,8 +1,10 @@
 import { configManager } from "@/dojo/setup";
-import { useGetRealm } from "@/hooks/helpers/use-realm";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { unpackResources } from "@/ui/utils/packed-data";
+import { getRealmInfo } from "@/utils/realm";
 import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export const RealmResourcesIO = ({
   realmEntityId,
@@ -10,12 +12,13 @@ export const RealmResourcesIO = ({
   titleClassName,
   size = "xs",
 }: {
-  realmEntityId?: ID;
+  realmEntityId: ID;
   className?: string;
   titleClassName?: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 }) => {
-  const { realm } = useGetRealm(realmEntityId);
+  const dojo = useDojo();
+  const realm = getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), dojo.setup.components);
 
   const resourcesProduced = realm ? unpackResources(realm.resourceTypesPacked) : [];
   const resourcesInputs = configManager.resourceInputs;
