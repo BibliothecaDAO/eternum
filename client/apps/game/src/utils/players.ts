@@ -1,9 +1,7 @@
-import { usePrizePool } from "@/hooks/helpers/use-rewards";
 import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
-import { calculateLordsShare, calculatePlayerSharePercentage } from "@/ui/utils/leaderboard";
+import { calculatePlayerSharePercentage } from "@/ui/utils/leaderboard";
 import { ClientComponents, ContractAddress, Player, PlayerInfo, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
-import { formatEther } from "viem";
 import { getEntityName } from "./entities";
 
 export const getPlayerInfo = (
@@ -14,8 +12,6 @@ export const getPlayerInfo = (
   const { Realm, Owner, GuildMember, Hyperstructure, Structure } = components;
 
   const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
-
-  const prizePool = usePrizePool();
 
   const totalPoints = playersByRank.reduce((sum, [, points]) => sum + points, 0);
 
@@ -51,7 +47,7 @@ export const getPlayerInfo = (
       points,
       rank: rankIndex === -1 ? Number.MAX_SAFE_INTEGER : rankIndex + 1,
       percentage: calculatePlayerSharePercentage(points, totalPoints),
-      lords: calculateLordsShare(points, totalPoints, Number(formatEther(prizePool))),
+      lords: 0,
       realms: runQuery([Has(Realm), HasValue(Owner, { address: player.address })]).size,
       mines: runQuery([
         HasValue(Structure, { category: StructureType[StructureType.FragmentMine] }),
