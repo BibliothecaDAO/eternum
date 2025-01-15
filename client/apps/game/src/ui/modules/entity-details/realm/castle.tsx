@@ -1,6 +1,5 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
@@ -8,6 +7,7 @@ import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getRealmInfo } from "@/utils/realm";
+import { getBalance } from "@/utils/resources";
 import {
   ContractAddress,
   LEVEL_DESCRIPTIONS,
@@ -21,8 +21,6 @@ export const Castle = () => {
   const dojo = useDojo();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-
-  const { getBalance } = useResourceBalance();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,7 +44,7 @@ export const Castle = () => {
 
     return Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource);
+      const balance = getBalance(structureEntityId, resourceCost.resource, dojo.setup.components);
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
   }, [getBalance, structureEntityId]);

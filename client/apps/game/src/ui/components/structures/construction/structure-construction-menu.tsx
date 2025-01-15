@@ -1,10 +1,11 @@
 import { configManager } from "@/dojo/setup";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import { useDojo } from "@/hooks/context/dojo-context";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { StructureCard } from "@/ui/components/structures/construction/structure-card";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
+import { getBalance } from "@/utils/resources";
 import {
   HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
   HYPERSTRUCTURE_CREATION_COSTS,
@@ -25,10 +26,10 @@ export const STRUCTURE_IMAGE_PATHS = {
 };
 
 export const StructureConstructionMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
+  const dojo = useDojo();
+
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-
-  const { getBalance } = useResourceBalance();
 
   const buildingTypes = Object.keys(StructureType)
     .filter((key) => isNaN(Number(key)))
@@ -39,7 +40,7 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(entityId, resourceCost.resource);
+      const balance = getBalance(entityId, resourceCost.resource, dojo.setup.components);
       return balance.balance >= multiplyByPrecision(resourceCost.amount);
     });
 
@@ -90,6 +91,8 @@ const StructureInfo = ({
   entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
+  const dojo = useDojo();
+
   // if is hyperstructure, the construction cost are only fragments
   const isHyperstructure = structureId === StructureType["Hyperstructure"];
   const cost = HYPERSTRUCTURE_CREATION_COSTS.filter(
@@ -100,8 +103,6 @@ const StructureInfo = ({
     structureId == StructureType.Hyperstructure
       ? `+${configManager.getHyperstructureConfig().pointsPerCycle} points`
       : "";
-
-  const { getBalance } = useResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">
@@ -117,7 +118,7 @@ const StructureInfo = ({
       <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
       <div className="grid grid-cols-1 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0, ResourcesIds.AncientFragment);
+          const balance = getBalance(entityId || 0, ResourcesIds.AncientFragment, dojo.setup.components);
           return (
             <ResourceCost
               key={index}

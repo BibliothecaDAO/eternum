@@ -8,9 +8,35 @@ import {
   Resource,
   ResourceManager,
   resources,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+
+// used for entities that don't have any production
+export const getInventoryResources = (entityId: ID, components: ClientComponents): Resource[] => {
+  return resources
+    .map(({ id }) => {
+      const resource = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(id)]));
+      if (resource?.balance !== undefined && resource.balance > 0n) {
+        return { resourceId: id, amount: Number(resource.balance) };
+      }
+      return undefined;
+    })
+    .filter((resource): resource is Resource => resource !== undefined);
+};
+
+// for entities that have production like realms
+export const getBalance = (entityId: ID, resourceId: ResourcesIds, components: ClientComponents) => {
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const resourceManager = new ResourceManager(components, entityId, resourceId);
+  return { balance: resourceManager.balance(currentDefaultTick), resourceId };
+};
+
+export const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds, components: ClientComponents) => {
+  const resourceManager = new ResourceManager(components, entityId, resourceId);
+  return resourceManager.getProduction();
+};
 
 export const getResourcesFromBalance = (entityId: ID, components: ClientComponents): Resource[] => {
   const currentDefaultTick = useUIStore.getState().currentDefaultTick;

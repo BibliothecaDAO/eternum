@@ -3,7 +3,6 @@ import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
 import { useFragmentMines } from "@/hooks/helpers/use-fragment-mines";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/use-hyperstructures";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { FragmentMinePanel } from "@/ui/components/fragmentMines/fragment-mine-panel";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/hyperstructure-panel";
@@ -15,6 +14,7 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { getAddressNameFromEntity, getPlayerAddressFromEntity } from "@/utils/entities";
+import { getBalance } from "@/utils/resources";
 import {
   BattleSide,
   ContractAddress,
@@ -275,8 +275,9 @@ const HyperStructureExtraContent = ({
 };
 
 const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
-  const { getBalance } = useResourceBalance();
-  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment);
+  const dojo = useDojo();
+
+  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment, dojo.setup.components);
   const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);
 
   return (
