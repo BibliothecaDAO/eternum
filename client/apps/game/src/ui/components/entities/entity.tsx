@@ -1,6 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
-import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { DepositResources } from "@/ui/components/resources/deposit-resources";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
@@ -8,7 +7,7 @@ import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getEntityInfo, getEntityName } from "@/utils/entities";
 import { getResourcesFromBalance } from "@/utils/resources";
-import { ContractAddress, EntityType } from "@bibliothecadao/eternum";
+import { ArrivalInfo, ContractAddress, EntityType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import React, { useMemo } from "react";

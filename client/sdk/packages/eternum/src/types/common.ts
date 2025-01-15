@@ -10,6 +10,16 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
+export type ArrivalInfo = {
+  entityId: ID;
+  recipientEntityId: ID;
+  position: Position;
+  arrivesAt: bigint;
+  isOwner: boolean;
+  hasResources: boolean;
+  isHome: boolean;
+};
+
 export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string;

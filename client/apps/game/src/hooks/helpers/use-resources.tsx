@@ -1,4 +1,3 @@
-import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
@@ -20,10 +19,6 @@ export function useResourcesUtils() {
   const {
     components: { Weight, Resource, ResourceCost, Realm, CapacityCategory },
   } = setup;
-
-  const weightLessResources = useMemo(() => {
-    return configManager.getWeightLessResources();
-  }, []);
 
   const useResourcesFromBalance = (entityId: ID) => {
     const { currentDefaultTick } = useNextBlockTimestamp();
