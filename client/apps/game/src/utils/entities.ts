@@ -129,7 +129,7 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
   return `${structure?.category} ${structure?.entity_id}`;
 };
 
-export const getRealmName = (realm: ComponentValue<ClientComponents["Realm"]["schema"]>) => {
+const getRealmName = (realm: ComponentValue<ClientComponents["Realm"]["schema"]>) => {
   const baseName = getRealmNameById(realm.realm_id);
   return realm.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
