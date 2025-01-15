@@ -1,36 +1,37 @@
 import {
   ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE,
-  BRIDGE_FEE_DENOMINATOR,
   BuildingType, CapacityConfigCategory,
-  EternumGlobalConfig as DefaultConfig,
   DONKEY_ENTITY_TYPE,
   EternumProvider,
   FELT_CENTER,
   QuestType, ResourcesIds,
   ResourceTier,
-  scaleResourceCostMinMax, scaleResourceInputs, scaleResourceOutputs, scaleResources,
-  SHARDS_MINES_WIN_PROBABILITY,
+  scaleResourceCostMinMax,
+  scaleResourceInputs,
+  scaleResourceOutputs,
+  scaleResources,
   TickIds,
   TravelTypes,
-  type Config as EternumGlobalConfig, type ResourceInputs, type ResourceOutputs, type ResourceWhitelistConfig,
+  type Config as EternumConfig, type ResourceInputs, type ResourceOutputs, type ResourceWhitelistConfig,
 } from "@bibliothecadao/eternum";
-import { Account } from "starknet";
 
 import chalk from 'chalk';
+import { Account } from "starknet";
+import { BRIDGE_FEE_DENOMINATOR, SHARDS_MINES_WIN_PROBABILITY } from "../environments/_shared_";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
 interface Config {
   account: Account;
   provider: EternumProvider;
-  config: EternumGlobalConfig;
+  config: EternumConfig;
 }
 
 
 export class GameConfigDeployer {
-  public globalConfig: EternumGlobalConfig;
+  public globalConfig: EternumConfig;
 
-  constructor(config?: EternumGlobalConfig) {
-    this.globalConfig = config || DefaultConfig;
+  constructor(config: EternumConfig) {
+    this.globalConfig = config;
   }
 
 
@@ -332,12 +333,14 @@ export const setBuildingConfig = async (config: Config) => {
   const calldataArray = [];
   const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
   const buildingCosts = config.config.buildings.buildingCosts;
-  const scaledBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
+  const scaledNonResourceBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
   const BUILDING_COST_DISPLAY_ROWS = 6;
-  
+
+
+  // Non Resource Building Config
   for (const buildingId of Object.keys(buildingResourceProduced) as unknown as BuildingType[]) {
-    if (scaledBuildingCosts[buildingId].length !== 0) {
-      const costs = scaledBuildingCosts[buildingId];
+    if (scaledNonResourceBuildingCosts[buildingId].length !== 0) {
+      const costs = scaledNonResourceBuildingCosts[buildingId];
       const calldata = {
         building_category: buildingId,
         building_resource_type: buildingResourceProduced[buildingId] as ResourcesIds,
@@ -367,6 +370,45 @@ export const setBuildingConfig = async (config: Config) => {
     └────────────────────────────────`));
 
     }
+  }
+
+
+  // Resource Building Config
+  const scaledResourceBuildingCosts = scaleResourceInputs(
+    config.config.resources.resourceBuildingCosts,
+    config.config.resources.resourcePrecision,
+  );
+  for (const resourceId of Object.keys(scaledResourceBuildingCosts) as unknown as ResourcesIds[]) {
+    const costs = scaledResourceBuildingCosts[resourceId];
+    const calldata = {
+      building_category: BuildingType.Resource,
+      building_resource_type: resourceId,
+      cost_of_building: costs,
+    };
+
+    const buildingScalePercent = config.config.buildings.buildingFixedCostScalePercent;
+    console.log(chalk.cyan(`
+    ┌─ ${chalk.yellow(ResourcesIds[resourceId])} Building
+    │  ${chalk.gray('Produces:')} ${chalk.white(ResourcesIds[calldata.building_resource_type as ResourcesIds])}
+    │  ${chalk.gray('Building Costs:')}${costs.map(c => `
+    │     ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`)
+       .join('')}
+
+    │  ${chalk.gray('┌──────────')}${calldata.cost_of_building.map(c => '─'.repeat(12)).join('')}
+    │  ${chalk.gray('│')} Building ${calldata.cost_of_building.map(c => chalk.white(ResourcesIds[c.resource].padEnd(12))).join('')}
+    │  ${chalk.gray('├──────────')}${calldata.cost_of_building.map(c => '─'.repeat(12)).join('')}${Array.from({length: BUILDING_COST_DISPLAY_ROWS}, (_, i) => {
+        const buildingNum = i + 1;
+        const costsStr = calldata.cost_of_building.map(c => {
+          const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
+          return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
+        }).join('');
+        return `
+    │  ${chalk.yellow(('No #' + buildingNum).padEnd(8))}${chalk.gray('│')} ${costsStr}`;
+      }).join('')}
+    │  ${chalk.gray('└──────────')}${calldata.cost_of_building.map(c => '─'.repeat(12)).join('')}
+    └────────────────────────────────`));
+
+    calldataArray.push(calldata);
   }
 
   const tx = await config.provider.set_building_config({ signer: config.account, calls: calldataArray });

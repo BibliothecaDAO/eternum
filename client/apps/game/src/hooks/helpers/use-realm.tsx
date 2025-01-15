@@ -4,6 +4,7 @@ import useUIStore from "@/hooks/store/use-ui-store";
 import { unpackResources } from "@/ui/utils/packed-data";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   ContractAddress,
   getOrderName,
@@ -16,7 +17,6 @@ import { Has, HasValue, getComponentValue, runQuery, type ComponentValue, type E
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import realmIdsByOrder from "../../../../../common/data/realmids_by_order.json";
-
 export interface RealmInfo {
   realmId: ID;
   entityId: ID;
@@ -43,7 +43,7 @@ export function useRealm() {
   const getQuestResources = () => {
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
-    return getStartingResources(resourcesProduced);
+    return getStartingResources(resourcesProduced, ETERNUM_CONFIG().questResources, ETERNUM_CONFIG().resources.resourceInputs);
   };
 
   const getEntityOwner = (entityId: ID) => {

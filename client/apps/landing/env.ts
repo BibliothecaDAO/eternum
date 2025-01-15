@@ -13,11 +13,6 @@ const envSchema = z.object({
   // Client fee recipient
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
-  // External Contracts
-  VITE_SEASON_PASS_ADDRESS: z.string().startsWith("0x"),
-  VITE_REALMS_ADDRESS: z.string().startsWith("0x"),
-  VITE_LORDS_ADDRESS: z.string().startsWith("0x"),
-
   // API endpoints
   VITE_PUBLIC_TORII: z.string().url(),
   VITE_PUBLIC_NODE_URL: z.string().url(),

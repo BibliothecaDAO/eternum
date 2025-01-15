@@ -8,7 +8,8 @@ import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, toHexString } from "@/ui/utils/utils";
-import { LEVEL_DESCRIPTIONS, REALM_MAX_LEVEL, RealmLevels, StructureType } from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { LEVEL_DESCRIPTIONS, RealmLevels, StructureType } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
 export const Castle = () => {
@@ -28,7 +29,7 @@ export const Castle = () => {
 
   const getNextRealmLevel = useMemo(() => {
     const nextLevel = realm.level + 1;
-    return nextLevel < REALM_MAX_LEVEL ? nextLevel : null;
+    return nextLevel < ETERNUM_CONFIG().realmMaxLevel ? nextLevel : null;
   }, [realm.level]);
 
   const checkBalance = useMemo(() => {

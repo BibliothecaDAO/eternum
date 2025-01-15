@@ -1,10 +1,10 @@
+import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   ArmyInfo,
   CapacityConfigCategory,
   ClientComponents,
   ContractAddress,
-  EternumGlobalConfig,
-  getArmyTotalCapacity,
+  getArmyTotalCapacity
 } from "@bibliothecadao/eternum";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -26,8 +26,8 @@ export const formatArmies = (armies: Entity[], playerAddress: string, components
 
       let health = structuredClone(getComponentValue(components.Health, armyEntityId));
       if (health) {
-        health.current = health.current / BigInt(EternumGlobalConfig.resources.resourcePrecision);
-        health.lifetime = health.lifetime / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+        health.current = health.current / BigInt(ETERNUM_CONFIG().resources.resourcePrecision);
+        health.lifetime = health.lifetime / BigInt(ETERNUM_CONFIG().resources.resourcePrecision);
       } else {
         health = {
           entity_id: army.entity_id,
@@ -39,7 +39,7 @@ export const formatArmies = (armies: Entity[], playerAddress: string, components
 
       let quantity = structuredClone(getComponentValue(components.Quantity, armyEntityId));
       if (quantity) {
-        quantity.value = BigInt(quantity.value) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+        quantity.value = BigInt(quantity.value) / BigInt(ETERNUM_CONFIG().resources.resourcePrecision);
       } else {
         quantity = {
           entity_id: army.entity_id,
@@ -55,7 +55,7 @@ export const formatArmies = (armies: Entity[], playerAddress: string, components
 
       const weightComponentValue = getComponentValue(components.Weight, armyEntityId);
       const weight = weightComponentValue
-        ? weightComponentValue.value / BigInt(EternumGlobalConfig.resources.resourcePrecision)
+        ? weightComponentValue.value / BigInt(ETERNUM_CONFIG().resources.resourcePrecision)
         : 0n;
 
       const arrivalTime = getComponentValue(components.ArrivalTime, armyEntityId);

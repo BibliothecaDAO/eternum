@@ -12,9 +12,8 @@ import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Input } from "../ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { getSeasonAddresses } from "../ui/utils/utils";
+import { getResourceAddresses } from "../ui/utils/addresses";
 import { BridgeFees } from "./bridge-fees";
-
 export const BridgeOutStep2 = () => {
   const { address } = useAccount();
 
@@ -59,7 +58,7 @@ export const BridgeOutStep2 = () => {
 
   const onFinishWithdrawFromBank = async () => {
     if (selectedResourceIds.length) {
-      const resourceAddresses = await getSeasonAddresses();
+      const resourceAddresses = await getResourceAddresses();
       const donkeyResources = selectedResourceIds.map((id, index) => ({
         tokenAddress: resourceAddresses[ResourcesIds[id].toUpperCase() as keyof typeof resourceAddresses][1],
         from_entity_id: Array.from(selectedDonkeys)[index],

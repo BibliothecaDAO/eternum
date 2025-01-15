@@ -1,4 +1,4 @@
-import { getSeasonAddresses } from "@/ui/utils/utils";
+import { getResourceAddresses } from "@/utils/addresses";
 import ControllerConnector from "@cartridge/connector/controller";
 import { ColorMode } from "@cartridge/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
@@ -13,7 +13,7 @@ enum StarknetChainId {
   SN_SEPOLIA = "0x534e5f5345504f4c4941",
 }
 
-const resourceAddresses = await getSeasonAddresses();
+const resourceAddresses = await getResourceAddresses();
 
 const LORDS = resourceAddresses["LORDS"][1];
 const otherResources = Object.entries(resourceAddresses)

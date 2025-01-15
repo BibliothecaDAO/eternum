@@ -6,6 +6,7 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { unpackResources } from "@/ui/utils/packed-data";
 import { getRealm } from "@/ui/utils/realms";
+import { getSeasonPassAddress } from "@/utils/addresses";
 import { RealmInterface, ResourcesIds } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
 import { useEffect, useState } from "react";
@@ -33,7 +34,7 @@ const SettleRealmComponent = ({ setSettledRealmId }: { setSettledRealmId: (id: n
         owner: account.address,
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
         signer: account,
-        season_pass_address: env.VITE_SEASON_PASS_ADDRESS,
+        season_pass_address: await getSeasonPassAddress(),
       });
     } catch (error) {
       console.error("Error settling realms:", error);
@@ -190,12 +191,13 @@ export const SeasonPassRealm = ({
 
 export const getUnusedSeasonPasses = async (accountAddress: string, realms: RealmInfo[]) => {
   const balances = await querySeasonPasses(accountAddress);
+  const seasonPassAddress = await getSeasonPassAddress();
   return balances?.tokenBalances?.edges
     ?.filter(
       (token: { node: { tokenMetadata: { __typename: string; contractAddress?: string } } }) =>
         token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
         addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-          addAddressPadding(env.VITE_SEASON_PASS_ADDRESS ?? "0x0"),
+          addAddressPadding(seasonPassAddress ?? "0x0"),
     )
     .map((token: { node: { tokenMetadata: { tokenId: string } } }) => {
       const realmsResourcesPacked = getRealm(Number(token.node.tokenMetadata.tokenId));

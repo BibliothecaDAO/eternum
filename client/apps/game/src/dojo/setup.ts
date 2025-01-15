@@ -1,5 +1,6 @@
 import { AppStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   ClientConfigManager,
@@ -217,7 +218,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
 
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
 
-  configManager.setDojo(components);
+  configManager.setDojo(components, ETERNUM_CONFIG);
 
   // setLoading(LoadingStateKey.Events, true);
 

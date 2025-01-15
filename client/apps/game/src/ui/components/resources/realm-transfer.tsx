@@ -7,10 +7,12 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { calculateDonkeysNeeded, currencyFormat, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { ID, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
+
 
 type transferCall = {
   structureId: ID;
@@ -62,7 +64,7 @@ export const RealmTransfer = memo(
       const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
         sender_entity_id,
         recipient_entity_id,
-        resources: [resources[0], BigInt(Number(resources[1]) * EternumGlobalConfig.resources.resourcePrecision)],
+        resources: [resources[0], BigInt(Number(resources[1]) * ETERNUM_CONFIG().resources.resourcePrecision)],
       }));
 
       try {

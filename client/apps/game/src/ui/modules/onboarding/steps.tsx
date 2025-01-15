@@ -11,6 +11,7 @@ import { Position } from "@/types/position";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/settle-realm-component";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
+import { getSeasonPassAddress } from "@/utils/addresses";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
@@ -103,7 +104,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         owner: account.address,
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
         signer: account,
-        season_pass_address: env.VITE_SEASON_PASS_ADDRESS,
+        season_pass_address: await getSeasonPassAddress(),
       });
       setSelectedRealms([]);
       onPrevious();

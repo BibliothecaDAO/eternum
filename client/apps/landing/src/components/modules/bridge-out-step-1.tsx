@@ -24,10 +24,10 @@ import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Tooltip, TooltipProvider } from "../ui/tooltip";
+import { getResourceAddresses } from "../ui/utils/addresses";
 import {
   calculateDonkeysNeeded,
   divideByPrecision,
-  getSeasonAddresses,
   getTotalResourceWeight,
 } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
@@ -131,7 +131,7 @@ export const BridgeOutStep1 = () => {
       try {
         setIsLoading(true);
 
-        const resourceAddresses = await getSeasonAddresses();
+        const resourceAddresses = await getResourceAddresses();
         const validResources = await Promise.all(
           Object.entries(selectedResourceAmounts)
             .filter(([id, amount]) => amount > 0)

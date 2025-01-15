@@ -1,13 +1,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  BUILDING_COSTS_SCALED,
-  RESOURCE_BUILDING_COSTS,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS,
-  RESOURCE_RARITY,
-  RESOURCE_TIERS,
-  Resources,
-  WEIGHTS_GRAM,
+    BUILDING_COSTS_SCALED,
+    RESOURCE_BUILDING_COSTS,
+    RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED,
+    RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+    RESOURCE_RARITY,
+    RESOURCE_TIERS,
+    Resources,
+    WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { Badge } from "../ui/badge";
 
@@ -46,16 +46,16 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
     const multiplier = RESOURCE_RARITY[resourceId as keyof typeof RESOURCE_RARITY] || 1; // Default multiplier is 1
 
     return (
-      RESOURCE_INPUTS_SCALED[resourceId]?.map((input) => ({
+      RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED[resourceId]?.map((input) => ({
         ...input,
         adjustedAmount: input.amount * multiplier,
       })) || []
     );
   };
-  // Sum up how many times each resource is used as an input based on RESOURCE_INPUTS_SCALED and BUILDING_COSTS_SCALED
+  // Sum up how many times each resource is used as an input based on RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED and BUILDING_COSTS_SCALED
   const resourceUsageCount = resources.reduce(
     (acc, resource) => {
-      const inputUsageCount = Object.values(RESOURCE_INPUTS_SCALED).reduce((count, inputs) => {
+      const inputUsageCount = Object.values(RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED).reduce((count, inputs) => {
         return count + inputs.filter((input: any) => input.resource === resource.id).length;
       }, 0);
       const buildingUsageCount = Object.values(BUILDING_COSTS_SCALED).reduce((count, costs) => {
@@ -125,7 +125,7 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
             <TableCell className="text-center">{getResourceTier(resource.id)}</TableCell>
             <TableCell className="text-center">{getResourceWeight(resource.id)}</TableCell>
             <TableCell className="rounded flex gap-2 justify-center">
-              {RESOURCE_INPUTS_SCALED[resource.id]?.map((input, idx) => (
+              {RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED[resource.id]?.map((input, idx) => (
                 <Badge className="border p-1" key={idx} style={{ borderColor: resourceColor(input.resource) }}>
                   <img src={getResourceImage(input.resource)} alt={resource.trait} className="w-6 h-6 mx-auto" /> x{" "}
                   {input.amount}
@@ -135,7 +135,7 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
             <TableCell className="text-center">
               {sumAdjustedInputs(resource.id)} [{adjustedDemand[resource.id].toFixed(2)}]
             </TableCell>
-            <TableCell className="text-center">{RESOURCE_OUTPUTS[resource.id]}</TableCell>
+            <TableCell className="text-center">{RESOURCE_PRODUCTION_OUTPUT_AMOUNTS[resource.id]}</TableCell>
 
             <TableCell className="text-center">{resourceUsageCount[resource.id]}</TableCell>
             <TableCell className="rounded flex gap-2 justify-center">

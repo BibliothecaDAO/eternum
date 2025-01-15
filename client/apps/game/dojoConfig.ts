@@ -1,6 +1,7 @@
 import { createDojoConfig } from "@dojoengine/core";
-import { getGameManifest } from "../../common/utils";
+import { Chain, getGameManifest } from "../../common/utils";
 import { env } from "./env";
+import { ETERNUM_CONFIG } from "./src/utils/config";
 const {
   VITE_PUBLIC_NODE_URL,
   VITE_PUBLIC_TORII,
@@ -12,7 +13,8 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-const manifest = await getGameManifest(VITE_PUBLIC_CHAIN!);
+const manifest = await getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
+
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,
   toriiUrl: VITE_PUBLIC_TORII,
@@ -24,3 +26,8 @@ export const dojoConfig = createDojoConfig({
   feeTokenAddress: VITE_PUBLIC_FEE_TOKEN_ADDRESS || "0x0",
   manifest,
 });
+
+
+const config = await ETERNUM_CONFIG();
+console.log("logging eternum configuration json from file");
+console.log({config});

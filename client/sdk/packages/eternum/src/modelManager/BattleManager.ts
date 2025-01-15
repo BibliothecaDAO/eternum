@@ -1,6 +1,6 @@
 import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { EternumGlobalConfig, MIN_TROOPS_BATTLE } from "../constants";
+import { MIN_TROOPS_BATTLE, RESOURCE_PRECISION } from "../constants";
 import { ClientComponents } from "../dojo/createClientComponents";
 import { EternumProvider } from "../provider";
 import {
@@ -177,14 +177,14 @@ export class BattleManager {
       Number(cloneArmy.troops.knight_count) *
       this.getRemainingPercentageOfTroops(battle_army.troops.knight_count, battle_army_lifetime.troops.knight_count);
     cloneArmy.troops.knight_count = BigInt(
-      remainingKnights - (remainingKnights % EternumGlobalConfig.resources.resourcePrecision),
+      remainingKnights - (remainingKnights % RESOURCE_PRECISION),
     );
 
     const remainingPaladins =
       Number(cloneArmy.troops.paladin_count) *
       this.getRemainingPercentageOfTroops(battle_army.troops.paladin_count, battle_army_lifetime.troops.paladin_count);
     cloneArmy.troops.paladin_count = BigInt(
-      remainingPaladins - (remainingPaladins % EternumGlobalConfig.resources.resourcePrecision),
+      remainingPaladins - (remainingPaladins % RESOURCE_PRECISION),
     );
 
     const remainingCrossbowmen =
@@ -194,7 +194,7 @@ export class BattleManager {
         battle_army_lifetime.troops.crossbowman_count,
       );
     cloneArmy.troops.crossbowman_count = BigInt(
-      remainingCrossbowmen - (remainingCrossbowmen % EternumGlobalConfig.resources.resourcePrecision),
+      remainingCrossbowmen - (remainingCrossbowmen % RESOURCE_PRECISION),
     );
 
     cloneArmy.health.current = this.getTroopFullHealth(cloneArmy.troops);
@@ -374,7 +374,7 @@ export class BattleManager {
     return BigInt(
       Math.floor(
         (totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth) /
-          EternumGlobalConfig.resources.resourceMultiplier,
+          RESOURCE_PRECISION,
       ),
     );
   }
@@ -403,21 +403,21 @@ export class BattleManager {
     let paladin_count = (health.current * currentTroops.paladin_count) / health.lifetime;
     let crossbowman_count = (health.current * currentTroops.crossbowman_count) / health.lifetime;
 
-    if (knight_count < EternumGlobalConfig.resources.resourcePrecision) {
+    if (knight_count < RESOURCE_PRECISION) {
       knight_count = 0n;
     }
-    if (paladin_count < EternumGlobalConfig.resources.resourcePrecision) {
+    if (paladin_count < RESOURCE_PRECISION) {
       paladin_count = 0n;
     }
-    if (crossbowman_count < EternumGlobalConfig.resources.resourcePrecision) {
+    if (crossbowman_count < RESOURCE_PRECISION) {
       crossbowman_count = 0n;
     }
 
     return {
-      knight_count: knight_count - (knight_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
-      paladin_count: paladin_count - (paladin_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+      knight_count: knight_count - (knight_count % BigInt(RESOURCE_PRECISION)),
+      paladin_count: paladin_count - (paladin_count % BigInt(RESOURCE_PRECISION)),
       crossbowman_count:
-        crossbowman_count - (crossbowman_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+        crossbowman_count - (crossbowman_count % BigInt(RESOURCE_PRECISION)),
     };
   };
 

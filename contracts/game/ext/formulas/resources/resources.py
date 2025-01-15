@@ -17,7 +17,7 @@ resource_values = {k: 1 / v for k, v in resource_distribution.items() if v > 0}
 resource_values['Wheat'] = 0  # Assign zero value to Wheat
 
 # Predefined resource inputs (Fixed)
-resource_inputs = {
+RESOURCE_PRODUCTION_INPUT_RESOURCES = {
     "Wood": ("Coal", "Stone"),
     "Stone": ("Wood", "Coal"),
     "Coal": ("Wood", "Copper"),
@@ -47,7 +47,7 @@ scaling_factor = 1000
 
 # Determine input requirements
 input_requirements = {}
-for resource, (input1, input2) in resource_inputs.items():
+for resource, (input1, input2) in RESOURCE_PRODUCTION_INPUT_RESOURCES.items():
     value_output = resource_values[resource]
     value_input1 = resource_values[input1]
     value_input2 = resource_values[input2]

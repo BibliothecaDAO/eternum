@@ -17,20 +17,20 @@ import {
   getTotalResourceWeight,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   DONKEY_ENTITY_TYPE,
-  EternumGlobalConfig,
-  ONE_MONTH,
   ResourceManager,
   ResourcesIds,
   configManager,
   findResourceById,
   type ID,
-  type MarketInterface,
+  type MarketInterface
 } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
+export const ONE_MONTH = 2628000;
 export const MarketResource = memo(
   ({
     entityId,
@@ -498,7 +498,7 @@ const OrderRow = memo(
 const OrderCreation = memo(
   ({ entityId, resourceId, isBuy = false }: { entityId: ID; resourceId: ResourcesIds; isBuy?: boolean }) => {
     const [loading, setLoading] = useState(false);
-    const [resource, setResource] = useState(EternumGlobalConfig.resources.resourcePrecision);
+    const [resource, setResource] = useState(ETERNUM_CONFIG().resources.resourcePrecision);
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
     const { nextBlockTimestamp } = useNextBlockTimestamp();

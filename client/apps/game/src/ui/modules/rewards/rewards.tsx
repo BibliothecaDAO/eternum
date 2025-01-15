@@ -11,13 +11,13 @@ import { rewards } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
 import { formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getLordsAddress } from "@/utils/addresses";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
 import { formatEther } from "viem";
-import { env } from "../../../../env";
 
 const REGISTRATION_DELAY = 60 * 60 * 24 * 4; // 4 days
 const BRIDGE_OUT_DELAY = 60 * 60 * 24 * 2; // 2 days
@@ -77,11 +77,12 @@ export const Rewards = () => {
   }, [getContributions, getEpochs]);
 
   const claimRewards = useCallback(async () => {
+    const lordsAddress = await getLordsAddress();
     setIsLoading(true);
     try {
       await claim_leaderboard_rewards({
         signer: account,
-        token: env.VITE_LORDS_ADDRESS!,
+        token: lordsAddress,
       });
     } catch (error) {
       console.error("Error claiming rewards", error);

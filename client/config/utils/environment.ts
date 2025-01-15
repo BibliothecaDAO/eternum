@@ -1,6 +1,5 @@
 import type { Config } from "@bibliothecadao/eternum";
 export type NetworkType = 'local' | 'sepolia' | 'slot' | 'mainnet';
-
 /**
  * Loads the environment-specific configuration based on the network type.
  * 
@@ -19,15 +18,44 @@ export type NetworkType = 'local' | 'sepolia' | 'slot' | 'mainnet';
  * ```
  */
 export async function getConfigFromNetwork(chain: NetworkType): Promise<Config> {
-    const CONFIGURATION_FILE = `../environments/${chain}`;
+    const CONFIGURATION_FILE = `../environments/data/${chain}.json`;
     try {
       const configurationJson = (await import(CONFIGURATION_FILE))
         .default;
-  
-      return configurationJson;
+      return configurationJson.configuration;
     } catch (error) {
       throw new Error(`Failed to load configuration for chain ${chain}: ${error}`);
     }
+}
+
+export async function saveConfigJsonFromConfigTsFile(chain: NetworkType) {
+
+    const fs = require('fs');
+    const CONFIGURATION_FILE = `../environments/${chain}`;
+    const configurationJson = (await import(CONFIGURATION_FILE))
+        .default;
+
+    // Add a replacer function to handle BigInt
+    const bigIntReplacer = (key: string, value: any) => {
+        if (typeof value === 'bigint') {
+            return value.toString();
+        }
+        return value;
+    };
+
+    // make or overwrite the json file
+    const jsonFileContent = `{
+      "generatedFromTsFile": true,
+      "message": "This file was generated from the .ts file and should not be edited manually",
+      "configuration": ${JSON.stringify(configurationJson, bigIntReplacer, 2)}
+    }`;
+
+    const dataDir = './environments/data';
+    // make the directory if it doesn't exist
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(`${dataDir}/${chain}.json`, jsonFileContent);
 }
 
 /**

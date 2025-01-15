@@ -4,10 +4,10 @@ import { mainnet, sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 import React, { useCallback } from "react";
 import { env } from "../../../env";
-import { getSeasonAddresses } from "../ui/utils/utils";
+import { getResourceAddresses } from "../ui/utils/addresses";
 //import { cartridgeController } from "./cartridge-controller";
 
-const resourceAddresses = await getSeasonAddresses();
+const resourceAddresses = await getResourceAddresses();
 
 const LORDS = resourceAddresses["LORDS"][1];
 const otherResources = Object.entries(resourceAddresses)

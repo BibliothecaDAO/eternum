@@ -1,7 +1,9 @@
 import QuestRewards from "@/components/QuestRewards";
 import RealmUpgradeCosts from "@/components/RealmUpgradeCosts";
 import { divideByPrecision, formatNumberWithCommas } from "@/utils/formatting";
-import { CapacityConfigCategory, EternumGlobalConfig, RealmLevels } from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, RealmLevels } from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
+
 
 # Realms
 
@@ -27,12 +29,12 @@ help you learn the game and reward you with starting resources. Claim your resou
 
 ### 🏰 **Base Castle Stats**
 
-> - **Population**: {EternumGlobalConfig.populationCapacity.basePopulation}
+> - **Population**: {ETERNUM_CONFIG().populationCapacity.basePopulation}
 > - **Military Capacity**:
 >   - 3 attacking armies
 >   - 1 defending army
 > - **Resource Storage**:
->   {formatNumberWithCommas(divideByPrecision(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))}
+>   {formatNumberWithCommas(divideByPrecision(ETERNUM_CONFIG().carryCapacityGram[CapacityConfigCategory.Storehouse]))}
 >   kg
 >
 > _These are the default values for a newly settled realm before any buildings are constructed._
@@ -42,7 +44,7 @@ help you learn the game and reward you with starting resources. Claim your resou
 When first settling a realm, you receive:
 
 - <span>
-    {(EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 3600) * EternumGlobalConfig.battle.graceTickCount} hour
+    {(ETERNUM_CONFIG().tick.armiesTickIntervalInSeconds / 3600) * ETERNUM_CONFIG().battle.graceTickCount} hour
     immunity from attacks and from attacking others
   </span>
 

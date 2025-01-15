@@ -1,46 +1,24 @@
-import type { Config } from "@bibliothecadao/eternum";
 import {
-    AMM_STARTING_LIQUIDITY,
-    BUILDING_CAPACITY,
-    BUILDING_COSTS,
-    BUILDING_POPULATION,
-    BUILDING_RESOURCE_PRODUCED,
-    CapacityConfigCategory,
-    getContractByName,
-    HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-    HYPERSTRUCTURE_CREATION_COSTS,
-    HYPERSTRUCTURE_TOTAL_COSTS,
-    LORDS_LIQUIDITY_PER_RESOURCE,
-
-    NAMESPACE,
-
-    QUEST_RESOURCES,
-
-    REALM_MAX_LEVEL,
-    REALM_UPGRADE_COSTS,
-
-    RESOURCE_BUILDING_COSTS,
-    RESOURCE_INPUTS,
-    RESOURCE_OUTPUTS,
-    RESOURCE_RARITY,
-    ResourcesIds,
-    //
-    TROOPS_FOOD_CONSUMPTION,
-    TROOPS_STAMINAS,
-    WEIGHTS_GRAM,
+  CapacityConfigCategory,
+  getContractByName,
+  NAMESPACE,
+  RESOURCE_PRECISION,
+  RESOURCE_RARITY,
+  ResourcesIds,
+  type Config
 } from "@bibliothecadao/eternum";
-import { getGameManifest, getSeasonAddresses } from "../../common/utils";
-const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN!);
+import { getGameManifest, getSeasonAddresses, type Chain } from "../../common/utils";
+import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
+import { BUILDING_CAPACITY, BUILDING_POPULATION, BUILDING_RESOURCE_PRODUCED, NON_RESOURCE_BUILDING_COSTS, RESOURCE_BUILDING_COSTS } from "./utils/building";
+import { HYPERSTRUCTURE_CONSTRUCTION_COSTS, HYPERSTRUCTURE_CREATION_COSTS, HYPERSTRUCTURE_TOTAL_COSTS } from "./utils/hyperstructure";
+import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS } from "./utils/levels";
+import { QUEST_RESOURCES } from "./utils/quest";
+import { RESOURCE_PRODUCTION_INPUT_RESOURCES, RESOURCE_PRODUCTION_OUTPUT_AMOUNTS, RESOURCES_WEIGHTS_GRAM } from "./utils/resource";
+import { TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS } from "./utils/troop";
 
-export const MIN_TROOPS_BATTLE = 100_000;
-export const FELT_CENTER = 2147483646;
-export const WORLD_CONFIG_ID = 999999999n;
-export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;
-export const BUILDING_CATEGORY_POPULATION_CONFIG_ID = 999999990n;
-export const POPULATION_CONFIG_ID = 999999989n;
-export const U32_MAX = 4294967295;
-export const MAX_NAME_LENGTH = 31;
-export const ONE_MONTH = 2628000;
+
+
+const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 
 // ----- Buildings ----- //
 // This scales the costs of the buildings
@@ -52,10 +30,6 @@ export const HYPERSTRUCTURE_POINTS_ON_COMPLETION = 500_000;
 export const HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S = 17280; // 2 days
 export const HYPERSTRUCTURE_POINTS_FOR_WIN = 9_620_000;
 
-// ----- Entity Types ----- //
-export const DONKEY_ENTITY_TYPE = 256;
-export const REALM_ENTITY_TYPE = 257;
-export const ARMY_ENTITY_TYPE = 258;
 
 // ----- Stamina ----- //
 export const STAMINA_REFILL_PER_TICK = 20;
@@ -64,8 +38,6 @@ export const STAMINA_TRAVEL_COST = 10;
 export const STAMINA_EXPLORE_COST = 20;
 
 // ----- Resources ----- //
-export const RESOURCE_PRECISION = 1_000_000_000;
-export const RESOURCE_MULTIPLIER = 1_000_000_000;
 export const RESOURCE_AMOUNT_PER_TICK = 10;
 export const STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR = 6;
 
@@ -170,14 +142,14 @@ export const EternumGlobalConfig: Config = {
   },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
-    resourceMultiplier: RESOURCE_MULTIPLIER,
+    resourceMultiplier: RESOURCE_PRECISION,
     resourceAmountPerTick: RESOURCE_AMOUNT_PER_TICK,
     startingResourcesInputProductionFactor: STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR,
-    resourceInputs: RESOURCE_INPUTS,
-    resourceOutputs: RESOURCE_OUTPUTS,
-    resourceWeightsGrams: WEIGHTS_GRAM,
-    resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
+    resourceInputs: RESOURCE_PRODUCTION_INPUT_RESOURCES,
+    resourceOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+    resourceWeightsGrams: RESOURCES_WEIGHTS_GRAM,
     resourceRarity: RESOURCE_RARITY,
+    resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
   },
   banks: {
     name: BANK_NAME,
@@ -263,7 +235,7 @@ export const EternumGlobalConfig: Config = {
     buildingCapacity: BUILDING_CAPACITY,
     buildingPopulation: BUILDING_POPULATION,
     buildingResourceProduced: BUILDING_RESOURCE_PRODUCED,
-    buildingCosts: BUILDING_COSTS,
+    buildingCosts: NON_RESOURCE_BUILDING_COSTS,
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },
   hyperstructures: {
@@ -299,7 +271,7 @@ export const EternumGlobalConfig: Config = {
   realmMaxLevel: REALM_MAX_LEVEL,
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
-    addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN!),
+    addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain),
     manifest: manifest,
   },
 };

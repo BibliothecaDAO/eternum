@@ -1,4 +1,4 @@
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -20,9 +20,9 @@ export function displayAddress(string: string) {
 }
 
 export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * EternumGlobalConfig.resources.resourcePrecision);
+  return Math.floor(value * ETERNUM_CONFIG().resources.resourcePrecision);
 }
 
 export function divideByPrecision(value: number): number {
-  return value / EternumGlobalConfig.resources.resourcePrecision;
+  return value / ETERNUM_CONFIG().resources.resourcePrecision;
 }

@@ -5,16 +5,16 @@ import { StructureCard } from "@/ui/components/structures/construction/structure
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import {
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
-  HYPERSTRUCTURE_CREATION_COSTS,
   ID,
   ResourceTier,
   ResourcesIds,
   StructureType,
+  scaleResourceCostMinMax
 } from "@bibliothecadao/eternum";
 import React from "react";
+
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
@@ -51,7 +51,7 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
 
         // if is hyperstructure, the construction cost are only fragments
         const isHyperstructure = building === StructureType["Hyperstructure"];
-        const cost = HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED.filter(
+        const cost =  scaleResourceCostMinMax(ETERNUM_CONFIG().hyperstructures.hyperstructureCreationCosts, ETERNUM_CONFIG().resources.resourcePrecision).filter(
           (cost) => !isHyperstructure || cost.resource === ResourcesIds.AncientFragment,
         );
 
@@ -93,7 +93,7 @@ const StructureInfo = ({
 }) => {
   // if is hyperstructure, the construction cost are only fragments
   const isHyperstructure = structureId === StructureType["Hyperstructure"];
-  const cost = HYPERSTRUCTURE_CREATION_COSTS.filter(
+  const cost = ETERNUM_CONFIG().hyperstructures.hyperstructureCreationCosts.filter(
     (cost) => !isHyperstructure || cost.resource_tier === ResourceTier.Lords,
   );
 
@@ -124,7 +124,7 @@ const StructureInfo = ({
               key={index}
               type="horizontal"
               resourceId={ResourcesIds.AncientFragment}
-              amount={cost[Number(resourceId)].min_amount * EternumGlobalConfig.resources.resourcePrecision}
+              amount={cost[Number(resourceId)].min_amount * ETERNUM_CONFIG().resources.resourcePrecision}
               balance={balance.balance}
             />
           );
