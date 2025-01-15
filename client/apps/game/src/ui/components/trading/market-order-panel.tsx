@@ -17,9 +17,9 @@ import {
   getTotalResourceWeight,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
-import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   DONKEY_ENTITY_TYPE,
+  RESOURCE_PRECISION,
   ResourceManager,
   ResourcesIds,
   configManager,
@@ -498,7 +498,7 @@ const OrderRow = memo(
 const OrderCreation = memo(
   ({ entityId, resourceId, isBuy = false }: { entityId: ID; resourceId: ResourcesIds; isBuy?: boolean }) => {
     const [loading, setLoading] = useState(false);
-    const [resource, setResource] = useState(ETERNUM_CONFIG().resources.resourcePrecision);
+    const [resource, setResource] = useState(RESOURCE_PRECISION);
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
     const { nextBlockTimestamp } = useNextBlockTimestamp();

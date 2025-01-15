@@ -120,7 +120,8 @@ setup_log_handling() {
 # MAIN EXECUTION
 #==============================================================================
 
-DISPLAY_TITLE="Starting up Katana"
+KATANA_VERSION=$(katana --version)
+DISPLAY_TITLE="Starting up $KATANA_VERSION"
 if [ "$1" == "--kill" ]; then
     DISPLAY_TITLE="Stopping Katana"
 fi

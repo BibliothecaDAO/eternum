@@ -1,10 +1,10 @@
-import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   ArmyInfo,
   CapacityConfigCategory,
   ClientComponents,
   ContractAddress,
-  getArmyTotalCapacity
+  getArmyTotalCapacity,
+  RESOURCE_PRECISION
 } from "@bibliothecadao/eternum";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -26,8 +26,8 @@ export const formatArmies = (armies: Entity[], playerAddress: string, components
 
       let health = structuredClone(getComponentValue(components.Health, armyEntityId));
       if (health) {
-        health.current = health.current / BigInt(ETERNUM_CONFIG().resources.resourcePrecision);
-        health.lifetime = health.lifetime / BigInt(ETERNUM_CONFIG().resources.resourcePrecision);
+        health.current = health.current / BigInt(RESOURCE_PRECISION);
+        health.lifetime = health.lifetime / BigInt(RESOURCE_PRECISION);
       } else {
         health = {
           entity_id: army.entity_id,
@@ -39,7 +39,7 @@ export const formatArmies = (armies: Entity[], playerAddress: string, components
 
       let quantity = structuredClone(getComponentValue(components.Quantity, armyEntityId));
       if (quantity) {
-        quantity.value = BigInt(quantity.value) / BigInt(ETERNUM_CONFIG().resources.resourcePrecision);
+        quantity.value = BigInt(quantity.value) / BigInt(RESOURCE_PRECISION);
       } else {
         quantity = {
           entity_id: army.entity_id,
@@ -55,7 +55,7 @@ export const formatArmies = (armies: Entity[], playerAddress: string, components
 
       const weightComponentValue = getComponentValue(components.Weight, armyEntityId);
       const weight = weightComponentValue
-        ? weightComponentValue.value / BigInt(ETERNUM_CONFIG().resources.resourcePrecision)
+        ? weightComponentValue.value / BigInt(RESOURCE_PRECISION)
         : 0n;
 
       const arrivalTime = getComponentValue(components.ArrivalTime, armyEntityId);

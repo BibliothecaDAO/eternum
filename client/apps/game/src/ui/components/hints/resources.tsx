@@ -3,8 +3,7 @@ import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { CapacityConfigCategory, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, RESOURCE_PRECISION, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
 
@@ -36,7 +35,7 @@ export const Resources = () => {
           <span className="font-bold">
             {` ${
               gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse)) /
-              multiplyByPrecision(ETERNUM_CONFIG().resources.resourceMultiplier)
+              multiplyByPrecision(RESOURCE_PRECISION)
             }M capacity per resource type`}
           </span>
           . Build more of them to increase storage.
@@ -94,7 +93,7 @@ const ResourceTable = () => {
       </thead>
       <tbody>
         {resourceTable.map((resource) => {
-          const decimals = resource.amount > ETERNUM_CONFIG().resources.resourcePrecision ? 0 : 2;
+          const decimals = resource.amount > RESOURCE_PRECISION ? 0 : 2;
           return (
             <tr className="border border-gold/10" key={resource.resource_type}>
               <td>

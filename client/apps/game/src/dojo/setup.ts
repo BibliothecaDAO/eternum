@@ -217,8 +217,8 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
   });
 
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
-
-  configManager.setDojo(components, ETERNUM_CONFIG);
+  const eternumConfig = await ETERNUM_CONFIG();
+  configManager.setDojo(components, eternumConfig);
 
   // setLoading(LoadingStateKey.Events, true);
 

@@ -32,6 +32,8 @@ export interface RealmInfo {
   hasWonder: boolean;
 }
 
+const eternumConfig = await ETERNUM_CONFIG();
+
 export function useRealm() {
   const {
     setup: {
@@ -43,7 +45,7 @@ export function useRealm() {
   const getQuestResources = () => {
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
-    return getStartingResources(resourcesProduced, ETERNUM_CONFIG().questResources, ETERNUM_CONFIG().resources.resourceInputs);
+    return getStartingResources(resourcesProduced, eternumConfig.questResources, eternumConfig.resources.resourceInputs);
   };
 
   const getEntityOwner = (entityId: ID) => {

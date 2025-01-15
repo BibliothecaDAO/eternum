@@ -7,10 +7,12 @@ type Props = {
   buildingType: BuildingType;
 };
   
+
+const eternumConfig = await ETERNUM_CONFIG();
 export default function BuildingCosts({ buildingType }: Props) {
-  const costs = ETERNUM_CONFIG().buildings.buildingCosts[buildingType] || [];
-  const resourceCostsWheat = ETERNUM_CONFIG().resources.resourceBuildingCosts[ResourcesIds.Wood] || [];
-  const resourceCostsFish = ETERNUM_CONFIG().resources.resourceBuildingCosts[ResourcesIds.Stone] || [];
+  const costs = eternumConfig.buildings.buildingCosts[buildingType] || [];
+  const resourceCostsWheat = eternumConfig.resources.resourceBuildingCosts[ResourcesIds.Wood] || [];
+  const resourceCostsFish = eternumConfig.resources.resourceBuildingCosts[ResourcesIds.Stone] || [];
 
   if (buildingType === BuildingType.Resource) {
     return (

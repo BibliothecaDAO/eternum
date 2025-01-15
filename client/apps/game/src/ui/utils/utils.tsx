@@ -1,12 +1,12 @@
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { ResourceMiningTypes } from "@/types";
 import { SortInterface } from "@/ui/elements/sort-button";
-import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   BuildingType,
   CapacityConfigCategory,
   ClientConfigManager,
   ContractAddress,
+  RESOURCE_PRECISION,
   ResourceCost,
   ResourcesIds,
   TickIds,
@@ -60,11 +60,11 @@ export function displayAddress(string: string) {
 }
 
 export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * ETERNUM_CONFIG().resources.resourcePrecision);
+  return Math.floor(value * RESOURCE_PRECISION);
 }
 
 export function divideByPrecision(value: number): number {
-  return value / ETERNUM_CONFIG().resources.resourcePrecision;
+  return value / RESOURCE_PRECISION;
 }
 
 export function divideByPrecisionFormatted(value: number): string {

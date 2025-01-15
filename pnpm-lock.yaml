@@ -414,6 +414,9 @@ importers:
 
   client/config:
     dependencies:
+      chalk:
+        specifier: ^5.4.1
+        version: 5.4.1
       starknet:
         specifier: 6.11.0
         version: 6.11.0(encoding@0.1.13)

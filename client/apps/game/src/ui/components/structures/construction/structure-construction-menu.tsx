@@ -8,6 +8,7 @@ import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   ID,
+  RESOURCE_PRECISION,
   ResourceTier,
   ResourcesIds,
   StructureType,
@@ -16,6 +17,7 @@ import {
 import React from "react";
 
 
+const eternumConfig = await ETERNUM_CONFIG();
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
   [StructureType.Bank]: STRUCTURE_IMAGE_PREFIX + "mine.png",
@@ -51,7 +53,7 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
 
         // if is hyperstructure, the construction cost are only fragments
         const isHyperstructure = building === StructureType["Hyperstructure"];
-        const cost =  scaleResourceCostMinMax(ETERNUM_CONFIG().hyperstructures.hyperstructureCreationCosts, ETERNUM_CONFIG().resources.resourcePrecision).filter(
+        const cost =  scaleResourceCostMinMax(eternumConfig.hyperstructures.hyperstructureCreationCosts, RESOURCE_PRECISION).filter(
           (cost) => !isHyperstructure || cost.resource === ResourcesIds.AncientFragment,
         );
 
@@ -93,7 +95,7 @@ const StructureInfo = ({
 }) => {
   // if is hyperstructure, the construction cost are only fragments
   const isHyperstructure = structureId === StructureType["Hyperstructure"];
-  const cost = ETERNUM_CONFIG().hyperstructures.hyperstructureCreationCosts.filter(
+  const cost = eternumConfig.hyperstructures.hyperstructureCreationCosts.filter(
     (cost) => !isHyperstructure || cost.resource_tier === ResourceTier.Lords,
   );
 
@@ -124,7 +126,7 @@ const StructureInfo = ({
               key={index}
               type="horizontal"
               resourceId={ResourcesIds.AncientFragment}
-              amount={cost[Number(resourceId)].min_amount * ETERNUM_CONFIG().resources.resourcePrecision}
+              amount={cost[Number(resourceId)].min_amount * RESOURCE_PRECISION}
               balance={balance.balance}
             />
           );

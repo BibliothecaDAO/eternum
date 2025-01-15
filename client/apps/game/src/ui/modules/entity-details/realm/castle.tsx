@@ -12,6 +12,7 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 import { LEVEL_DESCRIPTIONS, RealmLevels, StructureType } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
+const eternumConfig = await ETERNUM_CONFIG();
 export const Castle = () => {
   const dojo = useDojo();
 
@@ -29,7 +30,7 @@ export const Castle = () => {
 
   const getNextRealmLevel = useMemo(() => {
     const nextLevel = realm.level + 1;
-    return nextLevel < ETERNUM_CONFIG().realmMaxLevel ? nextLevel : null;
+    return nextLevel < eternumConfig.realmMaxLevel ? nextLevel : null;
   }, [realm.level]);
 
   const checkBalance = useMemo(() => {
