@@ -1,6 +1,5 @@
 import { addToSubscription } from "@/dojo/queries";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { EntityArrival } from "@/ui/components/entities/entity";
 import { HintSection } from "@/ui/components/hints/hint-modal";
@@ -8,6 +7,7 @@ import Button from "@/ui/elements/button";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import { ArrivalInfo } from "@bibliothecadao/eternum";
 import { memo, useEffect, useState } from "react";
 import { create } from "zustand";
 

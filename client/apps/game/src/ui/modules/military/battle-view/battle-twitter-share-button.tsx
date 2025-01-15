@@ -1,7 +1,8 @@
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import { useDojo } from "@/hooks/context/dojo-context";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";
+import { getAddressNameFromEntity } from "@/utils/entities";
 import { ArmyInfo, BattleSide, ClientComponents, Structure } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -22,9 +23,11 @@ export const BattleTwitterShareButton = ({
   battleAdjusted: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
   structure: Structure | undefined;
 }) => {
-  const userBattleSide = userArmiesInBattle[0]?.battle_side || BattleSide.None;
+  const {
+    setup: { components },
+  } = useDojo();
 
-  const { getAddressNameFromEntity } = useEntitiesUtils();
+  const userBattleSide = userArmiesInBattle[0]?.battle_side || BattleSide.None;
 
   const getLargestArmyName = (armies: (ArmyInfo | undefined)[]) => {
     return armies.reduce(
@@ -34,7 +37,10 @@ export const BattleTwitterShareButton = ({
           (army?.troops.knight_count ?? 0n) +
           (army?.troops.paladin_count ?? 0n);
         return armySize > acc.size
-          ? { name: getAddressNameFromEntity(army?.entityOwner.entity_id || 0) ?? "mercenaries", size: armySize }
+          ? {
+              name: getAddressNameFromEntity(army?.entityOwner.entity_id || 0, components) ?? "mercenaries",
+              size: armySize,
+            }
           : acc;
       },
       { name: "mercenaries", size: 0n },

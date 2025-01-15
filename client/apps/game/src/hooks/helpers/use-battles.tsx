@@ -1,10 +1,10 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntities } from "@/hooks/helpers/use-entities";
-import { BattleManager, ID, Position } from "@bibliothecadao/eternum";
+import { BattleManager, ContractAddress, ID, Position } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
+import { usePlayerRealms } from "./use-entities";
 
 export const useBattleManager = (battleEntityId: ID) => {
   const dojo = useDojo();
@@ -40,13 +40,13 @@ export const useBattlesAtPosition = ({ x, y }: Position) => {
 
 export const usePlayerBattles = () => {
   const {
+    account: { account },
     setup: {
       components: { Army, EntityOwner },
     },
   } = useDojo();
 
-  const { playerRealms } = useEntities();
-  const realms = playerRealms();
+  const realms = usePlayerRealms(ContractAddress(account.address));
 
   const battleEntityIds = useMemo(() => {
     // Get all armies in battle owned by player's realms

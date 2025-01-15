@@ -62,7 +62,7 @@ export const applyInputProductionFactor = (
   return questResources;
 };
 
-export const getQuestResources = (resourcesOnRealm: number[]): ResourceInputs => {
+export const getStartingResources = (resourcesOnRealm: number[]): ResourceInputs => {
   let QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(
     QUEST_RESOURCES,
     EternumGlobalConfig.resources.resourceMultiplier,

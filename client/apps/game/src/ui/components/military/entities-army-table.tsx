@@ -1,5 +1,5 @@
 import { useArmiesByStructure } from "@/hooks/helpers/use-armies";
-import { useEntities } from "@/hooks/helpers/use-entities";
+import { usePlayerStructures } from "@/hooks/helpers/use-entities";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
@@ -14,7 +14,7 @@ import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
 
 export const EntitiesArmyTable = () => {
-  const { playerStructures } = useEntities();
+  const playerStructures = usePlayerStructures();
   const togglePopup = useUIStore((state) => state.togglePopup);
 
   return (
@@ -29,7 +29,7 @@ export const EntitiesArmyTable = () => {
       </div>
       <BattleSimulation />
       <PillageSimulation />
-      {playerStructures().map((entity: any, index: number) => {
+      {playerStructures.map((entity: any, index: number) => {
         return (
           <div key={entity.entity_id} className="p-2">
             <Headline>

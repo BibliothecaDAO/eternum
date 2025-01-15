@@ -1,97 +1,12 @@
 import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-checked.svg";
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { RealmInfo, usePlayerRealms } from "@/hooks/helpers/use-realm";
-import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { unpackResources } from "@/ui/utils/packed-data";
 import { getRealm } from "@/ui/utils/realms";
-import { RealmInterface, ResourcesIds } from "@bibliothecadao/eternum";
+import { RealmInfo, RealmInterface, ResourcesIds } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
-import { useEffect, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
-
-const SettleRealmComponent = ({ setSettledRealmId }: { setSettledRealmId: (id: number) => void }) => {
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { create_multiple_realms },
-    },
-  } = useDojo();
-
-  const [loading, setLoading] = useState<boolean>(false);
-  const [selectedRealms, setSelectedRealms] = useState<number[]>([]);
-
-  const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
-
-  const settleRealms = async (realmIds: number[]) => {
-    setLoading(true);
-    try {
-      const res = await create_multiple_realms({
-        realm_ids: realmIds,
-        owner: account.address,
-        frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
-        signer: account,
-        season_pass_address: env.VITE_SEASON_PASS_ADDRESS,
-      });
-    } catch (error) {
-      console.error("Error settling realms:", error);
-      setLoading(false);
-    }
-  };
-
-  const realms = usePlayerRealms();
-
-  useEffect(() => {
-    getUnusedSeasonPasses(account.address, realms).then((unsettledSeasonPassRealms) => {
-      if (unsettledSeasonPassRealms.length !== seasonPassRealms.length) {
-        setSeasonPassRealms(unsettledSeasonPassRealms);
-        setLoading(false);
-      }
-    });
-  }, [loading, realms]);
-
-  return (
-    <div className="flex flex-col h-min">
-      <div className="flex flex-col gap-y-1 md:gap-y-2">
-        <h2 className="text-center">Settle Realms</h2>
-        <div>
-          <Button
-            className="text-xxs"
-            variant="primary"
-            size="xs"
-            onClick={() =>
-              setSelectedRealms(selectedRealms.length > 0 ? [] : seasonPassRealms.map((realm) => realm.realmId))
-            }
-          >
-            {selectedRealms.length > 0 ? "unselect all" : "select all"}
-          </Button>
-        </div>
-        <div className="flex flex-col gap-2 overflow-x-auto no-scrollbar min-h-[25vh] max-h-[35vh]">
-          {seasonPassRealms.map((realm) => (
-            <SeasonPassRealm
-              key={realm.realmId}
-              seasonPassRealm={realm}
-              selected={selectedRealms.includes(realm.realmId)}
-              setSelected={(selected) =>
-                setSelectedRealms(
-                  selected ? [...selectedRealms, realm.realmId] : selectedRealms.filter((id) => id !== realm.realmId),
-                )
-              }
-              className={`col-start-1`}
-            />
-          ))}
-        </div>
-        <div className="flex flex-row justify-center">
-          <Button variant="primary" size="md" disabled={loading} onClick={() => settleRealms(selectedRealms)}>
-            {loading ? <img src="/images/logos/eternum-animated.png" className="invert w-6 h-4" /> : "settle"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const querySeasonPasses = async (accountAddress: string) => {
   const getAccountTokens = gql`

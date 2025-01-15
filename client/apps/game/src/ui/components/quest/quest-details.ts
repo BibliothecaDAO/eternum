@@ -1,5 +1,4 @@
-import { Prize } from "@/hooks/helpers/use-quests";
-import { QuestType } from "@bibliothecadao/eternum";
+import { Prize, QuestType } from "@bibliothecadao/eternum";
 
 interface StaticQuestInfo {
   name: string;

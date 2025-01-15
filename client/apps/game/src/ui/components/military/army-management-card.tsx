@@ -4,7 +4,6 @@ import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/button";
@@ -19,6 +18,7 @@ import {
   getEntityIdFromKeys,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
+import { getBalance } from "@/utils/resources";
 import { ArmyInfo, ArmyManager, ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
@@ -49,7 +49,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const isDefendingArmy = Boolean(army?.protectee);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const { getBalance } = useResourceBalance();
 
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
@@ -135,7 +134,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     let canCreate = true;
     Object.keys(troopCounts).forEach((troopId) => {
       const count = troopCounts[Number(troopId)];
-      const balance = getBalance(owner_entity, Number(troopId)).balance;
+      const balance = getBalance(owner_entity, Number(troopId), dojo.setup.components).balance;
       if (count > balance) {
         canCreate = false;
       }
@@ -248,7 +247,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
           <div className="grid grid-cols-3 gap-3 my-4">
             {troops.map((troop) => {
-              const balance = getBalance(owner_entity, troop.name).balance;
+              const balance = getBalance(owner_entity, troop.name, dojo.setup.components).balance;
 
               return (
                 <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>

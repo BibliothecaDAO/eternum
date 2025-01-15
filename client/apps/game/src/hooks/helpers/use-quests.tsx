@@ -1,53 +1,40 @@
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useArmiesByStructure } from "@/hooks/helpers/use-armies";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { useGetMyOffers } from "@/hooks/helpers/use-trade";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { questDetails } from "@/ui/components/quest/quest-details";
-import { ArmyInfo, BuildingType, ContractAddress, ID, QuestType, TileManager } from "@bibliothecadao/eternum";
+import { armyHasTraveled } from "@/utils/army";
+import { getEntityInfo } from "@/utils/entities";
+import { ContractAddress, Prize, QuestStatus, QuestType, TileManager } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { HasValue, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
-
-export interface Prize {
-  id: QuestType;
-  title: string;
-}
-
-export enum QuestStatus {
-  InProgress,
-  Completed,
-  Claimed,
-}
+import { useBuildingQuantities } from "./use-buildings";
 
 export const useQuests = () => {
   const questDependencies = useQuestDependencies();
 
-  const createQuest = (QuestType: QuestType) => {
-    const dependency = questDependencies[QuestType];
-    return useMemo(
-      () => ({
-        id: QuestType,
-        ...questDetails.get(QuestType)!,
-        status: dependency.status,
-      }),
-      [questDependencies[QuestType]],
-    );
-  };
-
-  const quests = [
-    createQuest(QuestType.Settle),
-    createQuest(QuestType.BuildFood),
-    createQuest(QuestType.BuildResource),
-    createQuest(QuestType.PauseProduction),
-    createQuest(QuestType.CreateDefenseArmy),
-    createQuest(QuestType.CreateAttackArmy),
-    createQuest(QuestType.Travel),
-    createQuest(QuestType.CreateTrade),
+  const questTypes = [
+    QuestType.Settle,
+    QuestType.BuildFood,
+    QuestType.BuildResource,
+    QuestType.PauseProduction,
+    QuestType.CreateDefenseArmy,
+    QuestType.CreateAttackArmy,
+    QuestType.Travel,
+    QuestType.CreateTrade,
   ];
 
-  return { quests };
+  const quests = useMemo(() => {
+    return questTypes.map((type) => ({
+      id: type,
+      ...questDetails.get(type)!,
+      status: questDependencies[type].status,
+    }));
+  }, [questDependencies]);
+
+  return quests;
 };
 
 const useQuestDependencies = () => {
@@ -63,10 +50,13 @@ const useQuestDependencies = () => {
     structureEntityId: structureEntityId || 0,
   });
   const orders = useGetMyOffers();
-  const { getEntityInfo } = useEntitiesUtils();
 
   const structurePosition = useMemo(
-    () => getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 },
+    () =>
+      getEntityInfo(structureEntityId, ContractAddress(setup.account.account.address), setup.components)?.position || {
+        x: 0,
+        y: 0,
+      },
     [structureEntityId, getEntityInfo],
   );
 
@@ -96,7 +86,7 @@ const useQuestDependencies = () => {
   );
 
   const { questClaimStatus } = useQuestClaimStatus();
-  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
+  const unclaimedQuestsCount = useUnclaimedQuestsCount();
 
   return useMemo(
     () => ({
@@ -215,43 +205,5 @@ export const useUnclaimedQuestsCount = () => {
     [questClaimStatus],
   );
 
-  return { unclaimedQuestsCount };
-};
-
-const useBuildingQuantities = (structureEntityId: ID | undefined) => {
-  const {
-    setup: {
-      components: { BuildingQuantityv2 },
-    },
-  } = useDojo();
-  const entityUpdate = useEntityQuery([HasValue(BuildingQuantityv2, { entity_id: structureEntityId || 0 })]);
-  const getBuildingQuantity = (buildingType: BuildingType) =>
-    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(buildingType)]))
-      ?.value || 0;
-
-  return useMemo(
-    () => ({
-      food: getBuildingQuantity(BuildingType.Farm) + getBuildingQuantity(BuildingType.FishingVillage),
-      resource: getBuildingQuantity(BuildingType.Resource),
-      workersHut: getBuildingQuantity(BuildingType.WorkersHut),
-      markets: getBuildingQuantity(BuildingType.Market),
-    }),
-    [structureEntityId, entityUpdate],
-  );
-};
-
-export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
-  return entityArmies.some(
-    (army) =>
-      army &&
-      (Number(army.troops.knight_count) !== 0 ||
-        Number(army.troops.crossbowman_count) !== 0 ||
-        Number(army.troops.paladin_count) !== 0),
-  );
-};
-
-const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: number; y: number }) => {
-  return entityArmies.some(
-    (army) => army && realmPosition && (army.position.x !== realmPosition.x || army.position.y !== realmPosition.y),
-  );
+  return unclaimedQuestsCount;
 };

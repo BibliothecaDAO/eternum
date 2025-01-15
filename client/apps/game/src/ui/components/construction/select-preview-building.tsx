@@ -1,7 +1,5 @@
 import { configManager } from "@/dojo/setup";
 import { DojoResult, useDojo } from "@/hooks/context/dojo-context";
-import { useGetRealm } from "@/hooks/helpers/use-realm";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { usePlayResourceSound } from "@/hooks/use-ui-sound";
 import { ResourceMiningTypes } from "@/types";
@@ -22,6 +20,8 @@ import {
   gramToKg,
   isResourceProductionBuilding,
 } from "@/ui/utils/utils";
+import { getRealmInfo } from "@/utils/realm";
+import { getBalance } from "@/utils/resources";
 import {
   BuildingEnumToString,
   BuildingType,
@@ -44,9 +44,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
-  const { realm } = useGetRealm(entityId);
+  const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
 
-  const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
 
   const buildingTypes = Object.keys(BuildingType).filter(
@@ -75,7 +74,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(entityId, resourceCost.resource);
+      const balance = getBalance(entityId, resourceCost.resource, dojo.setup.components);
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
 
@@ -234,7 +233,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const hasBalance = checkBalance(buildingCost);
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
-                const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
+                const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
                 const isBarracks = building === BuildingType.Barracks;
                 const isArcheryRange = building === BuildingType.ArcheryRange;
@@ -274,7 +273,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
       },
     ],
-    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound, realm.population],
+    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (
@@ -408,8 +407,6 @@ export const ResourceInfo = ({
 
   const amountProducedPerTick = divideByPrecision(configManager.getResourceOutputs(resourceId));
 
-  const { getBalance } = useResourceBalance();
-
   const consumedBy = useMemo(() => {
     return getConsumedBy(resourceId);
   }, [resourceId]);
@@ -461,7 +458,7 @@ export const ResourceInfo = ({
       <div className="font-bold uppercase">consumed per/s</div>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
-          const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource, dojo.setup.components);
 
           return (
             <ResourceCost
@@ -478,7 +475,7 @@ export const ResourceInfo = ({
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0, buildingCost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, buildingCost[Number(resourceId)].resource, dojo.setup.components);
           return (
             <ResourceCost
               key={index}
@@ -541,8 +538,6 @@ export const BuildingInfo = ({
   const perTick =
     resourceProduced !== undefined ? divideByPrecision(configManager.getResourceOutputs(resourceProduced)) || 0 : 0;
 
-  const { getBalance } = useResourceBalance();
-
   const usedIn = useMemo(() => {
     return getConsumedBy(resourceProduced);
   }, [resourceProduced]);
@@ -601,7 +596,11 @@ export const BuildingInfo = ({
           <div className="grid grid-cols-2 gap-2">
             {resourceProduced !== 0 &&
               Object.keys(ongoingCost).map((resourceId, index) => {
-                const balance = getBalance(entityId || 0, ongoingCost[Number(resourceId)].resource);
+                const balance = getBalance(
+                  entityId || 0,
+                  ongoingCost[Number(resourceId)].resource,
+                  dojo.setup.components,
+                );
                 return (
                   <ResourceCost
                     key={`ongoing-cost-${index}`}
@@ -621,7 +620,11 @@ export const BuildingInfo = ({
           <div className="pt-2 font-bold uppercase">One Time Cost</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             {Object.keys(buildingCost).map((resourceId, index) => {
-              const balance = getBalance(entityId || 0, buildingCost[Number(resourceId)].resource);
+              const balance = getBalance(
+                entityId || 0,
+                buildingCost[Number(resourceId)].resource,
+                dojo.setup.components,
+              );
               return (
                 <ResourceCost
                   key={`fixed-cost-${index}`}
