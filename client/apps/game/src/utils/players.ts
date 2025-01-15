@@ -1,4 +1,3 @@
-import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
 import { calculatePlayerSharePercentage } from "@/ui/utils/leaderboard";
 import { ClientComponents, ContractAddress, Player, PlayerInfo, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
@@ -7,11 +6,10 @@ import { getEntityName } from "./entities";
 export const getPlayerInfo = (
   players: Player[],
   playerAddress: ContractAddress,
+  playersByRank: [bigint, number][],
   components: ClientComponents,
 ): PlayerInfo[] => {
   const { Realm, Owner, GuildMember, Hyperstructure, Structure } = components;
-
-  const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
 
   const totalPoints = playersByRank.reduce((sum, [, points]) => sum + points, 0);
 

@@ -37,10 +37,11 @@ export const Social = () => {
 
   const players = usePlayers();
 
-  const [playerInfo, setPlayerInfo] = useState<PlayerInfo[]>(
-    getPlayerInfo(players, ContractAddress(account.address), components),
-  );
   const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
+
+  const [playerInfo, setPlayerInfo] = useState<PlayerInfo[]>(
+    getPlayerInfo(players, ContractAddress(account.address), playersByRank, components),
+  );
 
   const updateLeaderboard = useHyperstructureData();
 
@@ -50,7 +51,7 @@ export const Social = () => {
   };
 
   useEffect(() => {
-    setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), components));
+    setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));
     setIsLoading(false);
   }, [playersByRank]);
 
