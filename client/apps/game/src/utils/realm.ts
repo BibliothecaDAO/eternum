@@ -18,11 +18,6 @@ export const getRealmAddressName = (realmEntityId: ID, components: ClientCompone
   }
 };
 
-interface Attribute {
-  trait_type: string;
-  value: any;
-}
-
 let realms: {
   [key: string]: any;
 } = {};

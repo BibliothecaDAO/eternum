@@ -39,4 +39,5 @@ export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> 
   protector: ArmyInfo | undefined;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
 };

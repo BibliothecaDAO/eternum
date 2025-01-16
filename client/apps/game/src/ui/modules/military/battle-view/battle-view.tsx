@@ -1,16 +1,15 @@
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useBattleManager } from "@/hooks/helpers/use-battles";
-import { useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { Battle } from "@/ui/modules/military/battle-view/battle";
 import { getArmiesInBattle, getArmy } from "@/utils/army";
+import { getStructure, getStructureAtPosition } from "@/utils/structure";
 import { BattleManager, BattleSide, ContractAddress, Structure } from "@bibliothecadao/eternum";
 import { memo, useMemo } from "react";
 
 export const BattleView = memo(() => {
   const dojo = useDojo();
-  const getStructure = useStructureByPosition();
 
   const { nextBlockTimestamp: currentTimestamp } = useNextBlockTimestamp();
   const battleView = useUIStore((state) => state.battleView);
@@ -129,10 +128,24 @@ export const BattleView = memo(() => {
     [battleAdjusted, targetArmy],
   );
 
-  const structureFromPosition = getStructure({ x: battlePosition.x, y: battlePosition.y });
+  const structureFromPosition = useMemo(
+    () =>
+      getStructureAtPosition(
+        { x: battlePosition.x, y: battlePosition.y },
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [battlePosition.x, battlePosition.y, dojo.account.account.address, dojo.setup.components],
+  );
 
-  const structureId = useStructureByEntityId(
-    defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0,
+  const structureId = useMemo(
+    () =>
+      getStructure(
+        defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0,
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [defenderArmies, dojo.account.account.address, dojo.setup.components],
   );
 
   const structure = useMemo(() => {

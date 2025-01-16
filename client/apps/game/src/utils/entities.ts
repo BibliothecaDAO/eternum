@@ -6,7 +6,6 @@ import {
   divideByPrecision,
   EntityType,
   ID,
-  PlayerStructure,
   RealmWithPosition,
 } from "@bibliothecadao/eternum";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
@@ -28,25 +27,6 @@ export const getRealm = (entityId: ID, components: ClientComponents) => {
     name: getRealmNameById(realm.realm_id),
     owner,
   } as RealmWithPosition;
-};
-
-export const getStructure = (entityId: ID, components: ClientComponents) => {
-  const { Structure, Position, Owner } = components;
-  const entity = getEntityIdFromKeys([BigInt(entityId)]);
-  const structure = getComponentValue(Structure, entity);
-  if (!structure) return undefined;
-
-  const position = getComponentValue(Position, entity);
-  const owner = getComponentValue(Owner, entity);
-  const structureName = getEntityName(structure.entity_id, components);
-  const name = structureName ? `${structure?.category} ${structureName}` : structure.category || "";
-
-  return {
-    ...structure,
-    position,
-    name,
-    owner,
-  } as PlayerStructure;
 };
 
 export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) => {

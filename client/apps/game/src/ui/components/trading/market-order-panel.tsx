@@ -1,6 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
+import { useIsStructureResourcesLocked, useResourceManager } from "@/hooks/helpers/use-resources";
 import { useTravel } from "@/hooks/helpers/use-travel";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
@@ -114,7 +113,7 @@ export const MarketOrderPanel = memo(
         .sort((a, b) => b.ratio - a.ratio);
     }, [resourceAskOffers, resourceId]);
 
-    const isResourcesLocked = useIsResourcesLocked(entityId);
+    const isResourcesLocked = useIsStructureResourcesLocked(entityId);
 
     return (
       <div className="order-book-selector grid grid-cols-2 gap-4 p-4 h-full">
@@ -265,7 +264,7 @@ const OrderRow = memo(
       [entityId, updateBalance],
     );
 
-    const isMakerResourcesLocked = useIsResourcesLocked(offer.makerId);
+    const isMakerResourcesLocked = useIsStructureResourcesLocked(offer.makerId);
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 

@@ -8,7 +8,6 @@ import { useDojo } from "@/hooks/context/dojo-context";
 import { useBank } from "@/hooks/helpers/use-bank";
 import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
 import { usePlayerStructures } from "@/hooks/helpers/use-entities";
-import { useStructureByPosition } from "@/hooks/helpers/use-structures";
 import { useSetMarket } from "@/hooks/helpers/use-trade";
 import useMarketStore from "@/hooks/store/use-market-store";
 import { useModalStore } from "@/hooks/store/use-modal-store";
@@ -25,6 +24,7 @@ import { Tabs } from "@/ui/elements/tab";
 import { formatTimeDifference } from "@/ui/modules/military/battle-view/battle-progress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getArmy } from "@/utils/army";
+import { getStructureAtPosition } from "@/utils/structure";
 import { BattleManager, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
@@ -68,8 +68,15 @@ export const MarketModal = () => {
 
   const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
-  const getStructure = useStructureByPosition();
-  const bankStructure = getStructure(bank?.position || { x: 0, y: 0 });
+  const bankStructure = useMemo(
+    () =>
+      getStructureAtPosition(
+        bank?.position || { x: 0, y: 0 },
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [bank?.position, dojo.account.account.address, dojo.setup.components],
+  );
 
   const battleEntityId = useMemo(() => {
     if (battles.length === 0) return null;

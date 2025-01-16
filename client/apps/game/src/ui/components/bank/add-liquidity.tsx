@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/dojo-context";
 import { usePlayerStructures } from "@/hooks/helpers/use-entities";
-import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
+import { useIsStructureResourcesLocked } from "@/hooks/helpers/use-resources";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
 import { LiquidityTableHeader } from "@/ui/components/bank/liquidity-table";
@@ -66,8 +66,8 @@ const AddLiquidity = ({
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
-  const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
-  const isMyResourcesLocked = useIsResourcesLocked(entityId);
+  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId);
+  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId);
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
   const canAdd = hasEnough && isNotZero && !isBankResourcesLocked && !isMyResourcesLocked;
 
