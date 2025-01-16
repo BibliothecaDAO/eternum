@@ -27,7 +27,7 @@ const namespace: string = "s1_eternum";
 const colorMode: ColorMode = "dark";
 
 const controller =
-  env.VITE_PUBLIC_CHAIN === "mainnet"
+  env.VITE_PUBLIC_CHAIN === "mainnet" || env.VITE_PUBLIC_CHAIN === "sepolia"
     ? new ControllerConnector({
         chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
         defaultChainId: StarknetChainId.SN_MAIN,

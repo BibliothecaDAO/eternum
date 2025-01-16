@@ -23,7 +23,7 @@ const NETWORKS = {
     feeder_gateway_url: "http://127.0.0.1:5050/feeder_gateway",
     gateway_url: "http://127.0.0.1:5050/gateway",
   },
-  katana: {
+  slot: {
     name: "slot",
     explorer_url: "https://slot.voyager.online",
     rpc_url: process.env.STARKNET_RPC,

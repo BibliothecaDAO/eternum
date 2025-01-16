@@ -30,7 +30,7 @@
     "indexer:stop:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network local",
     "katana:stop:local": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",
 
-    "contract:start:local": "pnpm run katana:start:local && pnpm run game:migrate:local && pnpm run indexer:start:local && pnpm run seasonpass:deploy:local && pnpm run seasonresources:deploy:local && pnpm run config:local",
+    "contract:start:local": "pnpm run katana:start:local && pnpm run game:migrate:local && pnpm run indexer:start:local && pnpm run seasonpass:deploy:local && pnpm run seasonresources:deploy:local && pnpm run config:deploy:local",
     "contract:stop:local": "pnpm run katana:stop:local && pnpm run indexer:stop:local",
     
     "_comment_slot_network_": "_______________________________________________",
@@ -45,7 +45,6 @@
     "seasonpass:deploy:slot": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh slot",
     "seasonresources:deploy:slot": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh slot",
     "config:deploy:slot": "pnpm run build:packages && pnpm --dir ./client/config run slot",
-    "indexer:stop:slot": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network slot",
 
 
     "_comment_sepolia_network_": "_______________________________________________",
@@ -59,7 +58,6 @@
     "seasonpass:deploy:sepolia": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh sepolia",
     "seasonresources:deploy:sepolia": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh sepolia",
     "config:deploy:sepolia": "pnpm run build:packages && pnpm --dir ./client/config run sepolia",
-    "indexer:stop:sepolia": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network sepolia",
 
 
     "_comment_mainnet_network_": "_______________________________________________",
@@ -73,7 +71,6 @@
     "seasonpass:deploy:mainnet": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh mainnet",
     "seasonresources:deploy:mainnet": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh mainnet",
     "config:deploy:mainnet": "pnpm run build:packages && pnpm --dir ./client/config run mainnet",
-    "indexer:stop:mainnet": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network mainnet",
 
 
     "_comment_seasonresources_revoke_": "_______________________________________________",

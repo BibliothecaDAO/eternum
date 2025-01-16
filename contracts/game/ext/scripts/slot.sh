@@ -285,8 +285,10 @@ print_env_reminder() {
     echo -e "${BLUE}║              Update Environment Variables                         ║${NC}"
     echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${BLUE}║                                                                  ║${NC}"
-    echo -e "${BLUE}║  ${YELLOW}Add to: ${BOLD}client/apps/game/.env.${SN_NETWORK}${NC}${BLUE}                    ║${NC}"
-    echo -e "${BLUE}║                                                                  ║${NC}"
+    echo -e "${BLUE}║  ${YELLOW}REMEMBER TO UPDATE:${NC}${BLUE}                                    ║${NC}"
+    echo -e "${BLUE}║  ${BOLD}1. client/apps/game/.env.${SN_NETWORK}${NC}${BLUE}                       ║${NC}"
+    echo -e "${BLUE}║  ${BOLD}2. contracts/game/dojo_${SN_NETWORK}.toml${NC}${BLUE} rpc_url${NC}                    ║${NC}"
+    echo -e "${BLUE}║  ${BOLD}3. contracts/common/env.${SN_NETWORK}${NC}${BLUE} STARKNET_RPC${NC}                    ║${NC}"
     echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${BLUE}║                                                                  ║${NC}"
 
@@ -337,8 +339,10 @@ if [ "$COMMAND" = "torii" ]; then
 fi
 
 echo -e "${GREEN}✔ Deployment completed successfully${NC}"
-echo -e "${BLUE}► Project name: ${BOLD}$PROJECT_NAME${NC}\n"
-
-# Add this line at the very end of the script:
+echo -e "\n\n"
+echo -e "${MAGENTA}${BOLD}PROJECT NAME:${NC}"
+echo -e "\n"
+echo -e "${BLUE}${BOLD}$PROJECT_NAME${NC}"
+echo -e "\n\n"
 echo "$PROJECT_NAME"
 
