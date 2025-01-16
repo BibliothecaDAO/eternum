@@ -1,5 +1,4 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
@@ -13,20 +12,25 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { currencyFormat } from "@/ui/utils/utils";
+import { getArmy } from "@/utils/army";
 import { getRealmAddressName } from "@/utils/realm";
-import { ArmyInfo, Structure } from "@bibliothecadao/eternum";
+import { ArmyInfo, ContractAddress, Structure } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 
 export const ArmyInfoLabel = () => {
+  const {
+    account: { account },
+    setup: { components },
+  } = useDojo();
+
   const { isMapView } = useQuery();
   const hoveredArmyEntityId = useUIStore((state) => state.hoveredArmyEntityId);
-  const { getArmy } = useGetArmyByEntityId();
 
   const army = useMemo(() => {
-    if (hoveredArmyEntityId) return getArmy(hoveredArmyEntityId);
+    if (hoveredArmyEntityId) return getArmy(hoveredArmyEntityId, ContractAddress(account.address), components);
     return undefined;
-  }, [hoveredArmyEntityId, getArmy]);
+  }, [hoveredArmyEntityId]);
 
   return <>{army && isMapView && <RaiderInfo key={army.entity_id} army={army} />}</>;
 };

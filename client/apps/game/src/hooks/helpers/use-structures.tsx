@@ -1,8 +1,8 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { currentTickCount } from "@/ui/utils/utils";
+import { getArmy } from "@/utils/army";
 import { getEntityName } from "@/utils/entities";
 import {
   BattleManager,
@@ -26,8 +26,6 @@ export const useStructureAtPosition = ({ x, y }: Position): Structure | undefine
 
   const { Position, Structure, EntityOwner, Owner, Protector, AddressName } = components;
 
-  const { getArmy } = useGetArmyByEntityId();
-
   const structure = useMemo(() => {
     const structureAtPosition = runQuery([HasValue(Position, { x, y }), Has(Structure)]);
     const structureEntityId = Array.from(structureAtPosition)[0];
@@ -41,7 +39,9 @@ export const useStructureAtPosition = ({ x, y }: Position): Structure | undefine
     const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
 
     const protectorArmy = getComponentValue(Protector, structureEntityId);
-    const protector = protectorArmy ? getArmy(protectorArmy.army_id) : undefined;
+    const protector = protectorArmy
+      ? getArmy(protectorArmy.army_id, ContractAddress(account.address), components)
+      : undefined;
 
     const name = getEntityName(structure.entity_id, components) || "";
 
@@ -70,8 +70,6 @@ export const useStructureByPosition = () => {
   } = useDojo();
   const { Position, Structure, EntityOwner, Owner, Protector } = components;
 
-  const { getArmy } = useGetArmyByEntityId();
-
   const structureAtPosition = ({ x, y }: Position) => {
     const structureAtPosition = runQuery([HasValue(Position, { x, y }), Has(Structure)]);
     const structureEntityId = Array.from(structureAtPosition)[0];
@@ -85,7 +83,9 @@ export const useStructureByPosition = () => {
     const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
 
     const protectorArmy = getComponentValue(Protector, structureEntityId);
-    const protector = protectorArmy ? getArmy(protectorArmy.army_id) : undefined;
+    const protector = protectorArmy
+      ? getArmy(protectorArmy.army_id, ContractAddress(account.address), components)
+      : undefined;
 
     const name = getEntityName(structure.entity_id, components);
 
@@ -111,8 +111,6 @@ export const useStructureByEntityId = (entityId: ID) => {
 
   const { Structure, EntityOwner, Owner, Protector, Position, AddressName } = components;
 
-  const { getArmy } = useGetArmyByEntityId();
-
   const structure = useMemo(() => {
     const structureEntityId = getEntityIdFromKeys([BigInt(entityId)]);
     const structure = getComponentValue(Structure, structureEntityId);
@@ -125,7 +123,9 @@ export const useStructureByEntityId = (entityId: ID) => {
     const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
 
     const protectorArmy = getComponentValue(Protector, structureEntityId);
-    const protector = protectorArmy ? getArmy(protectorArmy.army_id) : undefined;
+    const protector = protectorArmy
+      ? getArmy(protectorArmy.army_id, ContractAddress(account.address), components)
+      : undefined;
 
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
     const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
@@ -158,8 +158,6 @@ export const useStructures = () => {
 
   const { Structure, EntityOwner, Owner, Protector, Position, AddressName } = components;
 
-  const { getArmy } = useGetArmyByEntityId();
-
   const getStructureByEntityId = (entityId: ID) => {
     const structureEntityId = getEntityIdFromKeys([BigInt(entityId)]);
     const structure = getComponentValue(Structure, structureEntityId);
@@ -172,7 +170,9 @@ export const useStructures = () => {
     const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
 
     const protectorArmy = getComponentValue(Protector, structureEntityId);
-    const protector = protectorArmy ? getArmy(protectorArmy.army_id) : undefined;
+    const protector = protectorArmy
+      ? getArmy(protectorArmy.army_id, ContractAddress(account.address), components)
+      : undefined;
 
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
     const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";

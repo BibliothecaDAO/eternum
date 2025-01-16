@@ -2,7 +2,6 @@ import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg"
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useArmiesInBattle } from "@/hooks/helpers/use-armies";
 import { useGetHyperstructureProgress } from "@/hooks/helpers/use-hyperstructures";
 import { useIsStructureImmune } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
@@ -10,7 +9,8 @@ import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
-import { ArmyInfo, BattleManager, Structure, StructureType } from "@bibliothecadao/eternum";
+import { getArmiesInBattle } from "@/utils/army";
+import { ArmyInfo, BattleManager, ContractAddress, Structure, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -62,7 +62,15 @@ export const StructureListItem = ({
     return { updatedBattle };
   }, [nextBlockTimestamp]);
 
-  const armiesInBattle = useArmiesInBattle(updatedBattle?.entity_id || 0);
+  const armiesInBattle = useMemo(
+    () =>
+      getArmiesInBattle(
+        updatedBattle?.entity_id || 0,
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [updatedBattle?.entity_id, dojo.account.account.address, dojo.setup.components],
+  );
 
   // Filter out only the player's armies
   const playerArmiesInBattle = useMemo(() => {

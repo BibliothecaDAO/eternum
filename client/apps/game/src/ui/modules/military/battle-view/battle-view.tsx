@@ -1,24 +1,26 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useArmiesInBattle, useArmyByArmyEntityId, useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useBattleManager } from "@/hooks/helpers/use-battles";
 import { useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { Battle } from "@/ui/modules/military/battle-view/battle";
-import { BattleManager, BattleSide, Structure } from "@bibliothecadao/eternum";
+import { getArmiesInBattle, getArmy } from "@/utils/army";
+import { BattleManager, BattleSide, ContractAddress, Structure } from "@bibliothecadao/eternum";
 import { memo, useMemo } from "react";
 
 export const BattleView = memo(() => {
   const dojo = useDojo();
   const getStructure = useStructureByPosition();
-  const { getArmy } = useGetArmyByEntityId();
 
   const { nextBlockTimestamp: currentTimestamp } = useNextBlockTimestamp();
   const battleView = useUIStore((state) => state.battleView);
   const selectedHex = useUIStore((state) => state.selectedHex);
 
   // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
-  const updatedTarget = useArmyByArmyEntityId(battleView?.targetArmy || 0);
+  const updatedTarget = useMemo(
+    () => getArmy(battleView?.targetArmy || 0, ContractAddress(dojo.account.account.address), dojo.setup.components),
+    [battleView?.targetArmy, dojo.account.account.address, dojo.setup.components],
+  );
 
   const battlePosition = useMemo(
     () => ({ x: selectedHex?.col || 0, y: selectedHex?.row || 0 }),
@@ -39,7 +41,15 @@ export const BattleView = memo(() => {
     battleView?.battleEntityId ? battleView?.battleEntityId : battleView?.engage ? 0 : targetArmy?.battle_id || 0,
   );
 
-  const armiesInBattle = useArmiesInBattle(battleManager.battleEntityId);
+  const armiesInBattle = useMemo(
+    () =>
+      getArmiesInBattle(
+        battleManager.battleEntityId,
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [battleManager.battleEntityId, dojo.account.account.address, dojo.setup.components],
+  );
 
   const playerArmiesInBattle = useMemo(() => {
     return armiesInBattle.filter((army) => army.isMine);
@@ -54,7 +64,8 @@ export const BattleView = memo(() => {
   );
 
   const ownArmyBattleStarter = useMemo(
-    () => getArmy(battleView?.ownArmyEntityId || 0),
+    () =>
+      getArmy(battleView?.ownArmyEntityId || 0, ContractAddress(dojo.account.account.address), dojo.setup.components),
     [battleView?.ownArmyEntityId || 0],
   );
 

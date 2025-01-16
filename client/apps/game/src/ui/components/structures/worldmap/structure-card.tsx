@@ -1,6 +1,5 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { useQuery } from "@/hooks/helpers/use-query";
 import {
@@ -22,6 +21,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
+import { getArmy } from "@/utils/army";
 import { ArmyInfo, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -206,13 +206,13 @@ const TroopExchange = ({
   const {
     setup: {
       account: { account },
-      components: { Army, Protector },
+      components,
       systemCalls: { army_merge_troops, create_army },
       network: { world },
     },
   } = useDojo();
 
-  const { getArmy } = useGetArmyByEntityId();
+  const { Army, Protector } = components;
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 
@@ -263,11 +263,19 @@ const TroopExchange = ({
 
   const [transferDirection, setTransferDirection] = useState<"to" | "from">("to");
 
+  const getArmyWithAddress = (armyId: ID) => getArmy(armyId, ContractAddress(account.address), components);
+
+  const protectorArmy = useMemo(
+    () => takerArmy || getArmyWithAddress(protector?.army_id || 0),
+    [takerArmy, protector?.army_id],
+  );
+  const giverArmy = useMemo(() => getArmyWithAddress(giverArmyEntityId), [giverArmyEntityId]);
+
   const mergeTroops = async () => {
     setLoading(true);
 
-    const fromArmy = transferDirection === "to" ? getArmy(giverArmyEntityId) : takerArmy || getArmy(protector!.army_id);
-    const toArmy = transferDirection === "to" ? takerArmy || getArmy(protector!.army_id) : getArmy(giverArmyEntityId);
+    const fromArmy = transferDirection === "to" ? giverArmy : protectorArmy;
+    const toArmy = transferDirection === "to" ? protectorArmy : giverArmy;
     const transferedTroops = {
       knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(configManager.getResourcePrecision()),
       paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(configManager.getResourcePrecision()),
@@ -313,7 +321,7 @@ const TroopExchange = ({
         <div className="w-[60%] mr-1 bg-gold/20">
           <p className="pt-2 pb-1 text-center">{giverArmyName}</p>
           <ArmyCapacity
-            army={transferDirection === "to" ? getArmy(giverArmyEntityId) : takerArmy || getArmy(protector!.army_id)}
+            army={transferDirection === "to" ? giverArmy : protectorArmy}
             className="flex justify-center"
             deductedTroops={Object.values(troopsGiven).reduce((a, b) => a + b, 0n)}
           />
