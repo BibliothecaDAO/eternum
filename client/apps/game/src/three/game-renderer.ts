@@ -11,12 +11,12 @@ import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { AppStore, SetupResult, useUIStore } from "@bibliothecadao/react";
 import throttle from "lodash/throttle";
 import {
-    BloomEffect,
-    BrightnessContrastEffect,
-    EffectComposer,
-    EffectPass,
-    FXAAEffect,
-    RenderPass,
+  BloomEffect,
+  BrightnessContrastEffect,
+  EffectComposer,
+  EffectPass,
+  FXAAEffect,
+  RenderPass,
 } from "postprocessing";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";

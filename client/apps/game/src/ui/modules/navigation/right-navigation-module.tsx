@@ -11,7 +11,6 @@ const EntityResourceTable = lazy(() =>
   import("@/ui/components/resources/entity-resource-table").then((module) => ({ default: module.EntityResourceTable })),
 );
 
-
 export const RightNavigationModule = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const view = useUIStore((state) => state.rightNavigationView);

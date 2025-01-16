@@ -4,8 +4,6 @@ import { useMemo } from "react";
 import { Tab } from "./types";
 import { useChatStore } from "./use-chat-store";
 
-
-
 export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
   const setCurrentTab = useChatStore((state) => state.setCurrentTab);
   const hideTab = useChatStore((state) => state.hideTab);

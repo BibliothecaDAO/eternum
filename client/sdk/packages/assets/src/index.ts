@@ -8,4 +8,3 @@ export { default as manifestSepolia } from "./data/manifests/manifest.SEPOLIA.js
 export { default as addressesLocal } from "./data/addresses/addresses.LOCAL.json";
 export { default as addressesMainnet } from "./data/addresses/addresses.MAINNET.json";
 export { default as addressesSepolia } from "./data/addresses/addresses.SEPOLIA.json";
-

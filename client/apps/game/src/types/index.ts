@@ -7,8 +7,6 @@ export enum SceneName {
   Hexception = "hex",
 }
 
-
-
 export enum HyperstructureTypesNames {
   STAGE_1 = "hyperstructure_stage0",
   STAGE_2 = "hyperstructure_stage1",

@@ -81,4 +81,3 @@ export const useScreenOrientation = () => {
 
   return { orientation, toggleFullScreen, isFullScreen };
 };
-
