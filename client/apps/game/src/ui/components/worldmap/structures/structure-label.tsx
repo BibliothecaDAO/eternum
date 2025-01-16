@@ -19,11 +19,12 @@ export const ImmunityTimer = ({ structure, className }: { structure: Structure; 
     [structure, nextBlockTimestamp],
   );
 
-  if (!isImmune) return null;
   const timer = useMemo(
     () => getStructureImmunityTimer(structure, nextBlockTimestamp || 0),
     [structure, nextBlockTimestamp],
   );
+
+  if (!isImmune) return null;
 
   return (
     <div className={`mt-2 p-2 bg-blue-500 bg-opacity-20 rounded-md ${className}`}>
