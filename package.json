@@ -41,7 +41,7 @@
     
     "katana:start:slot": "bash contracts/game/ext/scripts/slot.sh katana",
     "game:migrate:slot": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile slot",
-    "indexer:start:slot": "bash contracts/game/ext/scripts/slot.sh torii --network slot --world 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --toml ./contracts/game",
+    "indexer:start:slot": "bash contracts/game/ext/scripts/slot.sh torii --network slot --world 0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa --toml ./contracts/game",
     "seasonpass:deploy:slot": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh slot",
     "seasonresources:deploy:slot": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh slot",
     "config:deploy:slot": "pnpm run build:packages && pnpm --dir ./client/config run slot",
@@ -55,7 +55,7 @@
     "_comment_sepolia_network__": "_______________________________________________",
 
     "game:migrate:sepolia": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile sepolia",
-    "indexer:start:sepolia": "bash contracts/game/ext/scripts/slot.sh torii --network sepolia --world 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --toml ./contracts/game",
+    "indexer:start:sepolia": "bash contracts/game/ext/scripts/slot.sh torii --network sepolia --world 0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa --toml ./contracts/game",
     "seasonpass:deploy:sepolia": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh sepolia",
     "seasonresources:deploy:sepolia": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh sepolia",
     "config:deploy:sepolia": "pnpm run build:packages && pnpm --dir ./client/config run sepolia",
@@ -69,7 +69,7 @@
     "_comment_mainnet_network__": "_______________________________________________",
 
     "game:migrate:mainnet": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile mainnet",
-    "indexer:start:mainnet": "bash contracts/game/ext/scripts/slot.sh torii --network mainnet --world 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --toml ./contracts/game",
+    "indexer:start:mainnet": "bash contracts/game/ext/scripts/slot.sh torii --network mainnet --world 0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa --toml ./contracts/game",
     "seasonpass:deploy:mainnet": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh mainnet",
     "seasonresources:deploy:mainnet": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh mainnet",
     "config:deploy:mainnet": "pnpm run build:packages && pnpm --dir ./client/config run mainnet",

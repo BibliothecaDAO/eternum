@@ -1499,7 +1499,7 @@
     "manifest": {
       "world": {
         "class_hash": "0x45575a88cc5cef1e444c77ce60b7b4c9e73a01cbbe20926d5a4c72a94011410",
-        "address": "0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f",
+        "address": "0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa",
         "seed": "s1_eternum",
         "name": "Realms: Eternum",
         "entrypoints": [

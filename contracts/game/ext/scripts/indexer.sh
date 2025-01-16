@@ -22,7 +22,7 @@
 #
 # CONFIGURATION:
 #   The script starts Torii with the following default settings:
-#   - World address: 0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f
+#   - World address: 0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa
 #   - RPC URL: http://localhost:8080
 #   - Network: local
 #   - CORS: Enabled for all origins
@@ -78,7 +78,7 @@ DB_DIR="torii.$NETWORK.db"
 TORII_CONFIG="torii-$NETWORK.toml"
 
 # Torii settings
-DEFAULT_WORLD_ADDRESS="0x06a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f"
+DEFAULT_WORLD_ADDRESS="0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa"
 DEFAULT_RPC_URL="http://localhost:8080"
 WORLD_ADDRESS=$DEFAULT_WORLD_ADDRESS  # Will be overridden by args if provided
 RPC_URL=${RPC_URL:-$DEFAULT_RPC_URL}  # Use env var or default
