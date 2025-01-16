@@ -1,6 +1,6 @@
-import useUIStore from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
 import { STRUCTURE_IMAGE_PATHS } from "./structure-construction-menu";

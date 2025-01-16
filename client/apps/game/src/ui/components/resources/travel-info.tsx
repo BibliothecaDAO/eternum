@@ -1,5 +1,3 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
@@ -9,8 +7,8 @@ import {
   getTotalResourceWeight,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
-import { getBalance } from "@/utils/resources";
-import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
+import { configManager, getBalance, ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 export const TravelInfo = ({
@@ -27,7 +25,7 @@ export const TravelInfo = ({
   isAmm?: boolean;
 }) => {
   const dojo = useDojo();
-
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
   const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
@@ -38,7 +36,7 @@ export const TravelInfo = ({
     const multipliedWeight = multiplyByPrecision(totalWeight);
     setResourceWeight(multipliedWeight);
 
-    const { balance } = getBalance(entityId, ResourcesIds.Donkey, dojo.setup.components);
+    const { balance } = getBalance(entityId, ResourcesIds.Donkey, currentDefaultTick, dojo.setup.components);
 
     const currentDonkeyAmount = isAmm ? 0 : resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
 

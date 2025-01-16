@@ -1,13 +1,10 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { usePlayerStructures } from "@/hooks/helpers/use-entities";
-import { useResourceManager } from "@/hooks/helpers/use-resources";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { calculateDonkeysNeeded, currencyFormat, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import { ID, PlayerStructure, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { useDojo, usePlayerStructures, useResourceManager, useUIStore } from "@bibliothecadao/react";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";

@@ -1,9 +1,9 @@
-import { configManager } from "@/dojo/setup";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { roundDownToPrecision, roundUpToPrecision } from "@/ui/utils/utils";
 import {
   Battle,
   ClientComponents,
+  configManager,
   HealthSimulator,
   Percentage,
   ResourcesIds,

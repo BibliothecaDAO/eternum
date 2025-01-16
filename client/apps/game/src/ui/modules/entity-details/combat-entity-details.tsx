@@ -1,8 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
-import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
 import { PillageHistory } from "@/ui/components/military/pillage-history";
@@ -10,8 +5,8 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { Tabs } from "@/ui/elements/tab";
 import { Entities } from "@/ui/modules/entity-details/entities";
-import { getStructureAtPosition } from "@/utils/structure";
-import { ArmyInfo, ContractAddress, ID } from "@bibliothecadao/eternum";
+import { ArmyInfo, ContractAddress, getStructureAtPosition, ID } from "@bibliothecadao/eternum";
+import { Position, useArmiesAtPosition, useBattlesAtPosition, useDojo, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const CombatEntityDetails = () => {

@@ -1,8 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useIsStructureResourcesLocked, useResourceManager } from "@/hooks/helpers/use-resources";
-import { useTravel } from "@/hooks/helpers/use-travel";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
@@ -15,7 +10,6 @@ import {
   getTotalResourceWeight,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
-import { getRealmAddressName } from "@/utils/realm";
 import {
   DONKEY_ENTITY_TYPE,
   ONE_MONTH,
@@ -23,9 +17,19 @@ import {
   ResourcesIds,
   configManager,
   findResourceById,
+  getRealmAddressName,
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/eternum";
+import {
+  soundSelector,
+  useDojo,
+  useIsStructureResourcesLocked,
+  useNextBlockTimestamp,
+  useResourceManager,
+  useTravel,
+  useUiSounds,
+} from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 

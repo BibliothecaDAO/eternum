@@ -1,8 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { Account } from "starknet";
-import devManifest from "../../../../contracts/manifest_dev.json";
-import productionManifest from "../../../../contracts/manifest_prod.json";
+import { manifestLocal, manifestSepolia } from "@bibliothecadao/assets";
 import { EternumProvider, ResourceWhitelistConfig } from "./provider";
 
 const getResourceAddresses = () => {
@@ -52,7 +51,7 @@ const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_
 if (!VITE_PUBLIC_MASTER_ADDRESS || !VITE_PUBLIC_MASTER_PRIVATE_KEY || !VITE_PUBLIC_NODE_URL) {
   throw new Error("VITE_PUBLIC_MASTER_ADDRESS is required");
 }
-const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
+const manifest = VITE_PUBLIC_DEV === "true" ? manifestLocal : manifestSepolia;
 // Bug in bun we have to use http://127.0.0.1:5050/
 const nodeUrl = VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : VITE_PUBLIC_NODE_URL;
 

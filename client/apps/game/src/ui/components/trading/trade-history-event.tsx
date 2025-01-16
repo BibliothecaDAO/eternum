@@ -1,8 +1,7 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { getAddressNameFromEntity } from "@/utils/entities";
-import { Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { getAddressNameFromEntity, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { TradeEvent } from "./market-trading-history";
 
 export enum EventType {

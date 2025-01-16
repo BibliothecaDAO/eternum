@@ -1,13 +1,10 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
-import { useQuery } from "@/hooks/helpers/use-query";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { DurationLeft, ProgressBar } from "@/ui/modules/military/battle-view/battle-progress";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { getStructureAtPosition } from "@/utils/structure";
-import { BattleManager, ContractAddress, Structure } from "@bibliothecadao/eternum";
+import { BattleManager, ContractAddress, getStructureAtPosition, Structure } from "@bibliothecadao/eternum";
+import { useBattlesAtPosition, useQuery, useUIStore } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 export const BattleInfoLabel = () => {

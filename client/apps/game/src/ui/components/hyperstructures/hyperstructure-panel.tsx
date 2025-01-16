@@ -1,14 +1,3 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { usePlayerContributions } from "@/hooks/helpers/use-contributions";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import {
-  ProgressWithPercentage,
-  useHyperstructureProgress,
-  useHyperstructureUpdates,
-} from "@/hooks/helpers/use-hyperstructures";
-import { useHyperstructureData } from "@/hooks/store/use-leaderboard-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { ContributionSummary } from "@/ui/components/hyperstructures/contribution-summary";
 import { HyperstructureDetails } from "@/ui/components/hyperstructures/hyperstructure-details";
 import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/hyperstructure-resource-chip";
@@ -16,14 +5,25 @@ import Button from "@/ui/elements/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
 import { currencyIntlFormat, getEntityIdFromKeys, multiplyByPrecision, separateCamelCase } from "@/ui/utils/utils";
-import { getAddressNameFromEntity } from "@/utils/entities";
 import {
   Access,
   calculateCompletionPoints,
+  configManager,
   ContractAddress,
+  getAddressNameFromEntity,
   LeaderboardManager,
   MAX_NAME_LENGTH,
 } from "@bibliothecadao/eternum";
+import {
+  ProgressWithPercentage,
+  useDojo,
+  useGuilds,
+  useHyperstructureData,
+  useHyperstructureProgress,
+  useHyperstructureUpdates,
+  usePlayerContributions,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 

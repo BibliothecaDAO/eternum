@@ -1,9 +1,8 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { copyPlayerAddressToClipboard, currencyIntlFormat, divideByPrecision, formatNumber } from "@/ui/utils/utils";
-import { getAddressName } from "@/utils/entities";
-import { ContractAddress, ID, LeaderboardManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { ContractAddress, getAddressName, ID, LeaderboardManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const ContributionSummary = ({

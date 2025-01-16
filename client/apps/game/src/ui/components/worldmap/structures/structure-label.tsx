@@ -1,14 +1,15 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import { useQuery } from "@/hooks/helpers/use-query";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
-import { formatTime } from "@/ui/utils/utils";
-import { getStructure, getStructureImmunityTimer, isStructureImmune } from "@/utils/structure";
-import { ContractAddress, Structure } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  formatTime,
+  getStructure,
+  getStructureImmunityTimer,
+  isStructureImmune,
+  Structure,
+} from "@bibliothecadao/eternum";
+import { useDojo, useGuilds, useNextBlockTimestamp, useQuery, useUIStore } from "@bibliothecadao/react";
 import { memo, useMemo } from "react";
 
 export const ImmunityTimer = ({ structure, className }: { structure: Structure; className?: string }) => {

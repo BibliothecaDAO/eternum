@@ -1,5 +1,4 @@
-import { ResourceMiningTypes } from "@/types";
-import { BuildingType, FELT_CENTER } from "@bibliothecadao/eternum";
+import { BuildingType, FELT_CENTER, ResourceMiningTypes } from "@bibliothecadao/eternum";
 
 export { FELT_CENTER };
 

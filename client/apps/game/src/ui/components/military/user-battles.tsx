@@ -1,5 +1,5 @@
-import { usePlayerBattles } from "@/hooks/helpers/use-battles";
 import { BattleListItem } from "@/ui/components/battles/battle-list-item";
+import { usePlayerBattles } from "@bibliothecadao/react";
 
 export const UserBattles = () => {
   const battleEntityIds = usePlayerBattles();

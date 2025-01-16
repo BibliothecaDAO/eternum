@@ -1,13 +1,19 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useTravel } from "@/hooks/helpers/use-travel";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { TravelInfo } from "@/ui/components/resources/travel-info";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, EntityType, ID, MarketManager, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  EntityType,
+  ID,
+  MarketManager,
+  ResourcesIds,
+  configManager,
+  resources,
+} from "@bibliothecadao/eternum";
+import { useDojo, useTravel } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";
 

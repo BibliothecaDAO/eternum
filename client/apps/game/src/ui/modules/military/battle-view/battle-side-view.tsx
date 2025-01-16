@@ -1,20 +1,19 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import Button from "@/ui/elements/button";
 import { BattleHistory } from "@/ui/modules/military/battle-view/battle-history";
 import { EntityAvatar } from "@/ui/modules/military/battle-view/entity-avatar";
 import { TroopRow } from "@/ui/modules/military/battle-view/troops";
-import { getArmy } from "@/utils/army";
-import { getAddressNameFromEntity } from "@/utils/entities";
 import {
   ArmyInfo,
   BattleManager,
   BattleSide,
   ClientComponents,
   ContractAddress,
+  getAddressNameFromEntity,
+  getArmy,
   ID,
   Structure,
 } from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 

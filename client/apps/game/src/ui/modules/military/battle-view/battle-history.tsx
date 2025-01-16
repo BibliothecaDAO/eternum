@@ -1,8 +1,6 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useBattleJoin, useBattleLeave, useBattleStart } from "@/hooks/helpers/use-battle-events";
-import { currencyFormat, formatTime } from "@/ui/utils/utils";
-import { getArmy } from "@/utils/army";
-import { BattleSide, ClientComponents, ContractAddress, ID } from "@bibliothecadao/eternum";
+import { currencyFormat } from "@/ui/utils/utils";
+import { BattleSide, ClientComponents, ContractAddress, ID, formatTime, getArmy } from "@bibliothecadao/eternum";
+import { useBattleJoin, useBattleLeave, useBattleStart, useDojo } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo } from "react";
 import { shortString } from "starknet";

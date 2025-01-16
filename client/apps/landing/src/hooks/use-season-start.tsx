@@ -1,4 +1,4 @@
-import { configManager } from "@/dojo/setup";
+import { configManager } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
 export const useSeasonStart = () => {

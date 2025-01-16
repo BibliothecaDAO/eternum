@@ -1,6 +1,6 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import { Tabs } from "@/ui/elements/tab";
 import { ID, LeaderboardManager } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 import { CoOwners } from "./co-owners";
 import { Leaderboard } from "./leaderboard";

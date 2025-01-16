@@ -1,20 +1,22 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useQuery } from "@/hooks/helpers/use-query";
-import { usePlayerArrivalsNotifications } from "@/hooks/helpers/use-resource-arrivals";
-import { useModalStore } from "@/hooks/store/use-modal-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { EntityResourceTable } from "@/ui/components/resources/entity-resource-table";
 import { MarketModal } from "@/ui/components/trading/market-modal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
-import { getEntityInfo } from "@/utils/entities";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { Chat } from "@/ui/modules/chat/chat";
+import { ContractAddress, getEntityInfo } from "@bibliothecadao/eternum";
+import {
+  LeftView,
+  useDojo,
+  useModalStore,
+  usePlayerArrivalsNotifications,
+  useQuery,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
-import { Chat } from "../chat/chat";
 
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
@@ -40,22 +42,13 @@ const AllResourceArrivals = lazy(() =>
   import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
 );
 
-export enum LeftView {
-  None,
-  MilitaryView,
-  EntityView,
-  ConstructionView,
-  WorldStructuresView,
-  ResourceArrivals,
-  ResourceTable,
-}
-
 export const LeftNavigationModule = memo(() => {
   const {
     account: { account },
     setup: { components },
   } = useDojo();
 
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -69,7 +62,12 @@ export const LeftNavigationModule = memo(() => {
 
   const { arrivedNotificationLength, arrivals } = usePlayerArrivalsNotifications();
 
-  const structureInfo = getEntityInfo(structureEntityId, ContractAddress(account.address), components);
+  const structureInfo = getEntityInfo(
+    structureEntityId,
+    ContractAddress(account.address),
+    currentDefaultTick,
+    components,
+  );
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
   const isRealm = useMemo(

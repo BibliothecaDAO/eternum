@@ -1,9 +1,8 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getAddressNameFromEntity } from "@/utils/entities";
-import { ArmyInfo, BattleSide, ClientComponents, Structure } from "@bibliothecadao/eternum";
+import { ArmyInfo, BattleSide, ClientComponents, getAddressNameFromEntity, Structure } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { env } from "../../../../../env";

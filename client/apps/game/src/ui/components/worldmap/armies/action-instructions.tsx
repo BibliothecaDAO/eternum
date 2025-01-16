@@ -1,5 +1,5 @@
-import useUIStore from "@/hooks/store/use-ui-store";
 import { IS_MOBILE } from "@/ui/config";
+import { useUIStore } from "@bibliothecadao/react";
 
 export const ActionInstructions = () => {
   const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);

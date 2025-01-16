@@ -1,12 +1,17 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/use-quests";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { useStartingTutorial } from "@/hooks/use-starting-tutorial";
-import { questSteps, useTutorial } from "@/hooks/use-tutorial";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { getQuestResources } from "@/utils/resources";
-import { ID, Prize, QuestStatus, QuestType } from "@bibliothecadao/eternum";
+import { getQuestResources, ID, QuestType } from "@bibliothecadao/eternum";
+import {
+  Prize,
+  QuestStatus,
+  questSteps,
+  useDojo,
+  useQuests,
+  useStartingTutorial,
+  useTutorial,
+  useUIStore,
+  useUnclaimedQuestsCount,
+} from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo, useState } from "react";
 
@@ -201,7 +206,7 @@ export const QuestsMenu = memo(() => {
   );
 });
 
-const QuestRewards = ({ realmEntityId, prizes }: { realmEntityId: ID; prizes: Prize[] | undefined }) => {
+const QuestRewards = ({ realmEntityId, prizes }: { realmEntityId: ID; prizes: Readonly<Prize[]> | undefined }) => {
   const {
     setup: { components },
   } = useDojo();

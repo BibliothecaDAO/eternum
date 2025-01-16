@@ -1,7 +1,6 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { usePlayerStructures } from "@/hooks/helpers/use-entities";
 import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
 import { ContractAddress, ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useState } from "react";
 
 type LiquidityTableProps = {

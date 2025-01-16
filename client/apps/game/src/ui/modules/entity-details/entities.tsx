@@ -1,10 +1,9 @@
-import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
-import { Position } from "@/types/position";
 import { StructureCard } from "@/ui/components/structures/worldmap/structure-card";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { Battles } from "@/ui/modules/entity-details/battles";
 import { EnemyArmies } from "@/ui/modules/entity-details/enemy-armies";
 import { ArmyInfo, ID } from "@bibliothecadao/eternum";
+import { Position, useArmiesAtPosition } from "@bibliothecadao/react";
 import { useState } from "react";
 
 export const Entities = ({

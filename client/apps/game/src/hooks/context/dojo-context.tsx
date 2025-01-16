@@ -1,50 +1,28 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
-import { SetupResult } from "@/dojo/setup";
-import { SetupNetworkResult } from "@/dojo/setup-network";
-import { useAccountStore } from "@/hooks/context/account-store";
-import { useQuery } from "@/hooks/helpers/use-query";
-import { useAddressStore } from "@/hooks/store/use-address-store";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
+import {
+  DojoContext,
+  DojoResult,
+  Position,
+  SetupResult,
+  useAccountStore,
+  useAddressStore,
+  useQuery,
+  useUIStore,
+} from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
-import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
+import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
-
-interface DojoAccount {
-  create: () => void;
-  list: () => any[];
-  get: (id: string) => any;
-  select: (id: string) => void;
-  account: Account | AccountInterface;
-  isDeploying: boolean;
-  clear: () => void;
-  accountDisplay: string;
-}
-
-interface DojoContextType extends SetupResult {
-  masterAccount: Account | AccountInterface;
-  account: DojoAccount;
-}
-
-export interface DojoResult {
-  setup: DojoContextType;
-  account: DojoAccount;
-  network: SetupNetworkResult;
-  masterAccount: Account | AccountInterface;
-}
-
-const DojoContext = createContext<DojoContextType | null>(null);
 
 const requiredEnvs: (keyof Env)[] = [
   "VITE_PUBLIC_MASTER_ADDRESS",

@@ -1,10 +1,13 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { unpackResources } from "@/ui/utils/packed-data";
-import { getRealmInfo } from "@/utils/realm";
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import {
+  configManager,
+  getEntityIdFromKeys,
+  getRealmInfo,
+  ID,
+  ResourcesIds,
+  unpackResources,
+} from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 
 export const RealmResourcesIO = ({
   realmEntityId,

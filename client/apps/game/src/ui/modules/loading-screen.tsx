@@ -1,5 +1,5 @@
-import { useSeasonStart } from "@/hooks/use-season-start";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
+import { useSeasonStart } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 import "../../index.css";
 

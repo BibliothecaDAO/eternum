@@ -1,7 +1,6 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import Button from "@/ui/elements/button";
-import { getRealmAddressName } from "@/utils/realm";
-import { ID } from "@bibliothecadao/eternum";
+import { getRealmAddressName, ID } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo } from "react";
 

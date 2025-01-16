@@ -1,10 +1,3 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import { useQuery } from "@/hooks/helpers/use-query";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { Position } from "@/types/position";
 import { ResourceExchange } from "@/ui/components/hyperstructures/resource-exchange";
 import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
@@ -16,9 +9,16 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
-import { getArmy } from "@/utils/army";
-import { getStructureAtPosition } from "@/utils/structure";
-import { ArmyInfo, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  configManager,
+  ContractAddress,
+  getArmy,
+  getStructureAtPosition,
+  ID,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
+import { Position, useDojo, useGuilds, useQuery, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
@@ -39,8 +39,6 @@ export const StructureCard = ({
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
-
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const { handleUrlChange } = useQuery();
 

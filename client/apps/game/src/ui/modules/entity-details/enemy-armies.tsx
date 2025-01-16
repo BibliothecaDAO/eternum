@@ -1,12 +1,14 @@
 import { ReactComponent as Swords } from "@/assets/icons/common/cross-swords.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { Position } from "@/types/position";
 import { ArmyChip } from "@/ui/components/military/army-chip";
-import { getEntityInfo } from "@/utils/entities";
-import { getStructureAtPosition, isStructureImmune } from "@/utils/structure";
-import { ArmyInfo, BattleManager, ContractAddress } from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  BattleManager,
+  ContractAddress,
+  getEntityInfo,
+  getStructureAtPosition,
+  isStructureImmune,
+} from "@bibliothecadao/eternum";
+import { Position, useDojo, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import React, { useCallback, useMemo } from "react";
 
@@ -20,6 +22,8 @@ export const EnemyArmies = ({
   position: Position;
 }) => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+
   const structureAtPosition = useMemo(
     () =>
       getStructureAtPosition(
@@ -38,6 +42,7 @@ export const EnemyArmies = ({
   const entityInfo = getEntityInfo(
     ownArmySelected?.entityOwner.entity_owner_id ?? 0,
     ContractAddress(dojo.account.account.address),
+    currentDefaultTick,
     dojo.setup.components,
   ).structure;
 
@@ -59,6 +64,7 @@ export const EnemyArmies = ({
       const structure = getEntityInfo(
         army.entityOwner.entity_owner_id,
         ContractAddress(dojo.account.account.address),
+        currentDefaultTick,
         dojo.setup.components,
       ).structure;
       const isImmune = isStructureImmune(structure, nextBlockTimestamp!) || ownArmyIsImmune;

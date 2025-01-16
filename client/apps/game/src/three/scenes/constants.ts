@@ -1,7 +1,15 @@
 import { BiomeType } from "@/three/managers/biome";
-import { HyperstructureTypesNames, ResourceMiningTypes } from "@/types";
+import { HyperstructureTypesNames } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
-import { BuildingType, RealmLevelNames, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  RealmLevelNames,
+  RealmLevels,
+  ResourceMiningTypes,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/eternum";
+import { StructureProgress } from "@bibliothecadao/react";
 import * as THREE from "three";
 
 export const HEX_SIZE = 1;
@@ -23,12 +31,6 @@ export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
   [RealmLevels.Kingdom]: RealmLevelNames.Kingdom,
   [RealmLevels.Empire]: RealmLevelNames.Empire,
 };
-
-export enum StructureProgress {
-  STAGE_1 = 0,
-  STAGE_2 = 1,
-  STAGE_3 = 2,
-}
 
 export const hyperstructureStageToModel: Record<StructureProgress, string> = {
   [StructureProgress.STAGE_1]: HyperstructureTypesNames.STAGE_1,

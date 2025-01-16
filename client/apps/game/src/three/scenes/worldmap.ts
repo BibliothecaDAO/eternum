@@ -1,8 +1,3 @@
-import { SetupResult } from "@/dojo/setup";
-import { useAccountStore } from "@/hooks/context/account-store";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { soundSelector } from "@/hooks/use-ui-sound";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleManager } from "@/three/managers/battle-manager";
 import { Biome } from "@/three/managers/biome";
@@ -14,12 +9,10 @@ import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "@/three/scenes/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
-import { ArmySystemUpdate, TileSystemUpdate } from "@/three/systems/types";
+import { ArmySystemUpdate, TileSystemUpdate } from "@bibliothecadao/react";
 import { SceneName } from "@/types";
-import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import {
   ArmyMovementManager,
@@ -31,6 +24,15 @@ import {
   TravelPaths,
   getNeighborOffsets,
 } from "@bibliothecadao/eternum";
+import {
+  LeftView,
+  LoadingStateKey,
+  Position,
+  SetupResult,
+  soundSelector,
+  useAccountStore,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { getEntities } from "@dojoengine/state";
 import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";

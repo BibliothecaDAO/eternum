@@ -1,7 +1,5 @@
+import { manifestLocal, manifestMainnet, manifestSepolia } from "@bibliothecadao/assets";
 import { createDojoConfig } from "@dojoengine/core";
-import devManifest from "../../common/manifests/manifest_dev.json";
-import productionManifest from "../../common/manifests/manifest_mainnet.json";
-import sepoliaManifest from "../../common/manifests/manifest_prod.json";
 import { env } from "./env";
 
 const {
@@ -16,15 +14,15 @@ const {
 } = env;
 
 // const isLocal = VITE_PUBLIC_CHAIN === "local" || VITE_PUBLIC_CHAIN === "testnet";
-// const manifest = VITE_PUBLIC_DEV === true && isLocal ? devManifest : productionManifest;
+// const manifest = VITE_PUBLIC_DEV === true && isLocal ? manifestLocal : manifestMainnet;
 
 const manifestMap = {
-  local: devManifest,
-  mainnet: productionManifest,
-  sepolia: sepoliaManifest,
+  local: manifestLocal,
+  mainnet: manifestMainnet,
+  sepolia: manifestSepolia,
 } as const;
 
-const manifest = manifestMap[VITE_PUBLIC_CHAIN as keyof typeof manifestMap] ?? sepoliaManifest;
+const manifest = manifestMap[VITE_PUBLIC_CHAIN as keyof typeof manifestMap] ?? manifestSepolia;
 
 export const getManifest = () => {
   return manifest;
