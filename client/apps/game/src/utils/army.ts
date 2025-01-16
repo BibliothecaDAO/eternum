@@ -5,12 +5,17 @@ import {
   ContractAddress,
   EternumGlobalConfig,
   getArmyTotalCapacity,
+  ID,
 } from "@bibliothecadao/eternum";
-import { Entity, getComponentValue } from "@dojoengine/recs";
+import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 
-export const formatArmies = (armies: Entity[], playerAddress: string, components: ClientComponents): ArmyInfo[] => {
+export const formatArmies = (
+  armies: Entity[],
+  playerAddress: ContractAddress,
+  components: ClientComponents,
+): ArmyInfo[] => {
   return armies
     .map((armyEntityId) => {
       const army = getComponentValue(components.Army, armyEntityId);
@@ -74,7 +79,7 @@ export const formatArmies = (armies: Entity[], playerAddress: string, components
       const structurePosition =
         structure && getComponentValue(components.Position, getEntityIdFromKeys([BigInt(structure.entity_id)]));
 
-      const isMine = (owner?.address || 0n) === ContractAddress(playerAddress);
+      const isMine = (owner?.address || 0n) === playerAddress;
       const isMercenary = owner === undefined;
 
       const isHome = structurePosition && position.x === structurePosition.x && position.y === structurePosition.y;
@@ -103,6 +108,27 @@ export const formatArmies = (armies: Entity[], playerAddress: string, components
       };
     })
     .filter((army): army is ArmyInfo => army !== undefined);
+};
+
+export const getArmy = (
+  armyEntityId: ID,
+  playerAddress: ContractAddress,
+  components: ClientComponents,
+): ArmyInfo | undefined => {
+  return formatArmies([getEntityIdFromKeys([BigInt(armyEntityId)])], playerAddress, components)[0];
+};
+
+export const getArmiesInBattle = (battleEntityId: ID, playerAddress: ContractAddress, components: ClientComponents) => {
+  const armiesEntityIds = runQuery([
+    Has(components.Army),
+    NotValue(components.Health, { current: 0n }),
+    NotValue(components.Army, { battle_id: 0 }),
+    HasValue(components.Army, { battle_id: battleEntityId }),
+  ]);
+
+  const armies = formatArmies(Array.from(armiesEntityIds), playerAddress, components);
+
+  return armies;
 };
 
 export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {

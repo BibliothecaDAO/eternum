@@ -1,8 +1,10 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { ID, ResourceManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { getStructure } from "@/utils/structure";
+import { BattleManager, ContractAddress, ID, ResourceManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
+import useNextBlockTimestamp from "../use-next-block-timestamp";
 
 export const useResourceManager = (entityId: ID, resourceId: ResourcesIds) => {
   const dojo = useDojo();
@@ -16,4 +18,24 @@ export const useResourceManager = (entityId: ID, resourceId: ResourcesIds) => {
   }, [dojo.setup, entityId, resourceId, production]);
 
   return resourceManager;
+};
+
+export const useIsStructureResourcesLocked = (structureEntityId: ID) => {
+  const dojo = useDojo();
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
+  const structure = getStructure(
+    structureEntityId,
+    ContractAddress(dojo.account.account.address),
+    dojo.setup.components,
+  );
+
+  return useMemo(() => {
+    const battleManager = new BattleManager(
+      dojo.setup.components,
+      dojo.network.provider,
+      structure?.protector?.battle_id || 0,
+    );
+    return battleManager.isResourcesLocked(nextBlockTimestamp!);
+  }, [structure, nextBlockTimestamp]);
 };

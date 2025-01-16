@@ -1,24 +1,29 @@
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { useIsStructureImmune, useStructureImmunityTimer, useStructures } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { formatTime } from "@/ui/utils/utils";
+import { getStructure, getStructureImmunityTimer, isStructureImmune } from "@/utils/structure";
 import { ContractAddress, Structure } from "@bibliothecadao/eternum";
 import { memo, useMemo } from "react";
 
-export const ImmunityTimer = ({
-  isImmune,
-  timer,
-  className,
-}: {
-  isImmune: boolean;
-  timer: number;
-  className?: string;
-}) => {
+export const ImmunityTimer = ({ structure, className }: { structure: Structure; className?: string }) => {
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
+  const isImmune = useMemo(
+    () => isStructureImmune(structure, nextBlockTimestamp || 0),
+    [structure, nextBlockTimestamp],
+  );
+
+  const timer = useMemo(
+    () => getStructureImmunityTimer(structure, nextBlockTimestamp || 0),
+    [structure, nextBlockTimestamp],
+  );
+
   if (!isImmune) return null;
 
   return (
@@ -30,21 +35,21 @@ export const ImmunityTimer = ({
 };
 
 export const StructureInfoLabel = memo(() => {
+  const dojo = useDojo();
+
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
-  const { getStructureByEntityId } = useStructures();
   const { getGuildFromPlayerAddress } = useGuilds();
 
   const structure = useMemo(() => {
-    return getStructureByEntityId(hoveredStructure?.entityId || 0);
+    return getStructure(
+      hoveredStructure?.entityId || 0,
+      ContractAddress(dojo.account.account.address),
+      dojo.setup.components,
+    );
   }, [hoveredStructure]);
 
   const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));
-
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
-
-  const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
-  const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);
 
   return (
     <>
@@ -67,7 +72,7 @@ export const StructureInfoLabel = memo(() => {
               setShowMergeTroopsPopup={() => {}}
               maxInventory={3}
             />
-            <ImmunityTimer isImmune={isImmune} timer={timer} />
+            <ImmunityTimer structure={structure} />
           </div>
         </BaseThreeTooltip>
       )}

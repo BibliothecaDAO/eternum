@@ -1,6 +1,5 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
@@ -8,6 +7,7 @@ import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getRealmInfo } from "@/utils/realm";
 import { getBalance } from "@/utils/resources";
+import { getStructure } from "@/utils/structure";
 import {
   ContractAddress,
   LEVEL_DESCRIPTIONS,
@@ -29,7 +29,10 @@ export const Castle = () => {
     [structureEntityId, dojo.setup.components],
   );
 
-  const structure = useStructureByEntityId(structureEntityId);
+  const structure = useMemo(
+    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
+    [structureEntityId, dojo.account.account.address, dojo.setup.components],
+  );
 
   const getNextRealmLevel = useMemo(() => {
     if (!realmInfo) return null;

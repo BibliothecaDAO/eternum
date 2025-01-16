@@ -1,7 +1,6 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { usePlayers } from "@/hooks/helpers/use-players";
-import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
 import useUIStore from "@/hooks/store/use-ui-store";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import Button from "@/ui/elements/button";
@@ -11,6 +10,7 @@ import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress, formatTime } from "@/ui/utils/utils";
 import { getAddressName } from "@/utils/entities";
+import { getStructure } from "@/utils/structure";
 import { ContractAddress, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -80,7 +80,10 @@ const CoOwnersRows = ({
     }
   }, [hyperstructure, hyperstructureConfig, nextBlockTimestamp]);
 
-  const structure = useStructureByEntityId(hyperstructureEntityId);
+  const structure = useMemo(
+    () => getStructure(hyperstructureEntityId, ContractAddress(account.address), components),
+    [hyperstructureEntityId, account.address, components],
+  );
 
   const sortingParams = useMemo(() => {
     return [

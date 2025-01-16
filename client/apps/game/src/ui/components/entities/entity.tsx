@@ -1,10 +1,10 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
 import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { DepositResources } from "@/ui/components/resources/deposit-resources";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getArmy } from "@/utils/army";
 import { getEntityInfo, getEntityName } from "@/utils/entities";
 import { getResourcesFromBalance } from "@/utils/resources";
 import { ArrivalInfo, ContractAddress, EntityType } from "@bibliothecadao/eternum";
@@ -34,7 +34,6 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   const components = dojo.setup.components;
 
   const { nextBlockTimestamp } = useNextBlockTimestamp();
-  const { getArmy } = useGetArmyByEntityId();
 
   const weight = useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(arrival.entityId)]));
 
@@ -44,7 +43,10 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
     return getResourcesFromBalance(arrival.entityId, components);
   }, [weight]);
 
-  const army = useMemo(() => getArmy(arrival.entityId), [arrival.entityId, entity.resources]);
+  const army = useMemo(
+    () => getArmy(arrival.entityId, ContractAddress(dojo.account.account.address), components),
+    [arrival.entityId, entity.resources],
+  );
 
   const renderEntityStatus = useMemo(() => {
     return nextBlockTimestamp ? (

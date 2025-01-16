@@ -1,7 +1,7 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useIsResourcesLocked, useStructures } from "@/hooks/helpers/use-structures";
+import { useIsStructureResourcesLocked } from "@/hooks/helpers/use-resources";
 import { useTravel } from "@/hooks/helpers/use-travel";
 import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
@@ -11,6 +11,7 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
 import { getBalance } from "@/utils/resources";
+import { getStructure } from "@/utils/structure";
 import {
   ContractAddress,
   DONKEY_ENTITY_TYPE,
@@ -47,10 +48,9 @@ export const ResourceSwap = ({
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
-  const { getStructureByEntityId } = useStructures();
 
   const bankProtector = useMemo(() => {
-    const structure = getStructureByEntityId(bankEntityId);
+    const structure = getStructure(bankEntityId, ContractAddress(account.address), setup.components);
     return structure?.protector;
   }, [bankEntityId]);
 
@@ -90,8 +90,8 @@ export const ResourceSwap = ({
     return multiplyByPrecision(amount) <= balance;
   }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
-  const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
-  const isMyResourcesLocked = useIsResourcesLocked(entityId);
+  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId);
+  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId);
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
 
   const canSwap = useMemo(
