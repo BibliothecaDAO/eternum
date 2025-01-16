@@ -419,10 +419,6 @@ interface ResourceCosts {
   amount: num.BigNumberish;
 }
 
-export interface SetQuestConfigProps extends SystemSigner {
-  production_material_multiplier: num.BigNumberish;
-}
-
 export interface SetQuestRewardConfigProps extends SystemSigner {
   calls: {
     quest_id: num.BigNumberish;

@@ -112,7 +112,6 @@ union ModelUnion =
   | s0_eternum_Quantity
   | s0_eternum_QuantityTracker
   | s0_eternum_Quest
-  | s0_eternum_QuestBonus
   | s0_eternum_QuestConfig
   | s0_eternum_QuestRewardConfig
   | s0_eternum_Realm
@@ -1116,16 +1115,7 @@ type World__Query {
     order: s0_eternum_QuantityTrackerOrder
     where: s0_eternum_QuantityTrackerWhereInput
   ): s0_eternum_QuantityTrackerConnection
-  s0EternumQuestBonusModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: s0_eternum_QuestBonusOrder
-    where: s0_eternum_QuestBonusWhereInput
-  ): s0_eternum_QuestBonusConnection
+
   s0EternumQuestConfigModels(
     after: Cursor
     before: Cursor
@@ -7671,114 +7661,6 @@ type s0_eternum_Quest {
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_QuestBonus {
-  claimed: bool
-  entity: World__Entity
-  entity_id: u32
-  eventMessage: World__EventMessage
-  resource_type: u8
-}
-
-type s0_eternum_QuestBonusConnection {
-  edges: [s0_eternum_QuestBonusEdge]
-  pageInfo: World__PageInfo!
-  totalCount: Int!
-}
-
-type s0_eternum_QuestBonusEdge {
-  cursor: Cursor
-  node: s0_eternum_QuestBonus
-}
-
-input s0_eternum_QuestBonusOrder {
-  direction: OrderDirection!
-  field: s0_eternum_QuestBonusOrderField!
-}
-
-enum s0_eternum_QuestBonusOrderField {
-  CLAIMED
-  ENTITY_ID
-  RESOURCE_TYPE
-}
-
-input s0_eternum_QuestBonusWhereInput {
-  claimed: bool
-  entity_id: u32
-  entity_idEQ: u32
-  entity_idGT: u32
-  entity_idGTE: u32
-  entity_idIN: [u32]
-  entity_idLIKE: u32
-  entity_idLT: u32
-  entity_idLTE: u32
-  entity_idNEQ: u32
-  entity_idNOTIN: [u32]
-  entity_idNOTLIKE: u32
-  resource_type: u8
-  resource_typeEQ: u8
-  resource_typeGT: u8
-  resource_typeGTE: u8
-  resource_typeIN: [u8]
-  resource_typeLIKE: u8
-  resource_typeLT: u8
-  resource_typeLTE: u8
-  resource_typeNEQ: u8
-  resource_typeNOTIN: [u8]
-  resource_typeNOTLIKE: u8
-}
-
-type s0_eternum_QuestConfig {
-  config_id: u32
-  entity: World__Entity
-  eventMessage: World__EventMessage
-  production_material_multiplier: u16
-}
-
-type s0_eternum_QuestConfigConnection {
-  edges: [s0_eternum_QuestConfigEdge]
-  pageInfo: World__PageInfo!
-  totalCount: Int!
-}
-
-type s0_eternum_QuestConfigEdge {
-  cursor: Cursor
-  node: s0_eternum_QuestConfig
-}
-
-input s0_eternum_QuestConfigOrder {
-  direction: OrderDirection!
-  field: s0_eternum_QuestConfigOrderField!
-}
-
-enum s0_eternum_QuestConfigOrderField {
-  CONFIG_ID
-  PRODUCTION_MATERIAL_MULTIPLIER
-}
-
-input s0_eternum_QuestConfigWhereInput {
-  config_id: u32
-  config_idEQ: u32
-  config_idGT: u32
-  config_idGTE: u32
-  config_idIN: [u32]
-  config_idLIKE: u32
-  config_idLT: u32
-  config_idLTE: u32
-  config_idNEQ: u32
-  config_idNOTIN: [u32]
-  config_idNOTLIKE: u32
-  production_material_multiplier: u16
-  production_material_multiplierEQ: u16
-  production_material_multiplierGT: u16
-  production_material_multiplierGTE: u16
-  production_material_multiplierIN: [u16]
-  production_material_multiplierLIKE: u16
-  production_material_multiplierLT: u16
-  production_material_multiplierLTE: u16
-  production_material_multiplierNEQ: u16
-  production_material_multiplierNOTIN: [u16]
-  production_material_multiplierNOTLIKE: u16
-}
 
 type s0_eternum_QuestConnection {
   edges: [s0_eternum_QuestEdge]

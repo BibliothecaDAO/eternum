@@ -4532,77 +4532,6 @@ export type S0_Eternum_QuantityWhereInput = {
   valueNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_QuestBonusOrder = {
-  direction: OrderDirection;
-  field: S0_Eternum_QuestBonusOrderField;
-};
-
-export enum S0_Eternum_QuestBonusOrderField {
-  Claimed = "CLAIMED",
-  EntityId = "ENTITY_ID",
-  ResourceType = "RESOURCE_TYPE",
-}
-
-export type S0_Eternum_QuestBonusWhereInput = {
-  claimed?: InputMaybe<Scalars["bool"]["input"]>;
-  entity_id?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  resource_type?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeGT?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeGTE?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  resource_typeLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeLT?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeLTE?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeNEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-};
-
-export type S0_Eternum_QuestConfigOrder = {
-  direction: OrderDirection;
-  field: S0_Eternum_QuestConfigOrderField;
-};
-
-export enum S0_Eternum_QuestConfigOrderField {
-  ConfigId = "CONFIG_ID",
-  ProductionMaterialMultiplier = "PRODUCTION_MATERIAL_MULTIPLIER",
-}
-
-export type S0_Eternum_QuestConfigWhereInput = {
-  config_id?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  config_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  config_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  production_material_multiplier?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierEQ?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierGT?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierGTE?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierIN?: InputMaybe<Array<InputMaybe<Scalars["u16"]["input"]>>>;
-  production_material_multiplierLIKE?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierLT?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierLTE?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierNEQ?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u16"]["input"]>>>;
-  production_material_multiplierNOTLIKE?: InputMaybe<Scalars["u16"]["input"]>;
-};
 
 export type S0_Eternum_QuestOrder = {
   direction: OrderDirection;
@@ -7358,7 +7287,6 @@ export type GetEternumOwnerRealmIdsQuery = {
             | { __typename: "s0_eternum_Quantity" }
             | { __typename: "s0_eternum_QuantityTracker" }
             | { __typename: "s0_eternum_Quest" }
-            | { __typename: "s0_eternum_QuestBonus" }
             | { __typename: "s0_eternum_QuestConfig" }
             | { __typename: "s0_eternum_QuestRewardConfig" }
             | { __typename: "s0_eternum_Realm"; realm_id?: any | null }
@@ -7499,7 +7427,6 @@ export type GetEternumEntityOwnerQuery = {
             | { __typename: "s0_eternum_Quantity" }
             | { __typename: "s0_eternum_QuantityTracker" }
             | { __typename: "s0_eternum_Quest" }
-            | { __typename: "s0_eternum_QuestBonus" }
             | { __typename: "s0_eternum_QuestConfig" }
             | { __typename: "s0_eternum_QuestRewardConfig" }
             | { __typename: "s0_eternum_Realm" }

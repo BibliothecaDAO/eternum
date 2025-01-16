@@ -2,7 +2,7 @@ import { configManager } from "@/dojo/setup";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, currencyIntlFormat, formatTime, gramToKg, TimeFormat } from "@/ui/utils/utils";
+import { currencyFormat, currencyIntlFormat, divideByPrecision, formatTime, gramToKg, TimeFormat } from "@/ui/utils/utils";
 import { findResourceById, getIconResourceId, ID, TickIds } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RealmTransfer } from "./realm-transfer";
@@ -49,65 +49,33 @@ export const ResourceChip = ({
     return resourceManager.timeUntilValueReached(useUIStore.getState().currentDefaultTick, 0);
   }, [resourceManager, production?.production_rate]);
 
-  const netRate = useMemo(() => {
-    let netRate = resourceManager.netRate();
-    if (netRate[1] < 0) {
-      // net rate is negative
-      if (Math.abs(netRate[1]) > resourceManager.balance(useUIStore.getState().currentDefaultTick)) {
-        return 0;
-      }
-    }
-    return netRate[1];
-  }, [resourceManager, production]);
+  const productionRate = useMemo(() => {
+    return Number(divideByPrecision(Number(production?.production_rate || 0)));
+  }, [production]);
+
+  const productionEndsAt = useMemo(() => {
+    return resourceManager.getProductionEndsAt();
+  }, [production]);
+
 
   useEffect(() => {
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
 
     let realTick = useUIStore.getState().currentDefaultTick;
 
-    const resource = resourceManager.getResource();
-    const [sign, rate] = resourceManager.netRate();
-
-    const productionDuration = resourceManager.productionDuration(realTick);
-    const depletionDuration = resourceManager.depletionDuration(realTick);
-
-    const newBalance = resourceManager.balanceFromComponents(
-      resourceId,
-      rate,
-      sign,
-      resource?.balance,
-      productionDuration,
-      depletionDuration,
-    );
-
+    const newBalance = resourceManager.balance(realTick);
     setBalance(newBalance);
 
-    if (Math.abs(netRate) > 0) {
+    if (Math.abs(productionRate) > 0) {
       const interval = setInterval(() => {
         realTick += 1;
-        const localResource = resourceManager.getResource();
-        const localProductionDuration = resourceManager.productionDuration(realTick);
-        const localDepletionDuration = resourceManager.depletionDuration(realTick);
-
-        const newBalance = resourceManager.balanceFromComponents(
-          resourceId,
-          rate,
-          netRate > 0,
-          localResource?.balance,
-          localProductionDuration,
-          localDepletionDuration,
-        );
-
+        const newBalance = resourceManager.balance(realTick);
         setBalance(newBalance);
       }, tickTime);
       return () => clearInterval(interval);
     }
-  }, [setBalance, resourceManager, netRate, resourceId, production]);
+  }, [setBalance, resourceManager, resourceId, production]);
 
-  const isConsumingInputsWithoutOutput = useMemo(() => {
-    if (!production?.production_rate) return false;
-    return resourceManager.isConsumingInputsWithoutOutput(useUIStore.getState().currentDefaultTick);
-  }, [resourceManager, production, entityId]);
 
   const icon = useMemo(
     () => (
@@ -123,17 +91,8 @@ export const ResourceChip = ({
   );
 
   const reachedMaxCap = useMemo(() => {
-    return maxAmountStorable === balance && Math.abs(netRate) > 0;
-  }, [maxAmountStorable, balance, netRate]);
-
-  const timeUntilFinishTick = useMemo(() => {
-    return resourceManager.timeUntilFinishTick(useUIStore.getState().currentDefaultTick);
-  }, [resourceManager, production]);
-
-  const isProducingOrConsuming = useMemo(() => {
-    if (netRate > 0 && timeUntilFinishTick <= 0) return false;
-    return Math.abs(netRate) > 0 && !reachedMaxCap && !isConsumingInputsWithoutOutput && balance > 0;
-  }, [netRate, reachedMaxCap, isConsumingInputsWithoutOutput, balance, timeUntilFinishTick]);
+    return maxAmountStorable === balance && Math.abs(productionRate) > 0;
+  }, [maxAmountStorable, balance, production]);
 
   const handleMouseEnter = useCallback(() => {
     setTooltip({
@@ -171,17 +130,17 @@ export const ResourceChip = ({
               : ""}
           </div>
 
-          {isProducingOrConsuming ? (
+          {Math.abs(productionRate) > 0 && productionEndsAt > useUIStore.getState().currentDefaultTick ? (
             <div
               className={`${
-                Number(netRate) < 0 ? "text-light-red" : "text-green/80"
+                productionRate < 0 ? "text-light-red" : "text-green/80"
               } self-center px-2 flex font-bold text-[10px] col-span-3 text-center mx-auto`}
             >
               <div className={`self-center`}>
-                {parseFloat(netRate.toString()) < 0 ? "" : "+"}
+                +
                 {showPerHour
-                  ? `${currencyIntlFormat(netRate * 3.6, 2)}/h`
-                  : `${currencyIntlFormat(netRate / 1000, 2)}/s`}
+                  ? `${currencyIntlFormat(productionRate * 60 * 60, 2)}/h`
+                  : `${currencyIntlFormat(productionRate, 2)}/s`}
               </div>
             </div>
           ) : (
@@ -191,9 +150,9 @@ export const ResourceChip = ({
                   position: "top",
                   content: (
                     <>
-                      {isConsumingInputsWithoutOutput
-                        ? "Production has stopped because inputs have been depleted"
-                        : "Production has stopped because the max balance has been reached"}
+                      {reachedMaxCap
+                        ? "Production has stopped because the max balance has been reached"
+                        : "Production has stopped because labor has been depleted"}
                     </>
                   ),
                 });
@@ -203,7 +162,7 @@ export const ResourceChip = ({
               }}
               className="self-center px-2 col-span-3 mx-auto"
             >
-              {isConsumingInputsWithoutOutput || reachedMaxCap ? "⚠️" : ""}
+              {reachedMaxCap ? "MaxCap" : ""}
             </div>
           )}
         </div>

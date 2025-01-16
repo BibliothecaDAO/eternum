@@ -17,7 +17,7 @@
 #   --kill                    Stops any running indexer instance
 #   --world <world_address>   Starts indexer with custom world address
 #   --rpc <url>              Sets custom RPC URL
-#   --network <name>         Sets network name (default: devnet)
+#   --network <name>         Sets network name (default: local)
 #   --help                   Shows usage information
 #
 # CONFIGURATION:

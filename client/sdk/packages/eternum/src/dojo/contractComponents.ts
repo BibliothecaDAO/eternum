@@ -866,28 +866,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Production: (() => {
-      return defineComponent(
-        world,
-        {
-          entity_id: RecsType.Number,
-          resource_type: RecsType.Number,
-          building_count: RecsType.Number,
-          production_rate: RecsType.BigInt,
-          consumption_rate: RecsType.BigInt,
-          last_updated_tick: RecsType.BigInt,
-          labor_finish_tick: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "Production",
-            types: ["u32", "u8", "u8", "u128", "u128", "u64", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     ProductionConfig: (() => {
       return defineComponent(
         world,
@@ -1008,34 +986,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    QuestBonus: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, resource_type: RecsType.Number, claimed: RecsType.Boolean },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "QuestBonus",
-            types: ["u32", "u8", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    QuestConfig: (() => {
-      return defineComponent(
-        world,
-        { config_id: RecsType.Number, production_material_multiplier: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "QuestConfig",
-            types: ["u32", "u16"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     QuestRewardConfig: (() => {
       return defineComponent(
         world,
@@ -1102,12 +1052,21 @@ export function defineContractComponents(world: World) {
     Resource: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, resource_type: RecsType.Number, balance: RecsType.BigInt },
+        { entity_id: RecsType.Number, 
+          resource_type: RecsType.Number, 
+          balance: RecsType.BigInt,
+          production: {
+            building_count: RecsType.Number,
+            production_rate: RecsType.BigInt,
+            labor_units_left: RecsType.BigInt,
+            last_updated_tick: RecsType.Number,
+          }
+        },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "Resource",
-            types: ["u32", "u8", "u128"],
+            types: ["u32", "u8", "u128","u8", "u128", "u64", "u32"],
             customTypes: [],
           },
         },

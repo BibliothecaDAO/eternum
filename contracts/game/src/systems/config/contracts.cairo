@@ -38,7 +38,6 @@ trait IVRFConfig<T> {
 
 #[starknet::interface]
 trait IQuestConfig<T> {
-    fn set_quest_config(ref self: T, production_material_multiplier: u16);
     fn set_quest_reward_config(ref self: T, quest_id: ID, resources: Span<(u8, u128)>);
 }
 
@@ -229,7 +228,7 @@ mod config_systems {
     use s0_eternum::models::combat::{Troops};
 
     use s0_eternum::models::config::{
-        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestConfig, QuestRewardConfig,
+        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestRewardConfig,
         MapConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
@@ -365,12 +364,6 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl QuestConfigImpl of super::IQuestConfig<ContractState> {
-        fn set_quest_config(ref self: ContractState, production_material_multiplier: u16) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            world.write_model(@QuestConfig { config_id: WORLD_CONFIG_ID, production_material_multiplier });
-        }
 
         fn set_quest_reward_config(ref self: ContractState, quest_id: ID, resources: Span<(u8, u128)>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());

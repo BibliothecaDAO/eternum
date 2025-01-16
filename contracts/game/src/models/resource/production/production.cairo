@@ -11,12 +11,7 @@ use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTyp
 use starknet::get_block_timestamp;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct Production {
-    #[key]
-    entity_id: ID,
-    #[key]
-    resource_type: u8,
     // active building count
     building_count: u8,
     // production rate per tick
@@ -55,7 +50,7 @@ impl ProductionImpl of ProductionTrait {
     }
 
     fn use_labor(ref self: Production, production_config: @ProductionConfig, labor_amount: u128) {
-        assert!(self.resource_type == *production_config.resource_type, "mismatched resource type when using labor");
+        // assert!(self.resource_type == *production_config.resource_type, "mismatched resource type when using labor");
         assert!(labor_amount.is_non_zero(), "zero labor amount");
         assert!(
             labor_amount % (*production_config).labor_cost == 0, "labor amount not exactly divisible by labor cost"
@@ -91,7 +86,7 @@ impl ProductionImpl of ProductionTrait {
             let total_produced_amount: u128 = labor_units_burned * self.production_rate;
 
             // ensure lords can not be produced by any means
-            assert!(self.resource_type != ResourceTypes::LORDS, "lords can not be produced");
+            assert!(resource.resource_type != ResourceTypes::LORDS, "lords can not be produced");
 
             // update resource balance
             resource.balance += total_produced_amount;

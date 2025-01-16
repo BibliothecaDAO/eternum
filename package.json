@@ -26,13 +26,12 @@
     "indexer:start:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --network local --rpc http://127.0.0.1:8080",
     "seasonpass:deploy:local": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh",
     "seasonresources:deploy:local": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh",
-    "config:local": "pnpm run build:packages && pnpm --dir ./client/config run local",
+    "config:deploy:local": "pnpm run build:packages && pnpm --dir ./client/config run local",
     "indexer:stop:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network local",
     "katana:stop:local": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",
 
     "contract:start:local": "pnpm run katana:start:local && pnpm run game:migrate:local && pnpm run indexer:start:local && pnpm run seasonpass:deploy:local && pnpm run seasonresources:deploy:local && pnpm run config:local",
     "contract:stop:local": "pnpm run katana:stop:local && pnpm run indexer:stop:local",
-    
     
     "_comment_slot_network_": "_______________________________________________",
     "_comment_slot_network1": "These are all you commands you need to run (in this order)",
@@ -40,11 +39,12 @@
     "_comment_slot_network3": "and will also use `.env.slot` in client/apps/game for setting game config",
     "_comment_slot_network__": "_______________________________________________",
     
+    "katana:start:slot": "bash contracts/game/ext/scripts/slot.sh katana",
     "game:migrate:slot": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile slot",
-    "indexer:start:slot": "cd ./contracts/game && ./ext/scripts/indexer.sh --network slot --rpc https://api.cartridge.gg/x/starknet/slot",
+    "indexer:start:slot": "bash contracts/game/ext/scripts/slot.sh torii --network slot --world 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --toml ./contracts/game",
     "seasonpass:deploy:slot": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh slot",
     "seasonresources:deploy:slot": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh slot",
-    "config:slot": "pnpm run build:packages && pnpm --dir ./client/config run slot",
+    "config:deploy:slot": "pnpm run build:packages && pnpm --dir ./client/config run slot",
     "indexer:stop:slot": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network slot",
 
 
@@ -55,10 +55,10 @@
     "_comment_sepolia_network__": "_______________________________________________",
 
     "game:migrate:sepolia": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile sepolia",
-    "indexer:start:sepolia": "cd ./contracts/game && ./ext/scripts/indexer.sh --network sepolia --rpc https://api.cartridge.gg/x/starknet/sepolia",
+    "indexer:start:sepolia": "bash contracts/game/ext/scripts/slot.sh torii --network sepolia --world 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --toml ./contracts/game",
     "seasonpass:deploy:sepolia": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh sepolia",
     "seasonresources:deploy:sepolia": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh sepolia",
-    "config:sepolia": "pnpm run build:packages && pnpm --dir ./client/config run sepolia",
+    "config:deploy:sepolia": "pnpm run build:packages && pnpm --dir ./client/config run sepolia",
     "indexer:stop:sepolia": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network sepolia",
 
 
@@ -69,10 +69,10 @@
     "_comment_mainnet_network__": "_______________________________________________",
 
     "game:migrate:mainnet": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile mainnet",
-    "indexer:start:mainnet": "cd ./contracts/game && ./ext/scripts/indexer.sh --network mainnet --rpc https://api.cartridge.gg/x/starknet/mainnet",
+    "indexer:start:mainnet": "bash contracts/game/ext/scripts/slot.sh torii --network mainnet --world 0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f --toml ./contracts/game",
     "seasonpass:deploy:mainnet": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh mainnet",
     "seasonresources:deploy:mainnet": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh mainnet",
-    "config:mainnet": "pnpm run build:packages && pnpm --dir ./client/config run mainnet",
+    "config:deploy:mainnet": "pnpm run build:packages && pnpm --dir ./client/config run mainnet",
     "indexer:stop:mainnet": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network mainnet",
 
 
@@ -85,13 +85,14 @@
     "seasonresources:revoke:slot": "cd ./contracts/season_resources/ext/scripts/deployment && bun run revoke:slot",
     "seasonresources:revoke:sepolia": "cd ./contracts/season_resources/ext/scripts/deployment && bun run revoke:sepolia",
     "seasonresources:revoke:mainnet": "cd ./contracts/season_resources/ext/scripts/deployment && bun run revoke:mainnet",
-
+    
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
     "knip": "npx knip --exclude binaries,dependencies",
     "lint": "pnpm --recursive run lint",
     "lint:fix": "pnpm --recursive run lint:fix",
     "test": "pnpm --recursive run test"
+
   },
   "dependencies": {
     "colors": "^1.4.0",

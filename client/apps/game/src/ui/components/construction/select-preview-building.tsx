@@ -474,7 +474,7 @@ export const ResourceInfo = ({
         })}
       </div>
 
-      <div className="pt-2 font-bold uppercase">One Time Cost</div>
+      <div className="pt-2 font-bold uppercase">Building Creation Cost</div>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
@@ -618,7 +618,7 @@ export const BuildingInfo = ({
 
       {buildingCost.length !== 0 && (
         <>
-          <div className="pt-2 font-bold uppercase">One Time Cost</div>
+          <div className="pt-2 font-bold uppercase">Building Creation Cost</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(entityId || 0, buildingCost[Number(resourceId)].resource);

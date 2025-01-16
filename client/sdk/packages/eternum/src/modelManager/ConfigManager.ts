@@ -87,7 +87,7 @@ export class ClientConfigManager {
       (acc, [key, inputs]) => {
         acc[Number(key)] = inputs.map((input: { resource: number; amount: number }) => ({
           resource: input.resource,
-          amount: input.amount * this.getResourceMultiplier(),
+          amount: input.amount
         }));
         return acc;
       },
@@ -163,7 +163,7 @@ export class ClientConfigManager {
     this.realmUpgradeCosts = Object.fromEntries(
       Object.entries(this.config.realmUpgradeCosts).map(([key, costs]) => [
         key,
-        costs.map((cost: any) => ({ ...cost, amount: cost.amount * this.getResourceMultiplier() })),
+        costs.map((cost: any) => ({ ...cost, amount: cost.amount})),
       ]),
     );
   }
@@ -199,7 +199,7 @@ export class ClientConfigManager {
     this.resourceBuildingCosts = Object.fromEntries(
       Object.entries(this.config.resources.resourceBuildingCosts).map(([key, costs]) => [
         key,
-        costs.map((cost: any) => ({ ...cost, amount: cost.amount * this.getResourceMultiplier() })),
+        costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
       ]),
     );
   }
@@ -236,7 +236,7 @@ export class ClientConfigManager {
     this.buildingCosts = Object.fromEntries(
       Object.entries(this.config.buildings.buildingCosts).map(([key, costs]) => [
         key,
-        costs.map((cost: any) => ({ ...cost, amount: cost.amount * this.getResourceMultiplier() })),
+        costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
       ]),
     );
   }

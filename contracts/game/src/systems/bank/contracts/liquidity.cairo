@@ -59,6 +59,8 @@ mod liquidity_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
+            assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
+
             let owner: Owner = world.read_model(entity_id);
             owner.assert_caller_owner();
             let mut resource = ResourceImpl::get(ref world, (entity_id, resource_type));
@@ -101,6 +103,8 @@ mod liquidity_systems {
         fn remove(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
+
+            assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
             let player = starknet::get_caller_address();
             let owner: Owner = world.read_model(entity_id);

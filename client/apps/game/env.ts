@@ -23,7 +23,7 @@ const envSchema = z.object({
   VITE_PUBLIC_GRAPHICS_DEV: z.string().transform((v) => v === "true"),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string(),
-  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "testnet", "local"]), // Add other chains as needed
+  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "local"]), // Add other chains as needed
 
   VITE_PUBLIC_CONSTRUCTION_FLAG: z.string().transform((v) => v === "true"),
   VITE_PUBLIC_HIDE_THREEJS_MENU: z.string().transform((v) => v === "true"),

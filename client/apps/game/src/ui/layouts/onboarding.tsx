@@ -191,7 +191,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const realms = usePlayerRealms();
 
   const createRandomRealm = () => {
-    const newRealmId = Math.max(...realms.map((realm) => realm.realmId), 0) + 1;
+    const newRealmId = Math.floor(Math.random() * 8000) + 1;
     create_multiple_realms_dev({ signer: account, realm_ids: [newRealmId] });
   };
 
@@ -209,25 +209,31 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
     hasAcceptedToS &&
     (seasonPassRealms.length > 0 ? (
       <Button
-        onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
+        onClick={handleClick}
         className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
           realms.length === 0 ? "animate-pulse" : ""
         }`}
       >
-        {env.VITE_PUBLIC_DEV ? (
-          "Create Random Realm"
-        ) : (
-          <div className="flex items-center">
-            <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
-              {seasonPassRealms.length}
-            </div>
-            Redeem Season Pass
-          </div>
-        )}
+      <div className="flex items-center">
+        <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
+          {seasonPassRealms.length}
+        </div>
+        Redeem Season Pass
+      </div>
       </Button>
     ) : (
-      <div className="flex gap-2 justify-between w-full">
-        <a
+      env.VITE_PUBLIC_DEV ? (
+        <Button
+          onClick={createRandomRealm}
+          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+            realms.length === 0 ? "animate-pulse" : ""
+          }`}
+        >
+          Create Random Realm
+        </Button>
+      ) : (
+        <div className="flex gap-2 justify-between w-full">
+          <a
           className="text-brown cursor-pointer text-lg w-full"
           href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
           target="_blank"
@@ -261,8 +267,10 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
               Bridge in Lords
             </div>
           </Button>
-        </a>
-      </div>
-    ))
-  );
+          </a>
+        </div>
+      )
+    )
+  )
+  )
 };

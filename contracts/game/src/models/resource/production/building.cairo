@@ -145,7 +145,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         );
         produced_resource.save(ref world);
 
-        let mut resource_production: Production = world.read_model((self.outer_entity_id, produced_resource_type));
+        let mut production: Production = produced_resource.production;
 
         match stop {
             true => {
@@ -157,10 +157,10 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 self.update_bonus_received_percent(ref world, delete: true);
 
                 // decrease building count
-                resource_production.decrease_building_count();
+                production.decrease_building_count();
 
                 // decrease production rate
-                resource_production.decrease_production_rate(production_amount);
+                production.decrease_production_rate(production_amount);
             },
             false => {
                 // update bonus received percent
@@ -172,14 +172,16 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 assert!(production_amount.is_non_zero(), "resource cannot be produced");
 
                 // increase building count
-                resource_production.increase_building_count();
+                production.increase_building_count();
 
                 // increase production rate
-                resource_production.increase_production_rate(production_amount);
+                production.increase_production_rate(production_amount);
             }
         }
         // save production
-        world.write_model(@resource_production);
+        produced_resource.production = production;
+        world.write_model(@produced_resource);
+        
         // todo add event here
     }
 
@@ -282,17 +284,13 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 ref world, (self.outer_entity_id, recipient_produced_resource_type)
             );
 
-            // ensure harvest is done on the resource before we modify its production
-            recipient_building_resource.save(ref world);
-
-            // get production related to the building
-            let mut recipient_production: Production = world
-                .read_model((self.outer_entity_id, recipient_produced_resource_type));
-
             // remove the recipient building's contribution from global resource production
             // first so that we can recalculate and add the new production rate
-            let recipient_production_amount: u128 = recipient_building.production_amount(ref world);
-            recipient_production.decrease_production_rate(recipient_production_amount);
+            let recipient_building_resource_production_amount: u128 = recipient_building.production_amount(ref world);
+            let mut recipient_building_resource_production: Production = recipient_building_resource.production;
+            recipient_building_resource_production.decrease_production_rate(
+                recipient_building_resource_production_amount
+            );
 
             // update the recipient building's bonus percent
             if delete {
@@ -302,12 +300,12 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             }
             world.write_model(@recipient_building);
 
-            // get the building's new production amount
-            let recipient_building_new_production_amount: u128 = recipient_building.production_amount(ref world);
-
             // update the global resource production to reflect the new production rate
-            recipient_production.increase_production_rate(recipient_building_new_production_amount);
-            world.write_model(@recipient_production);
+            recipient_building_resource_production.increase_production_rate(
+                recipient_building.production_amount(ref world)
+            );
+            recipient_building_resource.production = recipient_building_resource_production;
+            world.write_model(@recipient_building_resource);
         }
     }
 }

@@ -21,41 +21,20 @@ export class ResourceManager {
   }
 
   public getProduction() {
-    return this._getProduction(this.resourceId);
+    return this._getResource()?.production;
   }
 
   public getResource() {
-    return this._getResource(this.resourceId);
+    return this._getResource();
   }
 
   public isActive(): boolean {
-    const production = this._getProduction(this.resourceId);
-    return production !== undefined && (production.building_count > 0 || production.consumption_rate > 0);
-  }
-
-  public netRate(): [boolean, number] {
-    return this._netRate(this.resourceId);
-  }
-
-  public balanceExhaustionTick(currentTick: number): number {
-    return this._balanceExhaustionTick(currentTick, this.resourceId);
-  }
-
-  public productionDuration(currentTick: number): number {
-    return this._productionDuration(currentTick, this.resourceId);
-  }
-
-  public depletionDuration(currentTick: number): number {
-    return this._depletionDuration(currentTick, this.resourceId);
+    const production = this.getProduction();
+    return production !== undefined && (production.building_count > 0);
   }
 
   public balance(currentTick: number): number {
-    return this._balance(currentTick, this.resourceId);
-  }
-
-  public timeUntilFinishTick(currentTick: number): number {
-    const finishTick = this._finish_tick();
-    return finishTick > currentTick ? finishTick - currentTick : 0;
+    return Number(this._balance(currentTick));
   }
 
   public optimisticResourceUpdate = (overrideId: string, change: bigint) => {
@@ -71,27 +50,18 @@ export class ResourceManager {
   };
 
   public timeUntilValueReached(currentTick: number, value: number): number {
-    const production = this._getProduction(this.resourceId);
-    const resource = this._getResource(this.resourceId);
+    const production = this.getProduction();
+    if (!production || production.production_rate === 0n) return 0;
 
-    if (!production || !resource) return 0;
-
-    const [sign, rate] = this._netRate(this.resourceId);
     const balance = this.balance(currentTick);
+    if (value <= Number(balance)) return 0;
 
-    if (rate !== 0) {
-      if (sign) {
-        // Positive net rate, increase balance
-        const timeToValue = (value - balance) / rate;
-        return Math.round(timeToValue > 0 ? timeToValue : 0);
-      } else {
-        // Negative net rate, decrease balance but not below zero
-        const timeToValue = balance / -rate;
-        return Math.round(timeToValue > 0 ? timeToValue : 0);
-      }
-    } else {
-      return 0;
-    }
+    return (value - Number(balance)) / Number(production.production_rate);
+  }
+
+  public getProductionEndsAt(): number {
+    const productionEndsAt = this._productionEndsAt();
+    return Number(productionEndsAt);
   }
 
   public getStoreCapacity(): number {
@@ -107,171 +77,62 @@ export class ResourceManager {
     return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
   }
 
-  public isConsumingInputsWithoutOutput(currentTick: number): boolean {
-    const production = this._getProduction(this.resourceId);
-    if (!production) return false;
-    return production?.production_rate > 0n && !this._inputs_available(currentTick, this.resourceId);
-  }
 
-  public balanceFromComponents(
-    resourceId: ResourcesIds,
-    rate: number,
-    sign: boolean,
-    resourceBalance: bigint | undefined,
-    productionDuration: number,
-    depletionDuration: number,
-  ): number {
-    return this._calculateBalance(resourceId, rate, sign, resourceBalance, productionDuration, depletionDuration);
-  }
-
-  private _calculateBalance(
-    resourceId: ResourcesIds,
-    rate: number,
-    sign: boolean,
-    resourceBalance: bigint | undefined,
-    productionDuration: number,
-    depletionDuration: number,
-  ): number {
-    if (rate !== 0) {
-      if (sign) {
-        // Positive net rate, increase balance
-        const balance = Number(resourceBalance || 0n) + productionDuration * rate;
-        const storeCapacity = this.getStoreCapacity();
-        const maxAmountStorable = multiplyByPrecision(
-          storeCapacity / (configManager.getResourceWeight(resourceId) || 1000),
-        );
-        const result = Math.min(balance, maxAmountStorable);
-        return result;
-      } else {
-        // Negative net rate, decrease balance but not below zero
-        const balance = Number(resourceBalance || 0n) - -depletionDuration * rate;
-        if (balance < 0) {
-          return 0;
-        } else {
-          return balance;
-        }
-      }
-    } else {
-      // No net rate change, return current balance
-      const currentBalance = Number(resourceBalance || 0n);
-      return currentBalance;
-    }
-  }
-
-  private _balance(currentTick: number, resourceId: ResourcesIds): number {
-    const resource = this._getResource(resourceId);
-
-    const [sign, rate] = this._netRate(resourceId);
-    const productionDuration = this._productionDuration(currentTick, resourceId);
-    const productionDepletion = this._depletionDuration(currentTick, resourceId);
-    return this._calculateBalance(resourceId, rate, sign, resource?.balance, productionDuration, productionDepletion);
-  }
-
-  private _finish_tick(): number {
-    const productionDeadline = this._getProductionDeadline(this.entityId);
-    const production = this._getProduction(this.resourceId);
-    if (!productionDeadline || !production) {
-      // todo@credence0x fix this
-      // return Number(production?.labor_finish_tick || 0); 
-      return Number(0);
-    } else {
-      // todo@credence0x fix this
-      // return Math.min(Number(productionDeadline.deadline_tick), Number(production.labor_finish_tick));
-      return Math.min(Number(0), Number(0));
-    }
-  }
-
-  private _productionDuration(currentTick: number, resourceId: ResourcesIds): number {
-    const production = this._getProduction(resourceId);
-    const labor_finish_tick = this._finish_tick();
-
-    if (!production) return 0;
-
-    if (production.last_updated_tick >= labor_finish_tick && labor_finish_tick !== 0) {
-      return 0;
-    }
-
-    if (labor_finish_tick === 0 || labor_finish_tick > currentTick) {
-      return Number(currentTick) - Number(production.last_updated_tick);
-    } else {
-      return Number(labor_finish_tick) - Number(production.last_updated_tick);
-    }
-  }
-
-  private _depletionDuration(currentTick: number, resourceId: ResourcesIds): number {
-    const production = this._getProduction(resourceId);
-    return Number(currentTick) - Number(production?.last_updated_tick);
-  }
-
-  private _netRate(resourceId: ResourcesIds): [boolean, number] {
-    const production = this._getProduction(resourceId);
-    if (!production) return [false, 0];
-
-    let consumptionRate = Number(production.consumption_rate);
-
-    const difference = Number(production.production_rate) - consumptionRate;
-    return [difference > 0, difference];
-  }
-
-  private _balanceExhaustionTick(currentTick: number, resourceId: ResourcesIds): number {
-    const production = this._getProduction(resourceId);
-    const resource = this._getResource(resourceId);
-
-    // If there is no production or resource, return current tick
-    if (!production || !resource) return currentTick;
-
-    const [_, value] = this.netRate();
-    const balance = this.balance(currentTick);
-
-    if (value != 0) {
-      if (value < 0) {
-        const lossPerTick = Math.abs(value);
-        const numTicksLeft = balance / lossPerTick;
-        return currentTick + Number(numTicksLeft);
-      } else {
-        return Number.MAX_SAFE_INTEGER;
-      }
-    } else {
-      if (balance > 0) {
-        return Number.MAX_SAFE_INTEGER;
-      } else {
-        return currentTick;
-      }
-    }
-  }
-
-  private _inputs_available(currentTick: number, resourceId: ResourcesIds): boolean {
-    const inputs = configManager.resourceInputs[resourceId];
-
-    // Ensure inputs is an array before proceeding
-    if (inputs.length == 0) {
-      return true;
-    }
-
-    for (const input of inputs) {
-      const balance = this._balance(currentTick, input.resource);
-      if (balance === undefined || balance <= 0) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private _getProduction(resourceId: ResourcesIds) {
-    return getComponentValue(
-      this.components.Production,
-      getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
+  private _limitBalanceByStoreCapacity(balance: bigint): bigint {
+    const storeCapacity = this.getStoreCapacity();
+    const maxAmountStorable = multiplyByPrecision(
+      storeCapacity / (configManager.getResourceWeight(this.resourceId) || 1000),
     );
+    if (balance > maxAmountStorable) {
+      return BigInt(maxAmountStorable);
+    }
+    return balance;
   }
 
-  private _getProductionDeadline(entityId: ID) {
-    return {}
+  private _amountProduced(resource: any, currentTick: number): bigint {
+    if (!resource) return 0n;
+    const production = resource.production!;
+    if (!production?.labor_units_left) return 0n;
+    
+    let laborUnitsBurned = this._laborUnitsBurned(resource, currentTick);
+    let totalProducedAmount = laborUnitsBurned * production.production_rate;
+    return totalProducedAmount;
   }
 
-  private _getResource(resourceId: ResourcesIds) {
+  private _laborUnitsBurned(resource: any, currentTick: number): bigint {
+    const production = resource?.production;
+    if (!production) return 0n;
+    let laborUnitsBurned = BigInt(currentTick - production.last_updated_tick) * BigInt(production.building_count);
+    if (laborUnitsBurned > production.labor_units_left) {
+      laborUnitsBurned = production.labor_units_left;
+    }
+
+    return laborUnitsBurned;
+  }
+
+  private _productionEndsAt(): number {
+    const resource = this._getResource();
+    const production = resource?.production;
+    if (!production) return 0;
+    if (production.building_count === 0) return 0;
+
+    const productionTicksLeft = BigInt(production.labor_units_left) / BigInt(production.building_count);
+
+    return production.last_updated_tick + Number(productionTicksLeft);
+  }
+
+  private _balance(currentTick: number): bigint {
+    const resource = this._getResource();
+    const balance = resource?.balance || 0n;
+    const amountProduced = this._amountProduced(resource, currentTick);
+    const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced);
+    return finalBalance;
+  }
+
+  private _getResource() {
     return getComponentValue(
       this.components.Resource,
-      getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
+      getEntityIdFromKeys([BigInt(this.entityId), BigInt(this.resourceId)]),
     );
   }
 }

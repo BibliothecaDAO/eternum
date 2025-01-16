@@ -727,13 +727,6 @@ impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct QuestConfig {
-    #[key]
-    config_id: ID,
-    production_material_multiplier: u16,
-}
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

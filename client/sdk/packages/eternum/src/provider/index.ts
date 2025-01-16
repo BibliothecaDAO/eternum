@@ -1774,16 +1774,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_quest_config(props: SystemProps.SetQuestConfigProps) {
-    const { production_material_multiplier, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_quest_config",
-      calldata: [production_material_multiplier],
-    });
-  }
-
   public async set_quest_reward_config(props: SystemProps.SetQuestRewardConfigProps) {
     const { calls, signer } = props;
     return await this.executeAndCheckTransaction(

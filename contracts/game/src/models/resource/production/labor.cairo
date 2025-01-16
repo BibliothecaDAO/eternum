@@ -65,17 +65,12 @@ impl LaborImpl of LaborTrait {
 
         // ** ADD LABOR AMOUNT TO PRODUCTION ** //
 
-        // harvest already produced resources
-        ResourceImpl::get(ref world, (entity_id, resource_type));
-
-        // add labor to production
-        let mut resource_production: Production = world.read_model((entity_id, resource_type));
+        let mut resource = ResourceImpl::get(ref world, (entity_id, resource_type));
         let resource_production_config: ProductionConfig = world.read_model(resource_type);
-        resource_production.use_labor(@resource_production_config, labor_amount);
-        world.write_model(@resource_production);
+        resource.production.use_labor(@resource_production_config, labor_amount);
+        world.write_model(@resource);
 
         // ** BURN LABOR AMOUNT FROM LABOR RESOURCE ** //
-
         let labor_resource_type = Self::labor_resource_from_regular(resource_type);
         let mut labor_resource = ResourceImpl::get(ref world, (entity_id, labor_resource_type));
         labor_resource.burn(labor_amount);

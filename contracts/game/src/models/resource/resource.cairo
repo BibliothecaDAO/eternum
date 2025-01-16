@@ -29,6 +29,7 @@ pub struct Resource {
     #[key]
     resource_type: u8,
     balance: u128,
+    production: Production,
 }
 
 impl ResourceDisplay of Display<Resource> {
@@ -86,6 +87,7 @@ pub struct DetachedResource {
 pub struct OwnedResourcesTracker {
     #[key]
     entity_id: ID,
+    // todo: use felt252 instead 
     resource_types: u256
 }
 
@@ -249,6 +251,9 @@ impl ResourceImpl of ResourceTrait {
         }
 
         let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, self.resource_type));
+        if resource_weight_config.weight_gram == 0 {
+            return;
+        }
 
         let storehouse_building_quantity: BuildingQuantityv2 = world
             .read_model((self.entity_id, BuildingCategory::Storehouse));
@@ -256,11 +261,6 @@ impl ResourceImpl of ResourceTrait {
         let storehouse_capacity_grams = storehouse_capacity.weight_gram;
         let storehouse_capacity_grams = storehouse_capacity_grams
             + (storehouse_building_quantity.value.into() * storehouse_capacity_grams);
-
-        if (resource_weight_config.weight_gram == 0) {
-            self.balance = min(self.balance, storehouse_capacity_grams);
-            return;
-        }
 
         let resource_weight_grams_with_precision = WeightConfigImpl::get_weight_grams_with_precision(
             ref world, self.resource_type, self.balance
@@ -275,19 +275,24 @@ impl ResourceImpl of ResourceTrait {
     }
 
     fn update_balance(ref self: Resource, ref world: WorldStorage) {
-        let mut production: Production = world.read_model((self.entity_id, self.resource_type));
         let tick = TickImpl::get_default_tick_config(ref world);
-        if production.has_building() && production.last_updated_tick != tick.current().try_into().unwrap() {
+        let current_tick = tick.current().try_into().unwrap();
+        let mut production: Production = self.production;
+        if production.has_building() && production.last_updated_tick != current_tick {
             // harvest the production
             let production_config: ProductionConfig = world.read_model(self.resource_type);
             production.harvest(ref self, @tick, @production_config);
 
+            // update the resource production
+            self.production = production;
+
             // limit balance by storehouse capacity
             self.limit_balance_by_storehouse_capacity(ref world);
 
-            // save the updated resources
+            // save the updated resource model
             world.write_model(@self);
-            world.write_model(@production);
+
+            // todo add event here to show amount burnt
         }
     }
 }

@@ -44,7 +44,6 @@ export class GameConfigDeployer {
     const config = { account, provider, config: this.globalConfig };
     await setProductionConfig(config);
     await setResourceBridgeWhitelistConfig(config);
-    await setQuestConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
     await setVRFConfig(config);
@@ -126,22 +125,6 @@ export class GameConfigDeployer {
   }
 }
 
-export const setQuestConfig = async (config: Config) => {
-  console.log(chalk.cyan(`
-  🎯 Quest System Configuration
-  ═══════════════════════════════`));
-
-  const calldata = {
-    signer: config.account,
-    production_material_multiplier: config.config.resources.startingResourcesInputProductionFactor,
-  }
-
-  console.log(chalk.cyan(`
-    Labor Resource Multiplier: ${chalk.yellow('×' + calldata.production_material_multiplier)}`));
-
-  const tx = await config.provider.set_quest_config(calldata);
-  console.log(chalk.gray(`    ⚡ Transaction: ${tx.statusReceipt}\n`));
-};
 
 export const setQuestRewardConfig = async (config: Config) => {
   console.log(chalk.cyan(`

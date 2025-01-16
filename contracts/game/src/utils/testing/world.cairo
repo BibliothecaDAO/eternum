@@ -33,7 +33,7 @@ use s0_eternum::models::owner::{m_Owner};
 use s0_eternum::models::population::m_Population;
 use s0_eternum::models::position::{m_Position};
 use s0_eternum::models::quantity::{m_Quantity, m_QuantityTracker};
-use s0_eternum::models::quest::{m_Quest, m_QuestBonus};
+use s0_eternum::models::quest::{m_Quest};
 use s0_eternum::models::realm::{m_Realm};
 use s0_eternum::models::resource::production::building::m_BuildingQuantityv2;
 use s0_eternum::models::resource::production::building::{m_Building};
@@ -160,7 +160,6 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_Quantity::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_QuantityTracker::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Quest::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Model(m_QuestBonus::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Realm::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_DetachedResource::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_OwnedResourcesTracker::TEST_CLASS_HASH.try_into().unwrap()),

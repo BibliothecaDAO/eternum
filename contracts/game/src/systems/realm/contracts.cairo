@@ -35,7 +35,7 @@ mod realm_systems {
     use s0_eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, DEFAULT_NS, WONDER_QUEST_REWARD_BOOST};
     use s0_eternum::models::capacity::{CapacityCategory};
     use s0_eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
-    use s0_eternum::models::config::{QuestRewardConfig, QuestConfig, SeasonAddressesConfig, ProductionConfig};
+    use s0_eternum::models::config::{QuestRewardConfig, SeasonAddressesConfig, ProductionConfig};
     use s0_eternum::models::event::{SettleRealmData, EventType};
     use s0_eternum::models::map::Tile;
     use s0_eternum::models::movable::Movable;
@@ -43,7 +43,7 @@ mod realm_systems {
     use s0_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
     use s0_eternum::models::position::{Position, Coord};
     use s0_eternum::models::quantity::QuantityTracker;
-    use s0_eternum::models::quest::{Quest, QuestBonus};
+    use s0_eternum::models::quest::{Quest};
     use s0_eternum::models::realm::{
         Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl, RealmNameAndAttrsDecodingTrait,
         RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
@@ -202,7 +202,6 @@ mod realm_systems {
             assert(!quest.completed, 'quest already completed');
 
             // ensure quest has rewards
-            let quest_config: QuestConfig = world.read_model(WORLD_CONFIG_ID);
             let quest_reward_config: QuestRewardConfig = world.read_model(quest_id);
             assert(quest_reward_config.detached_resource_count > 0, 'quest has no rewards');
 
@@ -217,25 +216,6 @@ mod realm_systems {
                     .read_model((quest_reward_config.detached_resource_id, index));
                 let reward_resource_type = detached_resource.resource_type;
                 let mut reward_resource_amount = detached_resource.resource_amount;
-
-                let mut quest_bonus: QuestBonus = world.read_model((entity_id, reward_resource_type));
-
-                // scale reward resource amount by quest production multiplier
-                // if the reward resource is used to produce another resource in the realm (labor).
-                // it should only be scaled if the quest bonus has not been claimed yet and
-                // the reward resource is not food.
-                if !quest_bonus.claimed && !ResourceFoodImpl::is_food(reward_resource_type) {
-                    if LaborImpl::is_labor(reward_resource_type) {
-                        if realm.produces_resource(reward_resource_type) {
-                            // scale reward resource amount by quest production multiplier
-                            reward_resource_amount *= quest_config.production_material_multiplier.into();
-                            // set quest bonus as claimed
-                            quest_bonus.claimed = true;
-                            world.write_model(@quest_bonus);
-                            break;
-                        }
-                    }
-                }
 
                 if realm.has_wonder {
                     reward_resource_amount *= WONDER_QUEST_REWARD_BOOST.into();

@@ -99,6 +99,10 @@ mod ResourceTypes {
     const SAPPHIRE: u8 = 20;
     const ETHEREAL_SILICA: u8 = 21;
     const DRAGONHIDE: u8 = 22;
+
+    // THE RESOURCE IDS ABOVE MUST MATCH THE 
+    // RESOURCE IDS IN THE SEASON PASS
+
     const DEMONHIDE: u8 = 23;
     const EARTHEN_SHARD: u8 = 24;
     const DONKEY: u8 = 25;
