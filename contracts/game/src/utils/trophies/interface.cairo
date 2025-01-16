@@ -1,5 +1,5 @@
 use achievement::types::task::{Task as BushidoTask};
-use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
 trait TrophyTrait {
     fn identifier(level: u8) -> felt252;

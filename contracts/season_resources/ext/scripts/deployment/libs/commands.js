@@ -4,10 +4,10 @@ import * as path from "path";
 import { shortString } from "starknet";
 import { fileURLToPath } from "url";
 import {
-  declare,
-  getContractPath,
-  getResourceAddressesFromFile,
-  saveResourceAddressesToFile
+    declare,
+    getContractPath,
+    getResourceAddressesFromFile,
+    saveResourceAddressesToFile
 } from "./common.js";
 import { getAccount, getNetwork } from "./network.js";
 import resourceNames from "./resources.json";
@@ -68,7 +68,7 @@ export const getContractByName = (name) => {
   return contract.address;
 };
 
-const NAMESPACE = "s0_eternum";
+const NAMESPACE = "s1_eternum";
 const RESOURCE_BRIDGE_SYSTEMS_CONTRACT = getContractByName(`${NAMESPACE}-resource_bridge_systems`);
 const RESOURCE_NAMES = resourceNames;
 const LORDS_RESOURCE_ID = 31;

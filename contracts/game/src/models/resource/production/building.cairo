@@ -3,20 +3,20 @@ use core::zeroable::Zeroable;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use s0_eternum::alias::ID;
-use s0_eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID, WORLD_CONFIG_ID};
-use s0_eternum::models::config::{
+use s1_eternum::alias::ID;
+use s1_eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID, WORLD_CONFIG_ID};
+use s1_eternum::models::config::{
     TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigImpl,
     BuildingCategoryPopConfigTrait, PopulationConfig, BuildingGeneralConfig
 };
-use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
-use s0_eternum::models::population::{Population, PopulationTrait};
-use s0_eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
-use s0_eternum::models::realm::Realm;
-use s0_eternum::models::resource::production::production::{Production, ProductionTrait};
-use s0_eternum::models::resource::resource::ResourceTrait;
-use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
-use s0_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
+use s1_eternum::models::population::{Population, PopulationTrait};
+use s1_eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
+use s1_eternum::models::realm::Realm;
+use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
+use s1_eternum::models::resource::resource::ResourceTrait;
+use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
+use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //todo we need to define border of innner hexes
 

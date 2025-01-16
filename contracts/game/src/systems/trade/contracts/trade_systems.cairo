@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 #[starknet::interface]
 trait ITradeSystems<T> {
@@ -37,28 +37,28 @@ mod trade_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s0_eternum::alias::ID;
+    use s1_eternum::alias::ID;
 
-    use s0_eternum::constants::{DEFAULT_NS, REALM_ENTITY_TYPE, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
-    use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
-    use s0_eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig, CapacityConfigImpl};
-    use s0_eternum::models::movable::{Movable, ArrivalTime};
-    use s0_eternum::models::owner::Owner;
-    use s0_eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
-    use s0_eternum::models::quantity::{Quantity, QuantityTracker};
-    use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resource::resource::{DetachedResource};
+    use s1_eternum::constants::{DEFAULT_NS, REALM_ENTITY_TYPE, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
+    use s1_eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use s1_eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig, CapacityConfigImpl};
+    use s1_eternum::models::movable::{Movable, ArrivalTime};
+    use s1_eternum::models::owner::Owner;
+    use s1_eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
+    use s1_eternum::models::quantity::{Quantity, QuantityTracker};
+    use s1_eternum::models::realm::Realm;
+    use s1_eternum::models::resource::resource::{DetachedResource};
 
-    use s0_eternum::models::resource::resource::{Resource, ResourceImpl};
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
 
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::trade::{Trade, Status, TradeStatus};
-    use s0_eternum::models::weight::{Weight, WeightTrait};
-    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::trade::{Trade, Status, TradeStatus};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{
         InternalResourceSystemsImpl as internal_resources,
     };
 
-    use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
+    use s1_eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
         InternalDonkeySystemsImpl as donkey
     };
 

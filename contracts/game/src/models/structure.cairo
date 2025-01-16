@@ -1,7 +1,7 @@
 use array::SpanTrait;
-use s0_eternum::alias::ID;
-use s0_eternum::models::config::{BattleConfig, TickConfig, TickTrait};
-use s0_eternum::models::position::Coord;
+use s1_eternum::alias::ID;
+use s1_eternum::models::config::{BattleConfig, TickConfig, TickTrait};
+use s1_eternum::models::position::Coord;
 use starknet::ContractAddress;
 use traits::Into;
 

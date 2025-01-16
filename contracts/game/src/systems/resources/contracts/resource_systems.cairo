@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 #[starknet::interface]
 trait IResourceSystems<T> {
@@ -21,29 +21,29 @@ mod resource_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use s0_eternum::alias::ID;
+    use s1_eternum::alias::ID;
 
-    use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
-    use s0_eternum::models::config::{
+    use s1_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
+    use s1_eternum::models::config::{
         WeightConfig, WeightConfigImpl, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
     };
-    use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeTrait};
-    use s0_eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
-    use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::quantity::{Quantity,};
-    use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resource::resource::{
+    use s1_eternum::models::movable::{ArrivalTime, ArrivalTimeTrait};
+    use s1_eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
+    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::quantity::{Quantity,};
+    use s1_eternum::models::realm::Realm;
+    use s1_eternum::models::resource::resource::{
         Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceTransferLock, ResourceTransferLockTrait
     };
-    use s0_eternum::models::resource::resource::{DetachedResource};
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
-    use s0_eternum::models::weight::Weight;
-    use s0_eternum::models::weight::WeightTrait;
-    use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
+    use s1_eternum::models::resource::resource::{DetachedResource};
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
+    use s1_eternum::models::weight::Weight;
+    use s1_eternum::models::weight::WeightTrait;
+    use s1_eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
         InternalDonkeySystemsImpl as donkey
     };
-    use s0_eternum::systems::transport::contracts::travel_systems::travel_systems::{
+    use s1_eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl as travel
     };
 

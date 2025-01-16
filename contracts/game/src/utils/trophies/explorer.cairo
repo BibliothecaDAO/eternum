@@ -1,4 +1,4 @@
-use s0_eternum::utils::trophies::interface::{TrophyTrait, BushidoTask, Task, TaskTrait};
+use s1_eternum::utils::trophies::interface::{TrophyTrait, BushidoTask, Task, TaskTrait};
 
 impl Explorer of TrophyTrait {
     #[inline]

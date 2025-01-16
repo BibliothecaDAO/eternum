@@ -1,4 +1,4 @@
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -30,36 +30,36 @@ mod realm_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::REALM_ENTITY_TYPE;
-    use s0_eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, DEFAULT_NS, WONDER_QUEST_REWARD_BOOST};
-    use s0_eternum::models::capacity::{CapacityCategory};
-    use s0_eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
-    use s0_eternum::models::config::{QuestRewardConfig, SeasonAddressesConfig, ProductionConfig};
-    use s0_eternum::models::event::{SettleRealmData, EventType};
-    use s0_eternum::models::map::Tile;
-    use s0_eternum::models::movable::Movable;
-    use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
-    use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::quantity::QuantityTracker;
-    use s0_eternum::models::quest::{Quest};
-    use s0_eternum::models::realm::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::REALM_ENTITY_TYPE;
+    use s1_eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, DEFAULT_NS, WONDER_QUEST_REWARD_BOOST};
+    use s1_eternum::models::capacity::{CapacityCategory};
+    use s1_eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
+    use s1_eternum::models::config::{QuestRewardConfig, SeasonAddressesConfig, ProductionConfig};
+    use s1_eternum::models::event::{SettleRealmData, EventType};
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::movable::Movable;
+    use s1_eternum::models::name::{AddressName};
+    use s1_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
+    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::quantity::QuantityTracker;
+    use s1_eternum::models::quest::{Quest};
+    use s1_eternum::models::realm::{
         Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl, RealmNameAndAttrsDecodingTrait,
         RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
     };
-    use s0_eternum::models::resource::production::labor::{LaborImpl};
-    use s0_eternum::models::resource::resource::{
+    use s1_eternum::models::resource::production::labor::{LaborImpl};
+    use s1_eternum::models::resource::resource::{
         DetachedResource, Resource, ResourceImpl, ResourceTrait, ResourceFoodImpl, ResourceFoodTrait
     };
 
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
-    use s0_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
-    use s0_eternum::systems::resources::contracts::resource_bridge_systems::{
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
+    use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
+    use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait
     };
-    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
     use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait, IERC20Dispatcher, IERC20DispatcherTrait};
@@ -327,7 +327,7 @@ mod realm_systems {
         ) {
             // get bridge systems address
             let (bridge_systems_address, _namespace_hash) =
-                match world.dispatcher.resource(selector_from_tag!("s0_eternum-resource_bridge_systems")) {
+                match world.dispatcher.resource(selector_from_tag!("s1_eternum-resource_bridge_systems")) {
                 dojo::world::Resource::Contract((
                     contract_address, namespace_hash
                 )) => (contract_address, namespace_hash),

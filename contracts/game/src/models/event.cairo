@@ -1,5 +1,5 @@
-use s0_eternum::models::resource::production::building::BuildingCategory;
-use s0_eternum::{alias::ID, models::combat::{BattleSide, Troops}, models::structure::StructureCategory};
+use s1_eternum::models::resource::production::building::BuildingCategory;
+use s1_eternum::{alias::ID, models::combat::{BattleSide, Troops}, models::structure::StructureCategory};
 use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]

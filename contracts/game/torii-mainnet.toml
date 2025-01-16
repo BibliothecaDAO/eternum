@@ -16,4 +16,4 @@ contracts = [
 
 [events]
 raw = true
-historical = ["s0_eternum-TrophyCreation", "s0_eternum-TrophyProgression"]
+historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]

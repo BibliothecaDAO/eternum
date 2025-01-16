@@ -1,4 +1,4 @@
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

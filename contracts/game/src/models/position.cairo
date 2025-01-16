@@ -1,9 +1,9 @@
 use core::fmt::{Display, Formatter, Error};
 use core::zeroable::Zeroable;
 use option::OptionTrait;
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
-use s0_eternum::utils::number::{NumberTrait};
+use s1_eternum::utils::number::{NumberTrait};
 use traits::Into;
 use traits::TryInto;
 
@@ -255,7 +255,7 @@ impl PositionImpl of PositionTrait {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
-    use s0_eternum::alias::ID;
+    use s1_eternum::alias::ID;
     use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;

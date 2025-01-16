@@ -1,4 +1,4 @@
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -190,18 +190,18 @@ mod resource_bridge_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
-    use s0_eternum::models::bank::bank::Bank;
-    use s0_eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
-    use s0_eternum::models::config::{SeasonBridgeConfig, SeasonBridgeConfigImpl};
-    use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeImpl};
-    use s0_eternum::models::owner::{EntityOwner, Owner, EntityOwnerTrait};
-    use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, RESOURCE_PRECISION};
-    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
-    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
-    use s0_eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl, min};
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
+    use s1_eternum::models::bank::bank::Bank;
+    use s1_eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
+    use s1_eternum::models::config::{SeasonBridgeConfig, SeasonBridgeConfigImpl};
+    use s1_eternum::models::movable::{ArrivalTime, ArrivalTimeImpl};
+    use s1_eternum::models::owner::{EntityOwner, Owner, EntityOwnerTrait};
+    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl, RESOURCE_PRECISION};
+    use s1_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
+    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s1_eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl, min};
     use starknet::ContractAddress;
     use starknet::{get_caller_address, get_contract_address};
     use super::{
@@ -229,7 +229,7 @@ mod resource_bridge_systems {
             // ensure this system can only be called by realms systems contract
             let caller = get_caller_address();
             let (realm_systems_address, _namespace_hash) =
-                match world.dispatcher.resource(selector_from_tag!("s0_eternum-realm_systems")) {
+                match world.dispatcher.resource(selector_from_tag!("s1_eternum-realm_systems")) {
                 dojo::world::Resource::Contract((
                     contract_address, namespace_hash
                 )) => (contract_address, namespace_hash),

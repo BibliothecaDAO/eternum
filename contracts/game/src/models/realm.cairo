@@ -2,9 +2,9 @@ use alexandria_math::{BitShift, pow};
 use array::SpanTrait;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s0_eternum::alias::ID;
-use s0_eternum::constants::WORLD_CONFIG_ID;
-use s0_eternum::models::config::RealmMaxLevelConfig;
+use s1_eternum::alias::ID;
+use s1_eternum::constants::WORLD_CONFIG_ID;
+use s1_eternum::models::config::RealmMaxLevelConfig;
 use starknet::ContractAddress;
 use traits::Into;
 

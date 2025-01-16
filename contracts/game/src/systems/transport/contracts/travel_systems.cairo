@@ -1,13 +1,13 @@
 #[starknet::interface]
 trait ITravelSystems<T> {
     // fn travel(
-    //     ref self: T, travelling_entity_id: s0_eternum::alias::ID, destination_coord:
-    //     s0_eternum::models::position::Coord
+    //     ref self: T, travelling_entity_id: s1_eternum::alias::ID, destination_coord:
+    //     s1_eternum::models::position::Coord
     // );
     fn travel_hex(
         ref self: T,
-        travelling_entity_id: s0_eternum::alias::ID,
-        directions: Span<s0_eternum::models::position::Direction>
+        travelling_entity_id: s1_eternum::alias::ID,
+        directions: Span<s1_eternum::models::position::Direction>
     );
 }
 
@@ -16,22 +16,22 @@ mod travel_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s0_eternum::alias::ID;
+    use s1_eternum::alias::ID;
 
-    use s0_eternum::constants::{WORLD_CONFIG_ID, TravelTypes, DEFAULT_NS};
-    use s0_eternum::models::combat::Army;
-    use s0_eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
-    use s0_eternum::models::map::Tile;
-    use s0_eternum::models::movable::{Movable, ArrivalTime};
-    use s0_eternum::models::order::{Orders, OrdersTrait};
-    use s0_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
-    use s0_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
-    use s0_eternum::models::quantity::{Quantity,};
-    use s0_eternum::models::realm::Realm;
+    use s1_eternum::constants::{WORLD_CONFIG_ID, TravelTypes, DEFAULT_NS};
+    use s1_eternum::models::combat::Army;
+    use s1_eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::movable::{Movable, ArrivalTime};
+    use s1_eternum::models::order::{Orders, OrdersTrait};
+    use s1_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
+    use s1_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
+    use s1_eternum::models::quantity::{Quantity,};
+    use s1_eternum::models::realm::Realm;
 
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::StaminaImpl;
-    use s0_eternum::models::weight::Weight;
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::stamina::StaminaImpl;
+    use s1_eternum::models::weight::Weight;
 
     use starknet::ContractAddress;
 

@@ -16,7 +16,7 @@ use super::{duration_to_string, ToDiscordMessage, UNKNOWN_USER};
 
 // abigen!(
 //     _unused,
-//     "../contracts/target/dev/s0_eternum_e_BattleStartData.contract_class.json",
+//     "../contracts/target/dev/s1_eternum_e_BattleStartData.contract_class.json",
 // );
 // TODO have a build.rs that can load the abis of the types we care about and writes them to a file
 // Dojo world can load local world from manifests and retrieve the abi

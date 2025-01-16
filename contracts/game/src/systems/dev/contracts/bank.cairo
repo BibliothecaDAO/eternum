@@ -1,6 +1,6 @@
 use dojo::world::IWorldDispatcher;
-use s0_eternum::alias::ID;
-use s0_eternum::models::position::{Coord};
+use s1_eternum::alias::ID;
+use s1_eternum::models::position::{Coord};
 
 #[starknet::interface]
 trait IBankSystems<T> {
@@ -21,20 +21,20 @@ mod dev_bank_systems {
     use dojo::model::ModelStorage;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::DEFAULT_NS;
-    use s0_eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
-    use s0_eternum::models::bank::bank::{Bank};
-    use s0_eternum::models::capacity::{CapacityCategory};
-    use s0_eternum::models::config::{BankConfig, CapacityConfigCategory, MercenariesConfig};
-    use s0_eternum::models::name::{EntityName};
-    use s0_eternum::models::owner::{Owner, EntityOwner};
-    use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resource::resource::{Resource, ResourceImpl};
-    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
-    use s0_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
-    use s0_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
-    use s0_eternum::systems::map::map_generation::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
+    use s1_eternum::models::bank::bank::{Bank};
+    use s1_eternum::models::capacity::{CapacityCategory};
+    use s1_eternum::models::config::{BankConfig, CapacityConfigCategory, MercenariesConfig};
+    use s1_eternum::models::name::{EntityName};
+    use s1_eternum::models::owner::{Owner, EntityOwner};
+    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
+    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
+    use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
+    use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
+    use s1_eternum::systems::map::map_generation::{
         IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait
     };
     use traits::Into;

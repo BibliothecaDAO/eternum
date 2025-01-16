@@ -9,7 +9,7 @@ import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
 import * as SystemProps from "../types/provider";
 import { TransactionType } from "./types";
-export const NAMESPACE = "s0_eternum";
+export const NAMESPACE = "s1_eternum";
 export { TransactionType };
 
 /**
@@ -372,7 +372,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Use realm 123 to create a trade offering 100 wood for 50 stone. Expires at timestamp 1704067200 (example timestamp). Maker is realm 123, taker is realm 456.
    * {
-   *   contractAddress: "<s0_eternum-trade_systems>",
+   *   contractAddress: "<s1_eternum-trade_systems>",
    *   entrypoint: "create_order",
    *   calldata: [
    *     123, // maker_id
@@ -422,7 +422,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @example
    * ```typescript
    * {
-   *   contractAddress: "<s0_eternum-trade_systems>",
+   *   contractAddress: "<s1_eternum-trade_systems>",
    *   entrypoint: "accept_order",
    *   calldata: [
    *     123, // taker_id
@@ -471,7 +471,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @example
    * ```typescript
    * {
-   *   contractAddress: "<s0_eternum-trade_systems>",
+   *   contractAddress: "<s1_eternum-trade_systems>",
    *   entrypoint: "accept_partial_order",
    *   calldata: [
    *     123, // taker_id
@@ -520,7 +520,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @example
    * ```typescript
    * {
-   *   contractAddress: "<s0_eternum-trade_systems>",
+   *   contractAddress: "<s1_eternum-trade_systems>",
    *   entrypoint: "cancel_order",
    *   calldata: [
    *     789, // trade_id
@@ -1024,7 +1024,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Create a wood production building at coordinates determined by directions [1,2]
    * {
-   *   contractAddress: "<s0_eternum-production_systems>",
+   *   contractAddress: "<s1_eternum-production_systems>",
    *   entrypoint: "create_building",
    *   calldata: [
    *     123,     // entity_id
@@ -1063,7 +1063,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Destroy building at coordinates (10, 20)
    * {
-   *   contractAddress: "<s0_eternum-production_systems>",
+   *   contractAddress: "<s1_eternum-production_systems>",
    *   entrypoint: "destroy_building",
    *   calldata: [
    *     123,     // entity_id

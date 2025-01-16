@@ -23,7 +23,7 @@ version = "2.8.4"
 source = "git+https://github.com/dojoengine/dojo?tag=v1.0.3#c65c25788d900325fa5e6e9d464da633cfabc468"
 
 [[package]]
-name = "s0_eternum"
+name = "s1_eternum"
 version = "1.0.0"
 dependencies = [
  "dojo",

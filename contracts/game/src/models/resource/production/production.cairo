@@ -4,10 +4,10 @@ use core::num::traits::Bounded;
 use core::option::OptionTrait;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s0_eternum::alias::ID;
-use s0_eternum::models::config::{ProductionConfig};
-use s0_eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTypes};
+use s1_eternum::alias::ID;
+use s1_eternum::models::config::{ProductionConfig};
+use s1_eternum::models::config::{TickConfig, TickImpl, TickTrait};
+use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTypes};
 use starknet::get_block_timestamp;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

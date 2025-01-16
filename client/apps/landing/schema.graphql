@@ -36,121 +36,121 @@ union ERC__Token = ERC20__Token | ERC721__Token
 scalar Enum
 
 union ModelUnion =
-  | s0_eternum_AcceptOrder
-  | s0_eternum_AcceptPartialOrder
-  | s0_eternum_AddressName
-  | s0_eternum_Army
-  | s0_eternum_ArrivalTime
-  | s0_eternum_Bank
-  | s0_eternum_BankConfig
-  | s0_eternum_Battle
-  | s0_eternum_BattleClaimData
-  | s0_eternum_BattleConfig
-  | s0_eternum_BattleJoinData
-  | s0_eternum_BattleLeaveData
-  | s0_eternum_BattlePillageData
-  | s0_eternum_BattleStartData
-  | s0_eternum_Building
-  | s0_eternum_BuildingCategoryPopConfig
-  | s0_eternum_BuildingConfig
-  | s0_eternum_BuildingGeneralConfig
-  | s0_eternum_BuildingQuantityv2
-  | s0_eternum_BurnDonkey
-  | s0_eternum_CancelOrder
-  | s0_eternum_CapacityCategory
-  | s0_eternum_CapacityConfig
-  | s0_eternum_Contribution
-  | s0_eternum_CreateGuild
-  | s0_eternum_CreateOrder
-  | s0_eternum_DetachedResource
-  | s0_eternum_EntityName
-  | s0_eternum_EntityOwner
-  | s0_eternum_Epoch
-  | s0_eternum_FragmentMineDiscovered
-  | s0_eternum_GameEnded
-  | s0_eternum_Guild
-  | s0_eternum_GuildMember
-  | s0_eternum_GuildWhitelist
-  | s0_eternum_Health
-  | s0_eternum_Hyperstructure
-  | s0_eternum_HyperstructureCoOwnersChange
-  | s0_eternum_HyperstructureConfig
-  | s0_eternum_HyperstructureContribution
-  | s0_eternum_HyperstructureFinished
-  | s0_eternum_HyperstructureResourceConfig
-  | s0_eternum_HyperstructureStarted
-  | s0_eternum_JoinGuild
-  | s0_eternum_Leaderboard
-  | s0_eternum_LeaderboardEntry
-  | s0_eternum_LeaderboardRegisterContribution
-  | s0_eternum_LeaderboardRegisterShare
-  | s0_eternum_LeaderboardRegistered
-  | s0_eternum_LeaderboardRewardClaimed
-  | s0_eternum_LevelingConfig
-  | s0_eternum_Liquidity
-  | s0_eternum_LiquidityEvent
-  | s0_eternum_MapConfig
-  | s0_eternum_MapExplored
-  | s0_eternum_Market
-  | s0_eternum_MercenariesConfig
-  | s0_eternum_Message
-  | s0_eternum_Movable
-  | s0_eternum_Orders
-  | s0_eternum_OwnedResourcesTracker
-  | s0_eternum_Owner
-  | s0_eternum_Population
-  | s0_eternum_PopulationConfig
-  | s0_eternum_Position
-  | s0_eternum_Production
-  | s0_eternum_ProductionConfig
-  | s0_eternum_ProductionDeadline
-  | s0_eternum_ProductionInput
-  | s0_eternum_ProductionOutput
-  | s0_eternum_Progress
-  | s0_eternum_Protectee
-  | s0_eternum_Protector
-  | s0_eternum_Quantity
-  | s0_eternum_QuantityTracker
-  | s0_eternum_Quest
-  | s0_eternum_QuestConfig
-  | s0_eternum_QuestRewardConfig
-  | s0_eternum_Realm
-  | s0_eternum_RealmLevelConfig
-  | s0_eternum_RealmMaxLevelConfig
-  | s0_eternum_Resource
-  | s0_eternum_ResourceAllowance
-  | s0_eternum_ResourceBridgeConfig
-  | s0_eternum_ResourceBridgeFeeSplitConfig
-  | s0_eternum_ResourceBridgeWhitelistConfig
-  | s0_eternum_ResourceCost
-  | s0_eternum_ResourceTransferLock
-  | s0_eternum_Season
-  | s0_eternum_SeasonAddressesConfig
-  | s0_eternum_SeasonBridgeConfig
-  | s0_eternum_SettleRealmData
-  | s0_eternum_SettlementConfig
-  | s0_eternum_SpeedConfig
-  | s0_eternum_Stamina
-  | s0_eternum_StaminaConfig
-  | s0_eternum_StaminaRefillConfig
-  | s0_eternum_Status
-  | s0_eternum_Structure
-  | s0_eternum_StructureCount
-  | s0_eternum_SwapEvent
-  | s0_eternum_TickConfig
-  | s0_eternum_Tile
-  | s0_eternum_Trade
-  | s0_eternum_Transfer
-  | s0_eternum_Travel
-  | s0_eternum_TravelFoodCostConfig
-  | s0_eternum_TravelStaminaCostConfig
-  | s0_eternum_TroopConfig
-  | s0_eternum_TrophyCreation
-  | s0_eternum_TrophyProgression
-  | s0_eternum_VRFConfig
-  | s0_eternum_Weight
-  | s0_eternum_WeightConfig
-  | s0_eternum_WorldConfig
+  | s1_eternum_AcceptOrder
+  | s1_eternum_AcceptPartialOrder
+  | s1_eternum_AddressName
+  | s1_eternum_Army
+  | s1_eternum_ArrivalTime
+  | s1_eternum_Bank
+  | s1_eternum_BankConfig
+  | s1_eternum_Battle
+  | s1_eternum_BattleClaimData
+  | s1_eternum_BattleConfig
+  | s1_eternum_BattleJoinData
+  | s1_eternum_BattleLeaveData
+  | s1_eternum_BattlePillageData
+  | s1_eternum_BattleStartData
+  | s1_eternum_Building
+  | s1_eternum_BuildingCategoryPopConfig
+  | s1_eternum_BuildingConfig
+  | s1_eternum_BuildingGeneralConfig
+  | s1_eternum_BuildingQuantityv2
+  | s1_eternum_BurnDonkey
+  | s1_eternum_CancelOrder
+  | s1_eternum_CapacityCategory
+  | s1_eternum_CapacityConfig
+  | s1_eternum_Contribution
+  | s1_eternum_CreateGuild
+  | s1_eternum_CreateOrder
+  | s1_eternum_DetachedResource
+  | s1_eternum_EntityName
+  | s1_eternum_EntityOwner
+  | s1_eternum_Epoch
+  | s1_eternum_FragmentMineDiscovered
+  | s1_eternum_GameEnded
+  | s1_eternum_Guild
+  | s1_eternum_GuildMember
+  | s1_eternum_GuildWhitelist
+  | s1_eternum_Health
+  | s1_eternum_Hyperstructure
+  | s1_eternum_HyperstructureCoOwnersChange
+  | s1_eternum_HyperstructureConfig
+  | s1_eternum_HyperstructureContribution
+  | s1_eternum_HyperstructureFinished
+  | s1_eternum_HyperstructureResourceConfig
+  | s1_eternum_HyperstructureStarted
+  | s1_eternum_JoinGuild
+  | s1_eternum_Leaderboard
+  | s1_eternum_LeaderboardEntry
+  | s1_eternum_LeaderboardRegisterContribution
+  | s1_eternum_LeaderboardRegisterShare
+  | s1_eternum_LeaderboardRegistered
+  | s1_eternum_LeaderboardRewardClaimed
+  | s1_eternum_LevelingConfig
+  | s1_eternum_Liquidity
+  | s1_eternum_LiquidityEvent
+  | s1_eternum_MapConfig
+  | s1_eternum_MapExplored
+  | s1_eternum_Market
+  | s1_eternum_MercenariesConfig
+  | s1_eternum_Message
+  | s1_eternum_Movable
+  | s1_eternum_Orders
+  | s1_eternum_OwnedResourcesTracker
+  | s1_eternum_Owner
+  | s1_eternum_Population
+  | s1_eternum_PopulationConfig
+  | s1_eternum_Position
+  | s1_eternum_Production
+  | s1_eternum_ProductionConfig
+  | s1_eternum_ProductionDeadline
+  | s1_eternum_ProductionInput
+  | s1_eternum_ProductionOutput
+  | s1_eternum_Progress
+  | s1_eternum_Protectee
+  | s1_eternum_Protector
+  | s1_eternum_Quantity
+  | s1_eternum_QuantityTracker
+  | s1_eternum_Quest
+  | s1_eternum_QuestConfig
+  | s1_eternum_QuestRewardConfig
+  | s1_eternum_Realm
+  | s1_eternum_RealmLevelConfig
+  | s1_eternum_RealmMaxLevelConfig
+  | s1_eternum_Resource
+  | s1_eternum_ResourceAllowance
+  | s1_eternum_ResourceBridgeConfig
+  | s1_eternum_ResourceBridgeFeeSplitConfig
+  | s1_eternum_ResourceBridgeWhitelistConfig
+  | s1_eternum_ResourceCost
+  | s1_eternum_ResourceTransferLock
+  | s1_eternum_Season
+  | s1_eternum_SeasonAddressesConfig
+  | s1_eternum_SeasonBridgeConfig
+  | s1_eternum_SettleRealmData
+  | s1_eternum_SettlementConfig
+  | s1_eternum_SpeedConfig
+  | s1_eternum_Stamina
+  | s1_eternum_StaminaConfig
+  | s1_eternum_StaminaRefillConfig
+  | s1_eternum_Status
+  | s1_eternum_Structure
+  | s1_eternum_StructureCount
+  | s1_eternum_SwapEvent
+  | s1_eternum_TickConfig
+  | s1_eternum_Tile
+  | s1_eternum_Trade
+  | s1_eternum_Transfer
+  | s1_eternum_Travel
+  | s1_eternum_TravelFoodCostConfig
+  | s1_eternum_TravelStaminaCostConfig
+  | s1_eternum_TroopConfig
+  | s1_eternum_TrophyCreation
+  | s1_eternum_TrophyProgression
+  | s1_eternum_VRFConfig
+  | s1_eternum_Weight
+  | s1_eternum_WeightConfig
+  | s1_eternum_WorldConfig
 
 enum OrderDirection {
   ASC
@@ -372,9 +372,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_AcceptOrderOrder
-    where: s0_eternum_AcceptOrderWhereInput
-  ): s0_eternum_AcceptOrderConnection
+    order: s1_eternum_AcceptOrderOrder
+    where: s1_eternum_AcceptOrderWhereInput
+  ): s1_eternum_AcceptOrderConnection
   s0EternumAcceptPartialOrderModels(
     after: Cursor
     before: Cursor
@@ -382,9 +382,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_AcceptPartialOrderOrder
-    where: s0_eternum_AcceptPartialOrderWhereInput
-  ): s0_eternum_AcceptPartialOrderConnection
+    order: s1_eternum_AcceptPartialOrderOrder
+    where: s1_eternum_AcceptPartialOrderWhereInput
+  ): s1_eternum_AcceptPartialOrderConnection
   s0EternumAddressNameModels(
     after: Cursor
     before: Cursor
@@ -392,9 +392,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_AddressNameOrder
-    where: s0_eternum_AddressNameWhereInput
-  ): s0_eternum_AddressNameConnection
+    order: s1_eternum_AddressNameOrder
+    where: s1_eternum_AddressNameWhereInput
+  ): s1_eternum_AddressNameConnection
   s0EternumArmyModels(
     after: Cursor
     before: Cursor
@@ -402,9 +402,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ArmyOrder
-    where: s0_eternum_ArmyWhereInput
-  ): s0_eternum_ArmyConnection
+    order: s1_eternum_ArmyOrder
+    where: s1_eternum_ArmyWhereInput
+  ): s1_eternum_ArmyConnection
   s0EternumArrivalTimeModels(
     after: Cursor
     before: Cursor
@@ -412,9 +412,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ArrivalTimeOrder
-    where: s0_eternum_ArrivalTimeWhereInput
-  ): s0_eternum_ArrivalTimeConnection
+    order: s1_eternum_ArrivalTimeOrder
+    where: s1_eternum_ArrivalTimeWhereInput
+  ): s1_eternum_ArrivalTimeConnection
   s0EternumBankConfigModels(
     after: Cursor
     before: Cursor
@@ -422,9 +422,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BankConfigOrder
-    where: s0_eternum_BankConfigWhereInput
-  ): s0_eternum_BankConfigConnection
+    order: s1_eternum_BankConfigOrder
+    where: s1_eternum_BankConfigWhereInput
+  ): s1_eternum_BankConfigConnection
   s0EternumBankModels(
     after: Cursor
     before: Cursor
@@ -432,9 +432,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BankOrder
-    where: s0_eternum_BankWhereInput
-  ): s0_eternum_BankConnection
+    order: s1_eternum_BankOrder
+    where: s1_eternum_BankWhereInput
+  ): s1_eternum_BankConnection
   s0EternumBattleClaimDataModels(
     after: Cursor
     before: Cursor
@@ -442,9 +442,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BattleClaimDataOrder
-    where: s0_eternum_BattleClaimDataWhereInput
-  ): s0_eternum_BattleClaimDataConnection
+    order: s1_eternum_BattleClaimDataOrder
+    where: s1_eternum_BattleClaimDataWhereInput
+  ): s1_eternum_BattleClaimDataConnection
   s0EternumBattleConfigModels(
     after: Cursor
     before: Cursor
@@ -452,9 +452,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BattleConfigOrder
-    where: s0_eternum_BattleConfigWhereInput
-  ): s0_eternum_BattleConfigConnection
+    order: s1_eternum_BattleConfigOrder
+    where: s1_eternum_BattleConfigWhereInput
+  ): s1_eternum_BattleConfigConnection
   s0EternumBattleJoinDataModels(
     after: Cursor
     before: Cursor
@@ -462,9 +462,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BattleJoinDataOrder
-    where: s0_eternum_BattleJoinDataWhereInput
-  ): s0_eternum_BattleJoinDataConnection
+    order: s1_eternum_BattleJoinDataOrder
+    where: s1_eternum_BattleJoinDataWhereInput
+  ): s1_eternum_BattleJoinDataConnection
   s0EternumBattleLeaveDataModels(
     after: Cursor
     before: Cursor
@@ -472,9 +472,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BattleLeaveDataOrder
-    where: s0_eternum_BattleLeaveDataWhereInput
-  ): s0_eternum_BattleLeaveDataConnection
+    order: s1_eternum_BattleLeaveDataOrder
+    where: s1_eternum_BattleLeaveDataWhereInput
+  ): s1_eternum_BattleLeaveDataConnection
   s0EternumBattleModels(
     after: Cursor
     before: Cursor
@@ -482,9 +482,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BattleOrder
-    where: s0_eternum_BattleWhereInput
-  ): s0_eternum_BattleConnection
+    order: s1_eternum_BattleOrder
+    where: s1_eternum_BattleWhereInput
+  ): s1_eternum_BattleConnection
   s0EternumBattlePillageDataModels(
     after: Cursor
     before: Cursor
@@ -492,9 +492,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BattlePillageDataOrder
-    where: s0_eternum_BattlePillageDataWhereInput
-  ): s0_eternum_BattlePillageDataConnection
+    order: s1_eternum_BattlePillageDataOrder
+    where: s1_eternum_BattlePillageDataWhereInput
+  ): s1_eternum_BattlePillageDataConnection
   s0EternumBattleStartDataModels(
     after: Cursor
     before: Cursor
@@ -502,9 +502,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BattleStartDataOrder
-    where: s0_eternum_BattleStartDataWhereInput
-  ): s0_eternum_BattleStartDataConnection
+    order: s1_eternum_BattleStartDataOrder
+    where: s1_eternum_BattleStartDataWhereInput
+  ): s1_eternum_BattleStartDataConnection
   s0EternumBuildingCategoryPopConfigModels(
     after: Cursor
     before: Cursor
@@ -512,9 +512,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BuildingCategoryPopConfigOrder
-    where: s0_eternum_BuildingCategoryPopConfigWhereInput
-  ): s0_eternum_BuildingCategoryPopConfigConnection
+    order: s1_eternum_BuildingCategoryPopConfigOrder
+    where: s1_eternum_BuildingCategoryPopConfigWhereInput
+  ): s1_eternum_BuildingCategoryPopConfigConnection
   s0EternumBuildingConfigModels(
     after: Cursor
     before: Cursor
@@ -522,9 +522,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BuildingConfigOrder
-    where: s0_eternum_BuildingConfigWhereInput
-  ): s0_eternum_BuildingConfigConnection
+    order: s1_eternum_BuildingConfigOrder
+    where: s1_eternum_BuildingConfigWhereInput
+  ): s1_eternum_BuildingConfigConnection
   s0EternumBuildingGeneralConfigModels(
     after: Cursor
     before: Cursor
@@ -532,9 +532,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BuildingGeneralConfigOrder
-    where: s0_eternum_BuildingGeneralConfigWhereInput
-  ): s0_eternum_BuildingGeneralConfigConnection
+    order: s1_eternum_BuildingGeneralConfigOrder
+    where: s1_eternum_BuildingGeneralConfigWhereInput
+  ): s1_eternum_BuildingGeneralConfigConnection
   s0EternumBuildingModels(
     after: Cursor
     before: Cursor
@@ -542,9 +542,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BuildingOrder
-    where: s0_eternum_BuildingWhereInput
-  ): s0_eternum_BuildingConnection
+    order: s1_eternum_BuildingOrder
+    where: s1_eternum_BuildingWhereInput
+  ): s1_eternum_BuildingConnection
   s0EternumBuildingQuantityv2Models(
     after: Cursor
     before: Cursor
@@ -552,9 +552,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BuildingQuantityv2Order
-    where: s0_eternum_BuildingQuantityv2WhereInput
-  ): s0_eternum_BuildingQuantityv2Connection
+    order: s1_eternum_BuildingQuantityv2Order
+    where: s1_eternum_BuildingQuantityv2WhereInput
+  ): s1_eternum_BuildingQuantityv2Connection
   s0EternumBurnDonkeyModels(
     after: Cursor
     before: Cursor
@@ -562,9 +562,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_BurnDonkeyOrder
-    where: s0_eternum_BurnDonkeyWhereInput
-  ): s0_eternum_BurnDonkeyConnection
+    order: s1_eternum_BurnDonkeyOrder
+    where: s1_eternum_BurnDonkeyWhereInput
+  ): s1_eternum_BurnDonkeyConnection
   s0EternumCancelOrderModels(
     after: Cursor
     before: Cursor
@@ -572,9 +572,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_CancelOrderOrder
-    where: s0_eternum_CancelOrderWhereInput
-  ): s0_eternum_CancelOrderConnection
+    order: s1_eternum_CancelOrderOrder
+    where: s1_eternum_CancelOrderWhereInput
+  ): s1_eternum_CancelOrderConnection
   s0EternumCapacityCategoryModels(
     after: Cursor
     before: Cursor
@@ -582,9 +582,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_CapacityCategoryOrder
-    where: s0_eternum_CapacityCategoryWhereInput
-  ): s0_eternum_CapacityCategoryConnection
+    order: s1_eternum_CapacityCategoryOrder
+    where: s1_eternum_CapacityCategoryWhereInput
+  ): s1_eternum_CapacityCategoryConnection
   s0EternumCapacityConfigModels(
     after: Cursor
     before: Cursor
@@ -592,9 +592,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_CapacityConfigOrder
-    where: s0_eternum_CapacityConfigWhereInput
-  ): s0_eternum_CapacityConfigConnection
+    order: s1_eternum_CapacityConfigOrder
+    where: s1_eternum_CapacityConfigWhereInput
+  ): s1_eternum_CapacityConfigConnection
   s0EternumContributionModels(
     after: Cursor
     before: Cursor
@@ -602,9 +602,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ContributionOrder
-    where: s0_eternum_ContributionWhereInput
-  ): s0_eternum_ContributionConnection
+    order: s1_eternum_ContributionOrder
+    where: s1_eternum_ContributionWhereInput
+  ): s1_eternum_ContributionConnection
   s0EternumCreateGuildModels(
     after: Cursor
     before: Cursor
@@ -612,9 +612,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_CreateGuildOrder
-    where: s0_eternum_CreateGuildWhereInput
-  ): s0_eternum_CreateGuildConnection
+    order: s1_eternum_CreateGuildOrder
+    where: s1_eternum_CreateGuildWhereInput
+  ): s1_eternum_CreateGuildConnection
   s0EternumCreateOrderModels(
     after: Cursor
     before: Cursor
@@ -622,9 +622,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_CreateOrderOrder
-    where: s0_eternum_CreateOrderWhereInput
-  ): s0_eternum_CreateOrderConnection
+    order: s1_eternum_CreateOrderOrder
+    where: s1_eternum_CreateOrderWhereInput
+  ): s1_eternum_CreateOrderConnection
   s0EternumDetachedResourceModels(
     after: Cursor
     before: Cursor
@@ -632,9 +632,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_DetachedResourceOrder
-    where: s0_eternum_DetachedResourceWhereInput
-  ): s0_eternum_DetachedResourceConnection
+    order: s1_eternum_DetachedResourceOrder
+    where: s1_eternum_DetachedResourceWhereInput
+  ): s1_eternum_DetachedResourceConnection
   s0EternumEntityNameModels(
     after: Cursor
     before: Cursor
@@ -642,9 +642,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_EntityNameOrder
-    where: s0_eternum_EntityNameWhereInput
-  ): s0_eternum_EntityNameConnection
+    order: s1_eternum_EntityNameOrder
+    where: s1_eternum_EntityNameWhereInput
+  ): s1_eternum_EntityNameConnection
   s0EternumEntityOwnerModels(
     after: Cursor
     before: Cursor
@@ -652,9 +652,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_EntityOwnerOrder
-    where: s0_eternum_EntityOwnerWhereInput
-  ): s0_eternum_EntityOwnerConnection
+    order: s1_eternum_EntityOwnerOrder
+    where: s1_eternum_EntityOwnerWhereInput
+  ): s1_eternum_EntityOwnerConnection
   s0EternumEpochModels(
     after: Cursor
     before: Cursor
@@ -662,9 +662,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_EpochOrder
-    where: s0_eternum_EpochWhereInput
-  ): s0_eternum_EpochConnection
+    order: s1_eternum_EpochOrder
+    where: s1_eternum_EpochWhereInput
+  ): s1_eternum_EpochConnection
   s0EternumFragmentMineDiscoveredModels(
     after: Cursor
     before: Cursor
@@ -672,9 +672,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_FragmentMineDiscoveredOrder
-    where: s0_eternum_FragmentMineDiscoveredWhereInput
-  ): s0_eternum_FragmentMineDiscoveredConnection
+    order: s1_eternum_FragmentMineDiscoveredOrder
+    where: s1_eternum_FragmentMineDiscoveredWhereInput
+  ): s1_eternum_FragmentMineDiscoveredConnection
   s0EternumGameEndedModels(
     after: Cursor
     before: Cursor
@@ -682,9 +682,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_GameEndedOrder
-    where: s0_eternum_GameEndedWhereInput
-  ): s0_eternum_GameEndedConnection
+    order: s1_eternum_GameEndedOrder
+    where: s1_eternum_GameEndedWhereInput
+  ): s1_eternum_GameEndedConnection
   s0EternumGuildMemberModels(
     after: Cursor
     before: Cursor
@@ -692,9 +692,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_GuildMemberOrder
-    where: s0_eternum_GuildMemberWhereInput
-  ): s0_eternum_GuildMemberConnection
+    order: s1_eternum_GuildMemberOrder
+    where: s1_eternum_GuildMemberWhereInput
+  ): s1_eternum_GuildMemberConnection
   s0EternumGuildModels(
     after: Cursor
     before: Cursor
@@ -702,9 +702,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_GuildOrder
-    where: s0_eternum_GuildWhereInput
-  ): s0_eternum_GuildConnection
+    order: s1_eternum_GuildOrder
+    where: s1_eternum_GuildWhereInput
+  ): s1_eternum_GuildConnection
   s0EternumGuildWhitelistModels(
     after: Cursor
     before: Cursor
@@ -712,9 +712,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_GuildWhitelistOrder
-    where: s0_eternum_GuildWhitelistWhereInput
-  ): s0_eternum_GuildWhitelistConnection
+    order: s1_eternum_GuildWhitelistOrder
+    where: s1_eternum_GuildWhitelistWhereInput
+  ): s1_eternum_GuildWhitelistConnection
   s0EternumHealthModels(
     after: Cursor
     before: Cursor
@@ -722,9 +722,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_HealthOrder
-    where: s0_eternum_HealthWhereInput
-  ): s0_eternum_HealthConnection
+    order: s1_eternum_HealthOrder
+    where: s1_eternum_HealthWhereInput
+  ): s1_eternum_HealthConnection
   s0EternumHyperstructureCoOwnersChangeModels(
     after: Cursor
     before: Cursor
@@ -732,9 +732,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_HyperstructureCoOwnersChangeOrder
-    where: s0_eternum_HyperstructureCoOwnersChangeWhereInput
-  ): s0_eternum_HyperstructureCoOwnersChangeConnection
+    order: s1_eternum_HyperstructureCoOwnersChangeOrder
+    where: s1_eternum_HyperstructureCoOwnersChangeWhereInput
+  ): s1_eternum_HyperstructureCoOwnersChangeConnection
   s0EternumHyperstructureConfigModels(
     after: Cursor
     before: Cursor
@@ -742,9 +742,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_HyperstructureConfigOrder
-    where: s0_eternum_HyperstructureConfigWhereInput
-  ): s0_eternum_HyperstructureConfigConnection
+    order: s1_eternum_HyperstructureConfigOrder
+    where: s1_eternum_HyperstructureConfigWhereInput
+  ): s1_eternum_HyperstructureConfigConnection
   s0EternumHyperstructureContributionModels(
     after: Cursor
     before: Cursor
@@ -752,9 +752,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_HyperstructureContributionOrder
-    where: s0_eternum_HyperstructureContributionWhereInput
-  ): s0_eternum_HyperstructureContributionConnection
+    order: s1_eternum_HyperstructureContributionOrder
+    where: s1_eternum_HyperstructureContributionWhereInput
+  ): s1_eternum_HyperstructureContributionConnection
   s0EternumHyperstructureFinishedModels(
     after: Cursor
     before: Cursor
@@ -762,9 +762,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_HyperstructureFinishedOrder
-    where: s0_eternum_HyperstructureFinishedWhereInput
-  ): s0_eternum_HyperstructureFinishedConnection
+    order: s1_eternum_HyperstructureFinishedOrder
+    where: s1_eternum_HyperstructureFinishedWhereInput
+  ): s1_eternum_HyperstructureFinishedConnection
   s0EternumHyperstructureModels(
     after: Cursor
     before: Cursor
@@ -772,9 +772,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_HyperstructureOrder
-    where: s0_eternum_HyperstructureWhereInput
-  ): s0_eternum_HyperstructureConnection
+    order: s1_eternum_HyperstructureOrder
+    where: s1_eternum_HyperstructureWhereInput
+  ): s1_eternum_HyperstructureConnection
   s0EternumHyperstructureResourceConfigModels(
     after: Cursor
     before: Cursor
@@ -782,9 +782,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_HyperstructureResourceConfigOrder
-    where: s0_eternum_HyperstructureResourceConfigWhereInput
-  ): s0_eternum_HyperstructureResourceConfigConnection
+    order: s1_eternum_HyperstructureResourceConfigOrder
+    where: s1_eternum_HyperstructureResourceConfigWhereInput
+  ): s1_eternum_HyperstructureResourceConfigConnection
   s0EternumHyperstructureStartedModels(
     after: Cursor
     before: Cursor
@@ -792,9 +792,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_HyperstructureStartedOrder
-    where: s0_eternum_HyperstructureStartedWhereInput
-  ): s0_eternum_HyperstructureStartedConnection
+    order: s1_eternum_HyperstructureStartedOrder
+    where: s1_eternum_HyperstructureStartedWhereInput
+  ): s1_eternum_HyperstructureStartedConnection
   s0EternumJoinGuildModels(
     after: Cursor
     before: Cursor
@@ -802,9 +802,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_JoinGuildOrder
-    where: s0_eternum_JoinGuildWhereInput
-  ): s0_eternum_JoinGuildConnection
+    order: s1_eternum_JoinGuildOrder
+    where: s1_eternum_JoinGuildWhereInput
+  ): s1_eternum_JoinGuildConnection
   s0EternumLeaderboardEntryModels(
     after: Cursor
     before: Cursor
@@ -812,9 +812,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_LeaderboardEntryOrder
-    where: s0_eternum_LeaderboardEntryWhereInput
-  ): s0_eternum_LeaderboardEntryConnection
+    order: s1_eternum_LeaderboardEntryOrder
+    where: s1_eternum_LeaderboardEntryWhereInput
+  ): s1_eternum_LeaderboardEntryConnection
   s0EternumLeaderboardModels(
     after: Cursor
     before: Cursor
@@ -822,9 +822,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_LeaderboardOrder
-    where: s0_eternum_LeaderboardWhereInput
-  ): s0_eternum_LeaderboardConnection
+    order: s1_eternum_LeaderboardOrder
+    where: s1_eternum_LeaderboardWhereInput
+  ): s1_eternum_LeaderboardConnection
   s0EternumLeaderboardRegisterContributionModels(
     after: Cursor
     before: Cursor
@@ -832,9 +832,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_LeaderboardRegisterContributionOrder
-    where: s0_eternum_LeaderboardRegisterContributionWhereInput
-  ): s0_eternum_LeaderboardRegisterContributionConnection
+    order: s1_eternum_LeaderboardRegisterContributionOrder
+    where: s1_eternum_LeaderboardRegisterContributionWhereInput
+  ): s1_eternum_LeaderboardRegisterContributionConnection
   s0EternumLeaderboardRegisterShareModels(
     after: Cursor
     before: Cursor
@@ -842,9 +842,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_LeaderboardRegisterShareOrder
-    where: s0_eternum_LeaderboardRegisterShareWhereInput
-  ): s0_eternum_LeaderboardRegisterShareConnection
+    order: s1_eternum_LeaderboardRegisterShareOrder
+    where: s1_eternum_LeaderboardRegisterShareWhereInput
+  ): s1_eternum_LeaderboardRegisterShareConnection
   s0EternumLeaderboardRegisteredModels(
     after: Cursor
     before: Cursor
@@ -852,9 +852,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_LeaderboardRegisteredOrder
-    where: s0_eternum_LeaderboardRegisteredWhereInput
-  ): s0_eternum_LeaderboardRegisteredConnection
+    order: s1_eternum_LeaderboardRegisteredOrder
+    where: s1_eternum_LeaderboardRegisteredWhereInput
+  ): s1_eternum_LeaderboardRegisteredConnection
   s0EternumLeaderboardRewardClaimedModels(
     after: Cursor
     before: Cursor
@@ -862,9 +862,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_LeaderboardRewardClaimedOrder
-    where: s0_eternum_LeaderboardRewardClaimedWhereInput
-  ): s0_eternum_LeaderboardRewardClaimedConnection
+    order: s1_eternum_LeaderboardRewardClaimedOrder
+    where: s1_eternum_LeaderboardRewardClaimedWhereInput
+  ): s1_eternum_LeaderboardRewardClaimedConnection
   s0EternumLevelingConfigModels(
     after: Cursor
     before: Cursor
@@ -872,9 +872,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_LevelingConfigOrder
-    where: s0_eternum_LevelingConfigWhereInput
-  ): s0_eternum_LevelingConfigConnection
+    order: s1_eternum_LevelingConfigOrder
+    where: s1_eternum_LevelingConfigWhereInput
+  ): s1_eternum_LevelingConfigConnection
   s0EternumLiquidityEventModels(
     after: Cursor
     before: Cursor
@@ -882,9 +882,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_LiquidityEventOrder
-    where: s0_eternum_LiquidityEventWhereInput
-  ): s0_eternum_LiquidityEventConnection
+    order: s1_eternum_LiquidityEventOrder
+    where: s1_eternum_LiquidityEventWhereInput
+  ): s1_eternum_LiquidityEventConnection
   s0EternumLiquidityModels(
     after: Cursor
     before: Cursor
@@ -892,9 +892,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_LiquidityOrder
-    where: s0_eternum_LiquidityWhereInput
-  ): s0_eternum_LiquidityConnection
+    order: s1_eternum_LiquidityOrder
+    where: s1_eternum_LiquidityWhereInput
+  ): s1_eternum_LiquidityConnection
   s0EternumMapConfigModels(
     after: Cursor
     before: Cursor
@@ -902,9 +902,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_MapConfigOrder
-    where: s0_eternum_MapConfigWhereInput
-  ): s0_eternum_MapConfigConnection
+    order: s1_eternum_MapConfigOrder
+    where: s1_eternum_MapConfigWhereInput
+  ): s1_eternum_MapConfigConnection
   s0EternumMapExploredModels(
     after: Cursor
     before: Cursor
@@ -912,9 +912,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_MapExploredOrder
-    where: s0_eternum_MapExploredWhereInput
-  ): s0_eternum_MapExploredConnection
+    order: s1_eternum_MapExploredOrder
+    where: s1_eternum_MapExploredWhereInput
+  ): s1_eternum_MapExploredConnection
   s0EternumMarketModels(
     after: Cursor
     before: Cursor
@@ -922,9 +922,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_MarketOrder
-    where: s0_eternum_MarketWhereInput
-  ): s0_eternum_MarketConnection
+    order: s1_eternum_MarketOrder
+    where: s1_eternum_MarketWhereInput
+  ): s1_eternum_MarketConnection
   s0EternumMercenariesConfigModels(
     after: Cursor
     before: Cursor
@@ -932,9 +932,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_MercenariesConfigOrder
-    where: s0_eternum_MercenariesConfigWhereInput
-  ): s0_eternum_MercenariesConfigConnection
+    order: s1_eternum_MercenariesConfigOrder
+    where: s1_eternum_MercenariesConfigWhereInput
+  ): s1_eternum_MercenariesConfigConnection
   s0EternumMessageModels(
     after: Cursor
     before: Cursor
@@ -942,9 +942,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_MessageOrder
-    where: s0_eternum_MessageWhereInput
-  ): s0_eternum_MessageConnection
+    order: s1_eternum_MessageOrder
+    where: s1_eternum_MessageWhereInput
+  ): s1_eternum_MessageConnection
   s0EternumMovableModels(
     after: Cursor
     before: Cursor
@@ -952,9 +952,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_MovableOrder
-    where: s0_eternum_MovableWhereInput
-  ): s0_eternum_MovableConnection
+    order: s1_eternum_MovableOrder
+    where: s1_eternum_MovableWhereInput
+  ): s1_eternum_MovableConnection
   s0EternumOrdersModels(
     after: Cursor
     before: Cursor
@@ -962,9 +962,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_OrdersOrder
-    where: s0_eternum_OrdersWhereInput
-  ): s0_eternum_OrdersConnection
+    order: s1_eternum_OrdersOrder
+    where: s1_eternum_OrdersWhereInput
+  ): s1_eternum_OrdersConnection
   s0EternumOwnedResourcesTrackerModels(
     after: Cursor
     before: Cursor
@@ -972,9 +972,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_OwnedResourcesTrackerOrder
-    where: s0_eternum_OwnedResourcesTrackerWhereInput
-  ): s0_eternum_OwnedResourcesTrackerConnection
+    order: s1_eternum_OwnedResourcesTrackerOrder
+    where: s1_eternum_OwnedResourcesTrackerWhereInput
+  ): s1_eternum_OwnedResourcesTrackerConnection
   s0EternumOwnerModels(
     after: Cursor
     before: Cursor
@@ -982,9 +982,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_OwnerOrder
-    where: s0_eternum_OwnerWhereInput
-  ): s0_eternum_OwnerConnection
+    order: s1_eternum_OwnerOrder
+    where: s1_eternum_OwnerWhereInput
+  ): s1_eternum_OwnerConnection
   s0EternumPopulationConfigModels(
     after: Cursor
     before: Cursor
@@ -992,9 +992,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_PopulationConfigOrder
-    where: s0_eternum_PopulationConfigWhereInput
-  ): s0_eternum_PopulationConfigConnection
+    order: s1_eternum_PopulationConfigOrder
+    where: s1_eternum_PopulationConfigWhereInput
+  ): s1_eternum_PopulationConfigConnection
   s0EternumPopulationModels(
     after: Cursor
     before: Cursor
@@ -1002,9 +1002,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_PopulationOrder
-    where: s0_eternum_PopulationWhereInput
-  ): s0_eternum_PopulationConnection
+    order: s1_eternum_PopulationOrder
+    where: s1_eternum_PopulationWhereInput
+  ): s1_eternum_PopulationConnection
   s0EternumPositionModels(
     after: Cursor
     before: Cursor
@@ -1012,9 +1012,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_PositionOrder
-    where: s0_eternum_PositionWhereInput
-  ): s0_eternum_PositionConnection
+    order: s1_eternum_PositionOrder
+    where: s1_eternum_PositionWhereInput
+  ): s1_eternum_PositionConnection
   s0EternumProductionConfigModels(
     after: Cursor
     before: Cursor
@@ -1022,9 +1022,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ProductionConfigOrder
-    where: s0_eternum_ProductionConfigWhereInput
-  ): s0_eternum_ProductionConfigConnection
+    order: s1_eternum_ProductionConfigOrder
+    where: s1_eternum_ProductionConfigWhereInput
+  ): s1_eternum_ProductionConfigConnection
   s0EternumProductionDeadlineModels(
     after: Cursor
     before: Cursor
@@ -1032,9 +1032,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ProductionDeadlineOrder
-    where: s0_eternum_ProductionDeadlineWhereInput
-  ): s0_eternum_ProductionDeadlineConnection
+    order: s1_eternum_ProductionDeadlineOrder
+    where: s1_eternum_ProductionDeadlineWhereInput
+  ): s1_eternum_ProductionDeadlineConnection
   s0EternumProductionInputModels(
     after: Cursor
     before: Cursor
@@ -1042,9 +1042,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ProductionInputOrder
-    where: s0_eternum_ProductionInputWhereInput
-  ): s0_eternum_ProductionInputConnection
+    order: s1_eternum_ProductionInputOrder
+    where: s1_eternum_ProductionInputWhereInput
+  ): s1_eternum_ProductionInputConnection
   s0EternumProductionModels(
     after: Cursor
     before: Cursor
@@ -1052,9 +1052,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ProductionOrder
-    where: s0_eternum_ProductionWhereInput
-  ): s0_eternum_ProductionConnection
+    order: s1_eternum_ProductionOrder
+    where: s1_eternum_ProductionWhereInput
+  ): s1_eternum_ProductionConnection
   s0EternumProductionOutputModels(
     after: Cursor
     before: Cursor
@@ -1062,9 +1062,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ProductionOutputOrder
-    where: s0_eternum_ProductionOutputWhereInput
-  ): s0_eternum_ProductionOutputConnection
+    order: s1_eternum_ProductionOutputOrder
+    where: s1_eternum_ProductionOutputWhereInput
+  ): s1_eternum_ProductionOutputConnection
   s0EternumProgressModels(
     after: Cursor
     before: Cursor
@@ -1072,9 +1072,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ProgressOrder
-    where: s0_eternum_ProgressWhereInput
-  ): s0_eternum_ProgressConnection
+    order: s1_eternum_ProgressOrder
+    where: s1_eternum_ProgressWhereInput
+  ): s1_eternum_ProgressConnection
   s0EternumProtecteeModels(
     after: Cursor
     before: Cursor
@@ -1082,9 +1082,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ProtecteeOrder
-    where: s0_eternum_ProtecteeWhereInput
-  ): s0_eternum_ProtecteeConnection
+    order: s1_eternum_ProtecteeOrder
+    where: s1_eternum_ProtecteeWhereInput
+  ): s1_eternum_ProtecteeConnection
   s0EternumProtectorModels(
     after: Cursor
     before: Cursor
@@ -1092,9 +1092,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ProtectorOrder
-    where: s0_eternum_ProtectorWhereInput
-  ): s0_eternum_ProtectorConnection
+    order: s1_eternum_ProtectorOrder
+    where: s1_eternum_ProtectorWhereInput
+  ): s1_eternum_ProtectorConnection
   s0EternumQuantityModels(
     after: Cursor
     before: Cursor
@@ -1102,9 +1102,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_QuantityOrder
-    where: s0_eternum_QuantityWhereInput
-  ): s0_eternum_QuantityConnection
+    order: s1_eternum_QuantityOrder
+    where: s1_eternum_QuantityWhereInput
+  ): s1_eternum_QuantityConnection
   s0EternumQuantityTrackerModels(
     after: Cursor
     before: Cursor
@@ -1112,9 +1112,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_QuantityTrackerOrder
-    where: s0_eternum_QuantityTrackerWhereInput
-  ): s0_eternum_QuantityTrackerConnection
+    order: s1_eternum_QuantityTrackerOrder
+    where: s1_eternum_QuantityTrackerWhereInput
+  ): s1_eternum_QuantityTrackerConnection
 
   s0EternumQuestConfigModels(
     after: Cursor
@@ -1123,9 +1123,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_QuestConfigOrder
-    where: s0_eternum_QuestConfigWhereInput
-  ): s0_eternum_QuestConfigConnection
+    order: s1_eternum_QuestConfigOrder
+    where: s1_eternum_QuestConfigWhereInput
+  ): s1_eternum_QuestConfigConnection
   s0EternumQuestModels(
     after: Cursor
     before: Cursor
@@ -1133,9 +1133,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_QuestOrder
-    where: s0_eternum_QuestWhereInput
-  ): s0_eternum_QuestConnection
+    order: s1_eternum_QuestOrder
+    where: s1_eternum_QuestWhereInput
+  ): s1_eternum_QuestConnection
   s0EternumQuestRewardConfigModels(
     after: Cursor
     before: Cursor
@@ -1143,9 +1143,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_QuestRewardConfigOrder
-    where: s0_eternum_QuestRewardConfigWhereInput
-  ): s0_eternum_QuestRewardConfigConnection
+    order: s1_eternum_QuestRewardConfigOrder
+    where: s1_eternum_QuestRewardConfigWhereInput
+  ): s1_eternum_QuestRewardConfigConnection
   s0EternumRealmLevelConfigModels(
     after: Cursor
     before: Cursor
@@ -1153,9 +1153,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_RealmLevelConfigOrder
-    where: s0_eternum_RealmLevelConfigWhereInput
-  ): s0_eternum_RealmLevelConfigConnection
+    order: s1_eternum_RealmLevelConfigOrder
+    where: s1_eternum_RealmLevelConfigWhereInput
+  ): s1_eternum_RealmLevelConfigConnection
   s0EternumRealmMaxLevelConfigModels(
     after: Cursor
     before: Cursor
@@ -1163,9 +1163,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_RealmMaxLevelConfigOrder
-    where: s0_eternum_RealmMaxLevelConfigWhereInput
-  ): s0_eternum_RealmMaxLevelConfigConnection
+    order: s1_eternum_RealmMaxLevelConfigOrder
+    where: s1_eternum_RealmMaxLevelConfigWhereInput
+  ): s1_eternum_RealmMaxLevelConfigConnection
   s0EternumRealmModels(
     after: Cursor
     before: Cursor
@@ -1173,9 +1173,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_RealmOrder
-    where: s0_eternum_RealmWhereInput
-  ): s0_eternum_RealmConnection
+    order: s1_eternum_RealmOrder
+    where: s1_eternum_RealmWhereInput
+  ): s1_eternum_RealmConnection
   s0EternumResourceAllowanceModels(
     after: Cursor
     before: Cursor
@@ -1183,9 +1183,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ResourceAllowanceOrder
-    where: s0_eternum_ResourceAllowanceWhereInput
-  ): s0_eternum_ResourceAllowanceConnection
+    order: s1_eternum_ResourceAllowanceOrder
+    where: s1_eternum_ResourceAllowanceWhereInput
+  ): s1_eternum_ResourceAllowanceConnection
   s0EternumResourceBridgeConfigModels(
     after: Cursor
     before: Cursor
@@ -1193,9 +1193,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ResourceBridgeConfigOrder
-    where: s0_eternum_ResourceBridgeConfigWhereInput
-  ): s0_eternum_ResourceBridgeConfigConnection
+    order: s1_eternum_ResourceBridgeConfigOrder
+    where: s1_eternum_ResourceBridgeConfigWhereInput
+  ): s1_eternum_ResourceBridgeConfigConnection
   s0EternumResourceBridgeFeeSplitConfigModels(
     after: Cursor
     before: Cursor
@@ -1203,9 +1203,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ResourceBridgeFeeSplitConfigOrder
-    where: s0_eternum_ResourceBridgeFeeSplitConfigWhereInput
-  ): s0_eternum_ResourceBridgeFeeSplitConfigConnection
+    order: s1_eternum_ResourceBridgeFeeSplitConfigOrder
+    where: s1_eternum_ResourceBridgeFeeSplitConfigWhereInput
+  ): s1_eternum_ResourceBridgeFeeSplitConfigConnection
   s0EternumResourceBridgeWhitelistConfigModels(
     after: Cursor
     before: Cursor
@@ -1213,9 +1213,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ResourceBridgeWhitelistConfigOrder
-    where: s0_eternum_ResourceBridgeWhitelistConfigWhereInput
-  ): s0_eternum_ResourceBridgeWhitelistConfigConnection
+    order: s1_eternum_ResourceBridgeWhitelistConfigOrder
+    where: s1_eternum_ResourceBridgeWhitelistConfigWhereInput
+  ): s1_eternum_ResourceBridgeWhitelistConfigConnection
   s0EternumResourceCostModels(
     after: Cursor
     before: Cursor
@@ -1223,9 +1223,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ResourceCostOrder
-    where: s0_eternum_ResourceCostWhereInput
-  ): s0_eternum_ResourceCostConnection
+    order: s1_eternum_ResourceCostOrder
+    where: s1_eternum_ResourceCostWhereInput
+  ): s1_eternum_ResourceCostConnection
   s0EternumResourceModels(
     after: Cursor
     before: Cursor
@@ -1233,9 +1233,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ResourceOrder
-    where: s0_eternum_ResourceWhereInput
-  ): s0_eternum_ResourceConnection
+    order: s1_eternum_ResourceOrder
+    where: s1_eternum_ResourceWhereInput
+  ): s1_eternum_ResourceConnection
   s0EternumResourceTransferLockModels(
     after: Cursor
     before: Cursor
@@ -1243,9 +1243,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_ResourceTransferLockOrder
-    where: s0_eternum_ResourceTransferLockWhereInput
-  ): s0_eternum_ResourceTransferLockConnection
+    order: s1_eternum_ResourceTransferLockOrder
+    where: s1_eternum_ResourceTransferLockWhereInput
+  ): s1_eternum_ResourceTransferLockConnection
   s0EternumSeasonAddressesConfigModels(
     after: Cursor
     before: Cursor
@@ -1253,9 +1253,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_SeasonAddressesConfigOrder
-    where: s0_eternum_SeasonAddressesConfigWhereInput
-  ): s0_eternum_SeasonAddressesConfigConnection
+    order: s1_eternum_SeasonAddressesConfigOrder
+    where: s1_eternum_SeasonAddressesConfigWhereInput
+  ): s1_eternum_SeasonAddressesConfigConnection
   s0EternumSeasonBridgeConfigModels(
     after: Cursor
     before: Cursor
@@ -1263,9 +1263,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_SeasonBridgeConfigOrder
-    where: s0_eternum_SeasonBridgeConfigWhereInput
-  ): s0_eternum_SeasonBridgeConfigConnection
+    order: s1_eternum_SeasonBridgeConfigOrder
+    where: s1_eternum_SeasonBridgeConfigWhereInput
+  ): s1_eternum_SeasonBridgeConfigConnection
   s0EternumSeasonModels(
     after: Cursor
     before: Cursor
@@ -1273,9 +1273,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_SeasonOrder
-    where: s0_eternum_SeasonWhereInput
-  ): s0_eternum_SeasonConnection
+    order: s1_eternum_SeasonOrder
+    where: s1_eternum_SeasonWhereInput
+  ): s1_eternum_SeasonConnection
   s0EternumSettleRealmDataModels(
     after: Cursor
     before: Cursor
@@ -1283,9 +1283,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_SettleRealmDataOrder
-    where: s0_eternum_SettleRealmDataWhereInput
-  ): s0_eternum_SettleRealmDataConnection
+    order: s1_eternum_SettleRealmDataOrder
+    where: s1_eternum_SettleRealmDataWhereInput
+  ): s1_eternum_SettleRealmDataConnection
   s0EternumSettlementConfigModels(
     after: Cursor
     before: Cursor
@@ -1293,9 +1293,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_SettlementConfigOrder
-    where: s0_eternum_SettlementConfigWhereInput
-  ): s0_eternum_SettlementConfigConnection
+    order: s1_eternum_SettlementConfigOrder
+    where: s1_eternum_SettlementConfigWhereInput
+  ): s1_eternum_SettlementConfigConnection
   s0EternumSpeedConfigModels(
     after: Cursor
     before: Cursor
@@ -1303,9 +1303,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_SpeedConfigOrder
-    where: s0_eternum_SpeedConfigWhereInput
-  ): s0_eternum_SpeedConfigConnection
+    order: s1_eternum_SpeedConfigOrder
+    where: s1_eternum_SpeedConfigWhereInput
+  ): s1_eternum_SpeedConfigConnection
   s0EternumStaminaConfigModels(
     after: Cursor
     before: Cursor
@@ -1313,9 +1313,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_StaminaConfigOrder
-    where: s0_eternum_StaminaConfigWhereInput
-  ): s0_eternum_StaminaConfigConnection
+    order: s1_eternum_StaminaConfigOrder
+    where: s1_eternum_StaminaConfigWhereInput
+  ): s1_eternum_StaminaConfigConnection
   s0EternumStaminaModels(
     after: Cursor
     before: Cursor
@@ -1323,9 +1323,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_StaminaOrder
-    where: s0_eternum_StaminaWhereInput
-  ): s0_eternum_StaminaConnection
+    order: s1_eternum_StaminaOrder
+    where: s1_eternum_StaminaWhereInput
+  ): s1_eternum_StaminaConnection
   s0EternumStaminaRefillConfigModels(
     after: Cursor
     before: Cursor
@@ -1333,9 +1333,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_StaminaRefillConfigOrder
-    where: s0_eternum_StaminaRefillConfigWhereInput
-  ): s0_eternum_StaminaRefillConfigConnection
+    order: s1_eternum_StaminaRefillConfigOrder
+    where: s1_eternum_StaminaRefillConfigWhereInput
+  ): s1_eternum_StaminaRefillConfigConnection
   s0EternumStatusModels(
     after: Cursor
     before: Cursor
@@ -1343,9 +1343,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_StatusOrder
-    where: s0_eternum_StatusWhereInput
-  ): s0_eternum_StatusConnection
+    order: s1_eternum_StatusOrder
+    where: s1_eternum_StatusWhereInput
+  ): s1_eternum_StatusConnection
   s0EternumStructureCountModels(
     after: Cursor
     before: Cursor
@@ -1353,9 +1353,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_StructureCountOrder
-    where: s0_eternum_StructureCountWhereInput
-  ): s0_eternum_StructureCountConnection
+    order: s1_eternum_StructureCountOrder
+    where: s1_eternum_StructureCountWhereInput
+  ): s1_eternum_StructureCountConnection
   s0EternumStructureModels(
     after: Cursor
     before: Cursor
@@ -1363,9 +1363,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_StructureOrder
-    where: s0_eternum_StructureWhereInput
-  ): s0_eternum_StructureConnection
+    order: s1_eternum_StructureOrder
+    where: s1_eternum_StructureWhereInput
+  ): s1_eternum_StructureConnection
   s0EternumSwapEventModels(
     after: Cursor
     before: Cursor
@@ -1373,9 +1373,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_SwapEventOrder
-    where: s0_eternum_SwapEventWhereInput
-  ): s0_eternum_SwapEventConnection
+    order: s1_eternum_SwapEventOrder
+    where: s1_eternum_SwapEventWhereInput
+  ): s1_eternum_SwapEventConnection
   s0EternumTickConfigModels(
     after: Cursor
     before: Cursor
@@ -1383,9 +1383,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TickConfigOrder
-    where: s0_eternum_TickConfigWhereInput
-  ): s0_eternum_TickConfigConnection
+    order: s1_eternum_TickConfigOrder
+    where: s1_eternum_TickConfigWhereInput
+  ): s1_eternum_TickConfigConnection
   s0EternumTileModels(
     after: Cursor
     before: Cursor
@@ -1393,9 +1393,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TileOrder
-    where: s0_eternum_TileWhereInput
-  ): s0_eternum_TileConnection
+    order: s1_eternum_TileOrder
+    where: s1_eternum_TileWhereInput
+  ): s1_eternum_TileConnection
   s0EternumTradeModels(
     after: Cursor
     before: Cursor
@@ -1403,9 +1403,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TradeOrder
-    where: s0_eternum_TradeWhereInput
-  ): s0_eternum_TradeConnection
+    order: s1_eternum_TradeOrder
+    where: s1_eternum_TradeWhereInput
+  ): s1_eternum_TradeConnection
   s0EternumTransferModels(
     after: Cursor
     before: Cursor
@@ -1413,9 +1413,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TransferOrder
-    where: s0_eternum_TransferWhereInput
-  ): s0_eternum_TransferConnection
+    order: s1_eternum_TransferOrder
+    where: s1_eternum_TransferWhereInput
+  ): s1_eternum_TransferConnection
   s0EternumTravelFoodCostConfigModels(
     after: Cursor
     before: Cursor
@@ -1423,9 +1423,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TravelFoodCostConfigOrder
-    where: s0_eternum_TravelFoodCostConfigWhereInput
-  ): s0_eternum_TravelFoodCostConfigConnection
+    order: s1_eternum_TravelFoodCostConfigOrder
+    where: s1_eternum_TravelFoodCostConfigWhereInput
+  ): s1_eternum_TravelFoodCostConfigConnection
   s0EternumTravelModels(
     after: Cursor
     before: Cursor
@@ -1433,9 +1433,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TravelOrder
-    where: s0_eternum_TravelWhereInput
-  ): s0_eternum_TravelConnection
+    order: s1_eternum_TravelOrder
+    where: s1_eternum_TravelWhereInput
+  ): s1_eternum_TravelConnection
   s0EternumTravelStaminaCostConfigModels(
     after: Cursor
     before: Cursor
@@ -1443,9 +1443,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TravelStaminaCostConfigOrder
-    where: s0_eternum_TravelStaminaCostConfigWhereInput
-  ): s0_eternum_TravelStaminaCostConfigConnection
+    order: s1_eternum_TravelStaminaCostConfigOrder
+    where: s1_eternum_TravelStaminaCostConfigWhereInput
+  ): s1_eternum_TravelStaminaCostConfigConnection
   s0EternumTroopConfigModels(
     after: Cursor
     before: Cursor
@@ -1453,9 +1453,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TroopConfigOrder
-    where: s0_eternum_TroopConfigWhereInput
-  ): s0_eternum_TroopConfigConnection
+    order: s1_eternum_TroopConfigOrder
+    where: s1_eternum_TroopConfigWhereInput
+  ): s1_eternum_TroopConfigConnection
   s0EternumTrophyCreationModels(
     after: Cursor
     before: Cursor
@@ -1463,9 +1463,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TrophyCreationOrder
-    where: s0_eternum_TrophyCreationWhereInput
-  ): s0_eternum_TrophyCreationConnection
+    order: s1_eternum_TrophyCreationOrder
+    where: s1_eternum_TrophyCreationWhereInput
+  ): s1_eternum_TrophyCreationConnection
   s0EternumTrophyProgressionModels(
     after: Cursor
     before: Cursor
@@ -1473,9 +1473,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_TrophyProgressionOrder
-    where: s0_eternum_TrophyProgressionWhereInput
-  ): s0_eternum_TrophyProgressionConnection
+    order: s1_eternum_TrophyProgressionOrder
+    where: s1_eternum_TrophyProgressionWhereInput
+  ): s1_eternum_TrophyProgressionConnection
   s0EternumVrfConfigModels(
     after: Cursor
     before: Cursor
@@ -1483,9 +1483,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_VRFConfigOrder
-    where: s0_eternum_VRFConfigWhereInput
-  ): s0_eternum_VRFConfigConnection
+    order: s1_eternum_VRFConfigOrder
+    where: s1_eternum_VRFConfigWhereInput
+  ): s1_eternum_VRFConfigConnection
   s0EternumWeightConfigModels(
     after: Cursor
     before: Cursor
@@ -1493,9 +1493,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_WeightConfigOrder
-    where: s0_eternum_WeightConfigWhereInput
-  ): s0_eternum_WeightConfigConnection
+    order: s1_eternum_WeightConfigOrder
+    where: s1_eternum_WeightConfigWhereInput
+  ): s1_eternum_WeightConfigConnection
   s0EternumWeightModels(
     after: Cursor
     before: Cursor
@@ -1503,9 +1503,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_WeightOrder
-    where: s0_eternum_WeightWhereInput
-  ): s0_eternum_WeightConnection
+    order: s1_eternum_WeightOrder
+    where: s1_eternum_WeightWhereInput
+  ): s1_eternum_WeightConnection
   s0EternumWorldConfigModels(
     after: Cursor
     before: Cursor
@@ -1513,9 +1513,9 @@ type World__Query {
     last: Int
     limit: Int
     offset: Int
-    order: s0_eternum_WorldConfigOrder
-    where: s0_eternum_WorldConfigWhereInput
-  ): s0_eternum_WorldConfigConnection
+    order: s1_eternum_WorldConfigOrder
+    where: s1_eternum_WorldConfigWhereInput
+  ): s1_eternum_WorldConfigConnection
   tokenBalances(
     accountAddress: String!
     after: Cursor
@@ -1584,7 +1584,7 @@ scalar bool
 
 scalar felt252
 
-type s0_eternum_AcceptOrder {
+type s1_eternum_AcceptOrder {
   entity: World__Entity
   eventMessage: World__EventMessage
   id: u32
@@ -1594,23 +1594,23 @@ type s0_eternum_AcceptOrder {
   trade_id: u32
 }
 
-type s0_eternum_AcceptOrderConnection {
-  edges: [s0_eternum_AcceptOrderEdge]
+type s1_eternum_AcceptOrderConnection {
+  edges: [s1_eternum_AcceptOrderEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_AcceptOrderEdge {
+type s1_eternum_AcceptOrderEdge {
   cursor: Cursor
-  node: s0_eternum_AcceptOrder
+  node: s1_eternum_AcceptOrder
 }
 
-input s0_eternum_AcceptOrderOrder {
+input s1_eternum_AcceptOrderOrder {
   direction: OrderDirection!
-  field: s0_eternum_AcceptOrderOrderField!
+  field: s1_eternum_AcceptOrderOrderField!
 }
 
-enum s0_eternum_AcceptOrderOrderField {
+enum s1_eternum_AcceptOrderOrderField {
   ID
   MAKER_ID
   TAKER_ID
@@ -1618,7 +1618,7 @@ enum s0_eternum_AcceptOrderOrderField {
   TRADE_ID
 }
 
-input s0_eternum_AcceptOrderWhereInput {
+input s1_eternum_AcceptOrderWhereInput {
   id: u32
   idEQ: u32
   idGT: u32
@@ -1676,7 +1676,7 @@ input s0_eternum_AcceptOrderWhereInput {
   trade_idNOTLIKE: u32
 }
 
-type s0_eternum_AcceptPartialOrder {
+type s1_eternum_AcceptPartialOrder {
   entity: World__Entity
   eventMessage: World__EventMessage
   maker_id: u32
@@ -1685,30 +1685,30 @@ type s0_eternum_AcceptPartialOrder {
   trade_id: u32
 }
 
-type s0_eternum_AcceptPartialOrderConnection {
-  edges: [s0_eternum_AcceptPartialOrderEdge]
+type s1_eternum_AcceptPartialOrderConnection {
+  edges: [s1_eternum_AcceptPartialOrderEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_AcceptPartialOrderEdge {
+type s1_eternum_AcceptPartialOrderEdge {
   cursor: Cursor
-  node: s0_eternum_AcceptPartialOrder
+  node: s1_eternum_AcceptPartialOrder
 }
 
-input s0_eternum_AcceptPartialOrderOrder {
+input s1_eternum_AcceptPartialOrderOrder {
   direction: OrderDirection!
-  field: s0_eternum_AcceptPartialOrderOrderField!
+  field: s1_eternum_AcceptPartialOrderOrderField!
 }
 
-enum s0_eternum_AcceptPartialOrderOrderField {
+enum s1_eternum_AcceptPartialOrderOrderField {
   MAKER_ID
   TAKER_ID
   TIMESTAMP
   TRADE_ID
 }
 
-input s0_eternum_AcceptPartialOrderWhereInput {
+input s1_eternum_AcceptPartialOrderWhereInput {
   maker_id: u32
   maker_idEQ: u32
   maker_idGT: u32
@@ -1755,35 +1755,35 @@ input s0_eternum_AcceptPartialOrderWhereInput {
   trade_idNOTLIKE: u32
 }
 
-type s0_eternum_AddressName {
+type s1_eternum_AddressName {
   address: felt252
   entity: World__Entity
   eventMessage: World__EventMessage
   name: felt252
 }
 
-type s0_eternum_AddressNameConnection {
-  edges: [s0_eternum_AddressNameEdge]
+type s1_eternum_AddressNameConnection {
+  edges: [s1_eternum_AddressNameEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_AddressNameEdge {
+type s1_eternum_AddressNameEdge {
   cursor: Cursor
-  node: s0_eternum_AddressName
+  node: s1_eternum_AddressName
 }
 
-input s0_eternum_AddressNameOrder {
+input s1_eternum_AddressNameOrder {
   direction: OrderDirection!
-  field: s0_eternum_AddressNameOrderField!
+  field: s1_eternum_AddressNameOrderField!
 }
 
-enum s0_eternum_AddressNameOrderField {
+enum s1_eternum_AddressNameOrderField {
   ADDRESS
   NAME
 }
 
-input s0_eternum_AddressNameWhereInput {
+input s1_eternum_AddressNameWhereInput {
   address: felt252
   addressEQ: felt252
   addressGT: felt252
@@ -1808,39 +1808,39 @@ input s0_eternum_AddressNameWhereInput {
   nameNOTLIKE: felt252
 }
 
-type s0_eternum_Army {
+type s1_eternum_Army {
   battle_id: u32
   battle_side: Enum
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
-  troops: s0_eternum_Troops
+  troops: s1_eternum_Troops
 }
 
-type s0_eternum_ArmyConnection {
-  edges: [s0_eternum_ArmyEdge]
+type s1_eternum_ArmyConnection {
+  edges: [s1_eternum_ArmyEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ArmyEdge {
+type s1_eternum_ArmyEdge {
   cursor: Cursor
-  node: s0_eternum_Army
+  node: s1_eternum_Army
 }
 
-input s0_eternum_ArmyOrder {
+input s1_eternum_ArmyOrder {
   direction: OrderDirection!
-  field: s0_eternum_ArmyOrderField!
+  field: s1_eternum_ArmyOrderField!
 }
 
-enum s0_eternum_ArmyOrderField {
+enum s1_eternum_ArmyOrderField {
   BATTLE_ID
   BATTLE_SIDE
   ENTITY_ID
   TROOPS
 }
 
-input s0_eternum_ArmyWhereInput {
+input s1_eternum_ArmyWhereInput {
   battle_id: u32
   battle_idEQ: u32
   battle_idGT: u32
@@ -1866,35 +1866,35 @@ input s0_eternum_ArmyWhereInput {
   entity_idNOTLIKE: u32
 }
 
-type s0_eternum_ArrivalTime {
+type s1_eternum_ArrivalTime {
   arrives_at: u64
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_ArrivalTimeConnection {
-  edges: [s0_eternum_ArrivalTimeEdge]
+type s1_eternum_ArrivalTimeConnection {
+  edges: [s1_eternum_ArrivalTimeEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ArrivalTimeEdge {
+type s1_eternum_ArrivalTimeEdge {
   cursor: Cursor
-  node: s0_eternum_ArrivalTime
+  node: s1_eternum_ArrivalTime
 }
 
-input s0_eternum_ArrivalTimeOrder {
+input s1_eternum_ArrivalTimeOrder {
   direction: OrderDirection!
-  field: s0_eternum_ArrivalTimeOrderField!
+  field: s1_eternum_ArrivalTimeOrderField!
 }
 
-enum s0_eternum_ArrivalTimeOrderField {
+enum s1_eternum_ArrivalTimeOrderField {
   ARRIVES_AT
   ENTITY_ID
 }
 
-input s0_eternum_ArrivalTimeWhereInput {
+input s1_eternum_ArrivalTimeWhereInput {
   arrives_at: u64
   arrives_atEQ: u64
   arrives_atGT: u64
@@ -1919,7 +1919,7 @@ input s0_eternum_ArrivalTimeWhereInput {
   entity_idNOTLIKE: u32
 }
 
-type s0_eternum_Bank {
+type s1_eternum_Bank {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
@@ -1930,7 +1930,7 @@ type s0_eternum_Bank {
   owner_fee_num: u128
 }
 
-type s0_eternum_BankConfig {
+type s1_eternum_BankConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -1939,30 +1939,30 @@ type s0_eternum_BankConfig {
   lp_fee_num: u128
 }
 
-type s0_eternum_BankConfigConnection {
-  edges: [s0_eternum_BankConfigEdge]
+type s1_eternum_BankConfigConnection {
+  edges: [s1_eternum_BankConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BankConfigEdge {
+type s1_eternum_BankConfigEdge {
   cursor: Cursor
-  node: s0_eternum_BankConfig
+  node: s1_eternum_BankConfig
 }
 
-input s0_eternum_BankConfigOrder {
+input s1_eternum_BankConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_BankConfigOrderField!
+  field: s1_eternum_BankConfigOrderField!
 }
 
-enum s0_eternum_BankConfigOrderField {
+enum s1_eternum_BankConfigOrderField {
   CONFIG_ID
   LORDS_COST
   LP_FEE_DENOM
   LP_FEE_NUM
 }
 
-input s0_eternum_BankConfigWhereInput {
+input s1_eternum_BankConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -2009,23 +2009,23 @@ input s0_eternum_BankConfigWhereInput {
   lp_fee_numNOTLIKE: u128
 }
 
-type s0_eternum_BankConnection {
-  edges: [s0_eternum_BankEdge]
+type s1_eternum_BankConnection {
+  edges: [s1_eternum_BankEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BankEdge {
+type s1_eternum_BankEdge {
   cursor: Cursor
-  node: s0_eternum_Bank
+  node: s1_eternum_Bank
 }
 
-input s0_eternum_BankOrder {
+input s1_eternum_BankOrder {
   direction: OrderDirection!
-  field: s0_eternum_BankOrderField!
+  field: s1_eternum_BankOrderField!
 }
 
-enum s0_eternum_BankOrderField {
+enum s1_eternum_BankOrderField {
   ENTITY_ID
   EXISTS
   OWNER_BRIDGE_FEE_DPT_PERCENT
@@ -2034,7 +2034,7 @@ enum s0_eternum_BankOrderField {
   OWNER_FEE_NUM
 }
 
-input s0_eternum_BankWhereInput {
+input s1_eternum_BankWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -2093,15 +2093,15 @@ input s0_eternum_BankWhereInput {
   owner_fee_numNOTLIKE: u128
 }
 
-type s0_eternum_Battle {
-  attack_army: s0_eternum_BattleArmy
-  attack_army_health: s0_eternum_BattleHealth
-  attack_army_lifetime: s0_eternum_BattleArmy
+type s1_eternum_Battle {
+  attack_army: s1_eternum_BattleArmy
+  attack_army_health: s1_eternum_BattleHealth
+  attack_army_lifetime: s1_eternum_BattleArmy
   attack_delta: u64
   attackers_resources_escrow_id: u32
-  defence_army: s0_eternum_BattleArmy
-  defence_army_health: s0_eternum_BattleHealth
-  defence_army_lifetime: s0_eternum_BattleArmy
+  defence_army: s1_eternum_BattleArmy
+  defence_army_health: s1_eternum_BattleHealth
+  defence_army_lifetime: s1_eternum_BattleArmy
   defence_delta: u64
   defenders_resources_escrow_id: u32
   duration_left: u64
@@ -2112,13 +2112,13 @@ type s0_eternum_Battle {
   start_at: u64
 }
 
-type s0_eternum_BattleArmy {
+type s1_eternum_BattleArmy {
   battle_id: u32
   battle_side: Enum
-  troops: s0_eternum_Troops
+  troops: s1_eternum_Troops
 }
 
-type s0_eternum_BattleClaimData {
+type s1_eternum_BattleClaimData {
   claimee_address: ContractAddress
   claimee_name: felt252
   claimer: ContractAddress
@@ -2135,23 +2135,23 @@ type s0_eternum_BattleClaimData {
   y: u32
 }
 
-type s0_eternum_BattleClaimDataConnection {
-  edges: [s0_eternum_BattleClaimDataEdge]
+type s1_eternum_BattleClaimDataConnection {
+  edges: [s1_eternum_BattleClaimDataEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BattleClaimDataEdge {
+type s1_eternum_BattleClaimDataEdge {
   cursor: Cursor
-  node: s0_eternum_BattleClaimData
+  node: s1_eternum_BattleClaimData
 }
 
-input s0_eternum_BattleClaimDataOrder {
+input s1_eternum_BattleClaimDataOrder {
   direction: OrderDirection!
-  field: s0_eternum_BattleClaimDataOrderField!
+  field: s1_eternum_BattleClaimDataOrderField!
 }
 
-enum s0_eternum_BattleClaimDataOrderField {
+enum s1_eternum_BattleClaimDataOrderField {
   CLAIMEE_ADDRESS
   CLAIMEE_NAME
   CLAIMER
@@ -2166,7 +2166,7 @@ enum s0_eternum_BattleClaimDataOrderField {
   Y
 }
 
-input s0_eternum_BattleClaimDataWhereInput {
+input s1_eternum_BattleClaimDataWhereInput {
   claimee_address: ContractAddress
   claimee_addressEQ: ContractAddress
   claimee_addressGT: ContractAddress
@@ -2281,7 +2281,7 @@ input s0_eternum_BattleClaimDataWhereInput {
   yNOTLIKE: u32
 }
 
-type s0_eternum_BattleConfig {
+type s1_eternum_BattleConfig {
   battle_delay_seconds: u64
   config_id: u32
   entity: World__Entity
@@ -2290,30 +2290,30 @@ type s0_eternum_BattleConfig {
   regular_immunity_ticks: u8
 }
 
-type s0_eternum_BattleConfigConnection {
-  edges: [s0_eternum_BattleConfigEdge]
+type s1_eternum_BattleConfigConnection {
+  edges: [s1_eternum_BattleConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BattleConfigEdge {
+type s1_eternum_BattleConfigEdge {
   cursor: Cursor
-  node: s0_eternum_BattleConfig
+  node: s1_eternum_BattleConfig
 }
 
-input s0_eternum_BattleConfigOrder {
+input s1_eternum_BattleConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_BattleConfigOrderField!
+  field: s1_eternum_BattleConfigOrderField!
 }
 
-enum s0_eternum_BattleConfigOrderField {
+enum s1_eternum_BattleConfigOrderField {
   BATTLE_DELAY_SECONDS
   CONFIG_ID
   HYPERSTRUCTURE_IMMUNITY_TICKS
   REGULAR_IMMUNITY_TICKS
 }
 
-input s0_eternum_BattleConfigWhereInput {
+input s1_eternum_BattleConfigWhereInput {
   battle_delay_seconds: u64
   battle_delay_secondsEQ: u64
   battle_delay_secondsGT: u64
@@ -2360,23 +2360,23 @@ input s0_eternum_BattleConfigWhereInput {
   regular_immunity_ticksNOTLIKE: u8
 }
 
-type s0_eternum_BattleConnection {
-  edges: [s0_eternum_BattleEdge]
+type s1_eternum_BattleConnection {
+  edges: [s1_eternum_BattleEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BattleEdge {
+type s1_eternum_BattleEdge {
   cursor: Cursor
-  node: s0_eternum_Battle
+  node: s1_eternum_Battle
 }
 
-type s0_eternum_BattleHealth {
+type s1_eternum_BattleHealth {
   current: u128
   lifetime: u128
 }
 
-type s0_eternum_BattleJoinData {
+type s1_eternum_BattleJoinData {
   battle_entity_id: u32
   duration_left: u64
   entity: World__Entity
@@ -2392,23 +2392,23 @@ type s0_eternum_BattleJoinData {
   y: u32
 }
 
-type s0_eternum_BattleJoinDataConnection {
-  edges: [s0_eternum_BattleJoinDataEdge]
+type s1_eternum_BattleJoinDataConnection {
+  edges: [s1_eternum_BattleJoinDataEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BattleJoinDataEdge {
+type s1_eternum_BattleJoinDataEdge {
   cursor: Cursor
-  node: s0_eternum_BattleJoinData
+  node: s1_eternum_BattleJoinData
 }
 
-input s0_eternum_BattleJoinDataOrder {
+input s1_eternum_BattleJoinDataOrder {
   direction: OrderDirection!
-  field: s0_eternum_BattleJoinDataOrderField!
+  field: s1_eternum_BattleJoinDataOrderField!
 }
 
-enum s0_eternum_BattleJoinDataOrderField {
+enum s1_eternum_BattleJoinDataOrderField {
   BATTLE_ENTITY_ID
   DURATION_LEFT
   EVENT_ID
@@ -2422,7 +2422,7 @@ enum s0_eternum_BattleJoinDataOrderField {
   Y
 }
 
-input s0_eternum_BattleJoinDataWhereInput {
+input s1_eternum_BattleJoinDataWhereInput {
   battle_entity_id: u32
   battle_entity_idEQ: u32
   battle_entity_idGT: u32
@@ -2526,7 +2526,7 @@ input s0_eternum_BattleJoinDataWhereInput {
   yNOTLIKE: u32
 }
 
-type s0_eternum_BattleLeaveData {
+type s1_eternum_BattleLeaveData {
   battle_entity_id: u32
   duration_left: u64
   entity: World__Entity
@@ -2542,23 +2542,23 @@ type s0_eternum_BattleLeaveData {
   y: u32
 }
 
-type s0_eternum_BattleLeaveDataConnection {
-  edges: [s0_eternum_BattleLeaveDataEdge]
+type s1_eternum_BattleLeaveDataConnection {
+  edges: [s1_eternum_BattleLeaveDataEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BattleLeaveDataEdge {
+type s1_eternum_BattleLeaveDataEdge {
   cursor: Cursor
-  node: s0_eternum_BattleLeaveData
+  node: s1_eternum_BattleLeaveData
 }
 
-input s0_eternum_BattleLeaveDataOrder {
+input s1_eternum_BattleLeaveDataOrder {
   direction: OrderDirection!
-  field: s0_eternum_BattleLeaveDataOrderField!
+  field: s1_eternum_BattleLeaveDataOrderField!
 }
 
-enum s0_eternum_BattleLeaveDataOrderField {
+enum s1_eternum_BattleLeaveDataOrderField {
   BATTLE_ENTITY_ID
   DURATION_LEFT
   EVENT_ID
@@ -2572,7 +2572,7 @@ enum s0_eternum_BattleLeaveDataOrderField {
   Y
 }
 
-input s0_eternum_BattleLeaveDataWhereInput {
+input s1_eternum_BattleLeaveDataWhereInput {
   battle_entity_id: u32
   battle_entity_idEQ: u32
   battle_entity_idGT: u32
@@ -2676,12 +2676,12 @@ input s0_eternum_BattleLeaveDataWhereInput {
   yNOTLIKE: u32
 }
 
-input s0_eternum_BattleOrder {
+input s1_eternum_BattleOrder {
   direction: OrderDirection!
-  field: s0_eternum_BattleOrderField!
+  field: s1_eternum_BattleOrderField!
 }
 
-enum s0_eternum_BattleOrderField {
+enum s1_eternum_BattleOrderField {
   ATTACKERS_RESOURCES_ESCROW_ID
   ATTACK_ARMY
   ATTACK_ARMY_HEALTH
@@ -2698,14 +2698,14 @@ enum s0_eternum_BattleOrderField {
   START_AT
 }
 
-type s0_eternum_BattlePillageData {
-  attacker_lost_troops: s0_eternum_Troops
+type s1_eternum_BattlePillageData {
+  attacker_lost_troops: s1_eternum_Troops
   destroyed_building_category: Enum
   entity: World__Entity
   eventMessage: World__EventMessage
   event_id: Enum
   id: u32
-  pillaged_resources: [s0_eternum_u8u128]
+  pillaged_resources: [s1_eternum_u8u128]
   pillaged_structure_entity_id: u32
   pillaged_structure_owner: ContractAddress
   pillaged_structure_owner_name: felt252
@@ -2713,7 +2713,7 @@ type s0_eternum_BattlePillageData {
   pillager_army_entity_id: u32
   pillager_name: felt252
   pillager_realm_entity_id: u32
-  structure_lost_troops: s0_eternum_Troops
+  structure_lost_troops: s1_eternum_Troops
   structure_type: Enum
   timestamp: u64
   winner: Enum
@@ -2721,23 +2721,23 @@ type s0_eternum_BattlePillageData {
   y: u32
 }
 
-type s0_eternum_BattlePillageDataConnection {
-  edges: [s0_eternum_BattlePillageDataEdge]
+type s1_eternum_BattlePillageDataConnection {
+  edges: [s1_eternum_BattlePillageDataEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BattlePillageDataEdge {
+type s1_eternum_BattlePillageDataEdge {
   cursor: Cursor
-  node: s0_eternum_BattlePillageData
+  node: s1_eternum_BattlePillageData
 }
 
-input s0_eternum_BattlePillageDataOrder {
+input s1_eternum_BattlePillageDataOrder {
   direction: OrderDirection!
-  field: s0_eternum_BattlePillageDataOrderField!
+  field: s1_eternum_BattlePillageDataOrderField!
 }
 
-enum s0_eternum_BattlePillageDataOrderField {
+enum s1_eternum_BattlePillageDataOrderField {
   ATTACKER_LOST_TROOPS
   DESTROYED_BUILDING_CATEGORY
   EVENT_ID
@@ -2758,7 +2758,7 @@ enum s0_eternum_BattlePillageDataOrderField {
   Y
 }
 
-input s0_eternum_BattlePillageDataWhereInput {
+input s1_eternum_BattlePillageDataWhereInput {
   destroyed_building_category: Enum
   event_id: Enum
   id: u32
@@ -2886,7 +2886,7 @@ input s0_eternum_BattlePillageDataWhereInput {
   yNOTLIKE: u32
 }
 
-type s0_eternum_BattleStartData {
+type s1_eternum_BattleStartData {
   attacker: ContractAddress
   attacker_army_entity_id: u32
   attacker_name: felt252
@@ -2905,23 +2905,23 @@ type s0_eternum_BattleStartData {
   y: u32
 }
 
-type s0_eternum_BattleStartDataConnection {
-  edges: [s0_eternum_BattleStartDataEdge]
+type s1_eternum_BattleStartDataConnection {
+  edges: [s1_eternum_BattleStartDataEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BattleStartDataEdge {
+type s1_eternum_BattleStartDataEdge {
   cursor: Cursor
-  node: s0_eternum_BattleStartData
+  node: s1_eternum_BattleStartData
 }
 
-input s0_eternum_BattleStartDataOrder {
+input s1_eternum_BattleStartDataOrder {
   direction: OrderDirection!
-  field: s0_eternum_BattleStartDataOrderField!
+  field: s1_eternum_BattleStartDataOrderField!
 }
 
-enum s0_eternum_BattleStartDataOrderField {
+enum s1_eternum_BattleStartDataOrderField {
   ATTACKER
   ATTACKER_ARMY_ENTITY_ID
   ATTACKER_NAME
@@ -2938,7 +2938,7 @@ enum s0_eternum_BattleStartDataOrderField {
   Y
 }
 
-input s0_eternum_BattleStartDataWhereInput {
+input s1_eternum_BattleStartDataWhereInput {
   attacker: ContractAddress
   attackerEQ: ContractAddress
   attackerGT: ContractAddress
@@ -3075,7 +3075,7 @@ input s0_eternum_BattleStartDataWhereInput {
   yNOTLIKE: u32
 }
 
-input s0_eternum_BattleWhereInput {
+input s1_eternum_BattleWhereInput {
   attack_delta: u64
   attack_deltaEQ: u64
   attack_deltaGT: u64
@@ -3166,7 +3166,7 @@ input s0_eternum_BattleWhereInput {
   start_atNOTLIKE: u64
 }
 
-type s0_eternum_Building {
+type s1_eternum_Building {
   bonus_percent: u32
   category: Enum
   entity: World__Entity
@@ -3181,7 +3181,7 @@ type s0_eternum_Building {
   produced_resource_type: u8
 }
 
-type s0_eternum_BuildingCategoryPopConfig {
+type s1_eternum_BuildingCategoryPopConfig {
   building_category: Enum
   capacity: u32
   config_id: u32
@@ -3190,30 +3190,30 @@ type s0_eternum_BuildingCategoryPopConfig {
   population: u32
 }
 
-type s0_eternum_BuildingCategoryPopConfigConnection {
-  edges: [s0_eternum_BuildingCategoryPopConfigEdge]
+type s1_eternum_BuildingCategoryPopConfigConnection {
+  edges: [s1_eternum_BuildingCategoryPopConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BuildingCategoryPopConfigEdge {
+type s1_eternum_BuildingCategoryPopConfigEdge {
   cursor: Cursor
-  node: s0_eternum_BuildingCategoryPopConfig
+  node: s1_eternum_BuildingCategoryPopConfig
 }
 
-input s0_eternum_BuildingCategoryPopConfigOrder {
+input s1_eternum_BuildingCategoryPopConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_BuildingCategoryPopConfigOrderField!
+  field: s1_eternum_BuildingCategoryPopConfigOrderField!
 }
 
-enum s0_eternum_BuildingCategoryPopConfigOrderField {
+enum s1_eternum_BuildingCategoryPopConfigOrderField {
   BUILDING_CATEGORY
   CAPACITY
   CONFIG_ID
   POPULATION
 }
 
-input s0_eternum_BuildingCategoryPopConfigWhereInput {
+input s1_eternum_BuildingCategoryPopConfigWhereInput {
   building_category: Enum
   capacity: u32
   capacityEQ: u32
@@ -3250,7 +3250,7 @@ input s0_eternum_BuildingCategoryPopConfigWhereInput {
   populationNOTLIKE: u32
 }
 
-type s0_eternum_BuildingConfig {
+type s1_eternum_BuildingConfig {
   category: Enum
   config_id: u32
   entity: World__Entity
@@ -3260,23 +3260,23 @@ type s0_eternum_BuildingConfig {
   resource_type: u8
 }
 
-type s0_eternum_BuildingConfigConnection {
-  edges: [s0_eternum_BuildingConfigEdge]
+type s1_eternum_BuildingConfigConnection {
+  edges: [s1_eternum_BuildingConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BuildingConfigEdge {
+type s1_eternum_BuildingConfigEdge {
   cursor: Cursor
-  node: s0_eternum_BuildingConfig
+  node: s1_eternum_BuildingConfig
 }
 
-input s0_eternum_BuildingConfigOrder {
+input s1_eternum_BuildingConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_BuildingConfigOrderField!
+  field: s1_eternum_BuildingConfigOrderField!
 }
 
-enum s0_eternum_BuildingConfigOrderField {
+enum s1_eternum_BuildingConfigOrderField {
   CATEGORY
   CONFIG_ID
   RESOURCE_COST_COUNT
@@ -3284,7 +3284,7 @@ enum s0_eternum_BuildingConfigOrderField {
   RESOURCE_TYPE
 }
 
-input s0_eternum_BuildingConfigWhereInput {
+input s1_eternum_BuildingConfigWhereInput {
   category: Enum
   config_id: u32
   config_idEQ: u32
@@ -3332,46 +3332,46 @@ input s0_eternum_BuildingConfigWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_BuildingConnection {
-  edges: [s0_eternum_BuildingEdge]
+type s1_eternum_BuildingConnection {
+  edges: [s1_eternum_BuildingEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BuildingEdge {
+type s1_eternum_BuildingEdge {
   cursor: Cursor
-  node: s0_eternum_Building
+  node: s1_eternum_Building
 }
 
-type s0_eternum_BuildingGeneralConfig {
+type s1_eternum_BuildingGeneralConfig {
   base_cost_percent_increase: u16
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_BuildingGeneralConfigConnection {
-  edges: [s0_eternum_BuildingGeneralConfigEdge]
+type s1_eternum_BuildingGeneralConfigConnection {
+  edges: [s1_eternum_BuildingGeneralConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BuildingGeneralConfigEdge {
+type s1_eternum_BuildingGeneralConfigEdge {
   cursor: Cursor
-  node: s0_eternum_BuildingGeneralConfig
+  node: s1_eternum_BuildingGeneralConfig
 }
 
-input s0_eternum_BuildingGeneralConfigOrder {
+input s1_eternum_BuildingGeneralConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_BuildingGeneralConfigOrderField!
+  field: s1_eternum_BuildingGeneralConfigOrderField!
 }
 
-enum s0_eternum_BuildingGeneralConfigOrderField {
+enum s1_eternum_BuildingGeneralConfigOrderField {
   BASE_COST_PERCENT_INCREASE
   CONFIG_ID
 }
 
-input s0_eternum_BuildingGeneralConfigWhereInput {
+input s1_eternum_BuildingGeneralConfigWhereInput {
   base_cost_percent_increase: u16
   base_cost_percent_increaseEQ: u16
   base_cost_percent_increaseGT: u16
@@ -3396,12 +3396,12 @@ input s0_eternum_BuildingGeneralConfigWhereInput {
   config_idNOTLIKE: u32
 }
 
-input s0_eternum_BuildingOrder {
+input s1_eternum_BuildingOrder {
   direction: OrderDirection!
-  field: s0_eternum_BuildingOrderField!
+  field: s1_eternum_BuildingOrderField!
 }
 
-enum s0_eternum_BuildingOrderField {
+enum s1_eternum_BuildingOrderField {
   BONUS_PERCENT
   CATEGORY
   ENTITY_ID
@@ -3414,7 +3414,7 @@ enum s0_eternum_BuildingOrderField {
   PRODUCED_RESOURCE_TYPE
 }
 
-type s0_eternum_BuildingQuantityv2 {
+type s1_eternum_BuildingQuantityv2 {
   category: Enum
   entity: World__Entity
   entity_id: u32
@@ -3422,29 +3422,29 @@ type s0_eternum_BuildingQuantityv2 {
   value: u8
 }
 
-type s0_eternum_BuildingQuantityv2Connection {
-  edges: [s0_eternum_BuildingQuantityv2Edge]
+type s1_eternum_BuildingQuantityv2Connection {
+  edges: [s1_eternum_BuildingQuantityv2Edge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BuildingQuantityv2Edge {
+type s1_eternum_BuildingQuantityv2Edge {
   cursor: Cursor
-  node: s0_eternum_BuildingQuantityv2
+  node: s1_eternum_BuildingQuantityv2
 }
 
-input s0_eternum_BuildingQuantityv2Order {
+input s1_eternum_BuildingQuantityv2Order {
   direction: OrderDirection!
-  field: s0_eternum_BuildingQuantityv2OrderField!
+  field: s1_eternum_BuildingQuantityv2OrderField!
 }
 
-enum s0_eternum_BuildingQuantityv2OrderField {
+enum s1_eternum_BuildingQuantityv2OrderField {
   CATEGORY
   ENTITY_ID
   VALUE
 }
 
-input s0_eternum_BuildingQuantityv2WhereInput {
+input s1_eternum_BuildingQuantityv2WhereInput {
   category: Enum
   entity_id: u32
   entity_idEQ: u32
@@ -3470,7 +3470,7 @@ input s0_eternum_BuildingQuantityv2WhereInput {
   valueNOTLIKE: u8
 }
 
-input s0_eternum_BuildingWhereInput {
+input s1_eternum_BuildingWhereInput {
   bonus_percent: u32
   bonus_percentEQ: u32
   bonus_percentGT: u32
@@ -3563,7 +3563,7 @@ input s0_eternum_BuildingWhereInput {
   produced_resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_BurnDonkey {
+type s1_eternum_BurnDonkey {
   amount: u128
   entity: World__Entity
   entity_id: u32
@@ -3572,30 +3572,30 @@ type s0_eternum_BurnDonkey {
   timestamp: u64
 }
 
-type s0_eternum_BurnDonkeyConnection {
-  edges: [s0_eternum_BurnDonkeyEdge]
+type s1_eternum_BurnDonkeyConnection {
+  edges: [s1_eternum_BurnDonkeyEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_BurnDonkeyEdge {
+type s1_eternum_BurnDonkeyEdge {
   cursor: Cursor
-  node: s0_eternum_BurnDonkey
+  node: s1_eternum_BurnDonkey
 }
 
-input s0_eternum_BurnDonkeyOrder {
+input s1_eternum_BurnDonkeyOrder {
   direction: OrderDirection!
-  field: s0_eternum_BurnDonkeyOrderField!
+  field: s1_eternum_BurnDonkeyOrderField!
 }
 
-enum s0_eternum_BurnDonkeyOrderField {
+enum s1_eternum_BurnDonkeyOrderField {
   AMOUNT
   ENTITY_ID
   PLAYER_ADDRESS
   TIMESTAMP
 }
 
-input s0_eternum_BurnDonkeyWhereInput {
+input s1_eternum_BurnDonkeyWhereInput {
   amount: u128
   amountEQ: u128
   amountGT: u128
@@ -3642,7 +3642,7 @@ input s0_eternum_BurnDonkeyWhereInput {
   timestampNOTLIKE: u64
 }
 
-type s0_eternum_CancelOrder {
+type s1_eternum_CancelOrder {
   entity: World__Entity
   eventMessage: World__EventMessage
   maker_id: u32
@@ -3651,30 +3651,30 @@ type s0_eternum_CancelOrder {
   trade_id: u32
 }
 
-type s0_eternum_CancelOrderConnection {
-  edges: [s0_eternum_CancelOrderEdge]
+type s1_eternum_CancelOrderConnection {
+  edges: [s1_eternum_CancelOrderEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_CancelOrderEdge {
+type s1_eternum_CancelOrderEdge {
   cursor: Cursor
-  node: s0_eternum_CancelOrder
+  node: s1_eternum_CancelOrder
 }
 
-input s0_eternum_CancelOrderOrder {
+input s1_eternum_CancelOrderOrder {
   direction: OrderDirection!
-  field: s0_eternum_CancelOrderOrderField!
+  field: s1_eternum_CancelOrderOrderField!
 }
 
-enum s0_eternum_CancelOrderOrderField {
+enum s1_eternum_CancelOrderOrderField {
   MAKER_ID
   TAKER_ID
   TIMESTAMP
   TRADE_ID
 }
 
-input s0_eternum_CancelOrderWhereInput {
+input s1_eternum_CancelOrderWhereInput {
   maker_id: u32
   maker_idEQ: u32
   maker_idGT: u32
@@ -3721,35 +3721,35 @@ input s0_eternum_CancelOrderWhereInput {
   trade_idNOTLIKE: u32
 }
 
-type s0_eternum_CapacityCategory {
+type s1_eternum_CapacityCategory {
   category: Enum
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_CapacityCategoryConnection {
-  edges: [s0_eternum_CapacityCategoryEdge]
+type s1_eternum_CapacityCategoryConnection {
+  edges: [s1_eternum_CapacityCategoryEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_CapacityCategoryEdge {
+type s1_eternum_CapacityCategoryEdge {
   cursor: Cursor
-  node: s0_eternum_CapacityCategory
+  node: s1_eternum_CapacityCategory
 }
 
-input s0_eternum_CapacityCategoryOrder {
+input s1_eternum_CapacityCategoryOrder {
   direction: OrderDirection!
-  field: s0_eternum_CapacityCategoryOrderField!
+  field: s1_eternum_CapacityCategoryOrderField!
 }
 
-enum s0_eternum_CapacityCategoryOrderField {
+enum s1_eternum_CapacityCategoryOrderField {
   CATEGORY
   ENTITY_ID
 }
 
-input s0_eternum_CapacityCategoryWhereInput {
+input s1_eternum_CapacityCategoryWhereInput {
   category: Enum
   entity_id: u32
   entity_idEQ: u32
@@ -3764,35 +3764,35 @@ input s0_eternum_CapacityCategoryWhereInput {
   entity_idNOTLIKE: u32
 }
 
-type s0_eternum_CapacityConfig {
+type s1_eternum_CapacityConfig {
   category: Enum
   entity: World__Entity
   eventMessage: World__EventMessage
   weight_gram: u128
 }
 
-type s0_eternum_CapacityConfigConnection {
-  edges: [s0_eternum_CapacityConfigEdge]
+type s1_eternum_CapacityConfigConnection {
+  edges: [s1_eternum_CapacityConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_CapacityConfigEdge {
+type s1_eternum_CapacityConfigEdge {
   cursor: Cursor
-  node: s0_eternum_CapacityConfig
+  node: s1_eternum_CapacityConfig
 }
 
-input s0_eternum_CapacityConfigOrder {
+input s1_eternum_CapacityConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_CapacityConfigOrderField!
+  field: s1_eternum_CapacityConfigOrderField!
 }
 
-enum s0_eternum_CapacityConfigOrderField {
+enum s1_eternum_CapacityConfigOrderField {
   CATEGORY
   WEIGHT_GRAM
 }
 
-input s0_eternum_CapacityConfigWhereInput {
+input s1_eternum_CapacityConfigWhereInput {
   category: Enum
   weight_gram: u128
   weight_gramEQ: u128
@@ -3807,12 +3807,12 @@ input s0_eternum_CapacityConfigWhereInput {
   weight_gramNOTLIKE: u128
 }
 
-type s0_eternum_ContractAddressu16 {
+type s1_eternum_ContractAddressu16 {
   _0: ContractAddress
   _1: u16
 }
 
-type s0_eternum_Contribution {
+type s1_eternum_Contribution {
   amount: u128
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -3821,30 +3821,30 @@ type s0_eternum_Contribution {
   resource_type: u8
 }
 
-type s0_eternum_ContributionConnection {
-  edges: [s0_eternum_ContributionEdge]
+type s1_eternum_ContributionConnection {
+  edges: [s1_eternum_ContributionEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ContributionEdge {
+type s1_eternum_ContributionEdge {
   cursor: Cursor
-  node: s0_eternum_Contribution
+  node: s1_eternum_Contribution
 }
 
-input s0_eternum_ContributionOrder {
+input s1_eternum_ContributionOrder {
   direction: OrderDirection!
-  field: s0_eternum_ContributionOrderField!
+  field: s1_eternum_ContributionOrderField!
 }
 
-enum s0_eternum_ContributionOrderField {
+enum s1_eternum_ContributionOrderField {
   AMOUNT
   HYPERSTRUCTURE_ENTITY_ID
   PLAYER_ADDRESS
   RESOURCE_TYPE
 }
 
-input s0_eternum_ContributionWhereInput {
+input s1_eternum_ContributionWhereInput {
   amount: u128
   amountEQ: u128
   amountGT: u128
@@ -3891,12 +3891,12 @@ input s0_eternum_ContributionWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_Coord {
+type s1_eternum_Coord {
   x: u32
   y: u32
 }
 
-type s0_eternum_CreateGuild {
+type s1_eternum_CreateGuild {
   entity: World__Entity
   eventMessage: World__EventMessage
   guild_entity_id: u32
@@ -3904,29 +3904,29 @@ type s0_eternum_CreateGuild {
   timestamp: u64
 }
 
-type s0_eternum_CreateGuildConnection {
-  edges: [s0_eternum_CreateGuildEdge]
+type s1_eternum_CreateGuildConnection {
+  edges: [s1_eternum_CreateGuildEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_CreateGuildEdge {
+type s1_eternum_CreateGuildEdge {
   cursor: Cursor
-  node: s0_eternum_CreateGuild
+  node: s1_eternum_CreateGuild
 }
 
-input s0_eternum_CreateGuildOrder {
+input s1_eternum_CreateGuildOrder {
   direction: OrderDirection!
-  field: s0_eternum_CreateGuildOrderField!
+  field: s1_eternum_CreateGuildOrderField!
 }
 
-enum s0_eternum_CreateGuildOrderField {
+enum s1_eternum_CreateGuildOrderField {
   GUILD_ENTITY_ID
   GUILD_NAME
   TIMESTAMP
 }
 
-input s0_eternum_CreateGuildWhereInput {
+input s1_eternum_CreateGuildWhereInput {
   guild_entity_id: u32
   guild_entity_idEQ: u32
   guild_entity_idGT: u32
@@ -3962,7 +3962,7 @@ input s0_eternum_CreateGuildWhereInput {
   timestampNOTLIKE: u64
 }
 
-type s0_eternum_CreateOrder {
+type s1_eternum_CreateOrder {
   entity: World__Entity
   eventMessage: World__EventMessage
   maker_id: u32
@@ -3971,30 +3971,30 @@ type s0_eternum_CreateOrder {
   trade_id: u32
 }
 
-type s0_eternum_CreateOrderConnection {
-  edges: [s0_eternum_CreateOrderEdge]
+type s1_eternum_CreateOrderConnection {
+  edges: [s1_eternum_CreateOrderEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_CreateOrderEdge {
+type s1_eternum_CreateOrderEdge {
   cursor: Cursor
-  node: s0_eternum_CreateOrder
+  node: s1_eternum_CreateOrder
 }
 
-input s0_eternum_CreateOrderOrder {
+input s1_eternum_CreateOrderOrder {
   direction: OrderDirection!
-  field: s0_eternum_CreateOrderOrderField!
+  field: s1_eternum_CreateOrderOrderField!
 }
 
-enum s0_eternum_CreateOrderOrderField {
+enum s1_eternum_CreateOrderOrderField {
   MAKER_ID
   TAKER_ID
   TIMESTAMP
   TRADE_ID
 }
 
-input s0_eternum_CreateOrderWhereInput {
+input s1_eternum_CreateOrderWhereInput {
   maker_id: u32
   maker_idEQ: u32
   maker_idGT: u32
@@ -4041,7 +4041,7 @@ input s0_eternum_CreateOrderWhereInput {
   trade_idNOTLIKE: u32
 }
 
-type s0_eternum_DetachedResource {
+type s1_eternum_DetachedResource {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
@@ -4050,30 +4050,30 @@ type s0_eternum_DetachedResource {
   resource_type: u8
 }
 
-type s0_eternum_DetachedResourceConnection {
-  edges: [s0_eternum_DetachedResourceEdge]
+type s1_eternum_DetachedResourceConnection {
+  edges: [s1_eternum_DetachedResourceEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_DetachedResourceEdge {
+type s1_eternum_DetachedResourceEdge {
   cursor: Cursor
-  node: s0_eternum_DetachedResource
+  node: s1_eternum_DetachedResource
 }
 
-input s0_eternum_DetachedResourceOrder {
+input s1_eternum_DetachedResourceOrder {
   direction: OrderDirection!
-  field: s0_eternum_DetachedResourceOrderField!
+  field: s1_eternum_DetachedResourceOrderField!
 }
 
-enum s0_eternum_DetachedResourceOrderField {
+enum s1_eternum_DetachedResourceOrderField {
   ENTITY_ID
   INDEX
   RESOURCE_AMOUNT
   RESOURCE_TYPE
 }
 
-input s0_eternum_DetachedResourceWhereInput {
+input s1_eternum_DetachedResourceWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -4120,35 +4120,35 @@ input s0_eternum_DetachedResourceWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_EntityName {
+type s1_eternum_EntityName {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
   name: felt252
 }
 
-type s0_eternum_EntityNameConnection {
-  edges: [s0_eternum_EntityNameEdge]
+type s1_eternum_EntityNameConnection {
+  edges: [s1_eternum_EntityNameEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_EntityNameEdge {
+type s1_eternum_EntityNameEdge {
   cursor: Cursor
-  node: s0_eternum_EntityName
+  node: s1_eternum_EntityName
 }
 
-input s0_eternum_EntityNameOrder {
+input s1_eternum_EntityNameOrder {
   direction: OrderDirection!
-  field: s0_eternum_EntityNameOrderField!
+  field: s1_eternum_EntityNameOrderField!
 }
 
-enum s0_eternum_EntityNameOrderField {
+enum s1_eternum_EntityNameOrderField {
   ENTITY_ID
   NAME
 }
 
-input s0_eternum_EntityNameWhereInput {
+input s1_eternum_EntityNameWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -4173,35 +4173,35 @@ input s0_eternum_EntityNameWhereInput {
   nameNOTLIKE: felt252
 }
 
-type s0_eternum_EntityOwner {
+type s1_eternum_EntityOwner {
   entity: World__Entity
   entity_id: u32
   entity_owner_id: u32
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_EntityOwnerConnection {
-  edges: [s0_eternum_EntityOwnerEdge]
+type s1_eternum_EntityOwnerConnection {
+  edges: [s1_eternum_EntityOwnerEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_EntityOwnerEdge {
+type s1_eternum_EntityOwnerEdge {
   cursor: Cursor
-  node: s0_eternum_EntityOwner
+  node: s1_eternum_EntityOwner
 }
 
-input s0_eternum_EntityOwnerOrder {
+input s1_eternum_EntityOwnerOrder {
   direction: OrderDirection!
-  field: s0_eternum_EntityOwnerOrderField!
+  field: s1_eternum_EntityOwnerOrderField!
 }
 
-enum s0_eternum_EntityOwnerOrderField {
+enum s1_eternum_EntityOwnerOrderField {
   ENTITY_ID
   ENTITY_OWNER_ID
 }
 
-input s0_eternum_EntityOwnerWhereInput {
+input s1_eternum_EntityOwnerWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -4226,39 +4226,39 @@ input s0_eternum_EntityOwnerWhereInput {
   entity_owner_idNOTLIKE: u32
 }
 
-type s0_eternum_Epoch {
+type s1_eternum_Epoch {
   entity: World__Entity
   eventMessage: World__EventMessage
   hyperstructure_entity_id: u32
   index: u16
-  owners: [s0_eternum_ContractAddressu16]
+  owners: [s1_eternum_ContractAddressu16]
   start_timestamp: u64
 }
 
-type s0_eternum_EpochConnection {
-  edges: [s0_eternum_EpochEdge]
+type s1_eternum_EpochConnection {
+  edges: [s1_eternum_EpochEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_EpochEdge {
+type s1_eternum_EpochEdge {
   cursor: Cursor
-  node: s0_eternum_Epoch
+  node: s1_eternum_Epoch
 }
 
-input s0_eternum_EpochOrder {
+input s1_eternum_EpochOrder {
   direction: OrderDirection!
-  field: s0_eternum_EpochOrderField!
+  field: s1_eternum_EpochOrderField!
 }
 
-enum s0_eternum_EpochOrderField {
+enum s1_eternum_EpochOrderField {
   HYPERSTRUCTURE_ENTITY_ID
   INDEX
   OWNERS
   START_TIMESTAMP
 }
 
-input s0_eternum_EpochWhereInput {
+input s1_eternum_EpochWhereInput {
   hyperstructure_entity_id: u32
   hyperstructure_entity_idEQ: u32
   hyperstructure_entity_idGT: u32
@@ -4294,12 +4294,12 @@ input s0_eternum_EpochWhereInput {
   start_timestampNOTLIKE: u64
 }
 
-type s0_eternum_Fixed {
+type s1_eternum_Fixed {
   mag: u128
   sign: bool
 }
 
-type s0_eternum_FragmentMineDiscovered {
+type s1_eternum_FragmentMineDiscovered {
   discovered_at: u64
   entity: World__Entity
   entity_owner_id: u32
@@ -4307,30 +4307,30 @@ type s0_eternum_FragmentMineDiscovered {
   mine_entity_id: u32
 }
 
-type s0_eternum_FragmentMineDiscoveredConnection {
-  edges: [s0_eternum_FragmentMineDiscoveredEdge]
+type s1_eternum_FragmentMineDiscoveredConnection {
+  edges: [s1_eternum_FragmentMineDiscoveredEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_FragmentMineDiscoveredEdge {
+type s1_eternum_FragmentMineDiscoveredEdge {
   cursor: Cursor
-  node: s0_eternum_FragmentMineDiscovered
+  node: s1_eternum_FragmentMineDiscovered
 }
 
-input s0_eternum_FragmentMineDiscoveredOrder {
+input s1_eternum_FragmentMineDiscoveredOrder {
   direction: OrderDirection!
-  field: s0_eternum_FragmentMineDiscoveredOrderField!
+  field: s1_eternum_FragmentMineDiscoveredOrderField!
 }
 
-enum s0_eternum_FragmentMineDiscoveredOrderField {
+enum s1_eternum_FragmentMineDiscoveredOrderField {
   DISCOVERED_AT
   ENTITY_OWNER_ID
   MINE_ENTITY_ID
   PRODUCTION_DEADLINE_TICK
 }
 
-input s0_eternum_FragmentMineDiscoveredWhereInput {
+input s1_eternum_FragmentMineDiscoveredWhereInput {
   discovered_at: u64
   discovered_atEQ: u64
   discovered_atGT: u64
@@ -4366,35 +4366,35 @@ input s0_eternum_FragmentMineDiscoveredWhereInput {
   mine_entity_idNOTLIKE: u32
 }
 
-type s0_eternum_GameEnded {
+type s1_eternum_GameEnded {
   entity: World__Entity
   eventMessage: World__EventMessage
   timestamp: u64
   winner_address: ContractAddress
 }
 
-type s0_eternum_GameEndedConnection {
-  edges: [s0_eternum_GameEndedEdge]
+type s1_eternum_GameEndedConnection {
+  edges: [s1_eternum_GameEndedEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_GameEndedEdge {
+type s1_eternum_GameEndedEdge {
   cursor: Cursor
-  node: s0_eternum_GameEnded
+  node: s1_eternum_GameEnded
 }
 
-input s0_eternum_GameEndedOrder {
+input s1_eternum_GameEndedOrder {
   direction: OrderDirection!
-  field: s0_eternum_GameEndedOrderField!
+  field: s1_eternum_GameEndedOrderField!
 }
 
-enum s0_eternum_GameEndedOrderField {
+enum s1_eternum_GameEndedOrderField {
   TIMESTAMP
   WINNER_ADDRESS
 }
 
-input s0_eternum_GameEndedWhereInput {
+input s1_eternum_GameEndedWhereInput {
   timestamp: u64
   timestampEQ: u64
   timestampGT: u64
@@ -4419,7 +4419,7 @@ input s0_eternum_GameEndedWhereInput {
   winner_addressNOTLIKE: ContractAddress
 }
 
-type s0_eternum_Guild {
+type s1_eternum_Guild {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
@@ -4427,46 +4427,46 @@ type s0_eternum_Guild {
   member_count: u16
 }
 
-type s0_eternum_GuildConnection {
-  edges: [s0_eternum_GuildEdge]
+type s1_eternum_GuildConnection {
+  edges: [s1_eternum_GuildEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_GuildEdge {
+type s1_eternum_GuildEdge {
   cursor: Cursor
-  node: s0_eternum_Guild
+  node: s1_eternum_Guild
 }
 
-type s0_eternum_GuildMember {
+type s1_eternum_GuildMember {
   address: ContractAddress
   entity: World__Entity
   eventMessage: World__EventMessage
   guild_entity_id: u32
 }
 
-type s0_eternum_GuildMemberConnection {
-  edges: [s0_eternum_GuildMemberEdge]
+type s1_eternum_GuildMemberConnection {
+  edges: [s1_eternum_GuildMemberEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_GuildMemberEdge {
+type s1_eternum_GuildMemberEdge {
   cursor: Cursor
-  node: s0_eternum_GuildMember
+  node: s1_eternum_GuildMember
 }
 
-input s0_eternum_GuildMemberOrder {
+input s1_eternum_GuildMemberOrder {
   direction: OrderDirection!
-  field: s0_eternum_GuildMemberOrderField!
+  field: s1_eternum_GuildMemberOrderField!
 }
 
-enum s0_eternum_GuildMemberOrderField {
+enum s1_eternum_GuildMemberOrderField {
   ADDRESS
   GUILD_ENTITY_ID
 }
 
-input s0_eternum_GuildMemberWhereInput {
+input s1_eternum_GuildMemberWhereInput {
   address: ContractAddress
   addressEQ: ContractAddress
   addressGT: ContractAddress
@@ -4491,18 +4491,18 @@ input s0_eternum_GuildMemberWhereInput {
   guild_entity_idNOTLIKE: u32
 }
 
-input s0_eternum_GuildOrder {
+input s1_eternum_GuildOrder {
   direction: OrderDirection!
-  field: s0_eternum_GuildOrderField!
+  field: s1_eternum_GuildOrderField!
 }
 
-enum s0_eternum_GuildOrderField {
+enum s1_eternum_GuildOrderField {
   ENTITY_ID
   IS_PUBLIC
   MEMBER_COUNT
 }
 
-input s0_eternum_GuildWhereInput {
+input s1_eternum_GuildWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -4528,7 +4528,7 @@ input s0_eternum_GuildWhereInput {
   member_countNOTLIKE: u16
 }
 
-type s0_eternum_GuildWhitelist {
+type s1_eternum_GuildWhitelist {
   address: ContractAddress
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -4536,29 +4536,29 @@ type s0_eternum_GuildWhitelist {
   is_whitelisted: bool
 }
 
-type s0_eternum_GuildWhitelistConnection {
-  edges: [s0_eternum_GuildWhitelistEdge]
+type s1_eternum_GuildWhitelistConnection {
+  edges: [s1_eternum_GuildWhitelistEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_GuildWhitelistEdge {
+type s1_eternum_GuildWhitelistEdge {
   cursor: Cursor
-  node: s0_eternum_GuildWhitelist
+  node: s1_eternum_GuildWhitelist
 }
 
-input s0_eternum_GuildWhitelistOrder {
+input s1_eternum_GuildWhitelistOrder {
   direction: OrderDirection!
-  field: s0_eternum_GuildWhitelistOrderField!
+  field: s1_eternum_GuildWhitelistOrderField!
 }
 
-enum s0_eternum_GuildWhitelistOrderField {
+enum s1_eternum_GuildWhitelistOrderField {
   ADDRESS
   GUILD_ENTITY_ID
   IS_WHITELISTED
 }
 
-input s0_eternum_GuildWhitelistWhereInput {
+input s1_eternum_GuildWhitelistWhereInput {
   address: ContractAddress
   addressEQ: ContractAddress
   addressGT: ContractAddress
@@ -4584,7 +4584,7 @@ input s0_eternum_GuildWhitelistWhereInput {
   is_whitelisted: bool
 }
 
-type s0_eternum_Health {
+type s1_eternum_Health {
   current: u128
   entity: World__Entity
   entity_id: u32
@@ -4592,29 +4592,29 @@ type s0_eternum_Health {
   lifetime: u128
 }
 
-type s0_eternum_HealthConnection {
-  edges: [s0_eternum_HealthEdge]
+type s1_eternum_HealthConnection {
+  edges: [s1_eternum_HealthEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_HealthEdge {
+type s1_eternum_HealthEdge {
   cursor: Cursor
-  node: s0_eternum_Health
+  node: s1_eternum_Health
 }
 
-input s0_eternum_HealthOrder {
+input s1_eternum_HealthOrder {
   direction: OrderDirection!
-  field: s0_eternum_HealthOrderField!
+  field: s1_eternum_HealthOrderField!
 }
 
-enum s0_eternum_HealthOrderField {
+enum s1_eternum_HealthOrderField {
   CURRENT
   ENTITY_ID
   LIFETIME
 }
 
-input s0_eternum_HealthWhereInput {
+input s1_eternum_HealthWhereInput {
   current: u128
   currentEQ: u128
   currentGT: u128
@@ -4650,7 +4650,7 @@ input s0_eternum_HealthWhereInput {
   lifetimeNOTLIKE: u128
 }
 
-type s0_eternum_Hyperstructure {
+type s1_eternum_Hyperstructure {
   access: Enum
   completed: bool
   current_epoch: u16
@@ -4662,8 +4662,8 @@ type s0_eternum_Hyperstructure {
   randomness: felt252
 }
 
-type s0_eternum_HyperstructureCoOwnersChange {
-  co_owners: [s0_eternum_ContractAddressu16]
+type s1_eternum_HyperstructureCoOwnersChange {
+  co_owners: [s1_eternum_ContractAddressu16]
   entity: World__Entity
   eventMessage: World__EventMessage
   hyperstructure_entity_id: u32
@@ -4671,30 +4671,30 @@ type s0_eternum_HyperstructureCoOwnersChange {
   timestamp: u64
 }
 
-type s0_eternum_HyperstructureCoOwnersChangeConnection {
-  edges: [s0_eternum_HyperstructureCoOwnersChangeEdge]
+type s1_eternum_HyperstructureCoOwnersChangeConnection {
+  edges: [s1_eternum_HyperstructureCoOwnersChangeEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_HyperstructureCoOwnersChangeEdge {
+type s1_eternum_HyperstructureCoOwnersChangeEdge {
   cursor: Cursor
-  node: s0_eternum_HyperstructureCoOwnersChange
+  node: s1_eternum_HyperstructureCoOwnersChange
 }
 
-input s0_eternum_HyperstructureCoOwnersChangeOrder {
+input s1_eternum_HyperstructureCoOwnersChangeOrder {
   direction: OrderDirection!
-  field: s0_eternum_HyperstructureCoOwnersChangeOrderField!
+  field: s1_eternum_HyperstructureCoOwnersChangeOrderField!
 }
 
-enum s0_eternum_HyperstructureCoOwnersChangeOrderField {
+enum s1_eternum_HyperstructureCoOwnersChangeOrderField {
   CO_OWNERS
   HYPERSTRUCTURE_ENTITY_ID
   ID
   TIMESTAMP
 }
 
-input s0_eternum_HyperstructureCoOwnersChangeWhereInput {
+input s1_eternum_HyperstructureCoOwnersChangeWhereInput {
   hyperstructure_entity_id: u32
   hyperstructure_entity_idEQ: u32
   hyperstructure_entity_idGT: u32
@@ -4730,7 +4730,7 @@ input s0_eternum_HyperstructureCoOwnersChangeWhereInput {
   timestampNOTLIKE: u64
 }
 
-type s0_eternum_HyperstructureConfig {
+type s1_eternum_HyperstructureConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -4740,23 +4740,23 @@ type s0_eternum_HyperstructureConfig {
   time_between_shares_change: u64
 }
 
-type s0_eternum_HyperstructureConfigConnection {
-  edges: [s0_eternum_HyperstructureConfigEdge]
+type s1_eternum_HyperstructureConfigConnection {
+  edges: [s1_eternum_HyperstructureConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_HyperstructureConfigEdge {
+type s1_eternum_HyperstructureConfigEdge {
   cursor: Cursor
-  node: s0_eternum_HyperstructureConfig
+  node: s1_eternum_HyperstructureConfig
 }
 
-input s0_eternum_HyperstructureConfigOrder {
+input s1_eternum_HyperstructureConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_HyperstructureConfigOrderField!
+  field: s1_eternum_HyperstructureConfigOrderField!
 }
 
-enum s0_eternum_HyperstructureConfigOrderField {
+enum s1_eternum_HyperstructureConfigOrderField {
   CONFIG_ID
   POINTS_FOR_WIN
   POINTS_ON_COMPLETION
@@ -4764,7 +4764,7 @@ enum s0_eternum_HyperstructureConfigOrderField {
   TIME_BETWEEN_SHARES_CHANGE
 }
 
-input s0_eternum_HyperstructureConfigWhereInput {
+input s1_eternum_HyperstructureConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -4822,14 +4822,14 @@ input s0_eternum_HyperstructureConfigWhereInput {
   time_between_shares_changeNOTLIKE: u64
 }
 
-type s0_eternum_HyperstructureConnection {
-  edges: [s0_eternum_HyperstructureEdge]
+type s1_eternum_HyperstructureConnection {
+  edges: [s1_eternum_HyperstructureEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_HyperstructureContribution {
-  contributions: [s0_eternum_u8u128]
+type s1_eternum_HyperstructureContribution {
+  contributions: [s1_eternum_u8u128]
   contributor_entity_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -4838,23 +4838,23 @@ type s0_eternum_HyperstructureContribution {
   timestamp: u64
 }
 
-type s0_eternum_HyperstructureContributionConnection {
-  edges: [s0_eternum_HyperstructureContributionEdge]
+type s1_eternum_HyperstructureContributionConnection {
+  edges: [s1_eternum_HyperstructureContributionEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_HyperstructureContributionEdge {
+type s1_eternum_HyperstructureContributionEdge {
   cursor: Cursor
-  node: s0_eternum_HyperstructureContribution
+  node: s1_eternum_HyperstructureContribution
 }
 
-input s0_eternum_HyperstructureContributionOrder {
+input s1_eternum_HyperstructureContributionOrder {
   direction: OrderDirection!
-  field: s0_eternum_HyperstructureContributionOrderField!
+  field: s1_eternum_HyperstructureContributionOrderField!
 }
 
-enum s0_eternum_HyperstructureContributionOrderField {
+enum s1_eternum_HyperstructureContributionOrderField {
   CONTRIBUTIONS
   CONTRIBUTOR_ENTITY_ID
   HYPERSTRUCTURE_ENTITY_ID
@@ -4862,7 +4862,7 @@ enum s0_eternum_HyperstructureContributionOrderField {
   TIMESTAMP
 }
 
-input s0_eternum_HyperstructureContributionWhereInput {
+input s1_eternum_HyperstructureContributionWhereInput {
   contributor_entity_id: u32
   contributor_entity_idEQ: u32
   contributor_entity_idGT: u32
@@ -4909,12 +4909,12 @@ input s0_eternum_HyperstructureContributionWhereInput {
   timestampNOTLIKE: u64
 }
 
-type s0_eternum_HyperstructureEdge {
+type s1_eternum_HyperstructureEdge {
   cursor: Cursor
-  node: s0_eternum_Hyperstructure
+  node: s1_eternum_Hyperstructure
 }
 
-type s0_eternum_HyperstructureFinished {
+type s1_eternum_HyperstructureFinished {
   contributor_entity_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -4924,23 +4924,23 @@ type s0_eternum_HyperstructureFinished {
   timestamp: u64
 }
 
-type s0_eternum_HyperstructureFinishedConnection {
-  edges: [s0_eternum_HyperstructureFinishedEdge]
+type s1_eternum_HyperstructureFinishedConnection {
+  edges: [s1_eternum_HyperstructureFinishedEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_HyperstructureFinishedEdge {
+type s1_eternum_HyperstructureFinishedEdge {
   cursor: Cursor
-  node: s0_eternum_HyperstructureFinished
+  node: s1_eternum_HyperstructureFinished
 }
 
-input s0_eternum_HyperstructureFinishedOrder {
+input s1_eternum_HyperstructureFinishedOrder {
   direction: OrderDirection!
-  field: s0_eternum_HyperstructureFinishedOrderField!
+  field: s1_eternum_HyperstructureFinishedOrderField!
 }
 
-enum s0_eternum_HyperstructureFinishedOrderField {
+enum s1_eternum_HyperstructureFinishedOrderField {
   CONTRIBUTOR_ENTITY_ID
   HYPERSTRUCTURE_ENTITY_ID
   HYPERSTRUCTURE_OWNER_NAME
@@ -4948,7 +4948,7 @@ enum s0_eternum_HyperstructureFinishedOrderField {
   TIMESTAMP
 }
 
-input s0_eternum_HyperstructureFinishedWhereInput {
+input s1_eternum_HyperstructureFinishedWhereInput {
   contributor_entity_id: u32
   contributor_entity_idEQ: u32
   contributor_entity_idGT: u32
@@ -5006,12 +5006,12 @@ input s0_eternum_HyperstructureFinishedWhereInput {
   timestampNOTLIKE: u64
 }
 
-input s0_eternum_HyperstructureOrder {
+input s1_eternum_HyperstructureOrder {
   direction: OrderDirection!
-  field: s0_eternum_HyperstructureOrderField!
+  field: s1_eternum_HyperstructureOrderField!
 }
 
-enum s0_eternum_HyperstructureOrderField {
+enum s1_eternum_HyperstructureOrderField {
   ACCESS
   COMPLETED
   CURRENT_EPOCH
@@ -5021,7 +5021,7 @@ enum s0_eternum_HyperstructureOrderField {
   RANDOMNESS
 }
 
-type s0_eternum_HyperstructureResourceConfig {
+type s1_eternum_HyperstructureResourceConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -5030,30 +5030,30 @@ type s0_eternum_HyperstructureResourceConfig {
   resource_tier: u8
 }
 
-type s0_eternum_HyperstructureResourceConfigConnection {
-  edges: [s0_eternum_HyperstructureResourceConfigEdge]
+type s1_eternum_HyperstructureResourceConfigConnection {
+  edges: [s1_eternum_HyperstructureResourceConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_HyperstructureResourceConfigEdge {
+type s1_eternum_HyperstructureResourceConfigEdge {
   cursor: Cursor
-  node: s0_eternum_HyperstructureResourceConfig
+  node: s1_eternum_HyperstructureResourceConfig
 }
 
-input s0_eternum_HyperstructureResourceConfigOrder {
+input s1_eternum_HyperstructureResourceConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_HyperstructureResourceConfigOrderField!
+  field: s1_eternum_HyperstructureResourceConfigOrderField!
 }
 
-enum s0_eternum_HyperstructureResourceConfigOrderField {
+enum s1_eternum_HyperstructureResourceConfigOrderField {
   CONFIG_ID
   MAX_AMOUNT
   MIN_AMOUNT
   RESOURCE_TIER
 }
 
-input s0_eternum_HyperstructureResourceConfigWhereInput {
+input s1_eternum_HyperstructureResourceConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -5100,7 +5100,7 @@ input s0_eternum_HyperstructureResourceConfigWhereInput {
   resource_tierNOTLIKE: u8
 }
 
-type s0_eternum_HyperstructureStarted {
+type s1_eternum_HyperstructureStarted {
   creator_address_name: felt252
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -5109,30 +5109,30 @@ type s0_eternum_HyperstructureStarted {
   timestamp: u64
 }
 
-type s0_eternum_HyperstructureStartedConnection {
-  edges: [s0_eternum_HyperstructureStartedEdge]
+type s1_eternum_HyperstructureStartedConnection {
+  edges: [s1_eternum_HyperstructureStartedEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_HyperstructureStartedEdge {
+type s1_eternum_HyperstructureStartedEdge {
   cursor: Cursor
-  node: s0_eternum_HyperstructureStarted
+  node: s1_eternum_HyperstructureStarted
 }
 
-input s0_eternum_HyperstructureStartedOrder {
+input s1_eternum_HyperstructureStartedOrder {
   direction: OrderDirection!
-  field: s0_eternum_HyperstructureStartedOrderField!
+  field: s1_eternum_HyperstructureStartedOrderField!
 }
 
-enum s0_eternum_HyperstructureStartedOrderField {
+enum s1_eternum_HyperstructureStartedOrderField {
   CREATOR_ADDRESS_NAME
   HYPERSTRUCTURE_ENTITY_ID
   ID
   TIMESTAMP
 }
 
-input s0_eternum_HyperstructureStartedWhereInput {
+input s1_eternum_HyperstructureStartedWhereInput {
   creator_address_name: felt252
   creator_address_nameEQ: felt252
   creator_address_nameGT: felt252
@@ -5179,7 +5179,7 @@ input s0_eternum_HyperstructureStartedWhereInput {
   timestampNOTLIKE: u64
 }
 
-input s0_eternum_HyperstructureWhereInput {
+input s1_eternum_HyperstructureWhereInput {
   access: Enum
   completed: bool
   current_epoch: u16
@@ -5239,7 +5239,7 @@ input s0_eternum_HyperstructureWhereInput {
   randomnessNOTLIKE: felt252
 }
 
-type s0_eternum_JoinGuild {
+type s1_eternum_JoinGuild {
   address: ContractAddress
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -5248,30 +5248,30 @@ type s0_eternum_JoinGuild {
   timestamp: u64
 }
 
-type s0_eternum_JoinGuildConnection {
-  edges: [s0_eternum_JoinGuildEdge]
+type s1_eternum_JoinGuildConnection {
+  edges: [s1_eternum_JoinGuildEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_JoinGuildEdge {
+type s1_eternum_JoinGuildEdge {
   cursor: Cursor
-  node: s0_eternum_JoinGuild
+  node: s1_eternum_JoinGuild
 }
 
-input s0_eternum_JoinGuildOrder {
+input s1_eternum_JoinGuildOrder {
   direction: OrderDirection!
-  field: s0_eternum_JoinGuildOrderField!
+  field: s1_eternum_JoinGuildOrderField!
 }
 
-enum s0_eternum_JoinGuildOrderField {
+enum s1_eternum_JoinGuildOrderField {
   ADDRESS
   GUILD_ENTITY_ID
   GUILD_NAME
   TIMESTAMP
 }
 
-input s0_eternum_JoinGuildWhereInput {
+input s1_eternum_JoinGuildWhereInput {
   address: ContractAddress
   addressEQ: ContractAddress
   addressGT: ContractAddress
@@ -5318,56 +5318,56 @@ input s0_eternum_JoinGuildWhereInput {
   timestampNOTLIKE: u64
 }
 
-type s0_eternum_Leaderboard {
+type s1_eternum_Leaderboard {
   config_id: u32
   distribution_started: bool
   entity: World__Entity
   eventMessage: World__EventMessage
   registration_end_timestamp: u64
   total_points: u128
-  total_price_pool: s0_eternum_Optionu256
+  total_price_pool: s1_eternum_Optionu256
 }
 
-type s0_eternum_LeaderboardConnection {
-  edges: [s0_eternum_LeaderboardEdge]
+type s1_eternum_LeaderboardConnection {
+  edges: [s1_eternum_LeaderboardEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_LeaderboardEdge {
+type s1_eternum_LeaderboardEdge {
   cursor: Cursor
-  node: s0_eternum_Leaderboard
+  node: s1_eternum_Leaderboard
 }
 
-type s0_eternum_LeaderboardEntry {
+type s1_eternum_LeaderboardEntry {
   address: ContractAddress
   entity: World__Entity
   eventMessage: World__EventMessage
   points: u128
 }
 
-type s0_eternum_LeaderboardEntryConnection {
-  edges: [s0_eternum_LeaderboardEntryEdge]
+type s1_eternum_LeaderboardEntryConnection {
+  edges: [s1_eternum_LeaderboardEntryEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_LeaderboardEntryEdge {
+type s1_eternum_LeaderboardEntryEdge {
   cursor: Cursor
-  node: s0_eternum_LeaderboardEntry
+  node: s1_eternum_LeaderboardEntry
 }
 
-input s0_eternum_LeaderboardEntryOrder {
+input s1_eternum_LeaderboardEntryOrder {
   direction: OrderDirection!
-  field: s0_eternum_LeaderboardEntryOrderField!
+  field: s1_eternum_LeaderboardEntryOrderField!
 }
 
-enum s0_eternum_LeaderboardEntryOrderField {
+enum s1_eternum_LeaderboardEntryOrderField {
   ADDRESS
   POINTS
 }
 
-input s0_eternum_LeaderboardEntryWhereInput {
+input s1_eternum_LeaderboardEntryWhereInput {
   address: ContractAddress
   addressEQ: ContractAddress
   addressGT: ContractAddress
@@ -5392,12 +5392,12 @@ input s0_eternum_LeaderboardEntryWhereInput {
   pointsNOTLIKE: u128
 }
 
-input s0_eternum_LeaderboardOrder {
+input s1_eternum_LeaderboardOrder {
   direction: OrderDirection!
-  field: s0_eternum_LeaderboardOrderField!
+  field: s1_eternum_LeaderboardOrderField!
 }
 
-enum s0_eternum_LeaderboardOrderField {
+enum s1_eternum_LeaderboardOrderField {
   CONFIG_ID
   DISTRIBUTION_STARTED
   REGISTRATION_END_TIMESTAMP
@@ -5405,7 +5405,7 @@ enum s0_eternum_LeaderboardOrderField {
   TOTAL_PRICE_POOL
 }
 
-type s0_eternum_LeaderboardRegisterContribution {
+type s1_eternum_LeaderboardRegisterContribution {
   address: ContractAddress
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -5413,29 +5413,29 @@ type s0_eternum_LeaderboardRegisterContribution {
   registered: bool
 }
 
-type s0_eternum_LeaderboardRegisterContributionConnection {
-  edges: [s0_eternum_LeaderboardRegisterContributionEdge]
+type s1_eternum_LeaderboardRegisterContributionConnection {
+  edges: [s1_eternum_LeaderboardRegisterContributionEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_LeaderboardRegisterContributionEdge {
+type s1_eternum_LeaderboardRegisterContributionEdge {
   cursor: Cursor
-  node: s0_eternum_LeaderboardRegisterContribution
+  node: s1_eternum_LeaderboardRegisterContribution
 }
 
-input s0_eternum_LeaderboardRegisterContributionOrder {
+input s1_eternum_LeaderboardRegisterContributionOrder {
   direction: OrderDirection!
-  field: s0_eternum_LeaderboardRegisterContributionOrderField!
+  field: s1_eternum_LeaderboardRegisterContributionOrderField!
 }
 
-enum s0_eternum_LeaderboardRegisterContributionOrderField {
+enum s1_eternum_LeaderboardRegisterContributionOrderField {
   ADDRESS
   HYPERSTRUCTURE_ENTITY_ID
   REGISTERED
 }
 
-input s0_eternum_LeaderboardRegisterContributionWhereInput {
+input s1_eternum_LeaderboardRegisterContributionWhereInput {
   address: ContractAddress
   addressEQ: ContractAddress
   addressGT: ContractAddress
@@ -5461,7 +5461,7 @@ input s0_eternum_LeaderboardRegisterContributionWhereInput {
   registered: bool
 }
 
-type s0_eternum_LeaderboardRegisterShare {
+type s1_eternum_LeaderboardRegisterShare {
   address: ContractAddress
   entity: World__Entity
   epoch: u16
@@ -5470,30 +5470,30 @@ type s0_eternum_LeaderboardRegisterShare {
   registered: bool
 }
 
-type s0_eternum_LeaderboardRegisterShareConnection {
-  edges: [s0_eternum_LeaderboardRegisterShareEdge]
+type s1_eternum_LeaderboardRegisterShareConnection {
+  edges: [s1_eternum_LeaderboardRegisterShareEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_LeaderboardRegisterShareEdge {
+type s1_eternum_LeaderboardRegisterShareEdge {
   cursor: Cursor
-  node: s0_eternum_LeaderboardRegisterShare
+  node: s1_eternum_LeaderboardRegisterShare
 }
 
-input s0_eternum_LeaderboardRegisterShareOrder {
+input s1_eternum_LeaderboardRegisterShareOrder {
   direction: OrderDirection!
-  field: s0_eternum_LeaderboardRegisterShareOrderField!
+  field: s1_eternum_LeaderboardRegisterShareOrderField!
 }
 
-enum s0_eternum_LeaderboardRegisterShareOrderField {
+enum s1_eternum_LeaderboardRegisterShareOrderField {
   ADDRESS
   EPOCH
   HYPERSTRUCTURE_ENTITY_ID
   REGISTERED
 }
 
-input s0_eternum_LeaderboardRegisterShareWhereInput {
+input s1_eternum_LeaderboardRegisterShareWhereInput {
   address: ContractAddress
   addressEQ: ContractAddress
   addressGT: ContractAddress
@@ -5530,35 +5530,35 @@ input s0_eternum_LeaderboardRegisterShareWhereInput {
   registered: bool
 }
 
-type s0_eternum_LeaderboardRegistered {
+type s1_eternum_LeaderboardRegistered {
   address: ContractAddress
   entity: World__Entity
   eventMessage: World__EventMessage
   registered: bool
 }
 
-type s0_eternum_LeaderboardRegisteredConnection {
-  edges: [s0_eternum_LeaderboardRegisteredEdge]
+type s1_eternum_LeaderboardRegisteredConnection {
+  edges: [s1_eternum_LeaderboardRegisteredEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_LeaderboardRegisteredEdge {
+type s1_eternum_LeaderboardRegisteredEdge {
   cursor: Cursor
-  node: s0_eternum_LeaderboardRegistered
+  node: s1_eternum_LeaderboardRegistered
 }
 
-input s0_eternum_LeaderboardRegisteredOrder {
+input s1_eternum_LeaderboardRegisteredOrder {
   direction: OrderDirection!
-  field: s0_eternum_LeaderboardRegisteredOrderField!
+  field: s1_eternum_LeaderboardRegisteredOrderField!
 }
 
-enum s0_eternum_LeaderboardRegisteredOrderField {
+enum s1_eternum_LeaderboardRegisteredOrderField {
   ADDRESS
   REGISTERED
 }
 
-input s0_eternum_LeaderboardRegisteredWhereInput {
+input s1_eternum_LeaderboardRegisteredWhereInput {
   address: ContractAddress
   addressEQ: ContractAddress
   addressGT: ContractAddress
@@ -5573,35 +5573,35 @@ input s0_eternum_LeaderboardRegisteredWhereInput {
   registered: bool
 }
 
-type s0_eternum_LeaderboardRewardClaimed {
+type s1_eternum_LeaderboardRewardClaimed {
   address: ContractAddress
   claimed: bool
   entity: World__Entity
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_LeaderboardRewardClaimedConnection {
-  edges: [s0_eternum_LeaderboardRewardClaimedEdge]
+type s1_eternum_LeaderboardRewardClaimedConnection {
+  edges: [s1_eternum_LeaderboardRewardClaimedEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_LeaderboardRewardClaimedEdge {
+type s1_eternum_LeaderboardRewardClaimedEdge {
   cursor: Cursor
-  node: s0_eternum_LeaderboardRewardClaimed
+  node: s1_eternum_LeaderboardRewardClaimed
 }
 
-input s0_eternum_LeaderboardRewardClaimedOrder {
+input s1_eternum_LeaderboardRewardClaimedOrder {
   direction: OrderDirection!
-  field: s0_eternum_LeaderboardRewardClaimedOrderField!
+  field: s1_eternum_LeaderboardRewardClaimedOrderField!
 }
 
-enum s0_eternum_LeaderboardRewardClaimedOrderField {
+enum s1_eternum_LeaderboardRewardClaimedOrderField {
   ADDRESS
   CLAIMED
 }
 
-input s0_eternum_LeaderboardRewardClaimedWhereInput {
+input s1_eternum_LeaderboardRewardClaimedWhereInput {
   address: ContractAddress
   addressEQ: ContractAddress
   addressGT: ContractAddress
@@ -5616,7 +5616,7 @@ input s0_eternum_LeaderboardRewardClaimedWhereInput {
   claimed: bool
 }
 
-input s0_eternum_LeaderboardWhereInput {
+input s1_eternum_LeaderboardWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -5653,7 +5653,7 @@ input s0_eternum_LeaderboardWhereInput {
   total_pointsNOTLIKE: u128
 }
 
-type s0_eternum_LevelingConfig {
+type s1_eternum_LevelingConfig {
   base_multiplier: u128
   config_id: u32
   cost_percentage_scaled: u128
@@ -5672,23 +5672,23 @@ type s0_eternum_LevelingConfig {
   wheat_base_amount: u128
 }
 
-type s0_eternum_LevelingConfigConnection {
-  edges: [s0_eternum_LevelingConfigEdge]
+type s1_eternum_LevelingConfigConnection {
+  edges: [s1_eternum_LevelingConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_LevelingConfigEdge {
+type s1_eternum_LevelingConfigEdge {
   cursor: Cursor
-  node: s0_eternum_LevelingConfig
+  node: s1_eternum_LevelingConfig
 }
 
-input s0_eternum_LevelingConfigOrder {
+input s1_eternum_LevelingConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_LevelingConfigOrderField!
+  field: s1_eternum_LevelingConfigOrderField!
 }
 
-enum s0_eternum_LevelingConfigOrderField {
+enum s1_eternum_LevelingConfigOrderField {
   BASE_MULTIPLIER
   CONFIG_ID
   COST_PERCENTAGE_SCALED
@@ -5705,7 +5705,7 @@ enum s0_eternum_LevelingConfigOrderField {
   WHEAT_BASE_AMOUNT
 }
 
-input s0_eternum_LevelingConfigWhereInput {
+input s1_eternum_LevelingConfigWhereInput {
   base_multiplier: u128
   base_multiplierEQ: u128
   base_multiplierGT: u128
@@ -5862,27 +5862,27 @@ input s0_eternum_LevelingConfigWhereInput {
   wheat_base_amountNOTLIKE: u128
 }
 
-type s0_eternum_Liquidity {
+type s1_eternum_Liquidity {
   bank_entity_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
   player: ContractAddress
   resource_type: u8
-  shares: s0_eternum_Fixed
+  shares: s1_eternum_Fixed
 }
 
-type s0_eternum_LiquidityConnection {
-  edges: [s0_eternum_LiquidityEdge]
+type s1_eternum_LiquidityConnection {
+  edges: [s1_eternum_LiquidityEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_LiquidityEdge {
+type s1_eternum_LiquidityEdge {
   cursor: Cursor
-  node: s0_eternum_Liquidity
+  node: s1_eternum_Liquidity
 }
 
-type s0_eternum_LiquidityEvent {
+type s1_eternum_LiquidityEvent {
   add: bool
   bank_entity_id: u32
   entity: World__Entity
@@ -5895,23 +5895,23 @@ type s0_eternum_LiquidityEvent {
   timestamp: u64
 }
 
-type s0_eternum_LiquidityEventConnection {
-  edges: [s0_eternum_LiquidityEventEdge]
+type s1_eternum_LiquidityEventConnection {
+  edges: [s1_eternum_LiquidityEventEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_LiquidityEventEdge {
+type s1_eternum_LiquidityEventEdge {
   cursor: Cursor
-  node: s0_eternum_LiquidityEvent
+  node: s1_eternum_LiquidityEvent
 }
 
-input s0_eternum_LiquidityEventOrder {
+input s1_eternum_LiquidityEventOrder {
   direction: OrderDirection!
-  field: s0_eternum_LiquidityEventOrderField!
+  field: s1_eternum_LiquidityEventOrderField!
 }
 
-enum s0_eternum_LiquidityEventOrderField {
+enum s1_eternum_LiquidityEventOrderField {
   ADD
   BANK_ENTITY_ID
   ENTITY_ID
@@ -5922,7 +5922,7 @@ enum s0_eternum_LiquidityEventOrderField {
   TIMESTAMP
 }
 
-input s0_eternum_LiquidityEventWhereInput {
+input s1_eternum_LiquidityEventWhereInput {
   add: bool
   bank_entity_id: u32
   bank_entity_idEQ: u32
@@ -6003,19 +6003,19 @@ input s0_eternum_LiquidityEventWhereInput {
   timestampNOTLIKE: u64
 }
 
-input s0_eternum_LiquidityOrder {
+input s1_eternum_LiquidityOrder {
   direction: OrderDirection!
-  field: s0_eternum_LiquidityOrderField!
+  field: s1_eternum_LiquidityOrderField!
 }
 
-enum s0_eternum_LiquidityOrderField {
+enum s1_eternum_LiquidityOrderField {
   BANK_ENTITY_ID
   PLAYER
   RESOURCE_TYPE
   SHARES
 }
 
-input s0_eternum_LiquidityWhereInput {
+input s1_eternum_LiquidityWhereInput {
   bank_entity_id: u32
   bank_entity_idEQ: u32
   bank_entity_idGT: u32
@@ -6051,7 +6051,7 @@ input s0_eternum_LiquidityWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_MapConfig {
+type s1_eternum_MapConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -6059,29 +6059,29 @@ type s0_eternum_MapConfig {
   shards_mines_fail_probability: u128
 }
 
-type s0_eternum_MapConfigConnection {
-  edges: [s0_eternum_MapConfigEdge]
+type s1_eternum_MapConfigConnection {
+  edges: [s1_eternum_MapConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_MapConfigEdge {
+type s1_eternum_MapConfigEdge {
   cursor: Cursor
-  node: s0_eternum_MapConfig
+  node: s1_eternum_MapConfig
 }
 
-input s0_eternum_MapConfigOrder {
+input s1_eternum_MapConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_MapConfigOrderField!
+  field: s1_eternum_MapConfigOrderField!
 }
 
-enum s0_eternum_MapConfigOrderField {
+enum s1_eternum_MapConfigOrderField {
   CONFIG_ID
   REWARD_RESOURCE_AMOUNT
   SHARDS_MINES_FAIL_PROBABILITY
 }
 
-input s0_eternum_MapConfigWhereInput {
+input s1_eternum_MapConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -6117,7 +6117,7 @@ input s0_eternum_MapConfigWhereInput {
   shards_mines_fail_probabilityNOTLIKE: u128
 }
 
-type s0_eternum_MapExplored {
+type s1_eternum_MapExplored {
   biome: Enum
   col: u32
   entity: World__Entity
@@ -6125,28 +6125,28 @@ type s0_eternum_MapExplored {
   entity_owner_id: u32
   eventMessage: World__EventMessage
   id: u32
-  reward: [s0_eternum_u8u128]
+  reward: [s1_eternum_u8u128]
   row: u32
   timestamp: u64
 }
 
-type s0_eternum_MapExploredConnection {
-  edges: [s0_eternum_MapExploredEdge]
+type s1_eternum_MapExploredConnection {
+  edges: [s1_eternum_MapExploredEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_MapExploredEdge {
+type s1_eternum_MapExploredEdge {
   cursor: Cursor
-  node: s0_eternum_MapExplored
+  node: s1_eternum_MapExplored
 }
 
-input s0_eternum_MapExploredOrder {
+input s1_eternum_MapExploredOrder {
   direction: OrderDirection!
-  field: s0_eternum_MapExploredOrderField!
+  field: s1_eternum_MapExploredOrderField!
 }
 
-enum s0_eternum_MapExploredOrderField {
+enum s1_eternum_MapExploredOrderField {
   BIOME
   COL
   ENTITY_ID
@@ -6157,7 +6157,7 @@ enum s0_eternum_MapExploredOrderField {
   TIMESTAMP
 }
 
-input s0_eternum_MapExploredWhereInput {
+input s1_eternum_MapExploredWhereInput {
   biome: Enum
   col: u32
   colEQ: u32
@@ -6227,33 +6227,33 @@ input s0_eternum_MapExploredWhereInput {
   timestampNOTLIKE: u64
 }
 
-type s0_eternum_Market {
+type s1_eternum_Market {
   bank_entity_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
   lords_amount: u128
   resource_amount: u128
   resource_type: u8
-  total_shares: s0_eternum_Fixed
+  total_shares: s1_eternum_Fixed
 }
 
-type s0_eternum_MarketConnection {
-  edges: [s0_eternum_MarketEdge]
+type s1_eternum_MarketConnection {
+  edges: [s1_eternum_MarketEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_MarketEdge {
+type s1_eternum_MarketEdge {
   cursor: Cursor
-  node: s0_eternum_Market
+  node: s1_eternum_Market
 }
 
-input s0_eternum_MarketOrder {
+input s1_eternum_MarketOrder {
   direction: OrderDirection!
-  field: s0_eternum_MarketOrderField!
+  field: s1_eternum_MarketOrderField!
 }
 
-enum s0_eternum_MarketOrderField {
+enum s1_eternum_MarketOrderField {
   BANK_ENTITY_ID
   LORDS_AMOUNT
   RESOURCE_AMOUNT
@@ -6261,7 +6261,7 @@ enum s0_eternum_MarketOrderField {
   TOTAL_SHARES
 }
 
-input s0_eternum_MarketWhereInput {
+input s1_eternum_MarketWhereInput {
   bank_entity_id: u32
   bank_entity_idEQ: u32
   bank_entity_idGT: u32
@@ -6308,7 +6308,7 @@ input s0_eternum_MarketWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_MercenariesConfig {
+type s1_eternum_MercenariesConfig {
   config_id: u32
   crossbowmen_lower_bound: u64
   crossbowmen_upper_bound: u64
@@ -6318,26 +6318,26 @@ type s0_eternum_MercenariesConfig {
   knights_upper_bound: u64
   paladins_lower_bound: u64
   paladins_upper_bound: u64
-  rewards: [s0_eternum_u8u128]
+  rewards: [s1_eternum_u8u128]
 }
 
-type s0_eternum_MercenariesConfigConnection {
-  edges: [s0_eternum_MercenariesConfigEdge]
+type s1_eternum_MercenariesConfigConnection {
+  edges: [s1_eternum_MercenariesConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_MercenariesConfigEdge {
+type s1_eternum_MercenariesConfigEdge {
   cursor: Cursor
-  node: s0_eternum_MercenariesConfig
+  node: s1_eternum_MercenariesConfig
 }
 
-input s0_eternum_MercenariesConfigOrder {
+input s1_eternum_MercenariesConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_MercenariesConfigOrderField!
+  field: s1_eternum_MercenariesConfigOrderField!
 }
 
-enum s0_eternum_MercenariesConfigOrderField {
+enum s1_eternum_MercenariesConfigOrderField {
   CONFIG_ID
   CROSSBOWMEN_LOWER_BOUND
   CROSSBOWMEN_UPPER_BOUND
@@ -6348,7 +6348,7 @@ enum s0_eternum_MercenariesConfigOrderField {
   REWARDS
 }
 
-input s0_eternum_MercenariesConfigWhereInput {
+input s1_eternum_MercenariesConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -6428,7 +6428,7 @@ input s0_eternum_MercenariesConfigWhereInput {
   paladins_upper_boundNOTLIKE: u64
 }
 
-type s0_eternum_Message {
+type s1_eternum_Message {
   channel: felt252
   content: ByteArray
   entity: World__Entity
@@ -6438,23 +6438,23 @@ type s0_eternum_Message {
   timestamp: u64
 }
 
-type s0_eternum_MessageConnection {
-  edges: [s0_eternum_MessageEdge]
+type s1_eternum_MessageConnection {
+  edges: [s1_eternum_MessageEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_MessageEdge {
+type s1_eternum_MessageEdge {
   cursor: Cursor
-  node: s0_eternum_Message
+  node: s1_eternum_Message
 }
 
-input s0_eternum_MessageOrder {
+input s1_eternum_MessageOrder {
   direction: OrderDirection!
-  field: s0_eternum_MessageOrderField!
+  field: s1_eternum_MessageOrderField!
 }
 
-enum s0_eternum_MessageOrderField {
+enum s1_eternum_MessageOrderField {
   CHANNEL
   CONTENT
   IDENTITY
@@ -6462,7 +6462,7 @@ enum s0_eternum_MessageOrderField {
   TIMESTAMP
 }
 
-input s0_eternum_MessageWhereInput {
+input s1_eternum_MessageWhereInput {
   channel: felt252
   channelEQ: felt252
   channelGT: felt252
@@ -6520,7 +6520,7 @@ input s0_eternum_MessageWhereInput {
   timestampNOTLIKE: u64
 }
 
-type s0_eternum_Movable {
+type s1_eternum_Movable {
   blocked: bool
   entity: World__Entity
   entity_id: u32
@@ -6533,23 +6533,23 @@ type s0_eternum_Movable {
   start_coord_y: u32
 }
 
-type s0_eternum_MovableConnection {
-  edges: [s0_eternum_MovableEdge]
+type s1_eternum_MovableConnection {
+  edges: [s1_eternum_MovableEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_MovableEdge {
+type s1_eternum_MovableEdge {
   cursor: Cursor
-  node: s0_eternum_Movable
+  node: s1_eternum_Movable
 }
 
-input s0_eternum_MovableOrder {
+input s1_eternum_MovableOrder {
   direction: OrderDirection!
-  field: s0_eternum_MovableOrderField!
+  field: s1_eternum_MovableOrderField!
 }
 
-enum s0_eternum_MovableOrderField {
+enum s1_eternum_MovableOrderField {
   BLOCKED
   ENTITY_ID
   INTERMEDIATE_COORD_X
@@ -6560,7 +6560,7 @@ enum s0_eternum_MovableOrderField {
   START_COORD_Y
 }
 
-input s0_eternum_MovableWhereInput {
+input s1_eternum_MovableWhereInput {
   blocked: bool
   entity_id: u32
   entity_idEQ: u32
@@ -6631,40 +6631,40 @@ input s0_eternum_MovableWhereInput {
   start_coord_yNOTLIKE: u32
 }
 
-type s0_eternum_Optionu256 {
+type s1_eternum_Optionu256 {
   Some: u256
   option: Enum
 }
 
-type s0_eternum_Orders {
+type s1_eternum_Orders {
   entity: World__Entity
   eventMessage: World__EventMessage
   hyperstructure_count: u32
   order_id: u32
 }
 
-type s0_eternum_OrdersConnection {
-  edges: [s0_eternum_OrdersEdge]
+type s1_eternum_OrdersConnection {
+  edges: [s1_eternum_OrdersEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_OrdersEdge {
+type s1_eternum_OrdersEdge {
   cursor: Cursor
-  node: s0_eternum_Orders
+  node: s1_eternum_Orders
 }
 
-input s0_eternum_OrdersOrder {
+input s1_eternum_OrdersOrder {
   direction: OrderDirection!
-  field: s0_eternum_OrdersOrderField!
+  field: s1_eternum_OrdersOrderField!
 }
 
-enum s0_eternum_OrdersOrderField {
+enum s1_eternum_OrdersOrderField {
   HYPERSTRUCTURE_COUNT
   ORDER_ID
 }
 
-input s0_eternum_OrdersWhereInput {
+input s1_eternum_OrdersWhereInput {
   hyperstructure_count: u32
   hyperstructure_countEQ: u32
   hyperstructure_countGT: u32
@@ -6689,35 +6689,35 @@ input s0_eternum_OrdersWhereInput {
   order_idNOTLIKE: u32
 }
 
-type s0_eternum_OwnedResourcesTracker {
+type s1_eternum_OwnedResourcesTracker {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
   resource_types: u256
 }
 
-type s0_eternum_OwnedResourcesTrackerConnection {
-  edges: [s0_eternum_OwnedResourcesTrackerEdge]
+type s1_eternum_OwnedResourcesTrackerConnection {
+  edges: [s1_eternum_OwnedResourcesTrackerEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_OwnedResourcesTrackerEdge {
+type s1_eternum_OwnedResourcesTrackerEdge {
   cursor: Cursor
-  node: s0_eternum_OwnedResourcesTracker
+  node: s1_eternum_OwnedResourcesTracker
 }
 
-input s0_eternum_OwnedResourcesTrackerOrder {
+input s1_eternum_OwnedResourcesTrackerOrder {
   direction: OrderDirection!
-  field: s0_eternum_OwnedResourcesTrackerOrderField!
+  field: s1_eternum_OwnedResourcesTrackerOrderField!
 }
 
-enum s0_eternum_OwnedResourcesTrackerOrderField {
+enum s1_eternum_OwnedResourcesTrackerOrderField {
   ENTITY_ID
   RESOURCE_TYPES
 }
 
-input s0_eternum_OwnedResourcesTrackerWhereInput {
+input s1_eternum_OwnedResourcesTrackerWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -6742,35 +6742,35 @@ input s0_eternum_OwnedResourcesTrackerWhereInput {
   resource_typesNOTLIKE: u256
 }
 
-type s0_eternum_Owner {
+type s1_eternum_Owner {
   address: ContractAddress
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_OwnerConnection {
-  edges: [s0_eternum_OwnerEdge]
+type s1_eternum_OwnerConnection {
+  edges: [s1_eternum_OwnerEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_OwnerEdge {
+type s1_eternum_OwnerEdge {
   cursor: Cursor
-  node: s0_eternum_Owner
+  node: s1_eternum_Owner
 }
 
-input s0_eternum_OwnerOrder {
+input s1_eternum_OwnerOrder {
   direction: OrderDirection!
-  field: s0_eternum_OwnerOrderField!
+  field: s1_eternum_OwnerOrderField!
 }
 
-enum s0_eternum_OwnerOrderField {
+enum s1_eternum_OwnerOrderField {
   ADDRESS
   ENTITY_ID
 }
 
-input s0_eternum_OwnerWhereInput {
+input s1_eternum_OwnerWhereInput {
   address: ContractAddress
   addressEQ: ContractAddress
   addressGT: ContractAddress
@@ -6795,7 +6795,7 @@ input s0_eternum_OwnerWhereInput {
   entity_idNOTLIKE: u32
 }
 
-type s0_eternum_Population {
+type s1_eternum_Population {
   capacity: u32
   entity: World__Entity
   entity_id: u32
@@ -6803,35 +6803,35 @@ type s0_eternum_Population {
   population: u32
 }
 
-type s0_eternum_PopulationConfig {
+type s1_eternum_PopulationConfig {
   base_population: u32
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_PopulationConfigConnection {
-  edges: [s0_eternum_PopulationConfigEdge]
+type s1_eternum_PopulationConfigConnection {
+  edges: [s1_eternum_PopulationConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_PopulationConfigEdge {
+type s1_eternum_PopulationConfigEdge {
   cursor: Cursor
-  node: s0_eternum_PopulationConfig
+  node: s1_eternum_PopulationConfig
 }
 
-input s0_eternum_PopulationConfigOrder {
+input s1_eternum_PopulationConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_PopulationConfigOrderField!
+  field: s1_eternum_PopulationConfigOrderField!
 }
 
-enum s0_eternum_PopulationConfigOrderField {
+enum s1_eternum_PopulationConfigOrderField {
   BASE_POPULATION
   CONFIG_ID
 }
 
-input s0_eternum_PopulationConfigWhereInput {
+input s1_eternum_PopulationConfigWhereInput {
   base_population: u32
   base_populationEQ: u32
   base_populationGT: u32
@@ -6856,29 +6856,29 @@ input s0_eternum_PopulationConfigWhereInput {
   config_idNOTLIKE: u32
 }
 
-type s0_eternum_PopulationConnection {
-  edges: [s0_eternum_PopulationEdge]
+type s1_eternum_PopulationConnection {
+  edges: [s1_eternum_PopulationEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_PopulationEdge {
+type s1_eternum_PopulationEdge {
   cursor: Cursor
-  node: s0_eternum_Population
+  node: s1_eternum_Population
 }
 
-input s0_eternum_PopulationOrder {
+input s1_eternum_PopulationOrder {
   direction: OrderDirection!
-  field: s0_eternum_PopulationOrderField!
+  field: s1_eternum_PopulationOrderField!
 }
 
-enum s0_eternum_PopulationOrderField {
+enum s1_eternum_PopulationOrderField {
   CAPACITY
   ENTITY_ID
   POPULATION
 }
 
-input s0_eternum_PopulationWhereInput {
+input s1_eternum_PopulationWhereInput {
   capacity: u32
   capacityEQ: u32
   capacityGT: u32
@@ -6914,7 +6914,7 @@ input s0_eternum_PopulationWhereInput {
   populationNOTLIKE: u32
 }
 
-type s0_eternum_Position {
+type s1_eternum_Position {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
@@ -6922,29 +6922,29 @@ type s0_eternum_Position {
   y: u32
 }
 
-type s0_eternum_PositionConnection {
-  edges: [s0_eternum_PositionEdge]
+type s1_eternum_PositionConnection {
+  edges: [s1_eternum_PositionEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_PositionEdge {
+type s1_eternum_PositionEdge {
   cursor: Cursor
-  node: s0_eternum_Position
+  node: s1_eternum_Position
 }
 
-input s0_eternum_PositionOrder {
+input s1_eternum_PositionOrder {
   direction: OrderDirection!
-  field: s0_eternum_PositionOrderField!
+  field: s1_eternum_PositionOrderField!
 }
 
-enum s0_eternum_PositionOrderField {
+enum s1_eternum_PositionOrderField {
   ENTITY_ID
   X
   Y
 }
 
-input s0_eternum_PositionWhereInput {
+input s1_eternum_PositionWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -6980,7 +6980,7 @@ input s0_eternum_PositionWhereInput {
   yNOTLIKE: u32
 }
 
-type s0_eternum_Production {
+type s1_eternum_Production {
   building_count: u8
   consumption_rate: u128
   entity: World__Entity
@@ -6992,7 +6992,7 @@ type s0_eternum_Production {
   resource_type: u8
 }
 
-type s0_eternum_ProductionConfig {
+type s1_eternum_ProductionConfig {
   amount: u128
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -7001,30 +7001,30 @@ type s0_eternum_ProductionConfig {
   resource_type: u8
 }
 
-type s0_eternum_ProductionConfigConnection {
-  edges: [s0_eternum_ProductionConfigEdge]
+type s1_eternum_ProductionConfigConnection {
+  edges: [s1_eternum_ProductionConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ProductionConfigEdge {
+type s1_eternum_ProductionConfigEdge {
   cursor: Cursor
-  node: s0_eternum_ProductionConfig
+  node: s1_eternum_ProductionConfig
 }
 
-input s0_eternum_ProductionConfigOrder {
+input s1_eternum_ProductionConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_ProductionConfigOrderField!
+  field: s1_eternum_ProductionConfigOrderField!
 }
 
-enum s0_eternum_ProductionConfigOrderField {
+enum s1_eternum_ProductionConfigOrderField {
   AMOUNT
   INPUT_COUNT
   OUTPUT_COUNT
   RESOURCE_TYPE
 }
 
-input s0_eternum_ProductionConfigWhereInput {
+input s1_eternum_ProductionConfigWhereInput {
   amount: u128
   amountEQ: u128
   amountGT: u128
@@ -7071,41 +7071,41 @@ input s0_eternum_ProductionConfigWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_ProductionConnection {
-  edges: [s0_eternum_ProductionEdge]
+type s1_eternum_ProductionConnection {
+  edges: [s1_eternum_ProductionEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ProductionDeadline {
+type s1_eternum_ProductionDeadline {
   deadline_tick: u64
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_ProductionDeadlineConnection {
-  edges: [s0_eternum_ProductionDeadlineEdge]
+type s1_eternum_ProductionDeadlineConnection {
+  edges: [s1_eternum_ProductionDeadlineEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ProductionDeadlineEdge {
+type s1_eternum_ProductionDeadlineEdge {
   cursor: Cursor
-  node: s0_eternum_ProductionDeadline
+  node: s1_eternum_ProductionDeadline
 }
 
-input s0_eternum_ProductionDeadlineOrder {
+input s1_eternum_ProductionDeadlineOrder {
   direction: OrderDirection!
-  field: s0_eternum_ProductionDeadlineOrderField!
+  field: s1_eternum_ProductionDeadlineOrderField!
 }
 
-enum s0_eternum_ProductionDeadlineOrderField {
+enum s1_eternum_ProductionDeadlineOrderField {
   DEADLINE_TICK
   ENTITY_ID
 }
 
-input s0_eternum_ProductionDeadlineWhereInput {
+input s1_eternum_ProductionDeadlineWhereInput {
   deadline_tick: u64
   deadline_tickEQ: u64
   deadline_tickGT: u64
@@ -7130,12 +7130,12 @@ input s0_eternum_ProductionDeadlineWhereInput {
   entity_idNOTLIKE: u32
 }
 
-type s0_eternum_ProductionEdge {
+type s1_eternum_ProductionEdge {
   cursor: Cursor
-  node: s0_eternum_Production
+  node: s1_eternum_Production
 }
 
-type s0_eternum_ProductionInput {
+type s1_eternum_ProductionInput {
   entity: World__Entity
   eventMessage: World__EventMessage
   index: u8
@@ -7144,30 +7144,30 @@ type s0_eternum_ProductionInput {
   output_resource_type: u8
 }
 
-type s0_eternum_ProductionInputConnection {
-  edges: [s0_eternum_ProductionInputEdge]
+type s1_eternum_ProductionInputConnection {
+  edges: [s1_eternum_ProductionInputEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ProductionInputEdge {
+type s1_eternum_ProductionInputEdge {
   cursor: Cursor
-  node: s0_eternum_ProductionInput
+  node: s1_eternum_ProductionInput
 }
 
-input s0_eternum_ProductionInputOrder {
+input s1_eternum_ProductionInputOrder {
   direction: OrderDirection!
-  field: s0_eternum_ProductionInputOrderField!
+  field: s1_eternum_ProductionInputOrderField!
 }
 
-enum s0_eternum_ProductionInputOrderField {
+enum s1_eternum_ProductionInputOrderField {
   INDEX
   INPUT_RESOURCE_AMOUNT
   INPUT_RESOURCE_TYPE
   OUTPUT_RESOURCE_TYPE
 }
 
-input s0_eternum_ProductionInputWhereInput {
+input s1_eternum_ProductionInputWhereInput {
   index: u8
   indexEQ: u8
   indexGT: u8
@@ -7214,12 +7214,12 @@ input s0_eternum_ProductionInputWhereInput {
   output_resource_typeNOTLIKE: u8
 }
 
-input s0_eternum_ProductionOrder {
+input s1_eternum_ProductionOrder {
   direction: OrderDirection!
-  field: s0_eternum_ProductionOrderField!
+  field: s1_eternum_ProductionOrderField!
 }
 
-enum s0_eternum_ProductionOrderField {
+enum s1_eternum_ProductionOrderField {
   BUILDING_COUNT
   CONSUMPTION_RATE
   ENTITY_ID
@@ -7229,7 +7229,7 @@ enum s0_eternum_ProductionOrderField {
   RESOURCE_TYPE
 }
 
-type s0_eternum_ProductionOutput {
+type s1_eternum_ProductionOutput {
   entity: World__Entity
   eventMessage: World__EventMessage
   index: u8
@@ -7237,29 +7237,29 @@ type s0_eternum_ProductionOutput {
   output_resource_type: u8
 }
 
-type s0_eternum_ProductionOutputConnection {
-  edges: [s0_eternum_ProductionOutputEdge]
+type s1_eternum_ProductionOutputConnection {
+  edges: [s1_eternum_ProductionOutputEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ProductionOutputEdge {
+type s1_eternum_ProductionOutputEdge {
   cursor: Cursor
-  node: s0_eternum_ProductionOutput
+  node: s1_eternum_ProductionOutput
 }
 
-input s0_eternum_ProductionOutputOrder {
+input s1_eternum_ProductionOutputOrder {
   direction: OrderDirection!
-  field: s0_eternum_ProductionOutputOrderField!
+  field: s1_eternum_ProductionOutputOrderField!
 }
 
-enum s0_eternum_ProductionOutputOrderField {
+enum s1_eternum_ProductionOutputOrderField {
   INDEX
   INPUT_RESOURCE_TYPE
   OUTPUT_RESOURCE_TYPE
 }
 
-input s0_eternum_ProductionOutputWhereInput {
+input s1_eternum_ProductionOutputWhereInput {
   index: u8
   indexEQ: u8
   indexGT: u8
@@ -7295,7 +7295,7 @@ input s0_eternum_ProductionOutputWhereInput {
   output_resource_typeNOTLIKE: u8
 }
 
-input s0_eternum_ProductionWhereInput {
+input s1_eternum_ProductionWhereInput {
   building_count: u8
   building_countEQ: u8
   building_countGT: u8
@@ -7375,7 +7375,7 @@ input s0_eternum_ProductionWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_Progress {
+type s1_eternum_Progress {
   amount: u128
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -7383,29 +7383,29 @@ type s0_eternum_Progress {
   resource_type: u8
 }
 
-type s0_eternum_ProgressConnection {
-  edges: [s0_eternum_ProgressEdge]
+type s1_eternum_ProgressConnection {
+  edges: [s1_eternum_ProgressEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ProgressEdge {
+type s1_eternum_ProgressEdge {
   cursor: Cursor
-  node: s0_eternum_Progress
+  node: s1_eternum_Progress
 }
 
-input s0_eternum_ProgressOrder {
+input s1_eternum_ProgressOrder {
   direction: OrderDirection!
-  field: s0_eternum_ProgressOrderField!
+  field: s1_eternum_ProgressOrderField!
 }
 
-enum s0_eternum_ProgressOrderField {
+enum s1_eternum_ProgressOrderField {
   AMOUNT
   HYPERSTRUCTURE_ENTITY_ID
   RESOURCE_TYPE
 }
 
-input s0_eternum_ProgressWhereInput {
+input s1_eternum_ProgressWhereInput {
   amount: u128
   amountEQ: u128
   amountGT: u128
@@ -7441,35 +7441,35 @@ input s0_eternum_ProgressWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_Protectee {
+type s1_eternum_Protectee {
   army_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
   protectee_id: u32
 }
 
-type s0_eternum_ProtecteeConnection {
-  edges: [s0_eternum_ProtecteeEdge]
+type s1_eternum_ProtecteeConnection {
+  edges: [s1_eternum_ProtecteeEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ProtecteeEdge {
+type s1_eternum_ProtecteeEdge {
   cursor: Cursor
-  node: s0_eternum_Protectee
+  node: s1_eternum_Protectee
 }
 
-input s0_eternum_ProtecteeOrder {
+input s1_eternum_ProtecteeOrder {
   direction: OrderDirection!
-  field: s0_eternum_ProtecteeOrderField!
+  field: s1_eternum_ProtecteeOrderField!
 }
 
-enum s0_eternum_ProtecteeOrderField {
+enum s1_eternum_ProtecteeOrderField {
   ARMY_ID
   PROTECTEE_ID
 }
 
-input s0_eternum_ProtecteeWhereInput {
+input s1_eternum_ProtecteeWhereInput {
   army_id: u32
   army_idEQ: u32
   army_idGT: u32
@@ -7494,35 +7494,35 @@ input s0_eternum_ProtecteeWhereInput {
   protectee_idNOTLIKE: u32
 }
 
-type s0_eternum_Protector {
+type s1_eternum_Protector {
   army_id: u32
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_ProtectorConnection {
-  edges: [s0_eternum_ProtectorEdge]
+type s1_eternum_ProtectorConnection {
+  edges: [s1_eternum_ProtectorEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ProtectorEdge {
+type s1_eternum_ProtectorEdge {
   cursor: Cursor
-  node: s0_eternum_Protector
+  node: s1_eternum_Protector
 }
 
-input s0_eternum_ProtectorOrder {
+input s1_eternum_ProtectorOrder {
   direction: OrderDirection!
-  field: s0_eternum_ProtectorOrderField!
+  field: s1_eternum_ProtectorOrderField!
 }
 
-enum s0_eternum_ProtectorOrderField {
+enum s1_eternum_ProtectorOrderField {
   ARMY_ID
   ENTITY_ID
 }
 
-input s0_eternum_ProtectorWhereInput {
+input s1_eternum_ProtectorWhereInput {
   army_id: u32
   army_idEQ: u32
   army_idGT: u32
@@ -7547,63 +7547,63 @@ input s0_eternum_ProtectorWhereInput {
   entity_idNOTLIKE: u32
 }
 
-type s0_eternum_Quantity {
+type s1_eternum_Quantity {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
   value: u128
 }
 
-type s0_eternum_QuantityConnection {
-  edges: [s0_eternum_QuantityEdge]
+type s1_eternum_QuantityConnection {
+  edges: [s1_eternum_QuantityEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_QuantityEdge {
+type s1_eternum_QuantityEdge {
   cursor: Cursor
-  node: s0_eternum_Quantity
+  node: s1_eternum_Quantity
 }
 
-input s0_eternum_QuantityOrder {
+input s1_eternum_QuantityOrder {
   direction: OrderDirection!
-  field: s0_eternum_QuantityOrderField!
+  field: s1_eternum_QuantityOrderField!
 }
 
-enum s0_eternum_QuantityOrderField {
+enum s1_eternum_QuantityOrderField {
   ENTITY_ID
   VALUE
 }
 
-type s0_eternum_QuantityTracker {
+type s1_eternum_QuantityTracker {
   count: u128
   entity: World__Entity
   entity_id: felt252
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_QuantityTrackerConnection {
-  edges: [s0_eternum_QuantityTrackerEdge]
+type s1_eternum_QuantityTrackerConnection {
+  edges: [s1_eternum_QuantityTrackerEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_QuantityTrackerEdge {
+type s1_eternum_QuantityTrackerEdge {
   cursor: Cursor
-  node: s0_eternum_QuantityTracker
+  node: s1_eternum_QuantityTracker
 }
 
-input s0_eternum_QuantityTrackerOrder {
+input s1_eternum_QuantityTrackerOrder {
   direction: OrderDirection!
-  field: s0_eternum_QuantityTrackerOrderField!
+  field: s1_eternum_QuantityTrackerOrderField!
 }
 
-enum s0_eternum_QuantityTrackerOrderField {
+enum s1_eternum_QuantityTrackerOrderField {
   COUNT
   ENTITY_ID
 }
 
-input s0_eternum_QuantityTrackerWhereInput {
+input s1_eternum_QuantityTrackerWhereInput {
   count: u128
   countEQ: u128
   countGT: u128
@@ -7628,7 +7628,7 @@ input s0_eternum_QuantityTrackerWhereInput {
   entity_idNOTLIKE: felt252
 }
 
-input s0_eternum_QuantityWhereInput {
+input s1_eternum_QuantityWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -7653,7 +7653,7 @@ input s0_eternum_QuantityWhereInput {
   valueNOTLIKE: u128
 }
 
-type s0_eternum_Quest {
+type s1_eternum_Quest {
   completed: bool
   config_id: u32
   entity: World__Entity
@@ -7662,29 +7662,29 @@ type s0_eternum_Quest {
 }
 
 
-type s0_eternum_QuestConnection {
-  edges: [s0_eternum_QuestEdge]
+type s1_eternum_QuestConnection {
+  edges: [s1_eternum_QuestEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_QuestEdge {
+type s1_eternum_QuestEdge {
   cursor: Cursor
-  node: s0_eternum_Quest
+  node: s1_eternum_Quest
 }
 
-input s0_eternum_QuestOrder {
+input s1_eternum_QuestOrder {
   direction: OrderDirection!
-  field: s0_eternum_QuestOrderField!
+  field: s1_eternum_QuestOrderField!
 }
 
-enum s0_eternum_QuestOrderField {
+enum s1_eternum_QuestOrderField {
   COMPLETED
   CONFIG_ID
   ENTITY_ID
 }
 
-type s0_eternum_QuestRewardConfig {
+type s1_eternum_QuestRewardConfig {
   detached_resource_count: u32
   detached_resource_id: u32
   entity: World__Entity
@@ -7692,29 +7692,29 @@ type s0_eternum_QuestRewardConfig {
   quest_id: u32
 }
 
-type s0_eternum_QuestRewardConfigConnection {
-  edges: [s0_eternum_QuestRewardConfigEdge]
+type s1_eternum_QuestRewardConfigConnection {
+  edges: [s1_eternum_QuestRewardConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_QuestRewardConfigEdge {
+type s1_eternum_QuestRewardConfigEdge {
   cursor: Cursor
-  node: s0_eternum_QuestRewardConfig
+  node: s1_eternum_QuestRewardConfig
 }
 
-input s0_eternum_QuestRewardConfigOrder {
+input s1_eternum_QuestRewardConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_QuestRewardConfigOrderField!
+  field: s1_eternum_QuestRewardConfigOrderField!
 }
 
-enum s0_eternum_QuestRewardConfigOrderField {
+enum s1_eternum_QuestRewardConfigOrderField {
   DETACHED_RESOURCE_COUNT
   DETACHED_RESOURCE_ID
   QUEST_ID
 }
 
-input s0_eternum_QuestRewardConfigWhereInput {
+input s1_eternum_QuestRewardConfigWhereInput {
   detached_resource_count: u32
   detached_resource_countEQ: u32
   detached_resource_countGT: u32
@@ -7750,7 +7750,7 @@ input s0_eternum_QuestRewardConfigWhereInput {
   quest_idNOTLIKE: u32
 }
 
-input s0_eternum_QuestWhereInput {
+input s1_eternum_QuestWhereInput {
   completed: bool
   config_id: u32
   config_idEQ: u32
@@ -7776,7 +7776,7 @@ input s0_eternum_QuestWhereInput {
   entity_idNOTLIKE: u32
 }
 
-type s0_eternum_Realm {
+type s1_eternum_Realm {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
@@ -7787,18 +7787,18 @@ type s0_eternum_Realm {
   realm_id: u32
 }
 
-type s0_eternum_RealmConnection {
-  edges: [s0_eternum_RealmEdge]
+type s1_eternum_RealmConnection {
+  edges: [s1_eternum_RealmEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_RealmEdge {
+type s1_eternum_RealmEdge {
   cursor: Cursor
-  node: s0_eternum_Realm
+  node: s1_eternum_Realm
 }
 
-type s0_eternum_RealmLevelConfig {
+type s1_eternum_RealmLevelConfig {
   entity: World__Entity
   eventMessage: World__EventMessage
   level: u8
@@ -7806,29 +7806,29 @@ type s0_eternum_RealmLevelConfig {
   required_resources_id: u32
 }
 
-type s0_eternum_RealmLevelConfigConnection {
-  edges: [s0_eternum_RealmLevelConfigEdge]
+type s1_eternum_RealmLevelConfigConnection {
+  edges: [s1_eternum_RealmLevelConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_RealmLevelConfigEdge {
+type s1_eternum_RealmLevelConfigEdge {
   cursor: Cursor
-  node: s0_eternum_RealmLevelConfig
+  node: s1_eternum_RealmLevelConfig
 }
 
-input s0_eternum_RealmLevelConfigOrder {
+input s1_eternum_RealmLevelConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_RealmLevelConfigOrderField!
+  field: s1_eternum_RealmLevelConfigOrderField!
 }
 
-enum s0_eternum_RealmLevelConfigOrderField {
+enum s1_eternum_RealmLevelConfigOrderField {
   LEVEL
   REQUIRED_RESOURCES_ID
   REQUIRED_RESOURCE_COUNT
 }
 
-input s0_eternum_RealmLevelConfigWhereInput {
+input s1_eternum_RealmLevelConfigWhereInput {
   level: u8
   levelEQ: u8
   levelGT: u8
@@ -7864,35 +7864,35 @@ input s0_eternum_RealmLevelConfigWhereInput {
   required_resources_idNOTLIKE: u32
 }
 
-type s0_eternum_RealmMaxLevelConfig {
+type s1_eternum_RealmMaxLevelConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
   max_level: u8
 }
 
-type s0_eternum_RealmMaxLevelConfigConnection {
-  edges: [s0_eternum_RealmMaxLevelConfigEdge]
+type s1_eternum_RealmMaxLevelConfigConnection {
+  edges: [s1_eternum_RealmMaxLevelConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_RealmMaxLevelConfigEdge {
+type s1_eternum_RealmMaxLevelConfigEdge {
   cursor: Cursor
-  node: s0_eternum_RealmMaxLevelConfig
+  node: s1_eternum_RealmMaxLevelConfig
 }
 
-input s0_eternum_RealmMaxLevelConfigOrder {
+input s1_eternum_RealmMaxLevelConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_RealmMaxLevelConfigOrderField!
+  field: s1_eternum_RealmMaxLevelConfigOrderField!
 }
 
-enum s0_eternum_RealmMaxLevelConfigOrderField {
+enum s1_eternum_RealmMaxLevelConfigOrderField {
   CONFIG_ID
   MAX_LEVEL
 }
 
-input s0_eternum_RealmMaxLevelConfigWhereInput {
+input s1_eternum_RealmMaxLevelConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -7917,12 +7917,12 @@ input s0_eternum_RealmMaxLevelConfigWhereInput {
   max_levelNOTLIKE: u8
 }
 
-input s0_eternum_RealmOrder {
+input s1_eternum_RealmOrder {
   direction: OrderDirection!
-  field: s0_eternum_RealmOrderField!
+  field: s1_eternum_RealmOrderField!
 }
 
-enum s0_eternum_RealmOrderField {
+enum s1_eternum_RealmOrderField {
   ENTITY_ID
   HAS_WONDER
   LEVEL
@@ -7932,7 +7932,7 @@ enum s0_eternum_RealmOrderField {
   SETTLER_ADDRESS
 }
 
-input s0_eternum_RealmWhereInput {
+input s1_eternum_RealmWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -7991,7 +7991,7 @@ input s0_eternum_RealmWhereInput {
   realm_idNOTLIKE: u32
 }
 
-type s0_eternum_Resource {
+type s1_eternum_Resource {
   balance: u128
   entity: World__Entity
   entity_id: u32
@@ -7999,7 +7999,7 @@ type s0_eternum_Resource {
   resource_type: u8
 }
 
-type s0_eternum_ResourceAllowance {
+type s1_eternum_ResourceAllowance {
   amount: u128
   approved_entity_id: u32
   entity: World__Entity
@@ -8008,30 +8008,30 @@ type s0_eternum_ResourceAllowance {
   resource_type: u8
 }
 
-type s0_eternum_ResourceAllowanceConnection {
-  edges: [s0_eternum_ResourceAllowanceEdge]
+type s1_eternum_ResourceAllowanceConnection {
+  edges: [s1_eternum_ResourceAllowanceEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ResourceAllowanceEdge {
+type s1_eternum_ResourceAllowanceEdge {
   cursor: Cursor
-  node: s0_eternum_ResourceAllowance
+  node: s1_eternum_ResourceAllowance
 }
 
-input s0_eternum_ResourceAllowanceOrder {
+input s1_eternum_ResourceAllowanceOrder {
   direction: OrderDirection!
-  field: s0_eternum_ResourceAllowanceOrderField!
+  field: s1_eternum_ResourceAllowanceOrderField!
 }
 
-enum s0_eternum_ResourceAllowanceOrderField {
+enum s1_eternum_ResourceAllowanceOrderField {
   AMOUNT
   APPROVED_ENTITY_ID
   OWNER_ENTITY_ID
   RESOURCE_TYPE
 }
 
-input s0_eternum_ResourceAllowanceWhereInput {
+input s1_eternum_ResourceAllowanceWhereInput {
   amount: u128
   amountEQ: u128
   amountGT: u128
@@ -8078,7 +8078,7 @@ input s0_eternum_ResourceAllowanceWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_ResourceBridgeConfig {
+type s1_eternum_ResourceBridgeConfig {
   config_id: u32
   deposit_paused: bool
   entity: World__Entity
@@ -8086,29 +8086,29 @@ type s0_eternum_ResourceBridgeConfig {
   withdraw_paused: bool
 }
 
-type s0_eternum_ResourceBridgeConfigConnection {
-  edges: [s0_eternum_ResourceBridgeConfigEdge]
+type s1_eternum_ResourceBridgeConfigConnection {
+  edges: [s1_eternum_ResourceBridgeConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ResourceBridgeConfigEdge {
+type s1_eternum_ResourceBridgeConfigEdge {
   cursor: Cursor
-  node: s0_eternum_ResourceBridgeConfig
+  node: s1_eternum_ResourceBridgeConfig
 }
 
-input s0_eternum_ResourceBridgeConfigOrder {
+input s1_eternum_ResourceBridgeConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_ResourceBridgeConfigOrderField!
+  field: s1_eternum_ResourceBridgeConfigOrderField!
 }
 
-enum s0_eternum_ResourceBridgeConfigOrderField {
+enum s1_eternum_ResourceBridgeConfigOrderField {
   CONFIG_ID
   DEPOSIT_PAUSED
   WITHDRAW_PAUSED
 }
 
-input s0_eternum_ResourceBridgeConfigWhereInput {
+input s1_eternum_ResourceBridgeConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -8124,7 +8124,7 @@ input s0_eternum_ResourceBridgeConfigWhereInput {
   withdraw_paused: bool
 }
 
-type s0_eternum_ResourceBridgeFeeSplitConfig {
+type s1_eternum_ResourceBridgeFeeSplitConfig {
   client_fee_on_dpt_percent: u16
   client_fee_on_wtdr_percent: u16
   config_id: u32
@@ -8140,23 +8140,23 @@ type s0_eternum_ResourceBridgeFeeSplitConfig {
   velords_fee_recipient: ContractAddress
 }
 
-type s0_eternum_ResourceBridgeFeeSplitConfigConnection {
-  edges: [s0_eternum_ResourceBridgeFeeSplitConfigEdge]
+type s1_eternum_ResourceBridgeFeeSplitConfigConnection {
+  edges: [s1_eternum_ResourceBridgeFeeSplitConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ResourceBridgeFeeSplitConfigEdge {
+type s1_eternum_ResourceBridgeFeeSplitConfigEdge {
   cursor: Cursor
-  node: s0_eternum_ResourceBridgeFeeSplitConfig
+  node: s1_eternum_ResourceBridgeFeeSplitConfig
 }
 
-input s0_eternum_ResourceBridgeFeeSplitConfigOrder {
+input s1_eternum_ResourceBridgeFeeSplitConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_ResourceBridgeFeeSplitConfigOrderField!
+  field: s1_eternum_ResourceBridgeFeeSplitConfigOrderField!
 }
 
-enum s0_eternum_ResourceBridgeFeeSplitConfigOrderField {
+enum s1_eternum_ResourceBridgeFeeSplitConfigOrderField {
   CLIENT_FEE_ON_DPT_PERCENT
   CLIENT_FEE_ON_WTDR_PERCENT
   CONFIG_ID
@@ -8170,7 +8170,7 @@ enum s0_eternum_ResourceBridgeFeeSplitConfigOrderField {
   VELORDS_FEE_RECIPIENT
 }
 
-input s0_eternum_ResourceBridgeFeeSplitConfigWhereInput {
+input s1_eternum_ResourceBridgeFeeSplitConfigWhereInput {
   client_fee_on_dpt_percent: u16
   client_fee_on_dpt_percentEQ: u16
   client_fee_on_dpt_percentGT: u16
@@ -8294,35 +8294,35 @@ input s0_eternum_ResourceBridgeFeeSplitConfigWhereInput {
   velords_fee_recipientNOTLIKE: ContractAddress
 }
 
-type s0_eternum_ResourceBridgeWhitelistConfig {
+type s1_eternum_ResourceBridgeWhitelistConfig {
   entity: World__Entity
   eventMessage: World__EventMessage
   resource_type: u8
   token: ContractAddress
 }
 
-type s0_eternum_ResourceBridgeWhitelistConfigConnection {
-  edges: [s0_eternum_ResourceBridgeWhitelistConfigEdge]
+type s1_eternum_ResourceBridgeWhitelistConfigConnection {
+  edges: [s1_eternum_ResourceBridgeWhitelistConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ResourceBridgeWhitelistConfigEdge {
+type s1_eternum_ResourceBridgeWhitelistConfigEdge {
   cursor: Cursor
-  node: s0_eternum_ResourceBridgeWhitelistConfig
+  node: s1_eternum_ResourceBridgeWhitelistConfig
 }
 
-input s0_eternum_ResourceBridgeWhitelistConfigOrder {
+input s1_eternum_ResourceBridgeWhitelistConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_ResourceBridgeWhitelistConfigOrderField!
+  field: s1_eternum_ResourceBridgeWhitelistConfigOrderField!
 }
 
-enum s0_eternum_ResourceBridgeWhitelistConfigOrderField {
+enum s1_eternum_ResourceBridgeWhitelistConfigOrderField {
   RESOURCE_TYPE
   TOKEN
 }
 
-input s0_eternum_ResourceBridgeWhitelistConfigWhereInput {
+input s1_eternum_ResourceBridgeWhitelistConfigWhereInput {
   resource_type: u8
   resource_typeEQ: u8
   resource_typeGT: u8
@@ -8347,13 +8347,13 @@ input s0_eternum_ResourceBridgeWhitelistConfigWhereInput {
   tokenNOTLIKE: ContractAddress
 }
 
-type s0_eternum_ResourceConnection {
-  edges: [s0_eternum_ResourceEdge]
+type s1_eternum_ResourceConnection {
+  edges: [s1_eternum_ResourceEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ResourceCost {
+type s1_eternum_ResourceCost {
   amount: u128
   entity: World__Entity
   entity_id: u32
@@ -8362,30 +8362,30 @@ type s0_eternum_ResourceCost {
   resource_type: u8
 }
 
-type s0_eternum_ResourceCostConnection {
-  edges: [s0_eternum_ResourceCostEdge]
+type s1_eternum_ResourceCostConnection {
+  edges: [s1_eternum_ResourceCostEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ResourceCostEdge {
+type s1_eternum_ResourceCostEdge {
   cursor: Cursor
-  node: s0_eternum_ResourceCost
+  node: s1_eternum_ResourceCost
 }
 
-input s0_eternum_ResourceCostOrder {
+input s1_eternum_ResourceCostOrder {
   direction: OrderDirection!
-  field: s0_eternum_ResourceCostOrderField!
+  field: s1_eternum_ResourceCostOrderField!
 }
 
-enum s0_eternum_ResourceCostOrderField {
+enum s1_eternum_ResourceCostOrderField {
   AMOUNT
   ENTITY_ID
   INDEX
   RESOURCE_TYPE
 }
 
-input s0_eternum_ResourceCostWhereInput {
+input s1_eternum_ResourceCostWhereInput {
   amount: u128
   amountEQ: u128
   amountGT: u128
@@ -8432,23 +8432,23 @@ input s0_eternum_ResourceCostWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_ResourceEdge {
+type s1_eternum_ResourceEdge {
   cursor: Cursor
-  node: s0_eternum_Resource
+  node: s1_eternum_Resource
 }
 
-input s0_eternum_ResourceOrder {
+input s1_eternum_ResourceOrder {
   direction: OrderDirection!
-  field: s0_eternum_ResourceOrderField!
+  field: s1_eternum_ResourceOrderField!
 }
 
-enum s0_eternum_ResourceOrderField {
+enum s1_eternum_ResourceOrderField {
   BALANCE
   ENTITY_ID
   RESOURCE_TYPE
 }
 
-type s0_eternum_ResourceTransferLock {
+type s1_eternum_ResourceTransferLock {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
@@ -8456,29 +8456,29 @@ type s0_eternum_ResourceTransferLock {
   start_at: u64
 }
 
-type s0_eternum_ResourceTransferLockConnection {
-  edges: [s0_eternum_ResourceTransferLockEdge]
+type s1_eternum_ResourceTransferLockConnection {
+  edges: [s1_eternum_ResourceTransferLockEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_ResourceTransferLockEdge {
+type s1_eternum_ResourceTransferLockEdge {
   cursor: Cursor
-  node: s0_eternum_ResourceTransferLock
+  node: s1_eternum_ResourceTransferLock
 }
 
-input s0_eternum_ResourceTransferLockOrder {
+input s1_eternum_ResourceTransferLockOrder {
   direction: OrderDirection!
-  field: s0_eternum_ResourceTransferLockOrderField!
+  field: s1_eternum_ResourceTransferLockOrderField!
 }
 
-enum s0_eternum_ResourceTransferLockOrderField {
+enum s1_eternum_ResourceTransferLockOrderField {
   ENTITY_ID
   RELEASE_AT
   START_AT
 }
 
-input s0_eternum_ResourceTransferLockWhereInput {
+input s1_eternum_ResourceTransferLockWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -8514,7 +8514,7 @@ input s0_eternum_ResourceTransferLockWhereInput {
   start_atNOTLIKE: u64
 }
 
-input s0_eternum_ResourceWhereInput {
+input s1_eternum_ResourceWhereInput {
   balance: u128
   balanceEQ: u128
   balanceGT: u128
@@ -8550,7 +8550,7 @@ input s0_eternum_ResourceWhereInput {
   resource_typeNOTLIKE: u8
 }
 
-type s0_eternum_Season {
+type s1_eternum_Season {
   config_id: u32
   ended_at: u64
   entity: World__Entity
@@ -8559,7 +8559,7 @@ type s0_eternum_Season {
   start_at: u64
 }
 
-type s0_eternum_SeasonAddressesConfig {
+type s1_eternum_SeasonAddressesConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -8568,30 +8568,30 @@ type s0_eternum_SeasonAddressesConfig {
   season_pass_address: ContractAddress
 }
 
-type s0_eternum_SeasonAddressesConfigConnection {
-  edges: [s0_eternum_SeasonAddressesConfigEdge]
+type s1_eternum_SeasonAddressesConfigConnection {
+  edges: [s1_eternum_SeasonAddressesConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_SeasonAddressesConfigEdge {
+type s1_eternum_SeasonAddressesConfigEdge {
   cursor: Cursor
-  node: s0_eternum_SeasonAddressesConfig
+  node: s1_eternum_SeasonAddressesConfig
 }
 
-input s0_eternum_SeasonAddressesConfigOrder {
+input s1_eternum_SeasonAddressesConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_SeasonAddressesConfigOrderField!
+  field: s1_eternum_SeasonAddressesConfigOrderField!
 }
 
-enum s0_eternum_SeasonAddressesConfigOrderField {
+enum s1_eternum_SeasonAddressesConfigOrderField {
   CONFIG_ID
   LORDS_ADDRESS
   REALMS_ADDRESS
   SEASON_PASS_ADDRESS
 }
 
-input s0_eternum_SeasonAddressesConfigWhereInput {
+input s1_eternum_SeasonAddressesConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -8638,35 +8638,35 @@ input s0_eternum_SeasonAddressesConfigWhereInput {
   season_pass_addressNOTLIKE: ContractAddress
 }
 
-type s0_eternum_SeasonBridgeConfig {
+type s1_eternum_SeasonBridgeConfig {
   close_after_end_seconds: u64
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_SeasonBridgeConfigConnection {
-  edges: [s0_eternum_SeasonBridgeConfigEdge]
+type s1_eternum_SeasonBridgeConfigConnection {
+  edges: [s1_eternum_SeasonBridgeConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_SeasonBridgeConfigEdge {
+type s1_eternum_SeasonBridgeConfigEdge {
   cursor: Cursor
-  node: s0_eternum_SeasonBridgeConfig
+  node: s1_eternum_SeasonBridgeConfig
 }
 
-input s0_eternum_SeasonBridgeConfigOrder {
+input s1_eternum_SeasonBridgeConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_SeasonBridgeConfigOrderField!
+  field: s1_eternum_SeasonBridgeConfigOrderField!
 }
 
-enum s0_eternum_SeasonBridgeConfigOrderField {
+enum s1_eternum_SeasonBridgeConfigOrderField {
   CLOSE_AFTER_END_SECONDS
   CONFIG_ID
 }
 
-input s0_eternum_SeasonBridgeConfigWhereInput {
+input s1_eternum_SeasonBridgeConfigWhereInput {
   close_after_end_seconds: u64
   close_after_end_secondsEQ: u64
   close_after_end_secondsGT: u64
@@ -8691,30 +8691,30 @@ input s0_eternum_SeasonBridgeConfigWhereInput {
   config_idNOTLIKE: u32
 }
 
-type s0_eternum_SeasonConnection {
-  edges: [s0_eternum_SeasonEdge]
+type s1_eternum_SeasonConnection {
+  edges: [s1_eternum_SeasonEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_SeasonEdge {
+type s1_eternum_SeasonEdge {
   cursor: Cursor
-  node: s0_eternum_Season
+  node: s1_eternum_Season
 }
 
-input s0_eternum_SeasonOrder {
+input s1_eternum_SeasonOrder {
   direction: OrderDirection!
-  field: s0_eternum_SeasonOrderField!
+  field: s1_eternum_SeasonOrderField!
 }
 
-enum s0_eternum_SeasonOrderField {
+enum s1_eternum_SeasonOrderField {
   CONFIG_ID
   ENDED_AT
   IS_OVER
   START_AT
 }
 
-input s0_eternum_SeasonWhereInput {
+input s1_eternum_SeasonWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -8751,7 +8751,7 @@ input s0_eternum_SeasonWhereInput {
   start_atNOTLIKE: u64
 }
 
-type s0_eternum_SettleRealmData {
+type s1_eternum_SettleRealmData {
   cities: u8
   entity: World__Entity
   entity_id: u32
@@ -8772,23 +8772,23 @@ type s0_eternum_SettleRealmData {
   y: u32
 }
 
-type s0_eternum_SettleRealmDataConnection {
-  edges: [s0_eternum_SettleRealmDataEdge]
+type s1_eternum_SettleRealmDataConnection {
+  edges: [s1_eternum_SettleRealmDataEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_SettleRealmDataEdge {
+type s1_eternum_SettleRealmDataEdge {
   cursor: Cursor
-  node: s0_eternum_SettleRealmData
+  node: s1_eternum_SettleRealmData
 }
 
-input s0_eternum_SettleRealmDataOrder {
+input s1_eternum_SettleRealmDataOrder {
   direction: OrderDirection!
-  field: s0_eternum_SettleRealmDataOrderField!
+  field: s1_eternum_SettleRealmDataOrderField!
 }
 
-enum s0_eternum_SettleRealmDataOrderField {
+enum s1_eternum_SettleRealmDataOrderField {
   CITIES
   ENTITY_ID
   EVENT_ID
@@ -8807,7 +8807,7 @@ enum s0_eternum_SettleRealmDataOrderField {
   Y
 }
 
-input s0_eternum_SettleRealmDataWhereInput {
+input s1_eternum_SettleRealmDataWhereInput {
   cities: u8
   citiesEQ: u8
   citiesGT: u8
@@ -8976,7 +8976,7 @@ input s0_eternum_SettleRealmDataWhereInput {
   yNOTLIKE: u32
 }
 
-type s0_eternum_SettlementConfig {
+type s1_eternum_SettlementConfig {
   base_distance: u32
   center: u32
   config_id: u32
@@ -8989,23 +8989,23 @@ type s0_eternum_SettlementConfig {
   points_placed: u32
 }
 
-type s0_eternum_SettlementConfigConnection {
-  edges: [s0_eternum_SettlementConfigEdge]
+type s1_eternum_SettlementConfigConnection {
+  edges: [s1_eternum_SettlementConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_SettlementConfigEdge {
+type s1_eternum_SettlementConfigEdge {
   cursor: Cursor
-  node: s0_eternum_SettlementConfig
+  node: s1_eternum_SettlementConfig
 }
 
-input s0_eternum_SettlementConfigOrder {
+input s1_eternum_SettlementConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_SettlementConfigOrderField!
+  field: s1_eternum_SettlementConfigOrderField!
 }
 
-enum s0_eternum_SettlementConfigOrderField {
+enum s1_eternum_SettlementConfigOrderField {
   BASE_DISTANCE
   CENTER
   CONFIG_ID
@@ -9016,7 +9016,7 @@ enum s0_eternum_SettlementConfigOrderField {
   POINTS_PLACED
 }
 
-input s0_eternum_SettlementConfigWhereInput {
+input s1_eternum_SettlementConfigWhereInput {
   base_distance: u32
   base_distanceEQ: u32
   base_distanceGT: u32
@@ -9107,7 +9107,7 @@ input s0_eternum_SettlementConfigWhereInput {
   points_placedNOTLIKE: u32
 }
 
-type s0_eternum_SpeedConfig {
+type s1_eternum_SpeedConfig {
   config_id: u32
   entity: World__Entity
   entity_type: u32
@@ -9116,30 +9116,30 @@ type s0_eternum_SpeedConfig {
   speed_config_id: u32
 }
 
-type s0_eternum_SpeedConfigConnection {
-  edges: [s0_eternum_SpeedConfigEdge]
+type s1_eternum_SpeedConfigConnection {
+  edges: [s1_eternum_SpeedConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_SpeedConfigEdge {
+type s1_eternum_SpeedConfigEdge {
   cursor: Cursor
-  node: s0_eternum_SpeedConfig
+  node: s1_eternum_SpeedConfig
 }
 
-input s0_eternum_SpeedConfigOrder {
+input s1_eternum_SpeedConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_SpeedConfigOrderField!
+  field: s1_eternum_SpeedConfigOrderField!
 }
 
-enum s0_eternum_SpeedConfigOrderField {
+enum s1_eternum_SpeedConfigOrderField {
   CONFIG_ID
   ENTITY_TYPE
   SEC_PER_KM
   SPEED_CONFIG_ID
 }
 
-input s0_eternum_SpeedConfigWhereInput {
+input s1_eternum_SpeedConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -9186,7 +9186,7 @@ input s0_eternum_SpeedConfigWhereInput {
   speed_config_idNOTLIKE: u32
 }
 
-type s0_eternum_Stamina {
+type s1_eternum_Stamina {
   amount: u16
   entity: World__Entity
   entity_id: u32
@@ -9194,7 +9194,7 @@ type s0_eternum_Stamina {
   last_refill_tick: u64
 }
 
-type s0_eternum_StaminaConfig {
+type s1_eternum_StaminaConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -9202,29 +9202,29 @@ type s0_eternum_StaminaConfig {
   unit_type: u8
 }
 
-type s0_eternum_StaminaConfigConnection {
-  edges: [s0_eternum_StaminaConfigEdge]
+type s1_eternum_StaminaConfigConnection {
+  edges: [s1_eternum_StaminaConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_StaminaConfigEdge {
+type s1_eternum_StaminaConfigEdge {
   cursor: Cursor
-  node: s0_eternum_StaminaConfig
+  node: s1_eternum_StaminaConfig
 }
 
-input s0_eternum_StaminaConfigOrder {
+input s1_eternum_StaminaConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_StaminaConfigOrderField!
+  field: s1_eternum_StaminaConfigOrderField!
 }
 
-enum s0_eternum_StaminaConfigOrderField {
+enum s1_eternum_StaminaConfigOrderField {
   CONFIG_ID
   MAX_STAMINA
   UNIT_TYPE
 }
 
-input s0_eternum_StaminaConfigWhereInput {
+input s1_eternum_StaminaConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -9260,29 +9260,29 @@ input s0_eternum_StaminaConfigWhereInput {
   unit_typeNOTLIKE: u8
 }
 
-type s0_eternum_StaminaConnection {
-  edges: [s0_eternum_StaminaEdge]
+type s1_eternum_StaminaConnection {
+  edges: [s1_eternum_StaminaEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_StaminaEdge {
+type s1_eternum_StaminaEdge {
   cursor: Cursor
-  node: s0_eternum_Stamina
+  node: s1_eternum_Stamina
 }
 
-input s0_eternum_StaminaOrder {
+input s1_eternum_StaminaOrder {
   direction: OrderDirection!
-  field: s0_eternum_StaminaOrderField!
+  field: s1_eternum_StaminaOrderField!
 }
 
-enum s0_eternum_StaminaOrderField {
+enum s1_eternum_StaminaOrderField {
   AMOUNT
   ENTITY_ID
   LAST_REFILL_TICK
 }
 
-type s0_eternum_StaminaRefillConfig {
+type s1_eternum_StaminaRefillConfig {
   amount_per_tick: u16
   config_id: u32
   entity: World__Entity
@@ -9290,29 +9290,29 @@ type s0_eternum_StaminaRefillConfig {
   start_boost_tick_count: u8
 }
 
-type s0_eternum_StaminaRefillConfigConnection {
-  edges: [s0_eternum_StaminaRefillConfigEdge]
+type s1_eternum_StaminaRefillConfigConnection {
+  edges: [s1_eternum_StaminaRefillConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_StaminaRefillConfigEdge {
+type s1_eternum_StaminaRefillConfigEdge {
   cursor: Cursor
-  node: s0_eternum_StaminaRefillConfig
+  node: s1_eternum_StaminaRefillConfig
 }
 
-input s0_eternum_StaminaRefillConfigOrder {
+input s1_eternum_StaminaRefillConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_StaminaRefillConfigOrderField!
+  field: s1_eternum_StaminaRefillConfigOrderField!
 }
 
-enum s0_eternum_StaminaRefillConfigOrderField {
+enum s1_eternum_StaminaRefillConfigOrderField {
   AMOUNT_PER_TICK
   CONFIG_ID
   START_BOOST_TICK_COUNT
 }
 
-input s0_eternum_StaminaRefillConfigWhereInput {
+input s1_eternum_StaminaRefillConfigWhereInput {
   amount_per_tick: u16
   amount_per_tickEQ: u16
   amount_per_tickGT: u16
@@ -9348,7 +9348,7 @@ input s0_eternum_StaminaRefillConfigWhereInput {
   start_boost_tick_countNOTLIKE: u8
 }
 
-input s0_eternum_StaminaWhereInput {
+input s1_eternum_StaminaWhereInput {
   amount: u16
   amountEQ: u16
   amountGT: u16
@@ -9384,35 +9384,35 @@ input s0_eternum_StaminaWhereInput {
   last_refill_tickNOTLIKE: u64
 }
 
-type s0_eternum_Status {
+type s1_eternum_Status {
   entity: World__Entity
   eventMessage: World__EventMessage
   trade_id: u32
   value: u128
 }
 
-type s0_eternum_StatusConnection {
-  edges: [s0_eternum_StatusEdge]
+type s1_eternum_StatusConnection {
+  edges: [s1_eternum_StatusEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_StatusEdge {
+type s1_eternum_StatusEdge {
   cursor: Cursor
-  node: s0_eternum_Status
+  node: s1_eternum_Status
 }
 
-input s0_eternum_StatusOrder {
+input s1_eternum_StatusOrder {
   direction: OrderDirection!
-  field: s0_eternum_StatusOrderField!
+  field: s1_eternum_StatusOrderField!
 }
 
-enum s0_eternum_StatusOrderField {
+enum s1_eternum_StatusOrderField {
   TRADE_ID
   VALUE
 }
 
-input s0_eternum_StatusWhereInput {
+input s1_eternum_StatusWhereInput {
   trade_id: u32
   trade_idEQ: u32
   trade_idGT: u32
@@ -9437,7 +9437,7 @@ input s0_eternum_StatusWhereInput {
   valueNOTLIKE: u128
 }
 
-type s0_eternum_Structure {
+type s1_eternum_Structure {
   category: Enum
   created_at: u64
   entity: World__Entity
@@ -9445,41 +9445,41 @@ type s0_eternum_Structure {
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_StructureConnection {
-  edges: [s0_eternum_StructureEdge]
+type s1_eternum_StructureConnection {
+  edges: [s1_eternum_StructureEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_StructureCount {
-  coord: s0_eternum_Coord
+type s1_eternum_StructureCount {
+  coord: s1_eternum_Coord
   count: u8
   entity: World__Entity
   eventMessage: World__EventMessage
 }
 
-type s0_eternum_StructureCountConnection {
-  edges: [s0_eternum_StructureCountEdge]
+type s1_eternum_StructureCountConnection {
+  edges: [s1_eternum_StructureCountEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_StructureCountEdge {
+type s1_eternum_StructureCountEdge {
   cursor: Cursor
-  node: s0_eternum_StructureCount
+  node: s1_eternum_StructureCount
 }
 
-input s0_eternum_StructureCountOrder {
+input s1_eternum_StructureCountOrder {
   direction: OrderDirection!
-  field: s0_eternum_StructureCountOrderField!
+  field: s1_eternum_StructureCountOrderField!
 }
 
-enum s0_eternum_StructureCountOrderField {
+enum s1_eternum_StructureCountOrderField {
   COORD
   COUNT
 }
 
-input s0_eternum_StructureCountWhereInput {
+input s1_eternum_StructureCountWhereInput {
   count: u8
   countEQ: u8
   countGT: u8
@@ -9493,23 +9493,23 @@ input s0_eternum_StructureCountWhereInput {
   countNOTLIKE: u8
 }
 
-type s0_eternum_StructureEdge {
+type s1_eternum_StructureEdge {
   cursor: Cursor
-  node: s0_eternum_Structure
+  node: s1_eternum_Structure
 }
 
-input s0_eternum_StructureOrder {
+input s1_eternum_StructureOrder {
   direction: OrderDirection!
-  field: s0_eternum_StructureOrderField!
+  field: s1_eternum_StructureOrderField!
 }
 
-enum s0_eternum_StructureOrderField {
+enum s1_eternum_StructureOrderField {
   CATEGORY
   CREATED_AT
   ENTITY_ID
 }
 
-input s0_eternum_StructureWhereInput {
+input s1_eternum_StructureWhereInput {
   category: Enum
   created_at: u64
   created_atEQ: u64
@@ -9535,7 +9535,7 @@ input s0_eternum_StructureWhereInput {
   entity_idNOTLIKE: u32
 }
 
-type s0_eternum_SwapEvent {
+type s1_eternum_SwapEvent {
   bank_entity_id: u32
   bank_owner_fees: u128
   buy: bool
@@ -9551,23 +9551,23 @@ type s0_eternum_SwapEvent {
   timestamp: u64
 }
 
-type s0_eternum_SwapEventConnection {
-  edges: [s0_eternum_SwapEventEdge]
+type s1_eternum_SwapEventConnection {
+  edges: [s1_eternum_SwapEventEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_SwapEventEdge {
+type s1_eternum_SwapEventEdge {
   cursor: Cursor
-  node: s0_eternum_SwapEvent
+  node: s1_eternum_SwapEvent
 }
 
-input s0_eternum_SwapEventOrder {
+input s1_eternum_SwapEventOrder {
   direction: OrderDirection!
-  field: s0_eternum_SwapEventOrderField!
+  field: s1_eternum_SwapEventOrderField!
 }
 
-enum s0_eternum_SwapEventOrderField {
+enum s1_eternum_SwapEventOrderField {
   BANK_ENTITY_ID
   BANK_OWNER_FEES
   BUY
@@ -9581,7 +9581,7 @@ enum s0_eternum_SwapEventOrderField {
   TIMESTAMP
 }
 
-input s0_eternum_SwapEventWhereInput {
+input s1_eternum_SwapEventWhereInput {
   bank_entity_id: u32
   bank_entity_idEQ: u32
   bank_entity_idGT: u32
@@ -9695,13 +9695,13 @@ input s0_eternum_SwapEventWhereInput {
   timestampNOTLIKE: u64
 }
 
-type s0_eternum_Task {
+type s1_eternum_Task {
   description: ByteArray
   id: felt252
   total: u32
 }
 
-type s0_eternum_TickConfig {
+type s1_eternum_TickConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -9709,29 +9709,29 @@ type s0_eternum_TickConfig {
   tick_interval_in_seconds: u64
 }
 
-type s0_eternum_TickConfigConnection {
-  edges: [s0_eternum_TickConfigEdge]
+type s1_eternum_TickConfigConnection {
+  edges: [s1_eternum_TickConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TickConfigEdge {
+type s1_eternum_TickConfigEdge {
   cursor: Cursor
-  node: s0_eternum_TickConfig
+  node: s1_eternum_TickConfig
 }
 
-input s0_eternum_TickConfigOrder {
+input s1_eternum_TickConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_TickConfigOrderField!
+  field: s1_eternum_TickConfigOrderField!
 }
 
-enum s0_eternum_TickConfigOrderField {
+enum s1_eternum_TickConfigOrderField {
   CONFIG_ID
   TICK_ID
   TICK_INTERVAL_IN_SECONDS
 }
 
-input s0_eternum_TickConfigWhereInput {
+input s1_eternum_TickConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -9767,7 +9767,7 @@ input s0_eternum_TickConfigWhereInput {
   tick_interval_in_secondsNOTLIKE: u64
 }
 
-type s0_eternum_Tile {
+type s1_eternum_Tile {
   biome: Enum
   col: u32
   entity: World__Entity
@@ -9777,23 +9777,23 @@ type s0_eternum_Tile {
   row: u32
 }
 
-type s0_eternum_TileConnection {
-  edges: [s0_eternum_TileEdge]
+type s1_eternum_TileConnection {
+  edges: [s1_eternum_TileEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TileEdge {
+type s1_eternum_TileEdge {
   cursor: Cursor
-  node: s0_eternum_Tile
+  node: s1_eternum_Tile
 }
 
-input s0_eternum_TileOrder {
+input s1_eternum_TileOrder {
   direction: OrderDirection!
-  field: s0_eternum_TileOrderField!
+  field: s1_eternum_TileOrderField!
 }
 
-enum s0_eternum_TileOrderField {
+enum s1_eternum_TileOrderField {
   BIOME
   COL
   EXPLORED_AT
@@ -9801,7 +9801,7 @@ enum s0_eternum_TileOrderField {
   ROW
 }
 
-input s0_eternum_TileWhereInput {
+input s1_eternum_TileWhereInput {
   biome: Enum
   col: u32
   colEQ: u32
@@ -9849,7 +9849,7 @@ input s0_eternum_TileWhereInput {
   rowNOTLIKE: u32
 }
 
-type s0_eternum_Trade {
+type s1_eternum_Trade {
   entity: World__Entity
   eventMessage: World__EventMessage
   expires_at: u64
@@ -9866,23 +9866,23 @@ type s0_eternum_Trade {
   trade_id: u32
 }
 
-type s0_eternum_TradeConnection {
-  edges: [s0_eternum_TradeEdge]
+type s1_eternum_TradeConnection {
+  edges: [s1_eternum_TradeEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TradeEdge {
+type s1_eternum_TradeEdge {
   cursor: Cursor
-  node: s0_eternum_Trade
+  node: s1_eternum_Trade
 }
 
-input s0_eternum_TradeOrder {
+input s1_eternum_TradeOrder {
   direction: OrderDirection!
-  field: s0_eternum_TradeOrderField!
+  field: s1_eternum_TradeOrderField!
 }
 
-enum s0_eternum_TradeOrderField {
+enum s1_eternum_TradeOrderField {
   EXPIRES_AT
   MAKER_GIVES_RESOURCES_HASH
   MAKER_GIVES_RESOURCES_ID
@@ -9897,7 +9897,7 @@ enum s0_eternum_TradeOrderField {
   TRADE_ID
 }
 
-input s0_eternum_TradeWhereInput {
+input s1_eternum_TradeWhereInput {
   expires_at: u64
   expires_atEQ: u64
   expires_atGT: u64
@@ -10032,33 +10032,33 @@ input s0_eternum_TradeWhereInput {
   trade_idNOTLIKE: u32
 }
 
-type s0_eternum_Transfer {
+type s1_eternum_Transfer {
   entity: World__Entity
   eventMessage: World__EventMessage
   recipient_entity_id: u32
-  resources: [s0_eternum_u8u128]
+  resources: [s1_eternum_u8u128]
   sender_entity_id: u32
   sending_realm_id: u32
   timestamp: u64
 }
 
-type s0_eternum_TransferConnection {
-  edges: [s0_eternum_TransferEdge]
+type s1_eternum_TransferConnection {
+  edges: [s1_eternum_TransferEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TransferEdge {
+type s1_eternum_TransferEdge {
   cursor: Cursor
-  node: s0_eternum_Transfer
+  node: s1_eternum_Transfer
 }
 
-input s0_eternum_TransferOrder {
+input s1_eternum_TransferOrder {
   direction: OrderDirection!
-  field: s0_eternum_TransferOrderField!
+  field: s1_eternum_TransferOrderField!
 }
 
-enum s0_eternum_TransferOrderField {
+enum s1_eternum_TransferOrderField {
   RECIPIENT_ENTITY_ID
   RESOURCES
   SENDER_ENTITY_ID
@@ -10066,7 +10066,7 @@ enum s0_eternum_TransferOrderField {
   TIMESTAMP
 }
 
-input s0_eternum_TransferWhereInput {
+input s1_eternum_TransferWhereInput {
   recipient_entity_id: u32
   recipient_entity_idEQ: u32
   recipient_entity_idGT: u32
@@ -10113,7 +10113,7 @@ input s0_eternum_TransferWhereInput {
   timestampNOTLIKE: u64
 }
 
-type s0_eternum_Travel {
+type s1_eternum_Travel {
   destination_coord_x: u32
   destination_coord_y: u32
   entity: World__Entity
@@ -10121,22 +10121,22 @@ type s0_eternum_Travel {
   eventMessage: World__EventMessage
   owner: ContractAddress
   timestamp: u64
-  travel_path: [s0_eternum_Coord]
+  travel_path: [s1_eternum_Coord]
   travel_time: u64
 }
 
-type s0_eternum_TravelConnection {
-  edges: [s0_eternum_TravelEdge]
+type s1_eternum_TravelConnection {
+  edges: [s1_eternum_TravelEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TravelEdge {
+type s1_eternum_TravelEdge {
   cursor: Cursor
-  node: s0_eternum_Travel
+  node: s1_eternum_Travel
 }
 
-type s0_eternum_TravelFoodCostConfig {
+type s1_eternum_TravelFoodCostConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -10147,23 +10147,23 @@ type s0_eternum_TravelFoodCostConfig {
   unit_type: u8
 }
 
-type s0_eternum_TravelFoodCostConfigConnection {
-  edges: [s0_eternum_TravelFoodCostConfigEdge]
+type s1_eternum_TravelFoodCostConfigConnection {
+  edges: [s1_eternum_TravelFoodCostConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TravelFoodCostConfigEdge {
+type s1_eternum_TravelFoodCostConfigEdge {
   cursor: Cursor
-  node: s0_eternum_TravelFoodCostConfig
+  node: s1_eternum_TravelFoodCostConfig
 }
 
-input s0_eternum_TravelFoodCostConfigOrder {
+input s1_eternum_TravelFoodCostConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_TravelFoodCostConfigOrderField!
+  field: s1_eternum_TravelFoodCostConfigOrderField!
 }
 
-enum s0_eternum_TravelFoodCostConfigOrderField {
+enum s1_eternum_TravelFoodCostConfigOrderField {
   CONFIG_ID
   EXPLORE_FISH_BURN_AMOUNT
   EXPLORE_WHEAT_BURN_AMOUNT
@@ -10172,7 +10172,7 @@ enum s0_eternum_TravelFoodCostConfigOrderField {
   UNIT_TYPE
 }
 
-input s0_eternum_TravelFoodCostConfigWhereInput {
+input s1_eternum_TravelFoodCostConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -10241,12 +10241,12 @@ input s0_eternum_TravelFoodCostConfigWhereInput {
   unit_typeNOTLIKE: u8
 }
 
-input s0_eternum_TravelOrder {
+input s1_eternum_TravelOrder {
   direction: OrderDirection!
-  field: s0_eternum_TravelOrderField!
+  field: s1_eternum_TravelOrderField!
 }
 
-enum s0_eternum_TravelOrderField {
+enum s1_eternum_TravelOrderField {
   DESTINATION_COORD_X
   DESTINATION_COORD_Y
   ENTITY_ID
@@ -10256,7 +10256,7 @@ enum s0_eternum_TravelOrderField {
   TRAVEL_TIME
 }
 
-type s0_eternum_TravelStaminaCostConfig {
+type s1_eternum_TravelStaminaCostConfig {
   config_id: u32
   cost: u16
   entity: World__Entity
@@ -10264,29 +10264,29 @@ type s0_eternum_TravelStaminaCostConfig {
   travel_type: u8
 }
 
-type s0_eternum_TravelStaminaCostConfigConnection {
-  edges: [s0_eternum_TravelStaminaCostConfigEdge]
+type s1_eternum_TravelStaminaCostConfigConnection {
+  edges: [s1_eternum_TravelStaminaCostConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TravelStaminaCostConfigEdge {
+type s1_eternum_TravelStaminaCostConfigEdge {
   cursor: Cursor
-  node: s0_eternum_TravelStaminaCostConfig
+  node: s1_eternum_TravelStaminaCostConfig
 }
 
-input s0_eternum_TravelStaminaCostConfigOrder {
+input s1_eternum_TravelStaminaCostConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_TravelStaminaCostConfigOrderField!
+  field: s1_eternum_TravelStaminaCostConfigOrderField!
 }
 
-enum s0_eternum_TravelStaminaCostConfigOrderField {
+enum s1_eternum_TravelStaminaCostConfigOrderField {
   CONFIG_ID
   COST
   TRAVEL_TYPE
 }
 
-input s0_eternum_TravelStaminaCostConfigWhereInput {
+input s1_eternum_TravelStaminaCostConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -10322,7 +10322,7 @@ input s0_eternum_TravelStaminaCostConfigWhereInput {
   travel_typeNOTLIKE: u8
 }
 
-input s0_eternum_TravelWhereInput {
+input s1_eternum_TravelWhereInput {
   destination_coord_x: u32
   destination_coord_xEQ: u32
   destination_coord_xGT: u32
@@ -10391,7 +10391,7 @@ input s0_eternum_TravelWhereInput {
   travel_timeNOTLIKE: u64
 }
 
-type s0_eternum_TroopConfig {
+type s1_eternum_TroopConfig {
   advantage_percent: u16
   army_extra_per_building: u8
   army_free_per_structure: u8
@@ -10412,23 +10412,23 @@ type s0_eternum_TroopConfig {
   pillage_health_divisor: u8
 }
 
-type s0_eternum_TroopConfigConnection {
-  edges: [s0_eternum_TroopConfigEdge]
+type s1_eternum_TroopConfigConnection {
+  edges: [s1_eternum_TroopConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TroopConfigEdge {
+type s1_eternum_TroopConfigEdge {
   cursor: Cursor
-  node: s0_eternum_TroopConfig
+  node: s1_eternum_TroopConfig
 }
 
-input s0_eternum_TroopConfigOrder {
+input s1_eternum_TroopConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_TroopConfigOrderField!
+  field: s1_eternum_TroopConfigOrderField!
 }
 
-enum s0_eternum_TroopConfigOrderField {
+enum s1_eternum_TroopConfigOrderField {
   ADVANTAGE_PERCENT
   ARMY_EXTRA_PER_BUILDING
   ARMY_FREE_PER_STRUCTURE
@@ -10447,7 +10447,7 @@ enum s0_eternum_TroopConfigOrderField {
   PILLAGE_HEALTH_DIVISOR
 }
 
-input s0_eternum_TroopConfigWhereInput {
+input s1_eternum_TroopConfigWhereInput {
   advantage_percent: u16
   advantage_percentEQ: u16
   advantage_percentGT: u16
@@ -10626,13 +10626,13 @@ input s0_eternum_TroopConfigWhereInput {
   pillage_health_divisorNOTLIKE: u8
 }
 
-type s0_eternum_Troops {
+type s1_eternum_Troops {
   crossbowman_count: u64
   knight_count: u64
   paladin_count: u64
 }
 
-type s0_eternum_TrophyCreation {
+type s1_eternum_TrophyCreation {
   data: ByteArray
   description: ByteArray
   end: u64
@@ -10645,27 +10645,27 @@ type s0_eternum_TrophyCreation {
   index: u8
   points: u16
   start: u64
-  tasks: [s0_eternum_Task]
+  tasks: [s1_eternum_Task]
   title: felt252
 }
 
-type s0_eternum_TrophyCreationConnection {
-  edges: [s0_eternum_TrophyCreationEdge]
+type s1_eternum_TrophyCreationConnection {
+  edges: [s1_eternum_TrophyCreationEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TrophyCreationEdge {
+type s1_eternum_TrophyCreationEdge {
   cursor: Cursor
-  node: s0_eternum_TrophyCreation
+  node: s1_eternum_TrophyCreation
 }
 
-input s0_eternum_TrophyCreationOrder {
+input s1_eternum_TrophyCreationOrder {
   direction: OrderDirection!
-  field: s0_eternum_TrophyCreationOrderField!
+  field: s1_eternum_TrophyCreationOrderField!
 }
 
-enum s0_eternum_TrophyCreationOrderField {
+enum s1_eternum_TrophyCreationOrderField {
   DATA
   DESCRIPTION
   END
@@ -10680,7 +10680,7 @@ enum s0_eternum_TrophyCreationOrderField {
   TITLE
 }
 
-input s0_eternum_TrophyCreationWhereInput {
+input s1_eternum_TrophyCreationWhereInput {
   data: ByteArray
   dataEQ: ByteArray
   dataGT: ByteArray
@@ -10794,7 +10794,7 @@ input s0_eternum_TrophyCreationWhereInput {
   titleNOTLIKE: felt252
 }
 
-type s0_eternum_TrophyProgression {
+type s1_eternum_TrophyProgression {
   count: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -10803,30 +10803,30 @@ type s0_eternum_TrophyProgression {
   time: u64
 }
 
-type s0_eternum_TrophyProgressionConnection {
-  edges: [s0_eternum_TrophyProgressionEdge]
+type s1_eternum_TrophyProgressionConnection {
+  edges: [s1_eternum_TrophyProgressionEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_TrophyProgressionEdge {
+type s1_eternum_TrophyProgressionEdge {
   cursor: Cursor
-  node: s0_eternum_TrophyProgression
+  node: s1_eternum_TrophyProgression
 }
 
-input s0_eternum_TrophyProgressionOrder {
+input s1_eternum_TrophyProgressionOrder {
   direction: OrderDirection!
-  field: s0_eternum_TrophyProgressionOrderField!
+  field: s1_eternum_TrophyProgressionOrderField!
 }
 
-enum s0_eternum_TrophyProgressionOrderField {
+enum s1_eternum_TrophyProgressionOrderField {
   COUNT
   PLAYER_ID
   TASK_ID
   TIME
 }
 
-input s0_eternum_TrophyProgressionWhereInput {
+input s1_eternum_TrophyProgressionWhereInput {
   count: u32
   countEQ: u32
   countGT: u32
@@ -10873,35 +10873,35 @@ input s0_eternum_TrophyProgressionWhereInput {
   timeNOTLIKE: u64
 }
 
-type s0_eternum_VRFConfig {
+type s1_eternum_VRFConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
   vrf_provider_address: ContractAddress
 }
 
-type s0_eternum_VRFConfigConnection {
-  edges: [s0_eternum_VRFConfigEdge]
+type s1_eternum_VRFConfigConnection {
+  edges: [s1_eternum_VRFConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_VRFConfigEdge {
+type s1_eternum_VRFConfigEdge {
   cursor: Cursor
-  node: s0_eternum_VRFConfig
+  node: s1_eternum_VRFConfig
 }
 
-input s0_eternum_VRFConfigOrder {
+input s1_eternum_VRFConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_VRFConfigOrderField!
+  field: s1_eternum_VRFConfigOrderField!
 }
 
-enum s0_eternum_VRFConfigOrderField {
+enum s1_eternum_VRFConfigOrderField {
   CONFIG_ID
   VRF_PROVIDER_ADDRESS
 }
 
-input s0_eternum_VRFConfigWhereInput {
+input s1_eternum_VRFConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -10926,14 +10926,14 @@ input s0_eternum_VRFConfigWhereInput {
   vrf_provider_addressNOTLIKE: ContractAddress
 }
 
-type s0_eternum_Weight {
+type s1_eternum_Weight {
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
   value: u128
 }
 
-type s0_eternum_WeightConfig {
+type s1_eternum_WeightConfig {
   config_id: u32
   entity: World__Entity
   entity_type: u32
@@ -10942,30 +10942,30 @@ type s0_eternum_WeightConfig {
   weight_gram: u128
 }
 
-type s0_eternum_WeightConfigConnection {
-  edges: [s0_eternum_WeightConfigEdge]
+type s1_eternum_WeightConfigConnection {
+  edges: [s1_eternum_WeightConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_WeightConfigEdge {
+type s1_eternum_WeightConfigEdge {
   cursor: Cursor
-  node: s0_eternum_WeightConfig
+  node: s1_eternum_WeightConfig
 }
 
-input s0_eternum_WeightConfigOrder {
+input s1_eternum_WeightConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_WeightConfigOrderField!
+  field: s1_eternum_WeightConfigOrderField!
 }
 
-enum s0_eternum_WeightConfigOrderField {
+enum s1_eternum_WeightConfigOrderField {
   CONFIG_ID
   ENTITY_TYPE
   WEIGHT_CONFIG_ID
   WEIGHT_GRAM
 }
 
-input s0_eternum_WeightConfigWhereInput {
+input s1_eternum_WeightConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -11012,28 +11012,28 @@ input s0_eternum_WeightConfigWhereInput {
   weight_gramNOTLIKE: u128
 }
 
-type s0_eternum_WeightConnection {
-  edges: [s0_eternum_WeightEdge]
+type s1_eternum_WeightConnection {
+  edges: [s1_eternum_WeightEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_WeightEdge {
+type s1_eternum_WeightEdge {
   cursor: Cursor
-  node: s0_eternum_Weight
+  node: s1_eternum_Weight
 }
 
-input s0_eternum_WeightOrder {
+input s1_eternum_WeightOrder {
   direction: OrderDirection!
-  field: s0_eternum_WeightOrderField!
+  field: s1_eternum_WeightOrderField!
 }
 
-enum s0_eternum_WeightOrderField {
+enum s1_eternum_WeightOrderField {
   ENTITY_ID
   VALUE
 }
 
-input s0_eternum_WeightWhereInput {
+input s1_eternum_WeightWhereInput {
   entity_id: u32
   entity_idEQ: u32
   entity_idGT: u32
@@ -11058,7 +11058,7 @@ input s0_eternum_WeightWhereInput {
   valueNOTLIKE: u128
 }
 
-type s0_eternum_WorldConfig {
+type s1_eternum_WorldConfig {
   admin_address: ContractAddress
   config_id: u32
   entity: World__Entity
@@ -11066,29 +11066,29 @@ type s0_eternum_WorldConfig {
   realm_l2_contract: ContractAddress
 }
 
-type s0_eternum_WorldConfigConnection {
-  edges: [s0_eternum_WorldConfigEdge]
+type s1_eternum_WorldConfigConnection {
+  edges: [s1_eternum_WorldConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type s0_eternum_WorldConfigEdge {
+type s1_eternum_WorldConfigEdge {
   cursor: Cursor
-  node: s0_eternum_WorldConfig
+  node: s1_eternum_WorldConfig
 }
 
-input s0_eternum_WorldConfigOrder {
+input s1_eternum_WorldConfigOrder {
   direction: OrderDirection!
-  field: s0_eternum_WorldConfigOrderField!
+  field: s1_eternum_WorldConfigOrderField!
 }
 
-enum s0_eternum_WorldConfigOrderField {
+enum s1_eternum_WorldConfigOrderField {
   ADMIN_ADDRESS
   CONFIG_ID
   REALM_L2_CONTRACT
 }
 
-input s0_eternum_WorldConfigWhereInput {
+input s1_eternum_WorldConfigWhereInput {
   admin_address: ContractAddress
   admin_addressEQ: ContractAddress
   admin_addressGT: ContractAddress
@@ -11124,7 +11124,7 @@ input s0_eternum_WorldConfigWhereInput {
   realm_l2_contractNOTLIKE: ContractAddress
 }
 
-type s0_eternum_u8u128 {
+type s1_eternum_u8u128 {
   _0: u8
   _1: u128
 }

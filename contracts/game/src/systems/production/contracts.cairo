@@ -1,6 +1,6 @@
-use s0_eternum::alias::ID;
-use s0_eternum::models::position::{Coord, Direction};
-use s0_eternum::models::resource::production::building::BuildingCategory;
+use s1_eternum::alias::ID;
+use s1_eternum::models::position::{Coord, Direction};
+use s1_eternum::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
 trait IProductionContract<TContractState> {
@@ -31,10 +31,10 @@ mod production_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::DEFAULT_NS;
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::{
         resource::resource::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerTrait}, order::Orders,
         position::{Coord, CoordTrait, Position, PositionTrait, Direction},
         resource::production::building::{BuildingCategory, Building, BuildingImpl},
@@ -47,7 +47,7 @@ mod production_systems {
         fn create_building(
             ref self: ContractState,
             entity_id: ID,
-            mut directions: Span<s0_eternum::models::position::Direction>,
+            mut directions: Span<s1_eternum::models::position::Direction>,
             building_category: BuildingCategory,
             produce_resource_type: Option<u8>,
         ) {

@@ -1,4 +1,4 @@
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 
 // Config ID to fetch global configs
@@ -493,9 +493,9 @@ mod TravelTypes {
 
 
 fn DEFAULT_NS() -> @ByteArray {
-    @"s0_eternum"
+    @"s1_eternum"
 }
 
 fn DEFAULT_NS_STR() -> ByteArray {
-    "s0_eternum"
+    "s1_eternum"
 }

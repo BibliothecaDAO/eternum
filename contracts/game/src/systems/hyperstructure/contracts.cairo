@@ -1,9 +1,9 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use s0_eternum::alias::ID;
-use s0_eternum::constants::get_resource_tier;
-use s0_eternum::{
+use s1_eternum::alias::ID;
+use s1_eternum::constants::get_resource_tier;
+use s1_eternum::{
     models::{
         position::Coord, config::HyperstructureResourceConfigTrait, config::HyperstructureResourceConfig,
         hyperstructure::Access
@@ -45,11 +45,11 @@ mod hyperstructure_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s0_eternum::constants::DEFAULT_NS;
-    use s0_eternum::models::season::{Season, SeasonImpl};
-    use s0_eternum::utils::random::VRFImpl;
-    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
-    use s0_eternum::{
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::season::{Season, SeasonImpl};
+    use s1_eternum::utils::random::VRFImpl;
+    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s1_eternum::{
         alias::ID,
         constants::{
             WORLD_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_hyperstructure_construction_resources,

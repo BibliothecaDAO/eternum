@@ -1,4 +1,4 @@
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 #[starknet::interface]
 trait INameSystems<T> {
@@ -13,11 +13,11 @@ mod name_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::DEFAULT_NS;
-    use s0_eternum::models::name::{AddressName, EntityName};
-    use s0_eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
-    use s0_eternum::models::season::SeasonImpl;
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::name::{AddressName, EntityName};
+    use s1_eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
+    use s1_eternum::models::season::SeasonImpl;
 
     #[abi(embed_v0)]
     impl NameSystemsImpl of super::INameSystems<ContractState> {

@@ -3,20 +3,20 @@ use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use s0_eternum::alias::ID;
-use s0_eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
+use s1_eternum::alias::ID;
+use s1_eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 
 
-use s0_eternum::models::movable::{Movable, MovableTrait};
-use s0_eternum::models::quantity::{Quantity};
-use s0_eternum::models::{
+use s1_eternum::models::movable::{Movable, MovableTrait};
+use s1_eternum::models::quantity::{Quantity};
+use s1_eternum::models::{
     combat::{
         Army, ArmyTrait, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, BattleImpl, BattleTrait, Protector,
         Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
     },
 };
-use s0_eternum::models::{combat::{Troops, Battle, BattleSide}};
-use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+use s1_eternum::models::{combat::{Troops, Battle, BattleSide}};
+use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
 #[starknet::interface]
 trait IBattleContract<T> {
@@ -308,52 +308,52 @@ mod battle_systems {
     use dojo::model::ModelStorage;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
-    use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
-    use s0_eternum::models::config::{
+    use s1_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
+    use s1_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
+    use s1_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
         BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, VRFConfigImpl
     };
-    use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
-    use s0_eternum::models::event::{
+    use s1_eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use s1_eternum::models::event::{
         EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
-    use s0_eternum::models::movable::{Movable, MovableTrait};
-    use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
-    use s0_eternum::models::position::CoordTrait;
-    use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
-    use s0_eternum::models::quantity::{Quantity, QuantityTracker};
-    use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resource::production::building::{
+    use s1_eternum::models::movable::{Movable, MovableTrait};
+    use s1_eternum::models::name::{AddressName};
+    use s1_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
+    use s1_eternum::models::position::CoordTrait;
+    use s1_eternum::models::position::{Position, Coord, PositionTrait, Direction};
+    use s1_eternum::models::quantity::{Quantity, QuantityTracker};
+    use s1_eternum::models::realm::Realm;
+    use s1_eternum::models::resource::production::building::{
         Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,
     };
-    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
-    use s0_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
+    use s1_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
 
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::{Stamina, StaminaTrait};
-    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
-    use s0_eternum::models::weight::Weight;
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::stamina::{Stamina, StaminaTrait};
+    use s1_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
+    use s1_eternum::models::weight::Weight;
 
-    use s0_eternum::models::{
+    use s1_eternum::models::{
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
             BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
             AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl, BattleStructureImpl
         },
     };
-    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
-    use s0_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
-    use s0_eternum::utils::math::{min, max};
-    use s0_eternum::utils::random;
-    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s1_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
+    use s1_eternum::utils::math::{min, max};
+    use s1_eternum::utils::random;
+    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use super::{IBattleContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait};
 
@@ -811,52 +811,52 @@ mod battle_pillage_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
-    use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
-    use s0_eternum::models::config::{
+    use s1_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
+    use s1_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
+    use s1_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
         BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, VRFConfigImpl
     };
-    use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
-    use s0_eternum::models::event::{
+    use s1_eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use s1_eternum::models::event::{
         EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
-    use s0_eternum::models::movable::{Movable, MovableTrait};
-    use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
-    use s0_eternum::models::position::CoordTrait;
-    use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
-    use s0_eternum::models::quantity::{Quantity, QuantityTracker};
-    use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resource::production::building::{
+    use s1_eternum::models::movable::{Movable, MovableTrait};
+    use s1_eternum::models::name::{AddressName};
+    use s1_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
+    use s1_eternum::models::position::CoordTrait;
+    use s1_eternum::models::position::{Position, Coord, PositionTrait, Direction};
+    use s1_eternum::models::quantity::{Quantity, QuantityTracker};
+    use s1_eternum::models::realm::Realm;
+    use s1_eternum::models::resource::production::building::{
         Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,
     };
-    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
-    use s0_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
+    use s1_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
 
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::{Stamina, StaminaTrait};
-    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
-    use s0_eternum::models::weight::Weight;
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::stamina::{Stamina, StaminaTrait};
+    use s1_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
+    use s1_eternum::models::weight::Weight;
 
-    use s0_eternum::models::{
+    use s1_eternum::models::{
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
             BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
             AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
         },
     };
-    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
-    use s0_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
-    use s0_eternum::utils::math::{min, max};
-    use s0_eternum::utils::random::{VRFImpl};
-    use s0_eternum::utils::random;
+    use s1_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
+    use s1_eternum::utils::math::{min, max};
+    use s1_eternum::utils::random::{VRFImpl};
+    use s1_eternum::utils::random;
     use starknet::ContractAddress;
 
     use super::{IBattlePillageContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait};
@@ -1233,52 +1233,52 @@ mod battle_utils_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
-    use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
-    use s0_eternum::models::config::{
+    use s1_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
+    use s1_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
+    use s1_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
         BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
     };
-    use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
-    use s0_eternum::models::event::{
+    use s1_eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use s1_eternum::models::event::{
         EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
-    use s0_eternum::models::movable::{Movable, MovableTrait};
-    use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
-    use s0_eternum::models::position::CoordTrait;
-    use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
-    use s0_eternum::models::quantity::{Quantity, QuantityTracker};
-    use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resource::production::building::{
+    use s1_eternum::models::movable::{Movable, MovableTrait};
+    use s1_eternum::models::name::{AddressName};
+    use s1_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
+    use s1_eternum::models::position::CoordTrait;
+    use s1_eternum::models::position::{Position, Coord, PositionTrait, Direction};
+    use s1_eternum::models::quantity::{Quantity, QuantityTracker};
+    use s1_eternum::models::realm::Realm;
+    use s1_eternum::models::resource::production::building::{
         Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,
     };
-    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
-    use s0_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
+    use s1_eternum::models::resource::resource::{ResourceTransferLock, ResourceTransferLockTrait};
 
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::{Stamina, StaminaTrait};
-    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
-    use s0_eternum::models::weight::Weight;
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::stamina::{Stamina, StaminaTrait};
+    use s1_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
+    use s1_eternum::models::weight::Weight;
 
-    use s0_eternum::models::{
+    use s1_eternum::models::{
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
             BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
             AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
         },
     };
-    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
-    use s0_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
-    use s0_eternum::utils::math::{min, max};
-    use s0_eternum::utils::random;
-    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s1_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
+    use s1_eternum::utils::math::{min, max};
+    use s1_eternum::utils::random;
+    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use super::{IBattlePillageContract};
 

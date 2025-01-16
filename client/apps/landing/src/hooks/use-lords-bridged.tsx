@@ -11,7 +11,7 @@ export const useLordsBridgeBalance = () => {
   const [lordsBalance, setLordsBalance] = useState<bigint>(0n);
 
   const manifest = getManifest();
-  const bridgeContract = manifest.contracts.find((contract) => contract.tag === "s0_eternum-resource_bridge_systems");
+  const bridgeContract = manifest.contracts.find((contract) => contract.tag === "s1_eternum-resource_bridge_systems");
 
   useEffect(() => {
     const fetchBalance = async () => {

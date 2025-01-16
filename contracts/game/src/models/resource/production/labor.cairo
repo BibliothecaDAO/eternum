@@ -1,11 +1,11 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s0_eternum::alias::ID;
-use s0_eternum::constants::{FIRST_LABOR_RESOURCE_ID, LAST_LABOR_RESOURCE_ID};
-use s0_eternum::models::config::{LaborConfig, ProductionConfig};
-use s0_eternum::models::resource::production::production::{Production, ProductionImpl};
-use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
-use s0_eternum::models::structure::{Structure, StructureImpl};
+use s1_eternum::alias::ID;
+use s1_eternum::constants::{FIRST_LABOR_RESOURCE_ID, LAST_LABOR_RESOURCE_ID};
+use s1_eternum::models::config::{LaborConfig, ProductionConfig};
+use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
+use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
+use s1_eternum::models::structure::{Structure, StructureImpl};
 
 
 #[generate_trait]

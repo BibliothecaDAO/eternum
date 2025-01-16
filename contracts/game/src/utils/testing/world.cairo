@@ -3,17 +3,17 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo_cairo_test::{
     spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef, WorldStorageTestTrait
 };
-use s0_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR};
-use s0_eternum::models::bank::bank::{m_Bank};
-use s0_eternum::models::bank::liquidity::m_Liquidity;
-use s0_eternum::models::bank::market::m_Market;
-use s0_eternum::models::capacity::{m_CapacityCategory};
-use s0_eternum::models::combat::m_Army;
-use s0_eternum::models::combat::m_Battle;
-use s0_eternum::models::combat::m_Health;
-use s0_eternum::models::combat::m_Protectee;
-use s0_eternum::models::combat::m_Protector;
-use s0_eternum::models::config::{
+use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR};
+use s1_eternum::models::bank::bank::{m_Bank};
+use s1_eternum::models::bank::liquidity::m_Liquidity;
+use s1_eternum::models::bank::market::m_Market;
+use s1_eternum::models::capacity::{m_CapacityCategory};
+use s1_eternum::models::combat::m_Army;
+use s1_eternum::models::combat::m_Battle;
+use s1_eternum::models::combat::m_Health;
+use s1_eternum::models::combat::m_Protectee;
+use s1_eternum::models::combat::m_Protector;
+use s1_eternum::models::config::{
     m_WorldConfig, m_SpeedConfig, m_CapacityConfig, m_WeightConfig, m_HyperstructureResourceConfig, m_StaminaConfig,
     m_StaminaRefillConfig, m_TickConfig, m_MapConfig, m_MercenariesConfig, m_LevelingConfig, m_ProductionConfig,
     m_BankConfig, m_BuildingConfig, m_TroopConfig, m_BattleConfig, m_BuildingCategoryPopConfig, m_PopulationConfig,
@@ -21,74 +21,74 @@ use s0_eternum::models::config::{
     m_ResourceBridgeWhitelistConfig, m_SettlementConfig, m_RealmLevelConfig, m_RealmMaxLevelConfig,
     m_TravelFoodCostConfig, m_QuestRewardConfig, m_QuestConfig
 };
-use s0_eternum::models::guild::{m_Guild, m_GuildMember, m_GuildWhitelist};
-use s0_eternum::models::hyperstructure::{m_Progress, m_Contribution, m_Hyperstructure, m_Epoch};
-use s0_eternum::models::map::m_Tile;
-use s0_eternum::models::movable::{m_Movable, m_ArrivalTime};
-use s0_eternum::models::name::{m_AddressName};
-use s0_eternum::models::name::{m_EntityName};
-use s0_eternum::models::order::m_Orders;
-use s0_eternum::models::owner::m_EntityOwner;
-use s0_eternum::models::owner::{m_Owner};
-use s0_eternum::models::population::m_Population;
-use s0_eternum::models::position::{m_Position};
-use s0_eternum::models::quantity::{m_Quantity, m_QuantityTracker};
-use s0_eternum::models::quest::{m_Quest};
-use s0_eternum::models::realm::{m_Realm};
-use s0_eternum::models::resource::production::building::m_BuildingQuantityv2;
-use s0_eternum::models::resource::production::building::{m_Building};
-use s0_eternum::models::resource::production::production::{
+use s1_eternum::models::guild::{m_Guild, m_GuildMember, m_GuildWhitelist};
+use s1_eternum::models::hyperstructure::{m_Progress, m_Contribution, m_Hyperstructure, m_Epoch};
+use s1_eternum::models::map::m_Tile;
+use s1_eternum::models::movable::{m_Movable, m_ArrivalTime};
+use s1_eternum::models::name::{m_AddressName};
+use s1_eternum::models::name::{m_EntityName};
+use s1_eternum::models::order::m_Orders;
+use s1_eternum::models::owner::m_EntityOwner;
+use s1_eternum::models::owner::{m_Owner};
+use s1_eternum::models::population::m_Population;
+use s1_eternum::models::position::{m_Position};
+use s1_eternum::models::quantity::{m_Quantity, m_QuantityTracker};
+use s1_eternum::models::quest::{m_Quest};
+use s1_eternum::models::realm::{m_Realm};
+use s1_eternum::models::resource::production::building::m_BuildingQuantityv2;
+use s1_eternum::models::resource::production::building::{m_Building};
+use s1_eternum::models::resource::production::production::{
     m_Production, m_ProductionInput, m_ProductionOutput, m_ProductionDeadline
 };
-use s0_eternum::models::resource::resource::m_DetachedResource;
-use s0_eternum::models::resource::resource::m_OwnedResourcesTracker;
-use s0_eternum::models::resource::resource::m_ResourceAllowance;
-use s0_eternum::models::resource::resource::m_ResourceTransferLock;
-use s0_eternum::models::resource::resource::{m_ResourceCost};
-use s0_eternum::models::resource::resource::{m_Resource};
-use s0_eternum::models::season::m_Leaderboard;
-use s0_eternum::models::season::m_LeaderboardEntry;
-use s0_eternum::models::season::m_LeaderboardRegisterContribution;
-use s0_eternum::models::season::m_LeaderboardRegisterShare;
-use s0_eternum::models::season::m_LeaderboardRegistered;
-use s0_eternum::models::season::m_LeaderboardRewardClaimed;
-use s0_eternum::models::season::m_Season;
-use s0_eternum::models::stamina::m_Stamina;
-use s0_eternum::models::structure::m_Structure;
-use s0_eternum::models::structure::m_StructureCount;
-use s0_eternum::models::trade::{m_Status, m_Trade};
-use s0_eternum::models::weight::m_Weight;
+use s1_eternum::models::resource::resource::m_DetachedResource;
+use s1_eternum::models::resource::resource::m_OwnedResourcesTracker;
+use s1_eternum::models::resource::resource::m_ResourceAllowance;
+use s1_eternum::models::resource::resource::m_ResourceTransferLock;
+use s1_eternum::models::resource::resource::{m_ResourceCost};
+use s1_eternum::models::resource::resource::{m_Resource};
+use s1_eternum::models::season::m_Leaderboard;
+use s1_eternum::models::season::m_LeaderboardEntry;
+use s1_eternum::models::season::m_LeaderboardRegisterContribution;
+use s1_eternum::models::season::m_LeaderboardRegisterShare;
+use s1_eternum::models::season::m_LeaderboardRegistered;
+use s1_eternum::models::season::m_LeaderboardRewardClaimed;
+use s1_eternum::models::season::m_Season;
+use s1_eternum::models::stamina::m_Stamina;
+use s1_eternum::models::structure::m_Structure;
+use s1_eternum::models::structure::m_StructureCount;
+use s1_eternum::models::trade::{m_Status, m_Trade};
+use s1_eternum::models::weight::m_Weight;
 
-use s0_eternum::systems::bank::contracts::bank::bank_systems;
-use s0_eternum::systems::bank::contracts::liquidity::liquidity_systems;
-use s0_eternum::systems::bank::contracts::swap::swap_systems;
+use s1_eternum::systems::bank::contracts::bank::bank_systems;
+use s1_eternum::systems::bank::contracts::liquidity::liquidity_systems;
+use s1_eternum::systems::bank::contracts::swap::swap_systems;
 
 
-use s0_eternum::systems::buildings::contracts::production_systems;
-use s0_eternum::systems::combat::contracts::battle_systems::{
+use s1_eternum::systems::buildings::contracts::production_systems;
+use s1_eternum::systems::combat::contracts::battle_systems::{
     battle_systems, battle_pillage_systems, battle_utils_systems
 };
-use s0_eternum::systems::combat::contracts::troop_systems::troop_systems;
+use s1_eternum::systems::combat::contracts::troop_systems::troop_systems;
 
-use s0_eternum::systems::config::contracts::config_systems;
-use s0_eternum::systems::dev::contracts::bank::dev_bank_systems;
-use s0_eternum::systems::dev::contracts::realm::dev_realm_systems;
-use s0_eternum::systems::dev::contracts::resource::dev_resource_systems;
+use s1_eternum::systems::config::contracts::config_systems;
+use s1_eternum::systems::dev::contracts::bank::dev_bank_systems;
+use s1_eternum::systems::dev::contracts::realm::dev_realm_systems;
+use s1_eternum::systems::dev::contracts::resource::dev_resource_systems;
 
-use s0_eternum::systems::guild::contracts::guild_systems;
-use s0_eternum::systems::hyperstructure::contracts::hyperstructure_systems;
-use s0_eternum::systems::map::contracts::{map_systems};
-use s0_eternum::systems::map::map_generation::map_generation_systems;
-use s0_eternum::systems::name::contracts::name_systems;
-use s0_eternum::systems::ownership::contracts::ownership_systems;
-use s0_eternum::systems::realm::contracts::realm_systems;
-use s0_eternum::systems::resources::contracts::{
+use s1_eternum::systems::guild::contracts::guild_systems;
+use s1_eternum::systems::hyperstructure::contracts::hyperstructure_systems;
+use s1_eternum::systems::map::contracts::{map_systems};
+use s1_eternum::systems::map::map_generation::map_generation_systems;
+use s1_eternum::systems::name::contracts::name_systems;
+use s1_eternum::systems::ownership::contracts::ownership_systems;
+use s1_eternum::systems::realm::contracts::realm_systems;
+use s1_eternum::systems::resources::contracts::{
     resource_bridge_systems::resource_bridge_systems, resource_systems::resource_systems
 };
-use s0_eternum::systems::season::contracts::season_systems;
-use s0_eternum::systems::trade::contracts::trade_systems::trade_systems;
-use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems;
-use s0_eternum::systems::transport::contracts::travel_systems::travel_systems;
+use s1_eternum::systems::season::contracts::season_systems;
+use s1_eternum::systems::trade::contracts::trade_systems::trade_systems;
+use s1_eternum::systems::transport::contracts::donkey_systems::donkey_systems;
+use s1_eternum::systems::transport::contracts::travel_systems::travel_systems;
 use starknet::ContractAddress;
 
 use starknet::contract_address_const;
@@ -199,14 +199,14 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Event(trade_systems::e_CancelOrder::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(donkey_systems::e_BurnDonkey::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(travel_systems::e_Travel::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(s0_eternum::models::event::e_BattleStartData::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(s0_eternum::models::event::e_BattleJoinData::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(s0_eternum::models::event::e_BattleLeaveData::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(s0_eternum::models::event::e_BattleClaimData::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(s0_eternum::models::event::e_BattlePillageData::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(s0_eternum::models::event::e_SettleRealmData::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(s0_eternum::models::event::e_CreateGuild::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(s0_eternum::models::event::e_JoinGuild::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(s1_eternum::models::event::e_BattleStartData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(s1_eternum::models::event::e_BattleJoinData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(s1_eternum::models::event::e_BattleLeaveData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(s1_eternum::models::event::e_BattleClaimData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(s1_eternum::models::event::e_BattlePillageData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(s1_eternum::models::event::e_SettleRealmData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(s1_eternum::models::event::e_CreateGuild::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(s1_eternum::models::event::e_JoinGuild::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(achievement::events::index::e_TrophyCreation::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(achievement::events::index::e_TrophyProgression::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Contract(bank_systems::TEST_CLASS_HASH),

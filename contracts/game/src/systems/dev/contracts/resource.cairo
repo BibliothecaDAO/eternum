@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 #[starknet::interface]
 trait IResourceSystems<T> {
@@ -13,13 +13,13 @@ mod dev_resource_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::DEFAULT_NS;
-    use s0_eternum::constants::ResourceTypes;
-    use s0_eternum::constants::{WORLD_CONFIG_ID};
-    use s0_eternum::models::config::{WorldConfig};
-    use s0_eternum::models::resource::resource::{Resource, ResourceTrait, ResourceImpl};
-    use s0_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::ResourceTypes;
+    use s1_eternum::constants::{WORLD_CONFIG_ID};
+    use s1_eternum::models::config::{WorldConfig};
+    use s1_eternum::models::resource::resource::{Resource, ResourceTrait, ResourceImpl};
+    use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
 
 
     #[abi(embed_v0)]

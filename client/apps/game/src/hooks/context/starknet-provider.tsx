@@ -23,7 +23,7 @@ const otherResources = Object.entries(resourceAddresses)
 const preset: string = "eternum";
 const theme: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
-const namespace: string = "s0_eternum";
+const namespace: string = "s1_eternum";
 const colorMode: ColorMode = "dark";
 
 const controller =

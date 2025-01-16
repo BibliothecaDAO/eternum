@@ -1,6 +1,6 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::world::IWorldDispatcher;
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 #[starknet::interface]
 trait ILiquiditySystems<T> {
@@ -20,15 +20,15 @@ mod liquidity_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     // Eternum imports
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::ResourceTypes;
-    use s0_eternum::constants::{RESOURCE_PRECISION, DEFAULT_NS};
-    use s0_eternum::models::bank::liquidity::{Liquidity};
-    use s0_eternum::models::bank::market::{Market, MarketTrait};
-    use s0_eternum::models::owner::{Owner, OwnerTrait};
-    use s0_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait};
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::ResourceTypes;
+    use s1_eternum::constants::{RESOURCE_PRECISION, DEFAULT_NS};
+    use s1_eternum::models::bank::liquidity::{Liquidity};
+    use s1_eternum::models::bank::market::{Market, MarketTrait};
+    use s1_eternum::models::owner::{Owner, OwnerTrait};
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait};
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]

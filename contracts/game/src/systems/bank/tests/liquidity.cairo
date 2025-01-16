@@ -6,27 +6,27 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use s0_eternum::alias::ID;
-use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
-use s0_eternum::models::bank::liquidity::{Liquidity};
-use s0_eternum::models::bank::market::{Market, MarketImpl};
+use s1_eternum::alias::ID;
+use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
+use s1_eternum::models::bank::liquidity::{Liquidity};
+use s1_eternum::models::bank::market::{Market, MarketImpl};
 
-use s0_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
+use s1_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
 
 
-use s0_eternum::models::owner::{Owner};
-use s0_eternum::models::position::{Coord};
-use s0_eternum::models::resource::resource::{ResourceImpl, Resource};
-use s0_eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
-use s0_eternum::systems::bank::contracts::bank::{bank_systems::InternalBankSystemsImpl, bank_systems};
+use s1_eternum::models::owner::{Owner};
+use s1_eternum::models::position::{Coord};
+use s1_eternum::models::resource::resource::{ResourceImpl, Resource};
+use s1_eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
+use s1_eternum::systems::bank::contracts::bank::{bank_systems::InternalBankSystemsImpl, bank_systems};
 
-use s0_eternum::systems::bank::contracts::liquidity::liquidity_systems;
-use s0_eternum::systems::bank::contracts::liquidity::{ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,};
-use s0_eternum::systems::bank::contracts::swap::swap_systems;
-use s0_eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
-use s0_eternum::systems::config::contracts::config_systems;
-use s0_eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
-use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
+use s1_eternum::systems::bank::contracts::liquidity::liquidity_systems;
+use s1_eternum::systems::bank::contracts::liquidity::{ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,};
+use s1_eternum::systems::bank::contracts::swap::swap_systems;
+use s1_eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
+use s1_eternum::systems::config::contracts::config_systems;
+use s1_eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
+use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
 
 use starknet::contract_address_const;
 
