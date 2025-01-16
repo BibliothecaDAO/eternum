@@ -1,7 +1,6 @@
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { SortInterface } from "@/ui/elements/sort-button";
 import {
-  BuildingType,
   calculateDistance,
   CapacityConfigCategory,
   ClientConfigManager,
@@ -11,7 +10,6 @@ import {
   ResourcesIds,
   toHexString,
   type HexPosition,
-  type ID,
   type Position,
   type Resource,
 } from "@bibliothecadao/eternum";
@@ -181,32 +179,6 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     .catch((err) => {
       console.error("Failed to copy: ", err);
     });
-};
-
-const isRealmSelected = (structureEntityId: ID, structures: any) => {
-  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === structureEntityId);
-  return selectedStructure?.category === "Realm";
-};
-
-export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
-  const configManager = ClientConfigManager.instance();
-
-  return resources.reduce(
-    (total, resource) =>
-      total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
-    0,
-  );
-};
-
-export const isResourceProductionBuilding = (buildingId: BuildingType) => {
-  return (
-    buildingId === BuildingType.Resource ||
-    buildingId === BuildingType.Farm ||
-    buildingId === BuildingType.FishingVillage ||
-    buildingId === BuildingType.Barracks ||
-    buildingId === BuildingType.ArcheryRange ||
-    buildingId === BuildingType.Stable
-  );
 };
 
 export function gramToKg(grams: number): number {

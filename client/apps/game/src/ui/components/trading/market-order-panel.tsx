@@ -7,7 +7,6 @@ import {
   currencyFormat,
   divideByPrecision,
   formatNumber,
-  getTotalResourceWeight,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
 import {
@@ -18,6 +17,7 @@ import {
   configManager,
   findResourceById,
   getRealmAddressName,
+  getTotalResourceWeight,
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/eternum";
