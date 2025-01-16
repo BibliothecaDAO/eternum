@@ -1,4 +1,10 @@
-import { ContractAddress, getRealm, getStructure, PlayerStructure, RealmWithPosition } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  getRealmWithPosition,
+  getStructure,
+  PlayerStructure,
+  RealmWithPosition,
+} from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -17,7 +23,7 @@ export const usePlayerRealms = (playerAddress?: ContractAddress) => {
 
   const playerRealms = useMemo(() => {
     return entities
-      .map((id) => getRealm(Number(id), components))
+      .map((id) => getRealmWithPosition(Number(id), components))
       .filter((realm): realm is RealmWithPosition => realm !== undefined)
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [entities]);

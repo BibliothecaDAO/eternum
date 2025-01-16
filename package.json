@@ -6,7 +6,7 @@
     "build": "pnpm --dir ./client/apps/game build",
     "build:docs": "cd client/apps/game-docs && vocs build -o ../dist",
     "build:landing": "pnpm --dir ./client/apps/landing build",
-    "build:packages": "pnpm --dir ./client/sdk/packages/assets build && pnpm --dir ./client/sdk/packages/react build  && pnpm --dir ./client/sdk/packages/core build",
+    "build:packages": "pnpm --dir ./client/sdk/packages/assets build && pnpm --dir ./client/sdk/packages/core build && pnpm --dir ./client/sdk/packages/react build",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",
     "dev": "pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
