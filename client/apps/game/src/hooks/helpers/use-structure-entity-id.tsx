@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntities } from "@/hooks/helpers/use-entities";
+import { usePlayerStructures } from "@/hooks/helpers/use-entities";
 import { useQuery } from "@/hooks/helpers/use-query";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
@@ -23,9 +23,7 @@ export const useStructureEntityId = () => {
 
   const address = isSpectatorMode ? ContractAddress("0x0") : ContractAddress(account.address);
 
-  const { playerStructures } = useEntities();
-
-  const structures = playerStructures();
+  const structures = usePlayerStructures(ContractAddress(account.address));
 
   const defaultPlayerStructure = useMemo(() => {
     return structures[0];

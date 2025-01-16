@@ -6,9 +6,9 @@ import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
-import { useBank } from "@/hooks/helpers/use-banks";
+import { useBank } from "@/hooks/helpers/use-bank";
 import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
-import { useEntities } from "@/hooks/helpers/use-entities";
+import { usePlayerStructures } from "@/hooks/helpers/use-entities";
 import { useStructureByPosition } from "@/hooks/helpers/use-structures";
 import { useSetMarket } from "@/hooks/helpers/use-trade";
 import useMarketStore from "@/hooks/store/use-market-store";
@@ -59,7 +59,7 @@ export const MarketModal = () => {
   const dojo = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const { playerStructures } = useEntities();
+  const playerStructures = usePlayerStructures();
   const { toggleModal } = useModalStore();
   const bank = useBank();
   const { bidOffers, askOffers } = useSetMarket();
@@ -87,8 +87,6 @@ export const MarketModal = () => {
 
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
-
-  const structures = playerStructures();
 
   const [isSiegeOngoing, isBattleOngoing] = useMemo(() => {
     const isSiegeOngoing = battleManager.isSiege(currentBlockTimestamp);
@@ -217,7 +215,7 @@ export const MarketModal = () => {
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
                 <SelectContent>
-                  {structures.map((structure, index) => (
+                  {playerStructures.map((structure, index) => (
                     <SelectItem key={index} value={structure.entity_id.toString()}>
                       {structure.name}
                     </SelectItem>

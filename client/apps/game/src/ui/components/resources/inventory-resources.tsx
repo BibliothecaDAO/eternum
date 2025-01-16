@@ -1,8 +1,8 @@
 import { debouncedAddToSubscription } from "@/dojo/debounced-queries";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useResourceBalance, useResourcesUtils } from "@/hooks/helpers/use-resources";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
+import { getBalance, getInventoryResources } from "@/utils/resources";
 import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
@@ -27,15 +27,22 @@ export const InventoryResources = ({
   const dojo = useDojo();
 
   const [showAll, setShowAll] = useState(false);
-  const { useResourcesFromBalance } = useResourcesUtils();
-  const { getBalance } = useResourceBalance();
 
-  const inventoriesResources = useResourcesFromBalance(entityId);
+  const inventoriesResources = useMemo(
+    () => getInventoryResources(entityId, dojo.setup.components),
+    [entityId, dojo.setup.components],
+  );
 
   const [isSyncing, setIsSyncing] = useState(false);
 
   const dynamicResources = useMemo(
-    () => dynamic.map((resourceId): Resource => ({ resourceId, amount: getBalance(entityId, resourceId).balance })),
+    () =>
+      dynamic.map(
+        (resourceId): Resource => ({
+          resourceId,
+          amount: getBalance(entityId, resourceId, dojo.setup.components).balance,
+        }),
+      ),
     [dynamic, entityId, getBalance],
   );
 

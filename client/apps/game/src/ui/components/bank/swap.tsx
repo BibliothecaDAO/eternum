@@ -1,7 +1,6 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { useIsResourcesLocked, useStructures } from "@/hooks/helpers/use-structures";
 import { useTravel } from "@/hooks/helpers/use-travel";
 import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
@@ -11,6 +10,7 @@ import { TravelInfo } from "@/ui/components/resources/travel-info";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
+import { getBalance } from "@/utils/resources";
 import {
   ContractAddress,
   DONKEY_ENTITY_TYPE,
@@ -37,7 +37,6 @@ export const ResourceSwap = ({
     setup,
   } = useDojo();
 
-  const { getBalance } = useResourceBalance();
   const { computeTravelTime } = useTravel();
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
@@ -76,8 +75,14 @@ export const ResourceSwap = ({
     }
   }, [marketManager.resourceId]);
 
-  const lordsBalance = useMemo(() => getBalance(entityId, ResourcesIds.Lords).balance, [entityId, getBalance]);
-  const resourceBalance = useMemo(() => getBalance(entityId, resourceId).balance, [entityId, resourceId, getBalance]);
+  const lordsBalance = useMemo(
+    () => getBalance(entityId, ResourcesIds.Lords, setup.components).balance,
+    [entityId, getBalance],
+  );
+  const resourceBalance = useMemo(
+    () => getBalance(entityId, resourceId, setup.components).balance,
+    [entityId, resourceId, getBalance],
+  );
 
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;

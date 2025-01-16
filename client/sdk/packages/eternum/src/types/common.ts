@@ -1,3 +1,4 @@
+import { ComponentValue, Entity } from "@dojoengine/recs";
 import { SeasonAddresses } from "../../../../../common/utils";
 import {
   BuildingType,
@@ -8,6 +9,51 @@ import {
   ResourceTier,
   TroopFoodConsumption,
 } from "../constants";
+import { ClientComponents } from "../dojo";
+
+export type ArrivalInfo = {
+  entityId: ID;
+  recipientEntityId: ID;
+  position: Position;
+  arrivesAt: bigint;
+  isOwner: boolean;
+  hasResources: boolean;
+  isHome: boolean;
+};
+
+export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  name: string;
+  category?: string | undefined;
+  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+};
+
+export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  name: string;
+  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+};
+export interface Prize {
+  id: QuestType;
+  title: string;
+}
+
+export enum QuestStatus {
+  InProgress,
+  Completed,
+  Claimed,
+}
+
+export interface Building {
+  name: string;
+  category: string;
+  paused: boolean;
+  produced: ResourceCost;
+  consumed: ResourceCost[];
+  bonusPercent: number;
+  innerCol: number;
+  innerRow: number;
+}
 
 export enum BattleType {
   Hex,
@@ -462,7 +508,24 @@ export interface Config {
   }
 }
 
-export interface Player {
+export interface RealmInfo {
+  realmId: ID;
+  entityId: ID;
+  name: string;
+  resourceTypesPacked: bigint;
+  order: number;
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  population?: number | undefined;
+  capacity?: number;
+  hasCapacity: boolean;
+  owner: ContractAddress;
+  ownerName: string;
+  hasWonder: boolean;
+  level: number;
+}
+
+export interface PlayerInfo {
+  entity: Entity;
   rank: number;
   address: bigint;
   name: string;
@@ -474,6 +537,12 @@ export interface Player {
   hyperstructures: number;
   isAlive: boolean;
   guildName: string;
+}
+
+export interface Player {
+  entity: Entity;
+  address: ContractAddress;
+  name: string;
 }
 
 export type GuildInfo = {

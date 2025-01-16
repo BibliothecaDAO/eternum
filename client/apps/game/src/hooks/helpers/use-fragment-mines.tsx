@@ -48,5 +48,6 @@ export const useFragmentMines = () => {
       };
     },
   );
-  return { fragmentMines };
+
+  return fragmentMines;
 };

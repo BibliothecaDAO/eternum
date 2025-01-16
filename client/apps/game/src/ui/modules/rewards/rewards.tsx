@@ -1,9 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import {
-  useGetHyperstructuresWithContributionsFromPlayer,
-  useGetUnregisteredContributions,
-} from "@/hooks/helpers/use-contributions";
-import { useGetPlayerEpochs, useGetUnregisteredEpochs } from "@/hooks/helpers/use-hyperstructures";
+import { useGetUnregisteredEpochs } from "@/hooks/helpers/use-hyperstructures";
 import { usePrizePool } from "@/hooks/helpers/use-rewards";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
@@ -12,7 +8,7 @@ import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
 import { formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getLordsAddress } from "@/utils/addresses";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { ContractAddress, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -26,15 +22,17 @@ export const Rewards = () => {
   const {
     account: { account },
     setup: {
-      components: {
-        AddressName,
-        LeaderboardEntry,
-        LeaderboardRegistered,
-        events: { GameEnded },
-      },
+      components,
       systemCalls: { register_to_leaderboard, claim_leaderboard_rewards },
     },
   } = useDojo();
+
+  const {
+    LeaderboardEntry,
+    LeaderboardRegistered,
+    AddressName,
+    events: { GameEnded },
+  } = components;
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -45,9 +43,10 @@ export const Rewards = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(rewards));
 
-  const getContributions = useGetHyperstructuresWithContributionsFromPlayer();
-  const getEpochs = useGetPlayerEpochs();
-  const getUnregisteredContributions = useGetUnregisteredContributions();
+  const leaderboardManager = useMemo(() => {
+    return LeaderboardManager.instance(components);
+  }, [components]);
+
   const getUnregisteredEpochs = useGetUnregisteredEpochs();
 
   const gameEndedEntityId = useEntityQuery([Has(GameEnded)]);
@@ -61,7 +60,7 @@ export const Rewards = () => {
   const registerToLeaderboard = useCallback(async () => {
     setIsLoading(true);
     const epochs = getUnregisteredEpochs();
-    const contributions = getUnregisteredContributions();
+    const contributions = leaderboardManager.getPlayerUnregistredContributions(ContractAddress(account.address));
 
     try {
       await register_to_leaderboard({
@@ -74,7 +73,7 @@ export const Rewards = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [getContributions, getEpochs]);
+  }, [leaderboardManager]);
 
   const claimRewards = useCallback(async () => {
     const lordsAddress = await getLordsAddress();

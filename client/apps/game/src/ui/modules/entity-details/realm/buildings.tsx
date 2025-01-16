@@ -1,15 +1,15 @@
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { Building, useBuildings } from "@/hooks/helpers/use-buildings";
-import { useGetRealm } from "@/hooks/helpers/use-realm";
+import { useBuildings } from "@/hooks/helpers/use-buildings";
 import useUIStore from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { toHexString } from "@/ui/utils/utils";
-import { BuildingType, ResourcesIds, TileManager } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, toHexString } from "@/ui/utils/utils";
+import { getRealmInfo } from "@/utils/realm";
+import { Building, BuildingType, ResourcesIds, TileManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export const Buildings = ({ structure }: { structure: any }) => {
   const dojo = useDojo();
@@ -21,10 +21,12 @@ export const Buildings = ({ structure }: { structure: any }) => {
   const [showMilitary, setShowMilitary] = useState(false);
   const [isLoading, setIsLoading] = useState({ isLoading: false, innerCol: 0, innerRow: 0 });
 
-  const realm = useGetRealm(structureEntityId).realm;
+  const realm = useMemo(
+    () => getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), dojo.setup.components),
+    [structureEntityId, dojo.setup.components],
+  );
 
-  const { getBuildings } = useBuildings();
-  const buildings = getBuildings(realm.position.x, realm.position.y);
+  const buildings = useBuildings(realm?.position.x || 0, realm?.position.y || 0);
 
   const economyBuildings = buildings.filter(
     (building) =>
@@ -41,8 +43,6 @@ export const Buildings = ({ structure }: { structure: any }) => {
       building.category === BuildingType[BuildingType.Stable],
   );
 
-  const isOwner = toHexString(realm.owner) === dojo.account.account.address;
-
   const handlePauseResumeProduction = (paused: boolean, innerCol: number, innerRow: number) => {
     setIsLoading({ isLoading: true, innerCol, innerRow });
     const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
@@ -55,6 +55,9 @@ export const Buildings = ({ structure }: { structure: any }) => {
       setIsLoading({ isLoading: false, innerCol, innerRow });
     });
   };
+
+  if (!realm) return null;
+  const isOwner = toHexString(realm.owner) === dojo.account.account.address;
 
   return (
     <div className="buildings-selector w-full text-sm p-3">

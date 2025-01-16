@@ -1,4 +1,4 @@
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { usePlayerArrivalsNotifications } from "@/hooks/helpers/use-resource-arrivals";
 import { useModalStore } from "@/hooks/store/use-modal-store";
@@ -9,6 +9,8 @@ import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
+import { getEntityInfo } from "@/utils/entities";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
@@ -49,6 +51,11 @@ export enum LeftView {
 }
 
 export const LeftNavigationModule = memo(() => {
+  const {
+    account: { account },
+    setup: { components },
+  } = useDojo();
+
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -62,9 +69,7 @@ export const LeftNavigationModule = memo(() => {
 
   const { arrivedNotificationLength, arrivals } = usePlayerArrivalsNotifications();
 
-  const { getEntityInfo } = useEntitiesUtils();
-
-  const structureInfo = getEntityInfo(structureEntityId);
+  const structureInfo = getEntityInfo(structureEntityId, ContractAddress(account.address), components);
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
   const isRealm = useMemo(
