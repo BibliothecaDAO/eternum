@@ -11,7 +11,6 @@ import * as SystemProps from "../types/provider";
 import { TransactionType } from "./types";
 
 export const NAMESPACE = "s0_eternum";
-export * from "./tick";
 export { TransactionType };
 
 /**

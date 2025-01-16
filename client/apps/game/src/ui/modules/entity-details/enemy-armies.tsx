@@ -22,6 +22,8 @@ export const EnemyArmies = ({
   position: Position;
 }) => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+
   const structureAtPosition = useStructureAtPosition(position.getContract());
 
   const { nextBlockTimestamp } = useNextBlockTimestamp();
@@ -32,6 +34,7 @@ export const EnemyArmies = ({
   const entityInfo = getEntityInfo(
     ownArmySelected?.entityOwner.entity_owner_id ?? 0,
     ContractAddress(dojo.account.account.address),
+    currentDefaultTick,
     dojo.setup.components,
   ).structure;
 
@@ -50,6 +53,7 @@ export const EnemyArmies = ({
       const structure = getEntityInfo(
         army.entityOwner.entity_owner_id,
         ContractAddress(dojo.account.account.address),
+        currentDefaultTick,
         dojo.setup.components,
       ).structure;
       const isImmune = useIsStructureImmune(structure, nextBlockTimestamp!) || ownArmyIsImmune;

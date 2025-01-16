@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const [isLoading, setIsLoading] = useState(false);
   const [buildingState, setBuildingState] = useState<{
@@ -49,6 +50,7 @@ export const BuildingEntityDetails = () => {
   const selectedStructureInfo = getEntityInfo(
     structureEntityId,
     ContractAddress(dojo.account.account.address),
+    currentDefaultTick,
     dojo.setup.components,
   );
 

@@ -18,7 +18,7 @@ import { useMemo, useState } from "react";
 
 export const Castle = () => {
   const dojo = useDojo();
-
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +43,7 @@ export const Castle = () => {
 
     return Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource, dojo.setup.components);
+      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
   }, [getBalance, structureEntityId]);

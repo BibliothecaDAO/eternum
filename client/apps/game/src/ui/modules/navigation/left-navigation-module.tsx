@@ -48,6 +48,7 @@ export const LeftNavigationModule = memo(() => {
     setup: { components },
   } = useDojo();
 
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -61,7 +62,12 @@ export const LeftNavigationModule = memo(() => {
 
   const { arrivedNotificationLength, arrivals } = usePlayerArrivalsNotifications();
 
-  const structureInfo = getEntityInfo(structureEntityId, ContractAddress(account.address), components);
+  const structureInfo = getEntityInfo(
+    structureEntityId,
+    ContractAddress(account.address),
+    currentDefaultTick,
+    components,
+  );
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
   const isRealm = useMemo(

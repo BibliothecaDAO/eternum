@@ -11,7 +11,7 @@ import {
   getEntityName,
   getResourcesFromBalance,
 } from "@bibliothecadao/eternum";
-import { useDojo, useGetArmyByEntityId, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo, useGetArmyByEntityId, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import React, { useMemo } from "react";
@@ -34,6 +34,7 @@ type EntityProps = {
 
 export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const components = dojo.setup.components;
 
@@ -42,10 +43,15 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
 
   const weight = useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(arrival.entityId)]));
 
-  const entity = getEntityInfo(arrival.entityId, ContractAddress(dojo.account.account.address), dojo.setup.components);
+  const entity = getEntityInfo(
+    arrival.entityId,
+    ContractAddress(dojo.account.account.address),
+    currentDefaultTick,
+    dojo.setup.components,
+  );
 
   const entityResources = useMemo(() => {
-    return getResourcesFromBalance(arrival.entityId, components);
+    return getResourcesFromBalance(arrival.entityId, currentDefaultTick, components);
   }, [weight]);
 
   const army = useMemo(() => getArmy(arrival.entityId), [arrival.entityId, entity.resources]);

@@ -12,7 +12,7 @@ import {
   findResourceIdByTrait,
   getBalance,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { memo, useEffect, useRef, useState } from "react";
 
 export const ResourceBar = memo(
@@ -42,6 +42,7 @@ export const ResourceBar = memo(
     max?: number;
   }) => {
     const dojo = useDojo();
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
     const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
     const [searchInput, setSearchInput] = useState("");
@@ -51,7 +52,7 @@ export const ResourceBar = memo(
 
     useEffect(() => {
       setSelectedResourceBalance(
-        divideByPrecision(getBalance(entityId, Number(resourceId), dojo.setup.components).balance),
+        divideByPrecision(getBalance(entityId, Number(resourceId), currentDefaultTick, dojo.setup.components).balance),
       );
     }, [resourceId, getBalance, entityId]);
 
@@ -154,7 +155,9 @@ export const ResourceBar = memo(
               <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId}>
                 <ResourceCost
                   resourceId={resource.id}
-                  amount={divideByPrecision(getBalance(entityId, resource.id, dojo.setup.components).balance)}
+                  amount={divideByPrecision(
+                    getBalance(entityId, resource.id, currentDefaultTick, dojo.setup.components).balance,
+                  )}
                   className="border-0 bg-transparent"
                 />
               </SelectItem>

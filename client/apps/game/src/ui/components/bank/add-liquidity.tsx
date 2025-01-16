@@ -6,7 +6,7 @@ import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, ID, MarketManager, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
-import { useDojo, useIsResourcesLocked, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo, useIsResourcesLocked, usePlayerStructures, useUIStore } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 const AddLiquidity = ({
@@ -22,6 +22,7 @@ const AddLiquidity = ({
     account: { account },
     setup,
   } = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
@@ -58,8 +59,8 @@ const AddLiquidity = ({
     }
   }, [resourceAmount]);
 
-  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), setup.components).balance;
-  const resourceBalance = getBalance(entityId, Number(resourceId), setup.components).balance;
+  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), currentDefaultTick, setup.components).balance;
+  const resourceBalance = getBalance(entityId, Number(resourceId), currentDefaultTick, setup.components).balance;
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 

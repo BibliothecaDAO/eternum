@@ -85,7 +85,7 @@ export const ActionInfo = memo(() => {
   const hoveredHex = useUIStore(useCallback((state) => state.armyActions.hoveredHex, []));
   const selectedEntityId = useUIStore(useCallback((state) => state.armyActions.selectedEntityId, []));
   const structureEntityId = useUIStore(useCallback((state) => state.structureEntityId, []));
-
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const {
     setup: { components },
   } = useDojo();
@@ -139,7 +139,9 @@ export const ActionInfo = memo(() => {
         costs={costs}
         selectedEntityId={selectedEntityId}
         structureEntityId={structureEntityId}
-        getBalance={(entityId: ID, resourceId: ResourcesIds) => getBalance(entityId, resourceId, components)}
+        getBalance={(entityId: ID, resourceId: ResourcesIds) =>
+          getBalance(entityId, resourceId, currentDefaultTick, components)
+        }
       />
     </BaseThreeTooltip>
   );

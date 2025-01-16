@@ -43,7 +43,12 @@ export const getStructure = (entityId: ID, components: ClientComponents) => {
   } as PlayerStructure;
 };
 
-export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) => {
+export const getEntityInfo = (
+  entityId: ID,
+  playerAccount: ContractAddress,
+  currentDefaultTick: number,
+  components: ClientComponents,
+) => {
   const { ArrivalTime, Movable, CapacityCategory, CapacityConfig, EntityOwner, Owner, Structure, Army, Position } =
     components;
   const entityIdBigInt = BigInt(entityId);
@@ -62,7 +67,7 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, comp
 
   const structure = getComponentValue(Structure, getEntityIdFromKeys([entityIdBigInt]));
 
-  const resources = getResourcesFromBalance(entityId, components);
+  const resources = getResourcesFromBalance(entityId, currentDefaultTick, components);
   const army = getComponentValue(Army, getEntityIdFromKeys([entityIdBigInt]));
   const rawIntermediateDestination = movable
     ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y }

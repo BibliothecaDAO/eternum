@@ -30,11 +30,13 @@ export const HyperstructureResourceChip = ({
   resetContributions,
 }: HyperstructureResourceChipProps) => {
   const dojo = useDojo();
-
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const [inputValue, setInputValue] = useState<number>(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const balance = divideByPrecision(getBalance(structureEntityId, resourceId, dojo.setup.components).balance);
+  const balance = divideByPrecision(
+    getBalance(structureEntityId, resourceId, currentDefaultTick, dojo.setup.components).balance,
+  );
   const production = getResourceProductionInfo(structureEntityId, resourceId, dojo.setup.components);
 
   const safetyMargin = production !== undefined && production?.consumption_rate !== 0n ? 0.95 : 1;

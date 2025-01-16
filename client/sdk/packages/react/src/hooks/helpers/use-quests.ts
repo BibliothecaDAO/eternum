@@ -42,6 +42,7 @@ export const useQuests = () => {
 const useQuestDependencies = () => {
   const { setup } = useDojo();
 
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const entityUpdate = useEntityQuery([
@@ -55,7 +56,12 @@ const useQuestDependencies = () => {
 
   const structurePosition = useMemo(
     () =>
-      getEntityInfo(structureEntityId, ContractAddress(setup.account.account.address), setup.components)?.position || {
+      getEntityInfo(
+        structureEntityId,
+        ContractAddress(setup.account.account.address),
+        currentDefaultTick,
+        setup.components,
+      )?.position || {
         x: 0,
         y: 0,
       },

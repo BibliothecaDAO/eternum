@@ -5,7 +5,6 @@ import { resources, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../modelManager";
 import { configManager } from "../modelManager/ConfigManager";
-import { TickProviderManager } from "../provider/tick";
 import { ID, Resource } from "../types";
 import { unpackResources } from "./packed-data";
 
@@ -23,8 +22,12 @@ export const getInventoryResources = (entityId: ID, components: ClientComponents
 };
 
 // for entities that have production like realms
-export const getBalance = (entityId: ID, resourceId: ResourcesIds, components: ClientComponents) => {
-  const currentDefaultTick = TickProviderManager.getProvider().getCurrentTick();
+export const getBalance = (
+  entityId: ID,
+  resourceId: ResourcesIds,
+  currentDefaultTick: number,
+  components: ClientComponents,
+) => {
   const resourceManager = new ResourceManager(components, entityId, resourceId);
   return { balance: resourceManager.balance(currentDefaultTick), resourceId };
 };
@@ -34,9 +37,11 @@ export const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds
   return resourceManager.getProduction();
 };
 
-export const getResourcesFromBalance = (entityId: ID, components: ClientComponents): Resource[] => {
-  const currentDefaultTick = TickProviderManager.getProvider().getCurrentTick();
-
+export const getResourcesFromBalance = (
+  entityId: ID,
+  currentDefaultTick: number,
+  components: ClientComponents,
+): Resource[] => {
   const weight = getComponentValue(components.Weight, getEntityIdFromKeys([BigInt(entityId)]));
   const hasWeightlessResources = configManager
     .getWeightLessResources()

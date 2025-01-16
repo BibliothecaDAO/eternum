@@ -45,6 +45,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   } = useDojo();
 
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 
@@ -138,7 +139,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     let canCreate = true;
     Object.keys(troopCounts).forEach((troopId) => {
       const count = troopCounts[Number(troopId)];
-      const balance = getBalance(owner_entity, Number(troopId), dojo.setup.components).balance;
+      const balance = getBalance(owner_entity, Number(troopId), currentDefaultTick, dojo.setup.components).balance;
       if (count > balance) {
         canCreate = false;
       }
@@ -251,7 +252,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
           <div className="grid grid-cols-3 gap-3 my-4">
             {troops.map((troop) => {
-              const balance = getBalance(owner_entity, troop.name, dojo.setup.components).balance;
+              const balance = getBalance(owner_entity, troop.name, currentDefaultTick, dojo.setup.components).balance;
 
               return (
                 <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>

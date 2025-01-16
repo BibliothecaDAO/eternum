@@ -6,16 +6,16 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
 import {
+  configManager,
   ContractAddress,
   DONKEY_ENTITY_TYPE,
+  getBalance,
   ID,
   MarketManager,
   RESOURCE_TIERS,
   Resources,
-  ResourcesIds,
-  configManager,
-  getBalance,
   resources,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import {
   soundSelector,
@@ -24,6 +24,7 @@ import {
   useStructures,
   useTravel,
   useUiSounds,
+  useUIStore,
 } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -40,6 +41,8 @@ export const ResourceSwap = ({
     account: { account },
     setup,
   } = useDojo();
+
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const { computeTravelTime } = useTravel();
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
@@ -80,12 +83,12 @@ export const ResourceSwap = ({
   }, [marketManager.resourceId]);
 
   const lordsBalance = useMemo(
-    () => getBalance(entityId, ResourcesIds.Lords, setup.components).balance,
-    [entityId, getBalance],
+    () => getBalance(entityId, ResourcesIds.Lords, currentDefaultTick, setup.components).balance,
+    [entityId, currentDefaultTick, getBalance],
   );
   const resourceBalance = useMemo(
-    () => getBalance(entityId, resourceId, setup.components).balance,
-    [entityId, resourceId, getBalance],
+    () => getBalance(entityId, resourceId, currentDefaultTick, setup.components).balance,
+    [entityId, resourceId, currentDefaultTick, getBalance],
   );
 
   const hasEnough = useMemo(() => {

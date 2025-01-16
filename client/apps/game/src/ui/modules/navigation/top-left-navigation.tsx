@@ -109,6 +109,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     setup,
     account: { account },
   } = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
 
@@ -125,8 +126,8 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   });
 
   const entityInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
-    [structureEntityId],
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), currentDefaultTick, setup.components),
+    [structureEntityId, currentDefaultTick],
   );
 
   const structure = useMemo(() => {

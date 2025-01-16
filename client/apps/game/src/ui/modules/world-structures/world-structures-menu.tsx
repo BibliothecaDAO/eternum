@@ -26,6 +26,7 @@ import {
   useGuilds,
   useHyperstructureProgress,
   useHyperstructures,
+  useUIStore,
 } from "@bibliothecadao/react";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -280,8 +281,9 @@ const HyperStructureExtraContent = ({
 
 const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
-  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment, dojo.setup.components);
+  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment, currentDefaultTick, dojo.setup.components);
   const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);
 
   return (
