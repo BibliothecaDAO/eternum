@@ -9,7 +9,6 @@ import { playBuildingSound } from "@/three/sound/utils";
 import { SceneName } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { getEntityIdFromKeys, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -21,6 +20,7 @@ import {
   StructureType,
   TileManager,
   findResourceById,
+  getEntityIdFromKeys,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
 import {
@@ -38,6 +38,7 @@ import clsx from "clsx";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import {
   HEX_SIZE,
   MinesMaterialsParams,

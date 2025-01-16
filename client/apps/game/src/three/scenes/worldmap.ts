@@ -9,11 +9,9 @@ import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "@/three/scenes/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
-import { ArmySystemUpdate, TileSystemUpdate } from "@bibliothecadao/react";
 import { SceneName } from "@/types";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
 import {
   ArmyMovementManager,
   BiomeType,
@@ -25,10 +23,12 @@ import {
   getNeighborOffsets,
 } from "@bibliothecadao/eternum";
 import {
+  ArmySystemUpdate,
   LeftView,
   LoadingStateKey,
   Position,
   SetupResult,
+  TileSystemUpdate,
   soundSelector,
   useAccountStore,
   useUIStore,
@@ -39,6 +39,7 @@ import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { getWorldPositionForHex } from "../utils";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;

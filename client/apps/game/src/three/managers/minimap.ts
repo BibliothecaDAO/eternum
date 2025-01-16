@@ -4,11 +4,11 @@ import { type Biome, BIOME_COLORS } from "@/three/managers/biome";
 import { type StructureManager } from "@/three/managers/structure-manager";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { FELT_CENTER } from "@/ui/config";
-import { getHexForWorldPosition } from "@/ui/utils/utils";
 import { StructureType } from "@bibliothecadao/eternum";
 import { useUIStore } from "@bibliothecadao/react";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
+import { getHexForWorldPosition } from "../utils";
 
 const LABELS = {
   ARMY: "/textures/army_label.png",

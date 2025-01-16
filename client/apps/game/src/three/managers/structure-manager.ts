@@ -4,10 +4,10 @@ import { LabelManager } from "@/three/managers/label-manager";
 import { StructureLabelPaths, StructureModelPaths } from "@/three/scenes/constants";
 import { RenderChunkSize, StructureInfo } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import { StructureSystemUpdate, useAccountStore } from "@bibliothecadao/react";
 import * as THREE from "three";
+import { getWorldPositionForHex } from "../utils";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
