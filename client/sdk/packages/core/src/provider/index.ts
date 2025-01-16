@@ -9,7 +9,9 @@ import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
 import * as SystemProps from "../types/provider";
 import { TransactionType } from "./types";
+
 export const NAMESPACE = "s0_eternum";
+export * from "./tick";
 export { TransactionType };
 
 /**

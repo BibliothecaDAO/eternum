@@ -1,10 +1,25 @@
 import { realmsJson } from "@bibliothecadao/assets";
-import { ComponentValue } from "@dojoengine/recs";
+import { Entity, getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { findResourceIdByTrait, orders } from "../constants";
 import { ClientComponents } from "../dojo";
 import { configManager } from "../modelManager/ConfigManager";
-import { ID, RealmInterface } from "../types";
+import { ID, RealmInfo, RealmInterface } from "../types";
 import { packResources } from "./packed-data";
+
+export const getRealmAddressName = (realmEntityId: ID, components: ClientComponents) => {
+  const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const addressName = owner
+    ? getComponentValue(components.AddressName, getEntityIdFromKeys([owner.address]))
+    : undefined;
+
+  if (addressName) {
+    return shortString.decodeShortString(String(addressName.name));
+  } else {
+    return "";
+  }
+};
 
 interface Attribute {
   trait_type: string;
@@ -27,6 +42,37 @@ export const getRealmNameById = (realmId: ID): string => {
   if (!features) return "";
   return features["name"];
 };
+
+export function getRealmInfo(entity: Entity, components: ClientComponents): RealmInfo | undefined {
+  const realm = getComponentValue(components.Realm, entity);
+  const owner = getComponentValue(components.Owner, entity);
+  const position = getComponentValue(components.Position, entity);
+  const population = getComponentValue(components.Population, entity);
+
+  if (realm && owner && position) {
+    const { realm_id, entity_id, produced_resources, order, level } = realm;
+
+    const name = getRealmNameById(realm_id);
+
+    const { address } = owner;
+
+    return {
+      realmId: realm_id,
+      entityId: entity_id,
+      name,
+      level,
+      resourceTypesPacked: produced_resources,
+      order,
+      position,
+      ...population,
+      hasCapacity:
+        !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
+      owner: address,
+      ownerName: getRealmAddressName(realm.entity_id, components),
+      hasWonder: realm.has_wonder,
+    };
+  }
+}
 
 export function getRealm(realmId: ID): RealmInterface | undefined {
   const realmsData = realms;
@@ -77,9 +123,4 @@ export const hasEnoughPopulationForBuilding = (realm: any, building: number) => 
   const basePopulationCapacity = configManager.getBasePopulationCapacity();
 
   return (realm?.population || 0) + buildingPopulation <= basePopulationCapacity + (realm?.capacity || 0);
-};
-
-export const getRealmName = (realm: ComponentValue<ClientComponents["Realm"]["schema"]>) => {
-  const baseName = getRealmNameById(realm.realm_id);
-  return realm.has_wonder ? `WONDER - ${baseName}` : baseName;
 };

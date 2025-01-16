@@ -1,7 +1,14 @@
 import { ReactComponent as Swords } from "@/assets/icons/common/cross-swords.svg";
 import { ArmyChip } from "@/ui/components/military/army-chip";
-import { ArmyInfo, BattleManager } from "@bibliothecadao/eternum";
-import { Position, useDojo, useEntitiesUtils, useIsStructureImmune, useNextBlockTimestamp, useStructureAtPosition, useUIStore } from "@bibliothecadao/react";
+import { ArmyInfo, BattleManager, ContractAddress, getEntityInfo } from "@bibliothecadao/eternum";
+import {
+  Position,
+  useDojo,
+  useIsStructureImmune,
+  useNextBlockTimestamp,
+  useStructureAtPosition,
+  useUIStore,
+} from "@bibliothecadao/react";
 import clsx from "clsx";
 import React, { useCallback, useMemo } from "react";
 
@@ -15,7 +22,6 @@ export const EnemyArmies = ({
   position: Position;
 }) => {
   const dojo = useDojo();
-  const { getEntityInfo } = useEntitiesUtils();
   const structureAtPosition = useStructureAtPosition(position.getContract());
 
   const { nextBlockTimestamp } = useNextBlockTimestamp();
@@ -23,7 +29,11 @@ export const EnemyArmies = ({
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const entityInfo = getEntityInfo(ownArmySelected?.entityOwner.entity_owner_id ?? 0).structure;
+  const entityInfo = getEntityInfo(
+    ownArmySelected?.entityOwner.entity_owner_id ?? 0,
+    ContractAddress(dojo.account.account.address),
+    dojo.setup.components,
+  ).structure;
 
   const ownArmystructure = useMemo(() => {
     return ownArmySelected ? entityInfo : undefined;
@@ -37,7 +47,11 @@ export const EnemyArmies = ({
 
   const getArmyChip = useCallback(
     (army: ArmyInfo, index: number) => {
-      const structure = getEntityInfo(army.entityOwner.entity_owner_id).structure;
+      const structure = getEntityInfo(
+        army.entityOwner.entity_owner_id,
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ).structure;
       const isImmune = useIsStructureImmune(structure, nextBlockTimestamp!) || ownArmyIsImmune;
 
       const button = ownArmySelected && (

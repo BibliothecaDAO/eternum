@@ -5,21 +5,13 @@ import { SelectAddress } from "@/ui/elements/select-address";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
-import { ContractAddress, formatTime, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
-import {
-  useDojo,
-  useGetAllPlayers,
-  useNextBlockTimestamp,
-  useRealm,
-  useStructureByEntityId,
-  useUIStore,
-} from "@bibliothecadao/react";
+import { ContractAddress, formatTime, getAddressName, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp, usePlayers, useStructureByEntityId, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { env } from "../../../../env";
 import { CoOwnersWithTimestamp } from "./types";
 
 export const CoOwners = ({
@@ -57,10 +49,10 @@ const CoOwnersRows = ({
 }) => {
   const {
     account: { account },
-    setup: {
-      components: { Hyperstructure, HyperstructureConfig },
-    },
+    setup: { components },
   } = useDojo();
+  const { Hyperstructure, HyperstructureConfig } = components;
+
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const { nextBlockTimestamp } = useNextBlockTimestamp();
@@ -84,8 +76,6 @@ const CoOwnersRows = ({
   }, [hyperstructure, hyperstructureConfig, nextBlockTimestamp]);
 
   const structure = useStructureByEntityId(hyperstructureEntityId);
-
-  const { getAddressName } = useRealm();
 
   const sortingParams = useMemo(() => {
     return [
@@ -121,7 +111,7 @@ const CoOwnersRows = ({
       </SortPanel>
 
       {coOwnersWithTimestamp?.coOwners.map((coOwner, index) => {
-        const playerName = getAddressName(coOwner.address) || "Player not found";
+        const playerName = getAddressName(coOwner.address, components) || "Player not found";
 
         const isOwner = coOwner.address === ContractAddress(account.address);
 
@@ -181,7 +171,7 @@ const ChangeCoOwners = ({
     },
   } = useDojo();
 
-  const getPlayers = useGetAllPlayers({ viteLordsAddress: env.VITE_LORDS_ADDRESS });
+  const players = usePlayers();
   const [isLoading, setIsLoading] = useState(false);
   const [newCoOwners, setNewCoOwners] = useState<
     {
@@ -239,10 +229,6 @@ const ChangeCoOwners = ({
       .filter((owner) => owner.percentage > 0)
       .some((coOwner) => coOwner.address === ContractAddress(account.address));
   }, [newCoOwners, account.address]);
-
-  const players = useMemo(() => {
-    return getPlayers();
-  }, []);
 
   return (
     <div className="h-full flex flex-col justify-between">

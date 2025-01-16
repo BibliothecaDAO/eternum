@@ -6,13 +6,13 @@ import { Headline } from "@/ui/elements/headline";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ArmyInfo, getRealmNameById, Structure } from "@bibliothecadao/eternum";
+import { ArmyInfo, getRealmAddressName, getRealmNameById, Structure } from "@bibliothecadao/eternum";
 import {
+  useDojo,
   useGetArmyByEntityId,
   useIsStructureImmune,
   useNextBlockTimestamp,
   useQuery,
-  useRealm,
   useStructureImmunityTimer,
   useStructures,
   useUIStore,
@@ -38,12 +38,15 @@ interface ArmyInfoLabelProps {
 }
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
-  const { getRealmAddressName } = useRealm();
+  const {
+    setup: { components },
+  } = useDojo();
+
   const { realm, entity_id, entityOwner, troops } = army;
 
   const realmId = realm?.realm_id || 0;
 
-  const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
+  const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id, components) : "";
 
   const { getStructureByEntityId } = useStructures();
 

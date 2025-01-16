@@ -3,8 +3,8 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { calculateDonkeysNeeded, currencyFormat, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
-import { ID, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
-import { PlayerStructure, useDojo, useEntities, useResourceManager, useUIStore } from "@bibliothecadao/react";
+import { ID, PlayerStructure, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { useDojo, usePlayerStructures, useResourceManager, useUIStore } from "@bibliothecadao/react";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
@@ -30,7 +30,7 @@ export const RealmTransfer = memo(
     const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
     const selectedStructureEntityId = useUIStore((state) => state.structureEntityId);
 
-    const { playerStructures } = useEntities();
+    const playerStructures = usePlayerStructures();
 
     const [isLoading, setIsLoading] = useState(false);
     const [calls, setCalls] = useState<transferCall[]>([]);
@@ -104,7 +104,7 @@ export const RealmTransfer = memo(
             <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
           </div>
 
-          {playerStructures().map((structure) => (
+          {playerStructures.map((structure) => (
             <RealmTransferBalance
               key={structure.entity_id}
               structure={structure}

@@ -1,6 +1,13 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { configManager, ID, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
-import { useGetRealm } from "@bibliothecadao/react";
+import {
+  configManager,
+  getEntityIdFromKeys,
+  getRealmInfo,
+  ID,
+  ResourcesIds,
+  unpackResources,
+} from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 
 export const RealmResourcesIO = ({
   realmEntityId,
@@ -8,12 +15,13 @@ export const RealmResourcesIO = ({
   titleClassName,
   size = "xs",
 }: {
-  realmEntityId?: ID;
+  realmEntityId: ID;
   className?: string;
   titleClassName?: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 }) => {
-  const { realm } = useGetRealm(realmEntityId);
+  const dojo = useDojo();
+  const realm = getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), dojo.setup.components);
 
   const resourcesProduced = realm ? unpackResources(realm.resourceTypesPacked) : [];
   const resourcesInputs = configManager.resourceInputs;

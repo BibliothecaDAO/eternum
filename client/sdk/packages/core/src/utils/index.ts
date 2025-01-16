@@ -14,10 +14,14 @@ import {
 } from "../constants";
 import { ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
 
+export * from "./army";
 export * from "./battleSimulation";
+export * from "./entities";
 export * from "./leaderboard";
 export * from "./packed-data";
-export * from "./realms";
+export * from "./players";
+export * from "./realm";
+export * from "./resources";
 export * from "./utils";
 
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
@@ -65,7 +69,7 @@ export const applyInputProductionFactor = (
   return questResources;
 };
 
-export const getQuestResources = (resourcesOnRealm: number[]): ResourceInputs => {
+export const getStartingResources = (resourcesOnRealm: number[]): ResourceInputs => {
   let QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(
     QUEST_RESOURCES,
     EternumGlobalConfig.resources.resourceMultiplier,

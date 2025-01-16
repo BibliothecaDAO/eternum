@@ -3,8 +3,15 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { StaminaResourceCost } from "@/ui/elements/stamina-resource-cost";
-import { computeExploreFoodCosts, computeTravelFoodCosts, configManager, ResourcesIds } from "@bibliothecadao/eternum";
-import { useDojo, useResourceBalance, useUIStore } from "@bibliothecadao/react";
+import {
+  computeExploreFoodCosts,
+  computeTravelFoodCosts,
+  configManager,
+  getBalance,
+  ID,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useCallback, useMemo } from "react";
@@ -21,9 +28,9 @@ const TooltipContent = memo(
     isExplored: boolean;
     travelPath: any;
     costs: { travelFoodCosts: any; exploreFoodCosts: any };
-    selectedEntityId: string;
-    structureEntityId: string;
-    getBalance: any;
+    selectedEntityId: number;
+    structureEntityId: number;
+    getBalance: (entityId: ID, resourceId: ResourcesIds) => { balance: number; resourceId: ResourcesIds };
   }) => (
     <>
       <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
@@ -79,11 +86,8 @@ export const ActionInfo = memo(() => {
   const selectedEntityId = useUIStore(useCallback((state) => state.armyActions.selectedEntityId, []));
   const structureEntityId = useUIStore(useCallback((state) => state.structureEntityId, []));
 
-  const { getBalance } = useResourceBalance();
   const {
-    setup: {
-      components: { Army },
-    },
+    setup: { components },
   } = useDojo();
 
   const selectedEntityTroops = useMemo(() => {
@@ -94,7 +98,7 @@ export const ActionInfo = memo(() => {
         crossbowman_count: 0n,
       };
     }
-    const army = getComponentValue(Army, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+    const army = getComponentValue(components.Army, getEntityIdFromKeys([BigInt(selectedEntityId)]));
     return (
       army?.troops || {
         knight_count: 0n,
@@ -102,7 +106,7 @@ export const ActionInfo = memo(() => {
         crossbowman_count: 0n,
       }
     );
-  }, [selectedEntityId, Army]);
+  }, [selectedEntityId]);
 
   const travelPath = useMemo(() => {
     if (!hoveredHex) return undefined;
@@ -125,7 +129,7 @@ export const ActionInfo = memo(() => {
     [selectedEntityTroops],
   );
 
-  if (!showTooltip) return null;
+  if (!showTooltip || !selectedEntityId) return null;
 
   return (
     <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>
@@ -133,9 +137,9 @@ export const ActionInfo = memo(() => {
         isExplored={isExplored}
         travelPath={travelPath}
         costs={costs}
-        selectedEntityId={selectedEntityId!.toString()}
-        structureEntityId={structureEntityId.toString()}
-        getBalance={getBalance}
+        selectedEntityId={selectedEntityId}
+        structureEntityId={structureEntityId}
+        getBalance={(entityId: ID, resourceId: ResourcesIds) => getBalance(entityId, resourceId, components)}
       />
     </BaseThreeTooltip>
   );

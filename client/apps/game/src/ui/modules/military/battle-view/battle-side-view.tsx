@@ -2,8 +2,16 @@ import Button from "@/ui/elements/button";
 import { BattleHistory } from "@/ui/modules/military/battle-view/battle-history";
 import { EntityAvatar } from "@/ui/modules/military/battle-view/entity-avatar";
 import { TroopRow } from "@/ui/modules/military/battle-view/troops";
-import { ArmyInfo, BattleManager, BattleSide, ClientComponents, ID, Structure } from "@bibliothecadao/eternum";
-import { useArmyByArmyEntityId, useDojo, useEntitiesUtils, useNextBlockTimestamp } from "@bibliothecadao/react";
+import {
+  ArmyInfo,
+  BattleManager,
+  BattleSide,
+  ClientComponents,
+  getAddressNameFromEntity,
+  ID,
+  Structure,
+} from "@bibliothecadao/eternum";
+import { useArmyByArmyEntityId, useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 
@@ -32,6 +40,7 @@ export const BattleSideView = ({
     account: { account },
 
     setup: {
+      components,
       systemCalls: { battle_join, battle_leave },
     },
   } = useDojo();
@@ -42,7 +51,6 @@ export const BattleSideView = ({
 
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
-  const { getAddressNameFromEntity } = useEntitiesUtils();
   const [loading, setLoading] = useState<boolean>(false);
 
   const ownArmy = useArmyByArmyEntityId(ownArmyEntityId);
@@ -91,7 +99,7 @@ export const BattleSideView = ({
           {React.Children.toArray(
             ownSideArmies.map((army) => {
               if (!army) return;
-              const addressName = getAddressNameFromEntity(army.entity_id) || "Mercenaries";
+              const addressName = getAddressNameFromEntity(army.entity_id, components) || "Mercenaries";
               return (
                 <div className="flex justify-around px-2 py-1 rounded bg-brown/70 text-xs gap-2 border-gold/10 border">
                   <span className="self-center align-middle">{addressName}</span>

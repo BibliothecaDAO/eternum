@@ -14,21 +14,20 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import { RangeInput } from "@/ui/elements/range-input";
 import { addressToNumber, currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
-import { ContractAddress } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds, useMusicPlayer, useRealm, useScreenOrientation, useUIStore } from "@bibliothecadao/react";
+import { ContractAddress, getAddressName } from "@bibliothecadao/eternum";
+import { useDojo, useGuilds, useMusicPlayer, useScreenOrientation, useUIStore } from "@bibliothecadao/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const SettingsWindow = () => {
   const {
     account: { account },
+    setup: { components },
   } = useDojo();
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
-  const { getAddressName } = useRealm();
-
-  const addressName = getAddressName(ContractAddress(account.address));
+  const addressName = getAddressName(ContractAddress(account.address), components);
 
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);

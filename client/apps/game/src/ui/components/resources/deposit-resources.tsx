@@ -1,7 +1,7 @@
 import Button from "@/ui/elements/button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BattleManager, ID, Resource, ResourceInventoryManager } from "@bibliothecadao/eternum";
-import { ArrivalInfo, soundSelector, useDojo, useStructureByEntityId, useUiSounds, useUIStore } from "@bibliothecadao/react";
+import { ArrivalInfo, BattleManager, ID, Resource, ResourceInventoryManager } from "@bibliothecadao/eternum";
+import { soundSelector, useDojo, useStructureByEntityId, useUiSounds, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 

@@ -1,6 +1,13 @@
 import { TransferBetweenEntities } from "@/ui/components/trading/transfer-between-entities";
-import { ContractAddress, StructureType, getRealmNameById } from "@bibliothecadao/eternum";
-import { PlayerStructure, RealmWithPosition, useDojo, useEntities, useEntitiesUtils, useGuilds } from "@bibliothecadao/react";
+import {
+  ContractAddress,
+  PlayerStructure,
+  RealmWithPosition,
+  StructureType,
+  getEntityName,
+  getRealmNameById,
+} from "@bibliothecadao/eternum";
+import { useDojo, useGuilds, usePlayerRealms, usePlayerStructures } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
@@ -8,12 +15,12 @@ import { useMemo, useState } from "react";
 export const TransferView = () => {
   const {
     account: { account },
-    setup: {
-      components: { Structure, Position, Owner, Realm },
-    },
+    setup: { components },
   } = useDojo();
+  const { Structure, Position, Owner, Realm } = components;
 
-  const { playerRealms, playerStructures } = useEntities();
+  const playerRealms = usePlayerRealms();
+  const playerStructures = usePlayerStructures();
 
   const [guildOnly, setGuildOnly] = useState(false);
 
@@ -22,8 +29,6 @@ export const TransferView = () => {
   const playersInPlayersGuildAddress = useMemo(() => {
     return getPlayersInPlayersGuild(BigInt(account.address)).map((a) => BigInt(a.address));
   }, [account.address]);
-
-  const { getEntityName } = useEntitiesUtils();
 
   const otherStructuresQuery = useEntityQuery([
     Has(Structure),
@@ -40,7 +45,7 @@ export const TransferView = () => {
 
         const position = getComponentValue(Position, id);
 
-        const structureName = getEntityName(structure.entity_id);
+        const structureName = getEntityName(structure.entity_id, components);
 
         const name = structureName ? `${structure?.category} ${structureName}` : structure.category || "";
         return { ...structure, position: position!, name, owner: getComponentValue(Owner, id) };
@@ -68,17 +73,17 @@ export const TransferView = () => {
       filterBy={setGuildOnly}
       filtered={guildOnly}
       entitiesList={[
-        { entities: playerRealms(), name: "Your Realms" },
+        { entities: playerRealms, name: "Your Realms" },
         {
-          entities: playerStructures().filter((structure) => structure.category === "Hyperstructure"),
+          entities: playerStructures.filter((structure) => structure.category === "Hyperstructure"),
           name: "Your Hyperstructures",
         },
         {
-          entities: playerStructures().filter((structure) => structure.category === "FragmentMine"),
+          entities: playerStructures.filter((structure) => structure.category === "FragmentMine"),
           name: "Your Fragment Mines",
         },
         {
-          entities: playerStructures().filter((structure) => structure.category === "Bank"),
+          entities: playerStructures.filter((structure) => structure.category === "Bank"),
           name: "Your Banks",
         },
         {

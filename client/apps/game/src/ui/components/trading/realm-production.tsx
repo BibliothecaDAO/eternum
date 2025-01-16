@@ -1,31 +1,42 @@
-import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { configManager, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
-import { getRealms, useUIStore } from "@bibliothecadao/react";
+import { useRealms, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const RealmProduction = () => {
   const setSelectedPlayer = useUIStore((state) => state.setSelectedPlayer);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
-  const realms = getRealms();
+  // todo: pay attention to expensive query
+  const realms = useRealms();
   const [filterProduced, setFilterProduced] = useState<number | null>(null);
   const [filterConsumed, setFilterConsumed] = useState<number | null>(null);
 
   const resourcesInputs = useMemo(() => configManager.resourceInputs, []);
 
+  const realmsProduction = useMemo(() => {
+    return realms.map((realm) => {
+      const resourcesProduced = unpackResources(realm.produced_resources);
+
+      return {
+        ...realm,
+        resourcesProduced,
+      };
+    });
+  }, [realms]);
+
   const filteredRealms = useMemo(() => {
     if (!realms) return [];
 
-    return realms.filter((realm) => {
+    return realmsProduction.filter((realm) => {
       if (!realm) return false;
 
-      const resourcesProduced = unpackResources(realm.resourceTypesPacked);
-      if (filterProduced && !resourcesProduced.includes(filterProduced)) return false;
+      if (filterProduced && !realm.resourcesProduced.includes(filterProduced)) return false;
 
       if (filterConsumed) {
         const resourcesConsumed = new Set(
-          resourcesProduced.flatMap((resourceId) =>
+          realm.resourcesProduced.flatMap((resourceId) =>
             resourcesInputs[resourceId]
               .filter((input) => input.resource !== ResourcesIds["Wheat"] && input.resource !== ResourcesIds["Fish"])
               .map((input) => input.resource),
@@ -37,7 +48,7 @@ export const RealmProduction = () => {
 
       return true;
     });
-  }, [realms, filterProduced, filterConsumed, resourcesInputs]);
+  }, [realmsProduction, filterProduced, filterConsumed, resourcesInputs]);
 
   const handleRealmClick = (realm: any) => {
     toggleModal(null);
@@ -64,10 +75,12 @@ export const RealmProduction = () => {
             className="mb-5 border border-gold/40 rounded-xl p-3 hover:opacity-70"
             onClick={() => handleRealmClick(realm)}
           >
-            <p className="text-md">{realm.ownerName}</p>
-            <p className="text-md mb-1 font-bold">{realm.name}</p>
+            <div className="flex flex-row flex-wrap mb-4">
+              {realm.resourcesProduced.map((resourceId) => (
+                <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" key={resourceId} />
+              ))}
+            </div>
             <hr />
-            {realm.realmId && <RealmResourcesIO realmEntityId={realm.entityId} />}
           </div>
         ))}
       </div>

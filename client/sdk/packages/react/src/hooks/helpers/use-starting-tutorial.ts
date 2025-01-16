@@ -8,7 +8,7 @@ export const useStartingTutorial = () => {
   const { handleStart } = useTutorial(questSteps.get(QuestType.Settle));
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
-  const { quests } = useQuests();
+  const quests = useQuests();
 
   const settleQuest = quests.find((quest) => quest.id === QuestType.Settle);
   const tutorialCompleted = localStorage.getItem("tutorial") === "completed";

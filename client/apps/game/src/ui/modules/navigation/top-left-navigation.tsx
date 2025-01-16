@@ -11,12 +11,23 @@ import {
   BuildingType,
   CapacityConfigCategory,
   configManager,
+  ContractAddress,
   formatTime,
+  getEntityInfo,
   ID,
+  PlayerStructure,
   ResourcesIds,
   TickIds,
 } from "@bibliothecadao/eternum";
-import { PlayerStructure, Position, soundSelector, useDojo, useEntitiesUtils, useNextBlockTimestamp, useQuery, useUiSounds, useUIStore } from "@bibliothecadao/react";
+import {
+  Position,
+  soundSelector,
+  useDojo,
+  useNextBlockTimestamp,
+  useQuery,
+  useUiSounds,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -94,10 +105,12 @@ const WorkersHutTooltipContent = () => {
 };
 
 export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStructure[] }) => {
-  const { setup } = useDojo();
+  const {
+    setup,
+    account: { account },
+  } = useDojo();
 
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
-  const { getEntityInfo } = useEntitiesUtils();
 
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -111,11 +124,14 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     return saved ? JSON.parse(saved) : [];
   });
 
-  const entityInfo = useMemo(() => getEntityInfo(structureEntityId), [structureEntityId, getEntityInfo]);
+  const entityInfo = useMemo(
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
+    [structureEntityId],
+  );
 
   const structure = useMemo(() => {
     return { ...entityInfo, isFavorite: favorites.includes(entityInfo.entityId) };
-  }, [structureEntityId, getEntityInfo, favorites]);
+  }, [structureEntityId, favorites]);
 
   const structurePosition = useMemo(() => {
     return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();

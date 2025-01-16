@@ -1,8 +1,8 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { copyPlayerAddressToClipboard, currencyIntlFormat, divideByPrecision, formatNumber } from "@/ui/utils/utils";
-import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { useContributions, useRealm } from "@bibliothecadao/react";
+import { ContractAddress, getAddressName, ID, LeaderboardManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const ContributionSummary = ({
@@ -12,8 +12,13 @@ export const ContributionSummary = ({
   hyperstructureEntityId: ID;
   className?: string;
 }) => {
-  const { getContributions, getContributionsTotalPercentage } = useContributions();
-  const { getAddressName } = useRealm();
+  const {
+    setup: { components },
+  } = useDojo();
+
+  const leaderboardManager = useMemo(() => {
+    return LeaderboardManager.instance(components);
+  }, [components]);
 
   const [showContributions, setShowContributions] = useState(false);
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
@@ -23,7 +28,10 @@ export const ContributionSummary = ({
     resourceId: number;
   };
 
-  const contributions = getContributions(hyperstructureEntityId);
+  const contributions = useMemo(() => {
+    return leaderboardManager.getContributions(hyperstructureEntityId);
+  }, [leaderboardManager, hyperstructureEntityId]);
+
   const groupedContributions = contributions.reduce<Record<string, Record<number, bigint>>>((acc, contribution) => {
     const { player_address, resource_type, amount } = contribution;
     const playerAddressString = player_address.toString();
@@ -58,7 +66,10 @@ export const ContributionSummary = ({
           playerAddress,
           resources,
           percentage:
-            getContributionsTotalPercentage(hyperstructureEntityId, resourceContributions[playerAddress]) * 100,
+            leaderboardManager.getContributionsTotalPercentage(
+              hyperstructureEntityId,
+              resourceContributions[playerAddress],
+            ) * 100,
         }))
         .filter(({ resources }) =>
           selectedResource ? resources[selectedResource] > 0n : Object.values(resources).some((amount) => amount > 0n),
@@ -88,7 +99,7 @@ export const ContributionSummary = ({
           <SelectResource onSelect={(resourceId) => setSelectedResource(resourceId)} />
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {sortedContributors.map(({ playerAddress, resources, percentage }) => {
-              const addressName = getAddressName(ContractAddress(playerAddress)) || "Unknown";
+              const addressName = getAddressName(ContractAddress(playerAddress), components) || "Unknown";
 
               return (
                 <div key={playerAddress} className="bg-gold/10 p-1 rounded">

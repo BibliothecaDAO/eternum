@@ -4,8 +4,8 @@ import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
-import { ArmyInfo, BattleManager, ID } from "@bibliothecadao/eternum";
-import { useDojo, useEntitiesUtils, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
+import { ArmyInfo, BattleManager, getAddressNameFromEntity, ID } from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
 import React, { useMemo, useState } from "react";
 
 type BattleListItemProps = {
@@ -16,8 +16,6 @@ type BattleListItemProps = {
 
 export const BattleListItem = ({ battleEntityId, ownArmySelected, showCompass = false }: BattleListItemProps) => {
   const dojo = useDojo();
-
-  const { getAddressNameFromEntity } = useEntitiesUtils();
 
   const { nextBlockTimestamp } = useNextBlockTimestamp();
 
@@ -104,7 +102,7 @@ export const BattleListItem = ({ battleEntityId, ownArmySelected, showCompass = 
                   onMouseEnter={() =>
                     setTooltip({
                       content: armiesInBattle.map((armyEntityId) => {
-                        const name = getAddressNameFromEntity(armyEntityId);
+                        const name = getAddressNameFromEntity(armyEntityId, dojo.setup.components);
                         return <div key={armyEntityId}>{name ? name : "Bandit"}</div>;
                       }),
                       position: "top",

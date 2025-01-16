@@ -6,7 +6,7 @@ import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/settle-realm-component";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
-import { Position, useDojo, usePlayerRealms, useQuery, useUIStore } from "@bibliothecadao/react";
+import { Position, useDojo, usePlayerOwnedRealms, useQuery, useUIStore } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
@@ -22,7 +22,7 @@ export const StepOne = () => {
 
   const { handleUrlChange } = useQuery();
 
-  const realms = usePlayerRealms();
+  const realms = usePlayerOwnedRealms();
 
   const onSpectatorModeClick = () => {
     setIsLoadingScreenEnabled(true);
@@ -109,7 +109,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
     }
   };
 
-  const realms = usePlayerRealms();
+  const realms = usePlayerOwnedRealms();
 
   useEffect(() => {
     getUnusedSeasonPasses(account.address, realms).then((unsettledSeasonPassRealms) => {

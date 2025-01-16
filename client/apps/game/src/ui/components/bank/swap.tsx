@@ -12,9 +12,19 @@ import {
   MarketManager,
   RESOURCE_TIERS,
   Resources,
-  ResourcesIds, configManager, resources
+  ResourcesIds,
+  configManager,
+  getBalance,
+  resources,
 } from "@bibliothecadao/eternum";
-import { soundSelector, useDojo, useIsResourcesLocked, useResourceBalance, useStructures, useTravel, useUiSounds } from "@bibliothecadao/react";
+import {
+  soundSelector,
+  useDojo,
+  useIsResourcesLocked,
+  useStructures,
+  useTravel,
+  useUiSounds,
+} from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({
@@ -31,7 +41,6 @@ export const ResourceSwap = ({
     setup,
   } = useDojo();
 
-  const { getBalance } = useResourceBalance();
   const { computeTravelTime } = useTravel();
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
@@ -70,8 +79,14 @@ export const ResourceSwap = ({
     }
   }, [marketManager.resourceId]);
 
-  const lordsBalance = useMemo(() => getBalance(entityId, ResourcesIds.Lords).balance, [entityId, getBalance]);
-  const resourceBalance = useMemo(() => getBalance(entityId, resourceId).balance, [entityId, resourceId, getBalance]);
+  const lordsBalance = useMemo(
+    () => getBalance(entityId, ResourcesIds.Lords, setup.components).balance,
+    [entityId, getBalance],
+  );
+  const resourceBalance = useMemo(
+    () => getBalance(entityId, resourceId, setup.components).balance,
+    [entityId, resourceId, getBalance],
+  );
 
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;

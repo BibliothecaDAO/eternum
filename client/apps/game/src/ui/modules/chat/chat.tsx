@@ -9,13 +9,12 @@ import { useChatStore } from "@/ui/modules/chat/use-chat-store";
 import { getMessageKey } from "@/ui/modules/chat/utils";
 import { EventStream } from "@/ui/modules/stream/event-stream";
 import { ContractAddress, Player, toHexString } from "@bibliothecadao/eternum";
-import { useDojo, useGetAllPlayers, useGuilds } from "@bibliothecadao/react";
+import { useDojo, useGuilds, usePlayers } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
-import { env } from "../../../../env";
 
 export const Chat = () => {
   const {
@@ -42,11 +41,7 @@ export const Chat = () => {
 
   const addTab = useChatStore((state) => state.addTab);
 
-  const getPlayers = useGetAllPlayers({ viteLordsAddress: env.VITE_LORDS_ADDRESS });
-
-  const players = useMemo(() => {
-    return getPlayers().filter((player) => player.address !== BigInt(account.address));
-  }, []);
+  const players = usePlayers();
 
   useEffect(() => {
     scrollToElement(bottomChatRef);

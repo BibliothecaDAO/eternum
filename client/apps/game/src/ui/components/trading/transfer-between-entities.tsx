@@ -7,8 +7,8 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import TextInput from "@/ui/elements/text-input";
 import { multiplyByPrecision, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { configManager, DONKEY_ENTITY_TYPE, ID } from "@bibliothecadao/eternum";
-import { soundSelector, useDojo, useRealm, useTravel, useUiSounds } from "@bibliothecadao/react";
+import { configManager, DONKEY_ENTITY_TYPE, getRealmAddressName, ID } from "@bibliothecadao/eternum";
+import { soundSelector, useDojo, useTravel, useUiSounds } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
@@ -168,8 +168,6 @@ export const TransferBetweenEntities = ({
   filtered: boolean;
   filterBy: (filtered: boolean) => void;
 }) => {
-  const { getRealmAddressName } = useRealm();
-
   const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<SelectedEntity | null>(null);
   const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<SelectedEntity | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
@@ -188,6 +186,7 @@ export const TransferBetweenEntities = ({
   const {
     account: { account },
     setup: {
+      components,
       systemCalls: { send_resources, pickup_resources },
     },
   } = useDojo();
@@ -247,7 +246,7 @@ export const TransferBetweenEntities = ({
     return entitiesList.map(({ entities, name }) => ({
       entities: entities.map((entity) => ({
         ...entity,
-        accountName: getRealmAddressName(entity.entity_id),
+        accountName: getRealmAddressName(entity.entity_id, components),
       })),
       name,
     }));

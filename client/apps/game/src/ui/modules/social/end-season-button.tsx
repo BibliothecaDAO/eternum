@@ -1,6 +1,6 @@
 import Button from "@/ui/elements/button";
-import { configManager, ContractAddress } from "@bibliothecadao/eternum";
-import { useDojo, useGetHyperstructuresWithContributionsFromPlayer, useGetPlayerEpochs, useLeaderBoardStore, useUIStore } from "@bibliothecadao/react";
+import { configManager, ContractAddress, LeaderboardManager } from "@bibliothecadao/eternum";
+import { useDojo, useGetPlayerEpochs, useLeaderBoardStore, useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useCallback, useMemo } from "react";
 
@@ -17,7 +17,6 @@ export const EndSeasonButton = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp!;
 
-  const getContributions = useGetHyperstructuresWithContributionsFromPlayer();
   const getEpochs = useGetPlayerEpochs();
 
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
@@ -45,7 +44,11 @@ export const EndSeasonButton = () => {
     if (!hasReachedFinalPoints) {
       return;
     }
-    const contributions = Array.from(getContributions());
+    const contributions = Array.from(
+      LeaderboardManager.instance(setup.components).getHyperstructuresWithContributionsFromPlayer(
+        ContractAddress(account.address),
+      ),
+    );
     const epochs = getEpochs();
 
     await setup.systemCalls.end_game({
@@ -53,27 +56,7 @@ export const EndSeasonButton = () => {
       hyperstructure_contributed_to: contributions,
       hyperstructure_shareholder_epochs: epochs,
     });
-  }, [hasReachedFinalPoints, getContributions]);
-
-  const logPoints = useCallback(async () => {
-    const contributions = Array.from(getContributions());
-    const epochs = getEpochs();
-    console.log({ contributions, epochs });
-
-    const points = (await setup.systemCalls.get_points({
-      signer: account,
-      player_address: account.address,
-      hyperstructure_contributed_to: contributions,
-      hyperstructure_shareholder_epochs: epochs,
-    })) as [string, string, string, string];
-
-    console.log({
-      contribution_points: BigInt(points[0]).toLocaleString(),
-      share_points: BigInt(points[1]).toLocaleString(),
-      total_points: BigInt(points[2]).toLocaleString(),
-      points_for_win: BigInt(points[3]).toLocaleString(),
-    });
-  }, [hasReachedFinalPoints, getContributions]);
+  }, [hasReachedFinalPoints]);
 
   return (
     <Button
@@ -97,7 +80,6 @@ export const EndSeasonButton = () => {
       }}
       style={{ background: gradient }}
       onClick={endGame}
-      // onClick={logPoints}
     >
       End season
     </Button>

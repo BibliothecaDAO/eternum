@@ -17,10 +17,19 @@ import {
   ResourcesIds,
   configManager,
   findResourceById,
+  getRealmAddressName,
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/eternum";
-import { soundSelector, useDojo, useIsResourcesLocked, useNextBlockTimestamp, useRealm, useResourceManager, useTravel, useUiSounds } from "@bibliothecadao/react";
+import {
+  soundSelector,
+  useDojo,
+  useIsResourcesLocked,
+  useNextBlockTimestamp,
+  useResourceManager,
+  useTravel,
+  useUiSounds,
+} from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -259,8 +268,6 @@ const OrderRow = memo(
       [entityId, updateBalance],
     );
 
-    const { getRealmAddressName } = useRealm();
-
     const isMakerResourcesLocked = useIsResourcesLocked(offer.makerId);
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
@@ -353,7 +360,7 @@ const OrderRow = memo(
     }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
 
     const accountName = useMemo(() => {
-      return getRealmAddressName(offer.makerId);
+      return getRealmAddressName(offer.makerId, dojo.setup.components);
     }, [offer.originName]);
 
     const onAccept = async () => {

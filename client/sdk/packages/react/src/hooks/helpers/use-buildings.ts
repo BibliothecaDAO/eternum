@@ -1,37 +1,30 @@
 import {
+  Building,
   BuildingType,
   configManager,
-  ResourceCost,
+  getEntityIdFromKeys,
+  ID,
   ResourceIdToMiningType,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { useMemo } from "react";
 import { useDojo } from "../";
 
-export interface Building {
-  name: string;
-  category: string;
-  paused: boolean;
-  produced: ResourceCost;
-  consumed: ResourceCost[];
-  bonusPercent: number;
-  innerCol: number;
-  innerRow: number;
-}
-
-export const useBuildings = () => {
+export const useBuildings = (outerCol: number, outerRow: number) => {
   const {
     setup: {
       components: { Building },
     },
   } = useDojo();
 
-  const getBuildings = (outerCol: number, outerRow: number): Building[] => {
-    const buildingEntities = runQuery([
-      Has(Building),
-      HasValue(Building, { outer_col: outerCol, outer_row: outerRow }),
-    ]);
+  const buildingEntities = useEntityQuery([
+    Has(Building),
+    HasValue(Building, { outer_col: outerCol, outer_row: outerRow }),
+  ]);
 
+  const buildings = useMemo(() => {
     return Array.from(buildingEntities)
       .map((entity) => {
         const building = getComponentValue(Building, entity);
@@ -64,7 +57,30 @@ export const useBuildings = () => {
         };
       })
       .filter((building) => building != null);
-  };
+  }, [buildingEntities]);
 
-  return { getBuildings };
+  return buildings as Building[];
+};
+
+export const useBuildingQuantities = (structureEntityId: ID | undefined) => {
+  const {
+    setup: {
+      components: { BuildingQuantityv2 },
+    },
+  } = useDojo();
+  const entityUpdate = useEntityQuery([HasValue(BuildingQuantityv2, { entity_id: structureEntityId || 0 })]);
+
+  const getBuildingQuantity = (buildingType: BuildingType) =>
+    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(buildingType)]))
+      ?.value || 0;
+
+  return useMemo(
+    () => ({
+      food: getBuildingQuantity(BuildingType.Farm) + getBuildingQuantity(BuildingType.FishingVillage),
+      resource: getBuildingQuantity(BuildingType.Resource),
+      workersHut: getBuildingQuantity(BuildingType.WorkersHut),
+      markets: getBuildingQuantity(BuildingType.Market),
+    }),
+    [structureEntityId, entityUpdate],
+  );
 };

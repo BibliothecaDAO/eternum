@@ -9,9 +9,8 @@ import { Exchange } from "@/ui/components/structures/worldmap/structure-card";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
-import { ArmyInfo, BattleManager, Position } from "@bibliothecadao/eternum";
+import { armyHasTroops, ArmyInfo, BattleManager, Position } from "@bibliothecadao/eternum";
 import {
-  armyHasTroops,
   Position as PositionInterface,
   useArmiesAtPosition,
   useDojo,

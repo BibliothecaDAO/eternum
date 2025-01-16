@@ -9,10 +9,10 @@ import { BattleSimulation } from "@/ui/modules/simulation/battle-simulation";
 import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { useArmiesByStructure, useEntities, useUIStore } from "@bibliothecadao/react";
+import { useArmiesByStructure, usePlayerStructures, useUIStore } from "@bibliothecadao/react";
 
 export const EntitiesArmyTable = () => {
-  const { playerStructures } = useEntities();
+  const playerStructures = usePlayerStructures();
   const togglePopup = useUIStore((state) => state.togglePopup);
 
   return (
@@ -27,7 +27,7 @@ export const EntitiesArmyTable = () => {
       </div>
       <BattleSimulation />
       <PillageSimulation />
-      {playerStructures().map((entity: any, index: number) => {
+      {playerStructures.map((entity: any, index: number) => {
         return (
           <div key={entity.entity_id} className="p-2">
             <Headline>

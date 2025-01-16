@@ -1,10 +1,9 @@
-import { ArmyInfo, type ID, type Position } from "@bibliothecadao/eternum";
+import { ArmyInfo, formatArmies, type ID, type Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, Not, NotValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { useDojo } from "../";
-import { formatArmies } from "../utils/army";
 
 export const useArmiesByStructure = ({ structureEntityId }: { structureEntityId: ID }) => {
   const {

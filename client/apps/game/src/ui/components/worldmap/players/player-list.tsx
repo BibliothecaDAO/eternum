@@ -4,12 +4,12 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
-import { ContractAddress, GuildInfo, Player, ResourcesIds } from "@bibliothecadao/eternum";
+import { ContractAddress, GuildInfo, PlayerInfo, ResourcesIds } from "@bibliothecadao/eternum";
 import { useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 
-export interface PlayerCustom extends Player {
+export interface PlayerCustom extends PlayerInfo {
   structures: string[];
   isUser: boolean;
   isInvited: boolean;

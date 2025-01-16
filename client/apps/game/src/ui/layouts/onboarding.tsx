@@ -8,7 +8,7 @@ import Button from "@/ui/elements/button";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { Controller } from "@/ui/modules/controller/controller";
 import { SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
-import { useDojo, usePlayerRealms, useUIStore } from "@bibliothecadao/react";
+import { useDojo, usePlayerOwnedRealms, useUIStore } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
@@ -186,7 +186,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
 
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
-  const realms = usePlayerRealms();
+  const realms = usePlayerOwnedRealms();
 
   const createRandomRealm = () => {
     const newRealmId = Math.max(...realms.map((realm) => realm.realmId), 0) + 1;

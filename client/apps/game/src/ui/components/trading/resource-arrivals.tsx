@@ -5,7 +5,8 @@ import Button from "@/ui/elements/button";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { ArrivalInfo, useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { ArrivalInfo } from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { memo, useEffect, useState } from "react";
 import { create } from "zustand";
 

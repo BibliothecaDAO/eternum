@@ -1,10 +1,17 @@
-import { ID, MarketInterface, Resource, ResourcesIds, getRealmNameById } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  ID,
+  MarketInterface,
+  Resource,
+  ResourcesIds,
+  getRealmNameById,
+} from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, HasValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
 import { shortString } from "starknet";
-import { useDojo, useEntities, useNextBlockTimestamp, useUIStore } from "../";
+import { useDojo, useNextBlockTimestamp, usePlayerRealms, useUIStore } from "../";
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -156,13 +163,14 @@ export function useGetMyOffers(): MarketInterface[] {
 
 export function useSetMarket() {
   const {
+    account: { account },
     setup: {
       components: { Status, Trade },
     },
   } = useDojo();
 
-  const { playerRealms } = useEntities();
-  const realmEntityIds = playerRealms().map((realm: any) => realm.entity_id);
+  const playerRealms = usePlayerRealms(ContractAddress(account.address));
+
   const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const { computeTrades } = useTrade();
@@ -173,7 +181,7 @@ export function useSetMarket() {
   }, [allMarket]);
 
   const userTrades = useMemo(() => {
-    return allTrades.filter((trade) => realmEntityIds.includes(trade.makerId));
+    return allTrades.filter((trade) => playerRealms.map((realm) => realm.entity_id).includes(trade.makerId));
   }, [allTrades]);
 
   const bidOffers = useMemo(() => {

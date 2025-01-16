@@ -1,12 +1,13 @@
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
-import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
-import { useDojo, useEntitiesUtils } from "@bibliothecadao/react";
+import { getAddressNameFromEntity, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useState } from "react";
 
 export const FragmentMinePanel = ({ entity }: any) => {
   const {
     account: { account },
+    setup: { components },
     network: { provider },
   } = useDojo();
 
@@ -14,8 +15,7 @@ export const FragmentMinePanel = ({ entity }: any) => {
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
 
-  const { getAddressNameFromEntity } = useEntitiesUtils();
-  const ownerName = getAddressNameFromEntity(entity.entity_id);
+  const ownerName = getAddressNameFromEntity(entity.entity_id, components);
 
   return (
     <div className="flex flex-col h-[50vh] justify-between">

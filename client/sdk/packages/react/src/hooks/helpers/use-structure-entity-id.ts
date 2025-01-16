@@ -1,7 +1,7 @@
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
-import { Position as PositionInterface, useDojo, useEntities, useUIStore } from "../../";
+import { Position as PositionInterface, useDojo, usePlayerStructures, useUIStore } from "../../";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "../../constants";
 import { useQuery } from "./use-query";
 
@@ -20,9 +20,7 @@ export const useStructureEntityId = () => {
 
   const address = isSpectatorMode ? ContractAddress("0x0") : ContractAddress(account.address);
 
-  const { playerStructures } = useEntities();
-
-  const structures = playerStructures();
+  const structures = usePlayerStructures(ContractAddress(account.address));
 
   const defaultPlayerStructure = useMemo(() => {
     return structures[0];

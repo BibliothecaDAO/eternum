@@ -15,17 +15,17 @@ import {
   LeaderboardManager,
   ResourcesIds,
   findResourceById,
+  getAddressNameFromEntity,
+  getBalance,
+  getPlayerAddressFromEntity,
 } from "@bibliothecadao/eternum";
 import {
   useArmiesAtPosition,
   useDojo,
-  useEntitiesUtils,
   useFragmentMines,
-  useGetHyperstructuresWithContributionsFromPlayer,
   useGuilds,
   useHyperstructureProgress,
   useHyperstructures,
-  useResourceBalance,
 } from "@bibliothecadao/react";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -33,6 +33,7 @@ import { Tabs } from "../../elements/tab";
 
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   const {
+    setup: { components },
     account: { account },
   } = useDojo();
 
@@ -40,8 +41,15 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const { hyperstructures } = useHyperstructures();
-  const { fragmentMines } = useFragmentMines();
-  const myHyperstructures = useGetHyperstructuresWithContributionsFromPlayer();
+  const fragmentMines = useFragmentMines();
+
+  const myHyperstructures = useMemo(
+    () =>
+      LeaderboardManager.instance(components).getHyperstructuresWithContributionsFromPlayer(
+        ContractAddress(account.address),
+      ),
+    [components, account.address],
+  );
 
   const renderExtraContent = useCallback(
     (entityId: ID, type: "hyperstructure" | "fragmentMine") => {
@@ -89,7 +97,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
                   position: { x: h.x, y: h.y },
                   ...h,
                 }))}
-              filterEntityIds={showOnlyMine ? Array.from(myHyperstructures()) : undefined}
+              filterEntityIds={showOnlyMine ? Array.from(myHyperstructures) : undefined}
             />
           </>
         ),
@@ -175,14 +183,17 @@ const BaseStructureExtraContent = ({
   entityId: ID;
   children: React.ReactNode;
 }) => {
+  const {
+    setup: { components },
+  } = useDojo();
+
   const { getGuildFromPlayerAddress } = useGuilds();
-  const { getAddressNameFromEntity, getPlayerAddressFromEntity } = useEntitiesUtils();
 
   const armies = useArmiesAtPosition({ position: { x, y } });
 
   const structureOwner = useMemo(() => {
-    const ownerName = getAddressNameFromEntity(entityId);
-    const address = getPlayerAddressFromEntity(entityId);
+    const ownerName = getAddressNameFromEntity(entityId, components);
+    const address = getPlayerAddressFromEntity(entityId, components);
     const guildName = getGuildFromPlayerAddress(address || 0n)?.name;
     return { name: ownerName, guildName };
   }, [entityId, getAddressNameFromEntity, getPlayerAddressFromEntity, getGuildFromPlayerAddress]);
@@ -195,7 +206,7 @@ const BaseStructureExtraContent = ({
 
     const getArmyInfo = (army?: any) => {
       if (!army) return;
-      const ownerName = getAddressNameFromEntity(army.entity_id || 0);
+      const ownerName = getAddressNameFromEntity(army.entity_id || 0, components);
       const guildName = getGuildFromPlayerAddress(army.owner?.address || 0n)?.name;
       const totalTroops =
         (army.troops?.knight_count || 0n) + (army.troops?.paladin_count || 0n) + (army.troops?.crossbowman_count || 0n);
@@ -268,8 +279,9 @@ const HyperStructureExtraContent = ({
 };
 
 const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
-  const { getBalance } = useResourceBalance();
-  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment);
+  const dojo = useDojo();
+
+  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment, dojo.setup.components);
   const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);
 
   return (

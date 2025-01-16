@@ -1,8 +1,30 @@
 import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, HasValue } from "@dojoengine/recs";
+import { Component, getComponentValue, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../";
+
+const useBattleEventData = (
+  eventComponent: Component,
+  battleEntityId: ID,
+  sideFilter?: { key: string; side: BattleSide },
+) => {
+  const eventEntityIds = useEntityQuery(
+    [
+      HasValue(eventComponent, {
+        battle_entity_id: battleEntityId,
+        ...(sideFilter ? { [sideFilter.key]: BattleSide[sideFilter.side] } : {}),
+      }),
+    ],
+    {
+      updateOnValueChange: false,
+    },
+  );
+
+  return useMemo(() => {
+    return eventEntityIds.map((entityId) => getComponentValue(eventComponent, entityId));
+  }, [eventEntityIds]);
+};
 
 export const useBattleStart = (battleEntityId: ID) => {
   const {
@@ -13,25 +35,7 @@ export const useBattleStart = (battleEntityId: ID) => {
     },
   } = useDojo();
 
-  const battleStartDataEntityIds = useEntityQuery(
-    [
-      HasValue(BattleStartData, {
-        battle_entity_id: battleEntityId,
-      }),
-    ],
-    {
-      updateOnValueChange: false,
-    },
-  );
-
-  const battleStartData = useMemo(() => {
-    return battleStartDataEntityIds.map((entityId) => {
-      const battleStartData = getComponentValue(BattleStartData, entityId);
-      return battleStartData;
-    });
-  }, [battleStartDataEntityIds]);
-
-  return battleStartData;
+  return useBattleEventData(BattleStartData, battleEntityId);
 };
 
 export const useBattleJoin = (battleEntityId: ID, joinerSide?: BattleSide) => {
@@ -43,27 +47,13 @@ export const useBattleJoin = (battleEntityId: ID, joinerSide?: BattleSide) => {
     },
   } = useDojo();
 
-  const battleStartDataEntityIds = useEntityQuery(
-    [
-      HasValue(BattleJoinData, {
-        battle_entity_id: battleEntityId,
-        ...(joinerSide ? { joiner_side: BattleSide[joinerSide] } : {}),
-      }),
-    ],
-    {
-      updateOnValueChange: false,
-    },
+  return useBattleEventData(
+    BattleJoinData,
+    battleEntityId,
+    joinerSide ? { key: "joiner_side", side: joinerSide } : undefined,
   );
-
-  const battleStartData = useMemo(() => {
-    return battleStartDataEntityIds.map((entityId) => {
-      const battleJoinData = getComponentValue(BattleJoinData, entityId);
-      return battleJoinData;
-    });
-  }, [battleStartDataEntityIds]);
-
-  return battleStartData;
 };
+
 export const useBattleLeave = (battleEntityId: ID, leaverSide?: BattleSide) => {
   const {
     setup: {
@@ -73,24 +63,9 @@ export const useBattleLeave = (battleEntityId: ID, leaverSide?: BattleSide) => {
     },
   } = useDojo();
 
-  const battleLeaveDataEntityIds = useEntityQuery(
-    [
-      HasValue(BattleLeaveData, {
-        battle_entity_id: battleEntityId,
-        ...(leaverSide ? { leaver_side: BattleSide[leaverSide] } : {}),
-      }),
-    ],
-    {
-      updateOnValueChange: false,
-    },
+  return useBattleEventData(
+    BattleLeaveData,
+    battleEntityId,
+    leaverSide ? { key: "leaver_side", side: leaverSide } : undefined,
   );
-
-  const battleLeaveData = useMemo(() => {
-    return battleLeaveDataEntityIds.map((entityId) => {
-      const battleLeaveData = getComponentValue(BattleLeaveData, entityId);
-      return battleLeaveData;
-    });
-  }, [battleLeaveDataEntityIds]);
-
-  return battleLeaveData;
 };

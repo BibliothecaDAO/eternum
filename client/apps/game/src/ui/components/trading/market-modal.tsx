@@ -20,9 +20,9 @@ import {
   useBank,
   useBattlesAtPosition,
   useDojo,
-  useEntities,
   useMarketStore,
   useModalStore,
+  usePlayerStructures,
   useSetMarket,
   useStructureByPosition,
   useUIStore,
@@ -60,7 +60,7 @@ export const MarketModal = () => {
   const dojo = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const { playerStructures } = useEntities();
+  const playerStructures = usePlayerStructures();
   const { toggleModal } = useModalStore();
   const bank = useBank();
   const { bidOffers, askOffers } = useSetMarket();
@@ -88,8 +88,6 @@ export const MarketModal = () => {
 
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
-
-  const structures = playerStructures();
 
   const [isSiegeOngoing, isBattleOngoing] = useMemo(() => {
     const isSiegeOngoing = battleManager.isSiege(currentBlockTimestamp);
@@ -218,7 +216,7 @@ export const MarketModal = () => {
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
                 <SelectContent>
-                  {structures.map((structure, index) => (
+                  {playerStructures.map((structure, index) => (
                     <SelectItem key={index} value={structure.entity_id.toString()}>
                       {structure.name}
                     </SelectItem>

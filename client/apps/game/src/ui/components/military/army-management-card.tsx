@@ -13,8 +13,17 @@ import {
   getEntityIdFromKeys,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
-import { ArmyInfo, ArmyManager, configManager, ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
-import { Position as PositionInterface, useDojo, useQuery, useResourceBalance, useUIStore } from "@bibliothecadao/react";
+import {
+  ArmyInfo,
+  ArmyManager,
+  configManager,
+  getBalance,
+  ID,
+  Position,
+  ResourcesIds,
+  U32_MAX,
+} from "@bibliothecadao/eternum";
+import { Position as PositionInterface, useDojo, useQuery, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -44,7 +53,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const isDefendingArmy = Boolean(army?.protectee);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const { getBalance } = useResourceBalance();
 
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
@@ -130,7 +138,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     let canCreate = true;
     Object.keys(troopCounts).forEach((troopId) => {
       const count = troopCounts[Number(troopId)];
-      const balance = getBalance(owner_entity, Number(troopId)).balance;
+      const balance = getBalance(owner_entity, Number(troopId), dojo.setup.components).balance;
       if (count > balance) {
         canCreate = false;
       }
@@ -243,7 +251,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
           <div className="grid grid-cols-3 gap-3 my-4">
             {troops.map((troop) => {
-              const balance = getBalance(owner_entity, troop.name).balance;
+              const balance = getBalance(owner_entity, troop.name, dojo.setup.components).balance;
 
               return (
                 <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>

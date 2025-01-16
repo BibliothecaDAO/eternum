@@ -6,6 +6,7 @@ import {
   ResourcesIds,
   configManager,
   divideByPrecision,
+  getAddressNameFromEntity,
   toHexString,
   toInteger,
 } from "@bibliothecadao/eternum";
@@ -13,7 +14,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
-import { useDojo, useEntitiesUtils } from "../";
+import { useDojo } from "../";
 
 export type ProgressWithPercentage = {
   percentage: number;
@@ -26,12 +27,10 @@ export type ProgressWithPercentage = {
 export const useHyperstructures = () => {
   const {
     account: { account },
-    setup: {
-      components: { Structure, Contribution, Position, Owner, EntityName, Hyperstructure },
-    },
+    setup: { components },
   } = useDojo();
 
-  const { getAddressNameFromEntity } = useEntitiesUtils();
+  const { Structure, Contribution, Position, Owner, EntityName, Hyperstructure } = components;
 
   const hyperstructures = useEntityQuery([Has(Structure), HasValue(Structure, { category: "Hyperstructure" })]).map(
     (hyperstructureEntityId) => {
@@ -49,7 +48,7 @@ export const useHyperstructures = () => {
       const owner = toHexString(ownerComponent?.address || 0n);
       const isOwner = ContractAddress(ownerComponent?.address ?? 0n) === ContractAddress(account.address);
       const entityName = getComponentValue(EntityName, hyperstructureEntityId);
-      const ownerName = hyperstructure ? getAddressNameFromEntity(hyperstructure.entity_id!) : "";
+      const ownerName = hyperstructure ? getAddressNameFromEntity(hyperstructure.entity_id!, components) : "";
 
       return {
         ...hyperstructure,

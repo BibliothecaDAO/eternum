@@ -3,8 +3,8 @@ import ListSelect from "@/ui/elements/list-select";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { usePlayResourceSound, useResourceBalance } from "@bibliothecadao/react";
+import { ID, RESOURCE_TIERS, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
+import { useDojo, usePlayResourceSound } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 export const SelectResources = ({
@@ -20,7 +20,8 @@ export const SelectResources = ({
   setSelectedResourceAmounts: any;
   entity_id: ID;
 }) => {
-  const { getBalance } = useResourceBalance();
+  const dojo = useDojo();
+
   const { playResourceSound } = usePlayResourceSound();
 
   const orderedResources = useMemo(() => {
@@ -49,12 +50,15 @@ export const SelectResources = ({
   return (
     <div className="items-center col-span-4 space-y-2 p-3">
       {selectedResourceIds.map((id: any, index: any) => {
-        const resource = getBalance(entity_id, id);
+        const resource = getBalance(entity_id, id, dojo.setup.components);
 
         const options = [orderedResources.find((res) => res.id === id), ...unselectedResources].map((res: any) => ({
           id: res.id,
           label: (
-            <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(entity_id, res.id)?.balance || 0)} />
+            <ResourceCost
+              resourceId={res.id}
+              amount={divideByPrecision(getBalance(entity_id, res.id, dojo.setup.components)?.balance || 0)}
+            />
           ),
         }));
 

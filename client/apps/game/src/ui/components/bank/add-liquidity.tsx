@@ -5,8 +5,8 @@ import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { ContractAddress, ID, MarketManager, ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { useDojo, useEntities, useIsResourcesLocked, useResourceBalance } from "@bibliothecadao/react";
+import { ContractAddress, ID, MarketManager, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
+import { useDojo, useIsResourcesLocked, usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 const AddLiquidity = ({
@@ -23,11 +23,9 @@ const AddLiquidity = ({
     setup,
   } = useDojo();
 
-  const { getBalance } = useResourceBalance();
+  const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
-  const { playerStructures } = useEntities();
-
-  const playerStructureIds = playerStructures().map((structure) => structure.entity_id);
+  const playerStructureIds = playerStructures.map((structure) => structure.entity_id);
 
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<ResourcesIds>(ResourcesIds.Wood);
@@ -60,8 +58,8 @@ const AddLiquidity = ({
     }
   }, [resourceAmount]);
 
-  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords)).balance;
-  const resourceBalance = getBalance(entityId, Number(resourceId)).balance;
+  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), setup.components).balance;
+  const resourceBalance = getBalance(entityId, Number(resourceId), setup.components).balance;
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
