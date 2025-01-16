@@ -10,125 +10,7 @@ export class Percentage {
   }
 }
 
-export class TroopConfig {
-  health: number;
-  knightStrength: number;
-  paladinStrength: number;
-  crossbowmanStrength: number;
-  advantagePercent: number;
-  disadvantagePercent: number;
-  battleTimeScale: number;
-  battleMaxTimeSeconds: number;
-
-  constructor(
-    health: number,
-    knightStrength: number,
-    paladinStrength: number,
-    crossbowmanStrength: number,
-    advantagePercent: number,
-    disadvantagePercent: number,
-    battleTimeScale: number,
-    battleMaxTimeSeconds: number,
-  ) {
-    this.health = health;
-    this.knightStrength = knightStrength;
-    this.paladinStrength = paladinStrength;
-    this.crossbowmanStrength = crossbowmanStrength;
-    this.advantagePercent = advantagePercent;
-    this.disadvantagePercent = disadvantagePercent;
-    this.battleTimeScale = battleTimeScale;
-    this.battleMaxTimeSeconds = battleMaxTimeSeconds;
-  }
-}
-
-export class TroopsSimulator {
-  knight_count: bigint;
-  paladin_count: bigint;
-  crossbowman_count: bigint;
-
-  lifetime_knight_count: bigint;
-  lifetime_paladin_count: bigint;
-  lifetime_crossbowman_count: bigint;
-
-  constructor(knight_count: bigint, paladin_count: bigint, crossbowman_count: bigint) {
-    this.knight_count = knight_count;
-    this.paladin_count = paladin_count;
-    this.crossbowman_count = crossbowman_count;
-
-    this.lifetime_knight_count = knight_count;
-    this.lifetime_paladin_count = paladin_count;
-    this.lifetime_crossbowman_count = crossbowman_count;
-  }
-
-  troops() {
-    return {
-      knight_count: this.knight_count,
-      paladin_count: this.paladin_count,
-      crossbowman_count: this.crossbowman_count,
-    };
-  }
-
-  count() {
-    return this.knight_count + this.paladin_count + this.crossbowman_count;
-  }
-
-  fullHealth(config: TroopConfig) {
-    const singleTroopHealth = BigInt(config.health);
-    const totalKnightHealth = singleTroopHealth * this.knight_count;
-    const totalPaladinHealth = singleTroopHealth * this.paladin_count;
-    const totalCrossbowmanHealth = singleTroopHealth * this.crossbowman_count;
-    return {
-      current: totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth,
-      lifetime: totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth,
-    };
-  }
-
-  static normalizationFactor() {
-    return BigInt(EternumGlobalConfig.resources.resourcePrecision);
-  }
-}
-
-export class HealthSimulator {
-  current: bigint;
-  lifetime: bigint;
-
-  constructor(health: { current: bigint; lifetime: bigint }) {
-    this.current = health.current * TroopsSimulator.normalizationFactor();
-    this.lifetime = health.lifetime * TroopsSimulator.normalizationFactor();
-  }
-
-  stepsToDie(deduction: bigint, config: TroopConfig) {
-    if (this.current === 0n || deduction === 0n) {
-      return 0;
-    }
-
-    const singleTroopHealth = BigInt(config.health) * TroopsSimulator.normalizationFactor();
-
-    if (this.current <= deduction) {
-      return 1;
-    }
-
-    if (this.current % singleTroopHealth !== 0n) {
-      throw new Error("Health is not a multiple of normalization factor.");
-    }
-
-    let numSteps: number;
-    if (deduction >= singleTroopHealth) {
-      numSteps = Number(this.current / deduction);
-      if (this.current % deduction > 0n) {
-        numSteps += 1;
-      }
-    } else {
-      const currentLessOneTroop = this.current - singleTroopHealth;
-      numSteps = Number(currentLessOneTroop / deduction);
-      numSteps += 1;
-    }
-
-    return numSteps;
-  }
-}
-
-export class Battle {
+export class BattleSimulator {
   attackArmy: TroopsSimulator;
   defenceArmy: TroopsSimulator;
   attackHealth: HealthSimulator;
@@ -398,5 +280,123 @@ export class Battle {
       attackerTroops,
       defenderTroops,
     };
+  }
+}
+
+export class TroopConfig {
+  health: number;
+  knightStrength: number;
+  paladinStrength: number;
+  crossbowmanStrength: number;
+  advantagePercent: number;
+  disadvantagePercent: number;
+  battleTimeScale: number;
+  battleMaxTimeSeconds: number;
+
+  constructor(
+    health: number,
+    knightStrength: number,
+    paladinStrength: number,
+    crossbowmanStrength: number,
+    advantagePercent: number,
+    disadvantagePercent: number,
+    battleTimeScale: number,
+    battleMaxTimeSeconds: number,
+  ) {
+    this.health = health;
+    this.knightStrength = knightStrength;
+    this.paladinStrength = paladinStrength;
+    this.crossbowmanStrength = crossbowmanStrength;
+    this.advantagePercent = advantagePercent;
+    this.disadvantagePercent = disadvantagePercent;
+    this.battleTimeScale = battleTimeScale;
+    this.battleMaxTimeSeconds = battleMaxTimeSeconds;
+  }
+}
+
+export class TroopsSimulator {
+  knight_count: bigint;
+  paladin_count: bigint;
+  crossbowman_count: bigint;
+
+  lifetime_knight_count: bigint;
+  lifetime_paladin_count: bigint;
+  lifetime_crossbowman_count: bigint;
+
+  constructor(knight_count: bigint, paladin_count: bigint, crossbowman_count: bigint) {
+    this.knight_count = knight_count;
+    this.paladin_count = paladin_count;
+    this.crossbowman_count = crossbowman_count;
+
+    this.lifetime_knight_count = knight_count;
+    this.lifetime_paladin_count = paladin_count;
+    this.lifetime_crossbowman_count = crossbowman_count;
+  }
+
+  troops() {
+    return {
+      knight_count: this.knight_count,
+      paladin_count: this.paladin_count,
+      crossbowman_count: this.crossbowman_count,
+    };
+  }
+
+  count() {
+    return this.knight_count + this.paladin_count + this.crossbowman_count;
+  }
+
+  fullHealth(config: TroopConfig) {
+    const singleTroopHealth = BigInt(config.health);
+    const totalKnightHealth = singleTroopHealth * this.knight_count;
+    const totalPaladinHealth = singleTroopHealth * this.paladin_count;
+    const totalCrossbowmanHealth = singleTroopHealth * this.crossbowman_count;
+    return {
+      current: totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth,
+      lifetime: totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth,
+    };
+  }
+
+  static normalizationFactor() {
+    return BigInt(EternumGlobalConfig.resources.resourcePrecision);
+  }
+}
+
+export class HealthSimulator {
+  current: bigint;
+  lifetime: bigint;
+
+  constructor(health: { current: bigint; lifetime: bigint }) {
+    this.current = health.current * TroopsSimulator.normalizationFactor();
+    this.lifetime = health.lifetime * TroopsSimulator.normalizationFactor();
+  }
+
+  stepsToDie(deduction: bigint, config: TroopConfig) {
+    if (this.current === 0n || deduction === 0n) {
+      return 0;
+    }
+
+    const singleTroopHealth = BigInt(config.health) * TroopsSimulator.normalizationFactor();
+
+    if (this.current <= deduction) {
+      return 1;
+    }
+
+    if (this.current % singleTroopHealth !== 0n) {
+      throw new Error("Health is not a multiple of normalization factor.");
+    }
+
+    let numSteps: number;
+    if (deduction >= singleTroopHealth) {
+      numSteps = Number(this.current / deduction);
+      if (this.current % deduction > 0n) {
+        numSteps += 1;
+      }
+    } else {
+      const currentLessOneTroop = this.current - singleTroopHealth;
+      numSteps = Number(currentLessOneTroop / deduction);
+      numSteps += 1;
+    }
+
+    return numSteps;
   }
 }

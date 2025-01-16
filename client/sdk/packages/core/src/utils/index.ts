@@ -15,7 +15,7 @@ import {
 import { ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
 
 export * from "./army";
-export * from "./battleSimulation";
+export * from "./battle-simulator";
 export * from "./entities";
 export * from "./leaderboard";
 export * from "./packed-data";
@@ -23,6 +23,7 @@ export * from "./players";
 export * from "./realm";
 export * from "./resources";
 export * from "./structure";
+export * from "./transport";
 export * from "./utils";
 
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {

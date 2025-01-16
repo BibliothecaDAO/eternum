@@ -5,8 +5,25 @@ import { shortString } from "starknet";
 import { findResourceIdByTrait, orders } from "../constants";
 import { ClientComponents } from "../dojo";
 import { configManager } from "../modelManager/ConfigManager";
-import { ID, RealmInfo, RealmInterface } from "../types";
+import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
 import { packResources } from "./packed-data";
+
+export const getRealmWithPosition = (entityId: ID, components: ClientComponents) => {
+  const { Realm, Owner, Position } = components;
+  const entity = getEntityIdFromKeys([BigInt(entityId)]);
+  const realm = getComponentValue(Realm, entity);
+  if (!realm) return undefined;
+
+  const position = getComponentValue(Position, entity);
+  const owner = getComponentValue(Owner, entity);
+
+  return {
+    ...realm,
+    position,
+    name: getRealmNameById(realm.realm_id),
+    owner,
+  } as RealmWithPosition;
+};
 
 export const getRealmAddressName = (realmEntityId: ID, components: ClientComponents) => {
   const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(realmEntityId)]));

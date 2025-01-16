@@ -1,10 +1,10 @@
 import { gltfLoader } from "@/three/helpers/utils";
-import { calculateDistanceInHexes, getWorldPositionForHex } from "@/ui/utils/utils";
 import { type HexPosition } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { type MapControls } from "three/examples/jsm/controls/MapControls";
+import { calculateDistanceInHexes, getWorldPositionForHex } from "../utils";
 
 const dummyObject = new THREE.Object3D();
 const arrowOffset = new THREE.Vector3(0, 3, 0);

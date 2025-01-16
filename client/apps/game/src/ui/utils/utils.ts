@@ -1,22 +1,13 @@
-import { HEX_SIZE } from "@/three/scenes/constants";
 import { SortInterface } from "@/ui/elements/sort-button";
 import {
-  BuildingType,
-  calculateDistance,
-  CapacityConfigCategory,
-  ClientConfigManager,
   ContractAddress,
   EternumGlobalConfig,
   ResourceCost,
   ResourcesIds,
   toHexString,
-  type HexPosition,
-  type ID,
-  type Position,
   type Resource,
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import * as THREE from "three";
 import { env } from "../../../env";
 
 export { getEntityIdFromKeys };
@@ -92,86 +83,6 @@ export function addressToNumber(address: string) {
   return result < 10 ? `0${result}` : result.toString();
 }
 
-export const getHexagonCoordinates = (
-  instancedMesh: THREE.InstancedMesh,
-  instanceId: number,
-): { hexCoords: HexPosition; position: THREE.Vector3 } => {
-  const matrix = new THREE.Matrix4();
-  instancedMesh.getMatrixAt(instanceId, matrix);
-  const position = new THREE.Vector3();
-  matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
-
-  const hexCoords = getHexForWorldPosition(position);
-
-  return { hexCoords, position };
-};
-
-export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true) => {
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  const col = hexCoords.col;
-  const row = hexCoords.row;
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const x = col * horizDist - rowOffset;
-  const z = row * vertDist;
-  const y = flat ? 0 : pseudoRandom(x, z) * 2;
-  return new THREE.Vector3(x, y, z);
-};
-
-export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  const row = Math.round(worldPosition.z / vertDist);
-  // hexception offsets hack
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const col = Math.round((worldPosition.x + rowOffset) / horizDist);
-
-  return {
-    col,
-    row,
-  };
-};
-
-export const calculateDistanceInHexes = (start: Position, destination: Position): number | undefined => {
-  const distance = calculateDistance(start, destination);
-  if (distance) {
-    return Math.round(distance / HEX_SIZE / 2);
-  }
-  return undefined;
-};
-
-export const calculateOffset = (index: number, total: number, radius: number) => {
-  if (total === 1) return { x: 0, y: 0 };
-
-  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
-  let angle = angleIncrement * (index % 6);
-  let offsetRadius = radius;
-
-  if (index >= 6) {
-    // Adjustments for more than 6 armies, placing them in another layer
-    offsetRadius += 0.5; // Increase radius for each new layer
-    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
-  }
-
-  return {
-    x: offsetRadius * Math.cos(angle),
-    z: offsetRadius * Math.sin(angle),
-  };
-};
-
-const pseudoRandom = (x: number, y: number) => {
-  const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
-  return n - Math.floor(n);
-};
-
 export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string, hex: boolean = false) => {
   navigator.clipboard
     .writeText(hex ? toHexString(address) : address.toString())
@@ -181,32 +92,6 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     .catch((err) => {
       console.error("Failed to copy: ", err);
     });
-};
-
-const isRealmSelected = (structureEntityId: ID, structures: any) => {
-  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === structureEntityId);
-  return selectedStructure?.category === "Realm";
-};
-
-export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
-  const configManager = ClientConfigManager.instance();
-
-  return resources.reduce(
-    (total, resource) =>
-      total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
-    0,
-  );
-};
-
-export const isResourceProductionBuilding = (buildingId: BuildingType) => {
-  return (
-    buildingId === BuildingType.Resource ||
-    buildingId === BuildingType.Farm ||
-    buildingId === BuildingType.FishingVillage ||
-    buildingId === BuildingType.Barracks ||
-    buildingId === BuildingType.ArcheryRange ||
-    buildingId === BuildingType.Stable
-  );
 };
 
 export function gramToKg(grams: number): number {
@@ -372,13 +257,6 @@ export const getSeasonAddresses = async (): Promise<ResourceAddresses> => {
     console.error("Error loading season addresses:", error);
     return {};
   }
-};
-
-export const calculateDonkeysNeeded = (orderWeight: number): number => {
-  const configManager = ClientConfigManager.instance();
-  const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfigCategory.Donkey);
-
-  return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacityGrams);
 };
 
 export const normalizeDiacriticalMarks = (str: string) => {

@@ -6,13 +6,7 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs } from "@/ui/elements/tab";
-import {
-  adjustWonderLordsCost,
-  divideByPrecision,
-  getEntityIdFromKeys,
-  gramToKg,
-  isResourceProductionBuilding,
-} from "@/ui/utils/utils";
+import { adjustWonderLordsCost, divideByPrecision, getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
 import {
   BuildingEnumToString,
   BuildingType,
@@ -29,6 +23,7 @@ import {
   getBalance,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
+  isResourceProductionBuilding,
   unpackResources,
 } from "@bibliothecadao/eternum";
 import { DojoResult, usePlayResourceSound, useUIStore } from "@bibliothecadao/react";

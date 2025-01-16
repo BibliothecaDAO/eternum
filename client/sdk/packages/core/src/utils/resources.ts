@@ -1,7 +1,7 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getStartingResources } from ".";
-import { resources, ResourcesIds } from "../constants";
+import { BuildingType, resources, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../modelManager";
 import { configManager } from "../modelManager/ConfigManager";
@@ -65,4 +65,15 @@ export const getQuestResources = (realmEntityId: ID, components: ClientComponent
   const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
   const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
   return getStartingResources(resourcesProduced);
+};
+
+export const isResourceProductionBuilding = (buildingId: BuildingType) => {
+  return (
+    buildingId === BuildingType.Resource ||
+    buildingId === BuildingType.Farm ||
+    buildingId === BuildingType.FishingVillage ||
+    buildingId === BuildingType.Barracks ||
+    buildingId === BuildingType.ArcheryRange ||
+    buildingId === BuildingType.Stable
+  );
 };

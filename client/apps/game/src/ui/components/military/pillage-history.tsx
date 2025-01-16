@@ -7,7 +7,6 @@ import {
   ClientComponents,
   formatTime,
   getAddressNameFromEntity,
-  getPlayerAddressFromEntity,
   ID,
   Resource,
   resources,
@@ -32,8 +31,8 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
   const formattedResources = useMemo(() => formatResources(history.pillaged_resources), [history.pillaged_resources]);
 
   const attackerIsPlayer = useMemo(
-    () => getPlayerAddressFromEntity(history.pillager_army_entity_id, components) === BigInt(account.address),
-    [getPlayerAddressFromEntity, history.pillager_army_entity_id, account.address],
+    () => getAddressNameFromEntity(history.pillager_army_entity_id, components) === account.address,
+    [history.pillager_army_entity_id, account.address],
   );
 
   const twitterText = useMemo(() => {

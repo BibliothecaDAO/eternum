@@ -2,22 +2,17 @@ import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { currencyFormat, divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
-  currencyFormat,
-  divideByPrecision,
-  formatNumber,
-  getTotalResourceWeight,
-  multiplyByPrecision,
-} from "@/ui/utils/utils";
-import {
+  configManager,
   DONKEY_ENTITY_TYPE,
+  findResourceById,
+  getRealmAddressName,
+  getTotalResourceWeight,
   ONE_MONTH,
   ResourceManager,
   ResourcesIds,
-  configManager,
-  findResourceById,
-  getRealmAddressName,
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/eternum";

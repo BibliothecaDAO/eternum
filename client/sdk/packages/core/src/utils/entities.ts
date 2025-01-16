@@ -3,26 +3,9 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { divideByPrecision } from ".";
 import { CAPACITY_CONFIG_CATEGORY_STRING_MAP } from "../constants";
 import { ClientComponents } from "../dojo";
-import { ContractAddress, EntityType, ID, RealmWithPosition } from "../types";
+import { ContractAddress, EntityType, ID } from "../types";
 import { getRealmNameById } from "./realm";
 import { getResourcesFromBalance } from "./resources";
-
-export const getRealmWithPosition = (entityId: ID, components: ClientComponents) => {
-  const { Realm, Owner, Position } = components;
-  const entity = getEntityIdFromKeys([BigInt(entityId)]);
-  const realm = getComponentValue(Realm, entity);
-  if (!realm) return undefined;
-
-  const position = getComponentValue(Position, entity);
-  const owner = getComponentValue(Owner, entity);
-
-  return {
-    ...realm,
-    position,
-    name: getRealmNameById(realm.realm_id),
-    owner,
-  } as RealmWithPosition;
-};
 
 export const getEntityInfo = (
   entityId: ID,
@@ -82,6 +65,11 @@ export const getEntityInfo = (
   };
 };
 
+const getRealmName = (realm: ComponentValue<ClientComponents["Realm"]["schema"]>) => {
+  const baseName = getRealmNameById(realm.realm_id);
+  return realm.has_wonder ? `WONDER - ${baseName}` : baseName;
+};
+
 export const getEntityName = (entityId: ID, components: ClientComponents, abbreviate: boolean = false) => {
   const entityName = getComponentValue(components.EntityName, getEntityIdFromKeys([BigInt(entityId)]));
   const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(entityId)]));
@@ -109,11 +97,6 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
   return `${structure?.category} ${structure?.entity_id}`;
 };
 
-const getRealmName = (realm: ComponentValue<ClientComponents["Realm"]["schema"]>) => {
-  const baseName = getRealmNameById(realm.realm_id);
-  return realm.has_wonder ? `WONDER - ${baseName}` : baseName;
-};
-
 export const getAddressName = (address: ContractAddress, components: ClientComponents) => {
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(address)]));
 
@@ -121,7 +104,7 @@ export const getAddressName = (address: ContractAddress, components: ClientCompo
 };
 
 export const getAddressNameFromEntity = (entityId: ID, components: ClientComponents) => {
-  const address = getPlayerAddressFromEntity(entityId, components);
+  const address = getAddressFromEntity(entityId, components);
   if (!address) return;
 
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(address)]));
@@ -129,7 +112,7 @@ export const getAddressNameFromEntity = (entityId: ID, components: ClientCompone
   return addressName ? addressName.name.toString() : undefined;
 };
 
-export const getPlayerAddressFromEntity = (entityId: ID, components: ClientComponents): ContractAddress | undefined => {
+export const getAddressFromEntity = (entityId: ID, components: ClientComponents): ContractAddress | undefined => {
   const entityOwner = getComponentValue(components.EntityOwner, getEntityIdFromKeys([BigInt(entityId)]));
   return entityOwner?.entity_owner_id
     ? getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))?.address

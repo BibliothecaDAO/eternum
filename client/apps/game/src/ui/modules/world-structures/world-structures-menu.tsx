@@ -15,9 +15,9 @@ import {
   LeaderboardManager,
   ResourcesIds,
   findResourceById,
+  getAddressFromEntity,
   getAddressNameFromEntity,
   getBalance,
-  getPlayerAddressFromEntity,
 } from "@bibliothecadao/eternum";
 import {
   useArmiesAtPosition,
@@ -194,10 +194,10 @@ const BaseStructureExtraContent = ({
 
   const structureOwner = useMemo(() => {
     const ownerName = getAddressNameFromEntity(entityId, components);
-    const address = getPlayerAddressFromEntity(entityId, components);
+    const address = getAddressFromEntity(entityId, components);
     const guildName = getGuildFromPlayerAddress(address || 0n)?.name;
     return { name: ownerName, guildName };
-  }, [entityId, getAddressNameFromEntity, getPlayerAddressFromEntity, getGuildFromPlayerAddress]);
+  }, [entityId, getAddressNameFromEntity, getAddressFromEntity, getGuildFromPlayerAddress]);
 
   const { defensiveArmy, attackingArmy } = useMemo(() => {
     const defensive = armies.find((army) => army.protectee?.protectee_id);
