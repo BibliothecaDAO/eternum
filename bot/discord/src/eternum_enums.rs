@@ -33,15 +33,16 @@ pub enum ResourceIds {
     #[strum(serialize = "Ethereal Silica")]
     EtherealSilica = 21,
     Dragonhide = 22,
+    Demonhide = 23,
     #[strum(serialize = "Ancient Fragment")]
-    AncientFragment = 29,
-    Donkey = 249,
-    Knight = 250,
-    Crossbowman = 251,
-    Paladin = 252,
-    Lords = 253,
-    Wheat = 254,
-    Fish = 255,
+    AncientFragment = 24,
+    Donkey = 25,
+    Knight = 26,
+    Crossbowman = 27,
+    Paladin = 28,
+    Wheat = 29,
+    Fish = 30,
+    Lords = 31,
 }
 
 #[derive(FromPrimitive, Debug, Clone, Copy, strum_macros::Display)]

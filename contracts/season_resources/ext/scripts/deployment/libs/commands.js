@@ -3,61 +3,109 @@ import * as fs from "fs";
 import * as path from "path";
 import { shortString } from "starknet";
 import { fileURLToPath } from "url";
-import devManifest from "../../../../contracts/manifest_dev.json";
-import productionManifest from "../../../../contracts/manifest_prod.json";
 import {
-  declare,
-  getContractPath,
-  getResourceAddressesFromFile,
-  saveResourceAddressesToFile,
-  saveResourceAddressesToLanding,
+    declare,
+    getContractPath,
+    getResourceAddressesFromFile,
+    saveResourceAddressesToFile
 } from "./common.js";
 import { getAccount, getNetwork } from "./network.js";
 import resourceNames from "./resources.json";
+const gameManifest = await import(`../../../../../game/manifest_${process.env.STARKNET_NETWORK}.json`, {
+  assert: { type: "json" }
+}).then(module => module.default);
 
-const VITE_PUBLIC_DEV = process.env.VITE_PUBLIC_DEV;
-if (VITE_PUBLIC_DEV === undefined) {
-  throw new Error("VITE_PUBLIC_DEV environment variable is not defined");
-}
-const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const TARGET_PATH = path.join(__dirname, "..", "..", "..", "contracts", "target", "release");
+const TARGET_PATH = path.join(__dirname, "..", "..", "..", "..", "target", "release");
+
+const colors = {
+  title: '\x1b[1m\x1b[38;5;105m',    // Bold Purple
+  success: '\x1b[38;5;83m',          // Bright Green
+  info: '\x1b[38;5;39m',             // Bright Blue
+  hash: '\x1b[38;5;214m',            // Orange
+  address: '\x1b[38;5;147m',         // Light Purple
+  reset: '\x1b[0m'                   // Reset
+};
 
 export const getJSONFile = (filePath) => {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // If file doesn't exist, create it with empty object
+      fs.writeFileSync(filePath, JSON.stringify({}, null, 2));
+      return {};
+    }
+    throw error;
+  }
 };
 
 export const getSeasonAddressesPath = () => {
-  return path.join(
+  const addressPath = path.join(
     __dirname,
+    "..",
     "..",
     "..",
     "..",
     "..",
     "common",
     "addresses",
-    `addresses.${process.env.STARKNET_NETWORK}.json`,
   );
+  return path.join(addressPath, `${process.env.STARKNET_NETWORK}.json`);
 };
 
 export const getSeasonAddresses = () => {
+  console.log(getSeasonAddressesPath());
   return getJSONFile(getSeasonAddressesPath());
 };
 
 export const getContractByName = (name) => {
-  const contract = manifest.contracts.find((contract) => contract.tag === name);
+  const contract = gameManifest.contracts.find((contract) => contract.tag === name);
   if (!contract) {
     throw new Error(`Contract ${name} not found in manifest`);
   }
   return contract.address;
 };
 
-const NAMESPACE = "s0_eternum";
+const NAMESPACE = "s1_eternum";
 const RESOURCE_BRIDGE_SYSTEMS_CONTRACT = getContractByName(`${NAMESPACE}-resource_bridge_systems`);
 const RESOURCE_NAMES = resourceNames;
-const LORDS_RESOURCE_ID = 253;
+const LORDS_RESOURCE_ID = 31;
 
+const displayResourceTable = (addresses) => {
+  const TABLE_WIDTH = {
+    name: 15,
+    id: 7,     // Increased to allow for padding
+    address: 42
+  };
+
+  // Top border with title
+  console.log(`${colors.title}📍 Deployed Resource Addresses${colors.reset}`);
+  
+  // Header row with proper spacing
+  console.log(`${colors.title}╔══════════════════╤════════╤════════════════════════════════════════════════════════════════════╗${colors.reset}`);
+  console.log(`${colors.title}║ Resource Name    │   ID   │  Address                                                           ║${colors.reset}`);
+  console.log(`${colors.title}╠══════════════════╪════════╪════════════════════════════════════════════════════════════════════╣${colors.reset}`);
+  
+  // Content rows with proper alignment
+  Object.entries(addresses).forEach(([name, [id, address]], index, array) => {
+    // Center-align the ID column
+    const paddedId = String(id).padStart(Math.floor((TABLE_WIDTH.id + String(id).length) / 2)).padEnd(TABLE_WIDTH.id);
+    
+    console.log(
+      `${colors.title}║${colors.reset}${colors.info}${name.padEnd(TABLE_WIDTH.name + 2)}${colors.reset}${colors.title} │${colors.reset} ${colors.address}${paddedId}${colors.reset}${colors.title}│${colors.reset} ${colors.address}${address.padEnd(TABLE_WIDTH.address)}${colors.reset}${colors.title}  ║${colors.reset}`
+    );
+    
+    // Separator between rows (except last)
+    if (index !== array.length - 1) {
+      console.log(`${colors.title}╟────────────────────────────────────────────────────────────────────────────────────────────────╢${colors.reset}`);
+    }
+  });
+  
+  // Bottom border
+  console.log(`${colors.title}╚════════════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`);
+};
 export const deployAllSeasonResourceContract = async () => {
   ///////////////////////////////////////////
   ////////   Season Pass Contract  //////////
@@ -72,7 +120,14 @@ export const deployAllSeasonResourceContract = async () => {
 
   // deploy contract
   let SEASON_RESOURCE_DEFAULT_ADMIN = BigInt(process.env.SEASON_RESOURCE_ADMIN);
-  let SEASON_RESOURCE_UPGRADER_CONTRACT = BigInt(process.env.SEASON_RESOURCE_ADMIN);
+  let SEASON_RESOURCE_UPGRADER = BigInt(process.env.SEASON_RESOURCE_ADMIN);
+
+  console.log(`\n`);
+  console.log(`${colors.info}╔════════════════════════════════════════════════════════════════════════════════════════${colors.reset}`);
+  console.log(`${colors.info}  Default Admin${colors.reset}    : ${colors.address}0x${SEASON_RESOURCE_DEFAULT_ADMIN.toString(16)}${colors.reset}`);
+  console.log(`${colors.info}  Upgrader Admin${colors.reset}   : ${colors.address}0x${SEASON_RESOURCE_UPGRADER.toString(16)}${colors.reset}`);
+  console.log(`${colors.info}═════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`);
+  console.log(`\n`);
 
   const ADDRESSES = {};
   const payload = [];
@@ -86,11 +141,10 @@ export const deployAllSeasonResourceContract = async () => {
     if (resourceSymbol.length > 31) {
       throw new Error("Resource symbol must be less than or equal to 32 characters");
     }
-    console.log({ resourceName, resourceSymbol });
 
     let constructorCalldata = [
       SEASON_RESOURCE_DEFAULT_ADMIN,
-      SEASON_RESOURCE_UPGRADER_CONTRACT,
+      SEASON_RESOURCE_UPGRADER,
       0,
       resourceName,
       resourceName.length,
@@ -107,12 +161,12 @@ export const deployAllSeasonResourceContract = async () => {
   }
 
   const account = getAccount();
-  console.log(`\n Deploying ${casualName} ... \n\n`.green);
+  console.log(`\n${colors.title}📦 Deploying ${casualName}...${colors.reset}\n`);
   const contract = await account.execute(account.buildUDCContractPayload(payload));
 
   // Wait for transaction
   let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  console.log(`${colors.info}Transaction Hash${colors.reset} : ${colors.hash}${network.explorer_url}/tx/${contract.transaction_hash}${colors.reset}\n`);
 
   let tx = await account.waitForTransaction(contract.transaction_hash);
   for (const event of tx.value.events) {
@@ -127,23 +181,21 @@ export const deployAllSeasonResourceContract = async () => {
 
   ADDRESSES["LORDS"] = [LORDS_RESOURCE_ID, getSeasonAddresses().lords];
 
-  console.log(ADDRESSES);
-
+  displayResourceTable(ADDRESSES);
+  console.log(`\n${colors.success}✨ Deployment Complete!${colors.reset}\n`);
+  
   await saveResourceAddressesToFile(ADDRESSES);
-  await saveResourceAddressesToLanding(ADDRESSES, process.env.STARKNET_NETWORK.toLowerCase());
   return ADDRESSES;
 };
 
-export const grantMinterRoleToAllSeasonResourceContracts = async () => {
+export const grantMinterRoleToInGameBridge = async () => {
   ////// GRANT MINTER ROLE TO ALL SEASON RESOURCE CONTRACTS //////
-  console.log(`\n Granting minter role to all season resource contracts ... \n\n`.green);
+  console.log(`\n Granting minter role to the in-game bridge system for  all season resource contracts... \n\n`.green);
 
   let resourceAddresses = await getResourceAddressesFromFile();
   let resourceAddressesArray = Object.values(resourceAddresses)
     .filter(([resourceId, resourceAddress]) => resourceId !== LORDS_RESOURCE_ID)
     .map(([resourceId, resourceAddress]) => resourceAddress);
-
-  console.log(resourceAddressesArray);
 
   if (!Array.isArray(resourceAddressesArray)) {
     throw new Error("resourceAddressesArray must be an array");
@@ -174,15 +226,17 @@ export const grantMinterRoleToAllSeasonResourceContracts = async () => {
 };
 
 export const revokeMinterRoleFromAllSeasonResourceContracts = async () => {
-  ////// Revoke MINTER ROLE TO ALL SEASON RESOURCE CONTRACTS //////
-  console.log(`\n Revoking minter role from all season resource contracts ... \n\n`.green);
+  console.log(`\n${colors.title}🔒 Revoking Minter Role from Season Resource Contracts${colors.reset}\n`);
+  
+  console.log(`${colors.info}╔════════════════════════════════════════════════════════════════════════════════════════${colors.reset}`);
+  console.log(`${colors.info}  In-Game Bridge System${colors.reset} : ${colors.address}${RESOURCE_BRIDGE_SYSTEMS_CONTRACT}${colors.reset}`);
+  console.log(`${colors.info}═════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`);
+  console.log(`\n`);
 
   let resourceAddresses = await getResourceAddressesFromFile();
   let resourceAddressesArray = Object.values(resourceAddresses)
     .filter(([resourceId, resourceAddress]) => resourceId !== LORDS_RESOURCE_ID)
     .map(([resourceId, resourceAddress]) => resourceAddress);
-
-  console.log(resourceAddressesArray);
 
   if (!Array.isArray(resourceAddressesArray)) {
     throw new Error("resourceAddressesArray must be an array");
@@ -206,8 +260,8 @@ export const revokeMinterRoleFromAllSeasonResourceContracts = async () => {
 
   // Wait for transaction
   let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  console.log(`${colors.info}Transaction Hash${colors.reset} : ${colors.hash}${network.explorer_url}/tx/${contract.transaction_hash}${colors.reset}\n`);
   await account.waitForTransaction(contract.transaction_hash);
 
-  console.log(`Successfully revoked minter role from all season resource contracts`.green, "\n\n");
+  console.log(`${colors.success}✨ Successfully revoked minter role from all season resource contracts!${colors.reset}\n`);
 };

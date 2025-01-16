@@ -1,7 +1,7 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 #[starknet::interface]
 trait ISeasonSystems<T> {
@@ -19,7 +19,7 @@ mod season_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use s0_eternum::{
+    use s1_eternum::{
         constants::{HYPERSTRUCTURE_CONFIG_ID, WORLD_CONFIG_ID, DEFAULT_NS, ResourceTypes}, alias::ID,
         models::{
             config::{

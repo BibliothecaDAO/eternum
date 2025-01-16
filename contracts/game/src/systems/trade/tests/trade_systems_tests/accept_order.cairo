@@ -4,33 +4,33 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
-use s0_eternum::constants::ResourceTypes;
-use s0_eternum::constants::{DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
-use s0_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
-use s0_eternum::models::movable::{Movable, ArrivalTime};
-use s0_eternum::models::order::{Orders, OrdersTrait};
-use s0_eternum::models::owner::Owner;
-use s0_eternum::models::position::{Position, Coord};
-use s0_eternum::models::realm::Realm;
-use s0_eternum::models::resources::Resource;
+use s1_eternum::constants::ResourceTypes;
+use s1_eternum::constants::{DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
+use s1_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
+use s1_eternum::models::movable::{Movable, ArrivalTime};
+use s1_eternum::models::order::{Orders, OrdersTrait};
+use s1_eternum::models::owner::Owner;
+use s1_eternum::models::position::{Position, Coord};
+use s1_eternum::models::realm::Realm;
+use s1_eternum::models::resource::resource::Resource;
 
-use s0_eternum::models::trade::{Trade, Status, TradeStatus};
-use s0_eternum::models::weight::Weight;
+use s1_eternum::models::trade::{Trade, Status, TradeStatus};
+use s1_eternum::models::weight::Weight;
 
-use s0_eternum::systems::config::contracts::config_systems;
-use s0_eternum::systems::config::contracts::{
+use s1_eternum::systems::config::contracts::config_systems;
+use s1_eternum::systems::config::contracts::{
     ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait,
     ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
 };
 
-use s0_eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
+use s1_eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 
-use s0_eternum::systems::trade::contracts::trade_systems::{
+use s1_eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
-use s0_eternum::utils::testing::{
+use s1_eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
     general::{spawn_realm}, config::{set_capacity_config, set_settlement_config}
 };

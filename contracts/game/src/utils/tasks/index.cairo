@@ -4,7 +4,7 @@ use achievement::types::task::{Task as BushidoTask, TaskTrait as BushidoTaskTrai
 
 // Internal imports
 
-use s0_eternum::utils::tasks;
+use s1_eternum::utils::tasks;
 
 // Types
 

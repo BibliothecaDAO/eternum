@@ -4,7 +4,7 @@ use dojo::meta::introspect::{Struct, Member};
 
 // Dojo imports
 use dojo::meta::{Ty, Introspect};
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 // Starknet imports
 use starknet::ContractAddress;
@@ -263,7 +263,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
-    use s0_eternum::alias::ID;
+    use s1_eternum::alias::ID;
     use super::{Fixed, FixedTrait};
     // Local imports
 

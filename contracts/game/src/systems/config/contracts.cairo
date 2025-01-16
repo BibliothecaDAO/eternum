@@ -1,12 +1,12 @@
 use dojo::world::IWorldDispatcher;
-use s0_eternum::alias::ID;
-use s0_eternum::models::buildings::BuildingCategory;
-use s0_eternum::models::combat::{Troops};
-use s0_eternum::models::config::{
+use s1_eternum::alias::ID;
+use s1_eternum::models::combat::{Troops};
+use s1_eternum::models::config::{
     TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonAddressesConfig
 };
-use s0_eternum::models::position::Coord;
+use s1_eternum::models::position::Coord;
+use s1_eternum::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
 trait IWorldConfig<T> {
@@ -38,7 +38,6 @@ trait IVRFConfig<T> {
 
 #[starknet::interface]
 trait IQuestConfig<T> {
-    fn set_quest_config(ref self: T, production_material_multiplier: u16);
     fn set_quest_reward_config(ref self: T, quest_id: ID, resources: Span<(u8, u128)>);
 }
 
@@ -132,7 +131,12 @@ trait IMapConfig<T> {
 
 #[starknet::interface]
 trait IProductionConfig<T> {
-    fn set_production_config(ref self: T, resource_type: u8, amount: u128, cost: Span<(u8, u128)>);
+    fn set_production_config(ref self: T, resource_type: u8, produced_amount: u128, labor_amount: u128);
+}
+
+#[starknet::interface]
+trait ILaborConfig<T> {
+    fn set_labor_config(ref self: T, resource_type: u8, cost: Span<(u8, u128)>);
 }
 
 #[starknet::interface]
@@ -213,31 +217,30 @@ mod config_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use s0_eternum::alias::ID;
+    use s1_eternum::alias::ID;
 
-    use s0_eternum::constants::{
+    use s1_eternum::constants::{
         ResourceTypes, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
         HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID,
         POPULATION_CONFIG_ID, DEFAULT_NS
     };
-    use s0_eternum::models::bank::bank::{Bank};
-    use s0_eternum::models::buildings::{BuildingCategory};
-    use s0_eternum::models::combat::{Troops};
+    use s1_eternum::models::bank::bank::{Bank};
+    use s1_eternum::models::combat::{Troops};
 
-    use s0_eternum::models::config::{
-        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestConfig, QuestRewardConfig,
+    use s1_eternum::models::config::{
+        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestRewardConfig,
         MapConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig, LaborConfig
     };
 
-    use s0_eternum::models::position::{Position, PositionTrait, Coord};
-    use s0_eternum::models::production::{ProductionInput, ProductionOutput};
-    use s0_eternum::models::resources::{ResourceCost, DetachedResource};
-    use s0_eternum::models::season::{Season};
-    use s0_eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
+    use s1_eternum::models::position::{Position, PositionTrait, Coord};
+    use s1_eternum::models::resource::production::building::{BuildingCategory};
+    use s1_eternum::models::resource::resource::{ResourceCost, DetachedResource};
+    use s1_eternum::models::season::{Season};
+    use s1_eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
 
     // Components
 
@@ -361,12 +364,6 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl QuestConfigImpl of super::IQuestConfig<ContractState> {
-        fn set_quest_config(ref self: ContractState, production_material_multiplier: u16) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            world.write_model(@QuestConfig { config_id: WORLD_CONFIG_ID, production_material_multiplier });
-        }
 
         fn set_quest_reward_config(ref self: ContractState, quest_id: ID, resources: Span<(u8, u128)>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -603,16 +600,59 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
-        fn set_production_config(ref self: ContractState, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>) {
+        fn set_production_config(
+            ref self: ContractState, resource_type: u8, produced_amount: u128, labor_amount: u128
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
-            resource_production_config.amount = amount;
+            resource_production_config.produced_amount = produced_amount;
+            resource_production_config.labor_cost = labor_amount;
             world.write_model(@resource_production_config);
         }
     }
 
+
+    #[abi(embed_v0)]
+    impl LaborConfigImpl of super::ILaborConfig<ContractState> {
+        fn set_labor_config(ref self: ContractState, resource_type: u8, cost: Span<(u8, u128)>) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let resource_cost_id = world.dispatcher.uuid();
+            for i in 0
+                ..cost
+                    .len() {
+                        let (resource_type, resource_amount) = *cost.at(i);
+                        world
+                            .write_model(
+                                @ResourceCost {
+                                    entity_id: resource_cost_id, index: i, resource_type, amount: resource_amount
+                                }
+                            );
+                    };
+
+            world
+                .write_model(
+                    @LaborConfig {
+                        resource_type, input_id: resource_cost_id, input_count: cost.len().try_into().unwrap()
+                    }
+                );
+        }
+    }
+
+    // #[derive(IntrospectPacked, Copy, Drop, Serde)]
+    // #[dojo::model]
+    // pub struct LaborConfig {
+    //     #[key]
+    //     // e.g when configuring stone labor, resource_type = stone
+    //     resource_type: u8,
+    //     // uuid used to get the ResourceCost
+    //     input_id: ID,
+    //     // number of resources required to make labor
+    //     input_count: u8,
+    // }
 
     #[abi(embed_v0)]
     impl TransportConfigImpl of super::ITransportConfig<ContractState> {
@@ -830,7 +870,7 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             // note: if we are whitelisting a NEW resource type, we WILL need to
-            // update several functions related to resources in `s0_eternum::constants`
+            // update several functions related to resources in `s1_eternum::constants`
             // so the new resource type is recognized throughout the contract.
 
             assert!(resource_bridge_whitelist_config.resource_type > 0, "resource type should be non zero");

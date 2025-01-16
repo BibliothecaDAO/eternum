@@ -2,15 +2,15 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDefTrait};
-use s0_eternum::alias::ID;
-use s0_eternum::constants::{WORLD_CONFIG_ID};
-use s0_eternum::models::owner::Owner;
-use s0_eternum::models::position::{Coord};
-use s0_eternum::models::season::Season;
-use s0_eternum::systems::ownership::contracts::ownership_systems;
-use s0_eternum::systems::ownership::contracts::{IOwnershipSystemsDispatcher, IOwnershipSystemsDispatcherTrait};
+use s1_eternum::alias::ID;
+use s1_eternum::constants::{WORLD_CONFIG_ID};
+use s1_eternum::models::owner::Owner;
+use s1_eternum::models::position::{Coord};
+use s1_eternum::models::season::Season;
+use s1_eternum::systems::ownership::contracts::ownership_systems;
+use s1_eternum::systems::ownership::contracts::{IOwnershipSystemsDispatcher, IOwnershipSystemsDispatcherTrait};
 
-use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 use starknet::ContractAddress;
 use starknet::contract_address_const;
 

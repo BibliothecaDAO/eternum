@@ -7,56 +7,6 @@ import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 // on hexception -> fetch below queries based on entityID
 
 // background sync after load ->
-
-export const syncPosition = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityID: string,
-) => {
-  await getEntities(
-    client,
-    {
-      Keys: {
-        keys: [entityID],
-        pattern_matching: "FixedLen" as PatternMatching,
-        models: ["s0_eternum-Position"],
-      },
-    },
-    components,
-    [],
-    [],
-    5_000,
-  );
-};
-
-export const addToSubscriptionTwoKeyModelbyRealmEntityId = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityID: string[],
-) => {
-  await getEntities(
-    client,
-    {
-      Composite: {
-        operator: "Or",
-        clauses: [
-          ...entityID.map((id) => ({
-            Keys: {
-              keys: [id, undefined],
-              pattern_matching: "VariableLen" as PatternMatching,
-              models: ["s0_eternum-BuildingQuantityv2"],
-            },
-          })),
-        ],
-      },
-    },
-    components,
-    [],
-    [],
-    5_000,
-  );
-};
-
 export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
@@ -72,7 +22,7 @@ export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Sche
             Keys: {
               keys: [id],
               pattern_matching: "VariableLen" as PatternMatching,
-              models: ["s0_eternum-ArrivalTime", "s0_eternum-OwnedResourcesTracker"],
+              models: ["s1_eternum-ArrivalTime", "s1_eternum-OwnedResourcesTracker"],
             },
           })),
         ],
@@ -137,7 +87,7 @@ export const addMarketSubscription = async <S extends Schema>(
     client,
     {
       Member: {
-        model: "s0_eternum-DetachedResource",
+        model: "s1_eternum-DetachedResource",
         member: "resource_amount",
         operator: "Gt",
         value: { Primitive: { U128: "0" } },
@@ -168,14 +118,14 @@ export const addHyperstructureSubscription = async <S extends Schema>(
             Keys: {
               keys: [undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s0_eternum-Epoch", "s0_eternum-Progress"],
+              models: ["s1_eternum-Epoch", "s1_eternum-Progress"],
             },
           },
           {
             Keys: {
               keys: [undefined, undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s0_eternum-Contribution"],
+              models: ["s1_eternum-Contribution"],
             },
           },
         ],
@@ -205,7 +155,7 @@ export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
         operator: "Or",
         clauses: entityIds.map((id) => ({
           Member: {
-            model: "s0_eternum-EntityOwner",
+            model: "s1_eternum-EntityOwner",
             member: "entity_owner_id",
             operator: "Eq",
             value: { Primitive: { U32: id } },
@@ -217,16 +167,16 @@ export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
     components,
     [],
     [
-      "s0_eternum-Army",
-      "s0_eternum-Position",
-      "s0_eternum-Health",
-      "s0_eternum-EntityOwner",
-      "s0_eternum-Protectee",
-      "s0_eternum-Stamina",
-      "s0_eternum-Weight",
-      "s0_eternum-OwnedResourcesTracker",
-      "s0_eternum-ArrivalTime",
-      "s0_eternum-Quantity",
+      "s1_eternum-Army",
+      "s1_eternum-Position",
+      "s1_eternum-Health",
+      "s1_eternum-EntityOwner",
+      "s1_eternum-Protectee",
+      "s1_eternum-Stamina",
+      "s1_eternum-Weight",
+      "s1_eternum-OwnedResourcesTracker",
+      "s1_eternum-ArrivalTime",
+      "s1_eternum-Quantity",
     ],
     1000,
     false,

@@ -13,3 +13,6 @@ export const findResourceIdByTrait = (trait: string) => {
 export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
   return isLabor ? resourceId - 28 : resourceId;
 };
+
+
+export const RESOURCE_PRECISION = 1_000_000_000;

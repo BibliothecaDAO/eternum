@@ -27,5 +27,6 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    publicDir: "../../common/public",
   };
 });

@@ -1,3 +1,5 @@
+import { ComponentValue, Entity } from "@dojoengine/recs";
+import { SeasonAddresses } from "../../../../../common/utils";
 import {
   BuildingType,
   CapacityConfigCategory,
@@ -7,6 +9,99 @@ import {
   ResourceTier,
   TroopFoodConsumption,
 } from "../constants";
+import { ClientComponents } from "../dojo";
+
+export type ArrivalInfo = {
+  entityId: ID;
+  recipientEntityId: ID;
+  position: Position;
+  arrivesAt: bigint;
+  isOwner: boolean;
+  hasResources: boolean;
+  isHome: boolean;
+};
+
+export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  name: string;
+  category?: string | undefined;
+  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+};
+
+export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  name: string;
+  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+};
+export interface Prize {
+  id: QuestType;
+  title: string;
+}
+
+export enum QuestStatus {
+  InProgress,
+  Completed,
+  Claimed,
+}
+
+export interface Building {
+  name: string;
+  category: string;
+  paused: boolean;
+  produced: ResourceCost;
+  consumed: ResourceCost[];
+  bonusPercent: number;
+  innerCol: number;
+  innerRow: number;
+}
+
+export enum BattleType {
+  Hex,
+  Structure,
+}
+
+export enum BattleStatus {
+  BattleStart = "Start battle",
+  BattleOngoing = "",
+  UserWon = "Victory",
+  UserLost = "Defeat",
+  BattleEnded = "Battle has ended",
+}
+
+export enum RaidStatus {
+  isRaidable = "Raid!",
+  NoStamina = "Not enough stamina",
+  NoStructureToClaim = "No structure to raid",
+  OwnStructure = "Can't raid your own structure",
+  NoArmy = "No army selected",
+  ArmyNotInBattle = "Selected army not in this battle",
+  MinTroops = "Minimum 100 troops required",
+}
+
+export enum LeaveStatus {
+  Leave = "Leave",
+  NoBattleToLeave = "No battle to leave",
+  DefenderCantLeaveOngoing = "A defender can't leave an ongoing battle",
+  NoArmyInBattle = "Your armies aren't in this battle",
+}
+
+export enum BattleStartStatus {
+  MinTroops = "Minimum 100 troops required",
+  BattleStart = "Start battle",
+  ForceStart = "Force start",
+  NothingToAttack = "Nothing to attack",
+  CantStart = "Can't start a battle now.",
+}
+
+export enum ClaimStatus {
+  Claimable = "Claim",
+  NoSelectedArmy = "No selected army",
+  BattleOngoing = "Battle ongoing",
+  DefenderPresent = "An army's defending the structure",
+  NoStructureToClaim = "No structure to claim",
+  StructureIsMine = "Can't claim your own structure",
+  SelectedArmyIsDead = "Selected army is dead",
+}
 
 export type HexPosition = { col: number; row: number };
 
@@ -366,9 +461,6 @@ export interface Config {
     current_point_on_side: number;
   };
   season: {
-    seasonPassAddress: string;
-    realmsAddress: string;
-    lordsAddress: string;
     startAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
   };
@@ -407,9 +499,33 @@ export interface Config {
   questResources: { [key in QuestType]: ResourceCost[] };
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
+
+  // Config for calling the setup function
+  setup?: {
+    chain: string;
+    addresses: SeasonAddresses;
+    manifest: any;
+  }
 }
 
-export interface Player {
+export interface RealmInfo {
+  realmId: ID;
+  entityId: ID;
+  name: string;
+  resourceTypesPacked: bigint;
+  order: number;
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  population?: number | undefined;
+  capacity?: number;
+  hasCapacity: boolean;
+  owner: ContractAddress;
+  ownerName: string;
+  hasWonder: boolean;
+  level: number;
+}
+
+export interface PlayerInfo {
+  entity: Entity;
   rank: number;
   address: bigint;
   name: string;
@@ -421,6 +537,12 @@ export interface Player {
   hyperstructures: number;
   isAlive: boolean;
   guildName: string;
+}
+
+export interface Player {
+  entity: Entity;
+  address: ContractAddress;
+  name: string;
 }
 
 export type GuildInfo = {

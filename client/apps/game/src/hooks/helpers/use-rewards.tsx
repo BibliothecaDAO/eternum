@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
+import { useDojo } from "@/hooks/context/dojo-context";
+import { getLordsAddress } from "@/utils/addresses";
 import { useEffect, useState } from "react";
-import { env } from "../../../env";
-import { useDojo } from "../context/DojoContext";
 
 export const usePrizePool = () => {
   const [prizePool, setPrizePool] = useState<bigint>(0n);
@@ -10,8 +10,9 @@ export const usePrizePool = () => {
   } = useDojo();
 
   const getBalance = async (address: string) => {
+    const lordsAddress = await getLordsAddress();
     const balance = await account?.callContract({
-      contractAddress: env.VITE_LORDS_ADDRESS!,
+      contractAddress: lordsAddress,
       entrypoint: "balance_of",
       calldata: [address],
     });

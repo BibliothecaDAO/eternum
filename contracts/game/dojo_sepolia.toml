@@ -1,0 +1,43 @@
+[namespace]
+default = "s1_eternum"
+
+[env]
+account_address = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"
+private_key = "0x075362a844768f31c8058ce31aec3dd7751686440b4f220f410ae0c9bf042e60"
+rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
+
+[world]
+seed = "s1_eternum-11"
+name = "Realms: Eternum"
+description = "Rule the Hex"
+cover_uri = "file://assets/bg.webp"
+website = "https://eternum.realms.world/"
+
+[writers]
+"s1_eternum" = [
+    "s1_eternum-bank_systems",
+    "s1_eternum-battle_pillage_systems",
+    "s1_eternum-battle_utils_systems",
+    "s1_eternum-battle_systems",
+    "s1_eternum-building_systems",
+    "s1_eternum-config_systems",
+    "s1_eternum-dev_bank_systems",
+    "s1_eternum-dev_realm_systems",
+    "s1_eternum-dev_resource_systems",
+    "s1_eternum-donkey_systems",
+    "s1_eternum-guild_systems",
+    "s1_eternum-hyperstructure_systems",
+    "s1_eternum-liquidity_systems",
+    "s1_eternum-map_systems",
+    "s1_eternum-map_generation_systems",
+    "s1_eternum-name_systems",
+    "s1_eternum-ownership_systems",
+    "s1_eternum-realm_systems",
+    "s1_eternum-resource_bridge_systems",
+    "s1_eternum-resource_systems",
+    "s1_eternum-swap_systems",
+    "s1_eternum-trade_systems",
+    "s1_eternum-travel_systems",
+    "s1_eternum-troop_systems",
+    "s1_eternum-season_systems",
+]

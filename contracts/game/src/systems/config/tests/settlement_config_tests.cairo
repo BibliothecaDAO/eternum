@@ -4,12 +4,12 @@ mod tests {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s0_eternum::models::config::{SettlementConfig, SettlementConfigImpl};
-    use s0_eternum::models::position::{Coord};
-    use s0_eternum::models::structure::{StructureCount};
-    use s0_eternum::systems::realm::contracts::realm_systems::InternalRealmLogicImpl;
+    use s1_eternum::models::config::{SettlementConfig, SettlementConfigImpl};
+    use s1_eternum::models::position::{Coord};
+    use s1_eternum::models::structure::{StructureCount};
+    use s1_eternum::systems::realm::contracts::realm_systems::InternalRealmLogicImpl;
 
-    use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_settlement_config};
+    use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_settlement_config};
 
     #[test]
     fn config_test_get_next_settlement_coord() {

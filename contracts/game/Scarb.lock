@@ -184,7 +184,7 @@ version = "0.15.0-rc.0"
 source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?rev=a13bae3#a13bae3390a7114a8c14c0352c6898eff5f4f5d7"
 
 [[package]]
-name = "s0_eternum"
+name = "s1_eternum"
 version = "1.0.0"
 dependencies = [
  "achievement",

@@ -1,4 +1,4 @@
-import { getSeasonAddresses } from "@/ui/utils/utils";
+import { getResourceAddresses } from "@/utils/addresses";
 import ControllerConnector from "@cartridge/connector/controller";
 import { ColorMode } from "@cartridge/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
@@ -8,7 +8,12 @@ import { env } from "../../../env";
 import { policies } from "./policies";
 import { signingPolicy } from "./signing-policy";
 
-const resourceAddresses = await getSeasonAddresses();
+enum StarknetChainId {
+  SN_MAIN = "0x534e5f4d41494e", // encodeShortString('SN_MAIN'),
+  SN_SEPOLIA = "0x534e5f5345504f4c4941",
+}
+
+const resourceAddresses = await getResourceAddresses();
 
 const LORDS = resourceAddresses["LORDS"][1];
 const otherResources = Object.entries(resourceAddresses)
@@ -18,19 +23,14 @@ const otherResources = Object.entries(resourceAddresses)
 const preset: string = "eternum";
 const theme: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
-const namespace: string = "s0_eternum";
+const namespace: string = "s1_eternum";
 const colorMode: ColorMode = "dark";
 
-const vrfPolicy = {
-  target: "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f",
-  method: "request_random",
-  description: "Allows requesting random numbers from the VRF provider",
-};
-
 const controller =
-  env.VITE_PUBLIC_CHAIN === "mainnet"
+  env.VITE_PUBLIC_CHAIN === "mainnet" || env.VITE_PUBLIC_CHAIN === "sepolia"
     ? new ControllerConnector({
-        rpc: env.VITE_PUBLIC_NODE_URL,
+        chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
+        defaultChainId: StarknetChainId.SN_MAIN,
         namespace,
         slot,
         preset,
@@ -40,11 +40,12 @@ const controller =
         colorMode,
       })
     : new ControllerConnector({
-        rpc: env.VITE_PUBLIC_NODE_URL,
+        chains: [{ rpcUrl: "https://api.cartridge.gg/x/starknet/sepolia" }],
+        defaultChainId: StarknetChainId.SN_SEPOLIA,
         namespace,
         slot,
         preset,
-        policies: [...signingPolicy, ...policies, vrfPolicy],
+        policies: { contracts: policies, messages: signingPolicy },
         theme,
         tokens: {
           erc20: [LORDS, ...otherResources],

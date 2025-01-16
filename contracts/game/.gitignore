@@ -1,14 +1,9 @@
 target/*
 torii.db
 KATANA.toml
-manifests/dev/deployment/abis/*
-manifests/dev/deployment/abis/*
-manifests/dev/base/*
-manifests/dev/base/*
-manifests/prod/deployment/abis/*
-manifests/prod/deployment/base/*
-manifests/prod/abis/*
-manifests/prod/base/*
+manifest_local.json
+logs/*
+pids/*
 .DS_Store
 
 torii.db-wal

@@ -4,54 +4,54 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
-use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
+use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 
-use s0_eternum::models::combat::{Battle};
-use s0_eternum::models::combat::{Health, Troops};
-use s0_eternum::models::config::{
+use s1_eternum::models::combat::{Battle};
+use s1_eternum::models::combat::{Health, Troops};
+use s1_eternum::models::config::{
     TickConfig, TickImpl, StaminaConfig, TravelStaminaCostConfig, CapacityConfig, CapacityConfigCategory
 };
-use s0_eternum::models::map::Tile;
-use s0_eternum::models::movable::{Movable};
-use s0_eternum::models::owner::{EntityOwner, Owner};
-use s0_eternum::models::position::{Position, Coord, CoordTrait, Direction};
-use s0_eternum::models::production::{Production, ProductionDeadline};
-use s0_eternum::models::quantity::Quantity;
+use s1_eternum::models::map::Tile;
+use s1_eternum::models::movable::{Movable};
+use s1_eternum::models::owner::{EntityOwner, Owner};
+use s1_eternum::models::position::{Position, Coord, CoordTrait, Direction};
+use s1_eternum::models::quantity::Quantity;
 
-use s0_eternum::models::realm::Realm;
-use s0_eternum::models::resources::{Resource, RESOURCE_PRECISION, ResourceFoodImpl};
-use s0_eternum::models::stamina::Stamina;
-use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount,};
-use s0_eternum::models::weight::Weight;
+use s1_eternum::models::realm::Realm;
+use s1_eternum::models::resource::production::production::{Production, ProductionDeadline};
+use s1_eternum::models::resource::resource::{Resource, RESOURCE_PRECISION, ResourceFoodImpl};
+use s1_eternum::models::stamina::Stamina;
+use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount,};
+use s1_eternum::models::weight::Weight;
 
-use s0_eternum::systems::combat::contracts::battle_systems::{
+use s1_eternum::systems::combat::contracts::battle_systems::{
     battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait, IBattlePillageContractDispatcher,
     IBattlePillageContractDispatcherTrait
 };
-use s0_eternum::systems::combat::contracts::troop_systems::{
+use s1_eternum::systems::combat::contracts::troop_systems::{
     troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait
 };
 
-use s0_eternum::systems::config::contracts::{
+use s1_eternum::systems::config::contracts::{
     config_systems, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
     IWeightConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait, IMercenariesConfigDispatcher,
     IMercenariesConfigDispatcherTrait,
 };
 
-use s0_eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
+use s1_eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 
-use s0_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
+use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
-use s0_eternum::systems::map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
-use s0_eternum::systems::map::map_generation::map_generation_systems::{InternalMapGenerationSystemsImpl};
+use s1_eternum::systems::map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
+use s1_eternum::systems::map::map_generation::map_generation_systems::{InternalMapGenerationSystemsImpl};
 
-use s0_eternum::systems::transport::contracts::travel_systems::{
+use s1_eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use s0_eternum::utils::testing::{
+use s1_eternum::utils::testing::{
     world::{spawn_eternum},
     systems::{
         deploy_realm_systems, deploy_battle_systems, deploy_system, deploy_map_systems, deploy_dev_resource_systems,

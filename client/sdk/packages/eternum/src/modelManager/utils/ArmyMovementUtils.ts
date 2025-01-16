@@ -1,6 +1,6 @@
 import { type ComponentValue } from "@dojoengine/recs";
-import { EternumGlobalConfig, ResourcesIds } from "../../constants";
-import { ClientComponents } from "../../dojo/components/createClientComponents";
+import { RESOURCE_PRECISION, ResourcesIds } from "../../constants";
+import { ClientComponents } from "../../dojo/createClientComponents";
 import { divideByPrecision, gramToKg } from "../../utils";
 import { configManager } from "../ConfigManager";
 
@@ -28,7 +28,7 @@ export const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Arm
   const knights = army.troops.knight_count || 0n;
   const crossbowmen = army.troops.crossbowman_count || 0n;
   const paladins = army.troops.paladin_count || 0n;
-  return (knights + crossbowmen + paladins) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+  return (knights + crossbowmen + paladins) / BigInt(RESOURCE_PRECISION);
 };
 
 export const computeTravelFoodCosts = (

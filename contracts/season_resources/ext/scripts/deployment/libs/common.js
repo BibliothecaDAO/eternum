@@ -131,36 +131,40 @@ export const getDeployedAddress = async (contractName) => {
   }
 };
 
-export const getProxyAddress = async (contractName) => {
-  const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
-  const fileName = path.join(folderPath, `${contractName}.json`);
-
-  try {
-    const data = await readFileAsync(fileName, "utf8");
-    const jsonData = JSON.parse(data);
-    return jsonData.data.proxy_address;
-  } catch (err) {
-    if (err.code === "ENOENT") {
-      console.error(`File not found: ${fileName}`);
-    } else if (err instanceof SyntaxError) {
-      console.error("Error parsing JSON:", err);
-    } else {
-      console.error("Error reading file:", err);
-    }
-    throw err; // Re-throw the error so the caller knows something went wrong
-  }
-};
 
 export const saveResourceAddressesToFile = async (resourceAddresses) => {
   try {
-    const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
+    const folderPath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "..",
+      "common",
+      "addresses",
+    );
     await mkdirAsync(folderPath, { recursive: true });
 
-    const fileName = path.join(folderPath, `resource_addresses.json`);
+    const fileName = path.join(folderPath, `${process.env.STARKNET_NETWORK}.json`);
+    
+    // Try to read existing data
+    let existingData = {};
+    try {
+      const fileContent = await readFileAsync(fileName, 'utf8');
+      existingData = JSON.parse(fileContent);
+    } catch (error) {
+      // File doesn't exist or is invalid JSON, start with empty object
+    }
 
-    const data = resourceAddresses;
+    // Merge new resources with existing data
+    const updatedData = {
+      ...existingData,
+      resources: resourceAddresses
+    };
+    
 
-    const jsonString = JSON.stringify(data);
+    const jsonString = customStringify(updatedData);
 
     await writeFileAsync(fileName, jsonString);
     console.log(`"${fileName}" has been saved or overwritten`);
@@ -171,29 +175,34 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
 };
 
 export const getResourceAddressesFromFile = async () => {
-  const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
-  const fileName = path.join(folderPath, `resource_addresses.json`);
+  const folderPath = path.join(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "..",
+    "..",
+    "common",
+    "addresses",
+  );
+  const fileName = path.join(folderPath, `${process.env.STARKNET_NETWORK}.json`);
   const data = await readFileAsync(fileName, "utf8");
-  return JSON.parse(data);
+  return JSON.parse(data).resources;
 };
 
-export const saveResourceAddressesToLanding = async (resourceAddresses, environment) => {
-  try {
-    const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
-    await mkdirAsync(folderPath, { recursive: true });
 
-    const fileName = path.join(
-      folderPath,
-      `../../../../../landing/public/resource_addresses/${environment}/resource_addresses.json`,
+  // Custom replacer function to keep arrays on one line
+  const customStringify = (obj) => {
+    // First convert to JSON string with standard formatting
+    const initialString = JSON.stringify(obj, null, 2);
+    
+    // Replace arrays with single-line version, handling multiple lines and whitespace
+    return initialString.replace(
+      /\[\n\s+(.+?)\n\s+\]/gs,
+      (match, content) => {
+        // Remove newlines and extra spaces between array elements
+        const singleLine = content.replace(/\n\s+/g, '');
+        return `[${singleLine}]`;
+      }
     );
-
-    const data = resourceAddresses;
-    const jsonString = JSON.stringify(data);
-    await writeFileAsync(fileName, jsonString);
-
-    console.log(`"${fileName}" has been saved or overwritten`);
-  } catch (err) {
-    console.error("Error writing file", err);
-    throw err; // Re-throw the error so the caller knows something went wrong
-  }
-};
+  };

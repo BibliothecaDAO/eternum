@@ -1,8 +1,9 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
+import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { roundDownToPrecision, roundUpToPrecision } from "@/ui/utils/utils";
 import {
   Battle,
+  ClientComponents,
   HealthSimulator,
   Percentage,
   ResourcesIds,
@@ -10,7 +11,6 @@ import {
   TroopConfig,
 } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
-import { getTotalTroops } from "./BattleHistory";
 
 type ArmyBattleInfo = {
   troops: {

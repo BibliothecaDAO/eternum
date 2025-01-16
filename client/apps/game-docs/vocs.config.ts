@@ -3,8 +3,8 @@ import { defineConfig } from "vocs";
 
 export default defineConfig({
   description: "Your Complete Guide to Mastering Eternum",
-  iconUrl: "/eternum_new_logo.svg",
-  logoUrl: "/eternum_new_logo.svg",
+  iconUrl: "/eternum-new-logo.svg",
+  logoUrl: "/eternum-new-logo.svg",
   ogImageUrl: "/eternum_documentation.png",
   theme: {
     colorScheme: "dark",

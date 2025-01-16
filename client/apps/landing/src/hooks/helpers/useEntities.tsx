@@ -5,17 +5,17 @@ import { execute } from "../gql/execute";
 import { GET_ETERNUM_OWNER_REALM_IDS } from "../query/entities";
 import { useRealm } from "./useRealms";
 
-export interface S0EternumRealm {
-  __typename: "s0_eternum_Realm";
+interface S0EternumRealm {
+  __typename: "s1_eternum_Realm";
   realm_id: number;
 }
 
-export function isS0EternumRealm(model: any): model is S0EternumRealm {
-  return model?.__typename === "s0_eternum_Realm";
+function isS0EternumRealm(model: any): model is S0EternumRealm {
+  return model?.__typename === "s1_eternum_Realm";
 }
 
-export function isS0EternumStructure(model: any) {
-  return model?.__typename === "s0_eternum_Structure";
+function isS0EternumStructure(model: any) {
+  return model?.__typename === "s1_eternum_Structure";
 }
 
 export const useEntities = () => {

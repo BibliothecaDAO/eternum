@@ -23,14 +23,14 @@ interface DojoContextType extends SetupResult {
   account: DojoAccount;
 }
 
-export interface DojoResult {
+interface DojoResult {
   setup: DojoContextType;
   account: DojoAccount;
   network: SetupNetworkResult;
   masterAccount: Account | AccountInterface;
 }
 
-export const DojoContext = createContext<DojoContextType | null>(null);
+const DojoContext = createContext<DojoContextType | null>(null);
 
 const requiredEnvs: (keyof typeof env)[] = [
   "VITE_PUBLIC_MASTER_ADDRESS",

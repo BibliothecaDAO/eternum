@@ -1,9 +1,9 @@
+import { TabContext } from "@/ui/elements/tab/tab-provider";
+import { VARIANTS } from "@/ui/elements/tab/tabs";
 import { Tab as HeadlessTab } from "@headlessui/react";
 import clsx from "clsx";
 import type { ComponentProps } from "react";
 import { useContext } from "react";
-import { TabContext } from "./TabProvider";
-import { VARIANTS } from "./tabs";
 
 type TabProps = ComponentProps<"button"> & { noText?: boolean };
 

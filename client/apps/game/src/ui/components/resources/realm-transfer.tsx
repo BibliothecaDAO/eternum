@@ -1,18 +1,17 @@
-import { useDojo } from "@/hooks/context/DojoContext";
-import { PlayerStructure, useEntities } from "@/hooks/helpers/useEntities";
-import { useResourceManager } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
-import Button from "@/ui/elements/Button";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { useDojo } from "@/hooks/context/dojo-context";
+import { usePlayerStructures } from "@/hooks/helpers/use-entities";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
+import useUIStore from "@/hooks/store/use-ui-store";
+import { OSWindow } from "@/ui/components/navigation/os-window";
+import Button from "@/ui/elements/button";
+import { NumberInput } from "@/ui/elements/number-input";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { calculateDonkeysNeeded, currencyFormat, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
-import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
-
-import { ID } from "@bibliothecadao/eternum";
+import { ID, PlayerStructure, RESOURCE_PRECISION, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
-import { OSWindow } from "../navigation/OSWindow";
+
 
 type transferCall = {
   structureId: ID;
@@ -35,7 +34,7 @@ export const RealmTransfer = memo(
     const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
     const selectedStructureEntityId = useUIStore((state) => state.structureEntityId);
 
-    const { playerStructures } = useEntities();
+    const playerStructures = usePlayerStructures();
 
     const [isLoading, setIsLoading] = useState(false);
     const [calls, setCalls] = useState<transferCall[]>([]);
@@ -64,7 +63,7 @@ export const RealmTransfer = memo(
       const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
         sender_entity_id,
         recipient_entity_id,
-        resources: [resources[0], BigInt(Number(resources[1]) * EternumGlobalConfig.resources.resourcePrecision)],
+        resources: [resources[0], BigInt(Number(resources[1]) * RESOURCE_PRECISION)],
       }));
 
       try {
@@ -109,7 +108,7 @@ export const RealmTransfer = memo(
             <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
           </div>
 
-          {playerStructures().map((structure) => (
+          {playerStructures.map((structure) => (
             <RealmTransferBalance
               key={structure.entity_id}
               structure={structure}
@@ -163,7 +162,7 @@ export const RealmTransfer = memo(
   },
 );
 
-export const RealmTransferBalance = memo(
+const RealmTransferBalance = memo(
   ({
     resource,
     structure,

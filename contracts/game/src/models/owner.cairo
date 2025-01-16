@@ -1,8 +1,8 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s0_eternum::alias::ID;
-use s0_eternum::constants::ErrorMessages;
-use s0_eternum::models::realm::Realm;
+use s1_eternum::alias::ID;
+use s1_eternum::constants::ErrorMessages;
+use s1_eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
 // contract address owning an entity
@@ -65,10 +65,10 @@ mod tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
-    use s0_eternum::models::realm::Realm;
-    use s0_eternum::utils::testing::world::spawn_eternum;
+    use s1_eternum::alias::ID;
+    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
+    use s1_eternum::models::realm::Realm;
+    use s1_eternum::utils::testing::world::spawn_eternum;
     use starknet::contract_address_const;
 
     #[test]
@@ -77,15 +77,7 @@ mod tests {
 
         world
             .write_model_test(
-                @Realm {
-                    entity_id: 1,
-                    realm_id: 3,
-                    produced_resources: 0,
-                    order: 0,
-                    level: 0,
-                    has_wonder: false,
-                    settler_address: contract_address_const::<'Settler'>()
-                }
+                @Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0, has_wonder: false, }
             );
         world.write_model_test(@EntityOwner { entity_id: 2, entity_owner_id: 1 });
 

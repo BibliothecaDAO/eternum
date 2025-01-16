@@ -1,6 +1,6 @@
 [package]
 cairo-version = "=2.8.4"
-name = "s0_eternum"
+name = "s1_eternum"
 version = "1.0.0"
 
 [cairo]
@@ -31,6 +31,10 @@ build-external-contracts = [
 sort-module-level-items = true
 max-line-length = 120
 
-[profile.prod]
+[profile.local]
+
+[profile.slot]
+
+[profile.sepolia]
 
 [profile.mainnet]

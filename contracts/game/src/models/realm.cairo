@@ -2,9 +2,9 @@ use alexandria_math::{BitShift, pow};
 use array::SpanTrait;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s0_eternum::alias::ID;
-use s0_eternum::constants::WORLD_CONFIG_ID;
-use s0_eternum::models::config::RealmMaxLevelConfig;
+use s1_eternum::alias::ID;
+use s1_eternum::constants::WORLD_CONFIG_ID;
+use s1_eternum::models::config::RealmMaxLevelConfig;
 use starknet::ContractAddress;
 use traits::Into;
 
@@ -19,7 +19,6 @@ pub struct Realm {
     order: u8,
     level: u8,
     has_wonder: bool,
-    settler_address: ContractAddress,
 }
 
 
@@ -333,15 +332,7 @@ mod test_realm_resources_impl {
     use super::{RealmResourcesImpl, RealmResourcesTrait, Realm};
 
     fn mock_realm() -> Realm {
-        Realm {
-            entity_id: 1,
-            realm_id: 1,
-            order: 0,
-            level: 0,
-            produced_resources: 0,
-            has_wonder: false,
-            settler_address: contract_address_const::<'Settler'>(),
-        }
+        Realm { entity_id: 1, realm_id: 1, order: 0, level: 0, produced_resources: 0, has_wonder: false, }
     }
 
 

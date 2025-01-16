@@ -4,25 +4,25 @@ use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s0_eternum::alias::ID;
-use s0_eternum::constants::{
+use s1_eternum::alias::ID;
+use s1_eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
     split_resources_and_probs, ResourceTypes, ResourceTiers
 };
-use s0_eternum::models::buildings::BuildingCategory;
-use s0_eternum::models::capacity::{CapacityCategory, CapacityCategoryImpl, CapacityCategoryTrait};
-use s0_eternum::models::combat::Troops;
-use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
-use s0_eternum::models::position::{Coord};
-use s0_eternum::models::quantity::Quantity;
+use s1_eternum::models::capacity::{CapacityCategory, CapacityCategoryImpl, CapacityCategoryTrait};
+use s1_eternum::models::combat::Troops;
+use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
+use s1_eternum::models::position::{Coord};
+use s1_eternum::models::quantity::Quantity;
+use s1_eternum::models::resource::production::building::BuildingCategory;
 
-use s0_eternum::models::resources::{ResourceFoodImpl};
-use s0_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
-use s0_eternum::models::weight::Weight;
-use s0_eternum::utils::map::constants::fixed_constants as fc;
-use s0_eternum::utils::math::{max, min};
-use s0_eternum::utils::random::VRFImpl;
-use s0_eternum::utils::random;
+use s1_eternum::models::resource::resource::{ResourceFoodImpl};
+use s1_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
+use s1_eternum::models::weight::Weight;
+use s1_eternum::utils::map::constants::fixed_constants as fc;
+use s1_eternum::utils::math::{max, min};
+use s1_eternum::utils::random::VRFImpl;
+use s1_eternum::utils::random;
 use starknet::ContractAddress;
 
 //
@@ -529,11 +529,21 @@ pub struct ProductionConfig {
     #[key]
     resource_type: u8,
     // production amount per tick
-    amount: u128,
-    // num materials required to produce this resource
-    input_count: u128,
-    // num different resources that this resource can produce
-    output_count: u128
+    produced_amount: u128,
+    // labor cost amount per tick
+    labor_cost: u128,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct LaborConfig {
+    #[key]
+    // e.g when configuring stone labor, resource_type = stone
+    resource_type: u8,
+    // uuid used to get the ResourceCost
+    input_id: ID,
+    // number of resources required to make labor
+    input_count: u8,
 }
 
 // vrf
@@ -717,13 +727,6 @@ impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct QuestConfig {
-    #[key]
-    config_id: ID,
-    production_material_multiplier: u16,
-}
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

@@ -1,9 +1,8 @@
 import {
-  EternumGlobalConfig,
-  ResourcesIds,
-  TROOPS_FOOD_CONSUMPTION,
-  TROOPS_STAMINAS,
-  findResourceById,
+    ResourcesIds,
+    TROOPS_FOOD_CONSUMPTION,
+    TROOPS_STAMINAS,
+    findResourceById
 } from "@bibliothecadao/eternum";
 import { formatAmount, formatNumberWithSpaces } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
@@ -67,12 +66,12 @@ export default function TroopsTable() {
               <div className="grid grid-cols-3 gap-2">
                 <div className="text-left">
                   <div>Travel</div>
-                  <div className="text-gray-400">{formatNumberWithSpaces(EternumGlobalConfig.stamina.travelCost)}</div>
+                  <div className="text-gray-400">{formatNumberWithSpaces(ETERNUM_CONFIG().stamina.travelCost)}</div>
                 </div>
 
                 <div className="text-left">
                   <div>Explore</div>
-                  <div className="text-gray-400">{formatNumberWithSpaces(EternumGlobalConfig.stamina.exploreCost)}</div>
+                  <div className="text-gray-400">{formatNumberWithSpaces(ETERNUM_CONFIG().stamina.exploreCost)}</div>
                 </div>
 
                 <div className="flex justify-center items-center mt-4">

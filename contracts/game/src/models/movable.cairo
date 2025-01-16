@@ -1,9 +1,9 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s0_eternum::alias::ID;
-use s0_eternum::constants::WORLD_CONFIG_ID;
-use s0_eternum::models::config::{SpeedConfig};
-use s0_eternum::models::position::Coord;
+use s1_eternum::alias::ID;
+use s1_eternum::constants::WORLD_CONFIG_ID;
+use s1_eternum::models::config::{SpeedConfig};
+use s1_eternum::models::position::Coord;
 // speed seconds per km
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

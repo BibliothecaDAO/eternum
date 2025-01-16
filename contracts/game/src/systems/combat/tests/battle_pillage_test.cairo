@@ -5,11 +5,11 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use s0_eternum::{
+use s1_eternum::{
     alias::ID,
     models::{
-        position::{Coord, Position}, weight::Weight, resources::{ResourceTypes, RESOURCE_PRECISION}, combat::{Troops},
-        quantity::Quantity, config::CapacityConfig
+        position::{Coord, Position}, weight::Weight, resource::resource::{ResourceTypes, RESOURCE_PRECISION},
+        combat::{Troops}, quantity::Quantity, config::CapacityConfig
     },
     systems::{
         config::contracts::config_systems,

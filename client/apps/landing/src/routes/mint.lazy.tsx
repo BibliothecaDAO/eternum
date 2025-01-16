@@ -37,29 +37,6 @@ function Mint() {
     refetchInterval: 10_000,
   });
 
-  /*  const { data: seasonPassMints, isLoading: isSeasonPassMintsLoading } = useSuspenseQuery({
-    queryKey: ["ERCMints"],
-    queryFn: () => execute(GET_ERC_MINTS),
-    refetchInterval: 10_000,
-  });*/
-
-  /*const seasonPassTokenIds = useMemo(
-    () =>
-      seasonPassMints?.tokenTransfers?.edges
-        ?.filter((token) => {
-          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
-          return token.node.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS;
-        })
-        .map((token) => {
-          if (token?.node?.tokenMetadata.__typename === "ERC721__Token") {
-            return token.node.tokenMetadata.tokenId;
-          }
-          return undefined;
-        })
-        .filter((id): id is string => id !== undefined),
-    [seasonPassMints],
-  );*/
-
   const realmsErcBalance = useMemo(
     () =>
       data?.tokenBalances?.edges?.filter((token) => {

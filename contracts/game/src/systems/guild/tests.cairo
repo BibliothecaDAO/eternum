@@ -3,19 +3,19 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
-use s0_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
-use s0_eternum::models::name::EntityName;
-use s0_eternum::models::owner::Owner;
-use s0_eternum::models::position::Position;
+use s1_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
+use s1_eternum::models::name::EntityName;
+use s1_eternum::models::owner::Owner;
+use s1_eternum::models::position::Position;
 
-use s0_eternum::systems::guild::contracts::{
+use s1_eternum::systems::guild::contracts::{
     guild_systems, IGuildSystems, IGuildSystemsDispatcher, IGuildSystemsDispatcherTrait
 };
-use s0_eternum::systems::name::contracts::{
+use s1_eternum::systems::name::contracts::{
     name_systems, INameSystems, INameSystemsDispatcher, INameSystemsDispatcherTrait
 };
 
-use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 use starknet::contract_address_const;
 
 

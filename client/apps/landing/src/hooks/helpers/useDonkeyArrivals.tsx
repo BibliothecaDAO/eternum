@@ -39,7 +39,6 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
     return batches;
   }, [realmEntityIds]);
 
-
   const donkeyQueriesResults = useQueries({
     queries: batchedRealmIds.map((realmIds) => ({
       queryKey: ["donkeyEntityIds", realmIds],
@@ -74,9 +73,9 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
     if (!donkeyEntities?.s0EternumEntityOwnerModels?.edges || !bankPosition) return [];
 
     return donkeyEntities.s0EternumEntityOwnerModels.edges.filter((edge) => {
-      const position = edge?.node?.entity?.models?.find((model) => model?.__typename === "s0_eternum_Position");
+      const position = edge?.node?.entity?.models?.find((model) => model?.__typename === "s1_eternum_Position");
       const resource = edge?.node?.entity?.models?.find(
-        (model) => model?.__typename === "s0_eternum_OwnedResourcesTracker",
+        (model) => model?.__typename === "s1_eternum_OwnedResourcesTracker",
       );
 
       return Boolean(
@@ -103,7 +102,7 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
   ) => {
     const donkeyEntityId = donkeyEntity?.node?.entity_id;
     const donkeyArrivalTime = donkeyEntity?.node?.entity?.models?.find(
-      (model) => model?.__typename === "s0_eternum_ArrivalTime",
+      (model) => model?.__typename === "s1_eternum_ArrivalTime",
     )?.arrives_at;
 
     const donkeyResourceBalances =

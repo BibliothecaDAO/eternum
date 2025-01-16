@@ -12,11 +12,6 @@ const envSchema = z.object({
 
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
-  // External Contracts
-  VITE_SEASON_PASS_ADDRESS: z.string().startsWith("0x"),
-  VITE_REALMS_ADDRESS: z.string().startsWith("0x"),
-  VITE_LORDS_ADDRESS: z.string().startsWith("0x"),
-
   // API endpoints
   VITE_PUBLIC_TORII: z.string().url(),
   VITE_PUBLIC_NODE_URL: z.string().url(),
@@ -28,13 +23,13 @@ const envSchema = z.object({
   VITE_PUBLIC_GRAPHICS_DEV: z.string().transform((v) => v === "true"),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string(),
-  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "testnet", "local"]), // Add other chains as needed
+  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "local"]), // Add other chains as needed
 
   VITE_PUBLIC_CONSTRUCTION_FLAG: z.string().transform((v) => v === "true"),
   VITE_PUBLIC_HIDE_THREEJS_MENU: z.string().transform((v) => v === "true"),
 
   // VRF
-  VITE_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x"),
+  VITE_PUBLIC_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x"),
 
   // Ark Marketplace API
   VITE_PUBLIC_ARK_MARKETPLACE_API: z.string().url(),

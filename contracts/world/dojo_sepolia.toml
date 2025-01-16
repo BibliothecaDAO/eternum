@@ -1,0 +1,15 @@
+[namespace]
+default = "world_0"
+
+[env]
+account_address = ""
+private_key = ""
+rpc_url = "https://api.cartridge.gg/x/starknet/mainnet"
+world_address = "0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa"
+
+[world]
+seed = "s1_eternum"
+name = "Realms World"
+description = "The world of Realms"
+cover_uri = "file://assets/bg.webp"
+website = "https://realms.world/"

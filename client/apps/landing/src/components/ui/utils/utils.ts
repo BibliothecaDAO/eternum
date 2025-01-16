@@ -1,14 +1,12 @@
 import { ClientConfigManager } from "@bibliothecadao/eternum";
-import { env } from "../../../../env";
 
 import {
-  BuildingType,
-  ContractAddress,
-  EternumGlobalConfig,
-  TickIds,
-  type ID,
-  type Position,
-  type Resource,
+    BuildingType,
+    ContractAddress,
+    TickIds,
+    type ID,
+    type Position,
+    type Resource
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
@@ -49,11 +47,11 @@ export function displayAddress(string: string) {
 }
 
 export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * EternumGlobalConfig.resources.resourcePrecision);
+  return Math.floor(value * ETERNUM_CONFIG().resources.resourcePrecision);
 }
 
 export function divideByPrecision(value: number): number {
-  return value / EternumGlobalConfig.resources.resourcePrecision;
+  return value / ETERNUM_CONFIG().resources.resourcePrecision;
 }
 
 export function roundDownToPrecision(value: bigint, precision: number) {
@@ -362,28 +360,4 @@ export const separateCamelCase = (str: string): string => {
 
 export const calculateDonkeysNeeded = (orderWeight: number, donkeyCapacity: number): number => {
   return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacity);
-};
-
-export const getSeasonAddressesPath = () => {
-  return `/resource_addresses/${env.VITE_PUBLIC_CHAIN}/resource_addresses.json`;
-};
-export const getJSONFile = async (filePath: string) => {
-  const response = await fetch(filePath);
-  const data = await response.json();
-  return data;
-};
-
-export interface ResourceAddresses {
-  [key: string]: [number, string];
-}
-
-export const getSeasonAddresses = async (): Promise<ResourceAddresses> => {
-  try {
-    const path = getSeasonAddressesPath();
-    const data = await getJSONFile(path);
-    return data;
-  } catch (error) {
-    console.error("Error loading season addresses:", error);
-    return {};
-  }
 };

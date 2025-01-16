@@ -1,6 +1,6 @@
 use dojo::world::IWorldDispatcher;
-use s0_eternum::alias::ID;
-use s0_eternum::models::position::{Coord};
+use s1_eternum::alias::ID;
+use s1_eternum::models::position::{Coord};
 
 #[starknet::interface]
 trait IBankSystems<T> {
@@ -17,18 +17,18 @@ mod bank_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::DEFAULT_NS;
-    use s0_eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
-    use s0_eternum::models::bank::bank::{Bank};
-    use s0_eternum::models::capacity::{CapacityCategory};
-    use s0_eternum::models::config::{BankConfig, CapacityConfigCategory};
-    use s0_eternum::models::owner::{Owner, EntityOwner};
-    use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resources::{Resource, ResourceImpl};
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
-    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
+    use s1_eternum::models::bank::bank::{Bank};
+    use s1_eternum::models::capacity::{CapacityCategory};
+    use s1_eternum::models::config::{BankConfig, CapacityConfigCategory};
+    use s1_eternum::models::owner::{Owner, EntityOwner};
+    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
+    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
     use traits::Into;
 

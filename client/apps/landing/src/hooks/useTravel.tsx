@@ -10,11 +10,14 @@ export function useTravel(fromId: ID, toId: ID, secPerKm: number, pickup?: boole
     queryFn: () => execute(GET_ENTITY_DISTANCE, { entityIds: [fromId, toId] }),
     refetchInterval: 10_000,
   });
-  
 
   const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) => {
-    const fromPosition = entityPositions?.s0EternumPositionModels?.edges?.find((entity)=> entity?.node?.entity_id == fromId);
-    const toPosition = entityPositions?.s0EternumPositionModels?.edges?.find((entity)=> entity?.node?.entity_id == toId);
+    const fromPosition = entityPositions?.s0EternumPositionModels?.edges?.find(
+      (entity) => entity?.node?.entity_id == fromId,
+    );
+    const toPosition = entityPositions?.s0EternumPositionModels?.edges?.find(
+      (entity) => entity?.node?.entity_id == toId,
+    );
     if (!fromPosition || !toPosition) return;
     const distanceFromPosition =
       calculateDistance(

@@ -1,4 +1,4 @@
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -30,36 +30,36 @@ mod realm_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::REALM_ENTITY_TYPE;
-    use s0_eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, DEFAULT_NS, WONDER_QUEST_REWARD_BOOST};
-    use s0_eternum::models::capacity::{CapacityCategory};
-    use s0_eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
-    use s0_eternum::models::config::{QuestRewardConfig, QuestConfig, SeasonAddressesConfig, ProductionConfig};
-    use s0_eternum::models::event::{SettleRealmData, EventType};
-    use s0_eternum::models::map::Tile;
-    use s0_eternum::models::movable::Movable;
-    use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
-    use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::production::{ProductionOutput};
-    use s0_eternum::models::quantity::QuantityTracker;
-    use s0_eternum::models::quest::{Quest, QuestBonus};
-    use s0_eternum::models::realm::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::REALM_ENTITY_TYPE;
+    use s1_eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, DEFAULT_NS, WONDER_QUEST_REWARD_BOOST};
+    use s1_eternum::models::capacity::{CapacityCategory};
+    use s1_eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
+    use s1_eternum::models::config::{QuestRewardConfig, SeasonAddressesConfig, ProductionConfig};
+    use s1_eternum::models::event::{SettleRealmData, EventType};
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::movable::Movable;
+    use s1_eternum::models::name::{AddressName};
+    use s1_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
+    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::quantity::QuantityTracker;
+    use s1_eternum::models::quest::{Quest};
+    use s1_eternum::models::realm::{
         Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl, RealmNameAndAttrsDecodingTrait,
         RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
     };
-    use s0_eternum::models::resources::{
+    use s1_eternum::models::resource::production::labor::{LaborImpl};
+    use s1_eternum::models::resource::resource::{
         DetachedResource, Resource, ResourceImpl, ResourceTrait, ResourceFoodImpl, ResourceFoodTrait
     };
 
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
-    use s0_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
-    use s0_eternum::systems::resources::contracts::resource_bridge_systems::{
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
+    use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
+    use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait
     };
-    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
     use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait, IERC20Dispatcher, IERC20DispatcherTrait};
@@ -194,14 +194,14 @@ mod realm_systems {
             let realm: Realm = world.read_model(entity_id);
             realm.assert_is_set();
 
+            let entity_owner: EntityOwner = world.read_model(entity_id);
+            entity_owner.assert_caller_owner(world);
+
             // ensure quest is not already completed
             let mut quest: Quest = world.read_model((entity_id, quest_id));
             assert(!quest.completed, 'quest already completed');
 
-            assert(realm.settler_address == starknet::get_caller_address(), 'Caller not settler');
-
             // ensure quest has rewards
-            let quest_config: QuestConfig = world.read_model(WORLD_CONFIG_ID);
             let quest_reward_config: QuestRewardConfig = world.read_model(quest_id);
             assert(quest_reward_config.detached_resource_count > 0, 'quest has no rewards');
 
@@ -216,35 +216,6 @@ mod realm_systems {
                     .read_model((quest_reward_config.detached_resource_id, index));
                 let reward_resource_type = detached_resource.resource_type;
                 let mut reward_resource_amount = detached_resource.resource_amount;
-
-                let mut quest_bonus: QuestBonus = world.read_model((entity_id, reward_resource_type));
-
-                // scale reward resource amount by quest production multiplier
-                // if the reward resource is used to produce another resource in the realm.
-                // it will only be scaled if the quest bonus has not been claimed yet and
-                // the reward resource is not food.
-                if !quest_bonus.claimed && !ResourceFoodImpl::is_food(reward_resource_type) {
-                    let reward_resource_production_config: ProductionConfig = world.read_model(reward_resource_type);
-                    let mut jndex = 0;
-                    loop {
-                        if jndex == reward_resource_production_config.output_count {
-                            break;
-                        }
-
-                        let output_resource_type: ProductionOutput = world.read_model((reward_resource_type, jndex));
-                        if realm.produces_resource(output_resource_type.output_resource_type) {
-                            // scale reward resource amount by quest production multiplier
-                            reward_resource_amount *= quest_config.production_material_multiplier.into();
-                            // set quest bonus as claimed
-                            quest_bonus.claimed = true;
-                            world.write_model(@quest_bonus);
-
-                            break;
-                        }
-
-                        jndex += 1;
-                    }
-                }
 
                 if realm.has_wonder {
                     reward_resource_amount *= WONDER_QUEST_REWARD_BOOST.into();
@@ -312,7 +283,6 @@ mod realm_systems {
                         order,
                         level,
                         has_wonder,
-                        settler_address: owner,
                     }
                 );
             world.write_model(@Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, });
@@ -357,7 +327,7 @@ mod realm_systems {
         ) {
             // get bridge systems address
             let (bridge_systems_address, _namespace_hash) =
-                match world.dispatcher.resource(selector_from_tag!("s0_eternum-resource_bridge_systems")) {
+                match world.dispatcher.resource(selector_from_tag!("s1_eternum-resource_bridge_systems")) {
                 dojo::world::Resource::Contract((
                     contract_address, namespace_hash
                 )) => (contract_address, namespace_hash),

@@ -12,7 +12,7 @@ import { Castle, Coins, Gamepad2, Home, PlayCircle, Scale, Sheet, Ship, Twitter 
 import { TypeH2 } from "../typography/type-h2";
 
 import { ReactComponent as Discord } from "@/assets/icons/discord.svg";
-import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
+import { ReactComponent as EternumLogo } from "@/assets/icons/eternum-new-logo.svg";
 // Menu items.
 const items = [
   {

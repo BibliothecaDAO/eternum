@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -35,11 +35,11 @@ mod dev_realm_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::DEFAULT_NS;
-    use s0_eternum::constants::WORLD_CONFIG_ID;
-    use s0_eternum::models::config::SeasonAddressesConfig;
-    use s0_eternum::systems::realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::WORLD_CONFIG_ID;
+    use s1_eternum::models::config::SeasonAddressesConfig;
+    use s1_eternum::systems::realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
     use starknet::ContractAddress;
     use super::{
         ILordsMintDispatcher, ILordsMintDispatcherTrait, ISeasonPassMintDispatcher, ISeasonPassMintDispatcherTrait,
@@ -67,7 +67,7 @@ mod dev_realm_systems {
 
             // approve realms systems contract to spend season passs
             let (realm_systems_address, _namespace_hash) =
-                match world.dispatcher.resource(selector_from_tag!("s0_eternum-realm_systems")) {
+                match world.dispatcher.resource(selector_from_tag!("s1_eternum-realm_systems")) {
                 dojo::world::Resource::Contract((
                     contract_address, namespace_hash
                 )) => (contract_address, namespace_hash),

@@ -1,18 +1,17 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use s0_eternum::{
+use s1_eternum::{
     alias::ID,
     constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_contributable_resources_with_rarity, RESOURCE_PRECISION},
     models::{
         owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
-        resources::{Resource, ResourceImpl, ResourceCost},
+        resource::resource::{Resource, ResourceImpl, ResourceCost},
         structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember}
     },
-    systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
 };
 
-use s0_eternum::{constants::WORLD_CONFIG_ID};
+use s1_eternum::{constants::WORLD_CONFIG_ID};
 use starknet::ContractAddress;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

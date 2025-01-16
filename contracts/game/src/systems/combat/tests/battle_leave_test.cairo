@@ -4,25 +4,25 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use s0_eternum::alias::ID;
-use s0_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
-use s0_eternum::models::combat::{Army, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle};
-use s0_eternum::models::config::{
+use s1_eternum::alias::ID;
+use s1_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
+use s1_eternum::models::combat::{Army, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle};
+use s1_eternum::models::config::{
     TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SpeedConfig, SettlementConfig
 };
-use s0_eternum::models::movable::{Movable};
-use s0_eternum::models::owner::{Owner, EntityOwner};
-use s0_eternum::models::position::{Coord, Position};
+use s1_eternum::models::movable::{Movable};
+use s1_eternum::models::owner::{Owner, EntityOwner};
+use s1_eternum::models::position::{Coord, Position};
 
-use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION};
-use s0_eternum::models::stamina::Stamina;
-use s0_eternum::systems::config::contracts::config_systems;
-use s0_eternum::systems::{
+use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION};
+use s1_eternum::models::stamina::Stamina;
+use s1_eternum::systems::config::contracts::config_systems;
+use s1_eternum::systems::{
     realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
     combat::contracts::battle_systems::{battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait},
     combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
-use s0_eternum::utils::testing::{
+use s1_eternum::utils::testing::{
     config::{get_combat_config, set_capacity_config, set_settlement_config}, world::spawn_eternum,
     systems::{deploy_realm_systems, deploy_system, deploy_battle_systems, deploy_troop_systems},
     general::{mint, spawn_realm}

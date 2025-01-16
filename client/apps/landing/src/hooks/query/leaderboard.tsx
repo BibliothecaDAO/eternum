@@ -12,22 +12,6 @@ export const GET_GAME_WINNER = graphql(`
   }
 `);
 
-export const GET_PLAYER_HAS_REGISTRED = graphql(`
-  query hasPlayerRegistered($accountAddress: ContractAddress!) {
-    s0EternumOwnerModels(where: { address: $accountAddress }) {
-      totalCount
-    }
-  }
-`);
-
-export const GET_PLAYER_HAS_CLAIMED = graphql(`
-  query hasPlayerClaimed($accountAddress: ContractAddress!) {
-    s0EternumLeaderboardRewardClaimedModels(where: { address: $accountAddress }) {
-      totalCount
-    }
-  }
-`);
-
 export const GET_LEADERBOARD_ENTRY = graphql(`
   query getLeaderboardEntry($accountAddress: ContractAddress!) {
     s0EternumLeaderboardEntryModels(where: { address: $accountAddress }) {

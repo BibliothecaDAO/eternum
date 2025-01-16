@@ -1,8 +1,10 @@
-import { AppStore } from "@/hooks/store/useUIStore";
-import { LoadingStateKey } from "@/hooks/store/useWorldLoading";
+import { AppStore } from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   ClientConfigManager,
+  createClientComponents,
   HYPERSTRUCTURE_CONFIG_ID,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
@@ -11,15 +13,14 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
-import { createClientComponents } from "./createClientComponents";
-import { createSystemCalls } from "./createSystemCalls";
-import { setupNetwork } from "./setupNetwork";
+import { createSystemCalls } from "./create-system-calls";
+import { setupNetwork } from "./setup-network";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
 export const configManager = ClientConfigManager.instance();
 
-export const syncEntitiesDebounced = async <S extends Schema>(
+const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityKeyClause: EntityKeysClause[],
@@ -131,7 +132,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
           Keys: {
             keys: [undefined, undefined],
             pattern_matching: "FixedLen",
-            models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
+            models: ["s1_eternum-CapacityConfigCategory", "s1_eternum-ResourceCost"],
           },
         },
         network.contractComponents as any,
@@ -157,14 +158,14 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
             Keys: {
               keys: [undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s0_eternum-Epoch", "s0_eternum-Progress", "s0_eternum-LeaderboardRegisterContribution"],
+              models: ["s1_eternum-Epoch", "s1_eternum-Progress", "s1_eternum-LeaderboardRegisterContribution"],
             },
           },
           {
             Keys: {
               keys: [undefined, undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s0_eternum-Contribution", "s0_eternum-LeaderboardRegisterShare"],
+              models: ["s1_eternum-Contribution", "s1_eternum-LeaderboardRegisterShare"],
             },
           },
         ],
@@ -187,22 +188,22 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
         keys: [undefined],
         pattern_matching: "FixedLen",
         models: [
-          "s0_eternum-AddressName",
-          "s0_eternum-Realm",
-          "s0_eternum-PopulationConfig",
-          "s0_eternum-CapacityConfig",
-          "s0_eternum-ProductionConfig",
-          "s0_eternum-RealmLevelConfig",
-          "s0_eternum-BankConfig",
-          "s0_eternum-Bank",
-          "s0_eternum-Trade",
-          "s0_eternum-Structure",
-          "s0_eternum-Battle",
-          "s0_eternum-Guild",
-          "s0_eternum-LeaderboardRegistered",
-          "s0_eternum-Leaderboard",
-          "s0_eternum-LeaderboardRewardClaimed",
-          "s0_eternum-LeaderboardEntry",
+          "s1_eternum-AddressName",
+          "s1_eternum-Realm",
+          "s1_eternum-PopulationConfig",
+          "s1_eternum-CapacityConfig",
+          "s1_eternum-ProductionConfig",
+          "s1_eternum-RealmLevelConfig",
+          "s1_eternum-BankConfig",
+          "s1_eternum-Bank",
+          "s1_eternum-Trade",
+          "s1_eternum-Structure",
+          "s1_eternum-Battle",
+          "s1_eternum-Guild",
+          "s1_eternum-LeaderboardRegistered",
+          "s1_eternum-Leaderboard",
+          "s1_eternum-LeaderboardRewardClaimed",
+          "s1_eternum-LeaderboardEntry",
         ],
       },
     },
@@ -216,8 +217,8 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
   });
 
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
-
-  configManager.setDojo(components);
+  const eternumConfig = await ETERNUM_CONFIG();
+  configManager.setDojo(components, eternumConfig);
 
   // setLoading(LoadingStateKey.Events, true);
 
@@ -231,7 +232,7 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
       Keys: {
         keys: [undefined],
         pattern_matching: "VariableLen",
-        models: ["s0_eternum-GameEnded"],
+        models: ["s1_eternum-GameEnded"],
       },
     },
     false,
@@ -252,17 +253,17 @@ export async function setup(config: DojoConfig & { state: AppStore }) {
         keys: [undefined],
         pattern_matching: "VariableLen",
         models: [
-          // "s0_eternum-GameEnded",
-          "s0_eternum-HyperstructureFinished",
-          "s0_eternum-BattleClaimData",
-          "s0_eternum-BattleJoinData",
-          "s0_eternum-BattleLeaveData",
-          "s0_eternum-BattlePillageData",
-          "s0_eternum-BattleStartData",
-          "s0_eternum-AcceptOrder",
-          "s0_eternum-SwapEvent",
-          "s0_eternum-LiquidityEvent",
-          "s0_eternum-HyperstructureContribution",
+          // "s1_eternum-GameEnded",
+          "s1_eternum-HyperstructureFinished",
+          "s1_eternum-BattleClaimData",
+          "s1_eternum-BattleJoinData",
+          "s1_eternum-BattleLeaveData",
+          "s1_eternum-BattlePillageData",
+          "s1_eternum-BattleStartData",
+          "s1_eternum-AcceptOrder",
+          "s1_eternum-SwapEvent",
+          "s1_eternum-LiquidityEvent",
+          "s1_eternum-HyperstructureContribution",
         ],
       },
     },

@@ -6,26 +6,26 @@ mod resource_transfer_system_tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::DONKEY_ENTITY_TYPE;
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::DONKEY_ENTITY_TYPE;
 
-    use s0_eternum::constants::ResourceTypes;
-    use s0_eternum::constants::WORLD_CONFIG_ID;
-    use s0_eternum::models::capacity::CapacityCategory;
-    use s0_eternum::models::config::WeightConfig;
-    use s0_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
-    use s0_eternum::models::owner::{Owner, EntityOwner};
-    use s0_eternum::models::position::Position;
-    use s0_eternum::models::quantity::Quantity;
-    use s0_eternum::models::resources::{Resource, ResourceAllowance};
+    use s1_eternum::constants::ResourceTypes;
+    use s1_eternum::constants::WORLD_CONFIG_ID;
+    use s1_eternum::models::capacity::CapacityCategory;
+    use s1_eternum::models::config::WeightConfig;
+    use s1_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
+    use s1_eternum::models::owner::{Owner, EntityOwner};
+    use s1_eternum::models::position::Position;
+    use s1_eternum::models::quantity::Quantity;
+    use s1_eternum::models::resource::resource::{Resource, ResourceAllowance};
 
-    use s0_eternum::systems::config::contracts::{config_systems, IWeightConfigDispatcher, IWeightConfigDispatcherTrait};
+    use s1_eternum::systems::config::contracts::{config_systems, IWeightConfigDispatcher, IWeightConfigDispatcherTrait};
 
-    use s0_eternum::systems::resources::contracts::resource_systems::{
+    use s1_eternum::systems::resources::contracts::resource_systems::{
         resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
     };
 
-    use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
+    use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
     use starknet::contract_address_const;
 
 

@@ -1,8 +1,8 @@
-use s0_eternum::alias::ID;
+use s1_eternum::alias::ID;
 
 #[starknet::interface]
 trait IMapSystems<T> {
-    fn explore(ref self: T, unit_id: ID, direction: s0_eternum::models::position::Direction);
+    fn explore(ref self: T, unit_id: ID, direction: s1_eternum::models::position::Direction);
 }
 
 #[dojo::contract]
@@ -16,40 +16,39 @@ mod map_systems {
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
-    use s0_eternum::models::buildings::{BuildingCategory, Building, BuildingImpl};
-    use s0_eternum::models::capacity::{CapacityCategory};
-    use s0_eternum::models::combat::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
+    use s1_eternum::models::capacity::{CapacityCategory};
+    use s1_eternum::models::combat::{
         Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
-    use s0_eternum::models::config::{
+    use s1_eternum::models::config::{
         ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, MercenariesConfig, TroopConfigImpl,
         TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig, TravelFoodCostConfigImpl
     };
-    use s0_eternum::models::map::Tile;
-    use s0_eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
-    use s0_eternum::models::owner::{Owner, EntityOwner, OwnerTrait, EntityOwnerTrait};
-    use s0_eternum::models::position::{Coord, CoordTrait, Direction, Position};
-    use s0_eternum::models::production::ProductionDeadline;
-    use s0_eternum::models::quantity::Quantity;
-    use s0_eternum::models::realm::{Realm};
-    use s0_eternum::models::resources::{
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
+    use s1_eternum::models::owner::{Owner, EntityOwner, OwnerTrait, EntityOwnerTrait};
+    use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position};
+    use s1_eternum::models::quantity::Quantity;
+    use s1_eternum::models::realm::{Realm};
+    use s1_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
+    use s1_eternum::models::resource::resource::{
         Resource, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };
 
-    use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::StaminaImpl;
-    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
-    use s0_eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
-    use s0_eternum::systems::map::map_generation::{
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::stamina::StaminaImpl;
+    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
+    use s1_eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
+    use s1_eternum::systems::map::map_generation::{
         IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait
     };
-    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
-    use s0_eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
-    use s0_eternum::utils::map::biomes::{Biome, get_biome};
-    use s0_eternum::utils::random;
-    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s1_eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
+    use s1_eternum::utils::map::biomes::{Biome, get_biome};
+    use s1_eternum::utils::random;
+    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
 
@@ -77,8 +76,6 @@ mod map_systems {
         entity_owner_id: ID,
         #[key]
         mine_entity_id: ID,
-        #[key]
-        production_deadline_tick: u64,
         discovered_at: u64
     }
 

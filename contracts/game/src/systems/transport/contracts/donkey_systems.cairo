@@ -5,23 +5,23 @@ mod donkey_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
 
-    use s0_eternum::alias::ID;
+    use s1_eternum::alias::ID;
 
-    use s0_eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION};
-    use s0_eternum::models::capacity::{CapacityCategory};
-    use s0_eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigCategory, CapacityConfigImpl};
-    use s0_eternum::models::movable::{Movable, MovableImpl, ArrivalTime};
-    use s0_eternum::models::order::{Orders, OrdersTrait};
-    use s0_eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
-    use s0_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction, PositionTrait};
-    use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{Resource, ResourceImpl};
-    use s0_eternum::models::weight::Weight;
+    use s1_eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION};
+    use s1_eternum::models::capacity::{CapacityCategory};
+    use s1_eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigCategory, CapacityConfigImpl};
+    use s1_eternum::models::movable::{Movable, MovableImpl, ArrivalTime};
+    use s1_eternum::models::order::{Orders, OrdersTrait};
+    use s1_eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
+    use s1_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction, PositionTrait};
+    use s1_eternum::models::realm::Realm;
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
+    use s1_eternum::models::weight::Weight;
 
-    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{
+    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{
         ResourceSystemsImpl, InternalResourceSystemsImpl
     };
-    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
 

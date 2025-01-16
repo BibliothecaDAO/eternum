@@ -1,8 +1,8 @@
+import { BiomeType } from "@/three/managers/biome";
 import { HyperstructureTypesNames, ResourceMiningTypes } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { BuildingType, RealmLevelNames, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { BiomeType } from "../components/Biome";
 
 export const HEX_SIZE = 1;
 
@@ -77,7 +77,7 @@ const BASE_PATH = "/models/biomes-opt/";
 const FLAT_PATH = "/models/biomes-flat-opt/";
 const MODELS_PATH = IS_FLAT_MODE ? FLAT_PATH : BASE_PATH;
 
-export enum BiomeFilenames {
+enum BiomeFilenames {
   Bare = "bare.glb",
   Beach = "beach.glb",
   TemperateDeciduousForest = "deciduousForest.glb",

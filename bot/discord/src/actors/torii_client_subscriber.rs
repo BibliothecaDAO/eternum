@@ -22,15 +22,15 @@ use crate::{
 };
 
 const TORII_SUBSCRIPTION_MODELS: [&str; 9] = [
-    "s0_eternum-BattleClaimData",
-    "s0_eternum-BattleJoinData",
-    "s0_eternum-BattleLeaveData",
-    "s0_eternum-BattlePillageData",
-    "s0_eternum-BattleStartData",
-    "s0_eternum-SettleRealmData",
-    "s0_eternum-GameEnded",
-    "s0_eternum-HyperstructureFinished",
-    "s0_eternum-HyperstructureStarted",
+    "s1_eternum-BattleClaimData",
+    "s1_eternum-BattleJoinData",
+    "s1_eternum-BattleLeaveData",
+    "s1_eternum-BattlePillageData",
+    "s1_eternum-BattleStartData",
+    "s1_eternum-SettleRealmData",
+    "s1_eternum-GameEnded",
+    "s1_eternum-HyperstructureFinished",
+    "s1_eternum-HyperstructureStarted",
 ];
 
 pub struct ToriiClientSubscriber {
@@ -125,35 +125,35 @@ impl ToriiClientSubscriber {
             let felts = ty.serialize().unwrap();
 
             let event = match model.name.as_str() {
-                "s0_eternum-BattleStartData" => {
+                "s1_eternum-BattleStartData" => {
                     let event = BattleStart::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.defender,
                     }
                 }
-                "s0_eternum-BattleJoinData" => {
+                "s1_eternum-BattleJoinData" => {
                     let event = BattleJoin::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.joiner,
                     }
                 }
-                "s0_eternum-BattleLeaveData" => {
+                "s1_eternum-BattleLeaveData" => {
                     let event = BattleLeave::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.leaver,
                     }
                 }
-                "s0_eternum-BattleClaimData" => {
+                "s1_eternum-BattleClaimData" => {
                     let event = BattleClaim::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.claimee_address,
                     }
                 }
-                "s0_eternum-BattlePillageData" => {
+                "s1_eternum-BattlePillageData" => {
                     let event = BattlePillage::cairo_deserialize(&felts, 0).unwrap();
                     let event_clone = event.clone();
                     Event {
@@ -161,28 +161,28 @@ impl ToriiClientSubscriber {
                         identifier: event.pillaged_structure_owner,
                     }
                 }
-                "s0_eternum-SettleRealmData" => {
+                "s1_eternum-SettleRealmData" => {
                     let event = SettleRealm::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.owner_address,
                     }
                 }
-                "s0_eternum-GameEnded" => {
+                "s1_eternum-GameEnded" => {
                     let event = GameEnded::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.winner_address,
                     }
                 }
-                "s0_eternum-HyperstructureFinished" => {
+                "s1_eternum-HyperstructureFinished" => {
                     let event = HyperstructureFinished::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.hyperstructure_owner_name,
                     }
                 }
-                "s0_eternum-HyperstructureStarted" => {
+                "s1_eternum-HyperstructureStarted" => {
                     let event = HyperstructureStarted::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),

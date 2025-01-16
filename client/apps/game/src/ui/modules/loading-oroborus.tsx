@@ -8,7 +8,7 @@ export const LoadingOroborus = ({ loading }: { loading: boolean }) => {
         loading ? "opacity-100" : "opacity-0",
       )}
     >
-      <img src="/images/eternum-logo_animated.png" className="invert scale-50" />
+      <img src="/images/logos/eternum-animated.png" className="invert scale-50" />
     </div>
   );
 };

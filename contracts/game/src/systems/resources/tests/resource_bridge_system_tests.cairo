@@ -6,24 +6,24 @@ mod resource_bridge_system_tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use s0_eternum::alias::ID;
-    use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-    use s0_eternum::models::bank::{bank::Bank};
-    use s0_eternum::models::capacity::{CapacityCategory};
-    use s0_eternum::models::config::{CapacityConfigCategory, WeightConfig};
-    use s0_eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
-    use s0_eternum::models::movable::{ArrivalTime};
-    use s0_eternum::models::owner::{Owner, EntityOwner};
-    use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resources::{Resource, RESOURCE_PRECISION};
-    use s0_eternum::models::structure::{Structure, StructureCategory};
-    use s0_eternum::systems::config::contracts::config_systems;
-    use s0_eternum::systems::resources::contracts::resource_bridge_systems::{
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::models::bank::{bank::Bank};
+    use s1_eternum::models::capacity::{CapacityCategory};
+    use s1_eternum::models::config::{CapacityConfigCategory, WeightConfig};
+    use s1_eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
+    use s1_eternum::models::movable::{ArrivalTime};
+    use s1_eternum::models::owner::{Owner, EntityOwner};
+    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::resource::resource::{Resource, RESOURCE_PRECISION};
+    use s1_eternum::models::structure::{Structure, StructureCategory};
+    use s1_eternum::systems::config::contracts::config_systems;
+    use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         resource_bridge_systems, resource_bridge_systems::InternalBridgeImpl, IResourceBridgeSystemsDispatcher,
         IResourceBridgeSystemsDispatcherTrait, ERC20ABIDispatcher, ERC20ABIDispatcherTrait
     };
-    use s0_eternum::utils::testing::mock::erc20mock::MockERC20;
-    use s0_eternum::utils::testing::{
+    use s1_eternum::utils::testing::mock::erc20mock::MockERC20;
+    use s1_eternum::utils::testing::{
         world::spawn_eternum, systems::{deploy_system, deploy_contract}, config::set_capacity_config
     };
     use starknet::testing::set_contract_address;
