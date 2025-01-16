@@ -4,7 +4,7 @@ import { getStartingResources } from ".";
 import { BuildingType, resources, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../modelManager";
-import { ClientConfigManager, configManager } from "../modelManager/ConfigManager";
+import { configManager } from "../modelManager/ConfigManager";
 import { ID, Resource } from "../types";
 import { unpackResources } from "./packed-data";
 
@@ -65,16 +65,6 @@ export const getQuestResources = (realmEntityId: ID, components: ClientComponent
   const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
   const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
   return getStartingResources(resourcesProduced);
-};
-
-export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
-  const configManager = ClientConfigManager.instance();
-
-  return resources.reduce(
-    (total, resource) =>
-      total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
-    0,
-  );
 };
 
 export const isResourceProductionBuilding = (buildingId: BuildingType) => {

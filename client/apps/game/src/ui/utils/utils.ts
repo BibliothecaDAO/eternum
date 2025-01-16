@@ -2,8 +2,6 @@ import { HEX_SIZE } from "@/three/scenes/constants";
 import { SortInterface } from "@/ui/elements/sort-button";
 import {
   calculateDistance,
-  CapacityConfigCategory,
-  ClientConfigManager,
   ContractAddress,
   EternumGlobalConfig,
   ResourceCost,
@@ -344,13 +342,6 @@ export const getSeasonAddresses = async (): Promise<ResourceAddresses> => {
     console.error("Error loading season addresses:", error);
     return {};
   }
-};
-
-export const calculateDonkeysNeeded = (orderWeight: number): number => {
-  const configManager = ClientConfigManager.instance();
-  const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfigCategory.Donkey);
-
-  return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacityGrams);
 };
 
 export const normalizeDiacriticalMarks = (str: string) => {

@@ -23,6 +23,7 @@ export * from "./players";
 export * from "./realm";
 export * from "./resources";
 export * from "./structure";
+export * from "./transport";
 export * from "./utils";
 
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {

@@ -1,7 +1,8 @@
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { calculateDonkeysNeeded, currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import {
+  calculateDonkeysNeeded,
   configManager,
   getBalance,
   getTotalResourceWeight,

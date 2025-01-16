@@ -2,8 +2,15 @@ import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { calculateDonkeysNeeded, currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
-import { ID, PlayerStructure, ResourcesIds, findResourceById, getTotalResourceWeight } from "@bibliothecadao/eternum";
+import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
+import {
+  ID,
+  PlayerStructure,
+  ResourcesIds,
+  calculateDonkeysNeeded,
+  findResourceById,
+  getTotalResourceWeight,
+} from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useResourceManager, useUIStore } from "@bibliothecadao/react";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
