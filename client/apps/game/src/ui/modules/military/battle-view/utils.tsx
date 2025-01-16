@@ -1,7 +1,7 @@
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { roundDownToPrecision, roundUpToPrecision } from "@/ui/utils/utils";
 import {
-  Battle,
+  BattleSimulator,
   ClientComponents,
   configManager,
   HealthSimulator,
@@ -96,7 +96,7 @@ export const getTroopLossOnRaidPerTroopType = (
       defenderPaladinLost: 0,
       defenderCrossbowmanLost: 0,
     };
-  const battle = new Battle(
+  const battle = new BattleSimulator(
     attackerArmy.troops,
     defenderArmy.troops,
     new HealthSimulator(attackerArmy.health),

@@ -1,6 +1,6 @@
 import { Troops } from "@/ui/components/worldmap/battles/troops";
 import {
-  Battle,
+  BattleSimulator,
   configManager,
   formatTime,
   ResourcesIds,
@@ -53,7 +53,7 @@ export const BattleSimulationPanel = () => {
       (defendingTroopsNumber[ResourcesIds.Paladin] ?? 0n) * BigInt(configManager.getResourcePrecision()),
       (defendingTroopsNumber[ResourcesIds.Crossbowman] ?? 0n) * BigInt(configManager.getResourcePrecision()),
     );
-    return new Battle(
+    return new BattleSimulator(
       attacker,
       defender,
       attacker.fullHealth(troopConfigSimulation),
