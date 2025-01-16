@@ -3,18 +3,23 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { DurationLeft, ProgressBar } from "@/ui/modules/military/battle-view/battle-progress";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { BattleManager, Structure } from "@bibliothecadao/eternum";
-import { useBattlesAtPosition, useQuery, useStructureByPosition, useUIStore } from "@bibliothecadao/react";
+import { BattleManager, ContractAddress, getStructureAtPosition, Structure } from "@bibliothecadao/eternum";
+import { useBattlesAtPosition, useQuery, useUIStore } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 export const BattleInfoLabel = () => {
+  const dojo = useDojo();
+
   const { isMapView } = useQuery();
-  const getStructure = useStructureByPosition();
   const hoveredBattlePosition = useUIStore((state) => state.hoveredBattle);
   const currentTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
   const battles = useBattlesAtPosition({ x: hoveredBattlePosition?.x || 0, y: hoveredBattlePosition?.y || 0 });
-  const structure = getStructure({ x: hoveredBattlePosition?.x || 0, y: hoveredBattlePosition?.y || 0 });
+  const structure = getStructureAtPosition(
+    { x: hoveredBattlePosition?.x || 0, y: hoveredBattlePosition?.y || 0 },
+    ContractAddress(dojo.account.account.address),
+    dojo.setup.components,
+  );
 
   return (
     <>

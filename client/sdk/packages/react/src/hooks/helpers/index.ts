@@ -22,7 +22,6 @@ export * from "./use-season-start";
 export * from "./use-stamina";
 export * from "./use-starting-tutorial";
 export * from "./use-structure-entity-id";
-export * from "./use-structures";
 export * from "./use-trade";
 export * from "./use-travel";
 export * from "./use-tutorial";

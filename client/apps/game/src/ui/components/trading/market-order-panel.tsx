@@ -24,7 +24,7 @@ import {
 import {
   soundSelector,
   useDojo,
-  useIsResourcesLocked,
+  useIsStructureResourcesLocked,
   useNextBlockTimestamp,
   useResourceManager,
   useTravel,
@@ -117,7 +117,7 @@ export const MarketOrderPanel = memo(
         .sort((a, b) => b.ratio - a.ratio);
     }, [resourceAskOffers, resourceId]);
 
-    const isResourcesLocked = useIsResourcesLocked(entityId);
+    const isResourcesLocked = useIsStructureResourcesLocked(entityId);
 
     return (
       <div className="order-book-selector grid grid-cols-2 gap-4 p-4 h-full">
@@ -268,7 +268,7 @@ const OrderRow = memo(
       [entityId, updateBalance],
     );
 
-    const isMakerResourcesLocked = useIsResourcesLocked(offer.makerId);
+    const isMakerResourcesLocked = useIsStructureResourcesLocked(offer.makerId);
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 

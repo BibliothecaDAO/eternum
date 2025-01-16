@@ -14,9 +14,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { formatTimeDifference } from "@/ui/modules/military/battle-view/battle-progress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BattleManager, ID, ResourcesIds, configManager } from "@bibliothecadao/eternum";
 import {
-  useArmyByArmyEntityId,
+  BattleManager,
+  ContractAddress,
+  ID,
+  ResourcesIds,
+  configManager,
+  getArmy,
+  getStructureAtPosition,
+} from "@bibliothecadao/eternum";
+import {
   useBank,
   useBattlesAtPosition,
   useDojo,
@@ -24,7 +31,6 @@ import {
   useModalStore,
   usePlayerStructures,
   useSetMarket,
-  useStructureByPosition,
   useUIStore,
 } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
@@ -69,8 +75,15 @@ export const MarketModal = () => {
 
   const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
-  const getStructure = useStructureByPosition();
-  const bankStructure = getStructure(bank?.position || { x: 0, y: 0 });
+  const bankStructure = useMemo(
+    () =>
+      getStructureAtPosition(
+        bank?.position || { x: 0, y: 0 },
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [bank?.position, dojo.account.account.address, dojo.setup.components],
+  );
 
   const battleEntityId = useMemo(() => {
     if (battles.length === 0) return null;
@@ -107,7 +120,15 @@ export const MarketModal = () => {
       getEntityIdFromKeys([BigInt(bank?.entityId!), BigInt(ResourcesIds.Lords)]),
     )?.balance || 0n;
 
-  const bankArmy = useArmyByArmyEntityId(bankStructure?.protector?.entity_id || 0);
+  const bankArmy = useMemo(
+    () =>
+      getArmy(
+        bankStructure?.protector?.entity_id || 0,
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [bankStructure?.protector?.entity_id, dojo.account.account.address, dojo.setup.components],
+  );
 
   // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
   const armyInfo = useMemo(() => {

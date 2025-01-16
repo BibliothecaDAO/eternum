@@ -5,8 +5,15 @@ import { SelectAddress } from "@/ui/elements/select-address";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
-import { ContractAddress, formatTime, getAddressName, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp, usePlayers, useStructureByEntityId, useUIStore } from "@bibliothecadao/react";
+import {
+  ContractAddress,
+  formatTime,
+  getAddressName,
+  getStructure,
+  HYPERSTRUCTURE_CONFIG_ID,
+  ID,
+} from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp, usePlayers, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -75,7 +82,10 @@ const CoOwnersRows = ({
     }
   }, [hyperstructure, hyperstructureConfig, nextBlockTimestamp]);
 
-  const structure = useStructureByEntityId(hyperstructureEntityId);
+  const structure = useMemo(
+    () => getStructure(hyperstructureEntityId, ContractAddress(account.address), components),
+    [hyperstructureEntityId, account.address, components],
+  );
 
   const sortingParams = useMemo(() => {
     return [

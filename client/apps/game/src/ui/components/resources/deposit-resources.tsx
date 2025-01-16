@@ -1,7 +1,7 @@
 import Button from "@/ui/elements/button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ArrivalInfo, BattleManager, ID, Resource, ResourceInventoryManager } from "@bibliothecadao/eternum";
-import { soundSelector, useDojo, useStructureByEntityId, useUiSounds, useUIStore } from "@bibliothecadao/react";
+import { ArrivalInfo, BattleManager, ContractAddress, getStructure, ID, Resource, ResourceInventoryManager } from "@bibliothecadao/eternum";
+import { soundSelector, useDojo, useUiSounds, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 
@@ -18,7 +18,13 @@ export const DepositResources = ({ arrival, resources, armyInBattle }: DepositRe
   // stone as proxy for depoisiting resources
   const { play: playDeposit } = useUiSounds(soundSelector.addStone);
 
-  const structureAtPosition = useStructureByEntityId(arrival.recipientEntityId || 0);
+  const structureAtPosition = useMemo(() => {
+    return getStructure(
+      arrival.recipientEntityId || 0,
+      ContractAddress(dojo.account.account.address),
+      dojo.setup.components,
+    );
+  }, [arrival.recipientEntityId, dojo.account.account.address, dojo.setup.components]);
 
   const battleInProgress = useMemo(() => {
     if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0) {

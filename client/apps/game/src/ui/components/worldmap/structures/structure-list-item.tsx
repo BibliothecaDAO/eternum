@@ -4,15 +4,16 @@ import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
-import { ArmyInfo, BattleManager, Structure, StructureType } from "@bibliothecadao/eternum";
 import {
-  useArmiesInBattle,
-  useDojo,
-  useGetHyperstructureProgress,
-  useIsStructureImmune,
-  useNextBlockTimestamp,
-  useUIStore,
-} from "@bibliothecadao/react";
+  ArmyInfo,
+  BattleManager,
+  ContractAddress,
+  getArmiesInBattle,
+  isStructureImmune,
+  Structure,
+  StructureType,
+} from "@bibliothecadao/eternum";
+import { useDojo, useGetHyperstructureProgress, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -64,14 +65,22 @@ export const StructureListItem = ({
     return { updatedBattle };
   }, [nextBlockTimestamp]);
 
-  const armiesInBattle = useArmiesInBattle(updatedBattle?.entity_id || 0);
+  const armiesInBattle = useMemo(
+    () =>
+      getArmiesInBattle(
+        updatedBattle?.entity_id || 0,
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [updatedBattle?.entity_id, dojo.account.account.address, dojo.setup.components],
+  );
 
   // Filter out only the player's armies
   const playerArmiesInBattle = useMemo(() => {
     return armiesInBattle.filter((army) => army.isMine);
   }, [armiesInBattle]);
 
-  const isImmune = useIsStructureImmune(structure, nextBlockTimestamp!);
+  const isImmune = useMemo(() => isStructureImmune(structure, nextBlockTimestamp!), [structure, nextBlockTimestamp]);
 
   const battleButtons = useMemo(() => {
     if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");

@@ -1,26 +1,35 @@
+import { useDojo } from "@/hooks/context/dojo-context";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { Tabs } from "@/ui/elements/tab";
 import { Buildings } from "@/ui/modules/entity-details/realm/buildings";
 import { Castle } from "@/ui/modules/entity-details/realm/castle";
 import { copyPlayerAddressToClipboard, displayAddress } from "@/ui/utils/utils";
-import { Structure, StructureType, formatTime, toHexString } from "@bibliothecadao/eternum";
 import {
-  useIsStructureImmune,
-  useNextBlockTimestamp,
-  useStructureByEntityId,
-  useStructureImmunityTimer,
-  useUIStore,
-} from "@bibliothecadao/react";
+  ContractAddress,
+  Structure,
+  StructureType,
+  formatTime,
+  getStructure,
+  getStructureImmunityTimer,
+  isStructureImmune,
+  toHexString,
+} from "@bibliothecadao/eternum";
+import { useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const RealmDetails = () => {
+  const dojo = useDojo();
+
   const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const structure = useStructureByEntityId(structureEntityId);
+  const structure = useMemo(
+    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
+    [structureEntityId, dojo.account.account.address, dojo.setup.components],
+  );
 
   const isRealm = useMemo(() => {
     return structure?.category === StructureType[StructureType.Realm];
@@ -47,8 +56,14 @@ export const RealmDetails = () => {
     [structure],
   );
 
-  const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
-  const timer = useStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0);
+  const isImmune = useMemo(
+    () => isStructureImmune(structure, nextBlockTimestamp || 0),
+    [structure, nextBlockTimestamp],
+  );
+  const timer = useMemo(
+    () => getStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0),
+    [structure, nextBlockTimestamp],
+  );
 
   return (
     structure && (
@@ -87,7 +102,7 @@ export const RealmDetails = () => {
           <div>
             <span
               className="ml-1 hover:text-white cursor-pointer"
-              onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName)}
+              onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName || "")}
             >
               {displayAddress(address)}
             </span>

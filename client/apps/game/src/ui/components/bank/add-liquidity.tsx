@@ -6,7 +6,7 @@ import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, ID, MarketManager, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
-import { useDojo, useIsResourcesLocked, usePlayerStructures, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useIsStructureResourcesLocked, usePlayerStructures, useUIStore } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 const AddLiquidity = ({
@@ -64,8 +64,8 @@ const AddLiquidity = ({
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
-  const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
-  const isMyResourcesLocked = useIsResourcesLocked(entityId);
+  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId);
+  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId);
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
   const canAdd = hasEnough && isNotZero && !isBankResourcesLocked && !isMyResourcesLocked;
 

@@ -7,11 +7,13 @@ import {
   BattleManager,
   BattleSide,
   ClientComponents,
+  ContractAddress,
   getAddressNameFromEntity,
+  getArmy,
   ID,
   Structure,
 } from "@bibliothecadao/eternum";
-import { useArmyByArmyEntityId, useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 
@@ -53,7 +55,10 @@ export const BattleSideView = ({
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  const ownArmy = useArmyByArmyEntityId(ownArmyEntityId);
+  const ownArmy = useMemo(
+    () => getArmy(ownArmyEntityId, ContractAddress(account.address), components),
+    [ownArmyEntityId, account.address, components],
+  );
 
   const joinBattle = async (side: BattleSide, armyId: ID) => {
     if (ownArmyEntityId) {

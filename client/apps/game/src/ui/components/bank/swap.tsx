@@ -10,6 +10,7 @@ import {
   ContractAddress,
   DONKEY_ENTITY_TYPE,
   getBalance,
+  getStructure,
   ID,
   MarketManager,
   RESOURCE_TIERS,
@@ -20,8 +21,7 @@ import {
 import {
   soundSelector,
   useDojo,
-  useIsResourcesLocked,
-  useStructures,
+  useIsStructureResourcesLocked,
   useTravel,
   useUiSounds,
   useUIStore,
@@ -54,10 +54,9 @@ export const ResourceSwap = ({
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
-  const { getStructureByEntityId } = useStructures();
 
   const bankProtector = useMemo(() => {
-    const structure = getStructureByEntityId(bankEntityId);
+    const structure = getStructure(bankEntityId, ContractAddress(account.address), setup.components);
     return structure?.protector;
   }, [bankEntityId]);
 
@@ -97,8 +96,8 @@ export const ResourceSwap = ({
     return multiplyByPrecision(amount) <= balance;
   }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
-  const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
-  const isMyResourcesLocked = useIsResourcesLocked(entityId);
+  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId);
+  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId);
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
 
   const canSwap = useMemo(

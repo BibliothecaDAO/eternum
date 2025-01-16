@@ -8,12 +8,13 @@ import {
   getBalance,
   getEntityIdFromKeys,
   getRealmInfo,
+  getStructure,
   LEVEL_DESCRIPTIONS,
   REALM_MAX_LEVEL,
   RealmLevels,
   StructureType,
 } from "@bibliothecadao/eternum";
-import { useDojo, useStructureByEntityId, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const Castle = () => {
@@ -28,7 +29,10 @@ export const Castle = () => {
     [structureEntityId, dojo.setup.components],
   );
 
-  const structure = useStructureByEntityId(structureEntityId);
+  const structure = useMemo(
+    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
+    [structureEntityId, dojo.account.account.address, dojo.setup.components],
+  );
 
   const getNextRealmLevel = useMemo(() => {
     if (!realmInfo) return null;

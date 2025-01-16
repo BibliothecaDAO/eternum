@@ -2,8 +2,8 @@ import {
   ContractAddress,
   getRealmWithPosition,
   getStructure,
-  PlayerStructure,
   RealmWithPosition,
+  Structure,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@dojoengine/recs";
@@ -46,8 +46,8 @@ export const usePlayerStructures = (playerAddress?: ContractAddress) => {
 
   const playerStructures = useMemo(() => {
     return entities
-      .map((id) => getStructure(Number(id), components))
-      .filter((structure): structure is PlayerStructure => structure !== undefined)
+      .map((id) => getStructure(Number(id), ContractAddress(account.address), components))
+      .filter((structure): structure is Structure => structure !== undefined)
       .sort((a, b) => a.category.localeCompare(b.category));
   }, [entities]);
 

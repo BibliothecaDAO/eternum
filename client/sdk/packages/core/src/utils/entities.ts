@@ -3,7 +3,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { divideByPrecision } from ".";
 import { CAPACITY_CONFIG_CATEGORY_STRING_MAP } from "../constants";
 import { ClientComponents } from "../dojo";
-import { ContractAddress, EntityType, ID, PlayerStructure, RealmWithPosition } from "../types";
+import { ContractAddress, EntityType, ID, RealmWithPosition } from "../types";
 import { getRealmNameById } from "./realm";
 import { getResourcesFromBalance } from "./resources";
 
@@ -22,25 +22,6 @@ export const getRealmWithPosition = (entityId: ID, components: ClientComponents)
     name: getRealmNameById(realm.realm_id),
     owner,
   } as RealmWithPosition;
-};
-
-export const getStructure = (entityId: ID, components: ClientComponents) => {
-  const { Structure, Position, Owner } = components;
-  const entity = getEntityIdFromKeys([BigInt(entityId)]);
-  const structure = getComponentValue(Structure, entity);
-  if (!structure) return undefined;
-
-  const position = getComponentValue(Position, entity);
-  const owner = getComponentValue(Owner, entity);
-  const structureName = getEntityName(structure.entity_id, components);
-  const name = structureName ? `${structure?.category} ${structureName}` : structure.category || "";
-
-  return {
-    ...structure,
-    position,
-    name,
-    owner,
-  } as PlayerStructure;
 };
 
 export const getEntityInfo = (
