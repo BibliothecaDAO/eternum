@@ -6,7 +6,7 @@
     "**/vitest**",
     "client/apps/game/src/setupTests.ts",
 
-    "client/sdk/packages/eternum/global.d.ts",
+    "client/sdk/packages/core/global.d.ts",
 
     "**/**__test__**/**",
     "**/**__tests__**/**",
