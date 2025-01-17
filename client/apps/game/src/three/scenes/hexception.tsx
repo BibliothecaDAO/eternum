@@ -40,6 +40,8 @@ import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import {
+  BUILDINGS_CATEGORIES_TYPES,
+  BUILDINGS_GROUPS,
   HEX_SIZE,
   MinesMaterialsParams,
   WONDER_REALM,
@@ -93,16 +95,11 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
   return positions;
 };
 
-interface Building {
-  matrix: THREE.Matrix4;
-  buildingType: BuildingType;
-}
-
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
   private buildingModels: Map<
-    BuildingType | ResourceMiningTypes | typeof WONDER_REALM,
-    { model: THREE.Group; animations: THREE.AnimationClip[] }
+    BUILDINGS_GROUPS,
+    Map<BUILDINGS_CATEGORIES_TYPES, { model: THREE.Group; animations: THREE.AnimationClip[] }>
   > = new Map();
   private buildingInstances: Map<string, THREE.Group> = new Map();
   private buildingMixers: Map<string, THREE.AnimationMixer> = new Map();
@@ -115,7 +112,6 @@ export default class HexceptionScene extends HexagonScene {
   private tileManager: TileManager;
   private buildingSubscription: any;
   private realmSubscription: any;
-  private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
   private labels: {
     col: number;
     row: number;
@@ -194,36 +190,44 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private loadBuildingModels() {
-    for (const [building, path] of Object.entries(buildingModelPaths)) {
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        loader.load(
-          path,
-          (gltf) => {
-            const model = gltf.scene as THREE.Group;
-            model.position.set(0, 0, 0);
-            model.rotation.y = Math.PI;
+    for (const category of Object.values(BUILDINGS_GROUPS)) {
+      const categoryPaths = buildingModelPaths[category];
+      if (!this.buildingModels.has(category)) {
+        this.buildingModels.set(category, new Map());
+      }
+      const categoryMap = this.buildingModels.get(category)!;
 
-            model.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
-                  child.castShadow = true;
-                  child.receiveShadow = true;
+      for (const [building, path] of Object.entries(categoryPaths)) {
+        const loadPromise = new Promise<void>((resolve, reject) => {
+          loader.load(
+            path,
+            (gltf) => {
+              const model = gltf.scene as THREE.Group;
+              model.position.set(0, 0, 0);
+              model.rotation.y = Math.PI;
+
+              model.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                  if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                  }
                 }
-              }
-            });
+              });
 
-            // Store animations along with the model
-            this.buildingModels.set(building as any, { model, animations: gltf.animations });
-            resolve();
-          },
-          undefined,
-          (error) => {
-            console.error(`Error loading ${building} model:`, error);
-            reject(error);
-          },
-        );
-      });
-      this.modelLoadPromises.push(loadPromise);
+              // Store the model and animations in the nested map
+              categoryMap.set(building as BUILDINGS_CATEGORIES_TYPES, { model, animations: gltf.animations });
+              resolve();
+            },
+            undefined,
+            (error) => {
+              console.error(`Error loading ${building} model:`, error);
+              reject(error);
+            },
+          );
+        });
+        this.modelLoadPromises.push(loadPromise);
+      }
     }
 
     Promise.all(this.modelLoadPromises).then(() => {});
@@ -471,21 +475,32 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          let buildingType =
-            building.resource && (building.resource < 24 || building.resource === ResourcesIds.AncientFragment)
-              ? ResourceIdToMiningType[building.resource as ResourcesIds]
-              : (BuildingType[building.category].toString() as any);
+          let buildingGroup: BUILDINGS_GROUPS;
+          let buildingType: BUILDINGS_CATEGORIES_TYPES;
 
-          if (parseInt(buildingType) === BuildingType.Castle) {
-            buildingType = castleLevelToRealmCastle[this.structureStage as keyof typeof castleLevelToRealmCastle];
-            if (this.tileManager.getWonder(this.state.structureEntityId)) {
-              buildingType = WONDER_REALM;
-            }
+          if (building.resource && (building.resource < 24 || building.resource === ResourcesIds.AncientFragment)) {
+            buildingGroup = BUILDINGS_GROUPS.RESOURCES_MINING;
+            buildingType = ResourceIdToMiningType[building.resource as ResourcesIds] as ResourceMiningTypes;
+          } else {
+            buildingGroup = BUILDINGS_GROUPS.BUILDINGS;
+            buildingType = BuildingType[building.category].toString() as BUILDINGS_CATEGORIES_TYPES;
           }
+
+          if (buildingGroup === BUILDINGS_GROUPS.BUILDINGS && buildingType === BuildingType.Castle.toString()) {
+            buildingType = castleLevelToRealmCastle[this.structureStage];
+            buildingGroup = BUILDINGS_GROUPS.REALMS;
+          }
+
+          if (this.tileManager.getWonder(this.state.structureEntityId)) {
+            buildingGroup = BUILDINGS_GROUPS.WONDER;
+            buildingType = WONDER_REALM;
+          }
+
           if (building.structureType === StructureType.Hyperstructure) {
-            buildingType = hyperstructureStageToModel[this.structureStage as keyof typeof hyperstructureStageToModel];
+            buildingGroup = BUILDINGS_GROUPS.HYPERSTRUCTURE;
+            buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
           }
-          const buildingData = this.buildingModels.get(buildingType);
+          const buildingData = this.buildingModels.get(buildingGroup)?.get(buildingType);
 
           if (buildingData) {
             const instance = buildingData.model.clone();
