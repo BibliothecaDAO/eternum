@@ -1,7 +1,7 @@
+import { SetupNetworkResult } from "@bibliothecadao/eternum";
 import { createContext, useContext } from "react";
 import { Account, AccountInterface } from "starknet";
 import { SetupResult } from "../../dojo/setup";
-import { SetupNetworkResult } from "../../dojo/setup-network";
 
 export interface DojoAccount {
   create: () => void;

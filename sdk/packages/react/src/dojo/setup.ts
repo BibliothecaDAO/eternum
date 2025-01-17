@@ -3,6 +3,7 @@ import {
   ClientConfigManager,
   createClientComponents,
   HYPERSTRUCTURE_CONFIG_ID,
+  setupNetwork,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
@@ -12,7 +13,6 @@ import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client"
 import { debounce } from "lodash";
 import { AppStore, LoadingStateKey } from "../hooks/store";
 import { createSystemCalls } from "./create-system-calls";
-import { setupNetwork } from "./setup-network";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 

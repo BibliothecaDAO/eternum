@@ -1,8 +1,9 @@
-import { defineContractComponents, EternumProvider } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
 import { BurnerManager } from "@dojoengine/create-burner";
 import * as torii from "@dojoengine/torii-client";
 import { Account } from "starknet";
+import { EternumProvider } from "../provider";
+import { defineContractComponents } from "./contractComponents";
 import { world } from "./world";
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
