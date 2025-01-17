@@ -90,12 +90,6 @@ export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
   [RealmLevels.Empire]: RealmLevelNames.Empire,
 };
 
-export enum StructureProgress {
-  STAGE_1 = 0,
-  STAGE_2 = 1,
-  STAGE_3 = 2,
-}
-
 export const hyperstructureStageToModel: Record<StructureProgress, HyperstructureTypesNames> = {
   [StructureProgress.STAGE_1]: HyperstructureTypesNames.STAGE_1,
   [StructureProgress.STAGE_2]: HyperstructureTypesNames.STAGE_2,
