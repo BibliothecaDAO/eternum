@@ -24,7 +24,7 @@ const BIOMES_MODELS_PATH = IS_FLAT_MODE ? BIOMES_FLAT_PATH : BIOMES_BASE_PATH;
 
 const BUILDINGS_MODELS_PATH = "/models/buildings/";
 
-export enum BiomeFilenames {
+enum BiomeFilenames {
   Bare = "bare.glb",
   Beach = "beach.glb",
   TemperateDeciduousForest = "deciduousForest.glb",
@@ -44,7 +44,7 @@ export enum BiomeFilenames {
   TropicalSeasonalForest = "tropicalSeasonalForest.glb",
 }
 
-export enum BuildingFilenames {
+enum BuildingFilenames {
   Bank = "bank.glb",
   ArcheryRange = "archerrange.glb",
   Barracks = "barracks.glb",
