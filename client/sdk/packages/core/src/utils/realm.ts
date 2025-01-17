@@ -48,6 +48,7 @@ let realms: {
 } = {};
 
 const loadRealms = async () => {
+  if (typeof window === "undefined") return;
   const response = await fetch("/jsons/realms.json");
   realms = await response.json();
 };
