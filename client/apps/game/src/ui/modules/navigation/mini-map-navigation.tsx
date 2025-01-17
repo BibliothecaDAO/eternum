@@ -1,6 +1,6 @@
 import { ReactComponent as CollapseIcon } from "@/assets/icons/common/collapse.svg";
 import { ReactComponent as ExpandIcon } from "@/assets/icons/common/expand.svg";
-import useUIStore from "@/hooks/store/use-ui-store";
+import { useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useEffect, useRef, useState } from "react";
 

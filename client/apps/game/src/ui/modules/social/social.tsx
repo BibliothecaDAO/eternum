@@ -1,6 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useHyperstructureData, useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { social } from "@/ui/components/navigation/config";
 import { ExpandableOSWindow } from "@/ui/components/navigation/os-window";
@@ -9,21 +6,20 @@ import { Guilds } from "@/ui/components/worldmap/guilds/guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
 import Button from "@/ui/elements/button";
 import { Tabs } from "@/ui/elements/tab";
-import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
+import { ContractAddress, getPlayerInfo, ID, PlayerInfo } from "@bibliothecadao/eternum";
+import { useDojo, useHyperstructureData, useLeaderBoardStore, usePlayers, useUIStore } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { EndSeasonButton } from "./end-season-button";
 import { PlayerId } from "./player-id";
 
-export const Social = ({ getPlayers }: { getPlayers: () => Player[] }) => {
+export const Social = () => {
   const {
-    setup: {
-      components: {
-        events: { GameEnded },
-      },
-    },
+    account: { account },
+    setup: { components },
   } = useDojo();
+
   const [selectedTab, setSelectedTab] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,10 +29,15 @@ export const Social = ({ getPlayers }: { getPlayers: () => Player[] }) => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(social));
 
-  const gameEnded = useEntityQuery([Has(GameEnded)]);
+  const gameEnded = useEntityQuery([Has(components.events.GameEnded)]);
 
-  const [players, setPlayers] = useState(() => getPlayers());
+  const players = usePlayers();
+
   const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
+
+  const [playerInfo, setPlayerInfo] = useState<PlayerInfo[]>(
+    getPlayerInfo(players, ContractAddress(account.address), playersByRank, components),
+  );
 
   const updateLeaderboard = useHyperstructureData();
 
@@ -46,7 +47,7 @@ export const Social = ({ getPlayers }: { getPlayers: () => Player[] }) => {
   };
 
   useEffect(() => {
-    setPlayers(getPlayers());
+    setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));
     setIsLoading(false);
   }, [playersByRank]);
 
@@ -74,18 +75,18 @@ export const Social = ({ getPlayers }: { getPlayers: () => Player[] }) => {
       {
         key: "Players",
         label: <div>Players</div>,
-        component: <PlayersPanel players={players} viewPlayerInfo={viewPlayerInfo} />,
+        component: <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} />,
         expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
       },
       {
         key: "Guild",
         label: <div>Tribes</div>,
-        component: <Guilds players={players} viewGuildMembers={viewGuildMembers} />,
+        component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer ? (
           <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
         ) : (
           <GuildMembers
-            players={players}
+            players={playerInfo}
             selectedGuildEntityId={selectedGuild}
             viewPlayerInfo={viewPlayerInfo}
             setIsExpanded={setIsExpanded}
@@ -93,7 +94,7 @@ export const Social = ({ getPlayers }: { getPlayers: () => Player[] }) => {
         ),
       },
     ],
-    [selectedTab, isExpanded, selectedGuild, selectedPlayer, updateLeaderboard],
+    [selectedTab, isExpanded, selectedGuild, selectedPlayer, playerInfo],
   );
 
   return (

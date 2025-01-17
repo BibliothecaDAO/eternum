@@ -1,32 +1,30 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useRealm } from "@/hooks/helpers/use-realm";
-import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
-import { useTravel } from "@/hooks/helpers/use-travel";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { currencyFormat, divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
-  currencyFormat,
-  divideByPrecision,
-  formatNumber,
-  getTotalResourceWeight,
-  multiplyByPrecision,
-} from "@/ui/utils/utils";
-import {
+  configManager,
   DONKEY_ENTITY_TYPE,
+  findResourceById,
+  getRealmAddressName,
+  getTotalResourceWeight,
   ONE_MONTH,
   ResourceManager,
   ResourcesIds,
-  configManager,
-  findResourceById,
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/eternum";
+import {
+  soundSelector,
+  useDojo,
+  useIsStructureResourcesLocked,
+  useNextBlockTimestamp,
+  useResourceManager,
+  useTravel,
+  useUiSounds,
+} from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -114,7 +112,7 @@ export const MarketOrderPanel = memo(
         .sort((a, b) => b.ratio - a.ratio);
     }, [resourceAskOffers, resourceId]);
 
-    const isResourcesLocked = useIsResourcesLocked(entityId);
+    const isResourcesLocked = useIsStructureResourcesLocked(entityId);
 
     return (
       <div className="order-book-selector grid grid-cols-2 gap-4 p-4 h-full">
@@ -265,9 +263,7 @@ const OrderRow = memo(
       [entityId, updateBalance],
     );
 
-    const { getRealmAddressName } = useRealm();
-
-    const isMakerResourcesLocked = useIsResourcesLocked(offer.makerId);
+    const isMakerResourcesLocked = useIsStructureResourcesLocked(offer.makerId);
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
@@ -359,7 +355,7 @@ const OrderRow = memo(
     }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
 
     const accountName = useMemo(() => {
-      return getRealmAddressName(offer.makerId);
+      return getRealmAddressName(offer.makerId, dojo.setup.components);
     }, [offer.originName]);
 
     const onAccept = async () => {

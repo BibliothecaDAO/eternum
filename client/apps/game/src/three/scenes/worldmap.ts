@@ -1,8 +1,3 @@
-import { SetupResult } from "@/dojo/setup";
-import { useAccountStore } from "@/hooks/context/account-store";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { soundSelector } from "@/hooks/use-ui-sound";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleManager } from "@/three/managers/battle-manager";
 import { Biome } from "@/three/managers/biome";
@@ -14,13 +9,9 @@ import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "@/three/scenes/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
-import { ArmySystemUpdate, TileSystemUpdate } from "@/three/systems/types";
 import { SceneName } from "@/types";
-import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
 import {
   ArmyMovementManager,
   BiomeType,
@@ -31,12 +22,24 @@ import {
   TravelPaths,
   getNeighborOffsets,
 } from "@bibliothecadao/eternum";
+import {
+  ArmySystemUpdate,
+  LeftView,
+  LoadingStateKey,
+  Position,
+  SetupResult,
+  TileSystemUpdate,
+  soundSelector,
+  useAccountStore,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { getEntities } from "@dojoengine/state";
 import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { getWorldPositionForHex } from "../utils";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;

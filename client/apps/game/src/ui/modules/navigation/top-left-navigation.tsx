@@ -1,21 +1,33 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { PlayerStructure, useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import { useQuery } from "@/hooks/helpers/use-query";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
-import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { QuestsMenu } from "@/ui/modules/navigation/quest-menu";
-import { formatTime, gramToKg, kgToGram } from "@/ui/utils/utils";
-import { BuildingType, CapacityConfigCategory, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
+import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
+import { gramToKg, kgToGram } from "@/ui/utils/utils";
+import {
+  BuildingType,
+  CapacityConfigCategory,
+  configManager,
+  ContractAddress,
+  formatTime,
+  getEntityInfo,
+  ID,
+  PlayerStructure,
+  ResourcesIds,
+  TickIds,
+} from "@bibliothecadao/eternum";
+import {
+  Position,
+  soundSelector,
+  useDojo,
+  useNextBlockTimestamp,
+  useQuery,
+  useUiSounds,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -93,10 +105,13 @@ const WorkersHutTooltipContent = () => {
 };
 
 export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStructure[] }) => {
-  const { setup } = useDojo();
+  const {
+    setup,
+    account: { account },
+  } = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
-  const { getEntityInfo } = useEntitiesUtils();
 
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -110,11 +125,14 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     return saved ? JSON.parse(saved) : [];
   });
 
-  const entityInfo = useMemo(() => getEntityInfo(structureEntityId), [structureEntityId, getEntityInfo]);
+  const entityInfo = useMemo(
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), currentDefaultTick, setup.components),
+    [structureEntityId, currentDefaultTick],
+  );
 
   const structure = useMemo(() => {
     return { ...entityInfo, isFavorite: favorites.includes(entityInfo.entityId) };
-  }, [structureEntityId, getEntityInfo, favorites]);
+  }, [structureEntityId, favorites]);
 
   const structurePosition = useMemo(() => {
     return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();

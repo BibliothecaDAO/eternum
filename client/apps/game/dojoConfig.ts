@@ -1,7 +1,5 @@
+import { manifestLocal, manifestMainnet, manifestSepolia } from "@bibliothecadao/assets";
 import { createDojoConfig } from "@dojoengine/core";
-import devManifest from "../../common/manifests/manifest_dev.json";
-import mainnetManifest from "../../common/manifests/manifest_mainnet.json";
-import productionManifest from "../../common/manifests/manifest_prod.json";
 
 import { env } from "./env";
 const {
@@ -16,9 +14,9 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-let manifest = VITE_PUBLIC_DEV === true ? devManifest : productionManifest;
+let manifest = VITE_PUBLIC_DEV === true ? manifestLocal : manifestSepolia;
 
-manifest = VITE_PUBLIC_CHAIN === "mainnet" ? mainnetManifest : manifest;
+manifest = VITE_PUBLIC_CHAIN === "mainnet" ? manifestMainnet : manifest;
 
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,

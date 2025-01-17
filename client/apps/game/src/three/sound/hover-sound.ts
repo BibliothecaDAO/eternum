@@ -1,4 +1,4 @@
-import { dir, soundSelector } from "@/hooks/use-ui-sound";
+import { dir, soundSelector } from "@bibliothecadao/react";
 
 export class HoverSound {
   private firstSound: HTMLAudioElement;

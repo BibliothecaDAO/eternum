@@ -1,9 +1,17 @@
 import * as THREE from "three";
 
 import { BiomeType } from "@/three/managers/biome";
-import { HyperstructureTypesNames, ResourceMiningTypes } from "@/types";
+import { HyperstructureTypesNames } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
-import { BuildingType, RealmLevelNames, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  RealmLevelNames,
+  RealmLevels,
+  ResourceMiningTypes,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/eternum";
+import { StructureProgress } from "@bibliothecadao/react";
 
 export const HEX_SIZE = 1;
 

@@ -1,0 +1,264 @@
+import { SortInterface } from "@/ui/elements/sort-button";
+import {
+  ContractAddress,
+  EternumGlobalConfig,
+  ResourceCost,
+  ResourcesIds,
+  toHexString,
+  type Resource,
+} from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { env } from "../../../env";
+
+export { getEntityIdFromKeys };
+
+export const formatStringNumber = (str: string): string => {
+  return Number(str).toLocaleString();
+};
+
+export const formatNumber = (num: number, decimals: number): string => {
+  // Convert to string with max decimals
+  let str = num.toFixed(decimals);
+
+  // Remove trailing zeros after decimal point
+  if (str.includes(".")) {
+    str = str.replace(/\.?0+$/, "");
+  }
+
+  return str;
+};
+
+export const currencyFormat = (num: number, decimals: number): string => {
+  const formattedDecimals = formatNumber(divideByPrecision(num), decimals);
+  return Number(formattedDecimals).toLocaleString();
+};
+
+export function currencyIntlFormat(num: number, decimals: number = 2): string {
+  return Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: decimals,
+  }).format(num || 0);
+}
+
+export function displayAddress(string: string) {
+  if (string === undefined) return "unknown";
+  return string.substring(0, 6) + "..." + string.substring(string.length - 4);
+}
+
+export function multiplyByPrecision(value: number): number {
+  return Math.floor(value * EternumGlobalConfig.resources.resourcePrecision);
+}
+
+export function divideByPrecision(value: number): number {
+  return value / EternumGlobalConfig.resources.resourcePrecision;
+}
+
+export function divideByPrecisionFormatted(value: number): string {
+  return divideByPrecision(value).toLocaleString("en-US");
+}
+
+export function roundDownToPrecision(value: bigint, precision: number) {
+  return BigInt(Number(value) - (Number(value) % Number(precision)));
+}
+
+export function roundUpToPrecision(value: bigint, precision: number) {
+  return BigInt(Number(value) + (Number(precision) - (Number(value) % Number(precision))));
+}
+
+export function addressToNumber(address: string) {
+  // Convert the address to a big integer
+  let numericValue = ContractAddress(address);
+
+  // Sum the digits of the numeric value
+  let sum = 0;
+  while (numericValue > 0) {
+    sum += Number(numericValue % 5n);
+    numericValue /= 5n;
+  }
+
+  // Map the sum to a number between 1 and 10
+  const result = (sum % 5) + 1;
+
+  // Pad with a 0 if the result is less than 10
+  return result < 10 ? `0${result}` : result.toString();
+}
+
+export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string, hex: boolean = false) => {
+  navigator.clipboard
+    .writeText(hex ? toHexString(address) : address.toString())
+    .then(() => {
+      alert(`Address of ${name} copied to clipboard`);
+    })
+    .catch((err) => {
+      console.error("Failed to copy: ", err);
+    });
+};
+
+export function gramToKg(grams: number): number {
+  return Number(grams) / 1000;
+}
+
+export function kgToGram(kg: number): number {
+  return Number(kg) * 1000;
+}
+
+export const formatResources = (resources: any[]): Resource[] => {
+  return resources
+    .map((resource) => ({
+      resourceId: Number(resource[0].value),
+      amount: Number(resource[1].value),
+    }))
+    .filter((resource) => resource.amount > 0);
+};
+
+const accentsToAscii = (str: string) => {
+  // Character map for transliteration to ASCII
+  const charMap: Record<string, string> = {
+    á: "a",
+    ú: "u",
+    é: "e",
+    ä: "a",
+    Š: "S",
+    Ï: "I",
+    š: "s",
+    Í: "I",
+    í: "i",
+    ó: "o",
+    ï: "i",
+    ë: "e",
+    ê: "e",
+    â: "a",
+    Ó: "O",
+    ü: "u",
+    Á: "A",
+    Ü: "U",
+    ô: "o",
+    ž: "z",
+    Ê: "E",
+    ö: "o",
+    č: "c",
+    Â: "A",
+    Ä: "A",
+    Ë: "E",
+    É: "E",
+    Č: "C",
+    Ž: "Z",
+    Ö: "O",
+    Ú: "U",
+    Ô: "O",
+    "‘": "'",
+  };
+  const transliterate = (str: string) => {
+    return str
+      .split("")
+      .map((char) => charMap[char] || char)
+      .join("");
+  };
+  return transliterate(str);
+};
+
+export const toValidAscii = (str: string) => {
+  const intermediateString = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return accentsToAscii(intermediateString);
+};
+
+export const separateCamelCase = (str: string): string => {
+  return str
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortKey: SortInterface): T[] {
+  const compareValues = (a: T, b: T, sortKey: string, sortDirection: "asc" | "desc" | "none"): number => {
+    const valueA = getNestedPropertyValue(a, sortKey);
+    const valueB = getNestedPropertyValue(b, sortKey);
+
+    let comparison = 0;
+
+    if (sortKey === "age" && typeof valueA === "string" && typeof valueB === "string") {
+      comparison = timeStringToSeconds(valueA) - timeStringToSeconds(valueB);
+    } else if (typeof valueA === "string" && typeof valueB === "string") {
+      comparison = valueA.localeCompare(valueB);
+    } else if (typeof valueA === "number" && typeof valueB === "number") {
+      comparison = valueA - valueB;
+    }
+
+    return sortDirection === "asc" ? comparison : -comparison;
+  };
+
+  if (activeSort.sort !== "none") {
+    return items.sort((a, b) => compareValues(a, b, activeSort.sortKey, activeSort.sort));
+  } else {
+    return items.sort((a, b) => compareValues(a, b, defaultSortKey.sortKey, defaultSortKey.sort));
+  }
+}
+
+function getNestedPropertyValue<T>(item: T, propertyPath: string) {
+  return propertyPath
+    .split(".")
+    .reduce(
+      (currentObject, propertyName) =>
+        currentObject ? (currentObject as Record<string, any>)[propertyName] : undefined,
+      item,
+    );
+}
+
+function timeStringToSeconds(timeStr: string): number {
+  const value = parseInt(timeStr);
+  const unit = timeStr.slice(-1).toLowerCase();
+
+  switch (unit) {
+    case "d":
+      return value * 86400;
+    case "h":
+      return value * 3600;
+    case "m":
+      return value * 60;
+    case "s":
+      return value;
+    default:
+      return 0;
+  }
+}
+
+export const getRandomBackgroundImage = () => {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const imageNumber = (timestamp % 7) + 1;
+  const paddedNumber = imageNumber.toString().padStart(2, "0");
+  return paddedNumber;
+};
+
+export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
+  return cost.map((item) => (item.resource === ResourcesIds.Lords ? { ...item, amount: item.amount * 0.1 } : item));
+};
+
+const getSeasonAddressesPath = () => {
+  return `/resource_addresses/${env.VITE_PUBLIC_CHAIN}/resource_addresses.json`;
+};
+
+const getJSONFile = async (filePath: string) => {
+  const response = await fetch(filePath);
+  const data = await response.json();
+  return data;
+};
+interface ResourceAddresses {
+  [key: string]: [number, string];
+}
+
+export const getSeasonAddresses = async (): Promise<ResourceAddresses> => {
+  try {
+    const path = getSeasonAddressesPath();
+    const data = await getJSONFile(path);
+    return data;
+  } catch (error) {
+    console.error("Error loading season addresses:", error);
+    return {};
+  }
+};
+
+export const normalizeDiacriticalMarks = (str: string) => {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};

@@ -1,4 +1,3 @@
-import { configManager } from "@/dojo/setup";
 import { execute } from "@/hooks/gql/execute";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
@@ -11,6 +10,7 @@ import {
   DONKEY_ENTITY_TYPE,
   RESOURCE_PRECISION,
   ResourcesIds,
+  configManager,
   resources,
 } from "@bibliothecadao/eternum";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";

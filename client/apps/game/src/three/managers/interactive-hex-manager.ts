@@ -2,8 +2,8 @@ import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
-import { getHexagonCoordinates, getWorldPositionForHex } from "@/ui/utils/utils";
 import * as THREE from "three";
+import { getHexagonCoordinates, getWorldPositionForHex } from "../utils";
 
 export class InteractiveHexManager {
   private scene: THREE.Scene;

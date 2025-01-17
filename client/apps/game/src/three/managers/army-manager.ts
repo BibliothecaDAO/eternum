@@ -1,17 +1,15 @@
-import { useAccountStore } from "@/hooks/context/account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { findShortestPath } from "@/three/helpers/pathfinding";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { Biome } from "@/three/managers/biome";
 import { LabelManager } from "@/three/managers/label-manager";
-import { ArmySystemUpdate } from "@/three/systems/types";
 import { ArmyData, MovingArmyData, MovingLabelData, RenderChunkSize } from "@/types";
-import { Position } from "@/types/position";
-import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
+import { ArmySystemUpdate, Position, useAccountStore } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);

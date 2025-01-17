@@ -1,14 +1,18 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import { ArrivalInfo } from "@/hooks/helpers/use-resource-arrivals";
-import { useResourcesUtils } from "@/hooks/helpers/use-resources";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { DepositResources } from "@/ui/components/resources/deposit-resources";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision, formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { EntityType } from "@bibliothecadao/eternum";
+import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
+import {
+  ArrivalInfo,
+  ContractAddress,
+  EntityType,
+  formatTime,
+  getArmy,
+  getEntityInfo,
+  getEntityName,
+  getResourcesFromBalance,
+} from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import React, { useMemo } from "react";
@@ -29,37 +33,42 @@ type EntityProps = {
   arrival: ArrivalInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-const CACHE_KEY = "inventory-resources-sync";
-const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
-
 export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
-  const { getEntityInfo, getEntityName } = useEntitiesUtils();
-  const { getResourcesFromBalance } = useResourcesUtils();
+  const components = dojo.setup.components;
+
   const { nextBlockTimestamp } = useNextBlockTimestamp();
-  const { getArmy } = useGetArmyByEntityId();
 
   const weight = useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(arrival.entityId)]));
 
-  const entity = getEntityInfo(arrival.entityId);
+  const entity = getEntityInfo(
+    arrival.entityId,
+    ContractAddress(dojo.account.account.address),
+    currentDefaultTick,
+    dojo.setup.components,
+  );
 
   const entityResources = useMemo(() => {
-    return getResourcesFromBalance(arrival.entityId);
+    return getResourcesFromBalance(arrival.entityId, currentDefaultTick, components);
   }, [weight]);
 
-  const army = useMemo(() => getArmy(arrival.entityId), [arrival.entityId, entity.resources]);
+  const army = useMemo(
+    () => getArmy(arrival.entityId, ContractAddress(dojo.account.account.address), components),
+    [arrival.entityId, entity.resources],
+  );
 
   const renderEntityStatus = useMemo(() => {
     return nextBlockTimestamp ? (
       arrival.arrivesAt <= nextBlockTimestamp ? (
         <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
-          Waiting to offload to {getEntityName(arrival.recipientEntityId)}
+          Waiting to offload to {getEntityName(arrival.recipientEntityId, components)}
         </div>
       ) : (
         <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
           Arriving in {formatTime(Number(entity.arrivalTime) - nextBlockTimestamp)} to{" "}
-          {getEntityName(arrival.recipientEntityId)}
+          {getEntityName(arrival.recipientEntityId, components)}
         </div>
       )
     ) : null;

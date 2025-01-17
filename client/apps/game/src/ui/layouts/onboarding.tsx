@@ -3,14 +3,12 @@ import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
 import { ReactComponent as LordsIcon } from "@/assets/icons/resources/LordsSimple.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { usePlayerRealms } from "@/hooks/helpers/use-realm";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview/realm/settle-realm-component";
 import Button from "@/ui/elements/button";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { Controller } from "@/ui/modules/controller/controller";
 import { SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
+import { useDojo, usePlayerOwnedRealms, useUIStore } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
@@ -188,7 +186,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
 
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
-  const realms = usePlayerRealms();
+  const realms = usePlayerOwnedRealms();
 
   const createRandomRealm = () => {
     const newRealmId = Math.max(...realms.map((realm) => realm.realmId), 0) + 1;

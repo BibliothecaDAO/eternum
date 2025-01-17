@@ -1,15 +1,3 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useContributions } from "@/hooks/helpers/use-contributions";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import {
-  ProgressWithPercentage,
-  useHyperstructureProgress,
-  useHyperstructureUpdates,
-} from "@/hooks/helpers/use-hyperstructures";
-import { useHyperstructureData } from "@/hooks/store/use-leaderboard-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { ContributionSummary } from "@/ui/components/hyperstructures/contribution-summary";
 import { HyperstructureDetails } from "@/ui/components/hyperstructures/hyperstructure-details";
 import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/hyperstructure-resource-chip";
@@ -20,10 +8,22 @@ import { currencyIntlFormat, getEntityIdFromKeys, multiplyByPrecision, separateC
 import {
   Access,
   calculateCompletionPoints,
+  configManager,
   ContractAddress,
+  getAddressNameFromEntity,
   LeaderboardManager,
   MAX_NAME_LENGTH,
 } from "@bibliothecadao/eternum";
+import {
+  ProgressWithPercentage,
+  useDojo,
+  useGuilds,
+  useHyperstructureData,
+  useHyperstructureProgress,
+  useHyperstructureUpdates,
+  usePlayerContributions,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 
@@ -48,7 +48,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
     network: { provider },
     setup: {
       systemCalls: { contribute_to_construction, set_access },
-      components: { Hyperstructure },
+      components,
     },
   } = dojo;
 
@@ -66,18 +66,15 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const progresses = useHyperstructureProgress(entity.entity_id);
 
-  const { useContributionsByPlayerAddress } = useContributions();
-
-  const myContributions = useContributionsByPlayerAddress(BigInt(account.address), entity.entity_id);
+  const myContributions = usePlayerContributions(BigInt(account.address), entity.entity_id);
 
   const updates = useHyperstructureUpdates(entity.entity_id);
 
   const [newContributions, setNewContributions] = useState<Record<number, number>>({});
 
-  const { getAddressNameFromEntity } = useEntitiesUtils();
-  const ownerName = getAddressNameFromEntity(entity.entity_id);
+  const ownerName = getAddressNameFromEntity(entity.entity_id, components);
 
-  const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
+  const hyperstructure = useComponentValue(components.Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
 
   const playerGuild = useMemo(() => getGuildFromPlayerAddress(ContractAddress(account.address)), []);
 

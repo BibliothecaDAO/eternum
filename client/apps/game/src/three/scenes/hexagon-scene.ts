@@ -1,5 +1,3 @@
-import { type SetupResult } from "@/dojo/setup";
-import useUIStore, { type AppStore } from "@/hooks/store/use-ui-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { LocationManager } from "@/three/helpers/location-manager";
 import { gltfLoader } from "@/three/helpers/utils";
@@ -13,15 +11,14 @@ import { HEX_SIZE, biomeModelPaths } from "@/three/scenes/constants";
 import { SystemManager } from "@/three/systems/system-manager";
 import { type SceneName } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
-import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
-import { RightView } from "@/ui/modules/navigation/right-navigation-module";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { type HexPosition } from "@bibliothecadao/eternum";
+import { LeftView, RightView, useUIStore, type AppStore, type SetupResult } from "@bibliothecadao/react";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { type MapControls } from "three/examples/jsm/controls/MapControls";
 import { env } from "../../../env";
+import { getWorldPositionForHex } from "../utils";
 export abstract class HexagonScene {
   protected scene!: THREE.Scene;
   protected camera!: THREE.PerspectiveCamera;

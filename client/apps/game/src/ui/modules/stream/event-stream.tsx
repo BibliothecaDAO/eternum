@@ -1,9 +1,7 @@
-import { world } from "@/dojo/world";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { ContractAddress, getAddressFromEntity, getAddressNameFromEntity, ID } from "@bibliothecadao/eternum";
+import { useDojo, world } from "@bibliothecadao/react";
 import { Component, defineComponentSystem, Entity, getComponentValue, World } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useState } from "react";
@@ -21,7 +19,6 @@ export const EventStream = () => {
   const [eventList, setEventList] = useState<EventData[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "personal">("all");
   const [hasNewEvents, setHasNewEvents] = useState(false);
-  const { getAddressNameFromEntity, getPlayerAddressFromEntity } = useEntitiesUtils();
 
   const createEvent = useCallback(
     (entity: Entity, component: Component<any>, eventType: EventType): EventData | undefined => {
@@ -49,14 +46,14 @@ export const EventStream = () => {
         : getComponentValue(components.Position, getEntityIdFromKeys([BigInt(entityId)]));
 
       const name = entityOwner
-        ? getAddressNameFromEntity(entityOwner?.entity_owner_id)
-        : getAddressNameFromEntity(entityId);
+        ? getAddressNameFromEntity(entityOwner?.entity_owner_id, components)
+        : getAddressNameFromEntity(entityId, components);
 
       const owner = entityOwner
         ? getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
         : getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityId)]));
 
-      const to = eventDetails[eventType].to?.(componentValue! as any, getPlayerAddressFromEntity);
+      const to = eventDetails[eventType].to?.(componentValue! as any, (id: ID) => getAddressFromEntity(id, components));
       const isPersonal = to === ContractAddress(account.address);
 
       return {

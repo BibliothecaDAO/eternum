@@ -1,31 +1,30 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { PlayerCustom, PlayerList } from "@/ui/components/worldmap/players/player-list";
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
-import { getEntityIdFromKeys, normalizeDiacriticalMarks, toHexString } from "@/ui/utils/utils";
-import { ContractAddress, Player } from "@bibliothecadao/eternum";
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
+import { ContractAddress, getEntityName, PlayerInfo, toHexString } from "@bibliothecadao/eternum";
+import { useDojo, useGuilds } from "@bibliothecadao/react";
+import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { KeyboardEvent, useMemo, useState } from "react";
 
 export const PlayersPanel = ({
   players,
   viewPlayerInfo,
 }: {
-  players: Player[];
+  players: PlayerInfo[];
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
 }) => {
   const {
     setup: {
-      components: { Structure, Owner, GuildWhitelist },
+      components,
       systemCalls: { whitelist_player, remove_player_from_whitelist },
     },
     account: { account },
   } = useDojo();
 
+  const { Structure, Owner, GuildWhitelist } = components;
+
   const { getGuildFromPlayerAddress } = useGuilds();
-  const { getEntityName } = useEntitiesUtils();
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
 
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +45,7 @@ export const PlayersPanel = ({
           const structure = getComponentValue(Structure, entityId);
           if (!structure) return undefined;
 
-          const structureName = getEntityName(structure.entity_id);
+          const structureName = getEntityName(structure.entity_id, components);
           return structureName;
         })
         .filter((structure): structure is string => structure !== undefined);

@@ -1,7 +1,5 @@
-import { configManager } from "@/dojo/setup";
-import { useStaminaManager } from "@/hooks/helpers/use-stamina";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { ID } from "@bibliothecadao/eternum";
+import { configManager, ID } from "@bibliothecadao/eternum";
+import { useNextBlockTimestamp, useStaminaManager } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 

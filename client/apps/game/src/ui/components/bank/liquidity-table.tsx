@@ -1,6 +1,6 @@
-import { useEntities } from "@/hooks/helpers/use-entities";
 import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
-import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useState } from "react";
 
 type LiquidityTableProps = {
@@ -20,6 +20,10 @@ export const LiquidityTableHeader = () => (
 );
 
 export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps) => {
+  const {
+    account: { account },
+  } = useDojo();
+
   const [searchTerm, setSearchTerm] = useState("");
 
   if (!bankEntityId) {
@@ -37,9 +41,9 @@ export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps)
     );
   });
 
-  const { playerStructures } = useEntities();
+  const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
-  const playerStructureIds = playerStructures().map((structure) => structure.entity_id);
+  const playerStructureIds = playerStructures.map((structure) => structure.entity_id);
 
   return (
     <div className="amm-liquidity-selector p-4 h-full bg-gold/10 overflow-x-auto relative">

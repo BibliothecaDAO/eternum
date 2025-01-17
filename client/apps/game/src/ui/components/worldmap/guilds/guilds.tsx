@@ -1,5 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { CreateGuildButton } from "@/ui/components/worldmap/guilds/create-guild-button";
 import { GuildListHeader, GuildRow } from "@/ui/components/worldmap/guilds/guild-list";
 import { PRIZE_POOL_GUILDS } from "@/ui/constants";
@@ -7,7 +5,8 @@ import Button from "@/ui/elements/button";
 import { SortInterface } from "@/ui/elements/sort-button";
 import TextInput from "@/ui/elements/text-input";
 import { sortItems } from "@/ui/utils/utils";
-import { calculateGuildLordsPrize, ContractAddress, ID, Player } from "@bibliothecadao/eternum";
+import { calculateGuildLordsPrize, ContractAddress, ID, PlayerInfo } from "@bibliothecadao/eternum";
+import { useDojo, useGuilds } from "@bibliothecadao/react";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -16,7 +15,7 @@ export const Guilds = ({
   players,
 }: {
   viewGuildMembers: (guildEntityId: ID) => void;
-  players: Player[];
+  players: PlayerInfo[];
 }) => {
   const {
     setup: {

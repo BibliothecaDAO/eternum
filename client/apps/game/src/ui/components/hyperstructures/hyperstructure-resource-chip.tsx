@@ -1,11 +1,15 @@
-import { ProgressWithPercentage } from "@/hooks/helpers/use-hyperstructures";
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
-import useUIStore from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
+import {
+  findResourceById,
+  getBalance,
+  getIconResourceId,
+  getResourceProductionInfo,
+  ID,
+} from "@bibliothecadao/eternum";
+import { ProgressWithPercentage, useDojo, useUIStore } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 
 type HyperstructureResourceChipProps = {
@@ -25,12 +29,15 @@ export const HyperstructureResourceChip = ({
   progress,
   resetContributions,
 }: HyperstructureResourceChipProps) => {
+  const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const [inputValue, setInputValue] = useState<number>(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { getBalance, getResourceProductionInfo } = useResourceBalance();
-  const balance = divideByPrecision(getBalance(structureEntityId, resourceId).balance);
-  const production = getResourceProductionInfo(structureEntityId, resourceId);
+  const balance = divideByPrecision(
+    getBalance(structureEntityId, resourceId, currentDefaultTick, dojo.setup.components).balance,
+  );
+  const production = getResourceProductionInfo(structureEntityId, resourceId, dojo.setup.components);
 
   const safetyMargin = production !== undefined && production?.consumption_rate !== 0n ? 0.95 : 1;
 

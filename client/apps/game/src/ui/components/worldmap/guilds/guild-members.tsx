@@ -1,18 +1,17 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { GuildInviteList } from "@/ui/components/worldmap/guilds/guild-invites-list";
 import { GuildMemberList } from "@/ui/components/worldmap/guilds/guild-member-list";
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, PlayerInfo } from "@bibliothecadao/eternum";
+import { useDojo, useGuilds } from "@bibliothecadao/react";
 import { useCallback, useState } from "react";
 import { env } from "../../../../../env";
 
 interface GuildMembersProps {
-  players: Player[];
+  players: PlayerInfo[];
   selectedGuildEntityId: number;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   setIsExpanded: (isExpanded: boolean) => void;
@@ -23,6 +22,7 @@ interface GuildMembersProps {
 export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, setIsExpanded }: GuildMembersProps) => {
   const {
     setup: {
+      components,
       systemCalls: { join_guild, remove_guild_member, disband_guild, remove_player_from_whitelist, set_entity_name },
     },
     account: { account },
@@ -35,7 +35,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   const invitedPlayers = useGuildWhitelist(selectedGuildEntityId, players);
   const userWhitelist = usePlayerWhitelist(ContractAddress(account.address));
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
-  const selectedGuild = getGuildFromEntityId(selectedGuildEntityId, ContractAddress(account.address));
+  const selectedGuild = getGuildFromEntityId(selectedGuildEntityId, ContractAddress(account.address), components);
 
   const playerName = players.find((player) => player.address === ContractAddress(account?.address))?.name;
 

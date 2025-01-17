@@ -1,6 +1,3 @@
-import { SetupResult } from "@/dojo/setup";
-import { useAccountStore } from "@/hooks/context/account-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { createPausedLabel, gltfLoader } from "@/three/helpers/utils";
 import { BIOME_COLORS, Biome, BiomeType } from "@/three/managers/biome";
@@ -9,40 +6,44 @@ import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
-import { BuildingSystemUpdate, RealmSystemUpdate } from "@/three/systems/types";
-import { ResourceMiningTypes, SceneName } from "@/types";
-import { Position } from "@/types/position";
+import { SceneName } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
-import {
-  ResourceIdToMiningType,
-  getEntityIdFromKeys,
-  getHexForWorldPosition,
-  getWorldPositionForHex,
-} from "@/ui/utils/utils";
 import {
   BUILDINGS_CENTER,
   BuildingType,
   HexPosition,
   RealmLevels,
+  ResourceIdToMiningType,
+  ResourceMiningTypes,
   ResourcesIds,
   StructureType,
   TileManager,
   findResourceById,
+  getEntityIdFromKeys,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
+import {
+  BuildingSystemUpdate,
+  LeftView,
+  Position,
+  RealmSystemUpdate,
+  SetupResult,
+  StructureProgress,
+  useAccountStore,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import {
   BUILDINGS_CATEGORIES_TYPES,
   BUILDINGS_GROUPS,
   HEX_SIZE,
   MinesMaterialsParams,
-  StructureProgress,
   WONDER_REALM,
   buildingModelPaths,
   castleLevelToRealmCastle,

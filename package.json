@@ -6,7 +6,7 @@
     "build": "pnpm --dir ./client/apps/game build",
     "build:docs": "cd client/apps/game-docs && vocs build -o ../dist",
     "build:landing": "pnpm --dir ./client/apps/landing build",
-    "build:packages": "pnpm --dir ./client/sdk/packages/eternum build",
+    "build:packages": "pnpm --dir ./client/sdk/packages/assets build && pnpm --dir ./client/sdk/packages/core build && pnpm --dir ./client/sdk/packages/react build",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",
     "dev": "pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
@@ -28,6 +28,8 @@
   },
   "devDependencies": {
     "@bibliothecadao/eternum": "workspace:^",
+    "@bibliothecadao/react": "workspace:^",
+    "@bibliothecadao/assets": "workspace:^",
     "@dojoengine/core": "1.0.4-alpha.3.1.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
@@ -37,7 +39,8 @@
     "prettier": "^3.x.x",
     "typescript": "^5.x.x",
     "vite": "^5.x.x",
-    "vitest": "^2.0.5"
+    "vitest": "^2.0.5",
+    "@types/node": "^20.11.10"
   },
   "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee"
 }

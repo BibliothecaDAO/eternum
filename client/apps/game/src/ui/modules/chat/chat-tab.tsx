@@ -1,39 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useMemo } from "react";
+import { Tab } from "./types";
 import { useChatStore } from "./use-chat-store";
-import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
-
-export const DEFAULT_TAB: Tab = {
-  name: GLOBAL_CHANNEL_KEY,
-  address: "0x0",
-  key: GLOBAL_CHANNEL,
-  displayed: true,
-  lastSeen: new Date(),
-  lastMessage: undefined,
-  mandatory: true,
-};
-
-export const EVENT_STREAM_TAB: Tab = {
-  name: "Events",
-  address: "0x1",
-  key: "events",
-  displayed: true,
-  lastSeen: new Date(),
-  lastMessage: undefined,
-  mandatory: true,
-};
-
-export interface Tab {
-  name: string;
-  key: string;
-  address: string;
-  numberOfMessages?: number;
-  displayed: boolean;
-  lastSeen: Date;
-  lastMessage?: Date;
-  mandatory?: boolean;
-}
 
 export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
   const setCurrentTab = useChatStore((state) => state.setCurrentTab);

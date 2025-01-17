@@ -1,15 +1,18 @@
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { ReactComponent as MessageSvg } from "@/assets/icons/common/message.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { Position as PositionType } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
-import { formatTime, toHexString } from "@/ui/utils/utils";
-import { ContractAddress, StructureType } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  StructureType,
+  formatTime,
+  getAddressName,
+  getEntityName,
+  toHexString,
+} from "@bibliothecadao/eternum";
+import { Position as PositionType, useDojo, useUIStore } from "@bibliothecadao/react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useChatStore } from "../chat/use-chat-store";
@@ -56,19 +59,15 @@ export const PlayerId = ({
   back?: () => void;
 }) => {
   const {
-    setup: {
-      components: {
-        Owner,
-        Structure,
-        Position,
-        events: { SettleRealmData },
-      },
-    },
+    setup: { components },
   } = useDojo();
 
-  const { getEntityName } = useEntitiesUtils();
-
-  const { getAddressName } = useEntitiesUtils();
+  const {
+    Owner,
+    Structure,
+    Position,
+    events: { SettleRealmData },
+  } = components;
 
   const playerEntityId = useMemo(() => {
     if (!selectedPlayer) return;
@@ -83,7 +82,7 @@ export const PlayerId = ({
   const playerName = useMemo(() => {
     if (!selectedPlayer) return;
 
-    const playerName = getAddressName(selectedPlayer);
+    const playerName = getAddressName(selectedPlayer, components);
     return playerName;
   }, [selectedPlayer, playerEntityId]);
 
@@ -112,7 +111,7 @@ export const PlayerId = ({
 
       const position = new PositionType({ x: positionComponentValue.x, y: positionComponentValue.y });
 
-      const structureName = getEntityName(structure.entity_id, true);
+      const structureName = getEntityName(structure.entity_id, components, true);
       return {
         structureName,
         ...structure,

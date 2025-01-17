@@ -1,10 +1,8 @@
-import { world } from "@/dojo/world";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useTrade } from "@/hooks/helpers/use-trade";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/components/trading/trade-history-event";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { useDojo, useTrade, world } from "@bibliothecadao/react";
 import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useEffect, useMemo, useState } from "react";

@@ -1,11 +1,18 @@
-import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
-import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
+import {
+  ID,
+  Resources,
+  ResourcesIds,
+  findResourceById,
+  findResourceIdByTrait,
+  getBalance,
+} from "@bibliothecadao/eternum";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { memo, useEffect, useRef, useState } from "react";
 
 export const ResourceBar = memo(
@@ -34,7 +41,8 @@ export const ResourceBar = memo(
     onBlur?: () => void; // New prop
     max?: number;
   }) => {
-    const { getBalance } = useResourceBalance();
+    const dojo = useDojo();
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
     const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
     const [searchInput, setSearchInput] = useState("");
@@ -43,7 +51,9 @@ export const ResourceBar = memo(
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-      setSelectedResourceBalance(divideByPrecision(getBalance(entityId, Number(resourceId)).balance));
+      setSelectedResourceBalance(
+        divideByPrecision(getBalance(entityId, Number(resourceId), currentDefaultTick, dojo.setup.components).balance),
+      );
     }, [resourceId, getBalance, entityId]);
 
     const handleResourceChange = (trait: string) => {
@@ -145,7 +155,9 @@ export const ResourceBar = memo(
               <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId}>
                 <ResourceCost
                   resourceId={resource.id}
-                  amount={divideByPrecision(getBalance(entityId, resource.id).balance)}
+                  amount={divideByPrecision(
+                    getBalance(entityId, resource.id, currentDefaultTick, dojo.setup.components).balance,
+                  )}
                   className="border-0 bg-transparent"
                 />
               </SelectItem>

@@ -1,7 +1,7 @@
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { getAddressNameFromEntity, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { TradeEvent } from "./market-trading-history";
 
 export enum EventType {
@@ -24,7 +24,9 @@ export const TradeHistoryRowHeader = () => {
 };
 
 export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
-  const { getAddressNameFromEntity } = useEntitiesUtils();
+  const {
+    setup: { components },
+  } = useDojo();
 
   const resourceTaken = trade.event.resourceTaken;
   const resourceGiven = trade.event.resourceGiven;
@@ -33,7 +35,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   }
 
   const price = getLordsPricePerResource(trade.event.resourceGiven, trade.event.resourceTaken);
-  const taker = getAddressNameFromEntity(trade.event.takerId);
+  const taker = getAddressNameFromEntity(trade.event.takerId, components);
 
   return (
     <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow overflow-y-auto p-1">

@@ -1,21 +1,28 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntities, useEntitiesUtils } from "@/hooks/helpers/use-entities";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
-import { ResourceMiningTypes } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/select-preview-building";
 import Button from "@/ui/elements/button";
 import { RealmDetails } from "@/ui/modules/entity-details/realm/realm-details";
-import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
-import { ResourceIdToMiningType, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BUILDINGS_CENTER, BuildingType, ID, ResourcesIds, StructureType, TileManager } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
+import {
+  BUILDINGS_CENTER,
+  BuildingType,
+  ContractAddress,
+  ID,
+  ResourceIdToMiningType,
+  ResourceMiningTypes,
+  ResourcesIds,
+  StructureType,
+  TileManager,
+  configManager,
+  getEntityInfo,
+} from "@bibliothecadao/eternum";
+import { LeftView, soundSelector, useDojo, usePlayerStructures, useUIStore, useUiSounds } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const [isLoading, setIsLoading] = useState(false);
   const [buildingState, setBuildingState] = useState<{
@@ -31,8 +38,6 @@ export const BuildingEntityDetails = () => {
   const [isOwnedByPlayer, setIsOwnedByPlayer] = useState<boolean>(false);
   const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
 
-  const { getEntityInfo } = useEntitiesUtils();
-
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
@@ -40,9 +45,14 @@ export const BuildingEntityDetails = () => {
   const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
   const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
 
-  const { playerStructures } = useEntities();
+  const playerStructures = usePlayerStructures();
 
-  const selectedStructureInfo = getEntityInfo(structureEntityId);
+  const selectedStructureInfo = getEntityInfo(
+    structureEntityId,
+    ContractAddress(dojo.account.account.address),
+    currentDefaultTick,
+    dojo.setup.components,
+  );
 
   const isCastleSelected = useMemo(
     () =>
@@ -57,8 +67,6 @@ export const BuildingEntityDetails = () => {
     getEntityIdFromKeys(Object.values(selectedBuildingHex).map((v) => BigInt(v))),
   );
 
-  const structures = playerStructures();
-
   useEffect(() => {
     if (building) {
       setBuildingState({
@@ -67,7 +75,7 @@ export const BuildingEntityDetails = () => {
         ownerEntityId: building.outer_entity_id,
       });
       setIsPaused(building.paused);
-      setIsOwnedByPlayer(structures.some((structure) => structure.entity_id === building.outer_entity_id));
+      setIsOwnedByPlayer(playerStructures.some((structure) => structure.entity_id === building.outer_entity_id));
     } else {
       setBuildingState({
         buildingType: undefined,

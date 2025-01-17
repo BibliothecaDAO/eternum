@@ -1,16 +1,3 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import { useQuery } from "@/hooks/helpers/use-query";
-import {
-  useIsStructureImmune,
-  useStructureAtPosition,
-  useStructureImmunityTimer,
-} from "@/hooks/helpers/use-structures";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { Position } from "@/types/position";
 import { ResourceExchange } from "@/ui/components/hyperstructures/resource-exchange";
 import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
@@ -22,7 +9,16 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
-import { ArmyInfo, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  configManager,
+  ContractAddress,
+  getArmy,
+  getStructureAtPosition,
+  ID,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
+import { Position, useDojo, useGuilds, useQuery, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
@@ -38,22 +34,30 @@ export const StructureCard = ({
   position: Position;
   ownArmySelected: ArmyInfo | undefined;
 }) => {
+  const dojo = useDojo();
+
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
-
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const { handleUrlChange } = useQuery();
 
   const { getGuildFromPlayerAddress } = useGuilds();
 
-  const structure = useStructureAtPosition(position.getContract());
+  const structure = useMemo(
+    () =>
+      getStructureAtPosition(
+        position.getContract(),
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [position, dojo.account.account.address, dojo.setup.components],
+  );
 
-  const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));
-
-  const isImmune = useIsStructureImmune(structure, nextBlockTimestamp || 0);
-  const timer = useStructureImmunityTimer(structure, nextBlockTimestamp || 0);
+  const playerGuild = useMemo(
+    () => getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n)),
+    [structure?.owner.address],
+  );
 
   const goToHexView = () => {
     const url = position.toHexLocationUrl();
@@ -62,7 +66,7 @@ export const StructureCard = ({
   };
 
   return (
-    Boolean(structure) && (
+    structure && (
       <div className={`px-2 py-2 ${className}`}>
         <div className="ml-2">
           <Button
@@ -94,7 +98,7 @@ export const StructureCard = ({
               setShowMergeTroopsPopup={setShowMergeTroopsPopup}
               showButtons={true}
             />
-            <ImmunityTimer isImmune={isImmune} timer={timer} className="w-[27rem]" />
+            <ImmunityTimer structure={structure} className="w-[27rem]" />
           </>
         )}
         {showMergeTroopsPopup && (
@@ -206,13 +210,13 @@ const TroopExchange = ({
   const {
     setup: {
       account: { account },
-      components: { Army, Protector },
+      components,
       systemCalls: { army_merge_troops, create_army },
       network: { world },
     },
   } = useDojo();
 
-  const { getArmy } = useGetArmyByEntityId();
+  const { Army, Protector } = components;
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 
@@ -263,11 +267,19 @@ const TroopExchange = ({
 
   const [transferDirection, setTransferDirection] = useState<"to" | "from">("to");
 
+  const getArmyWithAddress = (armyId: ID) => getArmy(armyId, ContractAddress(account.address), components);
+
+  const protectorArmy = useMemo(
+    () => takerArmy || getArmyWithAddress(protector?.army_id || 0),
+    [takerArmy, protector?.army_id],
+  );
+  const giverArmy = useMemo(() => getArmyWithAddress(giverArmyEntityId), [giverArmyEntityId]);
+
   const mergeTroops = async () => {
     setLoading(true);
 
-    const fromArmy = transferDirection === "to" ? getArmy(giverArmyEntityId) : takerArmy || getArmy(protector!.army_id);
-    const toArmy = transferDirection === "to" ? takerArmy || getArmy(protector!.army_id) : getArmy(giverArmyEntityId);
+    const fromArmy = transferDirection === "to" ? giverArmy : protectorArmy;
+    const toArmy = transferDirection === "to" ? protectorArmy : giverArmy;
     const transferedTroops = {
       knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(configManager.getResourcePrecision()),
       paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(configManager.getResourcePrecision()),
@@ -313,7 +325,7 @@ const TroopExchange = ({
         <div className="w-[60%] mr-1 bg-gold/20">
           <p className="pt-2 pb-1 text-center">{giverArmyName}</p>
           <ArmyCapacity
-            army={transferDirection === "to" ? getArmy(giverArmyEntityId) : takerArmy || getArmy(protector!.army_id)}
+            army={transferDirection === "to" ? giverArmy : protectorArmy}
             className="flex justify-center"
             deductedTroops={Object.values(troopsGiven).reduce((a, b) => a + b, 0n)}
           />

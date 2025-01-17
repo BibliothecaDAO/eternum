@@ -1,7 +1,6 @@
-import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { LEVEL_DESCRIPTIONS, RealmLevels } from "@bibliothecadao/eternum";
+import { configManager, LEVEL_DESCRIPTIONS, RealmLevels } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const Realm = () => {

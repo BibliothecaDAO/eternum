@@ -1,10 +1,17 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useEntitiesUtils } from "@/hooks/helpers/use-entities";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { divideByPrecision, formatNumber, formatResources, formatTime } from "@/ui/utils/utils";
-import { BattleSide, ClientComponents, ID, Resource, resources } from "@bibliothecadao/eternum";
+import { divideByPrecision, formatNumber, formatResources } from "@/ui/utils/utils";
+import {
+  BattleSide,
+  ClientComponents,
+  formatTime,
+  getAddressNameFromEntity,
+  ID,
+  Resource,
+  resources,
+} from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
@@ -15,6 +22,7 @@ type PillageEvent = ComponentValue<ClientComponents["events"]["BattlePillageData
 const PillageHistoryItem = ({ addressName, history }: { addressName: string; history: PillageEvent }) => {
   const {
     setup: {
+      components,
       account: { account },
     },
   } = useDojo();
@@ -22,17 +30,15 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
   const isSuccess = history.winner === BattleSide[BattleSide.Attack];
   const formattedResources = useMemo(() => formatResources(history.pillaged_resources), [history.pillaged_resources]);
 
-  const { getPlayerAddressFromEntity, getAddressNameFromEntity } = useEntitiesUtils();
-
   const attackerIsPlayer = useMemo(
-    () => getPlayerAddressFromEntity(history.pillager_army_entity_id) === BigInt(account.address),
-    [getPlayerAddressFromEntity, history.pillager_army_entity_id, account.address],
+    () => getAddressNameFromEntity(history.pillager_army_entity_id, components) === account.address,
+    [history.pillager_army_entity_id, account.address],
   );
 
   const twitterText = useMemo(() => {
     if (isSuccess && formattedResources.length > 0 && attackerIsPlayer) {
       return formatSocialText(twitterTemplates.pillage, {
-        enemyName: getAddressNameFromEntity(history.pillaged_structure_entity_id) || "Unknown",
+        enemyName: getAddressNameFromEntity(history.pillaged_structure_entity_id, components) || "Unknown",
         addressName,
         resources: formattedResources
           .map(
@@ -124,28 +130,28 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
 
 export const PillageHistory = ({ structureId }: { structureId: ID }) => {
   const {
-    setup: {
-      components: { events },
-    },
+    setup: { components },
   } = useDojo();
 
   const [pillageHistory, setPillageHistory] = useState<PillageEvent[]>([]);
-  const { getAddressNameFromEntity } = useEntitiesUtils();
 
   useEffect(() => {
-    const query = defineQuery([HasValue(events.BattlePillageData, { pillaged_structure_entity_id: structureId })], {
-      runOnInit: true,
-    });
+    const query = defineQuery(
+      [HasValue(components.events.BattlePillageData, { pillaged_structure_entity_id: structureId })],
+      {
+        runOnInit: true,
+      },
+    );
 
     const subscription = query.update$.subscribe((update) => {
-      if (isComponentUpdate(update, events.BattlePillageData)) {
-        const event = getComponentValue(events.BattlePillageData, update.entity);
+      if (isComponentUpdate(update, components.events.BattlePillageData)) {
+        const event = getComponentValue(components.events.BattlePillageData, update.entity);
         setPillageHistory((prev) => [event!, ...prev]);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [events.BattlePillageData, structureId]);
+  }, [components.events.BattlePillageData, structureId]);
 
   return (
     <div className="p-1 h-full">
@@ -155,7 +161,7 @@ export const PillageHistory = ({ structureId }: { structureId: ID }) => {
             .sort((a, b) => b.timestamp - a.timestamp)
             .slice(0, 20)
             .map((history, index) => {
-              const addressName = getAddressNameFromEntity(history.pillager_army_entity_id);
+              const addressName = getAddressNameFromEntity(history.pillager_army_entity_id, components);
               return <PillageHistoryItem key={index} addressName={addressName || ""} history={history} />;
             })}
         </div>

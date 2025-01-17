@@ -1,14 +1,13 @@
-import { useAccountStore } from "@/hooks/context/account-store";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/helpers/utils";
 import InstancedModel from "@/three/managers/instanced-model";
 import { LabelManager } from "@/three/managers/label-manager";
 import { StructureLabelPaths, StructureModelPaths } from "@/three/scenes/constants";
-import { StructureSystemUpdate } from "@/three/systems/types";
 import { RenderChunkSize, StructureInfo } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID, StructureType } from "@bibliothecadao/eternum";
+import { StructureSystemUpdate, useAccountStore } from "@bibliothecadao/react";
 import * as THREE from "three";
+import { getWorldPositionForHex } from "../utils";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
