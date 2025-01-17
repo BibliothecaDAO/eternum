@@ -8,6 +8,33 @@ importers:
 
   .:
     dependencies:
+      '@cartridge/connector':
+        specifier: ^0.5.7
+        version: 0.5.9(encoding@0.1.13)(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(typescript@5.7.3)
+      '@cartridge/controller':
+        specifier: ^0.5.7
+        version: 0.5.9(encoding@0.1.13)
+      '@dojoengine/create-burner':
+        specifier: 1.0.4-alpha.3.1.0
+        version: 1.0.4-alpha.3.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)
+      '@dojoengine/react':
+        specifier: 1.0.4-alpha.3.1.0
+        version: 1.0.4-alpha.3.1.0(@types/node@20.17.14)(@types/react@18.3.18)(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(type-fest@2.19.0)(typescript@5.7.3)(zod@3.24.1)
+      '@dojoengine/recs':
+        specifier: ^2.0.13
+        version: 2.0.13(typescript@5.7.3)(zod@3.24.1)
+      '@dojoengine/state':
+        specifier: 1.0.4-alpha.3.1.0
+        version: 1.0.4-alpha.3.1.0(@types/node@20.17.14)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)
+      '@dojoengine/torii-client':
+        specifier: 1.0.4-alpha.3.1.0
+        version: 1.0.4-alpha.3.1.0
+      '@dojoengine/torii-wasm':
+        specifier: 1.0.4-alpha.3.1.0
+        version: 1.0.4-alpha.3.1.0
+      '@dojoengine/utils':
+        specifier: 1.0.4-alpha.3.1.0
+        version: 1.0.4-alpha.3.1.0(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)(zod@3.24.1)
       colors:
         specifier: ^1.4.0
         version: 1.4.0
@@ -29,13 +56,13 @@ importers:
     devDependencies:
       '@bibliothecadao/assets':
         specifier: workspace:^
-        version: link:client/sdk/packages/assets
+        version: link:sdk/packages/assets
       '@bibliothecadao/eternum':
         specifier: workspace:^
-        version: link:client/sdk/packages/core
+        version: link:sdk/packages/core
       '@bibliothecadao/react':
         specifier: workspace:^
-        version: link:client/sdk/packages/react
+        version: link:sdk/packages/react
       '@dojoengine/core':
         specifier: 1.0.4-alpha.3.1.0
         version: 1.0.4-alpha.3.1.0(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)
@@ -72,33 +99,6 @@ importers:
 
   client:
     dependencies:
-      '@cartridge/connector':
-        specifier: ^0.5.7
-        version: 0.5.9(encoding@0.1.13)(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(typescript@5.7.3)
-      '@cartridge/controller':
-        specifier: ^0.5.7
-        version: 0.5.9(encoding@0.1.13)
-      '@dojoengine/create-burner':
-        specifier: 1.0.4-alpha.3.1.0
-        version: 1.0.4-alpha.3.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)
-      '@dojoengine/react':
-        specifier: 1.0.4-alpha.3.1.0
-        version: 1.0.4-alpha.3.1.0(@types/node@20.17.14)(@types/react@18.3.18)(@vitest/ui@2.1.8(vitest@2.1.8))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(type-fest@2.19.0)(typescript@5.7.3)(zod@3.24.1)
-      '@dojoengine/recs':
-        specifier: ^2.0.13
-        version: 2.0.13(typescript@5.7.3)(zod@3.24.1)
-      '@dojoengine/state':
-        specifier: 1.0.4-alpha.3.1.0
-        version: 1.0.4-alpha.3.1.0(@types/node@20.17.14)(@vitest/ui@2.1.8(vitest@2.1.8))(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)
-      '@dojoengine/torii-client':
-        specifier: 1.0.4-alpha.3.1.0
-        version: 1.0.4-alpha.3.1.0
-      '@dojoengine/torii-wasm':
-        specifier: 1.0.4-alpha.3.1.0
-        version: 1.0.4-alpha.3.1.0
-      '@dojoengine/utils':
-        specifier: 1.0.4-alpha.3.1.0
-        version: 1.0.4-alpha.3.1.0(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)(zod@3.24.1)
       '@headlessui/react':
         specifier: ^2.2.0
         version: 2.2.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -119,7 +119,7 @@ importers:
         version: 3.1.2
       '@starknet-react/core':
         specifier: ^3.5.0
-        version: 3.7.1(get-starknet-core@3.3.4(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)
+        version: 3.7.1(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)
       '@tailwindcss/typography':
         specifier: ^0.5.13
         version: 0.5.16(tailwindcss@3.4.17)
@@ -298,32 +298,7 @@ importers:
         specifier: ^7.3.0
         version: 7.3.0
 
-  client/apps/game-docs:
-    devDependencies:
-      '@types/lodash':
-        specifier: ^4.14.202
-        version: 4.17.14
-      '@types/node':
-        specifier: ^20.11.10
-        version: 20.17.14
-      '@types/three':
-        specifier: ^0.163.0
-        version: 0.163.0
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^7.5.0
-        version: 7.18.0(@typescript-eslint/parser@8.20.0(eslint@9.18.0(jiti@2.4.2))(typescript@5.7.3))(eslint@9.18.0(jiti@2.4.2))(typescript@5.7.3)
-      '@vitest/coverage-v8':
-        specifier: ^2.0.5
-        version: 2.1.8(vitest@2.1.8(@types/node@20.17.14)(@vitest/ui@2.1.8)(terser@5.37.0))
-      '@vitest/ui':
-        specifier: ^2.0.1
-        version: 2.1.8(vitest@2.1.8)
-      eslint-config-love:
-        specifier: ^114.0.0
-        version: 114.0.0(@typescript-eslint/parser@8.20.0(eslint@9.18.0(jiti@2.4.2))(typescript@5.7.3))(eslint@9.18.0(jiti@2.4.2))(typescript@5.7.3)
-      workbox-window:
-        specifier: ^7.3.0
-        version: 7.3.0
+  client/apps/game-docs: {}
 
   client/apps/landing:
     dependencies:
@@ -462,7 +437,11 @@ importers:
         specifier: latest
         version: 1.1.17
 
-  client/sdk/packages/assets:
+  contracts/season_pass/scripts/deployment: {}
+
+  contracts/season_resources/scripts/deployment: {}
+
+  sdk/packages/assets:
     devDependencies:
       tsup:
         specifier: ^8.0.2
@@ -471,7 +450,7 @@ importers:
         specifier: ^5.4.4
         version: 5.7.3
 
-  client/sdk/packages/core:
+  sdk/packages/core:
     dependencies:
       '@dojoengine/core':
         specifier: 1.0.0-alpha.24
@@ -508,14 +487,14 @@ importers:
         specifier: ^2.0.5
         version: 2.1.8(@types/node@20.17.14)(@vitest/ui@2.1.8)(terser@5.37.0)
 
-  client/sdk/packages/react:
+  sdk/packages/react:
     dependencies:
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../core
       '@dojoengine/react':
         specifier: '*'
-        version: 1.0.10(@types/node@20.17.14)(@types/react@18.3.18)(@vitest/ui@2.1.8(vitest@2.1.8))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(type-fest@2.19.0)(typescript@5.7.3)(zod@3.24.1)
+        version: 1.0.10(@types/node@20.17.14)(@types/react@18.3.18)(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(type-fest@2.19.0)(typescript@5.7.3)(zod@3.24.1)
       '@starknet-react/core':
         specifier: '*'
         version: 3.7.1(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)
@@ -562,10 +541,6 @@ importers:
       vite-plugin-wasm:
         specifier: ^3.3.0
         version: 3.4.1(vite@5.4.11(@types/node@20.17.14)(terser@5.37.0))
-
-  contracts/season_pass/scripts/deployment: {}
-
-  contracts/season_resources/scripts/deployment: {}
 
 packages:
 
@@ -9873,10 +9848,10 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/react@1.0.10(@types/node@20.17.14)(@types/react@18.3.18)(@vitest/ui@2.1.8(vitest@2.1.8))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(type-fest@2.19.0)(typescript@5.7.3)(zod@3.24.1)':
+  '@dojoengine/react@1.0.10(@types/node@20.17.14)(@types/react@18.3.18)(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(type-fest@2.19.0)(typescript@5.7.3)(zod@3.24.1)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.7.3)(zod@3.24.1)
-      '@dojoengine/state': 1.0.10(@types/node@20.17.14)(@vitest/ui@2.1.8(vitest@2.1.8))(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)
+      '@dojoengine/state': 1.0.10(@types/node@20.17.14)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)
       '@dojoengine/torii-client': 1.0.10
       '@dojoengine/utils': 1.0.10(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)(zod@3.24.1)
       '@latticexyz/utils': 2.2.14
@@ -9911,10 +9886,10 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/react@1.0.4-alpha.3.1.0(@types/node@20.17.14)(@types/react@18.3.18)(@vitest/ui@2.1.8(vitest@2.1.8))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(type-fest@2.19.0)(typescript@5.7.3)(zod@3.24.1)':
+  '@dojoengine/react@1.0.4-alpha.3.1.0(@types/node@20.17.14)(@types/react@18.3.18)(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(type-fest@2.19.0)(typescript@5.7.3)(zod@3.24.1)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.7.3)(zod@3.24.1)
-      '@dojoengine/state': 1.0.4-alpha.3.1.0(@types/node@20.17.14)(@vitest/ui@2.1.8(vitest@2.1.8))(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)
+      '@dojoengine/state': 1.0.4-alpha.3.1.0(@types/node@20.17.14)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)
       '@dojoengine/torii-client': 1.0.4-alpha.3.1.0
       '@dojoengine/utils': 1.0.4-alpha.3.1.0(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)(zod@3.24.1)
       '@latticexyz/utils': 2.2.14
@@ -9961,12 +9936,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.0.10(@types/node@20.17.14)(@vitest/ui@2.1.8(vitest@2.1.8))(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)':
+  '@dojoengine/state@1.0.10(@types/node@20.17.14)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.7.3)(zod@3.24.1)
       '@dojoengine/torii-client': 1.0.10
       starknet: 6.11.0(encoding@0.1.13)
-      vitest: 1.6.0(@types/node@20.17.14)(@vitest/ui@2.1.8(vitest@2.1.8))(terser@5.37.0)
+      vitest: 1.6.0(@types/node@20.17.14)(terser@5.37.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -9987,12 +9962,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.0.4-alpha.3.1.0(@types/node@20.17.14)(@vitest/ui@2.1.8(vitest@2.1.8))(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)':
+  '@dojoengine/state@1.0.4-alpha.3.1.0(@types/node@20.17.14)(starknet@6.11.0(encoding@0.1.13))(terser@5.37.0)(typescript@5.7.3)(zod@3.24.1)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.7.3)(zod@3.24.1)
       '@dojoengine/torii-client': 1.0.4-alpha.3.1.0
       starknet: 6.11.0(encoding@0.1.13)
-      vitest: 1.6.0(@types/node@20.17.14)(@vitest/ui@2.1.8(vitest@2.1.8))(terser@5.37.0)
+      vitest: 1.6.0(@types/node@20.17.14)(terser@5.37.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -12122,7 +12097,7 @@ snapshots:
   '@scure/bip32@1.3.2':
     dependencies:
       '@noble/curves': 1.2.0
-      '@noble/hashes': 1.3.2
+      '@noble/hashes': 1.3.3
       '@scure/base': 1.1.9
 
   '@scure/bip32@1.6.0':
@@ -12139,7 +12114,7 @@ snapshots:
 
   '@scure/bip39@1.2.1':
     dependencies:
-      '@noble/hashes': 1.3.2
+      '@noble/hashes': 1.3.3
       '@scure/base': 1.1.9
 
   '@scure/bip39@1.5.0':
@@ -18440,7 +18415,7 @@ snapshots:
       fsevents: 2.3.3
       terser: 5.37.0
 
-  vitest@1.6.0(@types/node@20.17.14)(@vitest/ui@2.1.8(vitest@2.1.8))(terser@5.37.0):
+  vitest@1.6.0(@types/node@20.17.14)(terser@5.37.0):
     dependencies:
       '@vitest/expect': 1.6.0
       '@vitest/runner': 1.6.0
@@ -18464,7 +18439,6 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.17.14
-      '@vitest/ui': 2.1.8(vitest@2.1.8)
     transitivePeerDependencies:
       - less
       - lightningcss
