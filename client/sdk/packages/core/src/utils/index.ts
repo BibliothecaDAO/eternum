@@ -1,7 +1,9 @@
 import { RESOURCE_PRECISION, ResourcesIds } from "../constants";
 import { ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
 
-export * from "./battleSimulation";
+export * from "./army";
+export * from "./battle-simulator";
+export * from "./entities";
 export * from "./leaderboard";
 export * from "./packed-data";
 export * from "./players";
@@ -93,15 +95,6 @@ export const applyInputProductionFactor = (
     }
   }
   return questResources;
-};
-
-export const getQuestResources = (
-  resourcesOnRealm: number[],
-  questResources: ResourceInputs,
-  resourceProductionInputResources: ResourceInputs,
-): ResourceInputs => {
-  let QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(questResources, RESOURCE_PRECISION);
-  return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm, resourceProductionInputResources);
 };
 
 export function multiplyByPrecision(value: number): number {

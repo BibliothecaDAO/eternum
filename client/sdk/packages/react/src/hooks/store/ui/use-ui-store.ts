@@ -1,18 +1,22 @@
-import { BuildModeStore, createBuildModeStoreSlice } from "@/hooks/store/_build-mode-store";
-import { PopupsStore, createPopupsSlice } from "@/hooks/store/_popups-store";
-import { ThreeStore, createThreeStoreSlice } from "@/hooks/store/_three-store";
-import { BlockchainStore, createBlockchainStore } from "@/hooks/store/use-blockchain-store";
-import { RealmStore, createRealmStoreSlice } from "@/hooks/store/use-realm-store";
-import { WorldStore, createWorldStoreSlice } from "@/hooks/store/use-world-loading";
-import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
-import { RightView } from "@/ui/modules/navigation/right-navigation-module";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import React from "react";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { tracks } from "../use-music";
-import { BattleViewInfo } from "./types";
-export { LoadingStateKey } from "./slices/use-world-loading";
+import { BattleViewInfo, LeftView, RightView } from "../../../types";
+import { tracks } from "../../helpers";
+import {
+  BlockchainStore,
+  BuildModeStore,
+  PopupsStore,
+  RealmStore,
+  ThreeStore,
+  WorldStore,
+  createBlockchainStore,
+  createBuildModeStoreSlice,
+  createPopupsSlice,
+  createRealmStoreSlice,
+  createThreeStoreSlice,
+  createWorldStoreSlice,
+} from "./slices";
 
 type TooltipType = {
   content: React.ReactNode;

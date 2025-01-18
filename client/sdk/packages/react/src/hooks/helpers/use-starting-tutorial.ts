@@ -1,8 +1,8 @@
-import { useQuests } from "@/hooks/helpers/use-quests";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { questSteps, useTutorial } from "@/hooks/use-tutorial";
-import { QuestStatus, QuestType } from "@bibliothecadao/eternum";
+import { QuestType } from "@bibliothecadao/eternum";
 import { useEffect } from "react";
+import { useUIStore } from "../store";
+import { useQuests } from "./use-quests";
+import { questSteps, useTutorial } from "./use-tutorial";
 
 export const useStartingTutorial = () => {
   const { handleStart } = useTutorial(questSteps.get(QuestType.Settle));
@@ -13,9 +13,10 @@ export const useStartingTutorial = () => {
   const settleQuest = quests.find((quest) => quest.id === QuestType.Settle);
   const tutorialCompleted = localStorage.getItem("tutorial") === "completed";
 
+  // todo: make sure this works
   useEffect(() => {
-    if (!tutorialCompleted && settleQuest?.status !== QuestStatus.Claimed && !showBlankOverlay) {
+    if (!tutorialCompleted && !settleQuest && !showBlankOverlay) {
       handleStart();
     }
-  }, [settleQuest?.status, showBlankOverlay, handleStart]);
+  }, [settleQuest, showBlankOverlay, handleStart]);
 };

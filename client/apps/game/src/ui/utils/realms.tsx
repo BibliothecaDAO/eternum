@@ -1,12 +1,6 @@
 import { configManager } from "@/dojo/setup";
-import { findResourceIdByTrait, ID, orders, RealmInterface } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/eternum";
 import realmsJson from "../../../../../common/data/realms.json";
-import { packResources } from "./packed-data";
-
-interface Attribute {
-  trait_type: string;
-  value: any;
-}
 
 let realms: {
   [key: string]: any;
@@ -24,50 +18,6 @@ export const getRealmNameById = (realmId: ID): string => {
   if (!features) return "";
   return features["name"];
 };
-
-export function getRealm(realmId: ID): RealmInterface | undefined {
-  const realmsData = realms;
-  const realm = realmsData[realmId.toString()];
-  if (!realm) return;
-
-  const resourceIds = realm.attributes
-    .filter(({ trait_type }: Attribute) => trait_type === "Resource")
-    .map(({ value }: Attribute) => findResourceIdByTrait(value));
-
-  const resourceTypesPacked = BigInt(packResources(resourceIds));
-
-  const getAttributeValue = (attributeName: string): number => {
-    const attribute = realm.attributes.find(({ trait_type }: Attribute) => trait_type === attributeName);
-    return attribute ? attribute.value : 0;
-  };
-
-  const cities = getAttributeValue("Cities");
-  const harbors = getAttributeValue("Harbors");
-  const rivers = getAttributeValue("Rivers");
-  const regions = getAttributeValue("Regions");
-
-  const wonder: number = 1;
-
-  const orderAttribute = realm.attributes.find(({ trait_type }: Attribute) => trait_type === "Order");
-  const orderName = orderAttribute ? orderAttribute.value.split(" ").pop() || "" : "";
-  const order = orders.find(({ orderName: name }) => name === orderName)?.orderId || 0;
-
-  const imageUrl = realm.image;
-
-  return {
-    realmId,
-    name: getRealmNameById(realmId),
-    resourceTypesPacked,
-    resourceTypesCount: resourceIds.length,
-    cities,
-    harbors,
-    rivers,
-    regions,
-    wonder,
-    order,
-    imageUrl,
-  };
-}
 
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {
   const buildingPopulation = configManager.getBuildingPopConfig(building).population;

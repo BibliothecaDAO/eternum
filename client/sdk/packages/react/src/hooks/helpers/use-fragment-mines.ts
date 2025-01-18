@@ -1,14 +1,14 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { toHexString } from "@/ui/utils/utils";
+import { toHexString } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
+import { useDojo } from "../context";
 
 export const useFragmentMines = () => {
   const {
     setup: {
-      components: { Structure, Position, Owner, EntityName, Building, Production },
+      components: { Structure, Position, Owner, EntityName, Building },
     },
   } = useDojo();
 
@@ -29,18 +29,10 @@ export const useFragmentMines = () => {
           .next().value ?? ("0" as Entity),
       );
 
-      const production = getComponentValue(
-        Production,
-        runQuery([HasValue(Production, { entity_id: fragmentMine!.entity_id })])
-          .values()
-          .next().value ?? ("0" as Entity),
-      );
-
       return {
         ...fragmentMine,
         ...position,
         ...building,
-        ...production,
         owner,
         name: entityName
           ? shortString.decodeShortString(entityName.name.toString())

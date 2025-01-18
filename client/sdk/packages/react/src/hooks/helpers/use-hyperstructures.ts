@@ -1,18 +1,20 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { divideByPrecision, toHexString, toInteger } from "@/ui/utils/utils";
-import { getAddressNameFromEntity } from "@/utils/entities";
 import {
   ClientComponents,
+  configManager,
   ContractAddress,
+  divideByPrecision,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  getAddressNameFromEntity,
   ID,
   ResourcesIds,
+  toHexString,
+  toInteger,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Component, ComponentValue, Entity, getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
+import { useDojo } from "../context";
 
 export type ProgressWithPercentage = {
   percentage: number;

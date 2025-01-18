@@ -1,20 +1,3 @@
-/**
- * Interface representing season contract addresses and resources
- * @interface SeasonAddresses
- */
-export interface SeasonAddresses {
-  /** Address of the season pass contract */
-  seasonPass: string;
-  /** Address of the realms contract */
-  realms: string;
-  /** Address of the LORDS token contract */
-  lords: string;
-  /** Map of resource name to [resourceId, contractAddress] */
-  resources: {
-    [key: string]: [number, string];
-  };
-}
-
 /** Valid chain identifiers */
 export type Chain = "local" | "sepolia" | "mainnet" | "slot";
 
@@ -27,8 +10,7 @@ export type Chain = "local" | "sepolia" | "mainnet" | "slot";
 export async function getSeasonAddresses(chain: Chain): Promise<SeasonAddresses> {
   const ADDRESSES_FILE = `../../contracts/common/addresses/${chain}.json`;
   try {
-    const seasonAddressesJson = (await import(ADDRESSES_FILE))
-      .default;
+    const seasonAddressesJson = (await import(ADDRESSES_FILE)).default;
 
     return seasonAddressesJson;
   } catch (error) {

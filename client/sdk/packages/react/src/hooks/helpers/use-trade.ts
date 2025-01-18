@@ -1,14 +1,20 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { usePlayerRealms } from "@/hooks/helpers/use-entities";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { getRealmNameById } from "@/ui/utils/realms";
-import { ContractAddress, ID, MarketInterface, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  getRealmNameById,
+  ID,
+  MarketInterface,
+  Resource,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Entity, HasValue, getComponentValue } from "@dojoengine/recs";
+import { Entity, getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
 import { shortString } from "starknet";
+import { useDojo } from "../context";
+import { useUIStore } from "../store";
+import { usePlayerRealms } from "./use-entities";
+import { useNextBlockTimestamp } from "./use-next-block-timestamp";
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];

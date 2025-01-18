@@ -75,6 +75,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 export async function setup(
   config: DojoConfig & { state: AppStore },
   env: { viteVrfProviderAddress: string; vitePublicDev: boolean },
+  eternumConfig: any,
 ) {
   const network = await setupNetwork(config, env);
   const components = createClientComponents(network);
@@ -218,7 +219,6 @@ export async function setup(
   });
 
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
-  const eternumConfig = await ETERNUM_CONFIG();
   configManager.setDojo(components, eternumConfig);
 
   // setLoading(LoadingStateKey.Events, true);

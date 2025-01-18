@@ -1,22 +1,23 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { formatTime, toHexString } from "@/ui/utils/utils";
-import { getAddressName, getEntityName } from "@/utils/entities";
 import {
   ClientComponents,
   ContractAddress,
+  formatTime,
+  getAddressName,
+  getEntityName,
   GuildInfo,
   GuildMemberInfo,
   GuildWhitelistInfo,
   ID,
   PlayerInfo,
+  toHexString,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Component, Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback } from "react";
 import { shortString } from "starknet";
+import { useDojo } from "../context";
+import { useLeaderBoardStore, useUIStore } from "../store";
 
 const formatGuilds = (
   guildsRanked: [ID, number][],

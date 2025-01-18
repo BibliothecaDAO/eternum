@@ -1,7 +1,6 @@
-import useUIStore from "@/hooks/store/use-ui-store";
-import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
-import { RightView } from "@/ui/modules/navigation/right-navigation-module";
 import { StepOptions } from "shepherd.js";
+import { useUIStore } from "../../hooks";
+import { LeftView, RightView } from "../../types";
 import { StepButton, waitForElement } from "./utils";
 
 export const createDefenseArmySteps: StepOptions[] = [

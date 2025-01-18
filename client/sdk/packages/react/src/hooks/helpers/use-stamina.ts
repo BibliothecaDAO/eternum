@@ -1,3 +1,4 @@
+import { ID, StaminaManager } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";

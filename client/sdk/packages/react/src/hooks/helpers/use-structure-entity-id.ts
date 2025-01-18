@@ -1,7 +1,10 @@
+import { ContractAddress } from "@bibliothecadao/eternum";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "../../constants";
+import { Position as PositionInterface } from "../../types";
 import { useDojo } from "../context";
+import { useUIStore } from "../store";
 import { usePlayerStructures } from "./use-entities";
 import { useQuery } from "./use-query";
 

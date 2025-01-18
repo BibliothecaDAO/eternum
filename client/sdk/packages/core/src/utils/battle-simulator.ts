@@ -356,7 +356,7 @@ export class TroopsSimulator {
   }
 
   static normalizationFactor() {
-    return BigInt(EternumGlobalConfig.resources.resourcePrecision);
+    return BigInt(RESOURCE_PRECISION);
   }
 }
 

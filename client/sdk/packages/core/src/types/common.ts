@@ -10,6 +10,23 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
+/**
+ * Interface representing season contract addresses and resources
+ * @interface SeasonAddresses
+ */
+export interface SeasonAddresses {
+  /** Address of the season pass contract */
+  seasonPass: string;
+  /** Address of the realms contract */
+  realms: string;
+  /** Address of the LORDS token contract */
+  lords: string;
+  /** Map of resource name to [resourceId, contractAddress] */
+  resources: {
+    [key: string]: [number, string];
+  };
+}
+
 export type ArrivalInfo = {
   entityId: ID;
   recipientEntityId: ID;

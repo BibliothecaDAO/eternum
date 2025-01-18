@@ -91,7 +91,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   }
 }
 
-export function getRealm(realmId: ID): RealmInterface | undefined {
+export function getOffchainRealm(realmId: ID): RealmInterface | undefined {
   const realmsData = realms;
   const realm = realmsData[realmId.toString()];
   if (!realm) return;

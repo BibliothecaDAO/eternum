@@ -1,9 +1,7 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { ContractAddress, ID, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useCallback } from "react";
 import { create } from "zustand";
+import { useDojo, useGuilds, useNextBlockTimestamp } from "..";
 
 interface LeaderboardStore {
   playersByRank: [ContractAddress, number][];

@@ -1,7 +1,7 @@
 import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-checked.svg";
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { getRealm, RealmInfo, RealmInterface, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
+import { getOffchainRealm, RealmInfo, RealmInterface, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
@@ -112,7 +112,7 @@ export const getUnusedSeasonPasses = async (accountAddress: string, realms: Real
           addAddressPadding(seasonPassAddress ?? "0x0"),
     )
     .map((token: { node: { tokenMetadata: { tokenId: string } } }) => {
-      const realmsResourcesPacked = getRealm(Number(token.node.tokenMetadata.tokenId));
+      const realmsResourcesPacked = getOffchainRealm(Number(token.node.tokenMetadata.tokenId));
       if (!realmsResourcesPacked) return undefined;
       return {
         ...realmsResourcesPacked,

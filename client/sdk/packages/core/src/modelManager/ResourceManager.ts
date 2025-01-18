@@ -30,7 +30,7 @@ export class ResourceManager {
 
   public isActive(): boolean {
     const production = this.getProduction();
-    return production !== undefined && (production.building_count > 0);
+    return production !== undefined && production.building_count > 0;
   }
 
   public balance(currentTick: number): number {
@@ -77,7 +77,6 @@ export class ResourceManager {
     return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
   }
 
-
   private _limitBalanceByStoreCapacity(balance: bigint): bigint {
     const storeCapacity = this.getStoreCapacity();
     const maxAmountStorable = multiplyByPrecision(
@@ -93,7 +92,7 @@ export class ResourceManager {
     if (!resource) return 0n;
     const production = resource.production!;
     if (!production?.labor_units_left) return 0n;
-    
+
     let laborUnitsBurned = this._laborUnitsBurned(resource, currentTick);
     let totalProducedAmount = laborUnitsBurned * production.production_rate;
     return totalProducedAmount;

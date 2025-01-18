@@ -12,7 +12,7 @@ export function defineContractComponents(world: World) {
         { address: RecsType.BigInt, name: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "AddressName",
             types: ["felt252", "felt252"],
             customTypes: [],
@@ -31,7 +31,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Army",
             types: ["u32", "u64", "u64", "u64", "u32", "enum"],
             customTypes: ["Troops", "BattleSide"],
@@ -45,7 +45,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, arrives_at: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "ArrivalTime",
             types: ["u32", "u64"],
             customTypes: [],
@@ -66,7 +66,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Bank",
             types: ["u32", "u128", "u128", "u16", "u16", "bool"],
             customTypes: [],
@@ -85,7 +85,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "BankConfig",
             types: ["u32", "u128", "u128", "u128"],
             customTypes: [],
@@ -146,7 +146,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Battle",
             types: [
               "u32",
@@ -213,7 +213,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "BattleConfig",
             types: ["u32", "u8", "u8", "u64"],
             customTypes: [],
@@ -238,7 +238,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Building",
             types: ["u32", "u32", "u32", "u32", "enum", "u8", "u32", "u32", "u32", "bool"],
             customTypes: ["BuildingCategory"],
@@ -257,7 +257,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "BuildingCategoryPopConfig",
             types: ["u32", "enum", "u32", "u32"],
             customTypes: ["BuildingCategory"],
@@ -277,7 +277,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "BuildingConfig",
             types: ["u32", "enum", "u8", "u32", "u32"],
             customTypes: ["BuildingCategory"],
@@ -294,7 +294,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "BuildingGeneralConfig",
             types: ["u32", "u16"],
             customTypes: [],
@@ -308,7 +308,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, category: RecsType.String, value: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "BuildingQuantityv2",
             types: ["u32", "enum", "u8"],
             customTypes: ["BuildingCategory"],
@@ -322,7 +322,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, category: RecsType.String },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "CapacityCategory",
             types: ["u32", "enum"],
             customTypes: ["CapacityConfigCategory"],
@@ -339,7 +339,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "CapacityConfig",
             types: ["enum", "u128"],
             customTypes: ["CapacityConfigCategory"],
@@ -358,7 +358,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Contribution",
             types: ["u32", "contractaddress", "u8", "u128"],
             customTypes: [],
@@ -377,7 +377,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "DetachedResource",
             types: ["u32", "u32", "u8", "u128"],
             customTypes: [],
@@ -391,7 +391,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, name: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "EntityName",
             types: ["u32", "felt252"],
             customTypes: [],
@@ -405,7 +405,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, entity_owner_id: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "EntityOwner",
             types: ["u32", "u32"],
             customTypes: [],
@@ -424,7 +424,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Epoch",
             types: ["u32", "u16", "u64", "array"],
             customTypes: [],
@@ -438,7 +438,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, is_public: RecsType.Boolean, member_count: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Guild",
             types: ["u32", "bool", "u16"],
             customTypes: [],
@@ -452,7 +452,7 @@ export function defineContractComponents(world: World) {
         { address: RecsType.BigInt, guild_entity_id: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "GuildMember",
             types: ["contractaddress", "u32"],
             customTypes: [],
@@ -466,7 +466,7 @@ export function defineContractComponents(world: World) {
         { address: RecsType.BigInt, guild_entity_id: RecsType.Number, is_whitelisted: RecsType.Boolean },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "GuildWhitelist",
             types: ["contractaddress", "u32", "bool"],
             customTypes: [],
@@ -480,7 +480,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, current: RecsType.BigInt, lifetime: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Health",
             types: ["u32", "u128", "u128"],
             customTypes: [],
@@ -502,7 +502,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Hyperstructure",
             types: ["u32", "u16", "bool", "contractaddress", "u64", "enum", "felt252"],
             customTypes: ["Access"],
@@ -522,7 +522,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "HyperstructureConfig",
             types: ["u32", "u64", "u128", "u128", "u128"],
             customTypes: [],
@@ -541,7 +541,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "HyperstructureResourceConfig",
             types: ["u32", "u8", "u128", "u128"],
             customTypes: [],
@@ -561,7 +561,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Leaderboard",
             types: ["u32", "u64", "u128", "u256", "bool"],
             customTypes: [],
@@ -579,7 +579,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "LeaderboardEntry",
             types: ["contractaddress", "u128"],
             customTypes: [],
@@ -597,7 +597,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "LeaderboardRewardClaimed",
             types: ["contractaddress", "bool"],
             customTypes: [],
@@ -615,7 +615,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "LeaderboardRegistered",
             types: ["contractaddress", "bool"],
             customTypes: [],
@@ -634,7 +634,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "LeaderboardRegisterContribution",
             types: ["contractaddress", "u32", "bool"],
             customTypes: [],
@@ -654,7 +654,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "LeaderboardRegisterShare",
             types: ["contractaddress", "u32", "u16", "bool"],
             customTypes: [],
@@ -674,7 +674,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Liquidity",
             types: ["u32", "contractaddress", "u8", "u128", "bool"],
             customTypes: ["Fixed"],
@@ -693,7 +693,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "MapConfig",
             types: ["u32", "u128", "u128"],
             customTypes: [],
@@ -713,7 +713,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Market",
             types: ["u32", "u8", "u128", "u128", "u128", "bool"],
             customTypes: ["Fixed"],
@@ -731,7 +731,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "MercenariesConfig",
             types: ["u32", "u64", "u64", "u64"],
             customTypes: ["Troops"],
@@ -751,7 +751,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Message",
             types: ["felt252", "felt252", "BytesArray", "felt252", "u64"],
             customTypes: [],
@@ -774,7 +774,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Movable",
             types: ["u32", "u16", "bool", "bool", "u32", "u32", "u32", "u32"],
             customTypes: [],
@@ -788,7 +788,7 @@ export function defineContractComponents(world: World) {
         { order_id: RecsType.Number, hyperstructure_count: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Orders",
             types: ["u32", "u32"],
             customTypes: [],
@@ -802,7 +802,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, resource_types: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "OwnedResourcesTracker",
             types: ["u32", "u256"],
             customTypes: [],
@@ -816,7 +816,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, address: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Owner",
             types: ["u32", "contractaddress"],
             customTypes: [],
@@ -830,7 +830,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, population: RecsType.Number, capacity: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Population",
             types: ["u32", "u32", "u32"],
             customTypes: [],
@@ -844,7 +844,7 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, base_population: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "PopulationConfig",
             types: ["u32", "u32"],
             customTypes: [],
@@ -858,31 +858,9 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, x: RecsType.Number, y: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Position",
             types: ["u32", "u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Production: (() => {
-      return defineComponent(
-        world,
-        {
-          entity_id: RecsType.Number,
-          resource_type: RecsType.Number,
-          building_count: RecsType.Number,
-          production_rate: RecsType.BigInt,
-          consumption_rate: RecsType.BigInt,
-          last_updated_tick: RecsType.BigInt,
-          input_finish_tick: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "Production",
-            types: ["u32", "u8", "u8", "u128", "u128", "u64", "u64"],
             customTypes: [],
           },
         },
@@ -893,62 +871,32 @@ export function defineContractComponents(world: World) {
         world,
         {
           resource_type: RecsType.Number,
-          amount: RecsType.BigInt,
-          input_count: RecsType.BigInt,
-          output_count: RecsType.BigInt,
+          produced_amount: RecsType.BigInt,
+          labor_cost: RecsType.BigInt,
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "ProductionConfig",
-            types: ["u8", "u128", "u128", "u128"],
+            types: ["u8", "u128", "u128"],
             customTypes: [],
           },
         },
       );
     })(),
-    ProductionDeadline: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, deadline_tick: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "ProductionDeadline",
-            types: ["u32", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    ProductionInput: (() => {
+    LaborConfig: (() => {
       return defineComponent(
         world,
         {
-          output_resource_type: RecsType.Number,
-          index: RecsType.Number,
-          input_resource_type: RecsType.Number,
-          input_resource_amount: RecsType.BigInt,
+          resource_type: RecsType.Number,
+          input_id: RecsType.Number,
+          input_count: RecsType.Number,
         },
         {
           metadata: {
-            namespace: "s0_eternum",
-            name: "ProductionInput",
-            types: ["u8", "u8", "u8", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    ProductionOutput: (() => {
-      return defineComponent(
-        world,
-        { input_resource_type: RecsType.Number, index: RecsType.Number, output_resource_type: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "ProductionOutput",
-            types: ["u8", "u8", "u8"],
+            namespace: "s1_eternum",
+            name: "LaborConfig",
+            types: ["u8", "u32", "u8"],
             customTypes: [],
           },
         },
@@ -960,7 +908,7 @@ export function defineContractComponents(world: World) {
         { hyperstructure_entity_id: RecsType.Number, resource_type: RecsType.Number, amount: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Progress",
             types: ["u32", "u8", "u128"],
             customTypes: [],
@@ -974,7 +922,7 @@ export function defineContractComponents(world: World) {
         { army_id: RecsType.Number, protectee_id: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Protectee",
             types: ["u32", "u32"],
             customTypes: [],
@@ -988,7 +936,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, army_id: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Protector",
             types: ["u32", "u32"],
             customTypes: [],
@@ -1002,7 +950,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, value: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Quantity",
             types: ["u32", "u128"],
             customTypes: [],
@@ -1016,7 +964,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.BigInt, count: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "QuantityTracker",
             types: ["felt252", "u128"],
             customTypes: [],
@@ -1030,37 +978,9 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, config_id: RecsType.Number, completed: RecsType.Boolean },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Quest",
             types: ["u32", "u32", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    QuestBonus: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, resource_type: RecsType.Number, claimed: RecsType.Boolean },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "QuestBonus",
-            types: ["u32", "u8", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    QuestConfig: (() => {
-      return defineComponent(
-        world,
-        { config_id: RecsType.Number, production_material_multiplier: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s0_eternum",
-            name: "QuestConfig",
-            types: ["u32", "u16"],
             customTypes: [],
           },
         },
@@ -1072,7 +992,7 @@ export function defineContractComponents(world: World) {
         { quest_id: RecsType.Number, detached_resource_id: RecsType.Number, detached_resource_count: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "QuestRewardConfig",
             types: ["u32", "u32", "u32"],
             customTypes: [],
@@ -1090,13 +1010,12 @@ export function defineContractComponents(world: World) {
           order: RecsType.Number,
           level: RecsType.Number,
           has_wonder: RecsType.Boolean,
-          settler_address: RecsType.BigInt,
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8", "bool", "contractaddress"],
+            types: ["u32", "u32", "u128", "u8", "u8", "bool"],
             customTypes: [],
           },
         },
@@ -1108,7 +1027,7 @@ export function defineContractComponents(world: World) {
         { level: RecsType.Number, required_resources_id: RecsType.Number, required_resource_count: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "RealmLevelConfig",
             types: ["u8", "u32", "u8"],
             customTypes: [],
@@ -1122,7 +1041,7 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, max_level: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "RealmMaxLevelConfig",
             types: ["u32", "u8"],
             customTypes: [],
@@ -1133,12 +1052,22 @@ export function defineContractComponents(world: World) {
     Resource: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, resource_type: RecsType.Number, balance: RecsType.BigInt },
+        {
+          entity_id: RecsType.Number,
+          resource_type: RecsType.Number,
+          balance: RecsType.BigInt,
+          production: {
+            building_count: RecsType.Number,
+            production_rate: RecsType.BigInt,
+            labor_units_left: RecsType.BigInt,
+            last_updated_tick: RecsType.Number,
+          },
+        },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Resource",
-            types: ["u32", "u8", "u128"],
+            types: ["u32", "u8", "u128", "u8", "u128", "u64", "u32"],
             customTypes: [],
           },
         },
@@ -1155,7 +1084,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "ResourceAllowance",
             types: ["u32", "u32", "u8", "u128"],
             customTypes: [],
@@ -1181,7 +1110,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "ResourceBridgeFeeSplitConfig",
             types: [
               "u32",
@@ -1210,7 +1139,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "ResourceBridgeWhitelistConfig",
             types: ["ContractAddress", "u8"],
             customTypes: [],
@@ -1224,7 +1153,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, index: RecsType.Number, resource_type: RecsType.Number, amount: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "ResourceCost",
             types: ["u32", "u32", "u8", "u128"],
             customTypes: [],
@@ -1238,7 +1167,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, start_at: RecsType.BigInt, release_at: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "ResourceTransferLock",
             types: ["u32", "u64", "u64"],
             customTypes: [],
@@ -1257,7 +1186,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Season",
             types: ["u32", "u64", "bool", "u64"],
             customTypes: [],
@@ -1276,7 +1205,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "SeasonAddressesConfig",
             types: ["u32", "ContractAddress", "ContractAddress", "ContractAddress"],
             customTypes: [],
@@ -1293,7 +1222,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "SeasonBridgeConfig",
             types: ["u32", "u64"],
             customTypes: [],
@@ -1318,7 +1247,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "SettlementConfig",
             types: ["u32", "u128", "u32", "u128", "u32", "u32", "u32", "u64", "u64"],
             customTypes: [],
@@ -1337,7 +1266,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "SpeedConfig",
             types: ["u32", "u32", "u32", "u16"],
             customTypes: [],
@@ -1351,7 +1280,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, amount: RecsType.Number, last_refill_tick: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Stamina",
             types: ["u32", "u16", "u64"],
             customTypes: [],
@@ -1365,7 +1294,7 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, unit_type: RecsType.Number, max_stamina: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "StaminaConfig",
             types: ["u32", "u8", "u16"],
             customTypes: [],
@@ -1379,7 +1308,7 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, amount_per_tick: RecsType.Number, start_boost_tick_count: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "StaminaRefillConfig",
             types: ["u32", "u16", "u8"],
             customTypes: [],
@@ -1393,7 +1322,7 @@ export function defineContractComponents(world: World) {
         { trade_id: RecsType.Number, value: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Status",
             types: ["u32", "u128"],
             customTypes: [],
@@ -1407,7 +1336,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, category: RecsType.String, created_at: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Structure",
             types: ["u32", "enum", "u64"],
             customTypes: ["StructureCategory"],
@@ -1421,7 +1350,7 @@ export function defineContractComponents(world: World) {
         { coord: { x: RecsType.Number, y: RecsType.Number }, count: RecsType.Number },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "StructureCount",
             types: ["u32", "u32", "u8"],
             customTypes: ["Coord"],
@@ -1435,7 +1364,7 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, tick_id: RecsType.Number, tick_interval_in_seconds: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "TickConfig",
             types: ["u32", "u8", "u64"],
             customTypes: [],
@@ -1455,7 +1384,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Tile",
             types: ["u32", "u32", "u32", "u64", "enum"],
             customTypes: ["Biome"],
@@ -1482,7 +1411,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Trade",
             types: ["u32", "u32", "u32", "u32", "felt252", "u128", "u32", "u32", "u32", "felt252", "u128", "u64"],
             customTypes: [],
@@ -1503,7 +1432,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "TravelFoodCostConfig",
             types: ["u32", "u8", "u128", "u128", "u128", "u128"],
             customTypes: [],
@@ -1521,7 +1450,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "TravelStaminaCostConfig",
             types: ["u32", "u8", "u16"],
             customTypes: [],
@@ -1552,7 +1481,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "TroopConfig",
             types: [
               "u32",
@@ -1583,7 +1512,7 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, value: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "Weight",
             types: ["u32", "u128"],
             customTypes: [],
@@ -1602,7 +1531,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "WeightConfig",
             types: ["u32", "u32", "u32", "u128"],
             customTypes: [],
@@ -1616,7 +1545,7 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, admin_address: RecsType.BigInt, realm_l2_contract: RecsType.BigInt },
         {
           metadata: {
-            namespace: "s0_eternum",
+            namespace: "s1_eternum",
             name: "WorldConfig",
             types: ["u32", "contractaddress", "contractaddress"],
             customTypes: [],
@@ -1643,7 +1572,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "AcceptOrder",
               types: ["u32", "u32", "u32", "u32", "u64"],
               customTypes: [],
@@ -1671,7 +1600,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "BattleClaimData",
               types: [
                 "u32",
@@ -1711,7 +1640,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "BattleJoinData",
               types: [
                 "u32",
@@ -1750,7 +1679,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "BattleLeaveData",
               types: [
                 "u32",
@@ -1804,7 +1733,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "BattlePillageData",
               types: [
                 "u32",
@@ -1859,7 +1788,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "BattleStartData",
               types: [
                 "u32",
@@ -1894,7 +1823,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "BurnDonkey",
               types: ["ContractAddress", "u32", "u128", "u64"],
               customTypes: [],
@@ -1913,7 +1842,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "CreateGuild",
               types: ["u32", "felt252", "u64"],
               customTypes: [],
@@ -1931,7 +1860,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "GameEnded",
               types: ["ContractAddress", "u64"],
               customTypes: [],
@@ -1952,7 +1881,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "HyperstructureContribution",
               types: ["u32", "u32", "u32", "array", "u64"],
               customTypes: [],
@@ -1973,7 +1902,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "HyperstructureFinished",
               types: ["u32", "u32", "u32", "felt252", "u64"],
               customTypes: [],
@@ -1993,7 +1922,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "JoinGuild",
               types: ["u32", "ContractAddress", "felt252", "u64"],
               customTypes: [],
@@ -2017,7 +1946,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "LiquidityEvent",
               types: ["u32", "u32", "u8", "u128", "u128", "u128", "bool", "u64"],
               customTypes: [],
@@ -2041,7 +1970,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "MapExplored",
               types: ["u32", "u32", "u32", "u32", "u32", "Biome", "array", "u64"],
               customTypes: [],
@@ -2068,7 +1997,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "SwapEvent",
               types: ["u32", "u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
               customTypes: [],
@@ -2100,7 +2029,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "SettleRealmData",
               types: [
                 "u32",
@@ -2138,7 +2067,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "Transfer",
               types: ["u32", "u32", "u32", "array", "u64"],
               customTypes: ["Coord"],
@@ -2161,7 +2090,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "Travel",
               types: ["u32", "u32", "ContractAddress", "u32", "array", "u64"],
               customTypes: ["Coord"],
@@ -2181,7 +2110,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "TrophyProgression",
               types: ["felt252", "felt252", "u32", "u64"],
               customTypes: [],
@@ -2200,7 +2129,7 @@ const eventsComponents = (world: World) => {
           },
           {
             metadata: {
-              namespace: "s0_eternum",
+              namespace: "s1_eternum",
               name: "HyperstructureCoOwnersChange",
               types: ["u32", "u32", "array", "u64"],
               customTypes: [],
