@@ -1,4 +1,6 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import { TravelInfo } from "@/ui/components/resources/travel-info";
@@ -6,26 +8,19 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
 import {
-  configManager,
-  ContractAddress,
-  DONKEY_ENTITY_TYPE,
-  getBalance,
-  getStructure,
-  ID,
-  MarketManager,
-  RESOURCE_TIERS,
-  Resources,
-  resources,
-  ResourcesIds,
+    configManager,
+    ContractAddress,
+    DONKEY_ENTITY_TYPE,
+    getBalance,
+    getStructure,
+    ID,
+    MarketManager,
+    RESOURCE_TIERS,
+    Resources,
+    resources,
+    ResourcesIds,
 } from "@bibliothecadao/eternum";
-import {
-  soundSelector,
-  useDojo,
-  useIsStructureResourcesLocked,
-  useTravel,
-  useUiSounds,
-  useUIStore,
-} from "@bibliothecadao/react";
+import { useDojo, useIsStructureResourcesLocked, useTravel } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({

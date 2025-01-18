@@ -1,4 +1,6 @@
 import { useDojo } from "@/hooks/context/dojo-context";
+import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/headline";
@@ -8,25 +10,25 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs } from "@/ui/elements/tab";
 import { adjustWonderLordsCost, divideByPrecision, getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
 import {
-  BuildingEnumToString,
-  BuildingType,
-  CapacityConfigCategory,
-  ClientComponents,
-  ID,
-  ResourceCost as ResourceCostType,
-  ResourceIdToMiningType,
-  ResourceMiningTypes,
-  ResourcesIds,
-  WORLD_CONFIG_ID,
-  configManager,
-  findResourceById,
-  getBalance,
-  getRealmInfo,
-  hasEnoughPopulationForBuilding,
-  isResourceProductionBuilding,
-  unpackResources,
+    BuildingEnumToString,
+    BuildingType,
+    CapacityConfigCategory,
+    ClientComponents,
+    ID,
+    ResourceCost as ResourceCostType,
+    ResourceIdToMiningType,
+    ResourceMiningTypes,
+    ResourcesIds,
+    WORLD_CONFIG_ID,
+    configManager,
+    findResourceById,
+    getBalance,
+    getRealmInfo,
+    hasEnoughPopulationForBuilding,
+    isResourceProductionBuilding,
+    unpackResources,
 } from "@bibliothecadao/eternum";
-import { DojoResult, usePlayResourceSound, useUIStore } from "@bibliothecadao/react";
+import { DojoResult } from "@bibliothecadao/react";
 import { Component, getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";

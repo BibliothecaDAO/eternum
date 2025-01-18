@@ -1,6 +1,6 @@
 /// <reference types="vite-plugin-pwa/client" />
 
-import { setup, useUIStore } from "@bibliothecadao/react";
+import { setup } from "@bibliothecadao/react";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
@@ -62,10 +62,10 @@ async function init() {
 
   root.render(<LoadingScreen backgroundImage={backgroundImage} />);
 
-  const state = useUIStore.getState();
+  // const state = useUIStore.getState();
 
   const setupResult = await setup(
-    { state, ...dojoConfig },
+    { ...dojoConfig },
     { viteVrfProviderAddress: env.VITE_VRF_PROVIDER_ADDRESS, vitePublicDev: env.VITE_PUBLIC_DEV },
   );
 

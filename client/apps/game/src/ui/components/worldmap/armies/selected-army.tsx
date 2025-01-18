@@ -1,6 +1,7 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ArmyChip } from "@/ui/components/military/army-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
-import { Position, useArmiesAtPosition, useQuery, useUIStore } from "@bibliothecadao/react";
+import { Position, useArmiesAtPosition, useQuery } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArmyWarning } from "./army-warning";
 

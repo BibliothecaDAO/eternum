@@ -1,16 +1,17 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import {
-  calculateDonkeysNeeded,
-  configManager,
-  getBalance,
-  getTotalResourceWeight,
-  ResourcesIds,
-  type ID,
-  type Resource,
+    calculateDonkeysNeeded,
+    configManager,
+    getBalance,
+    getTotalResourceWeight,
+    ResourcesIds,
+    type ID,
+    type Resource,
 } from "@bibliothecadao/eternum";
-import { useDojo, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 export const TravelInfo = ({

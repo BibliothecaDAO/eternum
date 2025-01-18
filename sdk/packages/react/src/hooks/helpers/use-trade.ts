@@ -9,9 +9,9 @@ import {
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, HasValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { shortString } from "starknet";
-import { useDojo, useNextBlockTimestamp, usePlayerRealms, useUIStore } from "../";
+import { useDojo, useNextBlockTimestamp, usePlayerRealms } from "../";
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -133,32 +133,6 @@ export function useTrade() {
     canAcceptOffer,
     computeTrades,
   };
-}
-
-export function useGetMyOffers(): MarketInterface[] {
-  const {
-    setup: {
-      components: { Status, Trade },
-    },
-  } = useDojo();
-
-  const { computeTrades } = useTrade();
-
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
-
-  const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
-
-  const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { maker_id: structureEntityId })]);
-
-  useMemo((): any => {
-    if (!nextBlockTimestamp) return;
-    const trades = computeTrades(entityIds, nextBlockTimestamp);
-    setMyOffers(trades);
-    // only recompute when different number of orders
-  }, [entityIds, nextBlockTimestamp]);
-
-  return myOffers;
 }
 
 export function useSetMarket() {

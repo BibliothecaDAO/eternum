@@ -1,4 +1,5 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { SelectAddress } from "@/ui/elements/select-address";
@@ -6,14 +7,14 @@ import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
 import {
-  ContractAddress,
-  formatTime,
-  getAddressName,
-  getStructure,
-  HYPERSTRUCTURE_CONFIG_ID,
-  ID,
+    ContractAddress,
+    formatTime,
+    getAddressName,
+    getStructure,
+    HYPERSTRUCTURE_CONFIG_ID,
+    ID,
 } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp, usePlayers, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useNextBlockTimestamp, usePlayers } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

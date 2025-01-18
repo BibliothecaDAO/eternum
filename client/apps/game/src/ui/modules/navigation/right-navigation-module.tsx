@@ -1,8 +1,9 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import CircleButton from "@/ui/elements/circle-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { RightView, useUIStore } from "@bibliothecadao/react";
+import { RightView } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 import { BaseContainer } from "../../containers/base-container";

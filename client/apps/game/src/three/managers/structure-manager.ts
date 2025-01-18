@@ -1,3 +1,4 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/helpers/utils";
 import InstancedModel from "@/three/managers/instanced-model";
 import { LabelManager } from "@/three/managers/label-manager";
@@ -6,7 +7,6 @@ import { RenderChunkSize, StructureInfo } from "@/types";
 import { StructureSystemUpdate } from "@/types/systems";
 import { FELT_CENTER } from "@/ui/config";
 import { ID, StructureType } from "@bibliothecadao/eternum";
-import { useAccountStore } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { getWorldPositionForHex } from "../utils";
 

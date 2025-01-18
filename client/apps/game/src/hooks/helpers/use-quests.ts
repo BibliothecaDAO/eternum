@@ -1,7 +1,9 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   armyHasTraveled,
   ContractAddress,
   getEntityInfo,
+  MarketInterface,
   Prize,
   QuestType,
   TileManager,
@@ -10,13 +12,13 @@ import {
   useArmiesByStructure,
   useBuildingQuantities,
   useDojo,
-  useGetMyOffers,
-  useUIStore,
+  useNextBlockTimestamp,
+  useTrade,
 } from "@bibliothecadao/react";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { QUEST_DETAILS } from "./use-starting-tutorial";
 
 export enum QuestStatus {
@@ -229,3 +231,29 @@ export const useUnclaimedQuestsCount = () => {
 
   return unclaimedQuestsCount;
 };
+
+function useGetMyOffers(): MarketInterface[] {
+  const {
+    setup: {
+      components: { Status, Trade },
+    },
+  } = useDojo();
+
+  const { computeTrades } = useTrade();
+
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const { nextBlockTimestamp } = useNextBlockTimestamp();
+
+  const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
+
+  const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { maker_id: structureEntityId })]);
+
+  useMemo((): any => {
+    if (!nextBlockTimestamp) return;
+    const trades = computeTrades(entityIds, nextBlockTimestamp);
+    setMyOffers(trades);
+    // only recompute when different number of orders
+  }, [entityIds, nextBlockTimestamp]);
+
+  return myOffers;
+}

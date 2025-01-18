@@ -1,20 +1,21 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import {
-  configManager,
-  ContractAddress,
-  getBalance,
-  getEntityIdFromKeys,
-  getRealmInfo,
-  getStructure,
-  LEVEL_DESCRIPTIONS,
-  REALM_MAX_LEVEL,
-  RealmLevels,
-  StructureType,
+    configManager,
+    ContractAddress,
+    getBalance,
+    getEntityIdFromKeys,
+    getRealmInfo,
+    getStructure,
+    LEVEL_DESCRIPTIONS,
+    REALM_MAX_LEVEL,
+    RealmLevels,
+    StructureType,
 } from "@bibliothecadao/eternum";
-import { useDojo, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const Castle = () => {

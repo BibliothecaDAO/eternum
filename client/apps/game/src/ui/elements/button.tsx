@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@bibliothecadao/react";
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import React from "react";
 
 type ButtonProps = {

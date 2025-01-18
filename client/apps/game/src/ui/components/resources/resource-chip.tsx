@@ -1,15 +1,16 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, gramToKg } from "@/ui/utils/utils";
 import {
-  configManager,
-  findResourceById,
-  formatTime,
-  getIconResourceId,
-  ID,
-  TickIds,
-  TimeFormat,
+    configManager,
+    findResourceById,
+    formatTime,
+    getIconResourceId,
+    ID,
+    TickIds,
+    TimeFormat,
 } from "@bibliothecadao/eternum";
-import { useResourceManager, useUIStore } from "@bibliothecadao/react";
+import { useResourceManager } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RealmTransfer } from "./realm-transfer";
 

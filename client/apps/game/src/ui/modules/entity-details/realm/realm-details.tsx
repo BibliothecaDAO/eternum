@@ -1,4 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { Tabs } from "@/ui/elements/tab";
@@ -6,16 +7,16 @@ import { Buildings } from "@/ui/modules/entity-details/realm/buildings";
 import { Castle } from "@/ui/modules/entity-details/realm/castle";
 import { copyPlayerAddressToClipboard, displayAddress } from "@/ui/utils/utils";
 import {
-  ContractAddress,
-  Structure,
-  StructureType,
-  formatTime,
-  getStructure,
-  getStructureImmunityTimer,
-  isStructureImmune,
-  toHexString,
+    ContractAddress,
+    Structure,
+    StructureType,
+    formatTime,
+    getStructure,
+    getStructureImmunityTimer,
+    isStructureImmune,
+    toHexString,
 } from "@bibliothecadao/eternum";
-import { useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
+import { useNextBlockTimestamp } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const RealmDetails = () => {

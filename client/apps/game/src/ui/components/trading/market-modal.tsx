@@ -3,6 +3,9 @@ import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
+import { useMarketStore } from "@/hooks/store/use-market-store";
+import { useModalStore } from "@/hooks/store/use-modal-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintModal } from "@/ui/components/hints/hint-modal";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { ModalContainer } from "@/ui/components/modal-container";
@@ -23,16 +26,7 @@ import {
   getArmy,
   getStructureAtPosition,
 } from "@bibliothecadao/eternum";
-import {
-  useBank,
-  useBattlesAtPosition,
-  useDojo,
-  useMarketStore,
-  useModalStore,
-  usePlayerStructures,
-  useSetMarket,
-  useUIStore,
-} from "@bibliothecadao/react";
+import { useBank, useBattlesAtPosition, useDojo, usePlayerStructures, useSetMarket } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 

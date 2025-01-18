@@ -1,3 +1,5 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { createPausedLabel, gltfLoader } from "@/three/helpers/utils";
 import { BIOME_COLORS, Biome, BiomeType } from "@/three/managers/biome";
@@ -24,7 +26,7 @@ import {
   getEntityIdFromKeys,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
-import { LeftView, Position, SetupResult, StructureProgress, useAccountStore, useUIStore } from "@bibliothecadao/react";
+import { LeftView, Position, SetupResult, StructureProgress } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import * as THREE from "three";

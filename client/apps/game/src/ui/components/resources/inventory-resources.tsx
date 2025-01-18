@@ -1,8 +1,9 @@
 import { debouncedAddToSubscription } from "@/dojo/debounced-queries";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { getBalance, getInventoryResources, ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
-import { useDojo, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 const CACHE_KEY = "inventory-resources-sync";

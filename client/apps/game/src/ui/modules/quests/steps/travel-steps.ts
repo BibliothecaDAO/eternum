@@ -1,4 +1,5 @@
-import { LeftView, RightView, useUIStore } from "@bibliothecadao/react";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LeftView, RightView } from "@bibliothecadao/react";
 import { StepOptions } from "shepherd.js";
 import { StepButton } from "./utils";
 

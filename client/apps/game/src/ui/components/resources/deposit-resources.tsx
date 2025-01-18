@@ -1,15 +1,17 @@
+import { useDojo } from "@/hooks/context/dojo-context";
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
-  ArrivalInfo,
-  BattleManager,
-  ContractAddress,
-  getStructure,
-  ID,
-  Resource,
-  ResourceInventoryManager,
+    ArrivalInfo,
+    BattleManager,
+    ContractAddress,
+    getStructure,
+    ID,
+    Resource,
+    ResourceInventoryManager,
 } from "@bibliothecadao/eternum";
-import { soundSelector, useDojo, useUiSounds, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 

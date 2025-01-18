@@ -1,11 +1,12 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { ArmyInfo, BattleManager, getAddressNameFromEntity, ID } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import React, { useMemo, useState } from "react";
 
 type BattleListItemProps = {

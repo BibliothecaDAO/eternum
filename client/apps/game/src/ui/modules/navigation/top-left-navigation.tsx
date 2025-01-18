@@ -1,3 +1,5 @@
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { IS_MOBILE } from "@/ui/config";
@@ -7,26 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { gramToKg, kgToGram } from "@/ui/utils/utils";
 import {
-  BuildingType,
-  CapacityConfigCategory,
-  configManager,
-  ContractAddress,
-  formatTime,
-  getEntityInfo,
-  ID,
-  PlayerStructure,
-  ResourcesIds,
-  TickIds,
+    BuildingType,
+    CapacityConfigCategory,
+    configManager,
+    ContractAddress,
+    formatTime,
+    getEntityInfo,
+    ID,
+    PlayerStructure,
+    ResourcesIds,
+    TickIds,
 } from "@bibliothecadao/eternum";
-import {
-  Position,
-  soundSelector,
-  useDojo,
-  useNextBlockTimestamp,
-  useQuery,
-  useUiSounds,
-  useUIStore,
-} from "@bibliothecadao/react";
+import { Position, useDojo, useNextBlockTimestamp, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

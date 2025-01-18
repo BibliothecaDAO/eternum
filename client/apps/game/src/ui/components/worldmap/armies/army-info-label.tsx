@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ArmyWarning } from "@/ui/components/worldmap/armies/army-warning";
 import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
@@ -7,14 +8,14 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
-  ArmyInfo,
-  ContractAddress,
-  getArmy,
-  getRealmAddressName,
-  getRealmNameById,
-  getStructure,
+    ArmyInfo,
+    ContractAddress,
+    getArmy,
+    getRealmAddressName,
+    getRealmNameById,
+    getStructure,
 } from "@bibliothecadao/eternum";
-import { useDojo, useQuery, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 

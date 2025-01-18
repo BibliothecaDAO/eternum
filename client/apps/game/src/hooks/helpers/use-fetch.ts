@@ -1,6 +1,6 @@
 import { configManager, TickIds } from "@bibliothecadao/eternum";
 import { useEffect, useTransition } from "react";
-import { useUIStore } from "..";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 
 export const useFetchBlockchainData = () => {
   const [_isPending, startTransition] = useTransition();

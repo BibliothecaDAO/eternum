@@ -1,4 +1,4 @@
-import { useUIStore } from "./ui/use-ui-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 
 export const useModalStore = () => {
   const showModal = useUIStore((state) => state.showModal);

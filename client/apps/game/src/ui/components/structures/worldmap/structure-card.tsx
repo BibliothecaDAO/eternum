@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceExchange } from "@/ui/components/hyperstructures/resource-exchange";
 import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
@@ -10,15 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
 import {
-  ArmyInfo,
-  configManager,
-  ContractAddress,
-  getArmy,
-  getStructureAtPosition,
-  ID,
-  ResourcesIds,
+    ArmyInfo,
+    configManager,
+    ContractAddress,
+    getArmy,
+    getStructureAtPosition,
+    ID,
+    ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { Position, useDojo, useGuilds, useQuery, useUIStore } from "@bibliothecadao/react";
+import { Position, useDojo, useGuilds, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";

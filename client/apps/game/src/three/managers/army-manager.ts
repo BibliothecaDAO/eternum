@@ -1,3 +1,4 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { findShortestPath } from "@/three/helpers/pathfinding";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
@@ -7,7 +8,7 @@ import { LabelManager } from "@/three/managers/label-manager";
 import { ArmyData, MovingArmyData, MovingLabelData, RenderChunkSize } from "@/types";
 import { ArmySystemUpdate } from "@/types/systems";
 import { BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
-import { Position, useAccountStore } from "@bibliothecadao/react";
+import { Position } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "../utils";

@@ -47,7 +47,6 @@ const Button: React.FC<ButtonProps> = ({
   size = "md",
   ...props
 }) => {
-  // const { play: playClick } = useUiSounds(soundSelector.click);
 
   return (
     <button

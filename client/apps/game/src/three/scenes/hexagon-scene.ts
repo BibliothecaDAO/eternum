@@ -1,3 +1,4 @@
+import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { LocationManager } from "@/three/helpers/location-manager";
 import { gltfLoader } from "@/three/helpers/utils";
@@ -12,7 +13,7 @@ import { SystemManager } from "@/three/systems/system-manager";
 import { type SceneName } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type HexPosition } from "@bibliothecadao/eternum";
-import { LeftView, RightView, useUIStore, type AppStore, type SetupResult } from "@bibliothecadao/react";
+import { LeftView, RightView, type SetupResult } from "@bibliothecadao/react";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
 import * as THREE from "three";

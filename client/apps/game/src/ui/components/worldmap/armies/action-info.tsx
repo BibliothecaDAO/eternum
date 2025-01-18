@@ -1,17 +1,18 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { StaminaResourceCost } from "@/ui/elements/stamina-resource-cost";
 import {
-  computeExploreFoodCosts,
-  computeTravelFoodCosts,
-  configManager,
-  getBalance,
-  ID,
-  ResourcesIds,
+    computeExploreFoodCosts,
+    computeTravelFoodCosts,
+    configManager,
+    getBalance,
+    ID,
+    ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useCallback, useMemo } from "react";

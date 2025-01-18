@@ -1,16 +1,16 @@
 import { ContractAddress } from "@bibliothecadao/eternum";
+
+import { BattleViewInfo, LeftView, RightView } from "@bibliothecadao/react";
 import React from "react";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { BattleViewInfo, LeftView, RightView } from "../../../types";
-import { tracks } from "../../helpers/use-music";
-import { BuildModeStore, createBuildModeStoreSlice } from "./slices/_build-mode-store";
-import { PopupsStore, createPopupsSlice } from "./slices/_popups-store";
-import { ThreeStore, createThreeStoreSlice } from "./slices/_three-store";
-import { BlockchainStore, createBlockchainStore } from "./slices/use-blockchain-store";
-import { RealmStore, createRealmStoreSlice } from "./slices/use-realm-store";
-import { WorldStore, createWorldStoreSlice } from "./slices/use-world-loading";
-export { LoadingStateKey } from "./slices/use-world-loading";
+import { tracks } from "../helpers/use-music";
+import { BuildModeStore, createBuildModeStoreSlice } from "./_build-mode-store";
+import { createPopupsSlice, PopupsStore } from "./_popups-store";
+import { createThreeStoreSlice, ThreeStore } from "./_three-store";
+import { BlockchainStore, createBlockchainStore } from "./use-blockchain-store";
+import { createRealmStoreSlice, RealmStore } from "./use-realm-store";
+import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 
 type TooltipType = {
   content: React.ReactNode;

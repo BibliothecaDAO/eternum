@@ -504,12 +504,6 @@ importers:
       react:
         specifier: ^18
         version: 18.3.1
-      react-shepherd:
-        specifier: ^6.1.6
-        version: 6.1.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.7.3)
-      shepherd.js:
-        specifier: ^14.3.0
-        version: 14.4.0
       starknet:
         specifier: ^6
         version: 6.11.0(encoding@0.1.13)

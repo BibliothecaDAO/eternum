@@ -1,6 +1,6 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useEffect } from "react";
 import useSound from "use-sound";
-import { useUIStore } from "../store/ui";
 
 // Define a type for your tracks
 type Track = {

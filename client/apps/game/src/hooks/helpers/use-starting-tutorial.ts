@@ -1,5 +1,5 @@
 import { QuestStatus, QuestType } from "@bibliothecadao/eternum";
-import { useUIStore } from "@bibliothecadao/react";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useEffect } from "react";
 import { useQuests } from "./use-quests";
 import { questSteps, useTutorial } from "./use-tutorial";

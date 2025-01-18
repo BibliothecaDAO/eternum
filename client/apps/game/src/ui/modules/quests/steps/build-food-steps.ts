@@ -1,5 +1,6 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LeftView, RightView } from "@bibliothecadao/react";
 import { StepOptions } from "shepherd.js";
-import { LeftView, RightView, useUIStore } from "@bibliothecadao/react";
 import { StepButton, waitForElement } from "./utils";
 
 export const buildFoodSteps: StepOptions[] = [

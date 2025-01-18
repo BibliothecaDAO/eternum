@@ -11,7 +11,6 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
-import { AppStore, LoadingStateKey } from "../hooks/store";
 import { createSystemCalls } from "./create-system-calls";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
@@ -73,13 +72,14 @@ const syncEntitiesDebounced = async <S extends Schema>(
 };
 
 export async function setup(
-  config: DojoConfig & { state: AppStore },
+  config: DojoConfig,
+  // & { state: AppStore },
   env: { viteVrfProviderAddress: string; vitePublicDev: boolean },
 ) {
   const network = await setupNetwork(config, env);
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
-  const setLoading = config.state.setLoading;
+  // const setLoading = config.state.setLoading;
 
   const configClauses: Clause[] = [
     {
@@ -119,7 +119,7 @@ export async function setup(
     },
   ];
 
-  setLoading(LoadingStateKey.Config, true);
+  // setLoading(LoadingStateKey.Config, true);
   try {
     await Promise.all([
       getEntities(
@@ -144,11 +144,11 @@ export async function setup(
       ),
     ]);
   } finally {
-    setLoading(LoadingStateKey.Config, false);
+    // setLoading(LoadingStateKey.Config, false);
   }
 
   // fetch all existing entities from torii
-  setLoading(LoadingStateKey.Hyperstructure, true);
+  // setLoading(LoadingStateKey.Hyperstructure, true);
   await getEntities(
     network.toriiClient,
     {
@@ -178,10 +178,10 @@ export async function setup(
     40_000,
     false,
   ).finally(() => {
-    setLoading(LoadingStateKey.Hyperstructure, false);
+    // setLoading(LoadingStateKey.Hyperstructure, false);
   });
 
-  setLoading(LoadingStateKey.SingleKey, true);
+  // setLoading(LoadingStateKey.SingleKey, true);
   await getEntities(
     network.toriiClient,
     {
@@ -214,7 +214,7 @@ export async function setup(
     40_000,
     false,
   ).finally(() => {
-    setLoading(LoadingStateKey.SingleKey, false);
+    // setLoading(LoadingStateKey.SingleKey, false);
   });
 
   const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
@@ -271,7 +271,7 @@ export async function setup(
     false,
     false,
   ).finally(() => {
-    setLoading(LoadingStateKey.Events, false);
+    // setLoading(LoadingStateKey.Events, false);
   });
 
   return {

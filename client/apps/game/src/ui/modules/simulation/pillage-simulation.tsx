@@ -1,8 +1,8 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { pillageSimulation } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import { PillageSimulationPanel } from "@/ui/components/worldmap/battles/pillage-simulation-panel";
-import { useUIStore } from "@bibliothecadao/react";
 
 export const PillageSimulation = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);

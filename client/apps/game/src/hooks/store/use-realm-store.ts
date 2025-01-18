@@ -1,5 +1,5 @@
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { ID } from "@bibliothecadao/eternum";
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "../../../../constants/constants";
 
 export interface RealmStore {
   structureEntityId: ID;

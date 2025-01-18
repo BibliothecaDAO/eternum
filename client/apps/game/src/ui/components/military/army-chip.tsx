@@ -2,6 +2,7 @@ import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
 import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
 import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ArmyManagementCard, ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
@@ -15,12 +16,10 @@ import {
   useArmiesAtPosition,
   useDojo,
   useNextBlockTimestamp,
-  useUIStore,
 } from "@bibliothecadao/react";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-
 export const NavigateToPositionIcon = ({
   position,
   hideTooltip = false,

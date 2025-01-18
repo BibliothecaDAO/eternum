@@ -1,4 +1,4 @@
-import { useUIStore } from "@bibliothecadao/react";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import clsx from "clsx";
 import throttle from "lodash/throttle";
 import { useEffect, useRef } from "react";

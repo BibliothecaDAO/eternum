@@ -1,7 +1,7 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useCallback } from "react";
 import useSound from "use-sound";
-import { useUIStore } from "../";
 
 export const dir = "/sound/";
 
