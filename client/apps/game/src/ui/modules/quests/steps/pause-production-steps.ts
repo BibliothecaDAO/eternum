@@ -1,6 +1,6 @@
 import { BUILDINGS_CENTER } from "@bibliothecadao/eternum";
+import { LeftView, RightView, useUIStore } from "@bibliothecadao/react";
 import { StepOptions } from "shepherd.js";
-import { LeftView, RightView, useUIStore } from "../../";
 import { StepButton, waitForElement } from "./utils";
 
 export const pauseProductionSteps: StepOptions[] = [

@@ -75,9 +75,6 @@ export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & Rea
 
 const initialTrackIndex = Math.floor(Math.random() * tracks.length);
 
-console.log("Zustand create:", create);
-console.log("Zustand subscribeWithSelector:", subscribeWithSelector);
-
 export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
     theme: "light",

@@ -1,5 +1,5 @@
+import { LeftView, RightView, useUIStore } from "@bibliothecadao/react";
 import { StepOptions } from "shepherd.js";
-import { LeftView, RightView, useUIStore } from "../../";
 import { StepButton } from "./utils";
 
 export const travelSteps: StepOptions[] = [

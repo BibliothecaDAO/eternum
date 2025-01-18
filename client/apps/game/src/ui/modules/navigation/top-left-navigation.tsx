@@ -4,7 +4,6 @@ import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { QuestsMenu } from "@/ui/modules/navigation/quest-menu";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { gramToKg, kgToGram } from "@/ui/utils/utils";
 import {
@@ -34,6 +33,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { QuestsMenu } from "../quests/quest-menu";
 
 const slideDown = {
   hidden: { y: "-100%" },

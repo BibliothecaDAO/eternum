@@ -1,15 +1,15 @@
+import { buildFoodSteps } from "@/ui/modules/quests/steps/build-food-steps";
+import { buildResourceSteps } from "@/ui/modules/quests/steps/build-resource-steps";
+import { createAttackArmySteps } from "@/ui/modules/quests/steps/create-attack-army";
+import { createDefenseArmySteps } from "@/ui/modules/quests/steps/create-defense-army-steps";
+import { createTradeSteps } from "@/ui/modules/quests/steps/create-trade-steps";
+import { pauseProductionSteps } from "@/ui/modules/quests/steps/pause-production-steps";
+import { settleSteps } from "@/ui/modules/quests/steps/settle-steps";
+import { travelSteps } from "@/ui/modules/quests/steps/travel-steps";
 import { QuestType } from "@bibliothecadao/eternum";
 import { useCallback, useMemo } from "react";
 import { useShepherd } from "react-shepherd";
 import { StepOptions } from "shepherd.js";
-import { buildFoodSteps } from "../../constants/quests/build-food-steps";
-import { buildResourceSteps } from "../../constants/quests/build-resource-steps";
-import { createAttackArmySteps } from "../../constants/quests/create-attack-army";
-import { createDefenseArmySteps } from "../../constants/quests/create-defense-army-steps";
-import { createTradeSteps } from "../../constants/quests/create-trade-steps";
-import { pauseProductionSteps } from "../../constants/quests/pause-production-steps";
-import { settleSteps } from "../../constants/quests/settle-steps";
-import { travelSteps } from "../../constants/quests/travel-steps";
 
 export const questSteps = new Map<QuestType, StepOptions[]>([
   [QuestType.Settle, settleSteps],

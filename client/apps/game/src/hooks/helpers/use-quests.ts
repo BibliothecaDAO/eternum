@@ -1,12 +1,17 @@
 import { armyHasTraveled, ContractAddress, getEntityInfo, QuestType, TileManager } from "@bibliothecadao/eternum";
+import {
+  Prize,
+  useArmiesByStructure,
+  useBuildingQuantities,
+  useDojo,
+  useGetMyOffers,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
-import { useArmiesByStructure, useBuildingQuantities, useDojo, useUIStore } from "../";
-import { QUEST_DETAILS } from "../../constants";
-import { Prize } from "../../types/quest";
-import { useGetMyOffers } from "./use-trade";
+import { QUEST_DETAILS } from "./use-starting-tutorial";
 
 export enum QuestStatus {
   InProgress,
