@@ -3,9 +3,10 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { LabelManager } from "@/three/managers/label-manager";
 import { StructureLabelPaths, StructureModelPaths } from "@/three/scenes/constants";
 import { RenderChunkSize, StructureInfo } from "@/types";
+import { StructureSystemUpdate } from "@/types/systems";
 import { FELT_CENTER } from "@/ui/config";
 import { ID, StructureType } from "@bibliothecadao/eternum";
-import { StructureSystemUpdate, useAccountStore } from "@bibliothecadao/react";
+import { useAccountStore } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { getWorldPositionForHex } from "../utils";
 

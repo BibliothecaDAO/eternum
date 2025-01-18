@@ -10,6 +10,7 @@ import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "@/three/scenes/constants"
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
 import { SceneName } from "@/types";
+import { ArmySystemUpdate, TileSystemUpdate } from "@/types/systems";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import {
@@ -23,12 +24,10 @@ import {
   getNeighborOffsets,
 } from "@bibliothecadao/eternum";
 import {
-  ArmySystemUpdate,
   LeftView,
   LoadingStateKey,
   Position,
   SetupResult,
-  TileSystemUpdate,
   soundSelector,
   useAccountStore,
   useUIStore,

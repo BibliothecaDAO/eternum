@@ -7,7 +7,7 @@ interface MarketStore {
   setSelectedResource: (resource: number) => void;
 }
 
-export const useMarketStore = create<MarketStore>((set, get) => {
+export const useMarketStore = create<MarketStore>((set, _get) => {
   return {
     loading: false,
     setLoading: (loading) => set({ loading }),

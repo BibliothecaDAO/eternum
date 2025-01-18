@@ -1,5 +1,3 @@
-# @bibliothecadao/game-hooks
+# @bibliothecadao/react
 
-Shared hooks and stores for Eternum game applications.
-
-## Installation
+Shared react hooks and stores for Eternum game applications.

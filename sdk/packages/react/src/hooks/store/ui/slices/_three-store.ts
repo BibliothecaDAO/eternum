@@ -39,7 +39,7 @@ interface ArmyActions {
   selectedEntityId: ID | null;
 }
 
-export const createThreeStoreSlice = (set: any, get: any) => ({
+export const createThreeStoreSlice = (set: any, _get: any) => ({
   navigationTarget: null,
   setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
   armyActions: {

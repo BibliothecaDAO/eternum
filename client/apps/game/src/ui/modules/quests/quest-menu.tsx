@@ -3,8 +3,8 @@ import { useStartingTutorial } from "@/hooks/helpers/use-starting-tutorial";
 import { questSteps, useTutorial } from "@/hooks/helpers/use-tutorial";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { getQuestResources, ID, QuestStatus, QuestType } from "@bibliothecadao/eternum";
-import { Prize, useDojo, useUIStore } from "@bibliothecadao/react";
+import { getQuestResources, ID, QuestStatus, QuestType, Prize } from "@bibliothecadao/eternum";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo, useState } from "react";
 

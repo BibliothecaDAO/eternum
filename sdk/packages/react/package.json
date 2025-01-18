@@ -22,9 +22,7 @@
     "zustand": "^4.5.2",
     "lodash": "^4",
     "use-sound": "^4.0.1",
-    "wouter": "^2.12.1",
-    "shepherd.js": "^14.3.0",
-    "react-shepherd": "^6.1.6"
+    "wouter": "^2.12.1"
   },
   "devDependencies": {
     "@types/react": "^18",

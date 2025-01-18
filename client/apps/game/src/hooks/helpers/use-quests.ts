@@ -1,6 +1,12 @@
-import { armyHasTraveled, ContractAddress, getEntityInfo, QuestType, TileManager } from "@bibliothecadao/eternum";
 import {
+  armyHasTraveled,
+  ContractAddress,
+  getEntityInfo,
   Prize,
+  QuestType,
+  TileManager,
+} from "@bibliothecadao/eternum";
+import {
   useArmiesByStructure,
   useBuildingQuantities,
   useDojo,
