@@ -1,7 +1,6 @@
-import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
-import { useBattleJoin, useBattleLeave, useBattleStart } from "@/hooks/helpers/use-battle-events";
-import { currencyFormat, formatTime } from "@/ui/utils/utils";
-import { BattleSide, ClientComponents, ID } from "@bibliothecadao/eternum";
+import { currencyFormat } from "@/ui/utils/utils";
+import { BattleSide, ClientComponents, ContractAddress, ID, formatTime } from "@bibliothecadao/eternum";
+import { useBattleJoin, useBattleLeave, useBattleStart, useDojo } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo } from "react";
 import { shortString } from "starknet";
@@ -25,11 +24,14 @@ const EVENT_CONFIG = {
 };
 
 export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSide: BattleSide }) => {
+  const {
+    setup: { components },
+    account: { account },
+  } = useDojo();
+
   const battleStartData = useBattleStart(battleId);
   const battleJoinData = useBattleJoin(battleId, battleSide);
   const battleLeaveData = useBattleLeave(battleId, battleSide);
-
-  const { getArmy } = useGetArmyByEntityId();
 
   const events = useMemo(() => {
     return [...battleStartData, ...battleJoinData, ...battleLeaveData].sort(
@@ -69,7 +71,10 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
           doerArmyEntityId = 0;
         }
 
-        const doerArmy = getArmy(doerArmyEntityId);
+        const doerArmy = useMemo(
+          () => getArmy(doerArmyEntityId, ContractAddress(account.address), components),
+          [doerArmyEntityId, account.address, components],
+        );
 
         const armyName = doerName === 0n ? "Mercenaries" : shortString.decodeShortString(doerName.toString());
         const elapsedTime = eventClone.timestamp - battleStartTime;

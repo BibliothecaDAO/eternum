@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0x1c4c49a0cf675da5af2cc8b4899310af3378e78795bffac77c6650050368ba4"
+original_class_hash = "0x1c4c49a0cf675da5af2cc8b4899310af3378e78795bffac77c6650050368ba4"
+abi = "manifests/dev/base/abis/models/eternum-Liquidity-6c6683f5.json"
+tag = "eternum-Liquidity"
+qualified_path = "eternum::models::bank::liquidity::liquidity"
+manifest_name = "eternum-Liquidity-6c6683f5"
+
+[[members]]
+name = "bank_entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "player"
+type = "ContractAddress"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "shares"
+type = "Fixed"
+key = false

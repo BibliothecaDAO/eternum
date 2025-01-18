@@ -1,20 +1,24 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useQuery } from "@/hooks/helpers/use-query";
 import { EntityArmyList } from "@/ui/components/military/army-list";
 import { EntitiesArmyTable } from "@/ui/components/military/entities-army-table";
 import { UserBattles } from "@/ui/components/military/user-battles";
 import { Tabs } from "@/ui/elements/tab";
-import { getStructure } from "@/utils/entities";
-import { ID } from "@bibliothecadao/eternum";
+import { getStructure, ID } from "@bibliothecadao/eternum";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { useState } from "react";
 
 export const Military = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const {
+    account: {
+      account: { address },
+    },
     setup: { components },
   } = useDojo();
 
   const { isMapView } = useQuery();
-  const selectedStructure = entityId ? getStructure(entityId, components) : undefined;
+  const selectedStructure = useMemo(
+    () => (entityId ? getStructure(entityId, ContractAddress(address), components) : undefined),
+    [entityId, address, components],
+  );
 
   const [selectedTab, setSelectedTab] = useState(0);
 

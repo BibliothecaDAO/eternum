@@ -1,13 +1,6 @@
 import { ClientConfigManager } from "@bibliothecadao/eternum";
 
-import {
-    BuildingType,
-    ContractAddress,
-    TickIds,
-    type ID,
-    type Position,
-    type Resource
-} from "@bibliothecadao/eternum";
+import { BuildingType, ContractAddress, TickIds, type ID, type Position, type Resource } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };

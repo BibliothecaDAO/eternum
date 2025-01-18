@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x4544f38465d6ea7b422ec52214799c605d3f0722bc820bb87f68d8d985cc939"
+original_class_hash = "0x4544f38465d6ea7b422ec52214799c605d3f0722bc820bb87f68d8d985cc939"
+abi = "manifests/prod/base/abis/models/eternum-Population-28c60ba8.json"
+tag = "eternum-Population"
+qualified_path = "eternum::models::population::population"
+manifest_name = "eternum-Population-28c60ba8"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "population"
+type = "u32"
+key = false
+
+[[members]]
+name = "capacity"
+type = "u32"
+key = false

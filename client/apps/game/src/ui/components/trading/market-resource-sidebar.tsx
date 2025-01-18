@@ -1,6 +1,6 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import { MarketResource } from "@/ui/components/trading/market-order-panel";
 import { ID, MarketInterface, MarketManager, RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 export const MarketResourceSidebar = ({

@@ -1,8 +1,4 @@
-import { configManager } from "@/dojo/setup";
-import { DojoResult, useDojo } from "@/hooks/context/dojo-context";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { usePlayResourceSound } from "@/hooks/use-ui-sound";
-import { ResourceMiningTypes } from "@/types";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/headline";
@@ -10,18 +6,7 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs } from "@/ui/elements/tab";
-import { unpackResources } from "@/ui/utils/packed-data";
-import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import {
-  ResourceIdToMiningType,
-  adjustWonderLordsCost,
-  divideByPrecision,
-  getEntityIdFromKeys,
-  gramToKg,
-  isResourceProductionBuilding,
-} from "@/ui/utils/utils";
-import { getRealmInfo } from "@/utils/realm";
-import { getBalance } from "@/utils/resources";
+import { adjustWonderLordsCost, divideByPrecision, getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
 import {
   BuildingEnumToString,
   BuildingType,
@@ -29,10 +14,13 @@ import {
   ClientComponents,
   ID,
   ResourceCost as ResourceCostType,
+  ResourceMiningTypes,
   ResourcesIds,
   WORLD_CONFIG_ID,
+  configManager,
   findResourceById,
 } from "@bibliothecadao/eternum";
+import { DojoResult, usePlayResourceSound, useUIStore } from "@bibliothecadao/react";
 import { Component, getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
@@ -40,6 +28,8 @@ import React, { useMemo, useState } from "react";
 
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
+
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
@@ -74,7 +64,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(entityId, resourceCost.resource, dojo.setup.components);
+      const balance = getBalance(entityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
 
@@ -392,6 +382,7 @@ export const ResourceInfo = ({
   hintModal?: boolean;
 }) => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   let cost = configManager.resourceInputs[resourceId];
 
   const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
@@ -458,7 +449,12 @@ export const ResourceInfo = ({
       <div className="font-bold uppercase">consumed per/s</div>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
-          const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource, dojo.setup.components);
+          const balance = getBalance(
+            entityId || 0,
+            cost[Number(resourceId)].resource,
+            currentDefaultTick,
+            dojo.setup.components,
+          );
 
           return (
             <ResourceCost
@@ -475,7 +471,12 @@ export const ResourceInfo = ({
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0, buildingCost[Number(resourceId)].resource, dojo.setup.components);
+          const balance = getBalance(
+            entityId || 0,
+            buildingCost[Number(resourceId)].resource,
+            currentDefaultTick,
+            dojo.setup.components,
+          );
           return (
             <ResourceCost
               key={index}
@@ -516,6 +517,7 @@ export const BuildingInfo = ({
   isPaused?: boolean;
 }) => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const buildingCost = getBuildingCosts(entityId ?? 0, dojo, buildingId) || [];
 
@@ -599,6 +601,7 @@ export const BuildingInfo = ({
                 const balance = getBalance(
                   entityId || 0,
                   ongoingCost[Number(resourceId)].resource,
+                  currentDefaultTick,
                   dojo.setup.components,
                 );
                 return (
@@ -623,6 +626,7 @@ export const BuildingInfo = ({
               const balance = getBalance(
                 entityId || 0,
                 buildingCost[Number(resourceId)].resource,
+                currentDefaultTick,
                 dojo.setup.components,
               );
               return (

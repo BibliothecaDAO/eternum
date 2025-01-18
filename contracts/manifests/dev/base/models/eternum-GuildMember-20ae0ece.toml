@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x6fbc5caca9b75c09da505e60d4328b66113193af74fb1c24e896dc691182eaf"
+original_class_hash = "0x6fbc5caca9b75c09da505e60d4328b66113193af74fb1c24e896dc691182eaf"
+abi = "manifests/dev/base/abis/models/eternum-GuildMember-20ae0ece.json"
+tag = "eternum-GuildMember"
+qualified_path = "eternum::models::guild::guild_member"
+manifest_name = "eternum-GuildMember-20ae0ece"
+
+[[members]]
+name = "address"
+type = "ContractAddress"
+key = true
+
+[[members]]
+name = "guild_entity_id"
+type = "ID"
+key = false

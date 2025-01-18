@@ -3,17 +3,6 @@ import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
-import { useBank } from "@/hooks/helpers/use-bank";
-import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
-import { usePlayerStructures } from "@/hooks/helpers/use-entities";
-import { useStructureByPosition } from "@/hooks/helpers/use-structures";
-import { useSetMarket } from "@/hooks/helpers/use-trade";
-import useMarketStore from "@/hooks/store/use-market-store";
-import { useModalStore } from "@/hooks/store/use-modal-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { HintModal } from "@/ui/components/hints/hint-modal";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { ModalContainer } from "@/ui/components/modal-container";
@@ -25,7 +14,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { formatTimeDifference } from "@/ui/modules/military/battle-view/battle-progress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BattleManager, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  BattleManager,
+  ContractAddress,
+  ID,
+  ResourcesIds,
+  configManager,
+  getArmy,
+  getStructureAtPosition,
+} from "@bibliothecadao/eternum";
+import {
+  useBank,
+  useBattlesAtPosition,
+  useDojo,
+  useMarketStore,
+  useModalStore,
+  usePlayerStructures,
+  useSetMarket,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 
@@ -68,8 +75,15 @@ export const MarketModal = () => {
 
   const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
-  const getStructure = useStructureByPosition();
-  const bankStructure = getStructure(bank?.position || { x: 0, y: 0 });
+  const bankStructure = useMemo(
+    () =>
+      getStructureAtPosition(
+        bank?.position || { x: 0, y: 0 },
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [bank?.position, dojo.account.account.address, dojo.setup.components],
+  );
 
   const battleEntityId = useMemo(() => {
     if (battles.length === 0) return null;
@@ -106,7 +120,15 @@ export const MarketModal = () => {
       getEntityIdFromKeys([BigInt(bank?.entityId!), BigInt(ResourcesIds.Lords)]),
     )?.balance || 0n;
 
-  const bankArmy = useArmyByArmyEntityId(bankStructure?.protector?.entity_id || 0);
+  const bankArmy = useMemo(
+    () =>
+      getArmy(
+        bankStructure?.protector?.entity_id || 0,
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [bankStructure?.protector?.entity_id, dojo.account.account.address, dojo.setup.components],
+  );
 
   // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
   const armyInfo = useMemo(() => {

@@ -1,8 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
-import { useFragmentMines } from "@/hooks/helpers/use-fragment-mines";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/use-hyperstructures";
 import { FragmentMinePanel } from "@/ui/components/fragmentMines/fragment-mine-panel";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/hyperstructure-panel";
@@ -13,7 +8,7 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { getAddressNameFromEntity, getPlayerAddressFromEntity } from "@/utils/entities";
+import { getAddressNameFromEntity } from "@/utils/entities";
 import { getBalance } from "@/utils/resources";
 import {
   BattleSide,
@@ -22,7 +17,16 @@ import {
   LeaderboardManager,
   ResourcesIds,
   findResourceById,
+  getAddressFromEntity,
 } from "@bibliothecadao/eternum";
+import {
+  useArmiesAtPosition,
+  useDojo,
+  useFragmentMines,
+  useGuilds,
+  useHyperstructureProgress,
+  useHyperstructures,
+} from "@bibliothecadao/react";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
@@ -189,10 +193,10 @@ const BaseStructureExtraContent = ({
 
   const structureOwner = useMemo(() => {
     const ownerName = getAddressNameFromEntity(entityId, components);
-    const address = getPlayerAddressFromEntity(entityId, components);
+    const address = getAddressFromEntity(entityId, components);
     const guildName = getGuildFromPlayerAddress(address || 0n)?.name;
     return { name: ownerName, guildName };
-  }, [entityId, getAddressNameFromEntity, getPlayerAddressFromEntity, getGuildFromPlayerAddress]);
+  }, [entityId, getAddressNameFromEntity, getAddressFromEntity, getGuildFromPlayerAddress]);
 
   const { defensiveArmy, attackingArmy } = useMemo(() => {
     const defensive = armies.find((army) => army.protectee?.protectee_id);
@@ -276,8 +280,9 @@ const HyperStructureExtraContent = ({
 
 const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
   const dojo = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
-  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment, dojo.setup.components);
+  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment, currentDefaultTick, dojo.setup.components);
   const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);
 
   return (

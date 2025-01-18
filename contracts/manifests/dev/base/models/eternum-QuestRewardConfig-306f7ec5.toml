@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x667744a3984b7453ca8dba09d23775983e23568eb8e2e562341c1ae3057b971"
+original_class_hash = "0x667744a3984b7453ca8dba09d23775983e23568eb8e2e562341c1ae3057b971"
+abi = "manifests/dev/base/abis/models/eternum-QuestRewardConfig-306f7ec5.json"
+tag = "eternum-QuestRewardConfig"
+qualified_path = "eternum::models::config::quest_reward_config"
+manifest_name = "eternum-QuestRewardConfig-306f7ec5"
+
+[[members]]
+name = "quest_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "detached_resource_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "detached_resource_count"
+type = "u32"
+key = false

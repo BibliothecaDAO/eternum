@@ -1,26 +1,24 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useStructureByEntityId } from "@/hooks/helpers/use-structures";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { getRealmInfo } from "@/utils/realm";
-import { getBalance } from "@/utils/resources";
+import { divideByPrecision } from "@/ui/utils/utils";
 import {
+  configManager,
   ContractAddress,
+  getBalance,
+  getEntityIdFromKeys,
+  getRealmInfo,
   LEVEL_DESCRIPTIONS,
   RealmLevels,
-  StructureType
+  StructureType,
 } from "@bibliothecadao/eternum";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 const eternumConfig = await ETERNUM_CONFIG();
 export const Castle = () => {
   const dojo = useDojo();
-
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -30,12 +28,15 @@ export const Castle = () => {
     [structureEntityId, dojo.setup.components],
   );
 
-  const structure = useStructureByEntityId(structureEntityId);
+  const structure = useMemo(
+    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
+    [structureEntityId, dojo.account.account.address, dojo.setup.components],
+  );
 
   const getNextRealmLevel = useMemo(() => {
     if (!realmInfo) return null;
     const nextLevel = realmInfo.level + 1;
-    return nextLevel < eternumConfig.realmMaxLevel ? nextLevel : null;
+    return nextLevel < REALM_MAX_LEVEL ? nextLevel : null;
   }, [realmInfo]);
 
   const checkBalance = useMemo(() => {
@@ -45,7 +46,7 @@ export const Castle = () => {
 
     return Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource, dojo.setup.components);
+      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
   }, [getBalance, structureEntityId]);

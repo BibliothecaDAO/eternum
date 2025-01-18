@@ -1,13 +1,17 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { StaminaResourceCost } from "@/ui/elements/stamina-resource-cost";
-import { getBalance } from "@/utils/resources";
-import { computeExploreFoodCosts, computeTravelFoodCosts, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  computeExploreFoodCosts,
+  computeTravelFoodCosts,
+  configManager,
+  getBalance,
+  ID,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useCallback, useMemo } from "react";
@@ -81,7 +85,7 @@ export const ActionInfo = memo(() => {
   const hoveredHex = useUIStore(useCallback((state) => state.armyActions.hoveredHex, []));
   const selectedEntityId = useUIStore(useCallback((state) => state.armyActions.selectedEntityId, []));
   const structureEntityId = useUIStore(useCallback((state) => state.structureEntityId, []));
-
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const {
     setup: { components },
   } = useDojo();
@@ -135,7 +139,9 @@ export const ActionInfo = memo(() => {
         costs={costs}
         selectedEntityId={selectedEntityId}
         structureEntityId={structureEntityId}
-        getBalance={(entityId: ID, resourceId: ResourcesIds) => getBalance(entityId, resourceId, components)}
+        getBalance={(entityId: ID, resourceId: ResourcesIds) =>
+          getBalance(entityId, resourceId, currentDefaultTick, components)
+        }
       />
     </BaseThreeTooltip>
   );

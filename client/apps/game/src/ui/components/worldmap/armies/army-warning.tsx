@@ -1,8 +1,12 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
-import { ArmyInfo, ArmyMovementManager, computeExploreFoodCosts, StaminaManager } from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  ArmyMovementManager,
+  computeExploreFoodCosts,
+  configManager,
+  StaminaManager,
+} from "@bibliothecadao/eternum";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 interface ArmyWarningProps {

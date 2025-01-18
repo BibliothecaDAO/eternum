@@ -2,17 +2,11 @@ import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
 import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
 import { ReactComponent as Castle } from "@/assets/icons/castle.svg";
 import { ReactComponent as Flag } from "@/assets/icons/flag.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGetArmyByEntityId } from "@/hooks/helpers/use-armies";
-import { useModalStore } from "@/hooks/store/use-modal-store";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import { PillageHistory } from "@/ui/components/military/pillage-history";
 import { ModalContainer } from "@/ui/components/modal-container";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { LeftView } from "@/ui/modules/navigation/left-navigation-module";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
   ArmyInfo,
@@ -26,6 +20,7 @@ import {
   Structure,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
+import { LeftView, useDojo, useModalStore, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -60,14 +55,13 @@ export const BattleActions = ({
   const {
     account: { account },
     setup: {
-      components: { TroopConfig },
+      components,
       systemCalls: { battle_leave, battle_start, battle_claim, battle_leave_and_claim, battle_force_start },
     },
     network: { world },
   } = dojo;
 
   const { toggleModal } = useModalStore();
-  const { getArmy } = useGetArmyByEntityId();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { nextBlockTimestamp: currentTimestamp, currentArmiesTick } = useNextBlockTimestamp();
@@ -88,7 +82,7 @@ export const BattleActions = ({
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
   const selectedArmy = useMemo(() => {
-    return getArmy(localSelectedUnit || 0);
+    return getArmy(localSelectedUnit || 0, ContractAddress(account.address), components);
   }, [localSelectedUnit, isActive, userArmiesInBattle]);
 
   const defenderArmy = useMemo(() => {
@@ -224,7 +218,7 @@ export const BattleActions = ({
   );
 
   const mouseEnterRaid = useCallback(() => {
-    const troopConfig = getComponentValue(TroopConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const troopConfig = getComponentValue(components.TroopConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
     if (!troopConfig) return 0;
 
     const raidSuccessPercentage = getChancesOfSuccess(selectedArmy, defenderArmy, troopConfig) * 100;

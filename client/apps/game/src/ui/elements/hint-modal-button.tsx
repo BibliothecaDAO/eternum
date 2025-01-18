@@ -1,5 +1,5 @@
-import { useModalStore } from "@/hooks/store/use-modal-store";
 import CircleButton from "@/ui/elements/circle-button";
+import { useModalStore } from "@bibliothecadao/react";
 import { HintModal } from "../components/hints/hint-modal";
 import { BuildingThumbs } from "../config";
 

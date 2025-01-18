@@ -1,6 +1,3 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { StructureCard } from "@/ui/components/structures/construction/structure-card";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
@@ -13,10 +10,10 @@ import {
   ResourceTier,
   ResourcesIds,
   StructureType,
-  scaleResourceCostMinMax
+  configManager,
 } from "@bibliothecadao/eternum";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import React from "react";
-
 
 const eternumConfig = await ETERNUM_CONFIG();
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
@@ -30,7 +27,7 @@ export const STRUCTURE_IMAGE_PATHS = {
 
 export const StructureConstructionMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
-
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
@@ -43,7 +40,7 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(entityId, resourceCost.resource, dojo.setup.components);
+      const balance = getBalance(entityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
       return balance.balance >= multiplyByPrecision(resourceCost.amount);
     });
 
@@ -54,9 +51,10 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
 
         // if is hyperstructure, the construction cost are only fragments
         const isHyperstructure = building === StructureType["Hyperstructure"];
-        const cost =  scaleResourceCostMinMax(eternumConfig.hyperstructures.hyperstructureCreationCosts, RESOURCE_PRECISION).filter(
-          (cost) => !isHyperstructure || cost.resource === ResourcesIds.AncientFragment,
-        );
+        const cost = scaleResourceCostMinMax(
+          eternumConfig.hyperstructures.hyperstructureCreationCosts,
+          RESOURCE_PRECISION,
+        ).filter((cost) => !isHyperstructure || cost.resource === ResourcesIds.AncientFragment);
 
         const hasBalance = checkBalance(cost);
 
@@ -95,7 +93,7 @@ const StructureInfo = ({
   extraButtons?: React.ReactNode[];
 }) => {
   const dojo = useDojo();
-
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   // if is hyperstructure, the construction cost are only fragments
   const isHyperstructure = structureId === StructureType["Hyperstructure"];
   const cost = eternumConfig.hyperstructures.hyperstructureCreationCosts.filter(
@@ -121,7 +119,12 @@ const StructureInfo = ({
       <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
       <div className="grid grid-cols-1 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0, ResourcesIds.AncientFragment, dojo.setup.components);
+          const balance = getBalance(
+            entityId || 0,
+            ResourcesIds.AncientFragment,
+            currentDefaultTick,
+            dojo.setup.components,
+          );
           return (
             <ResourceCost
               key={index}

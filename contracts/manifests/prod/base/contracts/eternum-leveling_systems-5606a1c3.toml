@@ -1,0 +1,11 @@
+kind = "DojoContract"
+class_hash = "0x43c34c37eeb98e6bd76093d74972a7c7bc3335744daeddf3f7acd6db562173e"
+original_class_hash = "0x43c34c37eeb98e6bd76093d74972a7c7bc3335744daeddf3f7acd6db562173e"
+base_class_hash = "0x0"
+abi = "manifests/prod/base/abis/contracts/eternum-leveling_systems-5606a1c3.json"
+reads = []
+writes = []
+init_calldata = []
+tag = "eternum-leveling_systems"
+systems = ["level_up_realm"]
+manifest_name = "eternum-leveling_systems-5606a1c3"

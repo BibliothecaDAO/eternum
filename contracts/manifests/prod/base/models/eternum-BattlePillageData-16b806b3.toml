@@ -1,0 +1,82 @@
+kind = "DojoModel"
+class_hash = "0x550732ecd8e32d1aea1e57e3a6e23704399e4700844a7ea63e0f19d17d7f9bb"
+original_class_hash = "0x550732ecd8e32d1aea1e57e3a6e23704399e4700844a7ea63e0f19d17d7f9bb"
+abi = "manifests/prod/base/abis/models/eternum-BattlePillageData-16b806b3.json"
+tag = "eternum-BattlePillageData"
+qualified_path = "eternum::models::event::battle_pillage_data"
+manifest_name = "eternum-BattlePillageData-16b806b3"
+
+[[members]]
+name = "id"
+type = "ID"
+key = true
+
+[[members]]
+name = "event_id"
+type = "EventType"
+key = true
+
+[[members]]
+name = "pillager"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "pillager_name"
+type = "felt252"
+key = false
+
+[[members]]
+name = "pillager_realm_entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "pillager_army_entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "pillaged_structure_owner"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "pillaged_structure_entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "winner"
+type = "BattleSide"
+key = false
+
+[[members]]
+name = "x"
+type = "u32"
+key = false
+
+[[members]]
+name = "y"
+type = "u32"
+key = false
+
+[[members]]
+name = "structure_type"
+type = "StructureCategory"
+key = false
+
+[[members]]
+name = "pillaged_resources"
+type = "Span<(u8, u128)>"
+key = false
+
+[[members]]
+name = "destroyed_building_category"
+type = "BuildingCategory"
+key = false
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

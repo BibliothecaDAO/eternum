@@ -27,7 +27,6 @@ export const dojoConfig = createDojoConfig({
   manifest,
 });
 
-
 const config = await ETERNUM_CONFIG();
 console.log("logging eternum configuration json from file");
-console.log({config});
+console.log({ config });

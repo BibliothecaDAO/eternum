@@ -1,12 +1,19 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useArmyByArmyEntityId } from "@/hooks/helpers/use-armies";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
 import Button from "@/ui/elements/button";
 import { BattleHistory } from "@/ui/modules/military/battle-view/battle-history";
 import { EntityAvatar } from "@/ui/modules/military/battle-view/entity-avatar";
 import { TroopRow } from "@/ui/modules/military/battle-view/troops";
-import { getAddressNameFromEntity } from "@/utils/entities";
-import { ArmyInfo, BattleManager, BattleSide, ClientComponents, ID, Structure } from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  BattleManager,
+  BattleSide,
+  ClientComponents,
+  ContractAddress,
+  getAddressNameFromEntity,
+  getArmy,
+  ID,
+  Structure,
+} from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 
@@ -48,7 +55,10 @@ export const BattleSideView = ({
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  const ownArmy = useArmyByArmyEntityId(ownArmyEntityId);
+  const ownArmy = useMemo(
+    () => getArmy(ownArmyEntityId, ContractAddress(account.address), components),
+    [ownArmyEntityId, account.address, components],
+  );
 
   const joinBattle = async (side: BattleSide, armyId: ID) => {
     if (ownArmyEntityId) {

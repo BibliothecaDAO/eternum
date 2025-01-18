@@ -6,9 +6,9 @@ import { StructureLabelPaths, StructureModelPaths } from "@/three/scenes/constan
 import { StructureSystemUpdate } from "@/three/systems/types";
 import { RenderChunkSize, StructureInfo } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
+import { getWorldPositionForHex } from "../utils";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");

@@ -1,5 +1,4 @@
-import useUIStore from "@/hooks/store/use-ui-store";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { LoadingStateKey, useUIStore } from "@bibliothecadao/react";
 
 export const WorldLoading = () => {
   const loadingStates = useUIStore((state) => state.loadingStates);

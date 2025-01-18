@@ -1,0 +1,11 @@
+kind = "DojoContract"
+class_hash = "0x4d7a57693096465738b791c34c0b4167c08eb76a3ac9023fce0b35697dc8830"
+original_class_hash = "0x4d7a57693096465738b791c34c0b4167c08eb76a3ac9023fce0b35697dc8830"
+base_class_hash = "0x0"
+abi = "manifests/prod/base/abis/contracts/eternum-liquidity_systems-337d668f.json"
+reads = []
+writes = []
+init_calldata = []
+tag = "eternum-liquidity_systems"
+systems = ["add"]
+manifest_name = "eternum-liquidity_systems-337d668f"

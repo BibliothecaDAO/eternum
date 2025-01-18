@@ -1,0 +1,32 @@
+kind = "DojoModel"
+class_hash = "0x16b1c42e866ceb17538014081a0b5cd97b40a8a054bb50ececa84b600dadba0"
+original_class_hash = "0x16b1c42e866ceb17538014081a0b5cd97b40a8a054bb50ececa84b600dadba0"
+abi = "manifests/dev/base/abis/models/eternum-Transfer-aad2d49c.json"
+tag = "eternum-Transfer"
+qualified_path = "eternum::systems::resources::contracts::resource_systems::resource_systems::transfer"
+manifest_name = "eternum-Transfer-aad2d49c"
+
+[[members]]
+name = "recipient_entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "sending_realm_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "sender_entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "resources"
+type = "Span<(u8, u128)>"
+key = false
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

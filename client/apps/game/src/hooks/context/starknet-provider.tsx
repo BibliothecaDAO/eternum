@@ -40,7 +40,7 @@ const controller =
         colorMode,
       })
     : new ControllerConnector({
-        chains: [{ rpcUrl: "https://api.cartridge.gg/x/starknet/sepolia" }],
+        chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
         defaultChainId: StarknetChainId.SN_SEPOLIA,
         namespace,
         slot,

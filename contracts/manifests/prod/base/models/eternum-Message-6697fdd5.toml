@@ -1,0 +1,32 @@
+kind = "DojoModel"
+class_hash = "0x7123b3f6f966490e6b48bdfd9d4f7a4a74465754f761ae506a1ea461ffe29f9"
+original_class_hash = "0x7123b3f6f966490e6b48bdfd9d4f7a4a74465754f761ae506a1ea461ffe29f9"
+abi = "manifests/prod/base/abis/models/eternum-Message-6697fdd5.json"
+tag = "eternum-Message"
+qualified_path = "eternum::models::message::message"
+manifest_name = "eternum-Message-6697fdd5"
+
+[[members]]
+name = "identity"
+type = "ContractAddress"
+key = true
+
+[[members]]
+name = "channel"
+type = "felt252"
+key = true
+
+[[members]]
+name = "content"
+type = "ByteArray"
+key = false
+
+[[members]]
+name = "salt"
+type = "felt252"
+key = true
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

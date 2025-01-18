@@ -1,18 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useMemo } from "react";
+import { Tab } from "./types";
 import { useChatStore } from "./use-chat-store";
-
-export interface Tab {
-  name: string;
-  key: string;
-  address: string;
-  numberOfMessages?: number;
-  displayed: boolean;
-  lastSeen: Date;
-  lastMessage?: Date;
-  mandatory?: boolean;
-}
 
 export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
   const setCurrentTab = useChatStore((state) => state.setCurrentTab);

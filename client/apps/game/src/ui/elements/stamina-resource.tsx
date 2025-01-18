@@ -1,10 +1,6 @@
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useStaminaManager } from "@/hooks/helpers/use-stamina";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { ID } from "@bibliothecadao/eternum";
+import { configManager, ID } from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp, useStaminaManager, useUIStore } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";

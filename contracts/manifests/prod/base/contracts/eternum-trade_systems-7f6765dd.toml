@@ -1,0 +1,15 @@
+kind = "DojoContract"
+class_hash = "0x575918426611358e48582a47f827946b073300684a6daff69c9c5d55ced4a00"
+original_class_hash = "0x575918426611358e48582a47f827946b073300684a6daff69c9c5d55ced4a00"
+base_class_hash = "0x0"
+abi = "manifests/prod/base/abis/contracts/eternum-trade_systems-7f6765dd.json"
+reads = []
+writes = []
+init_calldata = []
+tag = "eternum-trade_systems"
+systems = [
+    "accept_order",
+    "accept_partial_order",
+    "cancel_order",
+]
+manifest_name = "eternum-trade_systems-7f6765dd"

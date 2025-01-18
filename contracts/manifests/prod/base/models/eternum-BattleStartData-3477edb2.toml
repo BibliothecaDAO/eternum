@@ -1,0 +1,77 @@
+kind = "DojoModel"
+class_hash = "0x7818dfa7e80f376524554b67c4c17dbb794146e008904d81c823453d62ec268"
+original_class_hash = "0x7818dfa7e80f376524554b67c4c17dbb794146e008904d81c823453d62ec268"
+abi = "manifests/prod/base/abis/models/eternum-BattleStartData-3477edb2.json"
+tag = "eternum-BattleStartData"
+qualified_path = "eternum::models::event::battle_start_data"
+manifest_name = "eternum-BattleStartData-3477edb2"
+
+[[members]]
+name = "id"
+type = "ID"
+key = true
+
+[[members]]
+name = "event_id"
+type = "EventType"
+key = true
+
+[[members]]
+name = "battle_entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "attacker"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "attacker_name"
+type = "felt252"
+key = false
+
+[[members]]
+name = "attacker_army_entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "defender_name"
+type = "felt252"
+key = false
+
+[[members]]
+name = "defender"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "defender_army_entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "duration_left"
+type = "u64"
+key = false
+
+[[members]]
+name = "x"
+type = "u32"
+key = false
+
+[[members]]
+name = "y"
+type = "u32"
+key = false
+
+[[members]]
+name = "structure_type"
+type = "StructureCategory"
+key = false
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

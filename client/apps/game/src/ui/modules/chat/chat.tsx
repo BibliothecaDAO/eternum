@@ -1,7 +1,4 @@
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
-import { usePlayers } from "@/hooks/helpers/use-players";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
 import { ChatTab } from "@/ui/modules/chat/chat-tab";
@@ -11,8 +8,8 @@ import { ChatMetadata, Tab } from "@/ui/modules/chat/types";
 import { useChatStore } from "@/ui/modules/chat/use-chat-store";
 import { getMessageKey } from "@/ui/modules/chat/utils";
 import { EventStream } from "@/ui/modules/stream/event-stream";
-import { toHexString } from "@/ui/utils/utils";
-import { ContractAddress, Player } from "@bibliothecadao/eternum";
+import { ContractAddress, Player, toHexString } from "@bibliothecadao/eternum";
+import { useDojo, useGuilds, usePlayers } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

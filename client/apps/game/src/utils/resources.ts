@@ -14,8 +14,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ETERNUM_CONFIG } from "./config";
 
-
- const eternumConfig = await ETERNUM_CONFIG();
+const eternumConfig = await ETERNUM_CONFIG();
 // used for entities that don't have any production
 export const getInventoryResources = (entityId: ID, components: ClientComponents): Resource[] => {
   return resources

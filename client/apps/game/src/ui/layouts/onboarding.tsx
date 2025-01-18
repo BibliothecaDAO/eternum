@@ -3,14 +3,12 @@ import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
 import { ReactComponent as LordsIcon } from "@/assets/icons/resources/LordsSimple.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { usePlayerRealms } from "@/hooks/helpers/use-realm";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview/realm/settle-realm-component";
 import Button from "@/ui/elements/button";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { Controller } from "@/ui/modules/controller/controller";
 import { SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
+import { useDojo, usePlayerOwnedRealms, useUIStore } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
@@ -188,7 +186,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
 
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
-  const realms = usePlayerRealms();
+  const realms = usePlayerOwnedRealms();
 
   const createRandomRealm = () => {
     const newRealmId = Math.floor(Math.random() * 8000) + 1;
@@ -214,26 +212,25 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           realms.length === 0 ? "animate-pulse" : ""
         }`}
       >
-      <div className="flex items-center">
-        <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
-          {seasonPassRealms.length}
+        <div className="flex items-center">
+          <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
+            {seasonPassRealms.length}
+          </div>
+          Redeem Season Pass
         </div>
-        Redeem Season Pass
-      </div>
+      </Button>
+    ) : env.VITE_PUBLIC_DEV ? (
+      <Button
+        onClick={createRandomRealm}
+        className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+          realms.length === 0 ? "animate-pulse" : ""
+        }`}
+      >
+        Create Random Realm
       </Button>
     ) : (
-      env.VITE_PUBLIC_DEV ? (
-        <Button
-          onClick={createRandomRealm}
-          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
-            realms.length === 0 ? "animate-pulse" : ""
-          }`}
-        >
-          Create Random Realm
-        </Button>
-      ) : (
-        <div className="flex gap-2 justify-between w-full">
-          <a
+      <div className="flex gap-2 justify-between w-full">
+        <a
           className="text-brown cursor-pointer text-lg w-full"
           href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
           target="_blank"
@@ -267,10 +264,8 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
               Bridge in Lords
             </div>
           </Button>
-          </a>
-        </div>
-      )
-    )
-  )
-  )
+        </a>
+      </div>
+    ))
+  );
 };

@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x14dee9755de66c42e7f54b899afeb65a1edda40a33a79945f0fbea6a13a617b"
+original_class_hash = "0x14dee9755de66c42e7f54b899afeb65a1edda40a33a79945f0fbea6a13a617b"
+abi = "manifests/dev/base/abis/models/eternum-Protector-177334e3.json"
+tag = "eternum-Protector"
+qualified_path = "eternum::models::combat::protector"
+manifest_name = "eternum-Protector-177334e3"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "army_id"
+type = "ID"
+key = false

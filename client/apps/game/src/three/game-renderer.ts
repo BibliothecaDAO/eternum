@@ -1,5 +1,3 @@
-import { SetupResult } from "@/dojo/setup";
-import useUIStore, { AppStore } from "@/hooks/store/use-ui-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { LocationManager } from "@/three/helpers/location-manager";
 import { TransitionManager } from "@/three/managers/transition-manager";
@@ -10,6 +8,7 @@ import WorldmapScene from "@/three/scenes/worldmap";
 import { SystemManager } from "@/three/systems/system-manager";
 import { SceneName } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
+import { AppStore, SetupResult, useUIStore } from "@bibliothecadao/react";
 import throttle from "lodash/throttle";
 import {
   BloomEffect,

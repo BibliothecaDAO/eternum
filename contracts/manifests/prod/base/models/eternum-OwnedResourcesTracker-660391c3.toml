@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x203f059bd2dcd4b0c44ff80bd9ca90341c56566819d52495b7d172c462f03ad"
+original_class_hash = "0x203f059bd2dcd4b0c44ff80bd9ca90341c56566819d52495b7d172c462f03ad"
+abi = "manifests/prod/base/abis/models/eternum-OwnedResourcesTracker-660391c3.json"
+tag = "eternum-OwnedResourcesTracker"
+qualified_path = "eternum::models::resources::owned_resources_tracker"
+manifest_name = "eternum-OwnedResourcesTracker-660391c3"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "resource_types"
+type = "u256"
+key = false

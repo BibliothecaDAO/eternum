@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0xa20dbb003d2008919dc8a8a56d872f81c7d6743f1e18756cb68d228dac3efa"
+original_class_hash = "0xa20dbb003d2008919dc8a8a56d872f81c7d6743f1e18756cb68d228dac3efa"
+abi = "manifests/prod/base/abis/models/eternum-SpeedConfig-1e31ed6d.json"
+tag = "eternum-SpeedConfig"
+qualified_path = "eternum::models::config::speed_config"
+manifest_name = "eternum-SpeedConfig-1e31ed6d"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "speed_config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "entity_type"
+type = "ID"
+key = false
+
+[[members]]
+name = "sec_per_km"
+type = "u16"
+key = false

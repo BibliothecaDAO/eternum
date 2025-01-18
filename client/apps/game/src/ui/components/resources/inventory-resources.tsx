@@ -1,9 +1,8 @@
 import { debouncedAddToSubscription } from "@/dojo/debounced-queries";
-import { useDojo } from "@/hooks/context/dojo-context";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { getBalance, getInventoryResources } from "@/utils/resources";
-import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { getBalance, getInventoryResources, ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 const CACHE_KEY = "inventory-resources-sync";
@@ -25,7 +24,7 @@ export const InventoryResources = ({
   textSize?: "xxs" | "xs" | "sm" | "md" | "lg";
 }) => {
   const dojo = useDojo();
-
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const [showAll, setShowAll] = useState(false);
 
   const inventoriesResources = useMemo(
@@ -40,7 +39,7 @@ export const InventoryResources = ({
       dynamic.map(
         (resourceId): Resource => ({
           resourceId,
-          amount: getBalance(entityId, resourceId, dojo.setup.components).balance,
+          amount: getBalance(entityId, resourceId, currentDefaultTick, dojo.setup.components).balance,
         }),
       ),
     [dynamic, entityId, getBalance],

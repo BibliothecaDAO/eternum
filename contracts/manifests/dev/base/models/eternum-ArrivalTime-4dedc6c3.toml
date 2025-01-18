@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x447b178960b9586eb4220c04c88a75d2fefdb2d0cd0be12381ed418035316d2"
+original_class_hash = "0x447b178960b9586eb4220c04c88a75d2fefdb2d0cd0be12381ed418035316d2"
+abi = "manifests/dev/base/abis/models/eternum-ArrivalTime-4dedc6c3.json"
+tag = "eternum-ArrivalTime"
+qualified_path = "eternum::models::movable::arrival_time"
+manifest_name = "eternum-ArrivalTime-4dedc6c3"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "arrives_at"
+type = "u64"
+key = false

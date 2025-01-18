@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x647a6ebed7dcc66f7a804a638ac53c50abc64133b3d57cfacf72b62e502a162"
+original_class_hash = "0x647a6ebed7dcc66f7a804a638ac53c50abc64133b3d57cfacf72b62e502a162"
+abi = "manifests/prod/base/abis/models/eternum-Quantity-3adcab42.json"
+tag = "eternum-Quantity"
+qualified_path = "eternum::models::quantity::quantity"
+manifest_name = "eternum-Quantity-3adcab42"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "value"
+type = "u128"
+key = false

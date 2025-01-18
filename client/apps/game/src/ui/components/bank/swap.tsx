@@ -1,9 +1,4 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useIsResourcesLocked, useStructures } from "@/hooks/helpers/use-structures";
-import { useTravel } from "@/hooks/helpers/use-travel";
-import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import { TravelInfo } from "@/ui/components/resources/travel-info";
@@ -12,15 +7,25 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
 import { getBalance } from "@/utils/resources";
 import {
+  configManager,
   ContractAddress,
   DONKEY_ENTITY_TYPE,
+  getStructure,
   ID,
   MarketManager,
   RESOURCE_TIERS,
   Resources,
-  ResourcesIds,
   resources,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
+import {
+  soundSelector,
+  useDojo,
+  useIsStructureResourcesLocked,
+  useTravel,
+  useUiSounds,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({
@@ -37,6 +42,8 @@ export const ResourceSwap = ({
     setup,
   } = useDojo();
 
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+
   const { computeTravelTime } = useTravel();
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
@@ -47,10 +54,9 @@ export const ResourceSwap = ({
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
-  const { getStructureByEntityId } = useStructures();
 
   const bankProtector = useMemo(() => {
-    const structure = getStructureByEntityId(bankEntityId);
+    const structure = getStructure(bankEntityId, ContractAddress(account.address), setup.components);
     return structure?.protector;
   }, [bankEntityId]);
 
@@ -76,12 +82,12 @@ export const ResourceSwap = ({
   }, [marketManager.resourceId]);
 
   const lordsBalance = useMemo(
-    () => getBalance(entityId, ResourcesIds.Lords, setup.components).balance,
-    [entityId, getBalance],
+    () => getBalance(entityId, ResourcesIds.Lords, currentDefaultTick, setup.components).balance,
+    [entityId, currentDefaultTick, getBalance],
   );
   const resourceBalance = useMemo(
-    () => getBalance(entityId, resourceId, setup.components).balance,
-    [entityId, resourceId, getBalance],
+    () => getBalance(entityId, resourceId, currentDefaultTick, setup.components).balance,
+    [entityId, resourceId, currentDefaultTick, getBalance],
   );
 
   const hasEnough = useMemo(() => {
@@ -90,8 +96,8 @@ export const ResourceSwap = ({
     return multiplyByPrecision(amount) <= balance;
   }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
-  const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
-  const isMyResourcesLocked = useIsResourcesLocked(entityId);
+  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId);
+  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId);
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
 
   const canSwap = useMemo(

@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0x23139a2cc39eea7c2ed9d293830b286be56585665fa03b1b00021e8ccbfab0"
+original_class_hash = "0x23139a2cc39eea7c2ed9d293830b286be56585665fa03b1b00021e8ccbfab0"
+abi = "manifests/prod/base/abis/models/eternum-Contribution-5402ccc4.json"
+tag = "eternum-Contribution"
+qualified_path = "eternum::models::hyperstructure::contribution"
+manifest_name = "eternum-Contribution-5402ccc4"
+
+[[members]]
+name = "hyperstructure_entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "player_address"
+type = "ContractAddress"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "amount"
+type = "u128"
+key = false

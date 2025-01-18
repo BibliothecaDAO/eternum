@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0xfcecc3c8a8d4544ea49f061ac3015cb8dde0f6a5f1e4fb9aeab2840527ee79"
+original_class_hash = "0xfcecc3c8a8d4544ea49f061ac3015cb8dde0f6a5f1e4fb9aeab2840527ee79"
+abi = "manifests/prod/base/abis/models/eternum-BankConfig-667de14b.json"
+tag = "eternum-BankConfig"
+qualified_path = "eternum::models::config::bank_config"
+manifest_name = "eternum-BankConfig-667de14b"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "lords_cost"
+type = "u128"
+key = false
+
+[[members]]
+name = "lp_fee_num"
+type = "u128"
+key = false
+
+[[members]]
+name = "lp_fee_denom"
+type = "u128"
+key = false

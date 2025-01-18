@@ -1,7 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { usePlayers } from "@/hooks/helpers/use-players";
-import { useHyperstructureData, useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { social } from "@/ui/components/navigation/config";
 import { ExpandableOSWindow } from "@/ui/components/navigation/os-window";
@@ -10,8 +6,8 @@ import { Guilds } from "@/ui/components/worldmap/guilds/guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
 import Button from "@/ui/elements/button";
 import { Tabs } from "@/ui/elements/tab";
-import { getPlayerInfo } from "@/utils/players";
-import { ContractAddress, ID, PlayerInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, getPlayerInfo, ID, PlayerInfo } from "@bibliothecadao/eternum";
+import { useDojo, useHyperstructureData, useLeaderBoardStore, usePlayers, useUIStore } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";

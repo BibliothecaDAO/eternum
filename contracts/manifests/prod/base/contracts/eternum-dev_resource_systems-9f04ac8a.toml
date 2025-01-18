@@ -1,0 +1,11 @@
+kind = "DojoContract"
+class_hash = "0x7cbaf8b08ff3e3c0bba390aad562fb65d86a8958f147cb56f6018b1d3f2baf8"
+original_class_hash = "0x7cbaf8b08ff3e3c0bba390aad562fb65d86a8958f147cb56f6018b1d3f2baf8"
+base_class_hash = "0x0"
+abi = "manifests/prod/base/abis/contracts/eternum-dev_resource_systems-9f04ac8a.json"
+reads = []
+writes = []
+init_calldata = []
+tag = "eternum-dev_resource_systems"
+systems = ["mint"]
+manifest_name = "eternum-dev_resource_systems-9f04ac8a"

@@ -1,10 +1,3 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useQuery } from "@/hooks/helpers/use-query";
-import useUIStore from "@/hooks/store/use-ui-store";
-import useNextBlockTimestamp from "@/hooks/use-next-block-timestamp";
-import { soundSelector, useUiSounds } from "@/hooks/use-ui-sound";
-import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { IS_MOBILE } from "@/ui/config";
@@ -13,17 +6,28 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { QuestsMenu } from "@/ui/modules/navigation/quest-menu";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
-import { formatTime, gramToKg, kgToGram } from "@/ui/utils/utils";
-import { getEntityInfo } from "@/utils/entities";
+import { gramToKg, kgToGram } from "@/ui/utils/utils";
 import {
   BuildingType,
   CapacityConfigCategory,
+  configManager,
   ContractAddress,
+  formatTime,
+  getEntityInfo,
   ID,
   PlayerStructure,
   ResourcesIds,
   TickIds,
 } from "@bibliothecadao/eternum";
+import {
+  Position,
+  soundSelector,
+  useDojo,
+  useNextBlockTimestamp,
+  useQuery,
+  useUiSounds,
+  useUIStore,
+} from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -105,6 +109,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     setup,
     account: { account },
   } = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
 
@@ -121,8 +126,8 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   });
 
   const entityInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
-    [structureEntityId],
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), currentDefaultTick, setup.components),
+    [structureEntityId, currentDefaultTick],
   );
 
   const structure = useMemo(() => {

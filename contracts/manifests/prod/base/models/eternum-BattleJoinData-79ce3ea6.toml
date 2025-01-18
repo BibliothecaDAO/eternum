@@ -1,0 +1,62 @@
+kind = "DojoModel"
+class_hash = "0x51fe1c4cfe64c5b1d506cde138b4fab312fa73085c752fb62eb5536c304fa4a"
+original_class_hash = "0x51fe1c4cfe64c5b1d506cde138b4fab312fa73085c752fb62eb5536c304fa4a"
+abi = "manifests/prod/base/abis/models/eternum-BattleJoinData-79ce3ea6.json"
+tag = "eternum-BattleJoinData"
+qualified_path = "eternum::models::event::battle_join_data"
+manifest_name = "eternum-BattleJoinData-79ce3ea6"
+
+[[members]]
+name = "id"
+type = "ID"
+key = true
+
+[[members]]
+name = "event_id"
+type = "EventType"
+key = true
+
+[[members]]
+name = "battle_entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "joiner"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "joiner_name"
+type = "felt252"
+key = false
+
+[[members]]
+name = "joiner_army_entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "joiner_side"
+type = "BattleSide"
+key = false
+
+[[members]]
+name = "duration_left"
+type = "u64"
+key = false
+
+[[members]]
+name = "x"
+type = "u32"
+key = false
+
+[[members]]
+name = "y"
+type = "u32"
+key = false
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

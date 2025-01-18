@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x47a93c6835a3ca98c8b06b651d7dd4d32d0ba20ab5e0a061b000073699eef17"
+original_class_hash = "0x47a93c6835a3ca98c8b06b651d7dd4d32d0ba20ab5e0a061b000073699eef17"
+abi = "manifests/dev/base/abis/models/eternum-GameEnded-76cedb5e.json"
+tag = "eternum-GameEnded"
+qualified_path = "eternum::systems::hyperstructure::contracts::hyperstructure_systems::game_ended"
+manifest_name = "eternum-GameEnded-76cedb5e"
+
+[[members]]
+name = "winner_address"
+type = "ContractAddress"
+key = true
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

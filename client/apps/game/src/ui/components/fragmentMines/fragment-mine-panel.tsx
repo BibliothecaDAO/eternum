@@ -1,8 +1,7 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
-import { getAddressNameFromEntity } from "@/utils/entities";
-import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { getAddressNameFromEntity, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useState } from "react";
 
 export const FragmentMinePanel = ({ entity }: any) => {

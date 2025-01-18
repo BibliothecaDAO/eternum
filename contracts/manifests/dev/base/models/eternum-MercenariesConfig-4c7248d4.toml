@@ -1,0 +1,47 @@
+kind = "DojoModel"
+class_hash = "0x12247bf8d7b37069a7c9b217db67538f14d0bae3b72478b20c3c6011493da57"
+original_class_hash = "0x12247bf8d7b37069a7c9b217db67538f14d0bae3b72478b20c3c6011493da57"
+abi = "manifests/dev/base/abis/models/eternum-MercenariesConfig-4c7248d4.json"
+tag = "eternum-MercenariesConfig"
+qualified_path = "eternum::models::config::mercenaries_config"
+manifest_name = "eternum-MercenariesConfig-4c7248d4"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "knights_lower_bound"
+type = "u64"
+key = false
+
+[[members]]
+name = "knights_upper_bound"
+type = "u64"
+key = false
+
+[[members]]
+name = "paladins_lower_bound"
+type = "u64"
+key = false
+
+[[members]]
+name = "paladins_upper_bound"
+type = "u64"
+key = false
+
+[[members]]
+name = "crossbowmen_lower_bound"
+type = "u64"
+key = false
+
+[[members]]
+name = "crossbowmen_upper_bound"
+type = "u64"
+key = false
+
+[[members]]
+name = "rewards"
+type = "Span<(u8, u128)>"
+key = false

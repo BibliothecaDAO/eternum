@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0x3104697ee75254626881a985184406dea49a7a1dd27ae27a504882c012b5582"
+original_class_hash = "0x3104697ee75254626881a985184406dea49a7a1dd27ae27a504882c012b5582"
+abi = "manifests/prod/base/abis/models/eternum-Army-5434a98b.json"
+tag = "eternum-Army"
+qualified_path = "eternum::models::combat::army"
+manifest_name = "eternum-Army-5434a98b"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "troops"
+type = "Troops"
+key = false
+
+[[members]]
+name = "battle_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "battle_side"
+type = "BattleSide"
+key = false

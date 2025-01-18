@@ -1,0 +1,32 @@
+kind = "DojoModel"
+class_hash = "0x12c9607184b30c61c0de0112cbe53326381cf522612566b3e32903aa507b888"
+original_class_hash = "0x12c9607184b30c61c0de0112cbe53326381cf522612566b3e32903aa507b888"
+abi = "manifests/dev/base/abis/models/eternum-Market-6dd46062.json"
+tag = "eternum-Market"
+qualified_path = "eternum::models::bank::market::market"
+manifest_name = "eternum-Market-6dd46062"
+
+[[members]]
+name = "bank_entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "lords_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "total_shares"
+type = "Fixed"
+key = false

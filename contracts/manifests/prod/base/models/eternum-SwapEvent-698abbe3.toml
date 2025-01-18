@@ -1,0 +1,62 @@
+kind = "DojoModel"
+class_hash = "0x221c5e9a263c1df474041c670e7452d4355e35e98d0e530ac1a28a6b227e9df"
+original_class_hash = "0x221c5e9a263c1df474041c670e7452d4355e35e98d0e530ac1a28a6b227e9df"
+abi = "manifests/prod/base/abis/models/eternum-SwapEvent-698abbe3.json"
+tag = "eternum-SwapEvent"
+qualified_path = "eternum::systems::bank::contracts::swap::swap_systems::swap_event"
+manifest_name = "eternum-SwapEvent-698abbe3"
+
+[[members]]
+name = "bank_entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "id"
+type = "ID"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = false
+
+[[members]]
+name = "lords_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "bank_owner_fees"
+type = "u128"
+key = false
+
+[[members]]
+name = "lp_fees"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_price"
+type = "u128"
+key = false
+
+[[members]]
+name = "buy"
+type = "bool"
+key = false
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

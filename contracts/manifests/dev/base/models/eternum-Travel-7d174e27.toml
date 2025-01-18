@@ -1,0 +1,42 @@
+kind = "DojoModel"
+class_hash = "0x42eb8f59cf164d1085b5f0bd0ea2bace49be984c50379287d2f518004e70206"
+original_class_hash = "0x42eb8f59cf164d1085b5f0bd0ea2bace49be984c50379287d2f518004e70206"
+abi = "manifests/dev/base/abis/models/eternum-Travel-7d174e27.json"
+tag = "eternum-Travel"
+qualified_path = "eternum::systems::transport::contracts::travel_systems::travel_systems::travel"
+manifest_name = "eternum-Travel-7d174e27"
+
+[[members]]
+name = "destination_coord_x"
+type = "u32"
+key = true
+
+[[members]]
+name = "destination_coord_y"
+type = "u32"
+key = true
+
+[[members]]
+name = "owner"
+type = "ContractAddress"
+key = true
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "travel_time"
+type = "u64"
+key = false
+
+[[members]]
+name = "travel_path"
+type = "Span<Coord>"
+key = false
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

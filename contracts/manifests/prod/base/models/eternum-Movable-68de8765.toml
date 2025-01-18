@@ -1,0 +1,47 @@
+kind = "DojoModel"
+class_hash = "0x568dc0d15cd5118220b0ed44df78d910267b87baec7f0835b2b89ec76d3d1fe"
+original_class_hash = "0x568dc0d15cd5118220b0ed44df78d910267b87baec7f0835b2b89ec76d3d1fe"
+abi = "manifests/prod/base/abis/models/eternum-Movable-68de8765.json"
+tag = "eternum-Movable"
+qualified_path = "eternum::models::movable::movable"
+manifest_name = "eternum-Movable-68de8765"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "sec_per_km"
+type = "u16"
+key = false
+
+[[members]]
+name = "blocked"
+type = "bool"
+key = false
+
+[[members]]
+name = "round_trip"
+type = "bool"
+key = false
+
+[[members]]
+name = "start_coord_x"
+type = "u32"
+key = false
+
+[[members]]
+name = "start_coord_y"
+type = "u32"
+key = false
+
+[[members]]
+name = "intermediate_coord_x"
+type = "u32"
+key = false
+
+[[members]]
+name = "intermediate_coord_y"
+type = "u32"
+key = false

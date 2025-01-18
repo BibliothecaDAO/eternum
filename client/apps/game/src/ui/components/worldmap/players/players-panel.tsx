@@ -1,12 +1,10 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useGuilds } from "@/hooks/helpers/use-guilds";
 import { PlayerCustom, PlayerList } from "@/ui/components/worldmap/players/player-list";
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
-import { getEntityIdFromKeys, normalizeDiacriticalMarks, toHexString } from "@/ui/utils/utils";
-import { getEntityName } from "@/utils/entities";
-import { ContractAddress, PlayerInfo } from "@bibliothecadao/eternum";
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
+import { ContractAddress, getEntityName, PlayerInfo, toHexString } from "@bibliothecadao/eternum";
+import { useDojo, useGuilds } from "@bibliothecadao/react";
+import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { KeyboardEvent, useMemo, useState } from "react";
 
 export const PlayersPanel = ({

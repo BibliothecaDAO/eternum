@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x49c8e797e75b458b6c599b2a6adac16d8e2c57dec23b220a3ce9a730a024e61"
+original_class_hash = "0x49c8e797e75b458b6c599b2a6adac16d8e2c57dec23b220a3ce9a730a024e61"
+abi = "manifests/dev/base/abis/models/eternum-Guild-22d294a4.json"
+tag = "eternum-Guild"
+qualified_path = "eternum::models::guild::guild"
+manifest_name = "eternum-Guild-22d294a4"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "is_public"
+type = "bool"
+key = false
+
+[[members]]
+name = "member_count"
+type = "u16"
+key = false

@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0x16acacc4278051d710a2410dfe0bd6a64eebbd520a9d259113f6baa079f2ee9"
+original_class_hash = "0x16acacc4278051d710a2410dfe0bd6a64eebbd520a9d259113f6baa079f2ee9"
+abi = "manifests/dev/base/abis/models/eternum-DetachedResource-5ed63b97.json"
+tag = "eternum-DetachedResource"
+qualified_path = "eternum::models::resources::detached_resource"
+manifest_name = "eternum-DetachedResource-5ed63b97"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "index"
+type = "u32"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = false
+
+[[members]]
+name = "resource_amount"
+type = "u128"
+key = false

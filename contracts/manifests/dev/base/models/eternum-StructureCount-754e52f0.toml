@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x35120eced6906e2e337caf0cf3fddc665273ab4061448318f6c7175d7effbb9"
+original_class_hash = "0x35120eced6906e2e337caf0cf3fddc665273ab4061448318f6c7175d7effbb9"
+abi = "manifests/dev/base/abis/models/eternum-StructureCount-754e52f0.json"
+tag = "eternum-StructureCount"
+qualified_path = "eternum::models::structure::structure_count"
+manifest_name = "eternum-StructureCount-754e52f0"
+
+[[members]]
+name = "coord"
+type = "Coord"
+key = true
+
+[[members]]
+name = "count"
+type = "u8"
+key = false

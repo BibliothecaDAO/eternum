@@ -1,9 +1,9 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildWhitelistInfo } from "@bibliothecadao/eternum";
+import { useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 

@@ -1,8 +1,3 @@
-import { useArmiesAtPosition } from "@/hooks/helpers/use-armies";
-import { useBattlesAtPosition } from "@/hooks/helpers/use-battles";
-import { useStructureAtPosition } from "@/hooks/helpers/use-structures";
-import useUIStore from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
 import { PillageHistory } from "@/ui/components/military/pillage-history";
@@ -11,9 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { Entities } from "@/ui/modules/entity-details/entities";
 import { ArmyInfo, ID } from "@bibliothecadao/eternum";
+import { Position, useArmiesAtPosition, useBattlesAtPosition, useDojo, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const CombatEntityDetails = () => {
+  const dojo = useDojo();
+
   const selectedHex = useUIStore((state) => state.selectedHex);
   const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
   const setSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
@@ -37,7 +35,15 @@ export const CombatEntityDetails = () => {
     return playerArmies.find((army) => army.entity_id === selectedEntityId);
   }, [playerArmies, selectedEntityId]);
 
-  const structure = useStructureAtPosition(hexPosition.getContract());
+  const structure = useMemo(
+    () =>
+      getStructureAtPosition(
+        hexPosition.getContract(),
+        ContractAddress(dojo.account.account.address),
+        dojo.setup.components,
+      ),
+    [hexPosition, dojo.account.account.address, dojo.setup.components],
+  );
   const battles = useBattlesAtPosition(hexPosition.getContract());
 
   const tabs = useMemo(

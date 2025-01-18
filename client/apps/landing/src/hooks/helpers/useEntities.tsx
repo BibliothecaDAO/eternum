@@ -1,9 +1,9 @@
+import { getRealmNameById } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { execute } from "../gql/execute";
 import { GET_ETERNUM_OWNER_REALM_IDS } from "../query/entities";
-import { useRealm } from "./useRealms";
 
 interface S0EternumRealm {
   __typename: "s1_eternum_Realm";
@@ -20,7 +20,6 @@ function isS0EternumStructure(model: any) {
 
 export const useEntities = () => {
   const { address } = useAccount();
-  const { getRealmNameById } = useRealm();
 
   const { data, isLoading } = useQuery({
     queryKey: ["entityResources", address],
@@ -31,7 +30,7 @@ export const useEntities = () => {
   const playerRealms = useMemo(() => {
     if (!data) return [];
 
-    return data.s0EternumOwnerModels?.edges
+    return data.s0EternumResourceModels?.edges
       ?.map((realm) => {
         const realmModel = realm?.node?.entity?.models?.find(isS0EternumRealm);
         if (!realmModel) return null;

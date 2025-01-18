@@ -1,6 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
-import { usePlayerStructures } from "@/hooks/helpers/use-entities";
-import { useIsResourcesLocked } from "@/hooks/helpers/use-structures";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
 import { LiquidityTableHeader } from "@/ui/components/bank/liquidity-table";
@@ -8,8 +5,8 @@ import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { getBalance } from "@/utils/resources";
-import { ContractAddress, ID, MarketManager, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, MarketManager, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
+import { useDojo, useIsStructureResourcesLocked, usePlayerStructures, useUIStore } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 const AddLiquidity = ({
@@ -25,6 +22,7 @@ const AddLiquidity = ({
     account: { account },
     setup,
   } = useDojo();
+  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
@@ -61,13 +59,13 @@ const AddLiquidity = ({
     }
   }, [resourceAmount]);
 
-  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), setup.components).balance;
-  const resourceBalance = getBalance(entityId, Number(resourceId), setup.components).balance;
+  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), currentDefaultTick, setup.components).balance;
+  const resourceBalance = getBalance(entityId, Number(resourceId), currentDefaultTick, setup.components).balance;
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
-  const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
-  const isMyResourcesLocked = useIsResourcesLocked(entityId);
+  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId);
+  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId);
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
   const canAdd = hasEnough && isNotZero && !isBankResourcesLocked && !isMyResourcesLocked;
 

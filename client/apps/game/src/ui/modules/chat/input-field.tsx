@@ -1,9 +1,10 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import TextInput from "@/ui/elements/text-input";
 import { scrollToElement } from "@/ui/modules/chat/chat";
 import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "@/ui/modules/chat/constants";
 import { Tab } from "@/ui/modules/chat/types";
-import { toHexString, toValidAscii } from "@/ui/utils/utils";
+import { toValidAscii } from "@/ui/utils/utils";
+import { toHexString } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useRef } from "react";
 import { Signature } from "starknet";

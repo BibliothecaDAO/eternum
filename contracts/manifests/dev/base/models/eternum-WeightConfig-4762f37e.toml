@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0x30110b2e5945a90f4e0ebd1676e97899e6062269d3528df2d8f452c9c177add"
+original_class_hash = "0x30110b2e5945a90f4e0ebd1676e97899e6062269d3528df2d8f452c9c177add"
+abi = "manifests/dev/base/abis/models/eternum-WeightConfig-4762f37e.json"
+tag = "eternum-WeightConfig"
+qualified_path = "eternum::models::config::weight_config"
+manifest_name = "eternum-WeightConfig-4762f37e"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "weight_config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "entity_type"
+type = "ID"
+key = false
+
+[[members]]
+name = "weight_gram"
+type = "u128"
+key = false

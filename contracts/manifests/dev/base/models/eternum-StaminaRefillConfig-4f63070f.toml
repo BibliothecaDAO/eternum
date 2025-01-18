@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x6c8d97d33190a4c6e6bc64c427824a4e493a2221309d5a5a60bbb9f6d22d128"
+original_class_hash = "0x6c8d97d33190a4c6e6bc64c427824a4e493a2221309d5a5a60bbb9f6d22d128"
+abi = "manifests/dev/base/abis/models/eternum-StaminaRefillConfig-4f63070f.json"
+tag = "eternum-StaminaRefillConfig"
+qualified_path = "eternum::models::config::stamina_refill_config"
+manifest_name = "eternum-StaminaRefillConfig-4f63070f"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "amount_per_tick"
+type = "u16"
+key = false

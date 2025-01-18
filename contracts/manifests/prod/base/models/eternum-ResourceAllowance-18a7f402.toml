@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0x20570895c0fe40008c09b55942894a71cc9e527fa9c2f44929c39c2f170f83b"
+original_class_hash = "0x20570895c0fe40008c09b55942894a71cc9e527fa9c2f44929c39c2f170f83b"
+abi = "manifests/prod/base/abis/models/eternum-ResourceAllowance-18a7f402.json"
+tag = "eternum-ResourceAllowance"
+qualified_path = "eternum::models::resources::resource_allowance"
+manifest_name = "eternum-ResourceAllowance-18a7f402"
+
+[[members]]
+name = "owner_entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "approved_entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "amount"
+type = "u128"
+key = false

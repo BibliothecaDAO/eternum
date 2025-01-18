@@ -1,8 +1,7 @@
-import { configManager } from "@/dojo/setup";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { Headline } from "@/ui/elements/headline";
-import { BuildingType, CapacityConfigCategory, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfigCategory, configManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const Transfers = () => {

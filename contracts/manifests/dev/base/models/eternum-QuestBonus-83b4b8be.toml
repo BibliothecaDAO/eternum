@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x73dad6ea4a1952ac79d17cf7066c8592e3c9f97c1e16c1743ef5d4691ce07e7"
+original_class_hash = "0x73dad6ea4a1952ac79d17cf7066c8592e3c9f97c1e16c1743ef5d4691ce07e7"
+abi = "manifests/dev/base/abis/models/eternum-QuestBonus-83b4b8be.json"
+tag = "eternum-QuestBonus"
+qualified_path = "eternum::models::quest::quest_bonus"
+manifest_name = "eternum-QuestBonus-83b4b8be"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "claimed"
+type = "bool"
+key = false

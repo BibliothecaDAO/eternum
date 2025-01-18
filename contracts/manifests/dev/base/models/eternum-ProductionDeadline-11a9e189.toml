@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x2d752662304df227f0b6f758c828c98b7012bc65a07edca586c4b4da583fe62"
+original_class_hash = "0x2d752662304df227f0b6f758c828c98b7012bc65a07edca586c4b4da583fe62"
+abi = "manifests/dev/base/abis/models/eternum-ProductionDeadline-11a9e189.json"
+tag = "eternum-ProductionDeadline"
+qualified_path = "eternum::models::production::production_deadline"
+manifest_name = "eternum-ProductionDeadline-11a9e189"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "deadline_tick"
+type = "u64"
+key = false

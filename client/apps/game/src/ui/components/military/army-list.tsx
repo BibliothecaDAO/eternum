@@ -1,13 +1,10 @@
-import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/dojo-context";
-import { useArmiesByStructure } from "@/hooks/helpers/use-armies";
-import useUIStore from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { BuildingType, PlayerStructure, StructureType, TileManager } from "@bibliothecadao/eternum";
+import { BuildingType, configManager, PlayerStructure, StructureType, TileManager } from "@bibliothecadao/eternum";
+import { useArmiesByStructure, useDojo, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
