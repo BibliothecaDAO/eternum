@@ -11,18 +11,18 @@ import { Headline } from "@/ui/elements/headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
-    ArmyInfo,
-    BattleManager,
-    BattleStartStatus,
-    ClaimStatus,
-    ClientComponents,
-    ContractAddress,
-    getArmy,
-    ID,
-    LeaveStatus,
-    RaidStatus,
-    Structure,
-    WORLD_CONFIG_ID,
+  ArmyInfo,
+  BattleManager,
+  BattleStartStatus,
+  ClaimStatus,
+  ClientComponents,
+  ContractAddress,
+  getArmy,
+  ID,
+  LeaveStatus,
+  RaidStatus,
+  Structure,
+  WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { LeftView, useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";

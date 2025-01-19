@@ -5,17 +5,17 @@ import Button from "@/ui/elements/button";
 import { RealmDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
-    BUILDINGS_CENTER,
-    BuildingType,
-    ContractAddress,
-    ID,
-    ResourceIdToMiningType,
-    ResourceMiningTypes,
-    ResourcesIds,
-    StructureType,
-    TileManager,
-    configManager,
-    getEntityInfo,
+  BUILDINGS_CENTER,
+  BuildingType,
+  ContractAddress,
+  ID,
+  ResourceIdToMiningType,
+  ResourceMiningTypes,
+  ResourcesIds,
+  StructureType,
+  TileManager,
+  configManager,
+  getEntityInfo,
 } from "@bibliothecadao/eternum";
 import { LeftView, useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";

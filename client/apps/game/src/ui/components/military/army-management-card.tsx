@@ -7,22 +7,22 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import TextInput from "@/ui/elements/text-input";
 import {
-    currencyFormat,
-    divideByPrecision,
-    formatNumber,
-    formatStringNumber,
-    getEntityIdFromKeys,
-    multiplyByPrecision,
+  currencyFormat,
+  divideByPrecision,
+  formatNumber,
+  formatStringNumber,
+  getEntityIdFromKeys,
+  multiplyByPrecision,
 } from "@/ui/utils/utils";
 import {
-    ArmyInfo,
-    ArmyManager,
-    configManager,
-    getBalance,
-    ID,
-    Position,
-    ResourcesIds,
-    U32_MAX,
+  ArmyInfo,
+  ArmyManager,
+  configManager,
+  getBalance,
+  ID,
+  Position,
+  ResourcesIds,
+  U32_MAX,
 } from "@bibliothecadao/eternum";
 import { Position as PositionInterface, useDojo, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";

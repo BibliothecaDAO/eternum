@@ -47,7 +47,6 @@ const Button: React.FC<ButtonProps> = ({
   size = "md",
   ...props
 }) => {
-
   return (
     <button
       type="button"

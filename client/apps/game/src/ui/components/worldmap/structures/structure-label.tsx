@@ -3,12 +3,12 @@ import { StructureListItem } from "@/ui/components/worldmap/structures/structure
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import {
-    ContractAddress,
-    formatTime,
-    getStructure,
-    getStructureImmunityTimer,
-    isStructureImmune,
-    Structure,
+  ContractAddress,
+  formatTime,
+  getStructure,
+  getStructureImmunityTimer,
+  isStructureImmune,
+  Structure,
 } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, useNextBlockTimestamp, useQuery } from "@bibliothecadao/react";
 import { memo, useMemo } from "react";

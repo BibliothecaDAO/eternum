@@ -6,12 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextInput from "@/ui/elements/text-input";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import {
-    ID,
-    Resources,
-    ResourcesIds,
-    findResourceById,
-    findResourceIdByTrait,
-    getBalance,
+  ID,
+  Resources,
+  ResourcesIds,
+  findResourceById,
+  findResourceIdByTrait,
+  getBalance,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { memo, useEffect, useRef, useState } from "react";

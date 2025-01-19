@@ -11,13 +11,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
 import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
 import {
-    ArmyInfo,
-    configManager,
-    ContractAddress,
-    getArmy,
-    getStructureAtPosition,
-    ID,
-    ResourcesIds,
+  ArmyInfo,
+  configManager,
+  ContractAddress,
+  getArmy,
+  getStructureAtPosition,
+  ID,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { Position, useDojo, useGuilds, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";

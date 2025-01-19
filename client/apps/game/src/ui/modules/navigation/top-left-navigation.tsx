@@ -9,16 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { gramToKg, kgToGram } from "@/ui/utils/utils";
 import {
-    BuildingType,
-    CapacityConfigCategory,
-    configManager,
-    ContractAddress,
-    formatTime,
-    getEntityInfo,
-    ID,
-    PlayerStructure,
-    ResourcesIds,
-    TickIds,
+  BuildingType,
+  CapacityConfigCategory,
+  configManager,
+  ContractAddress,
+  formatTime,
+  getEntityInfo,
+  ID,
+  PlayerStructure,
+  ResourcesIds,
+  TickIds,
 } from "@bibliothecadao/eternum";
 import { Position, useDojo, useNextBlockTimestamp, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";

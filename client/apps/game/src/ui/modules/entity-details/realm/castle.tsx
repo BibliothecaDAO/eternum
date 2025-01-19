@@ -4,16 +4,16 @@ import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import {
-    configManager,
-    ContractAddress,
-    getBalance,
-    getEntityIdFromKeys,
-    getRealmInfo,
-    getStructure,
-    LEVEL_DESCRIPTIONS,
-    REALM_MAX_LEVEL,
-    RealmLevels,
-    StructureType,
+  configManager,
+  ContractAddress,
+  getBalance,
+  getEntityIdFromKeys,
+  getRealmInfo,
+  getStructure,
+  LEVEL_DESCRIPTIONS,
+  REALM_MAX_LEVEL,
+  RealmLevels,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";

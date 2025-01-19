@@ -6,13 +6,13 @@ import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import {
-    ArmyInfo,
-    BattleManager,
-    ContractAddress,
-    getArmiesInBattle,
-    isStructureImmune,
-    Structure,
-    StructureType,
+  ArmyInfo,
+  BattleManager,
+  ContractAddress,
+  getArmiesInBattle,
+  isStructureImmune,
+  Structure,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useGetHyperstructureProgress, useNextBlockTimestamp } from "@bibliothecadao/react";
 import clsx from "clsx";

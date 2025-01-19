@@ -1,14 +1,14 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Battle } from "@/ui/modules/military/battle-view/battle";
 import {
-    BattleManager,
-    BattleSide,
-    ContractAddress,
-    getArmiesInBattle,
-    getArmy,
-    getStructure,
-    getStructureAtPosition,
-    Structure,
+  BattleManager,
+  BattleSide,
+  ContractAddress,
+  getArmiesInBattle,
+  getArmy,
+  getStructure,
+  getStructureAtPosition,
+  Structure,
 } from "@bibliothecadao/eternum";
 import { useBattleManager, useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { memo, useMemo } from "react";

@@ -7,12 +7,12 @@ import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
 import {
-    ContractAddress,
-    formatTime,
-    getAddressName,
-    getStructure,
-    HYPERSTRUCTURE_CONFIG_ID,
-    ID,
+  ContractAddress,
+  formatTime,
+  getAddressName,
+  getStructure,
+  HYPERSTRUCTURE_CONFIG_ID,
+  ID,
 } from "@bibliothecadao/eternum";
 import { useDojo, useNextBlockTimestamp, usePlayers } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";

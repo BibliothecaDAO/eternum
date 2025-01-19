@@ -8,17 +8,17 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
 import {
-    configManager,
-    ContractAddress,
-    DONKEY_ENTITY_TYPE,
-    getBalance,
-    getStructure,
-    ID,
-    MarketManager,
-    RESOURCE_TIERS,
-    Resources,
-    resources,
-    ResourcesIds,
+  configManager,
+  ContractAddress,
+  DONKEY_ENTITY_TYPE,
+  getBalance,
+  getStructure,
+  ID,
+  MarketManager,
+  RESOURCE_TIERS,
+  Resources,
+  resources,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useIsStructureResourcesLocked, useTravel } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";

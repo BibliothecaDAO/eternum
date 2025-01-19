@@ -5,12 +5,12 @@ import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { StaminaResourceCost } from "@/ui/elements/stamina-resource-cost";
 import {
-    computeExploreFoodCosts,
-    computeTravelFoodCosts,
-    configManager,
-    getBalance,
-    ID,
-    ResourcesIds,
+  computeExploreFoodCosts,
+  computeTravelFoodCosts,
+  configManager,
+  getBalance,
+  ID,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";

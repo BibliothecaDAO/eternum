@@ -4,14 +4,14 @@ import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
-    ArrivalInfo,
-    ContractAddress,
-    EntityType,
-    formatTime,
-    getArmy,
-    getEntityInfo,
-    getEntityName,
-    getResourcesFromBalance,
+  ArrivalInfo,
+  ContractAddress,
+  EntityType,
+  formatTime,
+  getArmy,
+  getEntityInfo,
+  getEntityName,
+  getResourcesFromBalance,
 } from "@bibliothecadao/eternum";
 import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";

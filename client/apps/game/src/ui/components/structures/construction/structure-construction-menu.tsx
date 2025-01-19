@@ -4,14 +4,14 @@ import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import {
-    HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
-    HYPERSTRUCTURE_CREATION_COSTS,
-    ID,
-    ResourceTier,
-    ResourcesIds,
-    StructureType,
-    configManager,
-    getBalance,
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
+  HYPERSTRUCTURE_CREATION_COSTS,
+  ID,
+  ResourceTier,
+  ResourcesIds,
+  StructureType,
+  configManager,
+  getBalance,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import React from "react";
