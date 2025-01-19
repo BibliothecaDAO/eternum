@@ -1,6 +1,5 @@
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { ReactComponent as MessageSvg } from "@/assets/icons/common/message.svg";
-import { useDojo } from "@/hooks/context/dojo-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionType } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
@@ -15,6 +14,7 @@ import {
   getEntityName,
   toHexString,
 } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useChatStore } from "../chat/use-chat-store";

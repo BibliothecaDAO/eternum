@@ -1,4 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
@@ -12,6 +11,7 @@ import {
   Resource,
   ResourceInventoryManager,
 } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 

@@ -1,4 +1,3 @@
-import { useDojo } from "@/hooks/context/dojo-context";
 import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
@@ -28,7 +27,7 @@ import {
   isResourceProductionBuilding,
   unpackResources,
 } from "@bibliothecadao/eternum";
-import { DojoResult } from "@bibliothecadao/react";
+import { DojoResult, useDojo } from "@bibliothecadao/react";
 import { Component, getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
