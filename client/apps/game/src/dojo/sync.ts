@@ -1,21 +1,16 @@
+import { AppStore } from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
-  ClientConfigManager,
-  createClientComponents,
+  configManager,
   HYPERSTRUCTURE_CONFIG_ID,
-  setupNetwork,
+  SetupResult,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
-import { DojoConfig } from "@dojoengine/core";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
-import { createSystemCalls } from "./create-system-calls";
-
-export type SetupResult = Awaited<ReturnType<typeof setup>>;
-
-export const configManager = ClientConfigManager.instance();
 
 const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
@@ -30,7 +25,8 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
   const debouncedSetEntities = debounce(() => {
     if (Object.keys(entityBatch).length > 0) {
-      // console.log("Applying batch update", entityBatch);
+      if (logging) console.log("Applying batch update", entityBatch);
+
       setEntities(entityBatch, components, logging);
       entityBatch = {}; // Clear the batch after applying
     }
@@ -39,6 +35,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
   // Handle entity updates
   const entitySub = await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
     if (logging) console.log("Entity updated", fetchedEntities);
+
     // Merge new data with existing data for this entity
     entityBatch[fetchedEntities] = {
       ...entityBatch[fetchedEntities],
@@ -53,6 +50,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
     historical,
     (fetchedEntities: any, data: any) => {
       if (logging) console.log("Event message updated", fetchedEntities);
+
       // Merge new data with existing data for this entity
       entityBatch[fetchedEntities] = {
         ...entityBatch[fetchedEntities],
@@ -71,15 +69,16 @@ const syncEntitiesDebounced = async <S extends Schema>(
   };
 };
 
-export async function setup(
-  config: DojoConfig,
-  // & { state: AppStore },
-  env: { viteVrfProviderAddress: string; vitePublicDev: boolean },
-) {
-  const network = await setupNetwork(config, env);
-  const components = createClientComponents(network);
-  const systemCalls = createSystemCalls(network);
-  // const setLoading = config.state.setLoading;
+export const initialSync = async (setup: SetupResult, state: AppStore) => {
+  const setLoading = state.setLoading;
+
+  // const sync = await syncEntitiesDebounced(
+  await syncEntitiesDebounced(
+    setup.network.toriiClient,
+    setup.network.contractComponents as any,
+    [],
+    false,
+  );
 
   const configClauses: Clause[] = [
     {
@@ -119,16 +118,16 @@ export async function setup(
     },
   ];
 
-  // setLoading(LoadingStateKey.Config, true);
+  setLoading(LoadingStateKey.Config, true);
   try {
     await Promise.all([
       getEntities(
-        network.toriiClient,
+        setup.network.toriiClient,
         { Composite: { operator: "Or", clauses: configClauses } },
-        network.contractComponents as any,
+        setup.network.contractComponents as any,
       ),
       getEntities(
-        network.toriiClient,
+        setup.network.toriiClient,
         {
           Keys: {
             keys: [undefined, undefined],
@@ -136,7 +135,7 @@ export async function setup(
             models: ["s0_eternum-CapacityConfigCategory", "s0_eternum-ResourceCost"],
           },
         },
-        network.contractComponents as any,
+        setup.network.contractComponents as any,
         [],
         [],
         40_000,
@@ -144,13 +143,13 @@ export async function setup(
       ),
     ]);
   } finally {
-    // setLoading(LoadingStateKey.Config, false);
+    setLoading(LoadingStateKey.Config, false);
   }
 
   // fetch all existing entities from torii
-  // setLoading(LoadingStateKey.Hyperstructure, true);
+  setLoading(LoadingStateKey.Hyperstructure, true);
   await getEntities(
-    network.toriiClient,
+    setup.network.toriiClient,
     {
       Composite: {
         operator: "Or",
@@ -172,18 +171,18 @@ export async function setup(
         ],
       },
     },
-    network.contractComponents as any,
+    setup.network.contractComponents as any,
     [],
     [],
     40_000,
     false,
   ).finally(() => {
-    // setLoading(LoadingStateKey.Hyperstructure, false);
+    setLoading(LoadingStateKey.Hyperstructure, false);
   });
 
-  // setLoading(LoadingStateKey.SingleKey, true);
+  setLoading(LoadingStateKey.SingleKey, true);
   await getEntities(
-    network.toriiClient,
+    setup.network.toriiClient,
     {
       Keys: {
         keys: [undefined],
@@ -208,24 +207,23 @@ export async function setup(
         ],
       },
     },
-    network.contractComponents as any,
+    setup.network.contractComponents as any,
     [],
     [],
     40_000,
     false,
   ).finally(() => {
-    // setLoading(LoadingStateKey.SingleKey, false);
+    setLoading(LoadingStateKey.SingleKey, false);
   });
 
-  const sync = await syncEntitiesDebounced(network.toriiClient, network.contractComponents as any, [], false);
 
-  configManager.setDojo(components);
+  configManager.setDojo(setup.components);
 
-  // setLoading(LoadingStateKey.Events, true);
+  setLoading(LoadingStateKey.Events, true);
 
   await getEvents(
-    network.toriiClient,
-    network.contractComponents.events as any,
+    setup.network.toriiClient,
+    setup.network.contractComponents.events as any,
     [],
     [],
     20000,
@@ -238,14 +236,14 @@ export async function setup(
     },
     false,
     false,
-  );
-  // .finally(() => {
-  //   setLoading(LoadingStateKey.Events, false);
-  // });
+  ).finally(() => {
+    setLoading(LoadingStateKey.Events, false);
+  });
 
-  const eventSync = getEvents(
-    network.toriiClient,
-    network.contractComponents.events as any,
+  // const eventSync = getEvents(
+  getEvents(
+    setup.network.toriiClient,
+    setup.network.contractComponents.events as any,
     [],
     [],
     20000,
@@ -271,14 +269,6 @@ export async function setup(
     false,
     false,
   ).finally(() => {
-    // setLoading(LoadingStateKey.Events, false);
+    setLoading(LoadingStateKey.Events, false);
   });
-
-  return {
-    network,
-    components,
-    systemCalls,
-    sync,
-    eventSync,
-  };
-}
+};

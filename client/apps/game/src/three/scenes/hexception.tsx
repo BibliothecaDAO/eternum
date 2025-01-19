@@ -8,7 +8,8 @@ import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
-import { SceneName } from "@/types";
+import { LeftView, SceneName, StructureProgress } from "@/types";
+import { Position } from "@/types/position";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "@/types/systems";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -20,16 +21,13 @@ import {
   ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
+  SetupResult,
   StructureType,
   TileManager,
   findResourceById,
   getEntityIdFromKeys,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
-import { SetupResult } from "@bibliothecadao/react";
-
-import { LeftView, StructureProgress } from "@/types";
-import { Position } from "@/types/position";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import * as THREE from "three";

@@ -1,4 +1,4 @@
-import type * as SystemProps from "@bibliothecadao/eternum";
+
 
 export function createSystemCalls({ provider }: { provider: SystemProps.EternumProvider }) {
   const uuid = async () => {

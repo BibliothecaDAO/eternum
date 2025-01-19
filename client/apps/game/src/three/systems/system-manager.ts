@@ -9,8 +9,15 @@ import {
   TileSystemUpdate,
 } from "@/types/systems";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { ClientComponents, ID, RealmLevels, StructureType, type HexPosition } from "@bibliothecadao/eternum";
-import { configManager, SetupResult } from "@bibliothecadao/react";
+import {
+  ClientComponents,
+  configManager,
+  ID,
+  RealmLevels,
+  SetupResult,
+  StructureType,
+  type HexPosition,
+} from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,

@@ -9,7 +9,7 @@ import WorldmapScene from "@/three/scenes/worldmap";
 import { SystemManager } from "@/three/systems/system-manager";
 import { SceneName } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
-import { SetupResult } from "@bibliothecadao/react";
+import { SetupResult } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
 import {
   BloomEffect,

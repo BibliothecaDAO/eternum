@@ -24,11 +24,11 @@ import {
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   HexPosition,
   ID,
+  SetupResult,
   TileManager,
   TravelPaths,
   getNeighborOffsets,
 } from "@bibliothecadao/eternum";
-import { SetupResult } from "@bibliothecadao/react";
 import { getEntities } from "@dojoengine/state";
 import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";

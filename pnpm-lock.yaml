@@ -56,13 +56,13 @@ importers:
     devDependencies:
       '@bibliothecadao/assets':
         specifier: workspace:^
-        version: link:sdk/packages/assets
+        version: link:packages/assets
       '@bibliothecadao/eternum':
         specifier: workspace:^
-        version: link:sdk/packages/core
+        version: link:packages/core
       '@bibliothecadao/react':
         specifier: workspace:^
-        version: link:sdk/packages/react
+        version: link:packages/react
       '@dojoengine/core':
         specifier: 1.0.4-alpha.3.1.0
         version: 1.0.4-alpha.3.1.0(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)
@@ -441,7 +441,7 @@ importers:
 
   contracts/season_resources/scripts/deployment: {}
 
-  sdk/packages/assets:
+  packages/assets:
     devDependencies:
       tsup:
         specifier: ^8.0.2
@@ -450,7 +450,7 @@ importers:
         specifier: ^5.4.4
         version: 5.7.3
 
-  sdk/packages/core:
+  packages/core:
     dependencies:
       '@dojoengine/core':
         specifier: 1.0.0-alpha.24
@@ -487,7 +487,7 @@ importers:
         specifier: ^2.0.5
         version: 2.1.8(@types/node@20.17.14)(@vitest/ui@2.1.8)(terser@5.37.0)
 
-  sdk/packages/react:
+  packages/react:
     dependencies:
       '@bibliothecadao/eternum':
         specifier: workspace:*

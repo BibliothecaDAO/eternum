@@ -1,6 +1,6 @@
 /// <reference types="vite-plugin-pwa/client" />
 
-import { setup } from "@bibliothecadao/react";
+import { setup } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
@@ -11,8 +11,10 @@ import { registerSW } from "virtual:pwa-register";
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
 import App from "./app";
+import { initialSync } from "./dojo/sync";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
+import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
 import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
@@ -62,12 +64,14 @@ async function init() {
 
   root.render(<LoadingScreen backgroundImage={backgroundImage} />);
 
-  // const state = useUIStore.getState();
+  const state = useUIStore.getState();
 
   const setupResult = await setup(
     { ...dojoConfig },
     { viteVrfProviderAddress: env.VITE_VRF_PROVIDER_ADDRESS, vitePublicDev: env.VITE_PUBLIC_DEV },
   );
+
+  await initialSync(setupResult, state);
 
   const graphic = new GameRenderer(setupResult);
 
