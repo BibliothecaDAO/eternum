@@ -7,12 +7,13 @@ import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
 import Button from "@/ui/elements/button";
 import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, getPlayerInfo, ID, PlayerInfo } from "@bibliothecadao/eternum";
-import { useDojo, useHyperstructureData, useLeaderBoardStore, usePlayers, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useHyperstructureData, useLeaderBoardStore, usePlayers } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { EndSeasonButton } from "./end-season-button";
 import { PlayerId } from "./player-id";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 
 export const Social = () => {
   const {

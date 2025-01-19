@@ -23,6 +23,7 @@ export default defineConfig({
         "@": path.resolve(__dirname, "./docs"),
       },
     },
+    publicDir: "../../common/public",
   },
   font: {
     google: "Open Sans",

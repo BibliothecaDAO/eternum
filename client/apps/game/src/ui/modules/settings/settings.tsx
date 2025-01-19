@@ -5,6 +5,8 @@ import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
+import { useMusicPlayer } from "@/hooks/helpers/use-music";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { settings } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
@@ -15,7 +17,7 @@ import { Headline } from "@/ui/elements/headline";
 import { RangeInput } from "@/ui/elements/range-input";
 import { addressToNumber, currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 import { ContractAddress, getAddressName } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds, useMusicPlayer, useScreenOrientation, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -26,6 +28,7 @@ export const SettingsWindow = () => {
   } = useDojo();
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
 
   const addressName = getAddressName(ContractAddress(account.address), components);
 
@@ -69,7 +72,7 @@ export const SettingsWindow = () => {
   const GRAPHICS_SETTING = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
 
   const { useGuildQuery } = useGuilds();
-  const { guilds } = useGuildQuery();
+  const { guilds } = useGuildQuery(nextBlockTimestamp || 0);
   const [selectedGuilds, setSelectedGuilds] = useState<string[]>(() => {
     const savedGuilds = localStorage.getItem("WHITELIST");
     return savedGuilds ? savedGuilds.split(",") : [];

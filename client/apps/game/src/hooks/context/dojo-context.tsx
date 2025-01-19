@@ -1,20 +1,15 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useAddressStore } from "@/hooks/store/use-address-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
-import { ContractAddress } from "@bibliothecadao/eternum";
-import {
-  DojoContext,
-  DojoResult,
-  Position,
-  SetupResult,
-  useAccountStore,
-  useAddressStore,
-  useQuery,
-  useUIStore,
-} from "@bibliothecadao/react";
+import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
+import { DojoContext, useQuery } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { HasValue, runQuery } from "@dojoengine/recs";
@@ -102,18 +97,6 @@ export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderP
       </DojoContextProvider>
     </BurnerProvider>
   );
-};
-
-export const useDojo = (): DojoResult => {
-  const contextValue = useContext(DojoContext);
-  if (!contextValue) throw new Error("The `useDojo` hook must be used within a `DojoProvider`");
-
-  return {
-    setup: contextValue,
-    account: contextValue.account,
-    network: contextValue.network,
-    masterAccount: contextValue.masterAccount,
-  };
 };
 
 const DojoContextProvider = ({

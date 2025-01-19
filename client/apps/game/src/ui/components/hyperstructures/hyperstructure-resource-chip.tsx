@@ -1,9 +1,15 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { findResourceById, getBalance, getIconResourceId, ID } from "@bibliothecadao/eternum";
-import { ProgressWithPercentage, useDojo, useUIStore } from "@bibliothecadao/react";
+import {
+  findResourceById,
+  getBalance,
+  getIconResourceId,
+  ID
+} from "@bibliothecadao/eternum";
+import { ProgressWithPercentage, useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 
 type HyperstructureResourceChipProps = {

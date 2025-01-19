@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
@@ -12,7 +13,7 @@ import {
   findResourceById,
   getTotalResourceWeight,
 } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures, useResourceManager, useUIStore } from "@bibliothecadao/react";
+import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";

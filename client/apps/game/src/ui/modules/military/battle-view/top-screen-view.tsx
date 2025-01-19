@@ -1,5 +1,5 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
-import { useUIStore } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 
 export const TopScreenView = () => {

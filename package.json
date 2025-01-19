@@ -6,7 +6,7 @@
     "build": "pnpm --dir ./client/apps/game build",
     "build:docs": "cd client/apps/game-docs && vocs build -o ../dist",
     "build:landing": "pnpm --dir ./client/apps/landing build",
-    "build:packages": "pnpm --dir ./client/sdk/packages/assets build && pnpm --dir ./client/sdk/packages/core build && pnpm --dir ./client/sdk/packages/react build",
+    "build:packages": "pnpm --dir ./packages/assets build && pnpm --dir ./packages/core build && pnpm --dir ./packages/react build",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",
     "dev": "pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
@@ -81,7 +81,16 @@
     "eventemitter3": "^5.0.1",
     "starknet": "^6.8.0",
     "viem": "^2.21.45",
-    "vocs": "latest"
+    "vocs": "latest",
+    "@cartridge/connector": "^0.5.7",
+    "@cartridge/controller": "^0.5.7",
+    "@dojoengine/create-burner": "1.0.4-alpha.3.1.0",
+    "@dojoengine/react": "1.0.4-alpha.3.1.0",
+    "@dojoengine/recs": "^2.0.13",
+    "@dojoengine/state": "1.0.4-alpha.3.1.0",
+    "@dojoengine/torii-client": "1.0.4-alpha.3.1.0",
+    "@dojoengine/torii-wasm": "1.0.4-alpha.3.1.0",
+    "@dojoengine/utils": "1.0.4-alpha.3.1.0"
   },
   "devDependencies": {
     "@bibliothecadao/eternum": "workspace:^",

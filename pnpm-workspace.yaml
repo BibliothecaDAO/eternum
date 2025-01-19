@@ -2,6 +2,6 @@ packages:
   - "client"
   - "client/apps/*"
   - "client/config"
-  - "client/sdk/packages/*"
+  - "packages/*"
   - "contracts/season_pass/scripts/deployment"
   - "contracts/season_resources/scripts/deployment"

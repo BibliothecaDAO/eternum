@@ -1,6 +1,7 @@
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager, ID } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp, useStaminaManager, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useNextBlockTimestamp, useStaminaManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";

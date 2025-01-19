@@ -1,6 +1,8 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -23,7 +25,7 @@ import {
   ResourcesIds,
   U32_MAX,
 } from "@bibliothecadao/eternum";
-import { Position as PositionInterface, useDojo, useQuery, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";

@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { CreateGuildButton } from "@/ui/components/worldmap/guilds/create-guild-button";
 import { GuildListHeader, GuildRow } from "@/ui/components/worldmap/guilds/guild-list";
 import { PRIZE_POOL_GUILDS } from "@/ui/constants";
@@ -24,9 +25,11 @@ export const Guilds = ({
     account: { account },
   } = useDojo();
 
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
+
   const { useGuildQuery, getGuildFromPlayerAddress, usePlayerWhitelist } = useGuilds();
 
-  const { guilds } = useGuildQuery();
+  const { guilds } = useGuildQuery(nextBlockTimestamp || 0);
   const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
   const playerGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
 

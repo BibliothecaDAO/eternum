@@ -1,9 +1,9 @@
 import { ReactComponent as LockClosed } from "@/assets/icons/common/lock-closed.svg";
 import { ReactComponent as LockOpen } from "@/assets/icons/common/lock-open.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
-import { useUIStore } from "@bibliothecadao/react";
 
 interface CreateGuildButtonProps {
   handleCreateGuild: (guildName: string, isPublic: boolean) => void;

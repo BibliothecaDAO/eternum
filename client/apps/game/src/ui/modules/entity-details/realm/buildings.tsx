@@ -1,4 +1,5 @@
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -11,7 +12,7 @@ import {
   TileManager,
   toHexString,
 } from "@bibliothecadao/eternum";
-import { useBuildings, useDojo, useUIStore } from "@bibliothecadao/react";
+import { useBuildings, useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 

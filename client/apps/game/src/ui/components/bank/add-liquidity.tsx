@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
 import { LiquidityTableHeader } from "@/ui/components/bank/liquidity-table";
@@ -6,7 +7,7 @@ import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, ID, MarketManager, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
-import { useDojo, useIsStructureResourcesLocked, usePlayerStructures, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useIsStructureResourcesLocked, usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 const AddLiquidity = ({

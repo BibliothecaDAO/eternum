@@ -1,17 +1,23 @@
-import { divideByPrecision } from "@/ui/utils/utils";
-import { ClientComponents, ID, RealmLevels, StructureType, type HexPosition } from "@bibliothecadao/eternum";
+import { StructureProgress } from "@/types";
+import { Position } from "@/types/position";
 import {
   ArmySystemUpdate,
   BattleSystemUpdate,
   BuildingSystemUpdate,
-  configManager,
-  Position,
   RealmSystemUpdate,
-  SetupResult,
-  StructureProgress,
   StructureSystemUpdate,
   TileSystemUpdate,
-} from "@bibliothecadao/react";
+} from "@/types/systems";
+import { divideByPrecision } from "@/ui/utils/utils";
+import {
+  ClientComponents,
+  configManager,
+  ID,
+  RealmLevels,
+  SetupResult,
+  StructureType,
+  type HexPosition,
+} from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,

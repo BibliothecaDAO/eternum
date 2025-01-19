@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
@@ -13,7 +14,7 @@ import {
   RealmLevels,
   StructureType,
 } from "@bibliothecadao/eternum";
-import { useDojo, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 // todo: fix this
 import { REALM_MAX_LEVEL } from "../../../../../../../config/environments/utils/levels";

@@ -2,6 +2,9 @@ import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
 import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
 import { ReactComponent as Castle } from "@/assets/icons/castle.svg";
 import { ReactComponent as Flag } from "@/assets/icons/flag.svg";
+import { useModalStore } from "@/hooks/store/use-modal-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LeftView } from "@/types";
 import { PillageHistory } from "@/ui/components/military/pillage-history";
 import { ModalContainer } from "@/ui/components/modal-container";
 import Button from "@/ui/elements/button";
@@ -22,7 +25,7 @@ import {
   Structure,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
-import { LeftView, useDojo, useModalStore, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";

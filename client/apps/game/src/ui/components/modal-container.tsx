@@ -1,5 +1,5 @@
+import { useModalStore } from "@/hooks/store/use-modal-store";
 import Button from "@/ui/elements/button";
-import { useModalStore } from "@bibliothecadao/react";
 import { X } from "lucide-react";
 import { useCallback, useEffect } from "react";
 
