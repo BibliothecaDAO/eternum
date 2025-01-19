@@ -1,3 +1,5 @@
+import { SeasonAddresses } from "@bibliothecadao/eternum";
+
 /** Valid chain identifiers */
 export type Chain = "local" | "sepolia" | "mainnet" | "slot";
 

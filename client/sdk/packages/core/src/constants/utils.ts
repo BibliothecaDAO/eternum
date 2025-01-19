@@ -14,5 +14,5 @@ export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
   return isLabor ? resourceId - 28 : resourceId;
 };
 
-
 export const RESOURCE_PRECISION = 1_000_000_000;
+export const RESOURCE_MULTIPLIER = 1000;

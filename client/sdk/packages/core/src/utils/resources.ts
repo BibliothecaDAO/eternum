@@ -60,10 +60,12 @@ export const getResourcesFromBalance = (
     .filter((r) => r.amount > 0);
 };
 
-export const getQuestResources = (realmEntityId: ID, components: ClientComponents, config: any) => {
+export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
   const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
   const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
-  return getStartingResources(resourcesProduced, config.questResources, config.resources.resourceInputs);
+
+  // todo: fix
+  return getStartingResources(resourcesProduced, [], []);
 };
 
 export const isResourceProductionBuilding = (buildingId: BuildingType) => {

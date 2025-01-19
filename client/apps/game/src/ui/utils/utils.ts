@@ -1,7 +1,7 @@
 import { SortInterface } from "@/ui/elements/sort-button";
 import {
   ContractAddress,
-  EternumGlobalConfig,
+  RESOURCE_PRECISION,
   ResourceCost,
   ResourcesIds,
   toHexString,
@@ -46,11 +46,11 @@ export function displayAddress(string: string) {
 }
 
 export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * EternumGlobalConfig.resources.resourcePrecision);
+  return Math.floor(value * RESOURCE_PRECISION);
 }
 
 export function divideByPrecision(value: number): number {
-  return value / EternumGlobalConfig.resources.resourcePrecision;
+  return value / RESOURCE_PRECISION;
 }
 
 export function divideByPrecisionFormatted(value: number): string {

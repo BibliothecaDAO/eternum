@@ -2,6 +2,7 @@ import { HintSection } from "@/ui/components/hints/hint-modal";
 import { rewards } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
+import { getLordsAddress } from "@/utils/addresses";
 import { ContractAddress, formatTime, getEntityIdFromKeys, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, useGetUnregisteredEpochs, usePrizePool, useUIStore } from "@bibliothecadao/react";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";

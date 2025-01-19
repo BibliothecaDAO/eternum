@@ -8,8 +8,6 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { getAddressNameFromEntity } from "@/utils/entities";
-import { getBalance } from "@/utils/resources";
 import {
   BattleSide,
   ContractAddress,
@@ -18,6 +16,8 @@ import {
   ResourcesIds,
   findResourceById,
   getAddressFromEntity,
+  getAddressNameFromEntity,
+  getBalance,
 } from "@bibliothecadao/eternum";
 import {
   useArmiesAtPosition,
@@ -26,6 +26,7 @@ import {
   useGuilds,
   useHyperstructureProgress,
   useHyperstructures,
+  useUIStore,
 } from "@bibliothecadao/react";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
