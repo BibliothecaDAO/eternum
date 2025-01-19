@@ -9,7 +9,7 @@ import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
 import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
-import { DojoContext, DojoResult, useQuery } from "@bibliothecadao/react";
+import { DojoContext, useQuery } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { HasValue, runQuery } from "@dojoengine/recs";
@@ -97,18 +97,6 @@ export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderP
       </DojoContextProvider>
     </BurnerProvider>
   );
-};
-
-export const useDojo = (): DojoResult => {
-  const contextValue = useContext(DojoContext);
-  if (!contextValue) throw new Error("The `useDojo` hook must be used within a `DojoProvider`");
-
-  return {
-    setup: contextValue,
-    account: contextValue.account,
-    network: contextValue.network,
-    masterAccount: contextValue.masterAccount,
-  };
 };
 
 const DojoContextProvider = ({
