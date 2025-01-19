@@ -6,6 +6,7 @@ import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/settle-realm-component";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
+import { getSeasonPassAddress } from "@/utils/addresses";
 import { Position, useDojo, usePlayerOwnedRealms, useQuery, useUIStore } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";

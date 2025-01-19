@@ -1,18 +1,16 @@
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { BuildingType, findResourceById, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, configManager, findResourceById, ResourcesIds } from "@bibliothecadao/eternum";
+import React from "react";
 import { formatAmount } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
 
 type Props = {
   buildingType: BuildingType;
 };
-  
 
-const eternumConfig = await ETERNUM_CONFIG();
 export default function BuildingCosts({ buildingType }: Props) {
-  const costs = eternumConfig.buildings.buildingCosts[buildingType] || [];
-  const resourceCostsWheat = eternumConfig.resources.resourceBuildingCosts[ResourcesIds.Wood] || [];
-  const resourceCostsFish = eternumConfig.resources.resourceBuildingCosts[ResourcesIds.Stone] || [];
+  const costs = configManager.buildingCosts[buildingType] || [];
+  const resourceCostsWheat = configManager.resourceBuildingCosts[ResourcesIds.Wood] || [];
+  const resourceCostsFish = configManager.resourceBuildingCosts[ResourcesIds.Stone] || [];
 
   if (buildingType === BuildingType.Resource) {
     return (

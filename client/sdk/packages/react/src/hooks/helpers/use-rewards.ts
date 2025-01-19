@@ -2,15 +2,16 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { useDojo } from "../";
 
-export const usePrizePool = (env: { viteLordsAddress: string }) => {
+export const usePrizePool = (lordsAddress: string) => {
   const [prizePool, setPrizePool] = useState<bigint>(0n);
+
   const {
     account: { account },
   } = useDojo();
 
   const getBalance = async (address: string) => {
     const balance = await account?.callContract({
-      contractAddress: env.viteLordsAddress,
+      contractAddress: lordsAddress,
       entrypoint: "balance_of",
       calldata: [address],
     });

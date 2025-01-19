@@ -35,7 +35,17 @@ export const Rewards = () => {
   const [registrationTimeRemaining, setRegistrationTimeRemaining] = useState<string>("");
   const [bridgeOutTimeRemaining, setBridgeOutTimeRemaining] = useState<string>("");
 
-  const prizePool = usePrizePool({ viteLordsAddress: env.VITE_LORDS_ADDRESS });
+  const [lordsAddress, setLordsAddress] = useState<string>();
+
+  useEffect(() => {
+    const init = async () => {
+      const address = await getLordsAddress();
+      setLordsAddress(address);
+    };
+    init();
+  }, []);
+
+  const prizePool = usePrizePool(lordsAddress || "");
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(rewards));
 

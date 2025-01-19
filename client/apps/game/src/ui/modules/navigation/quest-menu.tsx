@@ -216,7 +216,7 @@ const QuestRewards = ({ realmEntityId, prizes }: { realmEntityId: ID; prizes: Re
       {prizes &&
         prizes.map((prize, index) => (
           <div key={index} className="flex flex-wrap gap-1.5 mb-1.5">
-            {getQuestResources(realmEntityId, components)[prize.id].map((resource, i) => (
+            {getQuestResources(realmEntityId, components, eternumConfig)[prize.id].map((resource, i) => (
               <div key={i} className="flex-grow-0">
                 <ResourceCost resourceId={resource.resource} amount={resource.amount} />
               </div>
