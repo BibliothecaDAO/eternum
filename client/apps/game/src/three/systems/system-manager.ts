@@ -1,3 +1,5 @@
+import { StructureProgress } from "@/types";
+import { Position } from "@/types/position";
 import {
   ArmySystemUpdate,
   BattleSystemUpdate,
@@ -8,7 +10,7 @@ import {
 } from "@/types/systems";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ClientComponents, ID, RealmLevels, StructureType, type HexPosition } from "@bibliothecadao/eternum";
-import { configManager, Position, SetupResult, StructureProgress } from "@bibliothecadao/react";
+import { configManager, SetupResult } from "@bibliothecadao/react";
 import {
   Component,
   ComponentValue,

@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { ResourceExchange } from "@/ui/components/hyperstructures/resource-exchange";
 import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
@@ -19,7 +20,7 @@ import {
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { Position, useDojo, useGuilds, useQuery } from "@bibliothecadao/react";
+import { useDojo, useGuilds, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";

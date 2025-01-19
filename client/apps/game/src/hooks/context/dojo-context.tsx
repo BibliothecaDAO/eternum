@@ -2,13 +2,14 @@ import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import { DojoContext, DojoResult, Position, SetupResult, useQuery } from "@bibliothecadao/react";
+import { DojoContext, DojoResult, SetupResult, useQuery } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { HasValue, runQuery } from "@dojoengine/recs";

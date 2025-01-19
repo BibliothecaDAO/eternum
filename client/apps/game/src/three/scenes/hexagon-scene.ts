@@ -10,10 +10,10 @@ import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager"
 import { type SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, biomeModelPaths } from "@/three/scenes/constants";
 import { SystemManager } from "@/three/systems/system-manager";
-import { type SceneName } from "@/types";
+import { LeftView, RightView, type SceneName } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type HexPosition } from "@bibliothecadao/eternum";
-import { LeftView, RightView, type SetupResult } from "@bibliothecadao/react";
+import { type SetupResult } from "@bibliothecadao/react";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
 import * as THREE from "three";

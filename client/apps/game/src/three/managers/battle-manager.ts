@@ -1,9 +1,9 @@
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { BattleModel } from "@/three/managers/battle-model";
 import { LabelManager } from "@/three/managers/label-manager";
+import { Position } from "@/types/position";
 import { BattleSystemUpdate } from "@/types/systems";
 import { ID } from "@bibliothecadao/eternum";
-import { Position } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { getWorldPositionForHex } from "../utils";
 

@@ -1,5 +1,5 @@
+import { Position } from "@/types/position";
 import { ID, StructureType } from "@bibliothecadao/eternum";
-import { Position } from "@bibliothecadao/react";
 import * as THREE from "three";
 
 export enum SceneName {
@@ -13,6 +13,27 @@ export enum HyperstructureTypesNames {
   STAGE_3 = "hyperstructure_stage2",
 }
 
+export enum StructureProgress {
+  STAGE_1 = 0,
+  STAGE_2 = 1,
+  STAGE_3 = 2,
+}
+
+export enum RightView {
+  None,
+  ResourceTable,
+}
+
+export enum LeftView {
+  None,
+  MilitaryView,
+  EntityView,
+  ConstructionView,
+  WorldStructuresView,
+  ResourceArrivals,
+  ResourceTable,
+}
+
 export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };
@@ -23,6 +44,13 @@ export interface StructureInfo {
   structureType: StructureType;
   hasWonder: boolean;
 }
+
+export type BattleViewInfo = {
+  battleEntityId: ID | undefined;
+  engage?: boolean;
+  ownArmyEntityId: ID | undefined;
+  targetArmy: ID | undefined;
+};
 
 export interface ArmyData {
   entityId: ID;

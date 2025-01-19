@@ -1,5 +1,6 @@
 import { ReactComponent as Swords } from "@/assets/icons/common/cross-swords.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { ArmyChip } from "@/ui/components/military/army-chip";
 import {
   ArmyInfo,
@@ -9,7 +10,7 @@ import {
   getStructureAtPosition,
   isStructureImmune,
 } from "@bibliothecadao/eternum";
-import { Position, useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import clsx from "clsx";
 import React, { useCallback, useMemo } from "react";
 

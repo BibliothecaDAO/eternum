@@ -1,5 +1,6 @@
+import { StructureProgress } from "@/types";
+import { Position } from "@/types/position";
 import { HexPosition, ID, StructureType } from "@bibliothecadao/eternum";
-import { Position, StructureProgress } from "@bibliothecadao/react";
 
 export type ArmySystemUpdate = {
   entityId: ID;

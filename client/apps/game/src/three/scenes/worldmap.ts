@@ -13,7 +13,8 @@ import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "@/three/scenes/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
-import { SceneName } from "@/types";
+import { LeftView, SceneName } from "@/types";
+import { Position } from "@/types/position";
 import { ArmySystemUpdate, TileSystemUpdate } from "@/types/systems";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
@@ -27,7 +28,7 @@ import {
   TravelPaths,
   getNeighborOffsets,
 } from "@bibliothecadao/eternum";
-import { LeftView, Position, SetupResult } from "@bibliothecadao/react";
+import { SetupResult } from "@bibliothecadao/react";
 import { getEntities } from "@dojoengine/state";
 import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";

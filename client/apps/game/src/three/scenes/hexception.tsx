@@ -26,7 +26,10 @@ import {
   getEntityIdFromKeys,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
-import { LeftView, Position, SetupResult, StructureProgress } from "@bibliothecadao/react";
+import { SetupResult } from "@bibliothecadao/react";
+
+import { LeftView, StructureProgress } from "@/types";
+import { Position } from "@/types/position";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import * as THREE from "three";

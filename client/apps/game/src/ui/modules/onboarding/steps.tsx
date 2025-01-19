@@ -4,10 +4,11 @@ import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unc
 import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/settle-realm-component";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
-import { Position, useDojo, usePlayerOwnedRealms, useQuery } from "@bibliothecadao/react";
+import { useDojo, usePlayerOwnedRealms, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
