@@ -10,7 +10,7 @@ import {
   type ID,
   type Resource,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 export const TravelInfo = ({

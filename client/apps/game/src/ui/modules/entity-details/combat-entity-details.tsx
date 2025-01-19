@@ -5,7 +5,7 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { Tabs } from "@/ui/elements/tab";
 import { Entities } from "@/ui/modules/entity-details/entities";
-import { ArmyInfo, ID } from "@bibliothecadao/eternum";
+import { ArmyInfo, ContractAddress, getStructureAtPosition, ID } from "@bibliothecadao/eternum";
 import { Position, useArmiesAtPosition, useBattlesAtPosition, useDojo, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 

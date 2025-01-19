@@ -10,7 +10,7 @@ import {
   findResourceById,
   getRealmAddressName,
   getTotalResourceWeight,
-  ONE_MONTH,
+  RESOURCE_PRECISION,
   ResourceManager,
   ResourcesIds,
   type ID,

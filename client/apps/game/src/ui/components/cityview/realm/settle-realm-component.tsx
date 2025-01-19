@@ -1,6 +1,7 @@
 import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-checked.svg";
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { getSeasonPassAddress } from "@/utils/addresses";
 import { getOffchainRealm, RealmInfo, RealmInterface, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
 import { addAddressPadding } from "starknet";

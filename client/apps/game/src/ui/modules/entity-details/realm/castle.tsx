@@ -8,14 +8,16 @@ import {
   getBalance,
   getEntityIdFromKeys,
   getRealmInfo,
+  getStructure,
   LEVEL_DESCRIPTIONS,
   RealmLevels,
   StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useUIStore } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
+// todo: fix this
+import { REALM_MAX_LEVEL } from "../../../../../../../config/environments/utils/levels";
 
-const eternumConfig = await ETERNUM_CONFIG();
 export const Castle = () => {
   const dojo = useDojo();
   const currentDefaultTick = useUIStore.getState().currentDefaultTick;

@@ -13,6 +13,7 @@ import {
   ArmyInfo,
   configManager,
   ContractAddress,
+  getArmy,
   getStructureAtPosition,
   ID,
   ResourcesIds,
@@ -266,7 +267,7 @@ const TroopExchange = ({
 
   const [transferDirection, setTransferDirection] = useState<"to" | "from">("to");
 
-  const getArmyWithAddress = (armyId: ID) => (armyId, ContractAddress(account.address), components);
+  const getArmyWithAddress = (armyId: ID) => getArmy(armyId, ContractAddress(account.address), components);
 
   const protectorArmy = useMemo(
     () => takerArmy || getArmyWithAddress(protector?.army_id || 0),

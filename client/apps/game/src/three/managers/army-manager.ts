@@ -6,7 +6,7 @@ import { Biome } from "@/three/managers/biome";
 import { LabelManager } from "@/three/managers/label-manager";
 import { ArmyData, MovingArmyData, MovingLabelData, RenderChunkSize } from "@/types";
 import { BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
-import { useAccountStore } from "@bibliothecadao/react";
+import { ArmySystemUpdate, Position, useAccountStore } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "../utils";

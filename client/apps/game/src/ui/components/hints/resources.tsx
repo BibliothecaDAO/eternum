@@ -2,7 +2,13 @@ import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { CapacityConfigCategory, ResourcesIds, configManager, findResourceById } from "@bibliothecadao/eternum";
+import {
+  CapacityConfigCategory,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  configManager,
+  findResourceById,
+} from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
 

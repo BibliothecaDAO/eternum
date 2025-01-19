@@ -6,6 +6,7 @@ import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   ID,
   PlayerStructure,
+  RESOURCE_PRECISION,
   ResourcesIds,
   calculateDonkeysNeeded,
   findResourceById,

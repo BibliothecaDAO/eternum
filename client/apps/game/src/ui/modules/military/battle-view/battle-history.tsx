@@ -1,5 +1,5 @@
 import { currencyFormat } from "@/ui/utils/utils";
-import { BattleSide, ClientComponents, ContractAddress, ID, formatTime } from "@bibliothecadao/eternum";
+import { BattleSide, ClientComponents, ContractAddress, ID, formatTime, getArmy } from "@bibliothecadao/eternum";
 import { useBattleJoin, useBattleLeave, useBattleStart, useDojo } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo } from "react";

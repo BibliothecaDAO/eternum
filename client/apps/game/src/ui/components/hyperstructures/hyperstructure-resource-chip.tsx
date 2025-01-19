@@ -2,13 +2,7 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import {
-  findResourceById,
-  getBalance,
-  getIconResourceId,
-  getResourceProductionInfo,
-  ID,
-} from "@bibliothecadao/eternum";
+import { findResourceById, getBalance, getIconResourceId, ID } from "@bibliothecadao/eternum";
 import { ProgressWithPercentage, useDojo, useUIStore } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 
@@ -37,12 +31,8 @@ export const HyperstructureResourceChip = ({
   const balance = divideByPrecision(
     getBalance(structureEntityId, resourceId, currentDefaultTick, dojo.setup.components).balance,
   );
-  const production = getResourceProductionInfo(structureEntityId, resourceId, dojo.setup.components);
-
-  const safetyMargin = production !== undefined && production?.consumption_rate !== 0n ? 0.95 : 1;
 
   let maxContributableAmount = Math.min(progress.costNeeded! - progress.amount, balance);
-  maxContributableAmount *= progress.costNeeded - progress.amount > balance ? safetyMargin : 1;
   maxContributableAmount = Math.ceil(maxContributableAmount);
 
   useEffect(() => {

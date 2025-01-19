@@ -1,6 +1,6 @@
 import { ClientConfigManager } from "@bibliothecadao/eternum";
 
-import { BuildingType, ContractAddress, TickIds, type ID, type Position, type Resource } from "@bibliothecadao/eternum";
+import { ContractAddress, TickIds, type ID, type Position, type Resource } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };
@@ -255,17 +255,6 @@ export const formatSecondsInHoursMinutes = (seconds: number) => {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   return `${hours}h:${minutes}m`;
-};
-
-export const isResourceProductionBuilding = (buildingId: BuildingType) => {
-  return (
-    buildingId === BuildingType.Resource ||
-    buildingId === BuildingType.Farm ||
-    buildingId === BuildingType.FishingVillage ||
-    buildingId === BuildingType.Barracks ||
-    buildingId === BuildingType.ArcheryRange ||
-    buildingId === BuildingType.Stable
-  );
 };
 
 export const currentTickCount = (time: number) => {

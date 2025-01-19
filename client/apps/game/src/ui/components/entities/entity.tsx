@@ -7,6 +7,7 @@ import {
   ContractAddress,
   EntityType,
   formatTime,
+  getArmy,
   getEntityInfo,
   getEntityName,
   getResourcesFromBalance,

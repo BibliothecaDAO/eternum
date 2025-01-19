@@ -1,4 +1,3 @@
-
 export enum RealmLevels {
   Settlement,
   City,
@@ -12,7 +11,6 @@ export enum RealmLevelNames {
   Kingdom = "Kingdom",
   Empire = "Empire",
 }
-
 
 export const LEVEL_DESCRIPTIONS = {
   [RealmLevels.Settlement]: "A small settlement with a few buildings. You have 6 buildable hexes.",

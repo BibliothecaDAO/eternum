@@ -4,7 +4,15 @@ import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
-import { ArmyInfo, BattleManager, isStructureImmune, Structure, StructureType } from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  BattleManager,
+  ContractAddress,
+  getArmiesInBattle,
+  isStructureImmune,
+  Structure,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import { useDojo, useGetHyperstructureProgress, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";

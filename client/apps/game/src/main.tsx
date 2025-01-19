@@ -18,6 +18,7 @@ import GameRenderer from "./three/game-renderer";
 import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
+import { ETERNUM_CONFIG } from "./utils/config";
 
 declare global {
   interface Window {
@@ -64,9 +65,12 @@ async function init() {
 
   const state = useUIStore.getState();
 
+  const eternumConfig = await ETERNUM_CONFIG();
+
   const setupResult = await setup(
     { state, ...dojoConfig },
-    { viteVrfProviderAddress: env.VITE_VRF_PROVIDER_ADDRESS, vitePublicDev: env.VITE_PUBLIC_DEV },
+    { viteVrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS, vitePublicDev: env.VITE_PUBLIC_DEV },
+    eternumConfig,
   );
 
   const graphic = new GameRenderer(setupResult);

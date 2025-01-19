@@ -1,5 +1,5 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, currencyIntlFormat, gramToKg } from "@/ui/utils/utils";
+import { currencyFormat, currencyIntlFormat, divideByPrecision, gramToKg } from "@/ui/utils/utils";
 import {
   configManager,
   findResourceById,

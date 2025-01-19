@@ -14,6 +14,8 @@ import {
   BattleStartStatus,
   ClaimStatus,
   ClientComponents,
+  ContractAddress,
+  getArmy,
   ID,
   LeaveStatus,
   RaidStatus,

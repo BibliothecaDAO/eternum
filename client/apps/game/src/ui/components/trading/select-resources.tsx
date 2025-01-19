@@ -4,7 +4,7 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ID, RESOURCE_TIERS, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
-import { useDojo, usePlayResourceSound } from "@bibliothecadao/react";
+import { useDojo, usePlayResourceSound, useUIStore } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 export const SelectResources = ({

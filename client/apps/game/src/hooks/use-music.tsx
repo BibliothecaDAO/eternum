@@ -1,4 +1,4 @@
-import useUIStore from "@/hooks/store/use-ui-store";
+import { useUIStore } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import useSound from "use-sound";
 

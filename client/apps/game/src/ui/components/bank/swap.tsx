@@ -5,11 +5,11 @@ import { TravelInfo } from "@/ui/components/resources/travel-info";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
-import { getBalance } from "@/utils/resources";
 import {
   configManager,
   ContractAddress,
   DONKEY_ENTITY_TYPE,
+  getBalance,
   getStructure,
   ID,
   MarketManager,

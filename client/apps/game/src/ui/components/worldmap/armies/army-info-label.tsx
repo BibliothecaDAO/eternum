@@ -9,6 +9,7 @@ import { currencyFormat } from "@/ui/utils/utils";
 import {
   ArmyInfo,
   ContractAddress,
+  getArmy,
   getRealmAddressName,
   getRealmNameById,
   getStructure,

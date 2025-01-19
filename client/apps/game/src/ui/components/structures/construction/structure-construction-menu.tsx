@@ -3,7 +3,6 @@ import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { getBalance } from "@/utils/resources";
 import {
   ID,
   RESOURCE_PRECISION,
@@ -11,6 +10,8 @@ import {
   ResourcesIds,
   StructureType,
   configManager,
+  getBalance,
+  scaleResourceCostMinMax,
 } from "@bibliothecadao/eternum";
 import { useDojo, useUIStore } from "@bibliothecadao/react";
 import React from "react";
@@ -54,9 +55,9 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
         const cost = scaleResourceCostMinMax(
           eternumConfig.hyperstructures.hyperstructureCreationCosts,
           RESOURCE_PRECISION,
-        ).filter((cost) => !isHyperstructure || cost.resource === ResourcesIds.AncientFragment);
+        );
 
-        const hasBalance = checkBalance(cost);
+        const hasBalance = checkBalance(isHyperstructure ? cost : []);
 
         return (
           <StructureCard

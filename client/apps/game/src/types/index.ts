@@ -1,4 +1,3 @@
-import { Position } from "@/types/position";
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/react";
 import * as THREE from "three";

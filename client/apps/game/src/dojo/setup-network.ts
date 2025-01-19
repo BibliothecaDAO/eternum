@@ -1,11 +1,11 @@
 import { defineContractComponents, EternumProvider } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { world } from "./world";
 
 import { BurnerManager } from "@dojoengine/create-burner";
 import * as torii from "@dojoengine/torii-client";
 import { Account } from "starknet";
 
+import { world } from "@bibliothecadao/react";
 import { env } from "./../../env";
 const { VITE_PUBLIC_VRF_PROVIDER_ADDRESS, VITE_PUBLIC_DEV } = env;
 

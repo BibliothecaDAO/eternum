@@ -5,12 +5,12 @@ import Button from "@/ui/elements/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
 import { currencyIntlFormat, getEntityIdFromKeys, multiplyByPrecision, separateCamelCase } from "@/ui/utils/utils";
-import { getAddressNameFromEntity } from "@/utils/entities";
 import {
   Access,
   calculateCompletionPoints,
   configManager,
   ContractAddress,
+  getAddressNameFromEntity,
   LeaderboardManager,
   MAX_NAME_LENGTH,
 } from "@bibliothecadao/eternum";

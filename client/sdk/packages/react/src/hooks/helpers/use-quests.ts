@@ -15,6 +15,8 @@ export enum QuestStatus {
 }
 
 export const useQuests = () => {
+  const questStatus = useQuestClaimStatus();
+
   const questTypes = [
     QuestType.Settle,
     QuestType.BuildFood,
@@ -30,6 +32,7 @@ export const useQuests = () => {
     return questTypes.map((type) => ({
       id: type,
       ...QUEST_DETAILS[type],
+      status: questStatus.questClaimStatus[type] ? QuestStatus.Claimed : QuestStatus.InProgress,
     }));
   }, []);
 
@@ -57,13 +60,16 @@ const useQuestClaimStatus = () => {
         (prize) => getComponentValue(Quest, getEntityIdFromKeys([entityBigInt, BigInt(prize.id)]))?.completed,
       );
 
-    return Object.keys(QUEST_DETAILS).reduce((acc, questName) => {
-      const questType = Number(questName) as QuestType;
-      return {
-        ...acc,
-        [questType]: isNotSettler || checkPrizesClaimed(QUEST_DETAILS[questType].prizes),
-      };
-    }, {});
+    return Object.keys(QUEST_DETAILS).reduce(
+      (acc, questName) => {
+        const questType = Number(questName) as QuestType;
+        return {
+          ...acc,
+          [questType]: isNotSettler || checkPrizesClaimed(QUEST_DETAILS[questType].prizes),
+        };
+      },
+      {} as Record<QuestType, boolean>,
+    );
   }, [structureEntityId, isNotSettler, prizeUpdate, Quest]);
 
   return { questClaimStatus };
