@@ -1,10 +1,12 @@
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { QuestsMenu } from "@/ui/modules/navigation/quest-menu";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { gramToKg, kgToGram } from "@/ui/utils/utils";
 import {
@@ -19,21 +21,14 @@ import {
   ResourcesIds,
   TickIds,
 } from "@bibliothecadao/eternum";
-import {
-  Position,
-  soundSelector,
-  useDojo,
-  useNextBlockTimestamp,
-  useQuery,
-  useUiSounds,
-  useUIStore,
-} from "@bibliothecadao/react";
+import { useDojo, useNextBlockTimestamp, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { QuestsMenu } from "../quests/quest-menu";
 
 const slideDown = {
   hidden: { y: "-100%" },

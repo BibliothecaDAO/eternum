@@ -1,10 +1,12 @@
+import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import ListSelect from "@/ui/elements/list-select";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ID, RESOURCE_TIERS, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
-import { useDojo, usePlayResourceSound, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 export const SelectResources = ({

@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
@@ -11,7 +12,7 @@ import {
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useCallback, useMemo } from "react";

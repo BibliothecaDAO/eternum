@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   ArmyInfo,
@@ -6,7 +7,7 @@ import {
   configManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useDojo, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 interface ArmyWarningProps {

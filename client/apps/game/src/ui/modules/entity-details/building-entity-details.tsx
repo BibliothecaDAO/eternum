@@ -1,3 +1,6 @@
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LeftView } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/select-preview-building";
 import Button from "@/ui/elements/button";
 import { RealmDetails } from "@/ui/modules/entity-details/realm/realm-details";
@@ -15,7 +18,7 @@ import {
   configManager,
   getEntityInfo,
 } from "@bibliothecadao/eternum";
-import { LeftView, soundSelector, useDojo, usePlayerStructures, useUIStore, useUiSounds } from "@bibliothecadao/react";
+import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";

@@ -1,4 +1,5 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { GuildInviteList } from "@/ui/components/worldmap/guilds/guild-invites-list";
 import { GuildMemberList } from "@/ui/components/worldmap/guilds/guild-member-list";
 import Button from "@/ui/elements/button";
@@ -31,11 +32,18 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   const { useGuildMembers, getGuildFromPlayerAddress, useGuildWhitelist, usePlayerWhitelist, getGuildFromEntityId } =
     useGuilds();
 
-  const { guildMembers } = useGuildMembers(selectedGuildEntityId, players);
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
+
+  const { guildMembers } = useGuildMembers(selectedGuildEntityId, players, nextBlockTimestamp || 0);
   const invitedPlayers = useGuildWhitelist(selectedGuildEntityId, players);
   const userWhitelist = usePlayerWhitelist(ContractAddress(account.address));
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
-  const selectedGuild = getGuildFromEntityId(selectedGuildEntityId, ContractAddress(account.address), components);
+  const selectedGuild = getGuildFromEntityId(
+    selectedGuildEntityId,
+    ContractAddress(account.address),
+    components,
+    nextBlockTimestamp || 0,
+  );
 
   const playerName = players.find((player) => player.address === ContractAddress(account?.address))?.name;
 

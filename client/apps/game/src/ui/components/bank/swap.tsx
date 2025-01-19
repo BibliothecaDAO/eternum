@@ -1,4 +1,6 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import { TravelInfo } from "@/ui/components/resources/travel-info";
@@ -18,14 +20,7 @@ import {
   resources,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import {
-  soundSelector,
-  useDojo,
-  useIsStructureResourcesLocked,
-  useTravel,
-  useUiSounds,
-  useUIStore,
-} from "@bibliothecadao/react";
+import { useDojo, useIsStructureResourcesLocked, useTravel } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({

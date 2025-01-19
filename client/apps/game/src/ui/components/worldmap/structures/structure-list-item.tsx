@@ -1,6 +1,7 @@
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
@@ -13,7 +14,7 @@ import {
   Structure,
   StructureType,
 } from "@bibliothecadao/eternum";
-import { useDojo, useGetHyperstructureProgress, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
+import { useDojo, useGetHyperstructureProgress, useNextBlockTimestamp } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 

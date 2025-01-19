@@ -1,5 +1,5 @@
+import { Position } from "@/types/position";
 import { getNeighborOffsets, HexPosition } from "@bibliothecadao/eternum";
-import { Position } from "@bibliothecadao/react";
 
 interface Node {
   col: number;

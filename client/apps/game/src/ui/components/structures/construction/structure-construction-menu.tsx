@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { StructureCard } from "@/ui/components/structures/construction/structure-card";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
@@ -12,7 +13,7 @@ import {
   configManager,
   getBalance,
 } from "@bibliothecadao/eternum";
-import { useDojo, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import React from "react";
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";

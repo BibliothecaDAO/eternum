@@ -1,4 +1,4 @@
-import { useUIStore } from "@bibliothecadao/react";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { memo, useEffect } from "react";
 
 export const BattleContainer = memo(({ children }: { children: React.ReactNode }) => {

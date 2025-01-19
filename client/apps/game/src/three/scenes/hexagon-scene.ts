@@ -1,3 +1,4 @@
+import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { LocationManager } from "@/three/helpers/location-manager";
 import { gltfLoader } from "@/three/helpers/utils";
@@ -9,10 +10,9 @@ import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager"
 import { type SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, biomeModelPaths } from "@/three/scenes/constants";
 import { SystemManager } from "@/three/systems/system-manager";
-import { type SceneName } from "@/types";
+import { LeftView, RightView, type SceneName } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
-import { type HexPosition } from "@bibliothecadao/eternum";
-import { LeftView, RightView, useUIStore, type AppStore, type SetupResult } from "@bibliothecadao/react";
+import { type HexPosition, type SetupResult } from "@bibliothecadao/eternum";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
 import * as THREE from "three";

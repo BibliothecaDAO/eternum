@@ -1,6 +1,6 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ArmyInfo, configManager, getArmyNumberOfTroops } from "@bibliothecadao/eternum";
-import { useUIStore } from "@bibliothecadao/react";
 import { useMemo } from "react";
 import { formatNumber, formatStringNumber } from "../utils/utils";
 

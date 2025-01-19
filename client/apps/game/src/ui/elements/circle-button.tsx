@@ -1,4 +1,5 @@
-import { soundSelector, useUiSounds, useUIStore } from "@bibliothecadao/react";
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import clsx from "clsx";
 
 type CircleButtonProps = {

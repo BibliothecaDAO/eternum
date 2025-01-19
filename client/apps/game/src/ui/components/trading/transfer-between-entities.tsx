@@ -1,3 +1,4 @@
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { TravelInfo } from "@/ui/components/resources/travel-info";
 import { ToggleComponent } from "@/ui/components/toggle/toggle-component";
 import { SelectEntityFromList } from "@/ui/components/trading/select-entity-from-list";
@@ -8,7 +9,7 @@ import { Headline } from "@/ui/elements/headline";
 import TextInput from "@/ui/elements/text-input";
 import { multiplyByPrecision, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { configManager, DONKEY_ENTITY_TYPE, getRealmAddressName, ID } from "@bibliothecadao/eternum";
-import { soundSelector, useDojo, useTravel, useUiSounds } from "@bibliothecadao/react";
+import { useDojo, useTravel } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 

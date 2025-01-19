@@ -1,3 +1,4 @@
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
@@ -17,13 +18,11 @@ import {
   type MarketInterface,
 } from "@bibliothecadao/eternum";
 import {
-  soundSelector,
   useDojo,
   useIsStructureResourcesLocked,
   useNextBlockTimestamp,
   useResourceManager,
   useTravel,
-  useUiSounds,
 } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";

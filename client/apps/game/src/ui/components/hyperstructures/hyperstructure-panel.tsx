@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ContributionSummary } from "@/ui/components/hyperstructures/contribution-summary";
 import { HyperstructureDetails } from "@/ui/components/hyperstructures/hyperstructure-details";
 import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/hyperstructure-resource-chip";
@@ -22,7 +23,6 @@ import {
   useHyperstructureProgress,
   useHyperstructureUpdates,
   usePlayerContributions,
-  useUIStore,
 } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";

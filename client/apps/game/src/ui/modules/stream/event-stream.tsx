@@ -1,7 +1,7 @@
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
-import { ContractAddress, getAddressFromEntity, getAddressNameFromEntity, ID } from "@bibliothecadao/eternum";
-import { useDojo, world } from "@bibliothecadao/react";
+import { ContractAddress, getAddressFromEntity, getAddressNameFromEntity, ID, world } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { Component, defineComponentSystem, Entity, getComponentValue, World } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useState } from "react";

@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
@@ -12,7 +13,7 @@ import {
   findResourceIdByTrait,
   getBalance,
 } from "@bibliothecadao/eternum";
-import { useDojo, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { memo, useEffect, useRef, useState } from "react";
 
 export const ResourceBar = memo(

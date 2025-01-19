@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Battle } from "@/ui/modules/military/battle-view/battle";
 import {
   BattleManager,
@@ -9,7 +10,7 @@ import {
   getStructureAtPosition,
   Structure,
 } from "@bibliothecadao/eternum";
-import { useBattleManager, useDojo, useNextBlockTimestamp, useUIStore } from "@bibliothecadao/react";
+import { useBattleManager, useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { memo, useMemo } from "react";
 
 export const BattleView = memo(() => {

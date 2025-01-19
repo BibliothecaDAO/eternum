@@ -1,9 +1,12 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useModalStore } from "@/hooks/store/use-modal-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintModal } from "@/ui/components/hints/hint-modal";
 import { rewards, settings } from "@/ui/components/navigation/config";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
 import { Controller } from "@/ui/modules/controller/controller";
-import { useAccountStore, useDojo, useModalStore, useUIStore } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
