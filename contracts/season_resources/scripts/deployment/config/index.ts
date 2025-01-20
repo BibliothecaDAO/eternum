@@ -1,7 +1,7 @@
+import { manifestLocal, manifestMainnet, manifestSepolia, } from "@bibliothecadao/assets";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { Account } from "starknet";
-import { manifestLocal, manifestSepolia } from "@bibliothecadao/assets";
 import { EternumProvider, ResourceWhitelistConfig } from "./provider";
 
 const getResourceAddresses = () => {
@@ -46,16 +46,20 @@ export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
 
 //////////////////////////////////////////////////////////////
 
-const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_DEV, VITE_PUBLIC_NODE_URL } =
+const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_NODE_URL } =
   process.env;
 if (!VITE_PUBLIC_MASTER_ADDRESS || !VITE_PUBLIC_MASTER_PRIVATE_KEY || !VITE_PUBLIC_NODE_URL) {
   throw new Error("VITE_PUBLIC_MASTER_ADDRESS is required");
 }
-const manifest = VITE_PUBLIC_DEV === "true" ? manifestLocal : manifestSepolia;
-// Bug in bun we have to use http://127.0.0.1:5050/
-const nodeUrl = VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : VITE_PUBLIC_NODE_URL;
+const manifest = process.env.VITE_PUBLIC_CHAIN === "mainnet" 
+  ? manifestMainnet 
+  : process.env.VITE_PUBLIC_CHAIN === "sepolia" 
+    ? manifestSepolia 
+    : process.env.VITE_PUBLIC_CHAIN === "local"
+      ? manifestLocal
+      : manifestLocal;
 
-if (!VITE_PUBLIC_DEV) {
+if (process.env.VITE_PUBLIC_CHAIN !== "local") {
   const userConfirmation = prompt(
     "You are about to set the configuration for a non-development environment. Are you sure you want to proceed? (yes/no)",
   );
@@ -66,7 +70,8 @@ if (!VITE_PUBLIC_DEV) {
 }
 
 console.log("Provider set up");
-const provider = new EternumProvider(manifest, nodeUrl);
+// Bug in bun we have to use http://127.0.0.1:5050/
+const provider = new EternumProvider(manifest, VITE_PUBLIC_NODE_URL);
 
 console.log("Account set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);

@@ -97,7 +97,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
   const settleRealms = async (realmIds: number[]) => {
     setLoading(true);
     try {
-      const res = await create_multiple_realms({
+      await create_multiple_realms({
         realm_ids: realmIds,
         owner: account.address,
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,

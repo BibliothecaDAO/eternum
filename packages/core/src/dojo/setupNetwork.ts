@@ -12,11 +12,11 @@ export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 export async function setupNetwork(
   config: DojoConfig,
   env: {
-    viteVrfProviderAddress: string;
-    vitePublicDev: boolean;
+    vrfProviderAddress: string;
+    useBurner: boolean;
   },
 ) {
-  const provider = new EternumProvider(config.manifest, config.rpcUrl, env.viteVrfProviderAddress);
+  const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress);
 
   const toriiClient = await torii.createClient({
     rpcUrl: config.rpcUrl,
@@ -34,7 +34,7 @@ export async function setupNetwork(
 
   try {
     await burnerManager.init();
-    if (env.vitePublicDev === true && burnerManager.list().length === 0) {
+    if (env.useBurner === true && burnerManager.list().length === 0) {
       await burnerManager.create();
     }
   } catch (e) {

@@ -68,7 +68,7 @@ async function init() {
 
   const setupResult = await setup(
     { ...dojoConfig },
-    { viteVrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS, vitePublicDev: env.VITE_PUBLIC_DEV },
+    { vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS, useBurner: env.VITE_PUBLIC_CHAIN === "local" },
   );
 
   await initialSync(setupResult, state);
@@ -76,7 +76,7 @@ async function init() {
   const graphic = new GameRenderer(setupResult);
 
   graphic.initScene();
-  if (env.VITE_PUBLIC_SHOW_FPS == true) {
+  if (env.VITE_PUBLIC_GRAPHICS_DEV == true) {
     graphic.initStats();
   }
 

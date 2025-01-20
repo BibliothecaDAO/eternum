@@ -19,7 +19,7 @@ website = "https://eternum.realms.world/"
     "s1_eternum-battle_pillage_systems",
     "s1_eternum-battle_utils_systems",
     "s1_eternum-battle_systems",
-    "s1_eternum-building_systems",
+    "s1_eternum-production_systems",
     "s1_eternum-config_systems",
     "s1_eternum-dev_bank_systems",
     "s1_eternum-dev_realm_systems",

@@ -1,4 +1,4 @@
-import { ResourcesIds, TroopFoodConsumption } from "@bibliothecadao/eternum";
+import { ResourcesIds, type TroopFoodConsumption } from "@bibliothecadao/eternum";
 
 export const TROOPS_STAMINAS = {
     [ResourcesIds.Paladin]: 100,

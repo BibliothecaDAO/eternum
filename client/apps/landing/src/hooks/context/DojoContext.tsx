@@ -55,9 +55,9 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
 
   const { account } = useAccount();
 
-  if (import.meta.env.VITE_PUBLIC_DEV == "local") {
+  if (env.VITE_PUBLIC_CHAIN === "local") {
     const rpcProvider = new RpcProvider({
-      nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
+      nodeUrl: env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
     });
 
     const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;

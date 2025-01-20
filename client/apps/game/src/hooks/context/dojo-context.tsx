@@ -157,8 +157,8 @@ const DojoContextProvider = ({
   };
 
   // Determine which account to use based on environment
-  const isDev = env.VITE_PUBLIC_DEV === true;
-  const accountToUse = isDev
+  const isLocal = env.VITE_PUBLIC_CHAIN === "local";
+  const accountToUse = isLocal
     ? burnerAccount
     : isSpectatorMode
       ? new Account(value.network.provider.provider, "0x0", "0x0")
@@ -177,7 +177,7 @@ const DojoContextProvider = ({
       setAddressName(username);
     };
 
-    if (isDev) {
+    if (isLocal) {
       if (burnerAccount) {
         console.log("Setting account from burner hook:", burnerAccount);
         useAccountStore.getState().setAccount(burnerAccount);
@@ -211,13 +211,13 @@ const DojoContextProvider = ({
         }, 100);
       }
     }
-  }, [isDev, controllerAccount, burnerAccount, retries]);
+  }, [isLocal, controllerAccount, burnerAccount, retries]);
 
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
 
-  if (isDev) {
+  if (isLocal) {
     if (!burnerAccount) {
       return <LoadingScreen backgroundImage={backgroundImage} />;
     }
