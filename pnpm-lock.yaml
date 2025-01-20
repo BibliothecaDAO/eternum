@@ -437,15 +437,6 @@ importers:
         specifier: latest
         version: 1.1.17
 
-  packages/assets:
-    devDependencies:
-      tsup:
-        specifier: ^8.0.2
-        version: 8.3.5(@swc/core@1.10.8(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.5.1)(tsx@4.19.2)(typescript@5.7.3)(yaml@2.7.0)
-      typescript:
-        specifier: ^5.4.4
-        version: 5.7.3
-
   packages/core:
     dependencies:
       '@dojoengine/core':
@@ -12925,7 +12916,7 @@ snapshots:
 
   '@types/ws@8.5.13':
     dependencies:
-      '@types/node': 20.12.14
+      '@types/node': 20.17.14
 
   '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@8.21.0(eslint@9.18.0(jiti@2.4.2))(typescript@5.7.3))(eslint@9.18.0(jiti@2.4.2))(typescript@5.7.3)':
     dependencies:
