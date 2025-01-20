@@ -14,7 +14,8 @@ import { displayAddress } from "@/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { env } from "env";
+// todo: why not working
+// import { env } from "env";
 import { Loader2 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
@@ -50,7 +51,7 @@ function Mint() {
     [data, realmsAddress],
   );
 
-  const isDev = env.VITE_PUBLIC_CHAIN === "local";
+  const isDev = meta.env.VITE_PUBLIC_CHAIN === "local";
 
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
     useNftSelection({ userAddress: address as `0x${string}` });

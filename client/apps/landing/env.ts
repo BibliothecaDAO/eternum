@@ -17,7 +17,7 @@ const envSchema = z.object({
   VITE_PUBLIC_TORII_RELAY: z.string(),
 
   // Version and chain info
-  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "testnet", "local"]), // Add other chains as needed
+  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "local"]), // Add other chains as needed
 
   // Ark Marketplace API
   VITE_PUBLIC_ARK_MARKETPLACE_API: z.string().url(),

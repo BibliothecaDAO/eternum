@@ -49,6 +49,10 @@ export class ClientConfigManager {
     return ClientConfigManager._instance;
   }
 
+  public getConfig() {
+    return this.config;
+  }
+
   private getValueOrDefault<T>(callback: () => T, defaultValue: T): T {
     if (!this.components) {
       return defaultValue;
