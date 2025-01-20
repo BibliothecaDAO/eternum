@@ -275,5 +275,5 @@ echo -e "${GREEN}✔ PID file: contracts/game/${BOLD}$PID_FILE${NC}"
 echo -e "${GREEN}✔ Log file: contracts/game/${BOLD}$LOG_FILE${NC}"
 echo -e ""
 
-echo -e "${GREEN}✔ torii indexer started successfully${NC}"
+echo -e "${GREEN}✔ torii indexer started successfully at ${BLUE}http://localhost:${PORT}${NC}"
 echo -e ""
