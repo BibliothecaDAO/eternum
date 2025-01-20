@@ -7,6 +7,7 @@ import {
 import { useFetchBlockchainData } from "@/hooks/helpers/use-fetch";
 import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { rewards } from "@/ui/components/navigation/config";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
@@ -19,7 +20,6 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 
 // Lazy load components
 const SelectedArmy = lazy(() =>
@@ -340,7 +340,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
         <Redirect to="/" />
         <Leva
-          hidden={!env.VITE_PUBLIC_DEV || env.VITE_PUBLIC_HIDE_THREEJS_MENU}
+          hidden={!env.VITE_PUBLIC_GRAPHICS_DEV}
           collapsed
           titleBar={{ position: { x: 0, y: 50 } }}
         />

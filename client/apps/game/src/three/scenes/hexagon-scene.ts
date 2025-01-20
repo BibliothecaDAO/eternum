@@ -117,7 +117,7 @@ export abstract class HexagonScene {
 
   private setupLightHelper(): void {
     this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
-    if (env.VITE_PUBLIC_DEV == true) this.scene.add(this.lightHelper);
+    if (env.VITE_PUBLIC_GRAPHICS_DEV == true) this.scene.add(this.lightHelper);
   }
 
   private setupInputHandlers(): void {

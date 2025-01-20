@@ -14,6 +14,8 @@ import { displayAddress } from "@/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
+// todo: why not working
+// import { env } from "env";
 import { Loader2 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
@@ -49,7 +51,7 @@ function Mint() {
     [data, realmsAddress],
   );
 
-  console.log(realmsErcBalance);
+  const isDev = meta.env.VITE_PUBLIC_CHAIN === "local";
 
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
     useNftSelection({ userAddress: address as `0x${string}` });
@@ -99,7 +101,7 @@ function Mint() {
             </div>
           </div>
           <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
-            {import.meta.env.VITE_PUBLIC_DEV === "true" ? (
+            {isDev? (
               <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
                 Mint Realms
               </Button>

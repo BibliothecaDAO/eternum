@@ -16,7 +16,7 @@ export default defineConfig({
     topLevelAwait(),
     VitePWA({
       devOptions: {
-        enabled: process.env.VITE_PUBLIC_DEV === "true",
+        enabled: process.env.VITE_PUBLIC_CHAIN === "local",
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 4000000,

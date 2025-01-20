@@ -4,8 +4,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "env": ["./env.ts"]
     },
     "allowJs": true
-  }
+  },
+  "include": ["src", "env.ts"]
 }

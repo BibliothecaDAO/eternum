@@ -5,8 +5,6 @@ const envSchema = z.object({
   VITE_PUBLIC_MASTER_ADDRESS: z.string().startsWith("0x"),
   VITE_PUBLIC_MASTER_PRIVATE_KEY: z.string().startsWith("0x"),
 
-  // Contract addresses
-  VITE_PUBLIC_WORLD_ADDRESS: z.string().startsWith("0x"),
   VITE_PUBLIC_ACCOUNT_CLASS_HASH: z.string().startsWith("0x"),
   VITE_PUBLIC_FEE_TOKEN_ADDRESS: z.string().startsWith("0x"),
 
@@ -18,10 +16,8 @@ const envSchema = z.object({
   VITE_PUBLIC_NODE_URL: z.string().url(),
   VITE_PUBLIC_TORII_RELAY: z.string(),
 
-  // Configuration flags
-  VITE_PUBLIC_DEV: z.string().transform((v) => v === "true"),
   // Version and chain info
-  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "testnet", "local"]), // Add other chains as needed
+  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "local"]), // Add other chains as needed
 
   // Ark Marketplace API
   VITE_PUBLIC_ARK_MARKETPLACE_API: z.string().url(),

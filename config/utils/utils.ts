@@ -11,6 +11,7 @@ export type Chain = "local" | "sepolia" | "mainnet" | "slot";
  */
 export async function getSeasonAddresses(chain: Chain): Promise<SeasonAddresses> {
   const ADDRESSES_FILE = `../../contracts/common/addresses/${chain}.json`;
+  console.log({ ADDRESSES_FILE });
   try {
     const seasonAddressesJson = (await import(ADDRESSES_FILE)).default;
 

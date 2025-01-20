@@ -11,7 +11,6 @@ import { displayAddress } from "@/ui/utils/utils";
 import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext, useQuery } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -79,23 +78,14 @@ export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderP
   const controllerAccount = useControllerAccount();
 
   return (
-    <BurnerProvider
-      initOptions={{
-        masterAccount,
-        accountClassHash: env.VITE_PUBLIC_ACCOUNT_CLASS_HASH,
-        rpcProvider,
-        feeTokenAddress: env.VITE_PUBLIC_FEE_TOKEN_ADDRESS,
-      }}
+    <DojoContextProvider
+      value={value}
+      masterAccount={masterAccount}
+      controllerAccount={controllerAccount!}
+      backgroundImage={backgroundImage}
     >
-      <DojoContextProvider
-        value={value}
-        masterAccount={masterAccount}
-        controllerAccount={controllerAccount!}
-        backgroundImage={backgroundImage}
-      >
-        {children}
-      </DojoContextProvider>
-    </BurnerProvider>
+      {children}
+    </DojoContextProvider>
   );
 };
 
@@ -119,18 +109,6 @@ const DojoContextProvider = ({
 
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
-
-  const {
-    create,
-    list,
-    get,
-    account: burnerAccount,
-    select,
-    isDeploying,
-    clear,
-  } = useBurnerManager({
-    burnerManager: value.network.burnerManager,
-  });
 
   const { connect, connectors } = useConnect();
   const { isConnected, isConnecting, connector } = useAccount();
@@ -156,13 +134,9 @@ const DojoContextProvider = ({
     showBlankOverlay(false);
   };
 
-  // Determine which account to use based on environment
-  const isDev = env.VITE_PUBLIC_DEV === true;
-  const accountToUse = isDev
-    ? burnerAccount
-    : isSpectatorMode
-      ? new Account(value.network.provider.provider, "0x0", "0x0")
-      : controllerAccount;
+  const accountToUse = isSpectatorMode
+    ? new Account(value.network.provider.provider, "0x0", "0x0")
+    : controllerAccount;
 
   useEffect(() => {
     const setUserName = async () => {
@@ -177,89 +151,74 @@ const DojoContextProvider = ({
       setAddressName(username);
     };
 
-    if (isDev) {
-      if (burnerAccount) {
-        console.log("Setting account from burner hook:", burnerAccount);
-        useAccountStore.getState().setAccount(burnerAccount);
-        setAccountsInitialized(true);
-      } else {
-        console.log("Burner account is null in development.");
+    if (controllerAccount) {
+      useAccountStore.getState().setAccount(controllerAccount);
+
+      const addressName = runQuery([
+        HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
+      ]);
+
+      if (addressName.size === 0) {
+        setUserName();
       }
+
+      setAccountsInitialized(true);
     } else {
-      if (controllerAccount) {
-        useAccountStore.getState().setAccount(controllerAccount);
-
-        const addressName = runQuery([
-          HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
-        ]);
-
-        if (addressName.size === 0) {
-          setUserName();
-        }
-
-        setAccountsInitialized(true);
-      } else {
-        setTimeout(() => {
-          setRetries((prevRetries) => {
-            if (prevRetries < 10) {
-              return prevRetries + 1;
-            } else {
-              setAccountsInitialized(true);
-              return prevRetries;
-            }
-          });
-        }, 100);
-      }
+      setTimeout(() => {
+        setRetries((prevRetries) => {
+          if (prevRetries < 10) {
+            return prevRetries + 1;
+          } else {
+            setAccountsInitialized(true);
+            return prevRetries;
+          }
+        });
+      }, 100);
     }
-  }, [isDev, controllerAccount, burnerAccount, retries]);
+  }, [controllerAccount, retries]);
 
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
 
-  if (isDev) {
-    if (!burnerAccount) {
-      return <LoadingScreen backgroundImage={backgroundImage} />;
-    }
-  } else {
-    if (isConnecting) {
-      return (
-        <>
-          <CountdownTimer backgroundImage={backgroundImage} />
-          <LoadingScreen backgroundImage={backgroundImage} />
-        </>
-      );
-    }
-    if (!isConnected && !isConnecting && !controllerAccount && !isSpectatorMode) {
-      return (
-        <>
-          <CountdownTimer backgroundImage={backgroundImage} />
-          <OnboardingContainer backgroundImage={backgroundImage}>
-            <StepContainer>
-              <div className="flex justify-center space-x-8 mt-2 md:mt-4">
-                {!isConnected && (
-                  <>
-                    <SpectateButton onClick={onSpectatorModeClick} />
-                    <OnboardingButton
-                      onClick={connectWallet}
-                      className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80"
-                    >
-                      <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
-                      Log In
-                    </OnboardingButton>
-                  </>
-                )}
-              </div>
-            </StepContainer>
-          </OnboardingContainer>
-        </>
-      );
-    }
+  if (isConnecting) {
+    return (
+      <>
+        <CountdownTimer backgroundImage={backgroundImage} />
+        <LoadingScreen backgroundImage={backgroundImage} />
+      </>
+    );
+  }
 
-    if (!controllerAccount && isConnected) {
-      // Connected but controllerAccount is not set yet
-      return <LoadingScreen backgroundImage={backgroundImage} />;
-    }
+  if (!isConnected && !isConnecting && !controllerAccount && !isSpectatorMode) {
+    return (
+      <>
+        <CountdownTimer backgroundImage={backgroundImage} />
+        <OnboardingContainer backgroundImage={backgroundImage}>
+          <StepContainer>
+            <div className="flex justify-center space-x-8 mt-2 md:mt-4">
+              {!isConnected && (
+                <>
+                  <SpectateButton onClick={onSpectatorModeClick} />
+                  <OnboardingButton
+                    onClick={connectWallet}
+                    className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80"
+                  >
+                    <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
+                    Log In
+                  </OnboardingButton>
+                </>
+              )}
+            </div>
+          </StepContainer>
+        </OnboardingContainer>
+      </>
+    );
+  }
+
+  if (!controllerAccount && isConnected) {
+    // Connected but controllerAccount is not set yet
+    return <LoadingScreen backgroundImage={backgroundImage} />;
   }
 
   // Once account is set, render the children
@@ -269,13 +228,7 @@ const DojoContextProvider = ({
         ...value,
         masterAccount,
         account: {
-          create,
-          list,
-          get,
-          select,
-          clear,
           account: accountToUse as Account | AccountInterface,
-          isDeploying,
           accountDisplay: displayAddress((accountToUse as Account | AccountInterface)?.address || ""),
         },
       }}
