@@ -5,18 +5,30 @@ import {
   RESOURCE_PRECISION,
   RESOURCE_RARITY,
   ResourcesIds,
-  type Config
+  type Config,
 } from "@bibliothecadao/eternum";
-import { getGameManifest, getSeasonAddresses, type Chain } from "../../common/utils";
+import { getGameManifest, getSeasonAddresses, type Chain } from "../utils/utils";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
-import { BUILDING_CAPACITY, BUILDING_POPULATION, BUILDING_RESOURCE_PRODUCED, NON_RESOURCE_BUILDING_COSTS, RESOURCE_BUILDING_COSTS } from "./utils/building";
-import { HYPERSTRUCTURE_CONSTRUCTION_COSTS, HYPERSTRUCTURE_CREATION_COSTS, HYPERSTRUCTURE_TOTAL_COSTS } from "./utils/hyperstructure";
+import {
+  BUILDING_CAPACITY,
+  BUILDING_POPULATION,
+  BUILDING_RESOURCE_PRODUCED,
+  NON_RESOURCE_BUILDING_COSTS,
+  RESOURCE_BUILDING_COSTS,
+} from "./utils/building";
+import {
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
+  HYPERSTRUCTURE_CREATION_COSTS,
+  HYPERSTRUCTURE_TOTAL_COSTS,
+} from "./utils/hyperstructure";
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS } from "./utils/levels";
 import { QUEST_RESOURCES } from "./utils/quest";
-import { RESOURCE_PRODUCTION_INPUT_RESOURCES, RESOURCE_PRODUCTION_OUTPUT_AMOUNTS, RESOURCES_WEIGHTS_GRAM } from "./utils/resource";
+import {
+  RESOURCE_PRODUCTION_INPUT_RESOURCES,
+  RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+  RESOURCES_WEIGHTS_GRAM,
+} from "./utils/resource";
 import { TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS } from "./utils/troop";
-
-
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 
@@ -29,7 +41,6 @@ export const HYPERSTRUCTURE_POINTS_PER_CYCLE = 7;
 export const HYPERSTRUCTURE_POINTS_ON_COMPLETION = 500_000;
 export const HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S = 17280; // 2 days
 export const HYPERSTRUCTURE_POINTS_FOR_WIN = 9_620_000;
-
 
 // ----- Stamina ----- //
 export const STAMINA_REFILL_PER_TICK = 20;

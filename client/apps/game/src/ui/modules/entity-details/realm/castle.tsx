@@ -17,7 +17,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 // todo: fix this
-import { REALM_MAX_LEVEL } from "../../../../../../../config/environments/utils/levels";
+import { REALM_MAX_LEVEL } from "../../../../../../../../config/environments/utils/levels";
 
 export const Castle = () => {
   const dojo = useDojo();

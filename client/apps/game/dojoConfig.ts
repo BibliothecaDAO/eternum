@@ -1,7 +1,8 @@
+import { Chain, getGameManifest } from "@/utils/utils";
 import { createDojoConfig } from "@dojoengine/core";
-import { Chain, getGameManifest } from "../../common/utils";
 import { env } from "./env";
-import { ETERNUM_CONFIG } from "./src/utils/config";
+import { ETERNUM_CONFIG } from "@/utils/config";
+
 const {
   VITE_PUBLIC_NODE_URL,
   VITE_PUBLIC_TORII,

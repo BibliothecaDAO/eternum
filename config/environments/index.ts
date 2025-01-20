@@ -1,22 +1,16 @@
+import type { Config, EternumProvider } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
-import { ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, QuestType, ResourcesIds } from "../constants";
-import { BuildingType } from "../constants/structures";
-import { EternumProvider } from "../provider";
-import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
-import { scaleResourceCostMinMax, scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
-import { EternumGlobalConfig as DefaultConfig, FELT_CENTER } from "../constants/global";
-
-interface Config {
+interface IConfig {
   account: Account;
   provider: EternumProvider;
-  config: EternumGlobalConfig;
+  config: Config;
 }
 
 export class EternumConfig {
-  public globalConfig: EternumGlobalConfig;
+  public globalConfig: Config;
 
-  constructor(config?: EternumGlobalConfig) {
+  constructor(config?: Config) {
     this.globalConfig = config || DefaultConfig;
   }
 

@@ -1,6 +1,7 @@
+import type { EternumProvider } from "../provider";
+import * as SystemProps from "../types";
 
-
-export function createSystemCalls({ provider }: { provider: SystemProps.EternumProvider }) {
+export function createSystemCalls({ provider }: { provider: EternumProvider }) {
   const uuid = async () => {
     return await provider.uuid();
   };

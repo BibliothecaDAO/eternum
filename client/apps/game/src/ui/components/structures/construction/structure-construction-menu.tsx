@@ -3,21 +3,19 @@ import { StructureCard } from "@/ui/components/structures/construction/structure
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { ETERNUM_CONFIG } from "@/utils/config";
+// import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   ID,
   RESOURCE_PRECISION,
-  ResourceTier,
   ResourcesIds,
   StructureType,
   configManager,
   getBalance,
-  scaleResourceCostMinMax,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import React from "react";
 
-const eternumConfig = await ETERNUM_CONFIG();
+// const eternumConfig = await ETERNUM_CONFIG();
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
   [StructureType.Bank]: STRUCTURE_IMAGE_PREFIX + "mine.png",
@@ -53,10 +51,11 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
 
         // if is hyperstructure, the construction cost are only fragments
         const isHyperstructure = building === StructureType["Hyperstructure"];
-        const cost = scaleResourceCostMinMax(
-          eternumConfig.hyperstructures.hyperstructureCreationCosts,
-          RESOURCE_PRECISION,
-        );
+        const cost = configManager.structureCosts[building];
+        // scaleResourceCostMinMax(
+        //   configManager.getHyperstructureConstructionCosts(),
+        //   RESOURCE_PRECISION,
+        // );
 
         const hasBalance = checkBalance(isHyperstructure ? cost : []);
 
@@ -98,9 +97,10 @@ const StructureInfo = ({
   const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   // if is hyperstructure, the construction cost are only fragments
   const isHyperstructure = structureId === StructureType["Hyperstructure"];
-  const cost = eternumConfig.hyperstructures.hyperstructureCreationCosts.filter(
-    (cost) => !isHyperstructure || cost.resource_tier === ResourceTier.Lords,
-  );
+  const cost = configManager.structureCosts[structureId];
+  // eternumConfig.hyperstructures.hyperstructureCreationCosts.filter(
+  //   (cost) => !isHyperstructure || cost.resource_tier === ResourceTier.Lords,
+  // );
 
   const perTick =
     structureId == StructureType.Hyperstructure
@@ -132,7 +132,8 @@ const StructureInfo = ({
               key={index}
               type="horizontal"
               resourceId={ResourcesIds.AncientFragment}
-              amount={cost[Number(resourceId)].min_amount * RESOURCE_PRECISION}
+              // amount={cost[Number(resourceId)].min_amount * RESOURCE_PRECISION}
+              amount={cost[Number(resourceId)].amount * RESOURCE_PRECISION}
               balance={balance.balance}
             />
           );

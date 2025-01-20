@@ -1,8 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { Account } from "starknet";
-import { manifestLocal, manifestSepolia } from "@bibliothecadao/assets";
-import { EternumProvider, ResourceWhitelistConfig } from "./provider";
+import { EternumProvider, ResourceWhitelistConfig } from "@bibliothecadao/eternum";
 
 const getResourceAddresses = () => {
   const network = process.env.STARKNET_NETWORK;

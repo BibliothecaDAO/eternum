@@ -1,4 +1,4 @@
-import { SeasonAddresses } from "@bibliothecadao/eternum";
+import type { SeasonAddresses } from "@bibliothecadao/eternum";
 
 /** Valid chain identifiers */
 export type Chain = "local" | "sepolia" | "mainnet" | "slot";
