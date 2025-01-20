@@ -8,7 +8,6 @@ import {
   type Resource,
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { env } from "../../../env";
 
 export { getEntityIdFromKeys };
 
@@ -235,29 +234,6 @@ export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
   return cost.map((item) => (item.resource === ResourcesIds.Lords ? { ...item, amount: item.amount * 0.1 } : item));
 };
 
-const getSeasonAddressesPath = () => {
-  return `/resource_addresses/${env.VITE_PUBLIC_CHAIN}/resource_addresses.json`;
-};
-
-const getJSONFile = async (filePath: string) => {
-  const response = await fetch(filePath);
-  const data = await response.json();
-  return data;
-};
-interface ResourceAddresses {
-  [key: string]: [number, string];
-}
-
-export const getSeasonAddresses = async (): Promise<ResourceAddresses> => {
-  try {
-    const path = getSeasonAddressesPath();
-    const data = await getJSONFile(path);
-    return data;
-  } catch (error) {
-    console.error("Error loading season addresses:", error);
-    return {};
-  }
-};
 
 export const normalizeDiacriticalMarks = (str: string) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
