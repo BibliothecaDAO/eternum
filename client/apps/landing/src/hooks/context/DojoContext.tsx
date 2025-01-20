@@ -1,6 +1,5 @@
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { displayAddress } from "@/lib/utils";
-import { useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
@@ -8,13 +7,7 @@ import { env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
 
 interface DojoAccount {
-  create: () => void;
-  list: () => any[];
-  get: (id: string) => any;
-  select: (id: string) => void;
   account: Account | AccountInterface | null;
-  isDeploying: boolean;
-  clear: () => void;
   accountDisplay: string;
 }
 
@@ -55,29 +48,11 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
 
   const { account } = useAccount();
 
-  if (env.VITE_PUBLIC_CHAIN === "local") {
-    const rpcProvider = new RpcProvider({
-      nodeUrl: env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
-    });
-
-    const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
-    const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
-    const accountClassHash = import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH;
-    const feeTokenAddress = import.meta.env.VITE_NETWORK_FEE_TOKEN;
-    const masterAccount = new Account(rpcProvider, masterAddress, privateKey);
-
-    return (
-      <BurnerProvider initOptions={{ masterAccount, accountClassHash, rpcProvider, feeTokenAddress }}>
-        <DojoContextProvider value={value}>{children}</DojoContextProvider>
-      </BurnerProvider>
-    );
-  } else {
-    return (
-      <DojoContextProvider value={value} controllerAccount={account}>
-        {children}
-      </DojoContextProvider>
-    );
-  }
+  return (
+    <DojoContextProvider value={value} controllerAccount={account}>
+      {children}
+    </DojoContextProvider>
+  );
 };
 
 export const useDojo = (): DojoResult => {
@@ -116,24 +91,7 @@ const DojoContextProvider = ({
     [rpcProvider, masterAddress, privateKey],
   );
 
-  const {
-    create,
-    list,
-    get,
-    account: burnerAccount,
-    select,
-    isDeploying,
-    clear,
-  } = useBurnerManager({
-    burnerManager: value.network.burnerManager,
-  });
-
-  // Determine which account to use based on environment
-  const isLocal = env.VITE_PUBLIC_CHAIN === "local";
-  const accountToUse = isLocal ? burnerAccount : controllerAccount;
-
-  const activeAccount = accountToUse || (isLocal ? masterAccount : null);
-  const displayAddr = activeAccount ? displayAddress(activeAccount.address) : displayAddress(masterAddress);
+  const displayAddr = controllerAccount ? displayAddress(controllerAccount.address) : displayAddress(masterAddress);
 
   return (
     <DojoContext.Provider
@@ -141,13 +99,7 @@ const DojoContextProvider = ({
         ...value,
         masterAccount,
         account: {
-          create,
-          list,
-          get,
-          select,
-          clear,
-          account: activeAccount,
-          isDeploying,
+          account: controllerAccount,
           accountDisplay: displayAddr,
         },
       }}
