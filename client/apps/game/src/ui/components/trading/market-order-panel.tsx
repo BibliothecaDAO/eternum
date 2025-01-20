@@ -27,7 +27,7 @@ import {
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
-export const ONE_MONTH = 2628000;
+const ONE_MONTH = 2628000;
 export const MarketResource = memo(
   ({
     entityId,
