@@ -206,6 +206,7 @@ mkdir -p $PID_DIR $LOG_DIR
 # Handle kill mode
 if [ "$KILL_MODE" = true ]; then
     if [ -f "$PID_FILE" ]; then
+        free_port
         stop_indexer
         echo -e "${GREEN}✔ Indexer stopped successfully${NC}"
     else
@@ -248,14 +249,13 @@ echo -e ""
 if [ "$RPC_URL" != "http://localhost:8080" ] && [ "$RPC_URL" != "http://127.0.0.1:8080" ]; then
     torii --world $WORLD_ADDRESS \
         --http.cors_origins "*" \
-        --rpc $RPC_URL \
         --db-dir $DB_DIR \
-        --config $TORII_CONFIG 2>&1 | setup_log_handling &
+        --config $TORII_CONFIG 2>&1 > >(setup_log_handling) &
 else
     torii --world $WORLD_ADDRESS \
         --http.cors_origins "*" \
         --db-dir $DB_DIR \
-        --config $TORII_CONFIG 2>&1 | setup_log_handling &
+        --config $TORII_CONFIG 2>&1 > >(setup_log_handling) &
 fi
 
 # Store the PID
