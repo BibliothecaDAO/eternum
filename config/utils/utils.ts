@@ -10,12 +10,9 @@ export type Chain = "local" | "sepolia" | "mainnet" | "slot";
  * @throws Error if addresses cannot be loaded
  */
 export async function getSeasonAddresses(chain: Chain): Promise<SeasonAddresses> {
-  const ADDRESSES_FILE = `../../contracts/common/addresses/${chain}.json`;
-  console.log({ ADDRESSES_FILE });
   try {
-    const seasonAddressesJson = (await import(/* @vite-ignore */ ADDRESSES_FILE)).default;
-
-    return seasonAddressesJson;
+    const seasonAddressesJson = await import(`../../contracts/common/addresses/${chain}.json`);
+    return seasonAddressesJson.default;
   } catch (error) {
     throw new Error(`Failed to load season addresses for chain ${chain}: ${error}`);
   }
@@ -36,10 +33,9 @@ interface GameManifest {
  * @throws Error if manifest cannot be loaded
  */
 export async function getGameManifest(chain: Chain): Promise<GameManifest> {
-  const MANIFEST_FILE = `../../contracts/game/manifest_${chain}.json`;
   try {
-    const manifest = (await import(/* @vite-ignore */ MANIFEST_FILE)).default;
-    return manifest;
+    const manifest = await import(`../../contracts/game/manifest_${chain}.json`);
+    return manifest.default;
   } catch (error) {
     throw new Error(`Failed to load game manifest for chain ${chain}: ${error}`);
   }

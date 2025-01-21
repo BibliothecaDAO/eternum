@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    optimizeDeps: {
+      include: ["../../contracts/game/manifest_*.json", "../../contracts/common/addresses/*.json"],
+    },
     publicDir: "../../common/public",
   };
 });
