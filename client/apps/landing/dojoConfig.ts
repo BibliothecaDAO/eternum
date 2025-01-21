@@ -13,7 +13,7 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-const manifest = getGameManifest(VITE_PUBLIC_CHAIN as Chain);
+const manifest = await getGameManifest(VITE_PUBLIC_CHAIN as Chain);
 
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,

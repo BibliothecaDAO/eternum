@@ -1,4 +1,4 @@
-import { Player, ResourcesIds } from "@bibliothecadao/eternum";
+import { PlayerInfo, ResourcesIds } from "@bibliothecadao/eternum";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
@@ -11,7 +11,7 @@ interface PlayerLeaderboardPanelProps {
   /** Title displayed at the top of the leaderboard */
   title?: string;
   /** Array of players to display in the leaderboard */
-  players: Player[];
+  players: PlayerInfo[];
   /** Whether to show player rankings */
   showRank?: boolean;
   /** Custom points suffix (e.g. "pts", "points", etc) */

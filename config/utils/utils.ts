@@ -13,7 +13,7 @@ export async function getSeasonAddresses(chain: Chain): Promise<SeasonAddresses>
   const ADDRESSES_FILE = `../../contracts/common/addresses/${chain}.json`;
   console.log({ ADDRESSES_FILE });
   try {
-    const seasonAddressesJson = (await import(ADDRESSES_FILE)).default;
+    const seasonAddressesJson = (await import(/* @vite-ignore */ ADDRESSES_FILE)).default;
 
     return seasonAddressesJson;
   } catch (error) {
@@ -38,7 +38,7 @@ interface GameManifest {
 export async function getGameManifest(chain: Chain): Promise<GameManifest> {
   const MANIFEST_FILE = `../../contracts/game/manifest_${chain}.json`;
   try {
-    const manifest = (await import(MANIFEST_FILE)).default;
+    const manifest = (await import(/* @vite-ignore */ MANIFEST_FILE)).default;
     return manifest;
   } catch (error) {
     throw new Error(`Failed to load game manifest for chain ${chain}: ${error}`);

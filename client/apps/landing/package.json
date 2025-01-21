@@ -13,7 +13,8 @@
     "format:check": "npx prettier --check . --root=..",
     "lint": "eslint .",
     "preview": "vite preview",
-    "storybook": "storybook dev -p 6006"
+    "storybook": "storybook dev -p 6006",
+    "vite-plugin-pwa": "^0.20.5"
   },
   "dependencies": {
     "@ark-project/core": "3.0.0-beta.1",

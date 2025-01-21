@@ -7,3 +7,17 @@ export type RealmMetadata = {
     value: string | number;
   }[];
 };
+
+export type SeasonPassMint = {
+  node: {
+    __typename?: "Token__Balance";
+    tokenMetadata: {
+      __typename: "ERC721__Token";
+      tokenId: string;
+      metadataDescription: string;
+      imagePath: string;
+      contractAddress: string;
+      metadata: string;
+    };
+  };
+} | null;
