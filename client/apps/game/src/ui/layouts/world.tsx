@@ -3,7 +3,7 @@ import {
   debouncedGetEntitiesFromTorii,
   debouncedGetMarketFromTorii,
   debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii,
-} from "@/dojo/debouncedQueries";
+} from "@/dojo/debounced-queries";
 import { useFetchBlockchainData } from "@/hooks/helpers/use-fetch";
 import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
 import { useUIStore } from "@/hooks/store/use-ui-store";
