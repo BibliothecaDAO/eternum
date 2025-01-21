@@ -1,7 +1,7 @@
 import { ContractAddress, getGuildFromPlayerAddress, ID, LeaderboardManager } from "@bibliothecadao/eternum";
+import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
 import { useCallback } from "react";
 import { create } from "zustand";
-import { useDojo, useNextBlockTimestamp } from "..";
 
 interface LeaderboardStore {
   playersByRank: [ContractAddress, number][];
