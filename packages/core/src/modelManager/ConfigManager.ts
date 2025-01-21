@@ -32,6 +32,9 @@ export class ClientConfigManager {
   public setDojo(components: ContractComponents, config: Config) {
     this.components = components;
     this.config = config;
+
+    console.log("setting dojo for config manager");
+
     this.initializeResourceInputs();
     this.initializeResourceOutput();
     this.initializeHyperstructureTotalCosts();
@@ -39,6 +42,8 @@ export class ClientConfigManager {
     this.initializeResourceBuildingCosts();
     this.initializeBuildingCosts();
     this.initializeStructureCosts();
+
+    console.log({ resourceBuildingCosts: this.resourceBuildingCosts });
   }
 
   public static instance(): ClientConfigManager {
@@ -87,7 +92,6 @@ export class ClientConfigManager {
 
     //   this.resourceInputs[Number(resourceType)] = inputs;
     // }
-    return ;
     this.resourceInputs = Object.entries(this.config.resources.resourceInputs).reduce(
       (acc, [key, inputs]) => {
         acc[Number(key)] = inputs.map((input: { resource: number; amount: number }) => ({
@@ -163,7 +167,6 @@ export class ClientConfigManager {
     //   }
     //   this.realmUpgradeCosts[index] = resources;
     // }
-    return;
     this.realmUpgradeCosts = Object.fromEntries(
       Object.entries(this.config.realmUpgradeCosts).map(([key, costs]) => [
         key,
@@ -200,7 +203,6 @@ export class ClientConfigManager {
     // this.resourceBuildingCosts[Number(resourceId)] = resourceCosts;
 
     // }
-    return;
     this.resourceBuildingCosts = Object.fromEntries(
       Object.entries(this.config.resources.resourceBuildingCosts).map(([key, costs]) => [
         key,
@@ -238,7 +240,6 @@ export class ClientConfigManager {
     //   }
     //   this.buildingCosts[Number(buildingType)] = resourceCosts;
     // }
-    return;
     this.buildingCosts = Object.fromEntries(
       Object.entries(this.config.buildings.buildingCosts).map(([key, costs]) => [
         key,

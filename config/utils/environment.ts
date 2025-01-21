@@ -1,31 +1,4 @@
-import type { Config } from "@bibliothecadao/eternum";
 export type NetworkType = "local" | "sepolia" | "slot" | "mainnet";
-/**
- * Loads the environment-specific configuration based on the network type.
- *
- * @async
- * @remarks
- * Configuration files must follow these naming conventions:
- * - Located in environments/ directory
- * - Named exactly as the NetworkType: local.ts, sepolia.ts, slot.ts, mainnet.ts
- * - Must export a default Config object
- *
- * @throws {Error} If the configuration file cannot be loaded
- *
- * @example
- * ```typescript
- * const config = await getConfigFromNetwork('local'); // loads from environments/local.ts
- * ```
- */
-export async function getConfigFromNetwork(chain: NetworkType): Promise<Config> {
-  const CONFIGURATION_FILE = `../environments/data/${chain}.json`;
-  try {
-    const configurationJson = (await import(CONFIGURATION_FILE)).default;
-    return configurationJson.configuration;
-  } catch (error) {
-    throw new Error(`Failed to load configuration for chain ${chain}: ${error}`);
-  }
-}
 
 export async function saveConfigJsonFromConfigTsFile(chain: NetworkType) {
   const fs = require("fs");
