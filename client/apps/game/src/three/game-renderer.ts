@@ -373,14 +373,14 @@ export default class GameRenderer {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(width, height);
-      this.labelRenderer.setSize(width, height);
+      this.labelRenderer?.setSize(width, height);
       this.hudScene.onWindowResize(width, height);
     } else {
       // Fallback to window size if container not found
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
-      this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+      this.labelRenderer?.setSize(window.innerWidth, window.innerHeight);
       this.hudScene.onWindowResize(window.innerWidth, window.innerHeight);
     }
   }

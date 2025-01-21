@@ -2,7 +2,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { useDojo } from "../";
 
-export const usePrizePool = (lordsAddress: string) => {
+export const usePrizePool = (lordsAddress: string | undefined) => {
   const [prizePool, setPrizePool] = useState<bigint>(0n);
 
   const {
@@ -10,6 +10,7 @@ export const usePrizePool = (lordsAddress: string) => {
   } = useDojo();
 
   const getBalance = async (address: string) => {
+    if (!lordsAddress) return;
     const balance = await account?.callContract({
       contractAddress: lordsAddress,
       entrypoint: "balance_of",
@@ -50,7 +51,7 @@ export const usePrizePool = (lordsAddress: string) => {
     const interval = setInterval(getPrizePool, 60000); // Every minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [lordsAddress]);
 
   return prizePool;
 };
