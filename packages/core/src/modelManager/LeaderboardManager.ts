@@ -2,8 +2,8 @@ import { ComponentValue, Entity, getComponentValue, HasValue, runQuery } from "@
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { RESOURCE_RARITY, ResourcesIds, WORLD_CONFIG_ID } from "../constants";
 import { ClientComponents } from "../dojo/createClientComponents";
-import { ContractAddress, GuildInfo, ID, Resource, TickIds } from "../types";
-import { divideByPrecision } from "../utils";
+import { ContractAddress, ID, Resource, TickIds } from "../types";
+import { divideByPrecision, getGuildFromPlayerAddress } from "../utils";
 import { configManager } from "./ConfigManager";
 
 export class LeaderboardManager {
@@ -42,10 +42,7 @@ export class LeaderboardManager {
     return { coOwners, timestamp: Number(currentEpoch.start_timestamp) };
   }
 
-  public getGuildsByRank(
-    currentTimestamp: number,
-    getGuildFromPlayerAddress: (playerAddress: ContractAddress) => GuildInfo | undefined,
-  ): [ID, number][] {
+  public getGuildsByRank(currentTimestamp: number): [ID, number][] {
     const pointsPerGuild = new Map<ID, number>();
 
     const season = getComponentValue(this.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
@@ -55,7 +52,7 @@ export class LeaderboardManager {
     this.getPoints(
       Array.from(finishedHyperstructuresEntityIds),
       currentTimestamp,
-      (address) => getGuildFromPlayerAddress(address)?.entityId,
+      (address) => getGuildFromPlayerAddress(address, this.components)?.entityId,
       pointsPerGuild,
     );
     return Array.from(pointsPerGuild).sort(([_A, guildA], [_B, guildB]) => guildB - guildA);

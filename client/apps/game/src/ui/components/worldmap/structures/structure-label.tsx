@@ -5,12 +5,13 @@ import { Headline } from "@/ui/elements/headline";
 import {
   ContractAddress,
   formatTime,
+  getGuildFromPlayerAddress,
   getStructure,
   getStructureImmunityTimer,
   isStructureImmune,
   Structure,
 } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds, useNextBlockTimestamp, useQuery } from "@bibliothecadao/react";
+import { useDojo, useNextBlockTimestamp, useQuery } from "@bibliothecadao/react";
 import { memo, useMemo } from "react";
 
 export const ImmunityTimer = ({ structure, className }: { structure: Structure; className?: string }) => {
@@ -41,7 +42,6 @@ export const StructureInfoLabel = memo(() => {
 
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
-  const { getGuildFromPlayerAddress } = useGuilds();
 
   const structure = useMemo(() => {
     return getStructure(
@@ -51,7 +51,7 @@ export const StructureInfoLabel = memo(() => {
     );
   }, [hoveredStructure]);
 
-  const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));
+  const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n), dojo.setup.components);
 
   return (
     <>

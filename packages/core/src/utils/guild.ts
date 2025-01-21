@@ -1,24 +1,17 @@
-import { ContractAddress, GuildMemberInfo, GuildWhitelistInfo, PlayerInfo } from "../types";
+import { ContractAddress, GuildMemberInfo, ID } from "../types";
 
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../dojo";
-import { GuildInfo, ID } from "../types";
-import { formatTime } from "./utils";
+import { GuildInfo } from "../types";
+import { getAddressName, getEntityName } from "./entities";
 
 export const formatGuilds = (
-  guildsRanked: [ID, number][],
   guilds: Entity[],
-  nextBlockTimestamp: number | undefined,
-  address: string,
-  getEntityName: (entityId: ID) => string,
+  playerAddress: ContractAddress,
   components: ClientComponents,
-  // Guild: Component<ClientComponents["Guild"]["schema"]>,
-  // Owner: Component<ClientComponents["Owner"]["schema"]>,
-  // GuildMember: Component<ClientComponents["GuildMember"]["schema"]>,
-  // CreateGuild: Component<ClientComponents["events"]["CreateGuild"]["schema"]>,
 ): GuildInfo[] => {
-  const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([ContractAddress(address)]));
+  const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([playerAddress]));
 
   return guilds
     .map((guild_entity_id) => {
@@ -26,135 +19,72 @@ export const formatGuilds = (
       if (!guild) return;
 
       const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(guild.entity_id)]));
-      const name = getEntityName(guild.entity_id);
-
-      const createGuildEvent = getComponentValue(
-        components.events.CreateGuild,
-        getEntityIdFromKeys([BigInt(guild.entity_id)]),
-      );
-
-      let timeSinceCreation = "";
-      if (createGuildEvent) {
-        const guildCreationTimestamp = createGuildEvent?.timestamp ?? 0;
-        timeSinceCreation = formatTime((nextBlockTimestamp || 0) - guildCreationTimestamp, undefined, true);
-      }
-
-      const rankIndex = guildsRanked.findIndex(([guildEntityId, _]) => guildEntityId === guild.entity_id);
-      const hasPoints = rankIndex !== -1;
+      const name = getEntityName(guild.entity_id, components);
 
       return {
         entityId: guild.entity_id,
         name,
-        isOwner: owner?.address === ContractAddress(address),
+        isOwner: owner?.address === playerAddress,
         memberCount: guild.member_count,
-        rank: hasPoints ? rankIndex + 1 : Number.MAX_SAFE_INTEGER,
-        points: hasPoints ? guildsRanked[rankIndex][1] : 0,
         isPublic: guild.is_public,
-        age: timeSinceCreation,
         isMember: guild.entity_id === guildMember?.guild_entity_id,
       };
     })
-    .filter((guild): guild is NonNullable<typeof guild> => guild !== undefined)
-    .sort((a, b) => a.rank - b.rank)
-    .map((guild, index) => ({
-      ...guild,
-      rank: guild.rank === Number.MAX_SAFE_INTEGER ? index + 1 : guild.rank,
-    }));
+    .filter((guild): guild is NonNullable<typeof guild> => guild !== undefined);
+};
+
+export const getGuild = (
+  guildEntityId: ID,
+  playerAddress: ContractAddress,
+  components: ClientComponents,
+): GuildInfo | undefined => {
+  return formatGuilds([getEntityIdFromKeys([BigInt(guildEntityId)])], playerAddress, components)[0];
 };
 
 export const formatGuildMembers = (
   guildMembers: Entity[],
-  players: PlayerInfo[],
-  nextBlockTimestamp: number | undefined,
-  userAddress: string,
-  getAddressName: (address: ContractAddress) => string | undefined,
+  playerAddress: ContractAddress,
   components: ClientComponents,
-  // GuildMember: Component<ClientComponents["GuildMember"]["schema"]>,
-  // Owner: Component<ClientComponents["Owner"]["schema"]>,
-  // JoinGuild: Component<ClientComponents["events"]["JoinGuild"]["schema"]>,
 ): GuildMemberInfo[] => {
   return guildMembers
     .map((entity) => {
       const guildMember = getComponentValue(components.GuildMember, entity);
       if (!guildMember) return;
 
-      const joinGuildEvent = getComponentValue(
-        components.events.JoinGuild,
-        getEntityIdFromKeys([BigInt(guildMember.guild_entity_id), ContractAddress(guildMember.address)]),
-      );
       const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(guildMember.guild_entity_id)]));
-      const addressName = getAddressName(guildMember.address);
-
-      const playerIndex = players.findIndex((player) => player.address === guildMember.address);
-      if (playerIndex === -1) return;
-
-      let timeSinceJoined = "";
-      if (joinGuildEvent) {
-        const joinGuildTimestamp = joinGuildEvent?.timestamp ?? 0;
-        timeSinceJoined = formatTime((nextBlockTimestamp || 0) - joinGuildTimestamp, undefined, true);
-      }
+      const addressName = getAddressName(guildMember.address, components);
 
       return {
         address: guildMember.address,
         guildEntityId: guildMember.guild_entity_id,
-        age: timeSinceJoined,
         name: addressName ? addressName : "Unknown",
-        rank: players[playerIndex].rank,
-        points: players[playerIndex].points,
-        isUser: guildMember.address === ContractAddress(userAddress),
+        isUser: guildMember.address === playerAddress,
         isGuildMaster: owner?.address === guildMember.address,
       };
     })
     .filter((guildMember): guildMember is NonNullable<typeof guildMember> => guildMember !== undefined);
 };
 
-export const formatGuildWhitelist = (
-  whitelist: Entity[],
-  players: PlayerInfo[],
+export const getGuildMember = (
+  playerAddress: ContractAddress,
   components: ClientComponents,
-  //   GuildWhitelist: Component<ClientComponents["GuildWhitelist"]["schema"]>,
-  getAddressName: (address: ContractAddress) => string | undefined,
-  getEntityName: (entityId: ID) => string,
-): GuildWhitelistInfo[] => {
-  return whitelist
-    .map((entity) => {
-      const guildWhitelist = getComponentValue(components.GuildWhitelist, entity);
-      if (!guildWhitelist) return;
-
-      const addressName = getAddressName(guildWhitelist.address);
-      const guildName = getEntityName(guildWhitelist.guild_entity_id);
-      const playerIndex = players.findIndex((player) => player.address === guildWhitelist.address);
-
-      return {
-        guildEntityId: guildWhitelist.guild_entity_id,
-        name: addressName ?? "Unknown",
-        guildName,
-        rank: players[playerIndex].rank,
-        points: players[playerIndex].points,
-        address: guildWhitelist.address,
-      };
-    })
-    .filter((guildWhitelist): guildWhitelist is NonNullable<typeof guildWhitelist> => guildWhitelist !== undefined);
+): GuildMemberInfo | undefined => {
+  return formatGuildMembers([getEntityIdFromKeys([playerAddress])], playerAddress, components)[0];
 };
 
-export const formatPlayerWhitelist = (
-  addressWhitelist: Entity[],
+export const getGuildFromPlayerAddress = (
+  playerAddress: ContractAddress,
   components: ClientComponents,
-  // GuildWhitelist: Component<ClientComponents["GuildWhitelist"]["schema"]>,
-  getEntityName: (entityId: ID) => string,
-): GuildWhitelistInfo[] => {
-  return addressWhitelist
-    .map((entity) => {
-      const addressWhitelist = getComponentValue(components.GuildWhitelist, entity);
-      if (!addressWhitelist) return;
+): GuildInfo | undefined => {
+  const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([playerAddress]));
+  if (!guildMember) return;
 
-      const guildName = getEntityName(addressWhitelist.guild_entity_id);
-      return {
-        guildEntityId: addressWhitelist.guild_entity_id,
-        guildName,
-      };
-    })
-    .filter(
-      (addressWhitelist): addressWhitelist is NonNullable<typeof addressWhitelist> => addressWhitelist !== undefined,
-    );
+  return getGuild(guildMember.guild_entity_id, playerAddress, components);
+};
+
+export const getGuildMembersFromPlayerAddress = (playerAddress: ContractAddress, components: ClientComponents) => {
+  const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([playerAddress]));
+  if (!guildMember) return;
+
+  return formatGuildMembers([getEntityIdFromKeys([BigInt(guildMember.guild_entity_id)])], playerAddress, components);
 };

@@ -2,20 +2,20 @@ import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
-import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
-import { ContractAddress, GuildWhitelistInfo } from "@bibliothecadao/eternum";
+import { sortItems } from "@/ui/utils/utils";
+import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 
 interface GuildInviteListProps {
-  invitedPlayers: GuildWhitelistInfo[];
+  invitedPlayers: GuildMemberInfo[];
   isLoading: boolean;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
 }
 
 interface InviteRowProps {
-  player: GuildWhitelistInfo;
+  player: GuildMemberInfo;
   isLoading: boolean;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
@@ -92,18 +92,15 @@ const GuildInviteListHeader = ({ activeSort, setActiveSort }: ListHeaderProps) =
 const InviteRow = ({ player, isLoading, viewPlayerInfo, removePlayerFromWhitelist }: InviteRowProps) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  console.log(player);
   return (
     <div className="flex grid grid-cols-5">
       <div
-        className="col-span-4 grid grid-cols-4 text-md hover:opacity-70 hover:border p-1 rounded-xl"
+        className="col-span-4 grid grid-cols-1 text-md hover:opacity-70 hover:border p-1 rounded-xl"
         onClick={() => {
           viewPlayerInfo(ContractAddress(player.address!));
         }}
       >
-        <p className="italic">{player.rank === Number.MAX_SAFE_INTEGER ? `☠️` : `#${player.rank}`}</p>
-        <p className="col-span-2 truncate font-bold h6">{player.name}</p>
-        <p className="text-center">{currencyIntlFormat(player.points!)}</p>
+        <p className="truncate font-bold h6">{player.name}</p>
       </div>
 
       <Trash

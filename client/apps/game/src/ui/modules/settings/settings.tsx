@@ -71,8 +71,7 @@ export const SettingsWindow = () => {
 
   const GRAPHICS_SETTING = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
 
-  const { useGuildQuery } = useGuilds();
-  const { guilds } = useGuildQuery(nextBlockTimestamp || 0);
+  const guilds = useGuilds();
   const [selectedGuilds, setSelectedGuilds] = useState<string[]>(() => {
     const savedGuilds = localStorage.getItem("WHITELIST");
     return savedGuilds ? savedGuilds.split(",") : [];

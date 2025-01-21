@@ -566,31 +566,16 @@ export type GuildInfo = {
   name: string;
   isOwner: boolean;
   memberCount: number;
-  rank?: number;
-  points?: number;
   isPublic?: boolean;
-  age?: string;
   isMember?: boolean;
 };
 
 export type GuildMemberInfo = {
   guildEntityId: ID;
   name: string;
-  rank: number;
-  points: number;
   address: ContractAddress;
-  age: string;
   isUser: boolean;
   isGuildMaster: boolean;
-};
-
-export type GuildWhitelistInfo = {
-  guildEntityId: ID;
-  guildName: string;
-  name?: string;
-  rank?: number;
-  points?: number;
-  address?: ContractAddress;
 };
 
 export enum ResourceMiningTypes {

@@ -2,8 +2,14 @@ import { PlayerCustom, PlayerList } from "@/ui/components/worldmap/players/playe
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { ContractAddress, getEntityName, PlayerInfo, toHexString } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds } from "@bibliothecadao/react";
+import {
+  ContractAddress,
+  getEntityName,
+  getGuildFromPlayerAddress,
+  PlayerInfo,
+  toHexString,
+} from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { KeyboardEvent, useMemo, useState } from "react";
 
@@ -24,8 +30,7 @@ export const PlayersPanel = ({
 
   const { Structure, Owner, GuildWhitelist } = components;
 
-  const { getGuildFromPlayerAddress } = useGuilds();
-  const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
+  const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), components);
 
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -50,7 +55,7 @@ export const PlayersPanel = ({
         })
         .filter((structure): structure is string => structure !== undefined);
 
-      const guild = getGuildFromPlayerAddress(player.address);
+      const guild = getGuildFromPlayerAddress(player.address, components);
 
       let isInvited = false;
       if (userGuild) {

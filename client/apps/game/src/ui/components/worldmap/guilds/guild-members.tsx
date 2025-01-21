@@ -1,14 +1,13 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { GuildInviteList } from "@/ui/components/worldmap/guilds/guild-invites-list";
 import { GuildMemberList } from "@/ui/components/worldmap/guilds/guild-member-list";
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { ContractAddress, ID, PlayerInfo } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds } from "@bibliothecadao/react";
-import { useCallback, useState } from "react";
+import { ContractAddress, getGuild, getGuildFromPlayerAddress, ID, PlayerInfo } from "@bibliothecadao/eternum";
+import { useDojo, useGuildMembers, useGuildWhitelist, usePlayerWhitelist } from "@bibliothecadao/react";
+import { useCallback, useMemo, useState } from "react";
 import { env } from "../../../../../env";
 
 interface GuildMembersProps {
@@ -29,20 +28,17 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
     account: { account },
   } = useDojo();
 
-  const { useGuildMembers, getGuildFromPlayerAddress, useGuildWhitelist, usePlayerWhitelist, getGuildFromEntityId } =
-    useGuilds();
-
-  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
-
-  const { guildMembers } = useGuildMembers(selectedGuildEntityId, players, nextBlockTimestamp || 0);
-  const invitedPlayers = useGuildWhitelist(selectedGuildEntityId, players);
+  const guildMembers = useGuildMembers(selectedGuildEntityId);
+  const invitedPlayers = useGuildWhitelist(selectedGuildEntityId);
   const userWhitelist = usePlayerWhitelist(ContractAddress(account.address));
-  const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
-  const selectedGuild = getGuildFromEntityId(
-    selectedGuildEntityId,
-    ContractAddress(account.address),
-    components,
-    nextBlockTimestamp || 0,
+  const userGuild = useMemo(
+    () => getGuildFromPlayerAddress(ContractAddress(account.address), components),
+    [account.address, components],
+  );
+
+  const selectedGuild = useMemo(
+    () => getGuild(selectedGuildEntityId, ContractAddress(account.address), components),
+    [selectedGuildEntityId, account.address, components],
   );
 
   const playerName = players.find((player) => player.address === ContractAddress(account?.address))?.name;
@@ -53,7 +49,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   const [viewGuildInvites, setViewGuildInvites] = useState(false);
 
   const userIsGuildMaster = userGuild?.isOwner ? userGuild.entityId === selectedGuildEntityId : false;
-  const userIsInvited = userWhitelist.find((list) => list.guildEntityId === selectedGuildEntityId);
+  const userIsInvited = userWhitelist.find((list) => list.entityId === selectedGuildEntityId);
 
   const removeGuildMember = useCallback((address: ContractAddress) => {
     setIsLoading(true);
@@ -181,7 +177,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
             {userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}
           </Button>
         )}
-        {!userGuild?.entityId && (!selectedGuild?.guild.isPublic ? userIsInvited : true) && (
+        {!userGuild?.entityId && (!selectedGuild?.isPublic ? userIsInvited : true) && (
           <Button
             className="w-full"
             isLoading={isLoading}
