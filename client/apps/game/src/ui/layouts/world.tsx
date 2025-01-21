@@ -1,9 +1,9 @@
 import {
-  debounceAddDonkeysAndArmiesSubscription,
-  debouncedAddMarketSubscription,
-  debouncedAddToSubscription,
-  debouncedAddToSubscriptionOneKey,
-} from "@/dojo/debounced-queries";
+  debouncedGetDonkeysAndArmiesFromTorii,
+  debouncedGetEntitiesFromTorii,
+  debouncedGetMarketFromTorii,
+  debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii,
+} from "@/dojo/debouncedQueries";
 import { useFetchBlockchainData } from "@/hooks/helpers/use-fetch";
 import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -144,17 +144,26 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
     setLoading(LoadingStateKey.SelectedStructure, true);
     const fetch = async () => {
-      console.log("AddToSubscriptionStart - 1");
       try {
+        let start = performance.now();
         await Promise.all([
-          debouncedAddToSubscription(
+          debouncedGetEntitiesFromTorii(
             dojo.network.toriiClient,
             dojo.network.contractComponents as any,
             [structureEntityId.toString()],
+            [
+              "s1_eternum-BuildingQuantityv2",
+              "s1_eternum-Hyperstructure",
+              "s1_eternum-Resource",
+              "s1_eternum-Building",
+              "s1_eternum-Quest",
+            ],
             [{ x: position?.x || 0, y: position?.y || 0 }],
             () => setLoading(LoadingStateKey.SelectedStructure, false),
           ),
         ]);
+        let end = performance.now();
+        console.log("[composite] structure query", end - start);
       } catch (error) {
         console.error("Fetch failed", error);
       }
@@ -169,32 +178,44 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       setLoading(LoadingStateKey.PlayerStructuresTwoKey, true);
       setLoading(LoadingStateKey.DonkeysAndArmies, true);
 
-      const isSyncing = true;
-
       try {
-        console.log("AddToSubscriptionStart - 2");
-        await Promise.all([
-          debouncedAddToSubscription(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            [...filteredStructures.map((structure) => structure.entity_id.toString())],
-            [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
-            () => setLoading(LoadingStateKey.PlayerStructuresOneKey, false),
-          ),
-          debouncedAddToSubscriptionOneKey(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            [...filteredStructures.map((structure) => structure.entity_id.toString())],
-            () => setLoading(LoadingStateKey.PlayerStructuresTwoKey, false),
-          ),
-        ]);
+        let start = performance.now();
+        await debouncedGetEntitiesFromTorii(
+          dojo.network.toriiClient,
+          dojo.network.contractComponents as any,
+          [...filteredStructures.map((structure) => structure.entity_id.toString())],
+          [
+            "s1_eternum-BuildingQuantityv2",
+            "s1_eternum-Hyperstructure",
+            "s1_eternum-Resource",
+            "s1_eternum-Building",
+            "s1_eternum-Quest",
+          ],
+          [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
+          () => setLoading(LoadingStateKey.PlayerStructuresOneKey, false),
+        );
+        let end = performance.now();
+        console.log("[composite] buildings query", end - start);
 
-        await debounceAddDonkeysAndArmiesSubscription(
+        start = performance.now();
+        await debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii(
+          dojo.network.toriiClient,
+          dojo.network.contractComponents as any,
+          [...filteredStructures.map((structure) => structure.entity_id.toString())],
+          () => setLoading(LoadingStateKey.PlayerStructuresTwoKey, false),
+        );
+        end = performance.now();
+        console.log("[composite] realm one key query", end - start);
+
+        start = performance.now();
+        await debouncedGetDonkeysAndArmiesFromTorii(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           [...playerStructures.map((structure) => structure.entity_id)],
           () => setLoading(LoadingStateKey.DonkeysAndArmies, false),
         );
+        end = performance.now();
+        console.log("[composite] donkeys and armies query", end - start);
       } catch (error) {
         console.error("Fetch failed", error);
       }
@@ -208,19 +229,28 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       try {
         setLoading(LoadingStateKey.Market, true);
         setLoading(LoadingStateKey.Bank, true);
-        console.log("AddToSubscriptionStart - 3");
-        await Promise.all([
-          debouncedAddToSubscription(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            [ADMIN_BANK_ENTITY_ID.toString()],
-            [],
-            () => setLoading(LoadingStateKey.Bank, false),
-          ),
-          debouncedAddMarketSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
-            setLoading(LoadingStateKey.Market, false),
-          ),
-        ]);
+
+        let start = performance.now();
+        await debouncedGetEntitiesFromTorii(
+          dojo.network.toriiClient,
+          dojo.network.contractComponents as any,
+          [ADMIN_BANK_ENTITY_ID.toString()],
+          [
+            "s1_eternum-BuildingQuantityv2",
+            "s1_eternum-Hyperstructure",
+            "s1_eternum-Resource",
+            "s1_eternum-Building",
+            "s1_eternum-Quest",
+          ],
+          undefined,
+          () => setLoading(LoadingStateKey.Bank, false),
+        );
+        let end = performance.now();
+        console.log("[keys] bank query", end - start);
+
+        await debouncedGetMarketFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
+          setLoading(LoadingStateKey.Market, false),
+        );
       } catch (error) {
         console.error("Fetch failed", error);
       } finally {
@@ -232,27 +262,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
     fetch();
   }, []);
-
-  // useEffect(() => {
-  //   const fetch = async () => {
-  //     try {
-  //       setLoading(LoadingStateKey.Hyperstructure, true);
-  //       console.log("AddToSubscriptionStart - 4");
-  //       await Promise.all([
-  //         debouncedAddHyperstructureSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
-  //           setLoading(LoadingStateKey.Hyperstructure, false),
-  //         ),
-  //       ]);
-  //     } catch (error) {
-  //       console.error("Fetch failed", error);
-  //     } finally {
-  //       // Ensure loading states are reset even if there's an error
-  //       setLoading(LoadingStateKey.Hyperstructure, false);
-  //     }
-  //   };
-
-  //   fetch();
-  // }, []);
 
   const openPopup = useUIStore((state) => state.openPopup);
   useEffect(() => {

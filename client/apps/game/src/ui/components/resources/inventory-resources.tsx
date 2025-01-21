@@ -1,9 +1,9 @@
-import { debouncedAddToSubscription } from "@/dojo/debounced-queries";
+import { debouncedGetEntitiesFromTorii } from "@/dojo/debouncedQueries";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourceCost } from "@/ui/elements/resource-cost";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { getBalance, getInventoryResources, ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 const CACHE_KEY = "inventory-resources-sync";
@@ -59,7 +59,7 @@ export const InventoryResources = ({
       setIsSyncing(true);
       try {
         console.log("AddToSubscriptionStart - 4");
-        await debouncedAddToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, [
+        await debouncedGetEntitiesFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, [
           entityId.toString(),
         ]);
         localStorage.setItem(cacheKey, now.toString());
