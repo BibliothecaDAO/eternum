@@ -6,7 +6,6 @@ on:
       - "contracts/**"
       - "client/**"
       - "**/manifest.json"
-      - "discord-bot/**"
       - "config/**"
       - ".github/**"
       - "pnpm-lock.yaml"
