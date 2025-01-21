@@ -488,28 +488,16 @@ importers:
       '@starknet-react/core':
         specifier: '*'
         version: 3.7.1(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(typescript@5.7.3)
-      lodash:
-        specifier: ^4
-        version: 4.17.21
       react:
         specifier: ^18
         version: 18.3.1
       starknet:
         specifier: ^6
         version: 6.11.0(encoding@0.1.13)
-      use-sound:
-        specifier: ^4.0.1
-        version: 4.0.3(react@18.3.1)
       wouter:
         specifier: ^2.12.1
         version: 2.12.1(react@18.3.1)
-      zustand:
-        specifier: ^4.5.2
-        version: 4.5.6(@types/react@18.3.18)(react@18.3.1)
     devDependencies:
-      '@types/lodash':
-        specifier: ^4
-        version: 4.17.14
       '@types/react':
         specifier: ^18
         version: 18.3.18
