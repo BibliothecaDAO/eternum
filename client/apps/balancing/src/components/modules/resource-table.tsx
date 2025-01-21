@@ -1,13 +1,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-    BUILDING_COSTS_SCALED,
-    RESOURCE_BUILDING_COSTS,
-    RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED,
-    RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
-    RESOURCE_RARITY,
-    RESOURCE_TIERS,
-    Resources,
-    WEIGHTS_GRAM,
+  BUILDING_COSTS_SCALED,
+  RESOURCE_BUILDING_COSTS,
+  RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED,
+  RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+  RESOURCE_RARITY,
+  RESOURCE_TIERS,
+  Resources,
+  WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { Badge } from "../ui/badge";
 

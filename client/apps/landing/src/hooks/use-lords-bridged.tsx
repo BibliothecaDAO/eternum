@@ -17,7 +17,9 @@ export const useLordsBridgeBalance = () => {
   useEffect(() => {
     const initManifest = async () => {
       const manifest = await getGameManifest(meta.env.VITE_PUBLIC_CHAIN);
-      const bridge = manifest.contracts?.find((contract: { tag: string }) => contract.tag === "s1_eternum-resource_bridge_systems");
+      const bridge = manifest.contracts?.find(
+        (contract: { tag: string }) => contract.tag === "s1_eternum-resource_bridge_systems",
+      );
       setBridgeContract(bridge);
     };
     initManifest();

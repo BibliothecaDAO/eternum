@@ -149,7 +149,9 @@ export const BridgeIn = () => {
           .filter(([id, amount]) => amount > 0)
           .map(async ([id, amount]) => {
             const tokenAddress =
-              resourceAddresses[ResourcesIds[id as keyof typeof ResourcesIds].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
+              resourceAddresses[
+                ResourcesIds[id as keyof typeof ResourcesIds].toLocaleUpperCase() as keyof typeof resourceAddresses
+              ][1];
             return {
               tokenAddress: tokenAddress as string,
               amount: BigInt(amount * 10 ** 18),

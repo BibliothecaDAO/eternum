@@ -43,9 +43,10 @@ interface SeasonPassButtonProps {
 const SEASON_PASS_MARKET_URL = "0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80";
 
 const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
-  const mintUrl = env.VITE_PUBLIC_CHAIN === "mainnet"
-    ? "https://empire.realms.world/season-passes"
-    : "https://empire-next.realms.world/season-passes";
+  const mintUrl =
+    env.VITE_PUBLIC_CHAIN === "mainnet"
+      ? "https://empire.realms.world/season-passes"
+      : "https://empire-next.realms.world/season-passes";
 
   return (
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
@@ -188,8 +189,6 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
 
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
   const realms = usePlayerOwnedRealms();
-
-
 
   useEffect(() => {
     const fetchSeasonPasses = async () => {

@@ -1,4 +1,3 @@
-
 export enum QuestType {
   Settle = 1,
   BuildFood,

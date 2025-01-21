@@ -1,2 +1,1 @@
-
 export const ADMIN_BANK_ENTITY_ID = 999999998n;

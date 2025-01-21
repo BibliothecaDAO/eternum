@@ -341,7 +341,6 @@ export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Fish]: 1,
 };
 
-
 export enum ResourceTier {
   Lords = 1,
   Military,

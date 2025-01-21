@@ -25,3 +25,4 @@ yarn.lock
 
 dev-dist
 .env
+.env.local

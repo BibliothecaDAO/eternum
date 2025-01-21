@@ -131,27 +131,17 @@ export const getDeployedAddress = async (contractName) => {
   }
 };
 
-
 export const saveResourceAddressesToFile = async (resourceAddresses) => {
   try {
-    const folderPath = path.join(
-      __dirname,
-      "..",
-      "..",
-      "..",
-      "..",
-      "..",
-      "common",
-      "addresses",
-    );
+    const folderPath = path.join(__dirname, "..", "..", "..", "..", "..", "common", "addresses");
     await mkdirAsync(folderPath, { recursive: true });
 
     const fileName = path.join(folderPath, `${process.env.STARKNET_NETWORK}.json`);
-    
+
     // Try to read existing data
     let existingData = {};
     try {
-      const fileContent = await readFileAsync(fileName, 'utf8');
+      const fileContent = await readFileAsync(fileName, "utf8");
       existingData = JSON.parse(fileContent);
     } catch (error) {
       // File doesn't exist or is invalid JSON, start with empty object
@@ -160,9 +150,8 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
     // Merge new resources with existing data
     const updatedData = {
       ...existingData,
-      resources: resourceAddresses
+      resources: resourceAddresses,
     };
-    
 
     const jsonString = customStringify(updatedData);
 
@@ -175,34 +164,21 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
 };
 
 export const getResourceAddressesFromFile = async () => {
-  const folderPath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "..",
-    "..",
-    "..",
-    "common",
-    "addresses",
-  );
+  const folderPath = path.join(__dirname, "..", "..", "..", "..", "..", "common", "addresses");
   const fileName = path.join(folderPath, `${process.env.STARKNET_NETWORK}.json`);
   const data = await readFileAsync(fileName, "utf8");
   return JSON.parse(data).resources;
 };
 
+// Custom replacer function to keep arrays on one line
+const customStringify = (obj) => {
+  // First convert to JSON string with standard formatting
+  const initialString = JSON.stringify(obj, null, 2);
 
-  // Custom replacer function to keep arrays on one line
-  const customStringify = (obj) => {
-    // First convert to JSON string with standard formatting
-    const initialString = JSON.stringify(obj, null, 2);
-    
-    // Replace arrays with single-line version, handling multiple lines and whitespace
-    return initialString.replace(
-      /\[\n\s+(.+?)\n\s+\]/gs,
-      (match, content) => {
-        // Remove newlines and extra spaces between array elements
-        const singleLine = content.replace(/\n\s+/g, '');
-        return `[${singleLine}]`;
-      }
-    );
-  };
+  // Replace arrays with single-line version, handling multiple lines and whitespace
+  return initialString.replace(/\[\n\s+(.+?)\n\s+\]/gs, (match, content) => {
+    // Remove newlines and extra spaces between array elements
+    const singleLine = content.replace(/\n\s+/g, "");
+    return `[${singleLine}]`;
+  });
+};

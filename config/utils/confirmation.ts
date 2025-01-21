@@ -4,19 +4,19 @@
  * @throws {Error} If deployment is cancelled by user
  */
 export function confirmNonLocalDeployment(chain: string): void {
-    if (chain === "local") return;
-  
-    // Color mapping for different chains
-    const chainColors: Record<string, string> = {
-        mainnet: "31", // Red
-        sepolia: "34", // Blue
-        slot: "35",  // Magenta
-        default: "33" // Yellow
-    };
+  if (chain === "local") return;
 
-    const chainColor = chainColors[chain.toLowerCase()] || chainColors.default;
-  
-    const warningBox = `
+  // Color mapping for different chains
+  const chainColors: Record<string, string> = {
+    mainnet: "31", // Red
+    sepolia: "34", // Blue
+    slot: "35", // Magenta
+    default: "33", // Yellow
+  };
+
+  const chainColor = chainColors[chain.toLowerCase()] || chainColors.default;
+
+  const warningBox = `
     \x1b[1;33m╔════════════════════ WARNING ════════════════════╗
     ║                                                 ║
     ║          SETTING CONFIGURATIONS FOR:            ║
@@ -27,12 +27,12 @@ export function confirmNonLocalDeployment(chain: string): void {
     ║                                                 ║
     ╚═================================================╝\x1b[0m
     `;
-  
-    const userConfirmation = prompt(warningBox);
 
-    const validResponses = ["yes", "y"];
-    if (!validResponses.includes(userConfirmation?.toLowerCase() ?? "")) {
-      console.log("\x1b[1;31m❌ Deployment cancelled by user\x1b[0m");
-      process.exit(0);
-    }
+  const userConfirmation = prompt(warningBox);
+
+  const validResponses = ["yes", "y"];
+  if (!validResponses.includes(userConfirmation?.toLowerCase() ?? "")) {
+    console.log("\x1b[1;31m❌ Deployment cancelled by user\x1b[0m");
+    process.exit(0);
+  }
 }

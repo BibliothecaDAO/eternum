@@ -1,9 +1,4 @@
-import {
-    ResourcesIds,
-    TROOPS_FOOD_CONSUMPTION,
-    TROOPS_STAMINAS,
-    findResourceById
-} from "@bibliothecadao/eternum";
+import { ResourcesIds, TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS, findResourceById } from "@bibliothecadao/eternum";
 import { formatAmount, formatNumberWithSpaces } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
 

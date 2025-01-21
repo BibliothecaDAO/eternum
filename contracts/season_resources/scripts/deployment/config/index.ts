@@ -1,4 +1,4 @@
-import { manifestLocal, manifestMainnet, manifestSepolia, } from "@bibliothecadao/assets";
+import { manifestLocal, manifestMainnet, manifestSepolia } from "@bibliothecadao/assets";
 import { EternumProvider, ResourceWhitelistConfig } from "@bibliothecadao/eternum";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -46,18 +46,18 @@ export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
 
 //////////////////////////////////////////////////////////////
 
-const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_NODE_URL } =
-  process.env;
+const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_NODE_URL } = process.env;
 if (!VITE_PUBLIC_MASTER_ADDRESS || !VITE_PUBLIC_MASTER_PRIVATE_KEY || !VITE_PUBLIC_NODE_URL) {
   throw new Error("VITE_PUBLIC_MASTER_ADDRESS is required");
 }
-const manifest = process.env.VITE_PUBLIC_CHAIN === "mainnet" 
-  ? manifestMainnet 
-  : process.env.VITE_PUBLIC_CHAIN === "sepolia" 
-    ? manifestSepolia 
-    : process.env.VITE_PUBLIC_CHAIN === "local"
-      ? manifestLocal
-      : manifestLocal;
+const manifest =
+  process.env.VITE_PUBLIC_CHAIN === "mainnet"
+    ? manifestMainnet
+    : process.env.VITE_PUBLIC_CHAIN === "sepolia"
+      ? manifestSepolia
+      : process.env.VITE_PUBLIC_CHAIN === "local"
+        ? manifestLocal
+        : manifestLocal;
 
 if (process.env.VITE_PUBLIC_CHAIN !== "local") {
   const userConfirmation = prompt(

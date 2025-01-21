@@ -1,7 +1,7 @@
 /**
  * Sepolia testnet environment configuration for Eternum.
  * Extends the common configuration with testnet-specific settings.
- * 
+ *
  * @module SepoliaEnvironment
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */

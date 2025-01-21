@@ -15,7 +15,7 @@ console.log("\n");
 
 const toHex = (address) => {
   return "0x" + address.toString(16);
-}
+};
 
 // Contract address initialization
 const presetRealmsAddress = BigInt(process.env.SEASON_PASS_PRESET_REALMS_ADDRESS);
@@ -43,27 +43,17 @@ if (!presetLordsAddress || BigInt(presetLordsAddress) === BigInt(0)) {
 }
 
 // Deploy Season Pass contract
-const seasonPassAddress = await deploySeasonPassContract(
-  BigInt(realmsContractAddress),
-  BigInt(lordsContractAddress)
-);
+const seasonPassAddress = await deploySeasonPassContract(BigInt(realmsContractAddress), BigInt(lordsContractAddress));
 console.log(`\n\n 🎫 Deployed Season Pass contract: ${toHex(seasonPassAddress)}`);
 
 // Set Season Pass address in Lords contract if using test contract
 if (!presetLordsAddress || BigInt(presetLordsAddress) === BigInt(0)) {
-  await setSeasonPassAddressTestLordsContract(
-    BigInt(lordsContractAddress), 
-    BigInt(seasonPassAddress)
-  );
+  await setSeasonPassAddressTestLordsContract(BigInt(lordsContractAddress), BigInt(seasonPassAddress));
   console.log(`\n\n ✔ Set Season Pass address in Lords contract \n\n`);
 }
 
 // Save addresses
-await saveRelevantAddressesToCommonFolder(
-  seasonPassAddress, 
-  realmsContractAddress, 
-  lordsContractAddress
-);
+await saveRelevantAddressesToCommonFolder(seasonPassAddress, realmsContractAddress, lordsContractAddress);
 
 console.log("\n\n");
 console.log(`╔════════════════════════════════════════════════════════════════════════════════════════════╗`.yellow);
@@ -71,5 +61,7 @@ console.log("    Season Pass Contract: ".yellow + toHex(seasonPassAddress).magen
 console.log("    Lords Contract: ".yellow + toHex(lordsContractAddress).magenta);
 console.log("    Realms Contract: ".yellow + toHex(realmsContractAddress).magenta);
 console.log(`╚════════════════════════════════════════════════════════════════════════════════════════════╝`.yellow);
-console.log(`\n\n 💾 Saved contract addresses to common folder (contracts/common/addresses/${process.env.STARKNET_NETWORK}.json)`);
+console.log(
+  `\n\n 💾 Saved contract addresses to common folder (contracts/common/addresses/${process.env.STARKNET_NETWORK}.json)`,
+);
 console.log("\n\n\n");

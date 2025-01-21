@@ -3,7 +3,6 @@ export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;
 export const BUILDING_CATEGORY_POPULATION_CONFIG_ID = 999999990n;
 export const POPULATION_CONFIG_ID = 999999989n;
 
-
 // ----- Entity Types ----- //
 export const DONKEY_ENTITY_TYPE = 256;
 export const REALM_ENTITY_TYPE = 257;

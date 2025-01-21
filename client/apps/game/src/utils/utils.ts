@@ -21,32 +21,30 @@ export function getSeasonAddresses(chain: Chain): SeasonAddresses {
     local: seasonAddressesLocal,
     sepolia: seasonAddressesSepolia,
     mainnet: seasonAddressesMainnet,
-    slot: seasonAddressesLocal
+    slot: seasonAddressesLocal,
   };
 
-  const addresses = addressesMap[chain] as { 
-    seasonPass?: string, 
-    realms?: string, 
-    lords?: string, 
-    resources?: Record<string, string | number[]> 
+  const addresses = addressesMap[chain] as {
+    seasonPass?: string;
+    realms?: string;
+    lords?: string;
+    resources?: Record<string, string | number[]>;
   };
-  
+
   if (!addresses?.resources) {
     throw new Error(`Invalid addresses for chain: ${chain}`);
   }
 
   return {
-    seasonPass: addresses.seasonPass ?? '',
-    realms: addresses.realms ?? '',
-    lords: addresses.lords ?? '',
+    seasonPass: addresses.seasonPass ?? "",
+    realms: addresses.realms ?? "",
+    lords: addresses.lords ?? "",
     resources: Object.fromEntries(
       Object.entries(addresses.resources).map(([key, value]) => [
-        key, 
-        Array.isArray(value) 
-          ? value as [number, string] 
-          : [0, value as string]
-      ])
-    )
+        key,
+        Array.isArray(value) ? (value as [number, string]) : [0, value as string],
+      ]),
+    ),
   } as SeasonAddresses;
 }
 

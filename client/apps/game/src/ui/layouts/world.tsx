@@ -339,11 +339,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         </div>
 
         <Redirect to="/" />
-        <Leva
-          hidden={!env.VITE_PUBLIC_GRAPHICS_DEV}
-          collapsed
-          titleBar={{ position: { x: 0, y: 50 } }}
-        />
+        <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
         <Tooltip />
         <VersionDisplay />
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />

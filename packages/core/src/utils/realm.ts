@@ -6,7 +6,7 @@ import { ClientComponents } from "../dojo";
 import { configManager } from "../modelManager/ConfigManager";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
 import { packResources } from "./packed-data";
-import realmsJson from '../data/realms.json';
+import realmsJson from "../data/realms.json";
 
 export const getRealmWithPosition = (entityId: ID, components: ClientComponents) => {
   const { Realm, Owner, Position } = components;

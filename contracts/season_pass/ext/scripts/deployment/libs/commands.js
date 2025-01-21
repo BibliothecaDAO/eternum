@@ -8,7 +8,7 @@ import { getAccount, getNetwork } from "./network.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const TARGET_PATH = path.join(__dirname, "..", "..", "..","..", "target", "release");
+const TARGET_PATH = path.join(__dirname, "..", "..", "..", "..", "target", "release");
 
 export const deploySeasonPassContract = async (realmsContractAddress, lordsContractAddress) => {
   ///////////////////////////////////////////
@@ -94,8 +94,6 @@ export const setSeasonPassAddressTestLordsContract = async (lordsContractAddress
   );
 };
 
-
-
 const mkdirAsync = promisify(fs.mkdir);
 const writeFileAsync = promisify(fs.writeFile);
 export const saveRelevantAddressesToCommonFolder = async (seasonPassAddress, realmsAddress, lordsAddress) => {
@@ -108,7 +106,7 @@ export const saveRelevantAddressesToCommonFolder = async (seasonPassAddress, rea
     // Try to read existing data
     let existingData = {};
     try {
-      const fileContent = await fs.promises.readFile(fileName, 'utf8');
+      const fileContent = await fs.promises.readFile(fileName, "utf8");
       existingData = JSON.parse(fileContent);
     } catch (error) {
       // File doesn't exist or is invalid JSON, start with empty object
@@ -130,7 +128,7 @@ export const saveRelevantAddressesToCommonFolder = async (seasonPassAddress, rea
         }
         return value;
       },
-      2
+      2,
     );
 
     await writeFileAsync(fileName, jsonString);

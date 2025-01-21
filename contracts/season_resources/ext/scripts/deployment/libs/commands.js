@@ -3,36 +3,31 @@ import * as fs from "fs";
 import * as path from "path";
 import { shortString } from "starknet";
 import { fileURLToPath } from "url";
-import {
-    declare,
-    getContractPath,
-    getResourceAddressesFromFile,
-    saveResourceAddressesToFile
-} from "./common.js";
+import { declare, getContractPath, getResourceAddressesFromFile, saveResourceAddressesToFile } from "./common.js";
 import { getAccount, getNetwork } from "./network.js";
 import resourceNames from "./resources.json";
 const gameManifest = await import(`../../../../../game/manifest_${process.env.STARKNET_NETWORK}.json`, {
-  assert: { type: "json" }
-}).then(module => module.default);
+  assert: { type: "json" },
+}).then((module) => module.default);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TARGET_PATH = path.join(__dirname, "..", "..", "..", "..", "target", "release");
 
 const colors = {
-  title: '\x1b[1m\x1b[38;5;105m',    // Bold Purple
-  success: '\x1b[38;5;83m',          // Bright Green
-  info: '\x1b[38;5;39m',             // Bright Blue
-  hash: '\x1b[38;5;214m',            // Orange
-  address: '\x1b[38;5;147m',         // Light Purple
-  reset: '\x1b[0m'                   // Reset
+  title: "\x1b[1m\x1b[38;5;105m", // Bold Purple
+  success: "\x1b[38;5;83m", // Bright Green
+  info: "\x1b[38;5;39m", // Bright Blue
+  hash: "\x1b[38;5;214m", // Orange
+  address: "\x1b[38;5;147m", // Light Purple
+  reset: "\x1b[0m", // Reset
 };
 
 export const getJSONFile = (filePath) => {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
   } catch (error) {
-    if (error.code === 'ENOENT') {
+    if (error.code === "ENOENT") {
       // If file doesn't exist, create it with empty object
       fs.writeFileSync(filePath, JSON.stringify({}, null, 2));
       return {};
@@ -42,16 +37,7 @@ export const getJSONFile = (filePath) => {
 };
 
 export const getSeasonAddressesPath = () => {
-  const addressPath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "..",
-    "..",
-    "..",
-    "common",
-    "addresses",
-  );
+  const addressPath = path.join(__dirname, "..", "..", "..", "..", "..", "common", "addresses");
   return path.join(addressPath, `${process.env.STARKNET_NETWORK}.json`);
 };
 
@@ -76,35 +62,47 @@ const LORDS_RESOURCE_ID = 31;
 const displayResourceTable = (addresses) => {
   const TABLE_WIDTH = {
     name: 15,
-    id: 7,     // Increased to allow for padding
-    address: 42
+    id: 7, // Increased to allow for padding
+    address: 42,
   };
 
   // Top border with title
   console.log(`${colors.title}📍 Deployed Resource Addresses${colors.reset}`);
-  
+
   // Header row with proper spacing
-  console.log(`${colors.title}╔══════════════════╤════════╤════════════════════════════════════════════════════════════════════╗${colors.reset}`);
-  console.log(`${colors.title}║ Resource Name    │   ID   │  Address                                                           ║${colors.reset}`);
-  console.log(`${colors.title}╠══════════════════╪════════╪════════════════════════════════════════════════════════════════════╣${colors.reset}`);
-  
+  console.log(
+    `${colors.title}╔══════════════════╤════════╤════════════════════════════════════════════════════════════════════╗${colors.reset}`,
+  );
+  console.log(
+    `${colors.title}║ Resource Name    │   ID   │  Address                                                           ║${colors.reset}`,
+  );
+  console.log(
+    `${colors.title}╠══════════════════╪════════╪════════════════════════════════════════════════════════════════════╣${colors.reset}`,
+  );
+
   // Content rows with proper alignment
   Object.entries(addresses).forEach(([name, [id, address]], index, array) => {
     // Center-align the ID column
-    const paddedId = String(id).padStart(Math.floor((TABLE_WIDTH.id + String(id).length) / 2)).padEnd(TABLE_WIDTH.id);
-    
+    const paddedId = String(id)
+      .padStart(Math.floor((TABLE_WIDTH.id + String(id).length) / 2))
+      .padEnd(TABLE_WIDTH.id);
+
     console.log(
-      `${colors.title}║${colors.reset}${colors.info}${name.padEnd(TABLE_WIDTH.name + 2)}${colors.reset}${colors.title} │${colors.reset} ${colors.address}${paddedId}${colors.reset}${colors.title}│${colors.reset} ${colors.address}${address.padEnd(TABLE_WIDTH.address)}${colors.reset}${colors.title}  ║${colors.reset}`
+      `${colors.title}║${colors.reset}${colors.info}${name.padEnd(TABLE_WIDTH.name + 2)}${colors.reset}${colors.title} │${colors.reset} ${colors.address}${paddedId}${colors.reset}${colors.title}│${colors.reset} ${colors.address}${address.padEnd(TABLE_WIDTH.address)}${colors.reset}${colors.title}  ║${colors.reset}`,
     );
-    
+
     // Separator between rows (except last)
     if (index !== array.length - 1) {
-      console.log(`${colors.title}╟────────────────────────────────────────────────────────────────────────────────────────────────╢${colors.reset}`);
+      console.log(
+        `${colors.title}╟────────────────────────────────────────────────────────────────────────────────────────────────╢${colors.reset}`,
+      );
     }
   });
-  
+
   // Bottom border
-  console.log(`${colors.title}╚════════════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`);
+  console.log(
+    `${colors.title}╚════════════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`,
+  );
 };
 export const deployAllSeasonResourceContract = async () => {
   ///////////////////////////////////////////
@@ -123,10 +121,18 @@ export const deployAllSeasonResourceContract = async () => {
   let SEASON_RESOURCE_UPGRADER = BigInt(process.env.SEASON_RESOURCE_ADMIN);
 
   console.log(`\n`);
-  console.log(`${colors.info}╔════════════════════════════════════════════════════════════════════════════════════════${colors.reset}`);
-  console.log(`${colors.info}  Default Admin${colors.reset}    : ${colors.address}0x${SEASON_RESOURCE_DEFAULT_ADMIN.toString(16)}${colors.reset}`);
-  console.log(`${colors.info}  Upgrader Admin${colors.reset}   : ${colors.address}0x${SEASON_RESOURCE_UPGRADER.toString(16)}${colors.reset}`);
-  console.log(`${colors.info}═════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`);
+  console.log(
+    `${colors.info}╔════════════════════════════════════════════════════════════════════════════════════════${colors.reset}`,
+  );
+  console.log(
+    `${colors.info}  Default Admin${colors.reset}    : ${colors.address}0x${SEASON_RESOURCE_DEFAULT_ADMIN.toString(16)}${colors.reset}`,
+  );
+  console.log(
+    `${colors.info}  Upgrader Admin${colors.reset}   : ${colors.address}0x${SEASON_RESOURCE_UPGRADER.toString(16)}${colors.reset}`,
+  );
+  console.log(
+    `${colors.info}═════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`,
+  );
   console.log(`\n`);
 
   const ADDRESSES = {};
@@ -166,7 +172,9 @@ export const deployAllSeasonResourceContract = async () => {
 
   // Wait for transaction
   let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log(`${colors.info}Transaction Hash${colors.reset} : ${colors.hash}${network.explorer_url}/tx/${contract.transaction_hash}${colors.reset}\n`);
+  console.log(
+    `${colors.info}Transaction Hash${colors.reset} : ${colors.hash}${network.explorer_url}/tx/${contract.transaction_hash}${colors.reset}\n`,
+  );
 
   let tx = await account.waitForTransaction(contract.transaction_hash);
   for (const event of tx.value.events) {
@@ -183,7 +191,7 @@ export const deployAllSeasonResourceContract = async () => {
 
   displayResourceTable(ADDRESSES);
   console.log(`\n${colors.success}✨ Deployment Complete!${colors.reset}\n`);
-  
+
   await saveResourceAddressesToFile(ADDRESSES);
   return ADDRESSES;
 };
@@ -227,10 +235,16 @@ export const grantMinterRoleToInGameBridge = async () => {
 
 export const revokeMinterRoleFromAllSeasonResourceContracts = async () => {
   console.log(`\n${colors.title}🔒 Revoking Minter Role from Season Resource Contracts${colors.reset}\n`);
-  
-  console.log(`${colors.info}╔════════════════════════════════════════════════════════════════════════════════════════${colors.reset}`);
-  console.log(`${colors.info}  In-Game Bridge System${colors.reset} : ${colors.address}${RESOURCE_BRIDGE_SYSTEMS_CONTRACT}${colors.reset}`);
-  console.log(`${colors.info}═════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`);
+
+  console.log(
+    `${colors.info}╔════════════════════════════════════════════════════════════════════════════════════════${colors.reset}`,
+  );
+  console.log(
+    `${colors.info}  In-Game Bridge System${colors.reset} : ${colors.address}${RESOURCE_BRIDGE_SYSTEMS_CONTRACT}${colors.reset}`,
+  );
+  console.log(
+    `${colors.info}═════════════════════════════════════════════════════════════════════════════════════════╝${colors.reset}`,
+  );
   console.log(`\n`);
 
   let resourceAddresses = await getResourceAddressesFromFile();
@@ -260,8 +274,12 @@ export const revokeMinterRoleFromAllSeasonResourceContracts = async () => {
 
   // Wait for transaction
   let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log(`${colors.info}Transaction Hash${colors.reset} : ${colors.hash}${network.explorer_url}/tx/${contract.transaction_hash}${colors.reset}\n`);
+  console.log(
+    `${colors.info}Transaction Hash${colors.reset} : ${colors.hash}${network.explorer_url}/tx/${contract.transaction_hash}${colors.reset}\n`,
+  );
   await account.waitForTransaction(contract.transaction_hash);
 
-  console.log(`${colors.success}✨ Successfully revoked minter role from all season resource contracts!${colors.reset}\n`);
+  console.log(
+    `${colors.success}✨ Successfully revoked minter role from all season resource contracts!${colors.reset}\n`,
+  );
 };

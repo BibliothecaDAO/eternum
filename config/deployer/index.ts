@@ -1,10 +1,13 @@
-import {
-  EternumProvider
-} from "@bibliothecadao/eternum";
+import { EternumProvider } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
-import { getGameManifest, type Chain } from "../../common/utils";
 import { confirmNonLocalDeployment } from "../utils/confirmation";
-import { getConfigFromNetwork, logNetwork, saveConfigJsonFromConfigTsFile, type NetworkType } from "../utils/environment";
+import {
+  getConfigFromNetwork,
+  logNetwork,
+  saveConfigJsonFromConfigTsFile,
+  type NetworkType,
+} from "../utils/environment";
+import { getGameManifest, type Chain } from "../utils/utils";
 import { GameConfigDeployer } from "./config";
 
 const {
@@ -31,6 +34,3 @@ export const config = new GameConfigDeployer(configuration);
 logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
 await config.setupAll(account, provider);
 logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
-
-
-

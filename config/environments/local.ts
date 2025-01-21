@@ -1,7 +1,7 @@
 /**
  * Local environment configuration for Eternum.
  * Extends the common configuration with development-specific settings.
- * 
+ *
  * @module LocalEnvironment
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
@@ -18,7 +18,7 @@ export const LocalEternumGlobalConfig: Config = {
   season: {
     ...CommonEternumGlobalConfig.season,
     startAfterSeconds: 60, // 1 minute
-  }
+  },
 };
 
 export default LocalEternumGlobalConfig;

@@ -1,7 +1,7 @@
 /**
-* Catridge Slot network environment configuration for Eternum.
+ * Catridge Slot network environment configuration for Eternum.
  * Extends the common configuration with slot network-specific settings.
- * 
+ *
  * @module SlotEnvironment
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */

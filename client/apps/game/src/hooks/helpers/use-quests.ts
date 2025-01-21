@@ -1,11 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  Prize,
-  QuestType
-} from "@bibliothecadao/eternum";
-import {
-  useDojo
-} from "@bibliothecadao/react";
+import { Prize, QuestType } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -89,4 +84,3 @@ export const useUnclaimedQuestsCount = () => {
 
   return unclaimedQuestsCount;
 };
-

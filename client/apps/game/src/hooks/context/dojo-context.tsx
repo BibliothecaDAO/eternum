@@ -134,9 +134,7 @@ const DojoContextProvider = ({
     showBlankOverlay(false);
   };
 
-  const accountToUse = isSpectatorMode
-    ? new Account(value.network.provider.provider, "0x0", "0x0")
-    : controllerAccount;
+  const accountToUse = isSpectatorMode ? new Account(value.network.provider.provider, "0x0", "0x0") : controllerAccount;
 
   useEffect(() => {
     const setUserName = async () => {

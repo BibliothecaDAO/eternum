@@ -1,7 +1,7 @@
 /**
  * Mainnet environment configuration for Eternum.
  * Extends the common configuration with production-specific settings.
- * 
+ *
  * @module MainnetEnvironment
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */

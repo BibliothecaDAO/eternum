@@ -1,8 +1,8 @@
 import {
-    findResourceById,
-    RESOURCE_PRODUCTION_INPUT_RESOURCES,
-    RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
-    ResourcesIds
+  findResourceById,
+  RESOURCE_PRODUCTION_INPUT_RESOURCES,
+  RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import ResourceIcon from "./ResourceIcon";

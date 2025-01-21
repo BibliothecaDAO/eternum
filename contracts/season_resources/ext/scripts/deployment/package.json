@@ -11,7 +11,6 @@
     "deploy:slot": "source ../../../../common/.env.slot && bun --env-file=../../../../common/.env.slot ./deploy",
     "deploy:sepolia": "source ../../../../common/.env.sepolia && bun --env-file=../../../../common/.env.sepolia ./deploy",
     "deploy:mainnet": "source ../../../../common/.env.mainnet && bun --env-file=../../../../common/.env.mainnet ./deploy",
-    
     "revoke:local": "source ../../../../common/.env.local && bun --env-file=../../../../common/.env.local ./revoke",
     "revoke:slot": "source ../../../../common/.env.slot && bun --env-file=../../../../common/.env.slot ./revoke",
     "revoke:sepolia": "source ../../../../common/.env.sepolia && bun --env-file=../../../../common/.env.sepolia ./revoke",

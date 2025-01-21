@@ -15,12 +15,19 @@ const envSchema = z.object({
   VITE_PUBLIC_NODE_URL: z.string().url(),
   VITE_PUBLIC_TORII_RELAY: z.string(),
 
-  VITE_PUBLIC_GRAPHICS_DEV: z.string().transform((v) => v === "true").optional().default("false"),
+  VITE_PUBLIC_GRAPHICS_DEV: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "local"]), // Add other chains as needed
 
-  VITE_PUBLIC_CONSTRUCTION_FLAG: z.string().transform((v) => v === "true").optional(),
+  VITE_PUBLIC_CONSTRUCTION_FLAG: z
+    .string()
+    .transform((v) => v === "true")
+    .optional(),
 
   // VRF
   VITE_PUBLIC_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x"),
