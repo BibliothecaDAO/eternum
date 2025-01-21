@@ -11,8 +11,11 @@ import { Link } from "@tanstack/react-router";
 import { Castle, Coins, Gamepad2, Home, PlayCircle, Scale, Sheet, Ship, Twitter } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
-import Discord from "@/assets/icons/discord.svg?react";
-import EternumLogo from "@/assets/icons/eternum-new-logo.svg?react";
+// import { default as Discord } from "@/assets/icons/discord.svg?react";
+// import { default as EternumLogo } from "@/assets/icons/eternum-new-logo.svg?react";
+// import Discord from "@/assets/icons/discord.svg?react";
+// import EternumLogo from "@/assets/icons/eternum-new-logo.svg?react";
+
 // Menu items.
 const items = [
   {
@@ -59,7 +62,7 @@ export function AppSidebar() {
       <SidebarContent>
         <a href="/">
           <div className="flex flex-col items-center">
-            <EternumLogo className="w-24 h-24 fill-gold mx-auto pt-8" />
+            {/* <EternumLogo className="w-24 h-24 fill-gold mx-auto pt-8" /> */}
             <TypeH2 className="p-3">Eternum</TypeH2>
           </div>
         </a>
@@ -95,7 +98,7 @@ export function AppSidebar() {
                 <Twitter />
               </a>
               <a href="https://discord.gg/realmsworld" target="_blank" rel="noopener noreferrer">
-                <Discord className="w-6 h-6 fill-gold" />
+                {/* <Discord className="w-6 h-6 fill-gold" /> */}
               </a>
             </div>
           </SidebarGroupContent>

@@ -2,8 +2,11 @@ import { lordsAddress } from "@/config";
 // why not working
 // import { env } from "env";
 import { useEffect, useState } from "react";
-import { getGameManifest } from "../../../../common/utils";
+import { Chain, getGameManifest } from "../../../../../config/utils/utils";
+import { env } from "../../env";
 import { useDojo } from "./context/DojoContext";
+
+const { VITE_PUBLIC_CHAIN } = env;
 
 export const useLordsBridgeBalance = () => {
   const {
@@ -16,7 +19,9 @@ export const useLordsBridgeBalance = () => {
 
   useEffect(() => {
     const initManifest = async () => {
-      const manifest = await getGameManifest(meta.env.VITE_PUBLIC_CHAIN);
+      const manifest: { contracts?: Array<{ tag: string; address?: string }> } = await getGameManifest(
+        VITE_PUBLIC_CHAIN as Chain,
+      );
       const bridge = manifest.contracts?.find(
         (contract: { tag: string }) => contract.tag === "s1_eternum-resource_bridge_systems",
       );
