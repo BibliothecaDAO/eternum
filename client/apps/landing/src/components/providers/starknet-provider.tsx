@@ -3,6 +3,7 @@ import { ColorMode } from "@cartridge/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 import React, { useCallback } from "react";
+import { constants } from "starknet";
 import { env } from "../../../env";
 import { getResourceAddresses } from "../ui/utils/addresses";
 //import { cartridgeController } from "./cartridge-controller";
@@ -17,18 +18,20 @@ const otherResources = Object.entries(resourceAddresses)
 const theme: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "eternum";
+const preset: string = "eternum";
 const colorMode: ColorMode = "dark";
 
 const cartridgeController = new ControllerConnector({
-  policies: [],
-  rpc: "https://api.cartridge.gg/x/starknet/" + env.VITE_PUBLIC_CHAIN,
+  chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
+  defaultChainId: constants.StarknetChainId.SN_SEPOLIA,
+  namespace,
+  slot,
+  preset,
   theme,
-  colorMode,
   tokens: {
     erc20: [LORDS, ...otherResources],
   },
   // namespace,
-  slot,
 });
 
 export function StarknetProvider({ children, onlyCartridge }: { children: React.ReactNode; onlyCartridge?: boolean }) {

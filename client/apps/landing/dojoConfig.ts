@@ -1,6 +1,5 @@
 import { createDojoConfig } from "@dojoengine/core";
-import { Chain, getGameManifest } from "../../common/utils";
-
+import { Chain, getGameManifest } from "../../../config/utils/utils";
 import { env } from "./env";
 
 const {

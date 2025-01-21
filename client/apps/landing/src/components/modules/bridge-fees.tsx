@@ -1,4 +1,4 @@
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { Minus, Plus } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "../ui/button";
@@ -40,7 +40,7 @@ export const BridgeFees = ({
   type,
   setResourceFees,
 }: FeesCollapsibleProps) => {
-  const bridgeConfig = ETERNUM_CONFIG().bridge;
+  const bridgeConfig = configManager.getResourceBridgeFeeSplitConfig();
 
   const calculateBridgeFeeDisplayPercent = (percent: number) => {
     return (percent * 100) / BRIDGE_FEE_DENOMINATOR;
@@ -91,7 +91,7 @@ export const BridgeFees = ({
       </CollapsibleTrigger>
       <CollapsibleContent className="flex flex-col ">
         {feesForAllResources.map((fees) => {
-          const resourceName = ResourcesIds[fees.id as keyof typeof ResourcesIds];
+          const resourceName = ResourcesIds[fees.id as keyof typeof ResourcesIds].toString();
           return (
             <div key={fees.id} className="flex flex-col gap-2 py-4 border-b border-gold/15">
               <div className="font-semibold text-sm">

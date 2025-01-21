@@ -1,4 +1,4 @@
-import { Chain, getSeasonAddresses } from "../../../../../../common/utils";
+import { Chain, getSeasonAddresses } from "../../../../../../../config/utils/utils";
 import { env } from "../../../../env";
 
 export const getResourceAddresses = async () => {
