@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x2c8fcb569bb215be71e5da85b34fc3520077d1d42bd0c5e4a99ca97aeeb5e3b"
+original_class_hash = "0x2c8fcb569bb215be71e5da85b34fc3520077d1d42bd0c5e4a99ca97aeeb5e3b"
+abi = "manifests/dev/base/abis/models/eternum-WorldConfig-7b79ae7c.json"
+tag = "eternum-WorldConfig"
+qualified_path = "eternum::models::config::world_config"
+manifest_name = "eternum-WorldConfig-7b79ae7c"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "admin_address"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "realm_l2_contract"
+type = "ContractAddress"
+key = false

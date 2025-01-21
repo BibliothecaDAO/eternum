@@ -5,22 +5,22 @@ import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   BuildingType,
   CapacityConfigCategory,
-  EternumGlobalConfig,
   GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
   HYPERSTRUCTURE_CONFIG_ID,
   POPULATION_CONFIG_ID,
+  RESOURCE_PRECISION,
   ResourcesIds,
   ResourceTier,
   StructureType,
   WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contractComponents";
-import { TickIds, TravelTypes } from "../types";
+import { Config, TickIds, TravelTypes } from "../types";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
   private components!: ContractComponents;
-
+  private config!: Config;
   resourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
   hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
@@ -29,8 +29,9 @@ export class ClientConfigManager {
   resourceBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   structureCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
 
-  public setDojo(components: ContractComponents) {
+  public setDojo(components: ContractComponents, config: Config) {
     this.components = components;
+    this.config = config;
     this.initializeResourceInputs();
     this.initializeResourceOutput();
     this.initializeHyperstructureTotalCosts();
@@ -46,6 +47,10 @@ export class ClientConfigManager {
     }
 
     return ClientConfigManager._instance;
+  }
+
+  public getConfig() {
+    return this.config;
   }
 
   private getValueOrDefault<T>(callback: () => T, defaultValue: T): T {
@@ -82,15 +87,15 @@ export class ClientConfigManager {
 
     //   this.resourceInputs[Number(resourceType)] = inputs;
     // }
-    this.resourceInputs = Object.entries(EternumGlobalConfig.resources.resourceInputs).reduce(
+    this.resourceInputs = Object.entries(this.config.resources.resourceInputs).reduce(
       (acc, [key, inputs]) => {
         acc[Number(key)] = inputs.map((input: { resource: number; amount: number }) => ({
           resource: input.resource,
-          amount: input.amount * this.getResourceMultiplier(),
+          amount: input.amount,
         }));
         return acc;
       },
-      {} as typeof EternumGlobalConfig.resources.resourceInputs,
+      {} as typeof this.config.resources.resourceInputs,
     );
   }
 
@@ -105,7 +110,7 @@ export class ClientConfigManager {
 
       this.resourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
-        amount: this.divideByPrecision(Number(productionConfig?.amount)),
+        amount: this.divideByPrecision(Number(productionConfig?.produced_amount)),
       };
     }
   }
@@ -119,11 +124,9 @@ export class ClientConfigManager {
         getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceTier)]),
       );
 
-      const min_amount =
-        Number(hyperstructureResourceConfig?.min_amount ?? 0) / EternumGlobalConfig.resources.resourcePrecision;
+      const min_amount = Number(hyperstructureResourceConfig?.min_amount ?? 0) / RESOURCE_PRECISION;
 
-      const max_amount =
-        Number(hyperstructureResourceConfig?.max_amount ?? 0) / EternumGlobalConfig.resources.resourcePrecision;
+      const max_amount = Number(hyperstructureResourceConfig?.max_amount ?? 0) / RESOURCE_PRECISION;
 
       hyperstructureTotalCosts.push({ resource: resourceTier as ResourceTier, min_amount, max_amount });
     }
@@ -160,9 +163,9 @@ export class ClientConfigManager {
     //   this.realmUpgradeCosts[index] = resources;
     // }
     this.realmUpgradeCosts = Object.fromEntries(
-      Object.entries(EternumGlobalConfig.realmUpgradeCosts).map(([key, costs]) => [
+      Object.entries(this.config.realmUpgradeCosts).map(([key, costs]) => [
         key,
-        costs.map((cost: any) => ({ ...cost, amount: cost.amount * this.getResourceMultiplier() })),
+        costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
       ]),
     );
   }
@@ -188,7 +191,7 @@ export class ClientConfigManager {
     //   }
 
     //   const resourceType = resourceCost.resource_type;
-    //   const amount = Number(resourceCost.amount) / EternumGlobalConfig.resources.resourcePrecision;
+    //   const amount = Number(resourceCost.amount) / RESOURCE_PRECISION;
 
     //   resourceCosts.push({ resource: resourceType, amount });
     // }
@@ -196,9 +199,9 @@ export class ClientConfigManager {
 
     // }
     this.resourceBuildingCosts = Object.fromEntries(
-      Object.entries(EternumGlobalConfig.resources.resourceBuildingCosts).map(([key, costs]) => [
+      Object.entries(this.config.resources.resourceBuildingCosts).map(([key, costs]) => [
         key,
-        costs.map((cost: any) => ({ ...cost, amount: cost.amount * this.getResourceMultiplier() })),
+        costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
       ]),
     );
   }
@@ -233,9 +236,9 @@ export class ClientConfigManager {
     //   this.buildingCosts[Number(buildingType)] = resourceCosts;
     // }
     this.buildingCosts = Object.fromEntries(
-      Object.entries(EternumGlobalConfig.buildings.buildingCosts).map(([key, costs]) => [
+      Object.entries(this.config.buildings.buildingCosts).map(([key, costs]) => [
         key,
-        costs.map((cost: any) => ({ ...cost, amount: cost.amount * this.getResourceMultiplier() })),
+        costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
       ]),
     );
   }
@@ -577,7 +580,7 @@ export class ClientConfigManager {
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
 
-      return Number(productionConfig?.amount ?? 0);
+      return Number(productionConfig?.produced_amount ?? 0);
     }, 0);
   }
 
@@ -616,23 +619,23 @@ export class ClientConfigManager {
   }
 
   getResourceRarity(resourceId: ResourcesIds) {
-    return EternumGlobalConfig.resources.resourceRarity[resourceId] ?? 0;
+    return this.config.resources.resourceRarity[resourceId] ?? 0;
   }
 
   getResourcePrecision() {
-    return EternumGlobalConfig.resources.resourcePrecision;
+    return RESOURCE_PRECISION;
   }
 
   divideByPrecision(value: number) {
-    return value / EternumGlobalConfig.resources.resourcePrecision;
+    return value / RESOURCE_PRECISION;
   }
 
   getResourceMultiplier() {
-    return EternumGlobalConfig.resources.resourceMultiplier;
+    return this.config.resources.resourceMultiplier;
   }
 
   getResourceBuildingProduced(buildingType: BuildingType) {
-    return EternumGlobalConfig.buildings.buildingResourceProduced[buildingType] ?? 0;
+    return this.config.buildings.buildingResourceProduced[buildingType] ?? 0;
   }
 
   getBuildingBaseCostPercentIncrease() {

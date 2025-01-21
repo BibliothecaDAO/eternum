@@ -11,12 +11,13 @@ import {
   getRealmInfo,
   getStructure,
   LEVEL_DESCRIPTIONS,
-  REALM_MAX_LEVEL,
   RealmLevels,
   StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
+// todo: fix this
+import { REALM_MAX_LEVEL } from "../../../../../../../../config/environments/utils/levels";
 
 export const Castle = () => {
   const dojo = useDojo();

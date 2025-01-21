@@ -7,7 +7,7 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": false,
+    "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
@@ -25,7 +25,6 @@
     "types": ["vite-plugin-svgr/client", "@types/node"]
   },
   "include": ["src", "eternumConfig.tsx"],
-
   "exclude": ["node_modules", "./node_modules", "./node_modules/*", "src/node_modules", "dist", "**/*.spec.ts"],
   "references": [
     {

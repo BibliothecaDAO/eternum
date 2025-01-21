@@ -1,0 +1,47 @@
+kind = "DojoModel"
+class_hash = "0x717194503940a76fac5e90aedd77cbd8cbd2f9fc15fdd9bb5cf1808a413eb8f"
+original_class_hash = "0x717194503940a76fac5e90aedd77cbd8cbd2f9fc15fdd9bb5cf1808a413eb8f"
+abi = "manifests/dev/base/abis/models/eternum-LiquidityEvent-2811e183.json"
+tag = "eternum-LiquidityEvent"
+qualified_path = "eternum::systems::bank::contracts::liquidity::liquidity_systems::liquidity_event"
+manifest_name = "eternum-LiquidityEvent-2811e183"
+
+[[members]]
+name = "bank_entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = false
+
+[[members]]
+name = "lords_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_price"
+type = "u128"
+key = false
+
+[[members]]
+name = "add"
+type = "bool"
+key = false
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

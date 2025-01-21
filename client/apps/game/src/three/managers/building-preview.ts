@@ -1,10 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { gltfLoader } from "@/three/helpers/utils";
-import { buildingModelPaths, PREVIEW_BUILD_COLOR_VALID } from "@/three/scenes/constants";
+import { buildingModelPaths, BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "@/three/scenes/constants";
 import { HoverSound } from "@/three/sound/hover-sound";
 import { BuildingType, ResourceIdToMiningType, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { BUILDINGS_GROUPS } from "../scenes/constants";
 
 export class BuildingPreview {
   private previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null = null;

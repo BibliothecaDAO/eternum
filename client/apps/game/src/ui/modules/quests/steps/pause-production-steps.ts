@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { BUILDINGS_CENTER } from "@bibliothecadao/eternum";
 import { LeftView, RightView } from "@/types";
+import { BUILDINGS_CENTER } from "@bibliothecadao/eternum";
 import { StepOptions } from "shepherd.js";
 import { StepButton, waitForElement } from "./utils";
 

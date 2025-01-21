@@ -14,6 +14,8 @@ import { displayAddress } from "@/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
+// todo: why not working
+// import { env } from "env";
 import { Loader2 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
@@ -37,29 +39,6 @@ function Mint() {
     refetchInterval: 10_000,
   });
 
-  /*  const { data: seasonPassMints, isLoading: isSeasonPassMintsLoading } = useSuspenseQuery({
-    queryKey: ["ERCMints"],
-    queryFn: () => execute(GET_ERC_MINTS),
-    refetchInterval: 10_000,
-  });*/
-
-  /*const seasonPassTokenIds = useMemo(
-    () =>
-      seasonPassMints?.tokenTransfers?.edges
-        ?.filter((token) => {
-          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
-          return token.node.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS;
-        })
-        .map((token) => {
-          if (token?.node?.tokenMetadata.__typename === "ERC721__Token") {
-            return token.node.tokenMetadata.tokenId;
-          }
-          return undefined;
-        })
-        .filter((id): id is string => id !== undefined),
-    [seasonPassMints],
-  );*/
-
   const realmsErcBalance = useMemo(
     () =>
       data?.tokenBalances?.edges?.filter((token) => {
@@ -72,7 +51,7 @@ function Mint() {
     [data, realmsAddress],
   );
 
-  console.log(realmsErcBalance);
+  const isDev = meta.env.VITE_PUBLIC_CHAIN === "local";
 
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
     useNftSelection({ userAddress: address as `0x${string}` });
@@ -122,7 +101,7 @@ function Mint() {
             </div>
           </div>
           <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
-            {import.meta.env.VITE_PUBLIC_DEV === "true" ? (
+            {isDev ? (
               <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
                 Mint Realms
               </Button>

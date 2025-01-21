@@ -1,5 +1,6 @@
-import { manifestLocal, manifestMainnet, manifestSepolia } from "@bibliothecadao/assets";
 import { createDojoConfig } from "@dojoengine/core";
+import { Chain, getGameManifest } from "../../common/utils";
+
 import { env } from "./env";
 
 const {
@@ -13,20 +14,7 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-// const isLocal = VITE_PUBLIC_CHAIN === "local" || VITE_PUBLIC_CHAIN === "testnet";
-// const manifest = VITE_PUBLIC_DEV === true && isLocal ? manifestLocal : manifestMainnet;
-
-const manifestMap = {
-  local: manifestLocal,
-  mainnet: manifestMainnet,
-  sepolia: manifestSepolia,
-} as const;
-
-const manifest = manifestMap[VITE_PUBLIC_CHAIN as keyof typeof manifestMap] ?? manifestSepolia;
-
-export const getManifest = () => {
-  return manifest;
-};
+const manifest = getGameManifest(VITE_PUBLIC_CHAIN as Chain);
 
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,

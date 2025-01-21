@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0x38f17841f97149f81b81973133300baa099bf3469f89c9a41feeecc9b7b7435"
+original_class_hash = "0x38f17841f97149f81b81973133300baa099bf3469f89c9a41feeecc9b7b7435"
+abi = "manifests/dev/base/abis/models/eternum-BurnDonkey-f40994eb.json"
+tag = "eternum-BurnDonkey"
+qualified_path = "eternum::systems::transport::contracts::donkey_systems::donkey_systems::burn_donkey"
+manifest_name = "eternum-BurnDonkey-f40994eb"
+
+[[members]]
+name = "player_address"
+type = "ContractAddress"
+key = true
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

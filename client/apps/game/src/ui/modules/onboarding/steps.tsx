@@ -8,6 +8,7 @@ import { Position } from "@/types/position";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/settle-realm-component";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
+import { getSeasonPassAddress } from "@/utils/addresses";
 import { useDojo, usePlayerOwnedRealms, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
@@ -96,12 +97,12 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
   const settleRealms = async (realmIds: number[]) => {
     setLoading(true);
     try {
-      const res = await create_multiple_realms({
+      await create_multiple_realms({
         realm_ids: realmIds,
         owner: account.address,
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
         signer: account,
-        season_pass_address: env.VITE_SEASON_PASS_ADDRESS,
+        season_pass_address: await getSeasonPassAddress(),
       });
       setSelectedRealms([]);
       onPrevious();

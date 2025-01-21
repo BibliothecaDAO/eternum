@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x1c993acc831846ff569dbe5d8842c02b88b682de330d8fa40f1f7ce3dd90963"
+original_class_hash = "0x1c993acc831846ff569dbe5d8842c02b88b682de330d8fa40f1f7ce3dd90963"
+abi = "manifests/prod/base/abis/models/eternum-TickConfig-611cf60f.json"
+tag = "eternum-TickConfig"
+qualified_path = "eternum::models::config::tick_config"
+manifest_name = "eternum-TickConfig-611cf60f"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "tick_id"
+type = "u8"
+key = true
+
+[[members]]
+name = "tick_interval_in_seconds"
+type = "u64"
+key = false

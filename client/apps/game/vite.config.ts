@@ -16,7 +16,7 @@ export default defineConfig({
     topLevelAwait(),
     VitePWA({
       devOptions: {
-        enabled: process.env.VITE_PUBLIC_DEV === "true",
+        enabled: process.env.VITE_PUBLIC_CHAIN === "local",
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 4000000,
@@ -58,6 +58,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
+      "@/assets": path.resolve(__dirname, "../../public/assets"),
       events: "events",
       "@": path.resolve(__dirname, "./src"),
     },
@@ -98,5 +99,5 @@ export default defineConfig({
       "@bibliothecadao/eternum", // Add your dependency here
     ],
   },
-  publicDir: "../../common/public",
+  publicDir: "../../public",
 });

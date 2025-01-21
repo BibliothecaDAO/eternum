@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x54e7f6adf3bd2638c93729dc52ce40f028b3c0f398288d96bee710f1056f8b7"
+original_class_hash = "0x54e7f6adf3bd2638c93729dc52ce40f028b3c0f398288d96bee710f1056f8b7"
+abi = "manifests/dev/base/abis/models/eternum-ResourceBridgeConfig-31fc385d.json"
+tag = "eternum-ResourceBridgeConfig"
+qualified_path = "eternum::models::config::resource_bridge_config"
+manifest_name = "eternum-ResourceBridgeConfig-31fc385d"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "deposit_paused"
+type = "bool"
+key = false
+
+[[members]]
+name = "withdraw_paused"
+type = "bool"
+key = false

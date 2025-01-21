@@ -1,9 +1,12 @@
-import { BRIDGE_FEE_DENOMINATOR, EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { Minus, Plus } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
+
+// todo : get it directly from the config
+export const BRIDGE_FEE_DENOMINATOR = 10_000;
 
 interface FeesCollapsibleProps {
   isOpen: boolean;
@@ -37,7 +40,7 @@ export const BridgeFees = ({
   type,
   setResourceFees,
 }: FeesCollapsibleProps) => {
-  const bridgeConfig = EternumGlobalConfig.bridge;
+  const bridgeConfig = ETERNUM_CONFIG().bridge;
 
   const calculateBridgeFeeDisplayPercent = (percent: number) => {
     return (percent * 100) / BRIDGE_FEE_DENOMINATOR;

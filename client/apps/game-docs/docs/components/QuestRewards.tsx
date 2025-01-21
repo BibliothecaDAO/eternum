@@ -1,11 +1,11 @@
-import { EternumGlobalConfig, QuestType, findResourceById } from "@bibliothecadao/eternum";
+import { QuestType, findResourceById } from "@bibliothecadao/eternum";
+import { addSpacesBeforeCapitals, formatAmount } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
-import { formatAmount, addSpacesBeforeCapitals } from "../utils/formatting";
 
 export default function QuestRewards() {
   return (
     <div className="grid grid-cols-1 gap-6">
-      {Object.entries(EternumGlobalConfig.questResources).map(([questType, rewards]) => (
+      {Object.entries(ETERNUM_CONFIG().questResources).map(([questType, rewards]) => (
         <div key={questType} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5">
           <div className="font-bold text-lg mb-4">
             {addSpacesBeforeCapitals(QuestType[Number(questType)] || "Unknown Quest")}

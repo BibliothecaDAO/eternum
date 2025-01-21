@@ -1,0 +1,27 @@
+kind = "DojoModel"
+class_hash = "0x2887e0c383185a0f7c8bfd9cec199674bf5f887e2ffaf47e80c8e0d2a8c8c42"
+original_class_hash = "0x2887e0c383185a0f7c8bfd9cec199674bf5f887e2ffaf47e80c8e0d2a8c8c42"
+abi = "manifests/prod/base/abis/models/eternum-FragmentMineDiscovered-50864feb.json"
+tag = "eternum-FragmentMineDiscovered"
+qualified_path = "eternum::systems::map::contracts::map_systems::fragment_mine_discovered"
+manifest_name = "eternum-FragmentMineDiscovered-50864feb"
+
+[[members]]
+name = "entity_owner_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "mine_entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "production_deadline_tick"
+type = "u64"
+key = true
+
+[[members]]
+name = "discovered_at"
+type = "u64"
+key = false

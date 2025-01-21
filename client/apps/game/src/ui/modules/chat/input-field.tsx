@@ -107,7 +107,7 @@ function generateMessageTypedData(
         { name: "chainId", type: "shortstring" },
         { name: "revision", type: "shortstring" },
       ],
-      "s0_eternum-Message": [
+      "s1_eternum-Message": [
         { name: "identity", type: "ContractAddress" },
         { name: "channel", type: "shortstring" },
         { name: "content", type: "string" },
@@ -115,7 +115,7 @@ function generateMessageTypedData(
         { name: "salt", type: "felt" },
       ],
     },
-    primaryType: "s0_eternum-Message",
+    primaryType: "s1_eternum-Message",
     domain: {
       name: "Eternum",
       version: "1",

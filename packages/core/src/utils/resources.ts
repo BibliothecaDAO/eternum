@@ -1,11 +1,10 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { getStartingResources } from ".";
-import { BuildingType, resources, ResourcesIds } from "../constants";
+import { BuildingType, RESOURCE_PRECISION, resources, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../modelManager";
 import { configManager } from "../modelManager/ConfigManager";
-import { ID, Resource } from "../types";
+import { ID, Resource, ResourceInputs } from "../types";
 import { unpackResources } from "./packed-data";
 
 // used for entities that don't have any production
@@ -64,7 +63,9 @@ export const getResourcesFromBalance = (
 export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
   const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
   const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
-  return getStartingResources(resourcesProduced);
+
+  // todo: fix
+  return getStartingResources(resourcesProduced, [], []);
 };
 
 export const isResourceProductionBuilding = (buildingId: BuildingType) => {
@@ -77,3 +78,73 @@ export const isResourceProductionBuilding = (buildingId: BuildingType) => {
     buildingId === BuildingType.Stable
   );
 };
+
+export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {
+  let multipliedCosts: ResourceInputs = {};
+
+  for (let buildingType in resourceInputs) {
+    multipliedCosts[buildingType] = resourceInputs[buildingType].map((resourceInput) => ({
+      ...resourceInput,
+      amount: resourceInput.amount * multiplier,
+    }));
+  }
+
+  return multipliedCosts;
+};
+
+export const uniqueResourceInputs = (
+  resourcesProduced: number[],
+  resourceProductionInputResources: ResourceInputs,
+): number[] => {
+  let uniqueResourceInputs: number[] = [];
+
+  for (let resourceProduced of resourcesProduced) {
+    for (let resourceInput of resourceProductionInputResources[resourceProduced]) {
+      if (!uniqueResourceInputs.includes(resourceInput.resource)) {
+        uniqueResourceInputs.push(resourceInput.resource);
+      }
+    }
+  }
+
+  return uniqueResourceInputs;
+};
+
+export const applyInputProductionFactor = (
+  questResources: ResourceInputs,
+  resourcesOnRealm: number[],
+  resourceProductionInputResources: ResourceInputs,
+): ResourceInputs => {
+  for (let resourceInput of uniqueResourceInputs(resourcesOnRealm, resourceProductionInputResources).filter(
+    (id) => id != ResourcesIds.Wheat && id != ResourcesIds.Fish,
+  )) {
+    for (let questType in questResources) {
+      questResources[questType] = questResources[questType].map((questResource) => {
+        if (questResource.resource === resourceInput) {
+          return {
+            ...questResource,
+            amount: questResource.amount * RESOURCE_PRECISION,
+          };
+        }
+        return questResource;
+      });
+    }
+  }
+  return questResources;
+};
+
+export const getStartingResources = (
+  resourcesOnRealm: number[],
+  questResources: ResourceInputs,
+  resourceProductionInputResources: ResourceInputs,
+): ResourceInputs => {
+  let QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(questResources, RESOURCE_PRECISION);
+  return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm, resourceProductionInputResources);
+};
+
+export function multiplyByPrecision(value: number): number {
+  return Math.floor(value * RESOURCE_PRECISION);
+}
+
+export function divideByPrecision(value: number): number {
+  return value / RESOURCE_PRECISION;
+}

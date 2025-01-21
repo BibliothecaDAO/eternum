@@ -1,8 +1,7 @@
 import {
-  EternumGlobalConfig,
   findResourceById,
-  RESOURCE_INPUTS,
-  RESOURCE_OUTPUTS,
+  RESOURCE_PRODUCTION_INPUT_RESOURCES,
+  RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
@@ -11,15 +10,15 @@ import ResourceIcon from "./ResourceIcon";
 export default function ResourceTable() {
   const resourceTable = useMemo(() => {
     const resources = [];
-    for (const resourceId of Object.keys(RESOURCE_INPUTS) as unknown as ResourcesIds[]) {
+    for (const resourceId of Object.keys(RESOURCE_PRODUCTION_INPUT_RESOURCES) as unknown as ResourcesIds[]) {
       if (resourceId === ResourcesIds.Lords) continue;
       const calldata = {
         resource: findResourceById(Number(resourceId)),
-        amount: RESOURCE_OUTPUTS[resourceId],
+        amount: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS[resourceId],
         resource_type: resourceId,
-        cost: RESOURCE_INPUTS[resourceId].map((cost: any) => ({
+        cost: RESOURCE_PRODUCTION_INPUT_RESOURCES[resourceId].map((cost: any) => ({
           ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
+          amount: cost.amount * ETERNUM_CONFIG().resources.resourcePrecision,
           name: findResourceById(cost.resource)?.trait || "",
         })),
       };

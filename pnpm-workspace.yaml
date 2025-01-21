@@ -1,7 +1,7 @@
 packages:
   - "client"
   - "client/apps/*"
-  - "client/config"
+  - "config"
   - "packages/*"
   - "contracts/season_pass/scripts/deployment"
   - "contracts/season_resources/scripts/deployment"

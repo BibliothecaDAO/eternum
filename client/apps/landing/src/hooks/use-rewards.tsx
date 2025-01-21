@@ -1,15 +1,15 @@
 import { configManager } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { useEffect, useState } from "react";
-import { env } from "../../env";
 
 export const usePrizePool = () => {
   const [prizePool, setPrizePool] = useState<bigint>(0n);
   const { account } = useAccount();
 
   const getBalance = async (address: string) => {
+    const lordsAddress = await getLordsAddress();
     const balance = await account?.callContract({
-      contractAddress: env.VITE_LORDS_ADDRESS!,
+      contractAddress: lordsAddress,
       entrypoint: "balance_of",
       calldata: [address],
     });

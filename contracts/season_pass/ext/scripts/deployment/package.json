@@ -1,0 +1,15 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "deploy:local": "source ../../../../common/.env.local && bun --env-file=../../../../common/.env.local ./deploy",
+    "deploy:slot": "source ../../../../common/.env.slot && bun --env-file=../../../../common/.env.slot ./deploy",
+    "deploy:sepolia": "source ../../../../common/.env.sepolia && bun --env-file=../../../../common/.env.sepolia ./deploy",
+    "deploy:mainnet": "source ../../../../common/.env.mainnet && bun --env-file=../../../../common/.env.mainnet ./deploy"
+  }
+}

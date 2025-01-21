@@ -1,0 +1,42 @@
+kind = "DojoModel"
+class_hash = "0x29ee2bd434725ae40b576898f32182d79f00f4fef6a8c34982fbd60949e7d08"
+original_class_hash = "0x29ee2bd434725ae40b576898f32182d79f00f4fef6a8c34982fbd60949e7d08"
+abi = "manifests/prod/base/abis/models/eternum-MapConfig-369135d8.json"
+tag = "eternum-MapConfig"
+qualified_path = "eternum::models::config::map_config"
+manifest_name = "eternum-MapConfig-369135d8"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "explore_wheat_burn_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "explore_fish_burn_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "travel_wheat_burn_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "travel_fish_burn_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "reward_resource_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "shards_mines_fail_probability"
+type = "u128"
+key = false

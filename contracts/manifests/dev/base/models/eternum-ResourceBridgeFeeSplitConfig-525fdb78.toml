@@ -1,0 +1,62 @@
+kind = "DojoModel"
+class_hash = "0x4c46578226df8b17721dcc67042714e04a3b642af9ddcd9623c827f5a098f65"
+original_class_hash = "0x4c46578226df8b17721dcc67042714e04a3b642af9ddcd9623c827f5a098f65"
+abi = "manifests/dev/base/abis/models/eternum-ResourceBridgeFeeSplitConfig-525fdb78.json"
+tag = "eternum-ResourceBridgeFeeSplitConfig"
+qualified_path = "eternum::models::config::resource_bridge_fee_split_config"
+manifest_name = "eternum-ResourceBridgeFeeSplitConfig-525fdb78"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "velords_fee_on_dpt_percent"
+type = "u16"
+key = false
+
+[[members]]
+name = "velords_fee_on_wtdr_percent"
+type = "u16"
+key = false
+
+[[members]]
+name = "season_pool_fee_on_dpt_percent"
+type = "u16"
+key = false
+
+[[members]]
+name = "season_pool_fee_on_wtdr_percent"
+type = "u16"
+key = false
+
+[[members]]
+name = "client_fee_on_dpt_percent"
+type = "u16"
+key = false
+
+[[members]]
+name = "client_fee_on_wtdr_percent"
+type = "u16"
+key = false
+
+[[members]]
+name = "velords_fee_recipient"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "season_pool_fee_recipient"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "max_bank_fee_dpt_percent"
+type = "u16"
+key = false
+
+[[members]]
+name = "max_bank_fee_wtdr_percent"
+type = "u16"
+key = false

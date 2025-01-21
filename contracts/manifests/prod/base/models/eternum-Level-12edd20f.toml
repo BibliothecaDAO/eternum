@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x5c3197bdbd2938b015f89cbfe0c6c95a8ea5f3d85eb092e8b0531715841f35d"
+original_class_hash = "0x5c3197bdbd2938b015f89cbfe0c6c95a8ea5f3d85eb092e8b0531715841f35d"
+abi = "manifests/prod/base/abis/models/eternum-Level-12edd20f.json"
+tag = "eternum-Level"
+qualified_path = "eternum::models::level::level"
+manifest_name = "eternum-Level-12edd20f"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "level"
+type = "u64"
+key = false
+
+[[members]]
+name = "valid_until"
+type = "u64"
+key = false

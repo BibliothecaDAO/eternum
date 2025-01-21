@@ -3,6 +3,7 @@ import { HintSection } from "@/ui/components/hints/hint-modal";
 import { rewards } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
+import { getLordsAddress } from "@/utils/addresses";
 import { ContractAddress, formatTime, getEntityIdFromKeys, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, useGetUnregisteredEpochs, usePrizePool } from "@bibliothecadao/react";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
@@ -10,7 +11,6 @@ import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
 import { formatEther } from "viem";
-import { env } from "../../../../env";
 
 const REGISTRATION_DELAY = 60 * 60 * 24 * 4; // 4 days
 const BRIDGE_OUT_DELAY = 60 * 60 * 24 * 2; // 2 days
@@ -36,7 +36,17 @@ export const Rewards = () => {
   const [registrationTimeRemaining, setRegistrationTimeRemaining] = useState<string>("");
   const [bridgeOutTimeRemaining, setBridgeOutTimeRemaining] = useState<string>("");
 
-  const prizePool = usePrizePool({ viteLordsAddress: env.VITE_LORDS_ADDRESS });
+  const [lordsAddress, setLordsAddress] = useState<string>();
+
+  useEffect(() => {
+    const init = async () => {
+      const address = await getLordsAddress();
+      setLordsAddress(address);
+    };
+    init();
+  }, []);
+
+  const prizePool = usePrizePool(lordsAddress || "");
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(rewards));
 
@@ -73,11 +83,12 @@ export const Rewards = () => {
   }, [leaderboardManager]);
 
   const claimRewards = useCallback(async () => {
+    const lordsAddress = await getLordsAddress();
     setIsLoading(true);
     try {
       await claim_leaderboard_rewards({
         signer: account,
-        token: env.VITE_LORDS_ADDRESS!,
+        token: lordsAddress,
       });
     } catch (error) {
       console.error("Error claiming rewards", error);

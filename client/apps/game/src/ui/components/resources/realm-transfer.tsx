@@ -7,6 +7,7 @@ import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   ID,
   PlayerStructure,
+  RESOURCE_PRECISION,
   ResourcesIds,
   calculateDonkeysNeeded,
   findResourceById,
@@ -67,7 +68,7 @@ export const RealmTransfer = memo(
       const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
         sender_entity_id,
         recipient_entity_id,
-        resources: [resources[0], BigInt(Number(resources[1]) * 1000)],
+        resources: [resources[0], BigInt(Number(resources[1]) * RESOURCE_PRECISION)],
       }));
 
       try {

@@ -747,7 +747,7 @@ export default class WorldmapScene extends HexagonScene {
             clauses: [
               {
                 Member: {
-                  model: "s0_eternum-Tile",
+                  model: "s1_eternum-Tile",
                   member: "col",
                   operator: "Gte",
                   value: { Primitive: { U32: startCol - range } },
@@ -755,7 +755,7 @@ export default class WorldmapScene extends HexagonScene {
               },
               {
                 Member: {
-                  model: "s0_eternum-Tile",
+                  model: "s1_eternum-Tile",
                   member: "col",
                   operator: "Lte",
                   value: { Primitive: { U32: startCol + range } },
@@ -763,7 +763,7 @@ export default class WorldmapScene extends HexagonScene {
               },
               {
                 Member: {
-                  model: "s0_eternum-Tile",
+                  model: "s1_eternum-Tile",
                   member: "row",
                   operator: "Gte",
                   value: { Primitive: { U32: startRow - range } },
@@ -771,7 +771,7 @@ export default class WorldmapScene extends HexagonScene {
               },
               {
                 Member: {
-                  model: "s0_eternum-Tile",
+                  model: "s1_eternum-Tile",
                   member: "row",
                   operator: "Lte",
                   value: { Primitive: { U32: startRow + range } },
@@ -782,7 +782,7 @@ export default class WorldmapScene extends HexagonScene {
         },
         this.dojo.network.contractComponents as any,
         [],
-        ["s0_eternum-Tile"],
+        ["s1_eternum-Tile"],
         1000,
         false,
       );
@@ -794,7 +794,7 @@ export default class WorldmapScene extends HexagonScene {
             clauses: [
               {
                 Member: {
-                  model: "s0_eternum-Position",
+                  model: "s1_eternum-Position",
                   member: "x",
                   operator: "Gte",
                   value: { Primitive: { U32: startCol - range } },
@@ -802,7 +802,7 @@ export default class WorldmapScene extends HexagonScene {
               },
               {
                 Member: {
-                  model: "s0_eternum-Position",
+                  model: "s1_eternum-Position",
                   member: "x",
                   operator: "Lte",
                   value: { Primitive: { U32: startCol + range } },
@@ -810,7 +810,7 @@ export default class WorldmapScene extends HexagonScene {
               },
               {
                 Member: {
-                  model: "s0_eternum-Position",
+                  model: "s1_eternum-Position",
                   member: "y",
                   operator: "Gte",
                   value: { Primitive: { U32: startRow - range } },
@@ -818,7 +818,7 @@ export default class WorldmapScene extends HexagonScene {
               },
               {
                 Member: {
-                  model: "s0_eternum-Position",
+                  model: "s1_eternum-Position",
                   member: "y",
                   operator: "Lte",
                   value: { Primitive: { U32: startRow + range } },
@@ -830,12 +830,12 @@ export default class WorldmapScene extends HexagonScene {
         this.dojo.network.contractComponents as any,
         [],
         [
-          "s0_eternum-Army",
-          "s0_eternum-Position",
-          "s0_eternum-Health",
-          "s0_eternum-EntityOwner",
-          "s0_eternum-Protectee",
-          "s0_eternum-Stamina",
+          "s1_eternum-Army",
+          "s1_eternum-Position",
+          "s1_eternum-Health",
+          "s1_eternum-EntityOwner",
+          "s1_eternum-Protectee",
+          "s1_eternum-Stamina",
         ],
         1000,
         false,

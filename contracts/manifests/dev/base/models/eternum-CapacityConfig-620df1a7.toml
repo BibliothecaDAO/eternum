@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x59897890b030fb893af71ca82fbd4170f03dad09e464c3bc58971f14a89367"
+original_class_hash = "0x59897890b030fb893af71ca82fbd4170f03dad09e464c3bc58971f14a89367"
+abi = "manifests/dev/base/abis/models/eternum-CapacityConfig-620df1a7.json"
+tag = "eternum-CapacityConfig"
+qualified_path = "eternum::models::config::capacity_config"
+manifest_name = "eternum-CapacityConfig-620df1a7"
+
+[[members]]
+name = "category"
+type = "CapacityConfigCategory"
+key = true
+
+[[members]]
+name = "weight_gram"
+type = "u128"
+key = false

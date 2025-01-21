@@ -6,16 +6,16 @@ import { execute } from "../gql/execute";
 import { GET_ETERNUM_OWNER_REALM_IDS } from "../query/entities";
 
 interface S0EternumRealm {
-  __typename: "s0_eternum_Realm";
+  __typename: "s1_eternum_Realm";
   realm_id: number;
 }
 
 function isS0EternumRealm(model: any): model is S0EternumRealm {
-  return model?.__typename === "s0_eternum_Realm";
+  return model?.__typename === "s1_eternum_Realm";
 }
 
 function isS0EternumStructure(model: any) {
-  return model?.__typename === "s0_eternum_Structure";
+  return model?.__typename === "s1_eternum_Structure";
 }
 
 export const useEntities = () => {
@@ -30,7 +30,7 @@ export const useEntities = () => {
   const playerRealms = useMemo(() => {
     if (!data) return [];
 
-    return data.s0EternumOwnerModels?.edges
+    return data.s0EternumResourceModels?.edges
       ?.map((realm) => {
         const realmModel = realm?.node?.entity?.models?.find(isS0EternumRealm);
         if (!realmModel) return null;

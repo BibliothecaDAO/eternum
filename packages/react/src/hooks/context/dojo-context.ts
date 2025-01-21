@@ -3,13 +3,7 @@ import { createContext, useContext } from "react";
 import { Account, AccountInterface } from "starknet";
 
 export interface DojoAccount {
-  create: () => void;
-  list: () => any[];
-  get: (id: string) => any;
-  select: (id: string) => void;
   account: Account | AccountInterface;
-  isDeploying: boolean;
-  clear: () => void;
   accountDisplay: string;
 }
 

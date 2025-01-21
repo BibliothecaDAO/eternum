@@ -1,0 +1,11 @@
+kind = "DojoContract"
+class_hash = "0x57af78961e2147976593937f9fc17aad265e78049cab70c0ade9b5e9a5cec2b"
+original_class_hash = "0x57af78961e2147976593937f9fc17aad265e78049cab70c0ade9b5e9a5cec2b"
+base_class_hash = "0x0"
+abi = "manifests/dev/base/abis/contracts/eternum-battle_pillage_systems-533864d7.json"
+reads = []
+writes = []
+init_calldata = []
+tag = "eternum-battle_pillage_systems"
+systems = ["battle_pillage"]
+manifest_name = "eternum-battle_pillage_systems-533864d7"

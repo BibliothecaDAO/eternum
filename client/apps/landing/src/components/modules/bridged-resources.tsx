@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { TypeH2 } from "../typography/type-h2";
 import { Card, CardHeader } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
-import { getSeasonAddresses } from "../ui/utils/utils";
+import { getResourceAddresses } from "../ui/utils/addresses";
 
 type SortKey = "totalSupply" | "balance";
 type SortDirection = "asc" | "desc";
@@ -19,7 +19,7 @@ export const BridgedResources = () => {
 
   useEffect(() => {
     const getResources = async () => {
-      const addresses = await getSeasonAddresses();
+      const addresses = await getResourceAddresses();
       setSortedResources(Object.entries(addresses));
     };
     void getResources();

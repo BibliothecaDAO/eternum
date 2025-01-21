@@ -4,7 +4,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
-  EternumGlobalConfig,
+  RESOURCE_PRECISION,
   ResourcesIds,
   configManager,
   findResourceById,
@@ -40,7 +40,7 @@ export const Resources = () => {
           <span className="font-bold">
             {` ${
               gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse)) /
-              multiplyByPrecision(EternumGlobalConfig.resources.resourceMultiplier)
+              multiplyByPrecision(RESOURCE_PRECISION)
             }M capacity per resource type`}
           </span>
           . Build more of them to increase storage.
@@ -98,7 +98,7 @@ const ResourceTable = () => {
       </thead>
       <tbody>
         {resourceTable.map((resource) => {
-          const decimals = resource.amount > EternumGlobalConfig.resources.resourcePrecision ? 0 : 2;
+          const decimals = resource.amount > RESOURCE_PRECISION ? 0 : 2;
           return (
             <tr className="border border-gold/10" key={resource.resource_type}>
               <td>

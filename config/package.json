@@ -1,0 +1,22 @@
+{
+  "name": "eternum-config",
+  "module": "index.ts",
+  "scripts": {
+    "local": "bun --env-file=../client/apps/game/.env.local run ./deployer/index.ts",
+    "slot": "bun --env-file=../client/apps/game/.env.slot run ./deployer/index.ts",
+    "sepolia": "bun --env-file=../client/apps/game/.env.sepolia run ./deployer/index.ts",
+    "mainnet": "bun --env-file=../client/apps/game/.env.mainnet run ./deployer/index.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "starknet": "6.11.0",
+    "typescript": "^5.0.0"
+  }
+}

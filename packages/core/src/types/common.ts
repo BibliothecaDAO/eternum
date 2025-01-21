@@ -10,6 +10,23 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
+/**
+ * Interface representing season contract addresses and resources
+ * @interface SeasonAddresses
+ */
+export interface SeasonAddresses {
+  /** Address of the season pass contract */
+  seasonPass: string;
+  /** Address of the realms contract */
+  realms: string;
+  /** Address of the LORDS token contract */
+  lords: string;
+  /** Map of resource name to [resourceId, contractAddress] */
+  resources: {
+    [key: string]: [number, string];
+  };
+}
+
 export type ArrivalInfo = {
   entityId: ID;
   recipientEntityId: ID;
@@ -460,9 +477,6 @@ export interface Config {
     current_point_on_side: number;
   };
   season: {
-    seasonPassAddress: string;
-    realmsAddress: string;
-    lordsAddress: string;
     startAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
   };
@@ -501,6 +515,13 @@ export interface Config {
   questResources: { [key in QuestType]: ResourceCost[] };
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
+
+  // Config for calling the setup function
+  setup?: {
+    chain: string;
+    addresses: SeasonAddresses;
+    manifest: any;
+  };
 }
 
 export interface RealmInfo {

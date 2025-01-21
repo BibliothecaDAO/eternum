@@ -9,8 +9,7 @@ import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
 import * as SystemProps from "../types/provider";
 import { TransactionType } from "./types";
-
-export const NAMESPACE = "s0_eternum";
+export const NAMESPACE = "s1_eternum";
 export { TransactionType };
 
 /**
@@ -245,7 +244,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     if (isMultipleTransactions) {
       // For multiple calls, use the first call's entrypoint
-      console.log({ entrypoint: transactionDetails[0].entrypoint });
+      // console.log({ entrypoint: transactionDetails[0].entrypoint });
       txType =
         TransactionType[
           transactionDetails
@@ -373,7 +372,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Use realm 123 to create a trade offering 100 wood for 50 stone. Expires at timestamp 1704067200 (example timestamp). Maker is realm 123, taker is realm 456.
    * {
-   *   contractAddress: "<s0_eternum-trade_systems>",
+   *   contractAddress: "<s1_eternum-trade_systems>",
    *   entrypoint: "create_order",
    *   calldata: [
    *     123, // maker_id
@@ -423,7 +422,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @example
    * ```typescript
    * {
-   *   contractAddress: "<s0_eternum-trade_systems>",
+   *   contractAddress: "<s1_eternum-trade_systems>",
    *   entrypoint: "accept_order",
    *   calldata: [
    *     123, // taker_id
@@ -472,7 +471,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @example
    * ```typescript
    * {
-   *   contractAddress: "<s0_eternum-trade_systems>",
+   *   contractAddress: "<s1_eternum-trade_systems>",
    *   entrypoint: "accept_partial_order",
    *   calldata: [
    *     123, // taker_id
@@ -521,7 +520,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @example
    * ```typescript
    * {
-   *   contractAddress: "<s0_eternum-trade_systems>",
+   *   contractAddress: "<s1_eternum-trade_systems>",
    *   entrypoint: "cancel_order",
    *   calldata: [
    *     789, // trade_id
@@ -1025,8 +1024,8 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Create a wood production building at coordinates determined by directions [1,2]
    * {
-   *   contractAddress: "<s0_eternum-building_systems>",
-   *   entrypoint: "create",
+   *   contractAddress: "<s1_eternum-production_systems>",
+   *   entrypoint: "create_building",
    *   calldata: [
    *     123,     // entity_id
    *     [1, 2],  // directions array
@@ -1041,8 +1040,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     ["62", "1", "0", "4", "1"];
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "create",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "create_building",
       calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
     });
 
@@ -1064,8 +1063,8 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Destroy building at coordinates (10, 20)
    * {
-   *   contractAddress: "<s0_eternum-building_systems>",
-   *   entrypoint: "destroy",
+   *   contractAddress: "<s1_eternum-production_systems>",
+   *   entrypoint: "destroy_building",
    *   calldata: [
    *     123,     // entity_id
    *     10,      // building_coord.x
@@ -1078,8 +1077,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, building_coord, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "destroy",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "destroy_building",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
 
@@ -1111,8 +1110,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, building_coord, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "pause_production",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "pause_building_production",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
 
@@ -1144,8 +1143,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, building_coord, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
-      entrypoint: "resume_production",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "resume_building_production",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
 
@@ -1775,16 +1774,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_quest_config(props: SystemProps.SetQuestConfigProps) {
-    const { production_material_multiplier, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_quest_config",
-      calldata: [production_material_multiplier],
-    });
-  }
-
   public async set_quest_reward_config(props: SystemProps.SetQuestRewardConfigProps) {
     const { calls, signer } = props;
     return await this.executeAndCheckTransaction(
@@ -1877,16 +1866,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
-    const { token, resource_type, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_resource_bridge_whitelist_config",
-      calldata: [token, resource_type],
-    });
-  }
-
   public async set_resource_bridge_fees_config(props: SystemProps.SetResourceBridgeFeesConfigProps) {
     const {
       velords_fee_on_dpt_percent,
@@ -1968,21 +1947,27 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_production_config(props: SystemProps.SetProductionConfigProps) {
     const { signer, calls } = props;
 
-    return await this.executeAndCheckTransaction(
-      signer,
-      calls.map((call) => {
-        return {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_production_config",
-          calldata: [
-            call.resource_type,
-            call.amount,
-            call.cost.length,
-            ...call.cost.flatMap(({ resource, amount }) => [resource, amount]),
-          ],
-        };
-      }),
-    );
+    const productionCalldataArray = calls.map((call) => {
+      return {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+        entrypoint: "set_production_config",
+        calldata: [call.resource_type, call.amount, call.amount],
+      };
+    });
+
+    const laborCalldataArray = calls.map((call) => {
+      return {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+        entrypoint: "set_labor_config",
+        calldata: [
+          call.resource_type,
+          call.cost.length,
+          ...call.cost.flatMap(({ resource, amount }) => [resource, amount]),
+        ],
+      };
+    });
+    const calldataArray = [...productionCalldataArray, ...laborCalldataArray];
+    return await this.executeAndCheckTransaction(signer, calldataArray);
   }
 
   public async set_bank_config(props: SystemProps.SetBankConfigProps) {
@@ -1993,6 +1978,18 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "set_bank_config",
       calldata: [lords_cost, lp_fee_num, lp_fee_denom],
     });
+  }
+
+  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
+    const { resource_whitelist_configs, signer } = props;
+
+    const calldata = resource_whitelist_configs.map(({ token, resource_type }) => ({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_resource_bridge_whitelist_config",
+      calldata: [token, resource_type],
+    }));
+
+    return await this.executeAndCheckTransaction(signer, calldata);
   }
 
   public async set_troop_config(props: SystemProps.SetTroopConfigProps) {

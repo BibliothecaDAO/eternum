@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x3ac127612b62df864e3d3d4bd2e86216e3a23b8319626e38dfd11127a4affb1"
+original_class_hash = "0x3ac127612b62df864e3d3d4bd2e86216e3a23b8319626e38dfd11127a4affb1"
+abi = "manifests/prod/base/abis/models/eternum-Position-421d605b.json"
+tag = "eternum-Position"
+qualified_path = "eternum::models::position::position"
+manifest_name = "eternum-Position-421d605b"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "x"
+type = "u32"
+key = false
+
+[[members]]
+name = "y"
+type = "u32"
+key = false

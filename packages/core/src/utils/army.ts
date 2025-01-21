@@ -1,7 +1,7 @@
 import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { CapacityConfigCategory, EternumGlobalConfig } from "../constants";
+import { CapacityConfigCategory, RESOURCE_PRECISION } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ArmyInfo } from "../modelManager/types";
 import { getArmyTotalCapacity } from "../modelManager/utils";
@@ -27,8 +27,8 @@ export const formatArmies = (
 
       let health = structuredClone(getComponentValue(components.Health, armyEntityId));
       if (health) {
-        health.current = health.current / BigInt(EternumGlobalConfig.resources.resourcePrecision);
-        health.lifetime = health.lifetime / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+        health.current = health.current / BigInt(RESOURCE_PRECISION);
+        health.lifetime = health.lifetime / BigInt(RESOURCE_PRECISION);
       } else {
         health = {
           entity_id: army.entity_id,
@@ -40,7 +40,7 @@ export const formatArmies = (
 
       let quantity = structuredClone(getComponentValue(components.Quantity, armyEntityId));
       if (quantity) {
-        quantity.value = BigInt(quantity.value) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+        quantity.value = BigInt(quantity.value) / BigInt(RESOURCE_PRECISION);
       } else {
         quantity = {
           entity_id: army.entity_id,
@@ -55,9 +55,7 @@ export const formatArmies = (
       const totalCapacity = capacity ? getArmyTotalCapacity(army, capacity) : 0n;
 
       const weightComponentValue = getComponentValue(components.Weight, armyEntityId);
-      const weight = weightComponentValue
-        ? weightComponentValue.value / BigInt(EternumGlobalConfig.resources.resourcePrecision)
-        : 0n;
+      const weight = weightComponentValue ? weightComponentValue.value / BigInt(RESOURCE_PRECISION) : 0n;
 
       const arrivalTime = getComponentValue(components.ArrivalTime, armyEntityId);
       const stamina = getComponentValue(components.Stamina, armyEntityId);

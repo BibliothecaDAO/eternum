@@ -1,20 +1,20 @@
 import {
   ClientComponents,
+  configManager,
   ContractAddress,
+  divideByPrecision,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  getAddressNameFromEntity,
   ID,
   ResourcesIds,
-  configManager,
-  divideByPrecision,
-  getAddressNameFromEntity,
   toHexString,
   toInteger,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Component, ComponentValue, Entity, getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
-import { useDojo } from "../";
+import { useDojo } from "../context";
 
 export type ProgressWithPercentage = {
   percentage: number;

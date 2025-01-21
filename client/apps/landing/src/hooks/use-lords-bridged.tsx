@@ -1,6 +1,8 @@
 import { lordsAddress } from "@/config";
+// why not working
+// import { env } from "env";
 import { useEffect, useState } from "react";
-import { getManifest } from "../../dojoConfig";
+import { getGameManifest } from "../../../../common/utils";
 import { useDojo } from "./context/DojoContext";
 
 export const useLordsBridgeBalance = () => {
@@ -10,8 +12,18 @@ export const useLordsBridgeBalance = () => {
 
   const [lordsBalance, setLordsBalance] = useState<bigint>(0n);
 
-  const manifest = getManifest();
-  const bridgeContract = manifest.contracts.find((contract) => contract.tag === "s0_eternum-resource_bridge_systems");
+  const [bridgeContract, setBridgeContract] = useState<any>(null);
+
+  useEffect(() => {
+    const initManifest = async () => {
+      const manifest = await getGameManifest(meta.env.VITE_PUBLIC_CHAIN);
+      const bridge = manifest.contracts?.find(
+        (contract: { tag: string }) => contract.tag === "s1_eternum-resource_bridge_systems",
+      );
+      setBridgeContract(bridge);
+    };
+    initManifest();
+  }, []);
 
   useEffect(() => {
     const fetchBalance = async () => {

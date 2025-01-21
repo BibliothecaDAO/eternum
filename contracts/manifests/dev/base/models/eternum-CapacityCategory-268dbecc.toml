@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x1c872eae51ebc794cd2209e7848f2866079673b9511ef064612e20432d6f282"
+original_class_hash = "0x1c872eae51ebc794cd2209e7848f2866079673b9511ef064612e20432d6f282"
+abi = "manifests/dev/base/abis/models/eternum-CapacityCategory-268dbecc.json"
+tag = "eternum-CapacityCategory"
+qualified_path = "eternum::models::capacity::capacity_category"
+manifest_name = "eternum-CapacityCategory-268dbecc"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "category"
+type = "CapacityConfigCategory"
+key = false

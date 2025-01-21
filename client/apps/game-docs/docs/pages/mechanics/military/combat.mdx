@@ -1,4 +1,4 @@
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
 
 ## Combat System
 
@@ -25,14 +25,14 @@ the in-game simulator to determine durations.
 Combat in Eternum is dynamic and fluid. Additional armies can reinforce either side during battle, and fighting
 continues until victory is achieved or retreat is called.
 
-Retreating forces pay a steep price: deserting armies lose {EternumGlobalConfig.battle.TROOP_BATTLE_LEAVE_SLASH_NUM}% of
+Retreating forces pay a steep price: deserting armies lose {ETERNUM_CONFIG().battle.TROOP_BATTLE_LEAVE_SLASH_NUM}% of
 their troops during withdrawal.
 
 ### Siege Mechanics
 
 🏰 **Siege System**
 
-When attacking a Realm or the Central Bank, combat begins with an {EternumGlobalConfig.battle.delaySeconds / 3600} hour
+When attacking a Realm or the Central Bank, combat begins with an {ETERNUM_CONFIG().battle.delaySeconds / 3600} hour
 siege phase. During this time, defenders can:
 
 - Transfer resources in or out of the realm

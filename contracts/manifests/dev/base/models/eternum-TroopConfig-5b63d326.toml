@@ -1,0 +1,87 @@
+kind = "DojoModel"
+class_hash = "0x659627a2a01de15bff374b46b575d6cb786ce52fe8f845cb19fa8fda4878f78"
+original_class_hash = "0x659627a2a01de15bff374b46b575d6cb786ce52fe8f845cb19fa8fda4878f78"
+abi = "manifests/dev/base/abis/models/eternum-TroopConfig-5b63d326.json"
+tag = "eternum-TroopConfig"
+qualified_path = "eternum::models::config::troop_config"
+manifest_name = "eternum-TroopConfig-5b63d326"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "health"
+type = "u32"
+key = false
+
+[[members]]
+name = "knight_strength"
+type = "u8"
+key = false
+
+[[members]]
+name = "paladin_strength"
+type = "u8"
+key = false
+
+[[members]]
+name = "crossbowman_strength"
+type = "u16"
+key = false
+
+[[members]]
+name = "advantage_percent"
+type = "u16"
+key = false
+
+[[members]]
+name = "disadvantage_percent"
+type = "u16"
+key = false
+
+[[members]]
+name = "max_troop_count"
+type = "u64"
+key = false
+
+[[members]]
+name = "pillage_health_divisor"
+type = "u8"
+key = false
+
+[[members]]
+name = "army_free_per_structure"
+type = "u8"
+key = false
+
+[[members]]
+name = "army_extra_per_building"
+type = "u8"
+key = false
+
+[[members]]
+name = "army_max_per_structure"
+type = "u8"
+key = false
+
+[[members]]
+name = "battle_leave_slash_num"
+type = "u8"
+key = false
+
+[[members]]
+name = "battle_leave_slash_denom"
+type = "u8"
+key = false
+
+[[members]]
+name = "battle_time_scale"
+type = "u16"
+key = false
+
+[[members]]
+name = "battle_max_time_seconds"
+type = "u64"
+key = false

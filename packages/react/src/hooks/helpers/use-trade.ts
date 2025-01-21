@@ -1,13 +1,13 @@
 import {
   ContractAddress,
+  getRealmNameById,
   ID,
   MarketInterface,
   Resource,
   ResourcesIds,
-  getRealmNameById,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Entity, HasValue, getComponentValue } from "@dojoengine/recs";
+import { Entity, getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";

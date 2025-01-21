@@ -1,0 +1,11 @@
+kind = "DojoContract"
+class_hash = "0x24f8e7b7cc6eb58f66ff106556f35bad3efda6f02acafbb3847faef025eb71f"
+original_class_hash = "0x24f8e7b7cc6eb58f66ff106556f35bad3efda6f02acafbb3847faef025eb71f"
+base_class_hash = "0x0"
+abi = "manifests/prod/base/abis/contracts/eternum-bank_systems-85030190.json"
+reads = []
+writes = []
+init_calldata = []
+tag = "eternum-bank_systems"
+systems = ["change_owner_fee"]
+manifest_name = "eternum-bank_systems-85030190"

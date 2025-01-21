@@ -1,0 +1,47 @@
+kind = "DojoModel"
+class_hash = "0x77f0363c47bc3050398d2b3d829a6c94fa4c0b4da994c61e0870b0d62858f46"
+original_class_hash = "0x77f0363c47bc3050398d2b3d829a6c94fa4c0b4da994c61e0870b0d62858f46"
+abi = "manifests/dev/base/abis/models/eternum-MapExplored-53a86a9a.json"
+tag = "eternum-MapExplored"
+qualified_path = "eternum::systems::map::contracts::map_systems::map_explored"
+manifest_name = "eternum-MapExplored-53a86a9a"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "col"
+type = "u32"
+key = true
+
+[[members]]
+name = "row"
+type = "u32"
+key = true
+
+[[members]]
+name = "id"
+type = "ID"
+key = true
+
+[[members]]
+name = "entity_owner_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "biome"
+type = "Biome"
+key = false
+
+[[members]]
+name = "reward"
+type = "Span<(u8, u128)>"
+key = false
+
+[[members]]
+name = "timestamp"
+type = "u64"
+key = false

@@ -1,0 +1,11 @@
+kind = "DojoContract"
+class_hash = "0x66bd6566bc24401d4e898356e7f1acea24c5ac7bfc33f69c000cab5bf12dff9"
+original_class_hash = "0x66bd6566bc24401d4e898356e7f1acea24c5ac7bfc33f69c000cab5bf12dff9"
+base_class_hash = "0x0"
+abi = "manifests/prod/base/abis/contracts/eternum-map_systems-5431b122.json"
+reads = []
+writes = []
+init_calldata = []
+tag = "eternum-map_systems"
+systems = ["explore"]
+manifest_name = "eternum-map_systems-5431b122"

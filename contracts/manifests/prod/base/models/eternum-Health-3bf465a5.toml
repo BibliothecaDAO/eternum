@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x3e7f76d49fffd245b285f60d01890894ba559a4f873c379fa47aa3e48027cf5"
+original_class_hash = "0x3e7f76d49fffd245b285f60d01890894ba559a4f873c379fa47aa3e48027cf5"
+abi = "manifests/prod/base/abis/models/eternum-Health-3bf465a5.json"
+tag = "eternum-Health"
+qualified_path = "eternum::models::combat::health"
+manifest_name = "eternum-Health-3bf465a5"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "current"
+type = "u128"
+key = false
+
+[[members]]
+name = "lifetime"
+type = "u128"
+key = false

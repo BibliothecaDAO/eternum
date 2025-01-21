@@ -1,0 +1,17 @@
+kind = "DojoModel"
+class_hash = "0x16ccb72931523cbdd3144a679a2fc3c8bc391a53626c9efd6510444e3b223fa"
+original_class_hash = "0x16ccb72931523cbdd3144a679a2fc3c8bc391a53626c9efd6510444e3b223fa"
+abi = "manifests/prod/base/abis/models/eternum-Status-508b6172.json"
+tag = "eternum-Status"
+qualified_path = "eternum::models::trade::status"
+manifest_name = "eternum-Status-508b6172"
+
+[[members]]
+name = "trade_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "value"
+type = "u128"
+key = false

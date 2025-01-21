@@ -1,0 +1,15 @@
+kind = "DojoContract"
+class_hash = "0x3fc17060e0fd17267c0643025d2e20c186109cc3bd74cce946ccec03987eb0a"
+original_class_hash = "0x3fc17060e0fd17267c0643025d2e20c186109cc3bd74cce946ccec03987eb0a"
+base_class_hash = "0x0"
+abi = "manifests/dev/base/abis/contracts/eternum-troop_systems-54f7aef3.json"
+reads = []
+writes = []
+init_calldata = []
+tag = "eternum-troop_systems"
+systems = [
+    "army_delete",
+    "army_buy_troops",
+    "army_merge_troops",
+]
+manifest_name = "eternum-troop_systems-54f7aef3"

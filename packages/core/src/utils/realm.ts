@@ -1,4 +1,3 @@
-import { realmsJson } from "@bibliothecadao/assets";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
@@ -7,6 +6,7 @@ import { ClientComponents } from "../dojo";
 import { configManager } from "../modelManager/ConfigManager";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
 import { packResources } from "./packed-data";
+import realmsJson from "../data/realms.json";
 
 export const getRealmWithPosition = (entityId: ID, components: ClientComponents) => {
   const { Realm, Owner, Position } = components;
@@ -92,7 +92,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   }
 }
 
-export function getRealm(realmId: ID): RealmInterface | undefined {
+export function getOffchainRealm(realmId: ID): RealmInterface | undefined {
   const realmsData = realms;
   const realm = realmsData[realmId.toString()];
   if (!realm) return;

@@ -1,24 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  armyHasTraveled,
-  ContractAddress,
-  getEntityInfo,
-  MarketInterface,
-  Prize,
-  QuestType,
-  TileManager,
-} from "@bibliothecadao/eternum";
-import {
-  useArmiesByStructure,
-  useBuildingQuantities,
-  useDojo,
-  useNextBlockTimestamp,
-  useTrade,
-} from "@bibliothecadao/react";
-import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { Prize, QuestType } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { QUEST_DETAILS } from "./use-starting-tutorial";
 
 export enum QuestStatus {
@@ -28,7 +14,7 @@ export enum QuestStatus {
 }
 
 export const useQuests = () => {
-  const questDependencies = useQuestDependencies();
+  const questStatus = useQuestClaimStatus();
 
   const questTypes = [
     QuestType.Settle,
@@ -45,156 +31,23 @@ export const useQuests = () => {
     return questTypes.map((type) => ({
       id: type,
       ...QUEST_DETAILS[type],
-      status: questDependencies[type].status,
+      status: questStatus.questClaimStatus[type] ? QuestStatus.Claimed : QuestStatus.InProgress,
     }));
-  }, [questDependencies]);
+  }, []);
 
   return quests;
-};
-
-const useQuestDependencies = () => {
-  const { setup } = useDojo();
-
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-
-  const entityUpdate = useEntityQuery([
-    HasValue(setup.components.EntityOwner, { entity_owner_id: structureEntityId || 0 }),
-  ]);
-  const buildingQuantities = useBuildingQuantities(structureEntityId);
-  const { entityArmies } = useArmiesByStructure({
-    structureEntityId: structureEntityId || 0,
-  });
-  const orders = useGetMyOffers();
-
-  const structurePosition = useMemo(
-    () =>
-      getEntityInfo(
-        structureEntityId,
-        ContractAddress(setup.account.account.address),
-        currentDefaultTick,
-        setup.components,
-      )?.position || {
-        x: 0,
-        y: 0,
-      },
-    [structureEntityId, getEntityInfo],
-  );
-
-  const tileManager = new TileManager(setup.components, setup.network.provider, {
-    col: structurePosition.x,
-    row: structurePosition.y,
-  });
-
-  const existingBuildings = useMemo(() => tileManager.existingBuildings(), [structurePosition]);
-  const hasAnyPausedBuilding = useMemo(
-    () => existingBuildings.some((building) => building.paused),
-    [existingBuildings],
-  );
-
-  const hasDefensiveArmy = useMemo(
-    () => entityArmies.some((army) => army.protectee?.protectee_id === structureEntityId && army.quantity.value > 0n),
-    [entityArmies],
-  );
-  const hasAttackingArmy = useMemo(
-    () => entityArmies.some((army) => army.protectee === undefined && army.quantity.value > 0n),
-    [entityArmies],
-  );
-
-  const hasTraveled = useMemo(
-    () => armyHasTraveled(entityArmies, structurePosition),
-    [entityArmies, structurePosition],
-  );
-
-  const { questClaimStatus } = useQuestClaimStatus();
-  const unclaimedQuestsCount = useUnclaimedQuestsCount();
-
-  return useMemo(
-    () => ({
-      [QuestType.Settle]: {
-        value: true,
-        status: questClaimStatus[QuestType.Settle] ? QuestStatus.Claimed : QuestStatus.Completed,
-      },
-      [QuestType.BuildFood]: {
-        value: questClaimStatus[QuestType.BuildFood] ? null : buildingQuantities.food,
-        status: questClaimStatus[QuestType.BuildFood]
-          ? QuestStatus.Claimed
-          : buildingQuantities.food > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-      [QuestType.BuildResource]: {
-        value: questClaimStatus[QuestType.BuildResource] ? null : buildingQuantities.resource,
-        status: questClaimStatus[QuestType.BuildResource]
-          ? QuestStatus.Claimed
-          : buildingQuantities.resource > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-
-      [QuestType.PauseProduction]: {
-        value: questClaimStatus[QuestType.PauseProduction] ? null : hasAnyPausedBuilding,
-        status: questClaimStatus[QuestType.PauseProduction]
-          ? QuestStatus.Claimed
-          : hasAnyPausedBuilding
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-
-      [QuestType.CreateDefenseArmy]: {
-        value: questClaimStatus[QuestType.CreateDefenseArmy] ? null : hasDefensiveArmy,
-        status: questClaimStatus[QuestType.CreateDefenseArmy]
-          ? QuestStatus.Claimed
-          : hasDefensiveArmy
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-      [QuestType.CreateAttackArmy]: {
-        value: questClaimStatus[QuestType.CreateAttackArmy] ? null : hasAttackingArmy,
-        status: questClaimStatus[QuestType.CreateAttackArmy]
-          ? QuestStatus.Claimed
-          : hasAttackingArmy
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-      [QuestType.Travel]: {
-        value: questClaimStatus[QuestType.Travel] ? null : hasTraveled,
-        status: questClaimStatus[QuestType.Travel]
-          ? QuestStatus.Claimed
-          : hasTraveled
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-
-      [QuestType.CreateTrade]: {
-        value: questClaimStatus[QuestType.CreateTrade] ? null : orders.length,
-        status: questClaimStatus[QuestType.CreateTrade]
-          ? QuestStatus.Claimed
-          : orders.length > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
-      },
-    }),
-    [
-      structureEntityId,
-      questClaimStatus,
-      unclaimedQuestsCount > 0 ? entityUpdate : null,
-      unclaimedQuestsCount > 0 ? orders : null,
-    ],
-  );
 };
 
 const useQuestClaimStatus = () => {
   const {
     setup: {
-      components: { Quest, Realm },
+      components: { Quest },
     },
-    account: { account },
   } = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const realmSettler = useComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]))?.settler_address;
-  const isNotSettler = realmSettler !== ContractAddress(account.address);
+  // todo: find another way to know if settler
+  const isNotSettler = false;
 
   const prizeUpdate = useEntityQuery([HasValue(Quest, { entity_id: structureEntityId || 0 })]);
 
@@ -231,29 +84,3 @@ export const useUnclaimedQuestsCount = () => {
 
   return unclaimedQuestsCount;
 };
-
-function useGetMyOffers(): MarketInterface[] {
-  const {
-    setup: {
-      components: { Status, Trade },
-    },
-  } = useDojo();
-
-  const { computeTrades } = useTrade();
-
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
-
-  const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
-
-  const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { maker_id: structureEntityId })]);
-
-  useMemo((): any => {
-    if (!nextBlockTimestamp) return;
-    const trades = computeTrades(entityIds, nextBlockTimestamp);
-    setMyOffers(trades);
-    // only recompute when different number of orders
-  }, [entityIds, nextBlockTimestamp]);
-
-  return myOffers;
-}

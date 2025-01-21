@@ -10,7 +10,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
 
 # Editor directories and files
 .vscode/*
@@ -25,3 +24,5 @@ dist-ssr
 yarn.lock
 
 dev-dist
+.env
+.env.local

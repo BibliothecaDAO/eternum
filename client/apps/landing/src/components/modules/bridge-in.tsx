@@ -27,7 +27,8 @@ import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
+import { getResourceAddresses } from "../ui/utils/addresses";
+import { calculateDonkeysNeeded, getTotalResourceWeight } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeIn = () => {
@@ -70,7 +71,7 @@ export const BridgeIn = () => {
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({
     [ResourcesIds.Lords]: 0,
   });
-  const [resourceAddresses, setResourceAddresses] = useState<{ [key: string]: string }>({});
+  const [resourceAddresses, setResourceAddresses] = useState<{ [key: string]: [number, string] }>({});
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
     [selectedResourceIds],
@@ -127,7 +128,7 @@ export const BridgeIn = () => {
 
   useEffect(() => {
     const fetchAddresses = async () => {
-      const addresses = await getSeasonAddresses();
+      const addresses = await getResourceAddresses();
       setResourceAddresses(addresses);
     };
     fetchAddresses();
@@ -148,7 +149,9 @@ export const BridgeIn = () => {
           .filter(([id, amount]) => amount > 0)
           .map(async ([id, amount]) => {
             const tokenAddress =
-              resourceAddresses[ResourcesIds[id].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
+              resourceAddresses[
+                ResourcesIds[id as keyof typeof ResourcesIds].toLocaleUpperCase() as keyof typeof resourceAddresses
+              ][1];
             return {
               tokenAddress: tokenAddress as string,
               amount: BigInt(amount * 10 ** 18),

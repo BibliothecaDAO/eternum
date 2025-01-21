@@ -1,5 +1,6 @@
 import { divideByPrecision, formatNumberWithCommas } from "@/utils/formatting";
-import { CapacityConfigCategory, EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, ResourcesIds } from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
 
 ## Storage System
 
@@ -11,21 +12,21 @@ your realm.
 Resources in Eternum have different weights that affect storage:
 
 - **Basic resources** (Wood, Stone, Coal,...):
-  {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Wood])}kg per unit
-- **Military units**: {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Knight])}kg per
+  {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Wood])}kg per unit
+- **Military units**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Knight])}kg per
   unit
-- **Food** (Wheat, Fish): {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Wheat])}kg
-  per unit
-- **Lords**: {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Lords])}kg per unit
-- **Donkey**: {divideByPrecision(EternumGlobalConfig.resources.resourceWeightsGrams[ResourcesIds.Donkey])}kg
+- **Food** (Wheat, Fish): {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Wheat])}kg per
+  unit
+- **Lords**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Lords])}kg per unit
+- **Donkey**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Donkey])}kg
 
 ### Storehouses <img src="/buildings/storehouse.png" alt="Storehouse" width="300" className="float-right"/>
 
 Expand your storage capacity to support your growing realm:
 
 - **Capacity**: Each storehouse adds
-  {formatNumberWithCommas(divideByPrecision(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]
-  ))}kg of storage per resource
+  {formatNumberWithCommas(divideByPrecision(ETERNUM_CONFIG().carryCapacityGram[CapacityConfigCategory.Storehouse] ))}kg
+  of storage per resource
 - **Expansion**: Build additional storehouses to increase total storage.
 
 - **When storage is full**:

@@ -43,9 +43,10 @@ interface SeasonPassButtonProps {
 const SEASON_PASS_MARKET_URL = "0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80";
 
 const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
-  const mintUrl = env.VITE_PUBLIC_DEV
-    ? "https://empire-next.realms.world/season-passes"
-    : "https://empire.realms.world/season-passes";
+  const mintUrl =
+    env.VITE_PUBLIC_CHAIN === "mainnet"
+      ? "https://empire.realms.world/season-passes"
+      : "https://empire-next.realms.world/season-passes";
 
   return (
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
@@ -189,11 +190,6 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
   const realms = usePlayerOwnedRealms();
 
-  const createRandomRealm = () => {
-    const newRealmId = Math.max(...realms.map((realm) => realm.realmId), 0) + 1;
-    create_multiple_realms_dev({ signer: account, realm_ids: [newRealmId] });
-  };
-
   useEffect(() => {
     const fetchSeasonPasses = async () => {
       const unsettledSeasonPassRealms = await getUnusedSeasonPasses(account.address, realms);
@@ -203,26 +199,21 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   }, [realms, account.address]);
 
   const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
-
   return (
     hasAcceptedToS &&
     (seasonPassRealms.length > 0 ? (
       <Button
-        onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
+        onClick={handleClick}
         className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
           realms.length === 0 ? "animate-pulse" : ""
         }`}
       >
-        {env.VITE_PUBLIC_DEV ? (
-          "Create Random Realm"
-        ) : (
-          <div className="flex items-center">
-            <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
-              {seasonPassRealms.length}
-            </div>
-            Redeem Season Pass
+        <div className="flex items-center">
+          <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
+            {seasonPassRealms.length}
           </div>
-        )}
+          Redeem Season Pass
+        </div>
       </Button>
     ) : (
       <div className="flex gap-2 justify-between w-full">
@@ -233,7 +224,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           rel="noopener noreferrer"
         >
           <Button
-            onClick={env.VITE_PUBLIC_DEV ? createRandomRealm : handleClick}
+            onClick={handleClick}
             className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
               realms.length === 0 ? "animate-pulse" : ""
             }`}

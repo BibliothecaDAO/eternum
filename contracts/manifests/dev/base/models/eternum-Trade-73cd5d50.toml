@@ -1,0 +1,67 @@
+kind = "DojoModel"
+class_hash = "0x860044ba4a9b85bd90614e720326a78d9a0f33001220b5ed55cb513c452b13"
+original_class_hash = "0x860044ba4a9b85bd90614e720326a78d9a0f33001220b5ed55cb513c452b13"
+abi = "manifests/dev/base/abis/models/eternum-Trade-73cd5d50.json"
+tag = "eternum-Trade"
+qualified_path = "eternum::models::trade::trade"
+manifest_name = "eternum-Trade-73cd5d50"
+
+[[members]]
+name = "trade_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "maker_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "maker_gives_resources_origin_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "maker_gives_resources_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "maker_gives_resources_hash"
+type = "felt252"
+key = false
+
+[[members]]
+name = "maker_gives_resources_weight"
+type = "u128"
+key = false
+
+[[members]]
+name = "taker_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "taker_gives_resources_origin_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "taker_gives_resources_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "taker_gives_resources_hash"
+type = "felt252"
+key = false
+
+[[members]]
+name = "taker_gives_resources_weight"
+type = "u128"
+key = false
+
+[[members]]
+name = "expires_at"
+type = "u64"
+key = false

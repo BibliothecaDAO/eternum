@@ -44,12 +44,12 @@ export enum World__ModelOrderField {
   Name = "NAME",
 }
 
-export type S0_Eternum_AcceptOrderOrder = {
+export type s1_eternum_AcceptOrderOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_AcceptOrderOrderField;
+  field: s1_eternum_AcceptOrderOrderField;
 };
 
-export enum S0_Eternum_AcceptOrderOrderField {
+export enum s1_eternum_AcceptOrderOrderField {
   Id = "ID",
   MakerId = "MAKER_ID",
   TakerId = "TAKER_ID",
@@ -57,7 +57,7 @@ export enum S0_Eternum_AcceptOrderOrderField {
   TradeId = "TRADE_ID",
 }
 
-export type S0_Eternum_AcceptOrderWhereInput = {
+export type s1_eternum_AcceptOrderWhereInput = {
   id?: InputMaybe<Scalars["u32"]["input"]>;
   idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -115,19 +115,19 @@ export type S0_Eternum_AcceptOrderWhereInput = {
   trade_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_AcceptPartialOrderOrder = {
+export type s1_eternum_AcceptPartialOrderOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_AcceptPartialOrderOrderField;
+  field: s1_eternum_AcceptPartialOrderOrderField;
 };
 
-export enum S0_Eternum_AcceptPartialOrderOrderField {
+export enum s1_eternum_AcceptPartialOrderOrderField {
   MakerId = "MAKER_ID",
   TakerId = "TAKER_ID",
   Timestamp = "TIMESTAMP",
   TradeId = "TRADE_ID",
 }
 
-export type S0_Eternum_AcceptPartialOrderWhereInput = {
+export type s1_eternum_AcceptPartialOrderWhereInput = {
   maker_id?: InputMaybe<Scalars["u32"]["input"]>;
   maker_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   maker_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -174,17 +174,17 @@ export type S0_Eternum_AcceptPartialOrderWhereInput = {
   trade_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_AddressNameOrder = {
+export type s1_eternum_AddressNameOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_AddressNameOrderField;
+  field: s1_eternum_AddressNameOrderField;
 };
 
-export enum S0_Eternum_AddressNameOrderField {
+export enum s1_eternum_AddressNameOrderField {
   Address = "ADDRESS",
   Name = "NAME",
 }
 
-export type S0_Eternum_AddressNameWhereInput = {
+export type s1_eternum_AddressNameWhereInput = {
   address?: InputMaybe<Scalars["felt252"]["input"]>;
   addressEQ?: InputMaybe<Scalars["felt252"]["input"]>;
   addressGT?: InputMaybe<Scalars["felt252"]["input"]>;
@@ -209,19 +209,19 @@ export type S0_Eternum_AddressNameWhereInput = {
   nameNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
 };
 
-export type S0_Eternum_ArmyOrder = {
+export type s1_eternum_ArmyOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ArmyOrderField;
+  field: s1_eternum_ArmyOrderField;
 };
 
-export enum S0_Eternum_ArmyOrderField {
+export enum s1_eternum_ArmyOrderField {
   BattleId = "BATTLE_ID",
   BattleSide = "BATTLE_SIDE",
   EntityId = "ENTITY_ID",
   Troops = "TROOPS",
 }
 
-export type S0_Eternum_ArmyWhereInput = {
+export type s1_eternum_ArmyWhereInput = {
   battle_id?: InputMaybe<Scalars["u32"]["input"]>;
   battle_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   battle_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -247,17 +247,17 @@ export type S0_Eternum_ArmyWhereInput = {
   entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_ArrivalTimeOrder = {
+export type s1_eternum_ArrivalTimeOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ArrivalTimeOrderField;
+  field: s1_eternum_ArrivalTimeOrderField;
 };
 
-export enum S0_Eternum_ArrivalTimeOrderField {
+export enum s1_eternum_ArrivalTimeOrderField {
   ArrivesAt = "ARRIVES_AT",
   EntityId = "ENTITY_ID",
 }
 
-export type S0_Eternum_ArrivalTimeWhereInput = {
+export type s1_eternum_ArrivalTimeWhereInput = {
   arrives_at?: InputMaybe<Scalars["u64"]["input"]>;
   arrives_atEQ?: InputMaybe<Scalars["u64"]["input"]>;
   arrives_atGT?: InputMaybe<Scalars["u64"]["input"]>;
@@ -282,19 +282,19 @@ export type S0_Eternum_ArrivalTimeWhereInput = {
   entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_BankConfigOrder = {
+export type s1_eternum_BankConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BankConfigOrderField;
+  field: s1_eternum_BankConfigOrderField;
 };
 
-export enum S0_Eternum_BankConfigOrderField {
+export enum s1_eternum_BankConfigOrderField {
   ConfigId = "CONFIG_ID",
   LordsCost = "LORDS_COST",
   LpFeeDenom = "LP_FEE_DENOM",
   LpFeeNum = "LP_FEE_NUM",
 }
 
-export type S0_Eternum_BankConfigWhereInput = {
+export type s1_eternum_BankConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -341,12 +341,12 @@ export type S0_Eternum_BankConfigWhereInput = {
   lp_fee_numNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_BankOrder = {
+export type s1_eternum_BankOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BankOrderField;
+  field: s1_eternum_BankOrderField;
 };
 
-export enum S0_Eternum_BankOrderField {
+export enum s1_eternum_BankOrderField {
   EntityId = "ENTITY_ID",
   Exists = "EXISTS",
   OwnerBridgeFeeDptPercent = "OWNER_BRIDGE_FEE_DPT_PERCENT",
@@ -355,7 +355,7 @@ export enum S0_Eternum_BankOrderField {
   OwnerFeeNum = "OWNER_FEE_NUM",
 }
 
-export type S0_Eternum_BankWhereInput = {
+export type s1_eternum_BankWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -414,12 +414,12 @@ export type S0_Eternum_BankWhereInput = {
   owner_fee_numNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_BattleClaimDataOrder = {
+export type s1_eternum_BattleClaimDataOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BattleClaimDataOrderField;
+  field: s1_eternum_BattleClaimDataOrderField;
 };
 
-export enum S0_Eternum_BattleClaimDataOrderField {
+export enum s1_eternum_BattleClaimDataOrderField {
   ClaimeeAddress = "CLAIMEE_ADDRESS",
   ClaimeeName = "CLAIMEE_NAME",
   Claimer = "CLAIMER",
@@ -434,7 +434,7 @@ export enum S0_Eternum_BattleClaimDataOrderField {
   Y = "Y",
 }
 
-export type S0_Eternum_BattleClaimDataWhereInput = {
+export type s1_eternum_BattleClaimDataWhereInput = {
   claimee_address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   claimee_addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   claimee_addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -549,19 +549,19 @@ export type S0_Eternum_BattleClaimDataWhereInput = {
   yNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_BattleConfigOrder = {
+export type s1_eternum_BattleConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BattleConfigOrderField;
+  field: s1_eternum_BattleConfigOrderField;
 };
 
-export enum S0_Eternum_BattleConfigOrderField {
+export enum s1_eternum_BattleConfigOrderField {
   BattleDelaySeconds = "BATTLE_DELAY_SECONDS",
   ConfigId = "CONFIG_ID",
   HyperstructureImmunityTicks = "HYPERSTRUCTURE_IMMUNITY_TICKS",
   RegularImmunityTicks = "REGULAR_IMMUNITY_TICKS",
 }
 
-export type S0_Eternum_BattleConfigWhereInput = {
+export type s1_eternum_BattleConfigWhereInput = {
   battle_delay_seconds?: InputMaybe<Scalars["u64"]["input"]>;
   battle_delay_secondsEQ?: InputMaybe<Scalars["u64"]["input"]>;
   battle_delay_secondsGT?: InputMaybe<Scalars["u64"]["input"]>;
@@ -608,12 +608,12 @@ export type S0_Eternum_BattleConfigWhereInput = {
   regular_immunity_ticksNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_BattleJoinDataOrder = {
+export type s1_eternum_BattleJoinDataOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BattleJoinDataOrderField;
+  field: s1_eternum_BattleJoinDataOrderField;
 };
 
-export enum S0_Eternum_BattleJoinDataOrderField {
+export enum s1_eternum_BattleJoinDataOrderField {
   BattleEntityId = "BATTLE_ENTITY_ID",
   DurationLeft = "DURATION_LEFT",
   EventId = "EVENT_ID",
@@ -627,7 +627,7 @@ export enum S0_Eternum_BattleJoinDataOrderField {
   Y = "Y",
 }
 
-export type S0_Eternum_BattleJoinDataWhereInput = {
+export type s1_eternum_BattleJoinDataWhereInput = {
   battle_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   battle_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   battle_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -731,12 +731,12 @@ export type S0_Eternum_BattleJoinDataWhereInput = {
   yNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_BattleLeaveDataOrder = {
+export type s1_eternum_BattleLeaveDataOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BattleLeaveDataOrderField;
+  field: s1_eternum_BattleLeaveDataOrderField;
 };
 
-export enum S0_Eternum_BattleLeaveDataOrderField {
+export enum s1_eternum_BattleLeaveDataOrderField {
   BattleEntityId = "BATTLE_ENTITY_ID",
   DurationLeft = "DURATION_LEFT",
   EventId = "EVENT_ID",
@@ -750,7 +750,7 @@ export enum S0_Eternum_BattleLeaveDataOrderField {
   Y = "Y",
 }
 
-export type S0_Eternum_BattleLeaveDataWhereInput = {
+export type s1_eternum_BattleLeaveDataWhereInput = {
   battle_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   battle_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   battle_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -854,12 +854,12 @@ export type S0_Eternum_BattleLeaveDataWhereInput = {
   yNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_BattleOrder = {
+export type s1_eternum_BattleOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BattleOrderField;
+  field: s1_eternum_BattleOrderField;
 };
 
-export enum S0_Eternum_BattleOrderField {
+export enum s1_eternum_BattleOrderField {
   AttackersResourcesEscrowId = "ATTACKERS_RESOURCES_ESCROW_ID",
   AttackArmy = "ATTACK_ARMY",
   AttackArmyHealth = "ATTACK_ARMY_HEALTH",
@@ -876,12 +876,12 @@ export enum S0_Eternum_BattleOrderField {
   StartAt = "START_AT",
 }
 
-export type S0_Eternum_BattlePillageDataOrder = {
+export type s1_eternum_BattlePillageDataOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BattlePillageDataOrderField;
+  field: s1_eternum_BattlePillageDataOrderField;
 };
 
-export enum S0_Eternum_BattlePillageDataOrderField {
+export enum s1_eternum_BattlePillageDataOrderField {
   AttackerLostTroops = "ATTACKER_LOST_TROOPS",
   DestroyedBuildingCategory = "DESTROYED_BUILDING_CATEGORY",
   EventId = "EVENT_ID",
@@ -902,7 +902,7 @@ export enum S0_Eternum_BattlePillageDataOrderField {
   Y = "Y",
 }
 
-export type S0_Eternum_BattlePillageDataWhereInput = {
+export type s1_eternum_BattlePillageDataWhereInput = {
   destroyed_building_category?: InputMaybe<Scalars["Enum"]["input"]>;
   event_id?: InputMaybe<Scalars["Enum"]["input"]>;
   id?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1030,12 +1030,12 @@ export type S0_Eternum_BattlePillageDataWhereInput = {
   yNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_BattleStartDataOrder = {
+export type s1_eternum_BattleStartDataOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BattleStartDataOrderField;
+  field: s1_eternum_BattleStartDataOrderField;
 };
 
-export enum S0_Eternum_BattleStartDataOrderField {
+export enum s1_eternum_BattleStartDataOrderField {
   Attacker = "ATTACKER",
   AttackerArmyEntityId = "ATTACKER_ARMY_ENTITY_ID",
   AttackerName = "ATTACKER_NAME",
@@ -1052,7 +1052,7 @@ export enum S0_Eternum_BattleStartDataOrderField {
   Y = "Y",
 }
 
-export type S0_Eternum_BattleStartDataWhereInput = {
+export type s1_eternum_BattleStartDataWhereInput = {
   attacker?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   attackerEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   attackerGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -1189,7 +1189,7 @@ export type S0_Eternum_BattleStartDataWhereInput = {
   yNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_BattleWhereInput = {
+export type s1_eternum_BattleWhereInput = {
   attack_delta?: InputMaybe<Scalars["u64"]["input"]>;
   attack_deltaEQ?: InputMaybe<Scalars["u64"]["input"]>;
   attack_deltaGT?: InputMaybe<Scalars["u64"]["input"]>;
@@ -1280,19 +1280,19 @@ export type S0_Eternum_BattleWhereInput = {
   start_atNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_BuildingCategoryPopConfigOrder = {
+export type s1_eternum_BuildingCategoryPopConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BuildingCategoryPopConfigOrderField;
+  field: s1_eternum_BuildingCategoryPopConfigOrderField;
 };
 
-export enum S0_Eternum_BuildingCategoryPopConfigOrderField {
+export enum s1_eternum_BuildingCategoryPopConfigOrderField {
   BuildingCategory = "BUILDING_CATEGORY",
   Capacity = "CAPACITY",
   ConfigId = "CONFIG_ID",
   Population = "POPULATION",
 }
 
-export type S0_Eternum_BuildingCategoryPopConfigWhereInput = {
+export type s1_eternum_BuildingCategoryPopConfigWhereInput = {
   building_category?: InputMaybe<Scalars["Enum"]["input"]>;
   capacity?: InputMaybe<Scalars["u32"]["input"]>;
   capacityEQ?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1329,12 +1329,12 @@ export type S0_Eternum_BuildingCategoryPopConfigWhereInput = {
   populationNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_BuildingConfigOrder = {
+export type s1_eternum_BuildingConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BuildingConfigOrderField;
+  field: s1_eternum_BuildingConfigOrderField;
 };
 
-export enum S0_Eternum_BuildingConfigOrderField {
+export enum s1_eternum_BuildingConfigOrderField {
   Category = "CATEGORY",
   ConfigId = "CONFIG_ID",
   ResourceCostCount = "RESOURCE_COST_COUNT",
@@ -1342,7 +1342,7 @@ export enum S0_Eternum_BuildingConfigOrderField {
   ResourceType = "RESOURCE_TYPE",
 }
 
-export type S0_Eternum_BuildingConfigWhereInput = {
+export type s1_eternum_BuildingConfigWhereInput = {
   category?: InputMaybe<Scalars["Enum"]["input"]>;
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1390,17 +1390,17 @@ export type S0_Eternum_BuildingConfigWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_BuildingGeneralConfigOrder = {
+export type s1_eternum_BuildingGeneralConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BuildingGeneralConfigOrderField;
+  field: s1_eternum_BuildingGeneralConfigOrderField;
 };
 
-export enum S0_Eternum_BuildingGeneralConfigOrderField {
+export enum s1_eternum_BuildingGeneralConfigOrderField {
   BaseCostPercentIncrease = "BASE_COST_PERCENT_INCREASE",
   ConfigId = "CONFIG_ID",
 }
 
-export type S0_Eternum_BuildingGeneralConfigWhereInput = {
+export type s1_eternum_BuildingGeneralConfigWhereInput = {
   base_cost_percent_increase?: InputMaybe<Scalars["u16"]["input"]>;
   base_cost_percent_increaseEQ?: InputMaybe<Scalars["u16"]["input"]>;
   base_cost_percent_increaseGT?: InputMaybe<Scalars["u16"]["input"]>;
@@ -1425,12 +1425,12 @@ export type S0_Eternum_BuildingGeneralConfigWhereInput = {
   config_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_BuildingOrder = {
+export type s1_eternum_BuildingOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BuildingOrderField;
+  field: s1_eternum_BuildingOrderField;
 };
 
-export enum S0_Eternum_BuildingOrderField {
+export enum s1_eternum_BuildingOrderField {
   BonusPercent = "BONUS_PERCENT",
   Category = "CATEGORY",
   EntityId = "ENTITY_ID",
@@ -1443,18 +1443,18 @@ export enum S0_Eternum_BuildingOrderField {
   ProducedResourceType = "PRODUCED_RESOURCE_TYPE",
 }
 
-export type S0_Eternum_BuildingQuantityv2Order = {
+export type s1_eternum_BuildingQuantityv2Order = {
   direction: OrderDirection;
-  field: S0_Eternum_BuildingQuantityv2OrderField;
+  field: s1_eternum_BuildingQuantityv2OrderField;
 };
 
-export enum S0_Eternum_BuildingQuantityv2OrderField {
+export enum s1_eternum_BuildingQuantityv2OrderField {
   Category = "CATEGORY",
   EntityId = "ENTITY_ID",
   Value = "VALUE",
 }
 
-export type S0_Eternum_BuildingQuantityv2WhereInput = {
+export type s1_eternum_BuildingQuantityv2WhereInput = {
   category?: InputMaybe<Scalars["Enum"]["input"]>;
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1480,7 +1480,7 @@ export type S0_Eternum_BuildingQuantityv2WhereInput = {
   valueNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_BuildingWhereInput = {
+export type s1_eternum_BuildingWhereInput = {
   bonus_percent?: InputMaybe<Scalars["u32"]["input"]>;
   bonus_percentEQ?: InputMaybe<Scalars["u32"]["input"]>;
   bonus_percentGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1573,19 +1573,19 @@ export type S0_Eternum_BuildingWhereInput = {
   produced_resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_BurnDonkeyOrder = {
+export type s1_eternum_BurnDonkeyOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_BurnDonkeyOrderField;
+  field: s1_eternum_BurnDonkeyOrderField;
 };
 
-export enum S0_Eternum_BurnDonkeyOrderField {
+export enum s1_eternum_BurnDonkeyOrderField {
   Amount = "AMOUNT",
   EntityId = "ENTITY_ID",
   PlayerAddress = "PLAYER_ADDRESS",
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_BurnDonkeyWhereInput = {
+export type s1_eternum_BurnDonkeyWhereInput = {
   amount?: InputMaybe<Scalars["u128"]["input"]>;
   amountEQ?: InputMaybe<Scalars["u128"]["input"]>;
   amountGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -1632,19 +1632,19 @@ export type S0_Eternum_BurnDonkeyWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_CancelOrderOrder = {
+export type s1_eternum_CancelOrderOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_CancelOrderOrderField;
+  field: s1_eternum_CancelOrderOrderField;
 };
 
-export enum S0_Eternum_CancelOrderOrderField {
+export enum s1_eternum_CancelOrderOrderField {
   MakerId = "MAKER_ID",
   TakerId = "TAKER_ID",
   Timestamp = "TIMESTAMP",
   TradeId = "TRADE_ID",
 }
 
-export type S0_Eternum_CancelOrderWhereInput = {
+export type s1_eternum_CancelOrderWhereInput = {
   maker_id?: InputMaybe<Scalars["u32"]["input"]>;
   maker_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   maker_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1691,17 +1691,17 @@ export type S0_Eternum_CancelOrderWhereInput = {
   trade_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_CapacityCategoryOrder = {
+export type s1_eternum_CapacityCategoryOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_CapacityCategoryOrderField;
+  field: s1_eternum_CapacityCategoryOrderField;
 };
 
-export enum S0_Eternum_CapacityCategoryOrderField {
+export enum s1_eternum_CapacityCategoryOrderField {
   Category = "CATEGORY",
   EntityId = "ENTITY_ID",
 }
 
-export type S0_Eternum_CapacityCategoryWhereInput = {
+export type s1_eternum_CapacityCategoryWhereInput = {
   category?: InputMaybe<Scalars["Enum"]["input"]>;
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1716,17 +1716,17 @@ export type S0_Eternum_CapacityCategoryWhereInput = {
   entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_CapacityConfigOrder = {
+export type s1_eternum_CapacityConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_CapacityConfigOrderField;
+  field: s1_eternum_CapacityConfigOrderField;
 };
 
-export enum S0_Eternum_CapacityConfigOrderField {
+export enum s1_eternum_CapacityConfigOrderField {
   Category = "CATEGORY",
   WeightGram = "WEIGHT_GRAM",
 }
 
-export type S0_Eternum_CapacityConfigWhereInput = {
+export type s1_eternum_CapacityConfigWhereInput = {
   category?: InputMaybe<Scalars["Enum"]["input"]>;
   weight_gram?: InputMaybe<Scalars["u128"]["input"]>;
   weight_gramEQ?: InputMaybe<Scalars["u128"]["input"]>;
@@ -1741,19 +1741,19 @@ export type S0_Eternum_CapacityConfigWhereInput = {
   weight_gramNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_ContributionOrder = {
+export type s1_eternum_ContributionOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ContributionOrderField;
+  field: s1_eternum_ContributionOrderField;
 };
 
-export enum S0_Eternum_ContributionOrderField {
+export enum s1_eternum_ContributionOrderField {
   Amount = "AMOUNT",
   HyperstructureEntityId = "HYPERSTRUCTURE_ENTITY_ID",
   PlayerAddress = "PLAYER_ADDRESS",
   ResourceType = "RESOURCE_TYPE",
 }
 
-export type S0_Eternum_ContributionWhereInput = {
+export type s1_eternum_ContributionWhereInput = {
   amount?: InputMaybe<Scalars["u128"]["input"]>;
   amountEQ?: InputMaybe<Scalars["u128"]["input"]>;
   amountGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -1800,18 +1800,18 @@ export type S0_Eternum_ContributionWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_CreateGuildOrder = {
+export type s1_eternum_CreateGuildOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_CreateGuildOrderField;
+  field: s1_eternum_CreateGuildOrderField;
 };
 
-export enum S0_Eternum_CreateGuildOrderField {
+export enum s1_eternum_CreateGuildOrderField {
   GuildEntityId = "GUILD_ENTITY_ID",
   GuildName = "GUILD_NAME",
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_CreateGuildWhereInput = {
+export type s1_eternum_CreateGuildWhereInput = {
   guild_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   guild_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   guild_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1847,19 +1847,19 @@ export type S0_Eternum_CreateGuildWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_CreateOrderOrder = {
+export type s1_eternum_CreateOrderOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_CreateOrderOrderField;
+  field: s1_eternum_CreateOrderOrderField;
 };
 
-export enum S0_Eternum_CreateOrderOrderField {
+export enum s1_eternum_CreateOrderOrderField {
   MakerId = "MAKER_ID",
   TakerId = "TAKER_ID",
   Timestamp = "TIMESTAMP",
   TradeId = "TRADE_ID",
 }
 
-export type S0_Eternum_CreateOrderWhereInput = {
+export type s1_eternum_CreateOrderWhereInput = {
   maker_id?: InputMaybe<Scalars["u32"]["input"]>;
   maker_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   maker_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1906,19 +1906,19 @@ export type S0_Eternum_CreateOrderWhereInput = {
   trade_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_DetachedResourceOrder = {
+export type s1_eternum_DetachedResourceOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_DetachedResourceOrderField;
+  field: s1_eternum_DetachedResourceOrderField;
 };
 
-export enum S0_Eternum_DetachedResourceOrderField {
+export enum s1_eternum_DetachedResourceOrderField {
   EntityId = "ENTITY_ID",
   Index = "INDEX",
   ResourceAmount = "RESOURCE_AMOUNT",
   ResourceType = "RESOURCE_TYPE",
 }
 
-export type S0_Eternum_DetachedResourceWhereInput = {
+export type s1_eternum_DetachedResourceWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -1965,17 +1965,17 @@ export type S0_Eternum_DetachedResourceWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_EntityNameOrder = {
+export type s1_eternum_EntityNameOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_EntityNameOrderField;
+  field: s1_eternum_EntityNameOrderField;
 };
 
-export enum S0_Eternum_EntityNameOrderField {
+export enum s1_eternum_EntityNameOrderField {
   EntityId = "ENTITY_ID",
   Name = "NAME",
 }
 
-export type S0_Eternum_EntityNameWhereInput = {
+export type s1_eternum_EntityNameWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -2000,17 +2000,17 @@ export type S0_Eternum_EntityNameWhereInput = {
   nameNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
 };
 
-export type S0_Eternum_EntityOwnerOrder = {
+export type s1_eternum_EntityOwnerOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_EntityOwnerOrderField;
+  field: s1_eternum_EntityOwnerOrderField;
 };
 
-export enum S0_Eternum_EntityOwnerOrderField {
+export enum s1_eternum_EntityOwnerOrderField {
   EntityId = "ENTITY_ID",
   EntityOwnerId = "ENTITY_OWNER_ID",
 }
 
-export type S0_Eternum_EntityOwnerWhereInput = {
+export type s1_eternum_EntityOwnerWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -2035,19 +2035,19 @@ export type S0_Eternum_EntityOwnerWhereInput = {
   entity_owner_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_EpochOrder = {
+export type s1_eternum_EpochOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_EpochOrderField;
+  field: s1_eternum_EpochOrderField;
 };
 
-export enum S0_Eternum_EpochOrderField {
+export enum s1_eternum_EpochOrderField {
   HyperstructureEntityId = "HYPERSTRUCTURE_ENTITY_ID",
   Index = "INDEX",
   Owners = "OWNERS",
   StartTimestamp = "START_TIMESTAMP",
 }
 
-export type S0_Eternum_EpochWhereInput = {
+export type s1_eternum_EpochWhereInput = {
   hyperstructure_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   hyperstructure_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   hyperstructure_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -2083,76 +2083,65 @@ export type S0_Eternum_EpochWhereInput = {
   start_timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_FragmentMineDiscoveredOrder = {
+export type s1_eternum_FragmentMineDiscoveredOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_FragmentMineDiscoveredOrderField;
+  field: s1_eternum_FragmentMineDiscoveredOrderField;
 };
 
-export enum S0_Eternum_FragmentMineDiscoveredOrderField {
+export enum s1_eternum_FragmentMineDiscoveredOrderField {
   DiscoveredAt = "DISCOVERED_AT",
   EntityOwnerId = "ENTITY_OWNER_ID",
   MineEntityId = "MINE_ENTITY_ID",
   ProductionDeadlineTick = "PRODUCTION_DEADLINE_TICK",
 }
 
-export type S0_Eternum_FragmentMineDiscoveredWhereInput = {
-  discovered_at?: InputMaybe<Scalars["u64"]["input"]>;
-  discovered_atEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  discovered_atGT?: InputMaybe<Scalars["u64"]["input"]>;
-  discovered_atGTE?: InputMaybe<Scalars["u64"]["input"]>;
-  discovered_atIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  discovered_atLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  discovered_atLT?: InputMaybe<Scalars["u64"]["input"]>;
-  discovered_atLTE?: InputMaybe<Scalars["u64"]["input"]>;
-  discovered_atNEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  discovered_atNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  discovered_atNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  entity_owner_id?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_owner_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_owner_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_owner_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_owner_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_owner_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_owner_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_owner_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_owner_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_owner_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_owner_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  mine_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
-  mine_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  mine_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  mine_entity_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  mine_entity_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  mine_entity_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  mine_entity_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  mine_entity_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  mine_entity_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  mine_entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  mine_entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  production_deadline_tick?: InputMaybe<Scalars["u64"]["input"]>;
-  production_deadline_tickEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  production_deadline_tickGT?: InputMaybe<Scalars["u64"]["input"]>;
-  production_deadline_tickGTE?: InputMaybe<Scalars["u64"]["input"]>;
-  production_deadline_tickIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  production_deadline_tickLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  production_deadline_tickLT?: InputMaybe<Scalars["u64"]["input"]>;
-  production_deadline_tickLTE?: InputMaybe<Scalars["u64"]["input"]>;
-  production_deadline_tickNEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  production_deadline_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  production_deadline_tickNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+export type s1_eternum_FragmentMineDiscoveredWhereInput = {
+  discovered_at?: InputMaybe<Scalars['u64']['input']>;
+  discovered_atEQ?: InputMaybe<Scalars['u64']['input']>;
+  discovered_atGT?: InputMaybe<Scalars['u64']['input']>;
+  discovered_atGTE?: InputMaybe<Scalars['u64']['input']>;
+  discovered_atIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  discovered_atLIKE?: InputMaybe<Scalars['u64']['input']>;
+  discovered_atLT?: InputMaybe<Scalars['u64']['input']>;
+  discovered_atLTE?: InputMaybe<Scalars['u64']['input']>;
+  discovered_atNEQ?: InputMaybe<Scalars['u64']['input']>;
+  discovered_atNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  discovered_atNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  entity_owner_id?: InputMaybe<Scalars['u32']['input']>;
+  entity_owner_idEQ?: InputMaybe<Scalars['u32']['input']>;
+  entity_owner_idGT?: InputMaybe<Scalars['u32']['input']>;
+  entity_owner_idGTE?: InputMaybe<Scalars['u32']['input']>;
+  entity_owner_idIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  entity_owner_idLIKE?: InputMaybe<Scalars['u32']['input']>;
+  entity_owner_idLT?: InputMaybe<Scalars['u32']['input']>;
+  entity_owner_idLTE?: InputMaybe<Scalars['u32']['input']>;
+  entity_owner_idNEQ?: InputMaybe<Scalars['u32']['input']>;
+  entity_owner_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  entity_owner_idNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
+  mine_entity_id?: InputMaybe<Scalars['u32']['input']>;
+  mine_entity_idEQ?: InputMaybe<Scalars['u32']['input']>;
+  mine_entity_idGT?: InputMaybe<Scalars['u32']['input']>;
+  mine_entity_idGTE?: InputMaybe<Scalars['u32']['input']>;
+  mine_entity_idIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  mine_entity_idLIKE?: InputMaybe<Scalars['u32']['input']>;
+  mine_entity_idLT?: InputMaybe<Scalars['u32']['input']>;
+  mine_entity_idLTE?: InputMaybe<Scalars['u32']['input']>;
+  mine_entity_idNEQ?: InputMaybe<Scalars['u32']['input']>;
+  mine_entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  mine_entity_idNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
 };
 
-export type S0_Eternum_GameEndedOrder = {
+export type s1_eternum_GameEndedOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_GameEndedOrderField;
+  field: s1_eternum_GameEndedOrderField;
 };
 
-export enum S0_Eternum_GameEndedOrderField {
+export enum s1_eternum_GameEndedOrderField {
   Timestamp = "TIMESTAMP",
   WinnerAddress = "WINNER_ADDRESS",
 }
 
-export type S0_Eternum_GameEndedWhereInput = {
+export type s1_eternum_GameEndedWhereInput = {
   timestamp?: InputMaybe<Scalars["u64"]["input"]>;
   timestampEQ?: InputMaybe<Scalars["u64"]["input"]>;
   timestampGT?: InputMaybe<Scalars["u64"]["input"]>;
@@ -2177,17 +2166,17 @@ export type S0_Eternum_GameEndedWhereInput = {
   winner_addressNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
 };
 
-export type S0_Eternum_GuildMemberOrder = {
+export type s1_eternum_GuildMemberOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_GuildMemberOrderField;
+  field: s1_eternum_GuildMemberOrderField;
 };
 
-export enum S0_Eternum_GuildMemberOrderField {
+export enum s1_eternum_GuildMemberOrderField {
   Address = "ADDRESS",
   GuildEntityId = "GUILD_ENTITY_ID",
 }
 
-export type S0_Eternum_GuildMemberWhereInput = {
+export type s1_eternum_GuildMemberWhereInput = {
   address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -2212,18 +2201,18 @@ export type S0_Eternum_GuildMemberWhereInput = {
   guild_entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_GuildOrder = {
+export type s1_eternum_GuildOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_GuildOrderField;
+  field: s1_eternum_GuildOrderField;
 };
 
-export enum S0_Eternum_GuildOrderField {
+export enum s1_eternum_GuildOrderField {
   EntityId = "ENTITY_ID",
   IsPublic = "IS_PUBLIC",
   MemberCount = "MEMBER_COUNT",
 }
 
-export type S0_Eternum_GuildWhereInput = {
+export type s1_eternum_GuildWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -2249,18 +2238,18 @@ export type S0_Eternum_GuildWhereInput = {
   member_countNOTLIKE?: InputMaybe<Scalars["u16"]["input"]>;
 };
 
-export type S0_Eternum_GuildWhitelistOrder = {
+export type s1_eternum_GuildWhitelistOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_GuildWhitelistOrderField;
+  field: s1_eternum_GuildWhitelistOrderField;
 };
 
-export enum S0_Eternum_GuildWhitelistOrderField {
+export enum s1_eternum_GuildWhitelistOrderField {
   Address = "ADDRESS",
   GuildEntityId = "GUILD_ENTITY_ID",
   IsWhitelisted = "IS_WHITELISTED",
 }
 
-export type S0_Eternum_GuildWhitelistWhereInput = {
+export type s1_eternum_GuildWhitelistWhereInput = {
   address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -2286,18 +2275,18 @@ export type S0_Eternum_GuildWhitelistWhereInput = {
   is_whitelisted?: InputMaybe<Scalars["bool"]["input"]>;
 };
 
-export type S0_Eternum_HealthOrder = {
+export type s1_eternum_HealthOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_HealthOrderField;
+  field: s1_eternum_HealthOrderField;
 };
 
-export enum S0_Eternum_HealthOrderField {
+export enum s1_eternum_HealthOrderField {
   Current = "CURRENT",
   EntityId = "ENTITY_ID",
   Lifetime = "LIFETIME",
 }
 
-export type S0_Eternum_HealthWhereInput = {
+export type s1_eternum_HealthWhereInput = {
   current?: InputMaybe<Scalars["u128"]["input"]>;
   currentEQ?: InputMaybe<Scalars["u128"]["input"]>;
   currentGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -2333,19 +2322,19 @@ export type S0_Eternum_HealthWhereInput = {
   lifetimeNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_HyperstructureCoOwnersChangeOrder = {
+export type s1_eternum_HyperstructureCoOwnersChangeOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_HyperstructureCoOwnersChangeOrderField;
+  field: s1_eternum_HyperstructureCoOwnersChangeOrderField;
 };
 
-export enum S0_Eternum_HyperstructureCoOwnersChangeOrderField {
+export enum s1_eternum_HyperstructureCoOwnersChangeOrderField {
   CoOwners = "CO_OWNERS",
   HyperstructureEntityId = "HYPERSTRUCTURE_ENTITY_ID",
   Id = "ID",
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_HyperstructureCoOwnersChangeWhereInput = {
+export type s1_eternum_HyperstructureCoOwnersChangeWhereInput = {
   hyperstructure_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   hyperstructure_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   hyperstructure_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -2381,12 +2370,12 @@ export type S0_Eternum_HyperstructureCoOwnersChangeWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_HyperstructureConfigOrder = {
+export type s1_eternum_HyperstructureConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_HyperstructureConfigOrderField;
+  field: s1_eternum_HyperstructureConfigOrderField;
 };
 
-export enum S0_Eternum_HyperstructureConfigOrderField {
+export enum s1_eternum_HyperstructureConfigOrderField {
   ConfigId = "CONFIG_ID",
   PointsForWin = "POINTS_FOR_WIN",
   PointsOnCompletion = "POINTS_ON_COMPLETION",
@@ -2394,7 +2383,7 @@ export enum S0_Eternum_HyperstructureConfigOrderField {
   TimeBetweenSharesChange = "TIME_BETWEEN_SHARES_CHANGE",
 }
 
-export type S0_Eternum_HyperstructureConfigWhereInput = {
+export type s1_eternum_HyperstructureConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -2452,12 +2441,12 @@ export type S0_Eternum_HyperstructureConfigWhereInput = {
   time_between_shares_changeNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_HyperstructureContributionOrder = {
+export type s1_eternum_HyperstructureContributionOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_HyperstructureContributionOrderField;
+  field: s1_eternum_HyperstructureContributionOrderField;
 };
 
-export enum S0_Eternum_HyperstructureContributionOrderField {
+export enum s1_eternum_HyperstructureContributionOrderField {
   Contributions = "CONTRIBUTIONS",
   ContributorEntityId = "CONTRIBUTOR_ENTITY_ID",
   HyperstructureEntityId = "HYPERSTRUCTURE_ENTITY_ID",
@@ -2465,7 +2454,7 @@ export enum S0_Eternum_HyperstructureContributionOrderField {
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_HyperstructureContributionWhereInput = {
+export type s1_eternum_HyperstructureContributionWhereInput = {
   contributor_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   contributor_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   contributor_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -2512,12 +2501,12 @@ export type S0_Eternum_HyperstructureContributionWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_HyperstructureFinishedOrder = {
+export type s1_eternum_HyperstructureFinishedOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_HyperstructureFinishedOrderField;
+  field: s1_eternum_HyperstructureFinishedOrderField;
 };
 
-export enum S0_Eternum_HyperstructureFinishedOrderField {
+export enum s1_eternum_HyperstructureFinishedOrderField {
   ContributorEntityId = "CONTRIBUTOR_ENTITY_ID",
   HyperstructureEntityId = "HYPERSTRUCTURE_ENTITY_ID",
   HyperstructureOwnerName = "HYPERSTRUCTURE_OWNER_NAME",
@@ -2525,7 +2514,7 @@ export enum S0_Eternum_HyperstructureFinishedOrderField {
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_HyperstructureFinishedWhereInput = {
+export type s1_eternum_HyperstructureFinishedWhereInput = {
   contributor_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   contributor_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   contributor_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -2583,12 +2572,12 @@ export type S0_Eternum_HyperstructureFinishedWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_HyperstructureOrder = {
+export type s1_eternum_HyperstructureOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_HyperstructureOrderField;
+  field: s1_eternum_HyperstructureOrderField;
 };
 
-export enum S0_Eternum_HyperstructureOrderField {
+export enum s1_eternum_HyperstructureOrderField {
   Access = "ACCESS",
   Completed = "COMPLETED",
   CurrentEpoch = "CURRENT_EPOCH",
@@ -2598,19 +2587,19 @@ export enum S0_Eternum_HyperstructureOrderField {
   Randomness = "RANDOMNESS",
 }
 
-export type S0_Eternum_HyperstructureResourceConfigOrder = {
+export type s1_eternum_HyperstructureResourceConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_HyperstructureResourceConfigOrderField;
+  field: s1_eternum_HyperstructureResourceConfigOrderField;
 };
 
-export enum S0_Eternum_HyperstructureResourceConfigOrderField {
+export enum s1_eternum_HyperstructureResourceConfigOrderField {
   ConfigId = "CONFIG_ID",
   MaxAmount = "MAX_AMOUNT",
   MinAmount = "MIN_AMOUNT",
   ResourceTier = "RESOURCE_TIER",
 }
 
-export type S0_Eternum_HyperstructureResourceConfigWhereInput = {
+export type s1_eternum_HyperstructureResourceConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -2657,19 +2646,19 @@ export type S0_Eternum_HyperstructureResourceConfigWhereInput = {
   resource_tierNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_HyperstructureStartedOrder = {
+export type s1_eternum_HyperstructureStartedOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_HyperstructureStartedOrderField;
+  field: s1_eternum_HyperstructureStartedOrderField;
 };
 
-export enum S0_Eternum_HyperstructureStartedOrderField {
+export enum s1_eternum_HyperstructureStartedOrderField {
   CreatorAddressName = "CREATOR_ADDRESS_NAME",
   HyperstructureEntityId = "HYPERSTRUCTURE_ENTITY_ID",
   Id = "ID",
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_HyperstructureStartedWhereInput = {
+export type s1_eternum_HyperstructureStartedWhereInput = {
   creator_address_name?: InputMaybe<Scalars["felt252"]["input"]>;
   creator_address_nameEQ?: InputMaybe<Scalars["felt252"]["input"]>;
   creator_address_nameGT?: InputMaybe<Scalars["felt252"]["input"]>;
@@ -2716,7 +2705,7 @@ export type S0_Eternum_HyperstructureStartedWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_HyperstructureWhereInput = {
+export type s1_eternum_HyperstructureWhereInput = {
   access?: InputMaybe<Scalars["Enum"]["input"]>;
   completed?: InputMaybe<Scalars["bool"]["input"]>;
   current_epoch?: InputMaybe<Scalars["u16"]["input"]>;
@@ -2776,19 +2765,19 @@ export type S0_Eternum_HyperstructureWhereInput = {
   randomnessNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
 };
 
-export type S0_Eternum_JoinGuildOrder = {
+export type s1_eternum_JoinGuildOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_JoinGuildOrderField;
+  field: s1_eternum_JoinGuildOrderField;
 };
 
-export enum S0_Eternum_JoinGuildOrderField {
+export enum s1_eternum_JoinGuildOrderField {
   Address = "ADDRESS",
   GuildEntityId = "GUILD_ENTITY_ID",
   GuildName = "GUILD_NAME",
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_JoinGuildWhereInput = {
+export type s1_eternum_JoinGuildWhereInput = {
   address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -2835,17 +2824,17 @@ export type S0_Eternum_JoinGuildWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_LeaderboardEntryOrder = {
+export type s1_eternum_LeaderboardEntryOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_LeaderboardEntryOrderField;
+  field: s1_eternum_LeaderboardEntryOrderField;
 };
 
-export enum S0_Eternum_LeaderboardEntryOrderField {
+export enum s1_eternum_LeaderboardEntryOrderField {
   Address = "ADDRESS",
   Points = "POINTS",
 }
 
-export type S0_Eternum_LeaderboardEntryWhereInput = {
+export type s1_eternum_LeaderboardEntryWhereInput = {
   address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -2870,12 +2859,12 @@ export type S0_Eternum_LeaderboardEntryWhereInput = {
   pointsNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_LeaderboardOrder = {
+export type s1_eternum_LeaderboardOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_LeaderboardOrderField;
+  field: s1_eternum_LeaderboardOrderField;
 };
 
-export enum S0_Eternum_LeaderboardOrderField {
+export enum s1_eternum_LeaderboardOrderField {
   ConfigId = "CONFIG_ID",
   DistributionStarted = "DISTRIBUTION_STARTED",
   RegistrationEndTimestamp = "REGISTRATION_END_TIMESTAMP",
@@ -2883,18 +2872,18 @@ export enum S0_Eternum_LeaderboardOrderField {
   TotalPricePool = "TOTAL_PRICE_POOL",
 }
 
-export type S0_Eternum_LeaderboardRegisterContributionOrder = {
+export type s1_eternum_LeaderboardRegisterContributionOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_LeaderboardRegisterContributionOrderField;
+  field: s1_eternum_LeaderboardRegisterContributionOrderField;
 };
 
-export enum S0_Eternum_LeaderboardRegisterContributionOrderField {
+export enum s1_eternum_LeaderboardRegisterContributionOrderField {
   Address = "ADDRESS",
   HyperstructureEntityId = "HYPERSTRUCTURE_ENTITY_ID",
   Registered = "REGISTERED",
 }
 
-export type S0_Eternum_LeaderboardRegisterContributionWhereInput = {
+export type s1_eternum_LeaderboardRegisterContributionWhereInput = {
   address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -2920,19 +2909,19 @@ export type S0_Eternum_LeaderboardRegisterContributionWhereInput = {
   registered?: InputMaybe<Scalars["bool"]["input"]>;
 };
 
-export type S0_Eternum_LeaderboardRegisterShareOrder = {
+export type s1_eternum_LeaderboardRegisterShareOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_LeaderboardRegisterShareOrderField;
+  field: s1_eternum_LeaderboardRegisterShareOrderField;
 };
 
-export enum S0_Eternum_LeaderboardRegisterShareOrderField {
+export enum s1_eternum_LeaderboardRegisterShareOrderField {
   Address = "ADDRESS",
   Epoch = "EPOCH",
   HyperstructureEntityId = "HYPERSTRUCTURE_ENTITY_ID",
   Registered = "REGISTERED",
 }
 
-export type S0_Eternum_LeaderboardRegisterShareWhereInput = {
+export type s1_eternum_LeaderboardRegisterShareWhereInput = {
   address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -2969,17 +2958,17 @@ export type S0_Eternum_LeaderboardRegisterShareWhereInput = {
   registered?: InputMaybe<Scalars["bool"]["input"]>;
 };
 
-export type S0_Eternum_LeaderboardRegisteredOrder = {
+export type s1_eternum_LeaderboardRegisteredOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_LeaderboardRegisteredOrderField;
+  field: s1_eternum_LeaderboardRegisteredOrderField;
 };
 
-export enum S0_Eternum_LeaderboardRegisteredOrderField {
+export enum s1_eternum_LeaderboardRegisteredOrderField {
   Address = "ADDRESS",
   Registered = "REGISTERED",
 }
 
-export type S0_Eternum_LeaderboardRegisteredWhereInput = {
+export type s1_eternum_LeaderboardRegisteredWhereInput = {
   address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -2994,17 +2983,17 @@ export type S0_Eternum_LeaderboardRegisteredWhereInput = {
   registered?: InputMaybe<Scalars["bool"]["input"]>;
 };
 
-export type S0_Eternum_LeaderboardRewardClaimedOrder = {
+export type s1_eternum_LeaderboardRewardClaimedOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_LeaderboardRewardClaimedOrderField;
+  field: s1_eternum_LeaderboardRewardClaimedOrderField;
 };
 
-export enum S0_Eternum_LeaderboardRewardClaimedOrderField {
+export enum s1_eternum_LeaderboardRewardClaimedOrderField {
   Address = "ADDRESS",
   Claimed = "CLAIMED",
 }
 
-export type S0_Eternum_LeaderboardRewardClaimedWhereInput = {
+export type s1_eternum_LeaderboardRewardClaimedWhereInput = {
   address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -3019,7 +3008,7 @@ export type S0_Eternum_LeaderboardRewardClaimedWhereInput = {
   claimed?: InputMaybe<Scalars["bool"]["input"]>;
 };
 
-export type S0_Eternum_LeaderboardWhereInput = {
+export type s1_eternum_LeaderboardWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3056,12 +3045,12 @@ export type S0_Eternum_LeaderboardWhereInput = {
   total_pointsNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_LevelingConfigOrder = {
+export type s1_eternum_LevelingConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_LevelingConfigOrderField;
+  field: s1_eternum_LevelingConfigOrderField;
 };
 
-export enum S0_Eternum_LevelingConfigOrderField {
+export enum s1_eternum_LevelingConfigOrderField {
   BaseMultiplier = "BASE_MULTIPLIER",
   ConfigId = "CONFIG_ID",
   CostPercentageScaled = "COST_PERCENTAGE_SCALED",
@@ -3078,7 +3067,7 @@ export enum S0_Eternum_LevelingConfigOrderField {
   WheatBaseAmount = "WHEAT_BASE_AMOUNT",
 }
 
-export type S0_Eternum_LevelingConfigWhereInput = {
+export type s1_eternum_LevelingConfigWhereInput = {
   base_multiplier?: InputMaybe<Scalars["u128"]["input"]>;
   base_multiplierEQ?: InputMaybe<Scalars["u128"]["input"]>;
   base_multiplierGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -3235,12 +3224,12 @@ export type S0_Eternum_LevelingConfigWhereInput = {
   wheat_base_amountNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_LiquidityEventOrder = {
+export type s1_eternum_LiquidityEventOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_LiquidityEventOrderField;
+  field: s1_eternum_LiquidityEventOrderField;
 };
 
-export enum S0_Eternum_LiquidityEventOrderField {
+export enum s1_eternum_LiquidityEventOrderField {
   Add = "ADD",
   BankEntityId = "BANK_ENTITY_ID",
   EntityId = "ENTITY_ID",
@@ -3251,7 +3240,7 @@ export enum S0_Eternum_LiquidityEventOrderField {
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_LiquidityEventWhereInput = {
+export type s1_eternum_LiquidityEventWhereInput = {
   add?: InputMaybe<Scalars["bool"]["input"]>;
   bank_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   bank_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3332,19 +3321,19 @@ export type S0_Eternum_LiquidityEventWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_LiquidityOrder = {
+export type s1_eternum_LiquidityOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_LiquidityOrderField;
+  field: s1_eternum_LiquidityOrderField;
 };
 
-export enum S0_Eternum_LiquidityOrderField {
+export enum s1_eternum_LiquidityOrderField {
   BankEntityId = "BANK_ENTITY_ID",
   Player = "PLAYER",
   ResourceType = "RESOURCE_TYPE",
   Shares = "SHARES",
 }
 
-export type S0_Eternum_LiquidityWhereInput = {
+export type s1_eternum_LiquidityWhereInput = {
   bank_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   bank_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   bank_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3380,18 +3369,18 @@ export type S0_Eternum_LiquidityWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_MapConfigOrder = {
+export type s1_eternum_MapConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_MapConfigOrderField;
+  field: s1_eternum_MapConfigOrderField;
 };
 
-export enum S0_Eternum_MapConfigOrderField {
+export enum s1_eternum_MapConfigOrderField {
   ConfigId = "CONFIG_ID",
   RewardResourceAmount = "REWARD_RESOURCE_AMOUNT",
   ShardsMinesFailProbability = "SHARDS_MINES_FAIL_PROBABILITY",
 }
 
-export type S0_Eternum_MapConfigWhereInput = {
+export type s1_eternum_MapConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3427,12 +3416,12 @@ export type S0_Eternum_MapConfigWhereInput = {
   shards_mines_fail_probabilityNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_MapExploredOrder = {
+export type s1_eternum_MapExploredOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_MapExploredOrderField;
+  field: s1_eternum_MapExploredOrderField;
 };
 
-export enum S0_Eternum_MapExploredOrderField {
+export enum s1_eternum_MapExploredOrderField {
   Biome = "BIOME",
   Col = "COL",
   EntityId = "ENTITY_ID",
@@ -3443,7 +3432,7 @@ export enum S0_Eternum_MapExploredOrderField {
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_MapExploredWhereInput = {
+export type s1_eternum_MapExploredWhereInput = {
   biome?: InputMaybe<Scalars["Enum"]["input"]>;
   col?: InputMaybe<Scalars["u32"]["input"]>;
   colEQ?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3513,12 +3502,12 @@ export type S0_Eternum_MapExploredWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_MarketOrder = {
+export type s1_eternum_MarketOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_MarketOrderField;
+  field: s1_eternum_MarketOrderField;
 };
 
-export enum S0_Eternum_MarketOrderField {
+export enum s1_eternum_MarketOrderField {
   BankEntityId = "BANK_ENTITY_ID",
   LordsAmount = "LORDS_AMOUNT",
   ResourceAmount = "RESOURCE_AMOUNT",
@@ -3526,7 +3515,7 @@ export enum S0_Eternum_MarketOrderField {
   TotalShares = "TOTAL_SHARES",
 }
 
-export type S0_Eternum_MarketWhereInput = {
+export type s1_eternum_MarketWhereInput = {
   bank_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   bank_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   bank_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3573,12 +3562,12 @@ export type S0_Eternum_MarketWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_MercenariesConfigOrder = {
+export type s1_eternum_MercenariesConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_MercenariesConfigOrderField;
+  field: s1_eternum_MercenariesConfigOrderField;
 };
 
-export enum S0_Eternum_MercenariesConfigOrderField {
+export enum s1_eternum_MercenariesConfigOrderField {
   ConfigId = "CONFIG_ID",
   CrossbowmenLowerBound = "CROSSBOWMEN_LOWER_BOUND",
   CrossbowmenUpperBound = "CROSSBOWMEN_UPPER_BOUND",
@@ -3589,7 +3578,7 @@ export enum S0_Eternum_MercenariesConfigOrderField {
   Rewards = "REWARDS",
 }
 
-export type S0_Eternum_MercenariesConfigWhereInput = {
+export type s1_eternum_MercenariesConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3669,12 +3658,12 @@ export type S0_Eternum_MercenariesConfigWhereInput = {
   paladins_upper_boundNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_MessageOrder = {
+export type s1_eternum_MessageOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_MessageOrderField;
+  field: s1_eternum_MessageOrderField;
 };
 
-export enum S0_Eternum_MessageOrderField {
+export enum s1_eternum_MessageOrderField {
   Channel = "CHANNEL",
   Content = "CONTENT",
   Identity = "IDENTITY",
@@ -3682,7 +3671,7 @@ export enum S0_Eternum_MessageOrderField {
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_MessageWhereInput = {
+export type s1_eternum_MessageWhereInput = {
   channel?: InputMaybe<Scalars["felt252"]["input"]>;
   channelEQ?: InputMaybe<Scalars["felt252"]["input"]>;
   channelGT?: InputMaybe<Scalars["felt252"]["input"]>;
@@ -3740,12 +3729,12 @@ export type S0_Eternum_MessageWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_MovableOrder = {
+export type s1_eternum_MovableOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_MovableOrderField;
+  field: s1_eternum_MovableOrderField;
 };
 
-export enum S0_Eternum_MovableOrderField {
+export enum s1_eternum_MovableOrderField {
   Blocked = "BLOCKED",
   EntityId = "ENTITY_ID",
   IntermediateCoordX = "INTERMEDIATE_COORD_X",
@@ -3756,7 +3745,7 @@ export enum S0_Eternum_MovableOrderField {
   StartCoordY = "START_COORD_Y",
 }
 
-export type S0_Eternum_MovableWhereInput = {
+export type s1_eternum_MovableWhereInput = {
   blocked?: InputMaybe<Scalars["bool"]["input"]>;
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3827,17 +3816,17 @@ export type S0_Eternum_MovableWhereInput = {
   start_coord_yNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_OrdersOrder = {
+export type s1_eternum_OrdersOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_OrdersOrderField;
+  field: s1_eternum_OrdersOrderField;
 };
 
-export enum S0_Eternum_OrdersOrderField {
+export enum s1_eternum_OrdersOrderField {
   HyperstructureCount = "HYPERSTRUCTURE_COUNT",
   OrderId = "ORDER_ID",
 }
 
-export type S0_Eternum_OrdersWhereInput = {
+export type s1_eternum_OrdersWhereInput = {
   hyperstructure_count?: InputMaybe<Scalars["u32"]["input"]>;
   hyperstructure_countEQ?: InputMaybe<Scalars["u32"]["input"]>;
   hyperstructure_countGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3862,17 +3851,17 @@ export type S0_Eternum_OrdersWhereInput = {
   order_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_OwnedResourcesTrackerOrder = {
+export type s1_eternum_OwnedResourcesTrackerOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_OwnedResourcesTrackerOrderField;
+  field: s1_eternum_OwnedResourcesTrackerOrderField;
 };
 
-export enum S0_Eternum_OwnedResourcesTrackerOrderField {
+export enum s1_eternum_OwnedResourcesTrackerOrderField {
   EntityId = "ENTITY_ID",
   ResourceTypes = "RESOURCE_TYPES",
 }
 
-export type S0_Eternum_OwnedResourcesTrackerWhereInput = {
+export type s1_eternum_OwnedResourcesTrackerWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3897,17 +3886,17 @@ export type S0_Eternum_OwnedResourcesTrackerWhereInput = {
   resource_typesNOTLIKE?: InputMaybe<Scalars["u256"]["input"]>;
 };
 
-export type S0_Eternum_OwnerOrder = {
+export type s1_eternum_OwnerOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_OwnerOrderField;
+  field: s1_eternum_OwnerOrderField;
 };
 
-export enum S0_Eternum_OwnerOrderField {
+export enum s1_eternum_OwnerOrderField {
   Address = "ADDRESS",
   EntityId = "ENTITY_ID",
 }
 
-export type S0_Eternum_OwnerWhereInput = {
+export type s1_eternum_OwnerWhereInput = {
   address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -3932,17 +3921,17 @@ export type S0_Eternum_OwnerWhereInput = {
   entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_PopulationConfigOrder = {
+export type s1_eternum_PopulationConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_PopulationConfigOrderField;
+  field: s1_eternum_PopulationConfigOrderField;
 };
 
-export enum S0_Eternum_PopulationConfigOrderField {
+export enum s1_eternum_PopulationConfigOrderField {
   BasePopulation = "BASE_POPULATION",
   ConfigId = "CONFIG_ID",
 }
 
-export type S0_Eternum_PopulationConfigWhereInput = {
+export type s1_eternum_PopulationConfigWhereInput = {
   base_population?: InputMaybe<Scalars["u32"]["input"]>;
   base_populationEQ?: InputMaybe<Scalars["u32"]["input"]>;
   base_populationGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -3967,18 +3956,18 @@ export type S0_Eternum_PopulationConfigWhereInput = {
   config_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_PopulationOrder = {
+export type s1_eternum_PopulationOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_PopulationOrderField;
+  field: s1_eternum_PopulationOrderField;
 };
 
-export enum S0_Eternum_PopulationOrderField {
+export enum s1_eternum_PopulationOrderField {
   Capacity = "CAPACITY",
   EntityId = "ENTITY_ID",
   Population = "POPULATION",
 }
 
-export type S0_Eternum_PopulationWhereInput = {
+export type s1_eternum_PopulationWhereInput = {
   capacity?: InputMaybe<Scalars["u32"]["input"]>;
   capacityEQ?: InputMaybe<Scalars["u32"]["input"]>;
   capacityGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -4014,18 +4003,18 @@ export type S0_Eternum_PopulationWhereInput = {
   populationNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_PositionOrder = {
+export type s1_eternum_PositionOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_PositionOrderField;
+  field: s1_eternum_PositionOrderField;
 };
 
-export enum S0_Eternum_PositionOrderField {
+export enum s1_eternum_PositionOrderField {
   EntityId = "ENTITY_ID",
   X = "X",
   Y = "Y",
 }
 
-export type S0_Eternum_PositionWhereInput = {
+export type s1_eternum_PositionWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -4061,19 +4050,19 @@ export type S0_Eternum_PositionWhereInput = {
   yNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_ProductionConfigOrder = {
+export type s1_eternum_ProductionConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ProductionConfigOrderField;
+  field: s1_eternum_ProductionConfigOrderField;
 };
 
-export enum S0_Eternum_ProductionConfigOrderField {
+export enum s1_eternum_ProductionConfigOrderField {
   Amount = "AMOUNT",
   InputCount = "INPUT_COUNT",
   OutputCount = "OUTPUT_COUNT",
   ResourceType = "RESOURCE_TYPE",
 }
 
-export type S0_Eternum_ProductionConfigWhereInput = {
+export type s1_eternum_ProductionConfigWhereInput = {
   amount?: InputMaybe<Scalars["u128"]["input"]>;
   amountEQ?: InputMaybe<Scalars["u128"]["input"]>;
   amountGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -4120,17 +4109,17 @@ export type S0_Eternum_ProductionConfigWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_ProductionDeadlineOrder = {
+export type s1_eternum_ProductionDeadlineOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ProductionDeadlineOrderField;
+  field: s1_eternum_ProductionDeadlineOrderField;
 };
 
-export enum S0_Eternum_ProductionDeadlineOrderField {
+export enum s1_eternum_ProductionDeadlineOrderField {
   DeadlineTick = "DEADLINE_TICK",
   EntityId = "ENTITY_ID",
 }
 
-export type S0_Eternum_ProductionDeadlineWhereInput = {
+export type s1_eternum_ProductionDeadlineWhereInput = {
   deadline_tick?: InputMaybe<Scalars["u64"]["input"]>;
   deadline_tickEQ?: InputMaybe<Scalars["u64"]["input"]>;
   deadline_tickGT?: InputMaybe<Scalars["u64"]["input"]>;
@@ -4155,19 +4144,19 @@ export type S0_Eternum_ProductionDeadlineWhereInput = {
   entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_ProductionInputOrder = {
+export type s1_eternum_ProductionInputOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ProductionInputOrderField;
+  field: s1_eternum_ProductionInputOrderField;
 };
 
-export enum S0_Eternum_ProductionInputOrderField {
+export enum s1_eternum_ProductionInputOrderField {
   Index = "INDEX",
   InputResourceAmount = "INPUT_RESOURCE_AMOUNT",
   InputResourceType = "INPUT_RESOURCE_TYPE",
   OutputResourceType = "OUTPUT_RESOURCE_TYPE",
 }
 
-export type S0_Eternum_ProductionInputWhereInput = {
+export type s1_eternum_ProductionInputWhereInput = {
   index?: InputMaybe<Scalars["u8"]["input"]>;
   indexEQ?: InputMaybe<Scalars["u8"]["input"]>;
   indexGT?: InputMaybe<Scalars["u8"]["input"]>;
@@ -4214,33 +4203,33 @@ export type S0_Eternum_ProductionInputWhereInput = {
   output_resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_ProductionOrder = {
+export type s1_eternum_ProductionOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ProductionOrderField;
+  field: s1_eternum_ProductionOrderField;
 };
 
-export enum S0_Eternum_ProductionOrderField {
-  BuildingCount = "BUILDING_COUNT",
-  ConsumptionRate = "CONSUMPTION_RATE",
-  EntityId = "ENTITY_ID",
-  InputFinishTick = "INPUT_FINISH_TICK",
-  LastUpdatedTick = "LAST_UPDATED_TICK",
-  ProductionRate = "PRODUCTION_RATE",
-  ResourceType = "RESOURCE_TYPE",
+export enum s1_eternum_ProductionOrderField {
+  BuildingCount = 'BUILDING_COUNT',
+  ConsumptionRate = 'CONSUMPTION_RATE',
+  EntityId = 'ENTITY_ID',
+  InputFinishTick = 'LABOR_FINISH_TICK',
+  LastUpdatedTick = 'LAST_UPDATED_TICK',
+  ProductionRate = 'PRODUCTION_RATE',
+  ResourceType = 'RESOURCE_TYPE'
 }
 
-export type S0_Eternum_ProductionOutputOrder = {
+export type s1_eternum_ProductionOutputOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ProductionOutputOrderField;
+  field: s1_eternum_ProductionOutputOrderField;
 };
 
-export enum S0_Eternum_ProductionOutputOrderField {
+export enum s1_eternum_ProductionOutputOrderField {
   Index = "INDEX",
   InputResourceType = "INPUT_RESOURCE_TYPE",
   OutputResourceType = "OUTPUT_RESOURCE_TYPE",
 }
 
-export type S0_Eternum_ProductionOutputWhereInput = {
+export type s1_eternum_ProductionOutputWhereInput = {
   index?: InputMaybe<Scalars["u8"]["input"]>;
   indexEQ?: InputMaybe<Scalars["u8"]["input"]>;
   indexGT?: InputMaybe<Scalars["u8"]["input"]>;
@@ -4276,98 +4265,98 @@ export type S0_Eternum_ProductionOutputWhereInput = {
   output_resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_ProductionWhereInput = {
-  building_count?: InputMaybe<Scalars["u8"]["input"]>;
-  building_countEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  building_countGT?: InputMaybe<Scalars["u8"]["input"]>;
-  building_countGTE?: InputMaybe<Scalars["u8"]["input"]>;
-  building_countIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  building_countLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-  building_countLT?: InputMaybe<Scalars["u8"]["input"]>;
-  building_countLTE?: InputMaybe<Scalars["u8"]["input"]>;
-  building_countNEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  building_countNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  building_countNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-  consumption_rate?: InputMaybe<Scalars["u128"]["input"]>;
-  consumption_rateEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  consumption_rateGT?: InputMaybe<Scalars["u128"]["input"]>;
-  consumption_rateGTE?: InputMaybe<Scalars["u128"]["input"]>;
-  consumption_rateIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  consumption_rateLIKE?: InputMaybe<Scalars["u128"]["input"]>;
-  consumption_rateLT?: InputMaybe<Scalars["u128"]["input"]>;
-  consumption_rateLTE?: InputMaybe<Scalars["u128"]["input"]>;
-  consumption_rateNEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  consumption_rateNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  consumption_rateNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
-  entity_id?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  input_finish_tick?: InputMaybe<Scalars["u64"]["input"]>;
-  input_finish_tickEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  input_finish_tickGT?: InputMaybe<Scalars["u64"]["input"]>;
-  input_finish_tickGTE?: InputMaybe<Scalars["u64"]["input"]>;
-  input_finish_tickIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  input_finish_tickLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  input_finish_tickLT?: InputMaybe<Scalars["u64"]["input"]>;
-  input_finish_tickLTE?: InputMaybe<Scalars["u64"]["input"]>;
-  input_finish_tickNEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  input_finish_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  input_finish_tickNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  last_updated_tick?: InputMaybe<Scalars["u64"]["input"]>;
-  last_updated_tickEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  last_updated_tickGT?: InputMaybe<Scalars["u64"]["input"]>;
-  last_updated_tickGTE?: InputMaybe<Scalars["u64"]["input"]>;
-  last_updated_tickIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  last_updated_tickLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  last_updated_tickLT?: InputMaybe<Scalars["u64"]["input"]>;
-  last_updated_tickLTE?: InputMaybe<Scalars["u64"]["input"]>;
-  last_updated_tickNEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  last_updated_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  last_updated_tickNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  production_rate?: InputMaybe<Scalars["u128"]["input"]>;
-  production_rateEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  production_rateGT?: InputMaybe<Scalars["u128"]["input"]>;
-  production_rateGTE?: InputMaybe<Scalars["u128"]["input"]>;
-  production_rateIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  production_rateLIKE?: InputMaybe<Scalars["u128"]["input"]>;
-  production_rateLT?: InputMaybe<Scalars["u128"]["input"]>;
-  production_rateLTE?: InputMaybe<Scalars["u128"]["input"]>;
-  production_rateNEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  production_rateNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  production_rateNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
-  resource_type?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeGT?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeGTE?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  resource_typeLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeLT?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeLTE?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeNEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
+export type s1_eternum_ProductionWhereInput = {
+  building_count?: InputMaybe<Scalars['u8']['input']>;
+  building_countEQ?: InputMaybe<Scalars['u8']['input']>;
+  building_countGT?: InputMaybe<Scalars['u8']['input']>;
+  building_countGTE?: InputMaybe<Scalars['u8']['input']>;
+  building_countIN?: InputMaybe<Array<InputMaybe<Scalars['u8']['input']>>>;
+  building_countLIKE?: InputMaybe<Scalars['u8']['input']>;
+  building_countLT?: InputMaybe<Scalars['u8']['input']>;
+  building_countLTE?: InputMaybe<Scalars['u8']['input']>;
+  building_countNEQ?: InputMaybe<Scalars['u8']['input']>;
+  building_countNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u8']['input']>>>;
+  building_countNOTLIKE?: InputMaybe<Scalars['u8']['input']>;
+  consumption_rate?: InputMaybe<Scalars['u128']['input']>;
+  consumption_rateEQ?: InputMaybe<Scalars['u128']['input']>;
+  consumption_rateGT?: InputMaybe<Scalars['u128']['input']>;
+  consumption_rateGTE?: InputMaybe<Scalars['u128']['input']>;
+  consumption_rateIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
+  consumption_rateLIKE?: InputMaybe<Scalars['u128']['input']>;
+  consumption_rateLT?: InputMaybe<Scalars['u128']['input']>;
+  consumption_rateLTE?: InputMaybe<Scalars['u128']['input']>;
+  consumption_rateNEQ?: InputMaybe<Scalars['u128']['input']>;
+  consumption_rateNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
+  consumption_rateNOTLIKE?: InputMaybe<Scalars['u128']['input']>;
+  entity_id?: InputMaybe<Scalars['u32']['input']>;
+  entity_idEQ?: InputMaybe<Scalars['u32']['input']>;
+  entity_idGT?: InputMaybe<Scalars['u32']['input']>;
+  entity_idGTE?: InputMaybe<Scalars['u32']['input']>;
+  entity_idIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  entity_idLIKE?: InputMaybe<Scalars['u32']['input']>;
+  entity_idLT?: InputMaybe<Scalars['u32']['input']>;
+  entity_idLTE?: InputMaybe<Scalars['u32']['input']>;
+  entity_idNEQ?: InputMaybe<Scalars['u32']['input']>;
+  entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  entity_idNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
+  labor_finish_tick?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickEQ?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickGT?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickGTE?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  labor_finish_tickLIKE?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickLT?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickLTE?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickNEQ?: InputMaybe<Scalars['u64']['input']>;
+  labor_finish_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  labor_finish_tickNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  last_updated_tick?: InputMaybe<Scalars['u64']['input']>;
+  last_updated_tickEQ?: InputMaybe<Scalars['u64']['input']>;
+  last_updated_tickGT?: InputMaybe<Scalars['u64']['input']>;
+  last_updated_tickGTE?: InputMaybe<Scalars['u64']['input']>;
+  last_updated_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  last_updated_tickLIKE?: InputMaybe<Scalars['u64']['input']>;
+  last_updated_tickLT?: InputMaybe<Scalars['u64']['input']>;
+  last_updated_tickLTE?: InputMaybe<Scalars['u64']['input']>;
+  last_updated_tickNEQ?: InputMaybe<Scalars['u64']['input']>;
+  last_updated_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  last_updated_tickNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  production_rate?: InputMaybe<Scalars['u128']['input']>;
+  production_rateEQ?: InputMaybe<Scalars['u128']['input']>;
+  production_rateGT?: InputMaybe<Scalars['u128']['input']>;
+  production_rateGTE?: InputMaybe<Scalars['u128']['input']>;
+  production_rateIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
+  production_rateLIKE?: InputMaybe<Scalars['u128']['input']>;
+  production_rateLT?: InputMaybe<Scalars['u128']['input']>;
+  production_rateLTE?: InputMaybe<Scalars['u128']['input']>;
+  production_rateNEQ?: InputMaybe<Scalars['u128']['input']>;
+  production_rateNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
+  production_rateNOTLIKE?: InputMaybe<Scalars['u128']['input']>;
+  resource_type?: InputMaybe<Scalars['u8']['input']>;
+  resource_typeEQ?: InputMaybe<Scalars['u8']['input']>;
+  resource_typeGT?: InputMaybe<Scalars['u8']['input']>;
+  resource_typeGTE?: InputMaybe<Scalars['u8']['input']>;
+  resource_typeIN?: InputMaybe<Array<InputMaybe<Scalars['u8']['input']>>>;
+  resource_typeLIKE?: InputMaybe<Scalars['u8']['input']>;
+  resource_typeLT?: InputMaybe<Scalars['u8']['input']>;
+  resource_typeLTE?: InputMaybe<Scalars['u8']['input']>;
+  resource_typeNEQ?: InputMaybe<Scalars['u8']['input']>;
+  resource_typeNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u8']['input']>>>;
+  resource_typeNOTLIKE?: InputMaybe<Scalars['u8']['input']>;
 };
 
-export type S0_Eternum_ProgressOrder = {
+export type s1_eternum_ProgressOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ProgressOrderField;
+  field: s1_eternum_ProgressOrderField;
 };
 
-export enum S0_Eternum_ProgressOrderField {
+export enum s1_eternum_ProgressOrderField {
   Amount = "AMOUNT",
   HyperstructureEntityId = "HYPERSTRUCTURE_ENTITY_ID",
   ResourceType = "RESOURCE_TYPE",
 }
 
-export type S0_Eternum_ProgressWhereInput = {
+export type s1_eternum_ProgressWhereInput = {
   amount?: InputMaybe<Scalars["u128"]["input"]>;
   amountEQ?: InputMaybe<Scalars["u128"]["input"]>;
   amountGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -4403,17 +4392,17 @@ export type S0_Eternum_ProgressWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_ProtecteeOrder = {
+export type s1_eternum_ProtecteeOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ProtecteeOrderField;
+  field: s1_eternum_ProtecteeOrderField;
 };
 
-export enum S0_Eternum_ProtecteeOrderField {
+export enum s1_eternum_ProtecteeOrderField {
   ArmyId = "ARMY_ID",
   ProtecteeId = "PROTECTEE_ID",
 }
 
-export type S0_Eternum_ProtecteeWhereInput = {
+export type s1_eternum_ProtecteeWhereInput = {
   army_id?: InputMaybe<Scalars["u32"]["input"]>;
   army_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   army_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -4438,17 +4427,17 @@ export type S0_Eternum_ProtecteeWhereInput = {
   protectee_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_ProtectorOrder = {
+export type s1_eternum_ProtectorOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ProtectorOrderField;
+  field: s1_eternum_ProtectorOrderField;
 };
 
-export enum S0_Eternum_ProtectorOrderField {
+export enum s1_eternum_ProtectorOrderField {
   ArmyId = "ARMY_ID",
   EntityId = "ENTITY_ID",
 }
 
-export type S0_Eternum_ProtectorWhereInput = {
+export type s1_eternum_ProtectorWhereInput = {
   army_id?: InputMaybe<Scalars["u32"]["input"]>;
   army_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   army_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -4473,27 +4462,27 @@ export type S0_Eternum_ProtectorWhereInput = {
   entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_QuantityOrder = {
+export type s1_eternum_QuantityOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_QuantityOrderField;
+  field: s1_eternum_QuantityOrderField;
 };
 
-export enum S0_Eternum_QuantityOrderField {
+export enum s1_eternum_QuantityOrderField {
   EntityId = "ENTITY_ID",
   Value = "VALUE",
 }
 
-export type S0_Eternum_QuantityTrackerOrder = {
+export type s1_eternum_QuantityTrackerOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_QuantityTrackerOrderField;
+  field: s1_eternum_QuantityTrackerOrderField;
 };
 
-export enum S0_Eternum_QuantityTrackerOrderField {
+export enum s1_eternum_QuantityTrackerOrderField {
   Count = "COUNT",
   EntityId = "ENTITY_ID",
 }
 
-export type S0_Eternum_QuantityTrackerWhereInput = {
+export type s1_eternum_QuantityTrackerWhereInput = {
   count?: InputMaybe<Scalars["u128"]["input"]>;
   countEQ?: InputMaybe<Scalars["u128"]["input"]>;
   countGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -4518,7 +4507,7 @@ export type S0_Eternum_QuantityTrackerWhereInput = {
   entity_idNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
 };
 
-export type S0_Eternum_QuantityWhereInput = {
+export type s1_eternum_QuantityWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -4543,101 +4532,30 @@ export type S0_Eternum_QuantityWhereInput = {
   valueNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_QuestBonusOrder = {
+
+export type s1_eternum_QuestOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_QuestBonusOrderField;
+  field: s1_eternum_QuestOrderField;
 };
 
-export enum S0_Eternum_QuestBonusOrderField {
-  Claimed = "CLAIMED",
-  EntityId = "ENTITY_ID",
-  ResourceType = "RESOURCE_TYPE",
-}
-
-export type S0_Eternum_QuestBonusWhereInput = {
-  claimed?: InputMaybe<Scalars["bool"]["input"]>;
-  entity_id?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  resource_type?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeGT?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeGTE?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  resource_typeLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeLT?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeLTE?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeNEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  resource_typeNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-};
-
-export type S0_Eternum_QuestConfigOrder = {
-  direction: OrderDirection;
-  field: S0_Eternum_QuestConfigOrderField;
-};
-
-export enum S0_Eternum_QuestConfigOrderField {
-  ConfigId = "CONFIG_ID",
-  ProductionMaterialMultiplier = "PRODUCTION_MATERIAL_MULTIPLIER",
-}
-
-export type S0_Eternum_QuestConfigWhereInput = {
-  config_id?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  config_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  config_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  config_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  production_material_multiplier?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierEQ?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierGT?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierGTE?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierIN?: InputMaybe<Array<InputMaybe<Scalars["u16"]["input"]>>>;
-  production_material_multiplierLIKE?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierLT?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierLTE?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierNEQ?: InputMaybe<Scalars["u16"]["input"]>;
-  production_material_multiplierNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u16"]["input"]>>>;
-  production_material_multiplierNOTLIKE?: InputMaybe<Scalars["u16"]["input"]>;
-};
-
-export type S0_Eternum_QuestOrder = {
-  direction: OrderDirection;
-  field: S0_Eternum_QuestOrderField;
-};
-
-export enum S0_Eternum_QuestOrderField {
+export enum s1_eternum_QuestOrderField {
   Completed = "COMPLETED",
   ConfigId = "CONFIG_ID",
   EntityId = "ENTITY_ID",
 }
 
-export type S0_Eternum_QuestRewardConfigOrder = {
+export type s1_eternum_QuestRewardConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_QuestRewardConfigOrderField;
+  field: s1_eternum_QuestRewardConfigOrderField;
 };
 
-export enum S0_Eternum_QuestRewardConfigOrderField {
+export enum s1_eternum_QuestRewardConfigOrderField {
   DetachedResourceCount = "DETACHED_RESOURCE_COUNT",
   DetachedResourceId = "DETACHED_RESOURCE_ID",
   QuestId = "QUEST_ID",
 }
 
-export type S0_Eternum_QuestRewardConfigWhereInput = {
+export type s1_eternum_QuestRewardConfigWhereInput = {
   detached_resource_count?: InputMaybe<Scalars["u32"]["input"]>;
   detached_resource_countEQ?: InputMaybe<Scalars["u32"]["input"]>;
   detached_resource_countGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -4673,7 +4591,7 @@ export type S0_Eternum_QuestRewardConfigWhereInput = {
   quest_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_QuestWhereInput = {
+export type s1_eternum_QuestWhereInput = {
   completed?: InputMaybe<Scalars["bool"]["input"]>;
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
@@ -4699,18 +4617,18 @@ export type S0_Eternum_QuestWhereInput = {
   entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_RealmLevelConfigOrder = {
+export type s1_eternum_RealmLevelConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_RealmLevelConfigOrderField;
+  field: s1_eternum_RealmLevelConfigOrderField;
 };
 
-export enum S0_Eternum_RealmLevelConfigOrderField {
+export enum s1_eternum_RealmLevelConfigOrderField {
   Level = "LEVEL",
   RequiredResourcesId = "REQUIRED_RESOURCES_ID",
   RequiredResourceCount = "REQUIRED_RESOURCE_COUNT",
 }
 
-export type S0_Eternum_RealmLevelConfigWhereInput = {
+export type s1_eternum_RealmLevelConfigWhereInput = {
   level?: InputMaybe<Scalars["u8"]["input"]>;
   levelEQ?: InputMaybe<Scalars["u8"]["input"]>;
   levelGT?: InputMaybe<Scalars["u8"]["input"]>;
@@ -4746,17 +4664,17 @@ export type S0_Eternum_RealmLevelConfigWhereInput = {
   required_resources_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_RealmMaxLevelConfigOrder = {
+export type s1_eternum_RealmMaxLevelConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_RealmMaxLevelConfigOrderField;
+  field: s1_eternum_RealmMaxLevelConfigOrderField;
 };
 
-export enum S0_Eternum_RealmMaxLevelConfigOrderField {
+export enum s1_eternum_RealmMaxLevelConfigOrderField {
   ConfigId = "CONFIG_ID",
   MaxLevel = "MAX_LEVEL",
 }
 
-export type S0_Eternum_RealmMaxLevelConfigWhereInput = {
+export type s1_eternum_RealmMaxLevelConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -4781,12 +4699,12 @@ export type S0_Eternum_RealmMaxLevelConfigWhereInput = {
   max_levelNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_RealmOrder = {
+export type s1_eternum_RealmOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_RealmOrderField;
+  field: s1_eternum_RealmOrderField;
 };
 
-export enum S0_Eternum_RealmOrderField {
+export enum s1_eternum_RealmOrderField {
   EntityId = "ENTITY_ID",
   HasWonder = "HAS_WONDER",
   Level = "LEVEL",
@@ -4796,89 +4714,78 @@ export enum S0_Eternum_RealmOrderField {
   SettlerAddress = "SETTLER_ADDRESS",
 }
 
-export type S0_Eternum_RealmWhereInput = {
-  entity_id?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  has_wonder?: InputMaybe<Scalars["bool"]["input"]>;
-  level?: InputMaybe<Scalars["u8"]["input"]>;
-  levelEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  levelGT?: InputMaybe<Scalars["u8"]["input"]>;
-  levelGTE?: InputMaybe<Scalars["u8"]["input"]>;
-  levelIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  levelLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-  levelLT?: InputMaybe<Scalars["u8"]["input"]>;
-  levelLTE?: InputMaybe<Scalars["u8"]["input"]>;
-  levelNEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  levelNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  levelNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-  order?: InputMaybe<Scalars["u8"]["input"]>;
-  orderEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  orderGT?: InputMaybe<Scalars["u8"]["input"]>;
-  orderGTE?: InputMaybe<Scalars["u8"]["input"]>;
-  orderIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  orderLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-  orderLT?: InputMaybe<Scalars["u8"]["input"]>;
-  orderLTE?: InputMaybe<Scalars["u8"]["input"]>;
-  orderNEQ?: InputMaybe<Scalars["u8"]["input"]>;
-  orderNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
-  orderNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
-  produced_resources?: InputMaybe<Scalars["u128"]["input"]>;
-  produced_resourcesEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  produced_resourcesGT?: InputMaybe<Scalars["u128"]["input"]>;
-  produced_resourcesGTE?: InputMaybe<Scalars["u128"]["input"]>;
-  produced_resourcesIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  produced_resourcesLIKE?: InputMaybe<Scalars["u128"]["input"]>;
-  produced_resourcesLT?: InputMaybe<Scalars["u128"]["input"]>;
-  produced_resourcesLTE?: InputMaybe<Scalars["u128"]["input"]>;
-  produced_resourcesNEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  produced_resourcesNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  produced_resourcesNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
-  realm_id?: InputMaybe<Scalars["u32"]["input"]>;
-  realm_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  realm_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  realm_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  realm_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  realm_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  realm_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  realm_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  realm_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  realm_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  realm_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  settler_address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  settler_addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  settler_addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  settler_addressGTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  settler_addressIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
-  settler_addressLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  settler_addressLT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  settler_addressLTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  settler_addressNEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  settler_addressNOTIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
-  settler_addressNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+export type s1_eternum_RealmWhereInput = {
+  entity_id?: InputMaybe<Scalars['u32']['input']>;
+  entity_idEQ?: InputMaybe<Scalars['u32']['input']>;
+  entity_idGT?: InputMaybe<Scalars['u32']['input']>;
+  entity_idGTE?: InputMaybe<Scalars['u32']['input']>;
+  entity_idIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  entity_idLIKE?: InputMaybe<Scalars['u32']['input']>;
+  entity_idLT?: InputMaybe<Scalars['u32']['input']>;
+  entity_idLTE?: InputMaybe<Scalars['u32']['input']>;
+  entity_idNEQ?: InputMaybe<Scalars['u32']['input']>;
+  entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  entity_idNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
+  has_wonder?: InputMaybe<Scalars['bool']['input']>;
+  level?: InputMaybe<Scalars['u8']['input']>;
+  levelEQ?: InputMaybe<Scalars['u8']['input']>;
+  levelGT?: InputMaybe<Scalars['u8']['input']>;
+  levelGTE?: InputMaybe<Scalars['u8']['input']>;
+  levelIN?: InputMaybe<Array<InputMaybe<Scalars['u8']['input']>>>;
+  levelLIKE?: InputMaybe<Scalars['u8']['input']>;
+  levelLT?: InputMaybe<Scalars['u8']['input']>;
+  levelLTE?: InputMaybe<Scalars['u8']['input']>;
+  levelNEQ?: InputMaybe<Scalars['u8']['input']>;
+  levelNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u8']['input']>>>;
+  levelNOTLIKE?: InputMaybe<Scalars['u8']['input']>;
+  order?: InputMaybe<Scalars['u8']['input']>;
+  orderEQ?: InputMaybe<Scalars['u8']['input']>;
+  orderGT?: InputMaybe<Scalars['u8']['input']>;
+  orderGTE?: InputMaybe<Scalars['u8']['input']>;
+  orderIN?: InputMaybe<Array<InputMaybe<Scalars['u8']['input']>>>;
+  orderLIKE?: InputMaybe<Scalars['u8']['input']>;
+  orderLT?: InputMaybe<Scalars['u8']['input']>;
+  orderLTE?: InputMaybe<Scalars['u8']['input']>;
+  orderNEQ?: InputMaybe<Scalars['u8']['input']>;
+  orderNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u8']['input']>>>;
+  orderNOTLIKE?: InputMaybe<Scalars['u8']['input']>;
+  produced_resources?: InputMaybe<Scalars['u128']['input']>;
+  produced_resourcesEQ?: InputMaybe<Scalars['u128']['input']>;
+  produced_resourcesGT?: InputMaybe<Scalars['u128']['input']>;
+  produced_resourcesGTE?: InputMaybe<Scalars['u128']['input']>;
+  produced_resourcesIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
+  produced_resourcesLIKE?: InputMaybe<Scalars['u128']['input']>;
+  produced_resourcesLT?: InputMaybe<Scalars['u128']['input']>;
+  produced_resourcesLTE?: InputMaybe<Scalars['u128']['input']>;
+  produced_resourcesNEQ?: InputMaybe<Scalars['u128']['input']>;
+  produced_resourcesNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
+  produced_resourcesNOTLIKE?: InputMaybe<Scalars['u128']['input']>;
+  realm_id?: InputMaybe<Scalars['u32']['input']>;
+  realm_idEQ?: InputMaybe<Scalars['u32']['input']>;
+  realm_idGT?: InputMaybe<Scalars['u32']['input']>;
+  realm_idGTE?: InputMaybe<Scalars['u32']['input']>;
+  realm_idIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  realm_idLIKE?: InputMaybe<Scalars['u32']['input']>;
+  realm_idLT?: InputMaybe<Scalars['u32']['input']>;
+  realm_idLTE?: InputMaybe<Scalars['u32']['input']>;
+  realm_idNEQ?: InputMaybe<Scalars['u32']['input']>;
+  realm_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  realm_idNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
 };
 
-export type S0_Eternum_ResourceAllowanceOrder = {
+export type s1_eternum_ResourceAllowanceOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ResourceAllowanceOrderField;
+  field: s1_eternum_ResourceAllowanceOrderField;
 };
 
-export enum S0_Eternum_ResourceAllowanceOrderField {
+export enum s1_eternum_ResourceAllowanceOrderField {
   Amount = "AMOUNT",
   ApprovedEntityId = "APPROVED_ENTITY_ID",
   OwnerEntityId = "OWNER_ENTITY_ID",
   ResourceType = "RESOURCE_TYPE",
 }
 
-export type S0_Eternum_ResourceAllowanceWhereInput = {
+export type s1_eternum_ResourceAllowanceWhereInput = {
   amount?: InputMaybe<Scalars["u128"]["input"]>;
   amountEQ?: InputMaybe<Scalars["u128"]["input"]>;
   amountGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -4925,18 +4832,18 @@ export type S0_Eternum_ResourceAllowanceWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_ResourceBridgeConfigOrder = {
+export type s1_eternum_ResourceBridgeConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ResourceBridgeConfigOrderField;
+  field: s1_eternum_ResourceBridgeConfigOrderField;
 };
 
-export enum S0_Eternum_ResourceBridgeConfigOrderField {
+export enum s1_eternum_ResourceBridgeConfigOrderField {
   ConfigId = "CONFIG_ID",
   DepositPaused = "DEPOSIT_PAUSED",
   WithdrawPaused = "WITHDRAW_PAUSED",
 }
 
-export type S0_Eternum_ResourceBridgeConfigWhereInput = {
+export type s1_eternum_ResourceBridgeConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -4952,12 +4859,12 @@ export type S0_Eternum_ResourceBridgeConfigWhereInput = {
   withdraw_paused?: InputMaybe<Scalars["bool"]["input"]>;
 };
 
-export type S0_Eternum_ResourceBridgeFeeSplitConfigOrder = {
+export type s1_eternum_ResourceBridgeFeeSplitConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ResourceBridgeFeeSplitConfigOrderField;
+  field: s1_eternum_ResourceBridgeFeeSplitConfigOrderField;
 };
 
-export enum S0_Eternum_ResourceBridgeFeeSplitConfigOrderField {
+export enum s1_eternum_ResourceBridgeFeeSplitConfigOrderField {
   ClientFeeOnDptPercent = "CLIENT_FEE_ON_DPT_PERCENT",
   ClientFeeOnWtdrPercent = "CLIENT_FEE_ON_WTDR_PERCENT",
   ConfigId = "CONFIG_ID",
@@ -4971,7 +4878,7 @@ export enum S0_Eternum_ResourceBridgeFeeSplitConfigOrderField {
   VelordsFeeRecipient = "VELORDS_FEE_RECIPIENT",
 }
 
-export type S0_Eternum_ResourceBridgeFeeSplitConfigWhereInput = {
+export type s1_eternum_ResourceBridgeFeeSplitConfigWhereInput = {
   client_fee_on_dpt_percent?: InputMaybe<Scalars["u16"]["input"]>;
   client_fee_on_dpt_percentEQ?: InputMaybe<Scalars["u16"]["input"]>;
   client_fee_on_dpt_percentGT?: InputMaybe<Scalars["u16"]["input"]>;
@@ -5095,17 +5002,17 @@ export type S0_Eternum_ResourceBridgeFeeSplitConfigWhereInput = {
   velords_fee_recipientNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
 };
 
-export type S0_Eternum_ResourceBridgeWhitelistConfigOrder = {
+export type s1_eternum_ResourceBridgeWhitelistConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ResourceBridgeWhitelistConfigOrderField;
+  field: s1_eternum_ResourceBridgeWhitelistConfigOrderField;
 };
 
-export enum S0_Eternum_ResourceBridgeWhitelistConfigOrderField {
+export enum s1_eternum_ResourceBridgeWhitelistConfigOrderField {
   ResourceType = "RESOURCE_TYPE",
   Token = "TOKEN",
 }
 
-export type S0_Eternum_ResourceBridgeWhitelistConfigWhereInput = {
+export type s1_eternum_ResourceBridgeWhitelistConfigWhereInput = {
   resource_type?: InputMaybe<Scalars["u8"]["input"]>;
   resource_typeEQ?: InputMaybe<Scalars["u8"]["input"]>;
   resource_typeGT?: InputMaybe<Scalars["u8"]["input"]>;
@@ -5130,19 +5037,19 @@ export type S0_Eternum_ResourceBridgeWhitelistConfigWhereInput = {
   tokenNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
 };
 
-export type S0_Eternum_ResourceCostOrder = {
+export type s1_eternum_ResourceCostOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ResourceCostOrderField;
+  field: s1_eternum_ResourceCostOrderField;
 };
 
-export enum S0_Eternum_ResourceCostOrderField {
+export enum s1_eternum_ResourceCostOrderField {
   Amount = "AMOUNT",
   EntityId = "ENTITY_ID",
   Index = "INDEX",
   ResourceType = "RESOURCE_TYPE",
 }
 
-export type S0_Eternum_ResourceCostWhereInput = {
+export type s1_eternum_ResourceCostWhereInput = {
   amount?: InputMaybe<Scalars["u128"]["input"]>;
   amountEQ?: InputMaybe<Scalars["u128"]["input"]>;
   amountGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -5189,29 +5096,29 @@ export type S0_Eternum_ResourceCostWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_ResourceOrder = {
+export type s1_eternum_ResourceOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ResourceOrderField;
+  field: s1_eternum_ResourceOrderField;
 };
 
-export enum S0_Eternum_ResourceOrderField {
+export enum s1_eternum_ResourceOrderField {
   Balance = "BALANCE",
   EntityId = "ENTITY_ID",
   ResourceType = "RESOURCE_TYPE",
 }
 
-export type S0_Eternum_ResourceTransferLockOrder = {
+export type s1_eternum_ResourceTransferLockOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_ResourceTransferLockOrderField;
+  field: s1_eternum_ResourceTransferLockOrderField;
 };
 
-export enum S0_Eternum_ResourceTransferLockOrderField {
+export enum s1_eternum_ResourceTransferLockOrderField {
   EntityId = "ENTITY_ID",
   ReleaseAt = "RELEASE_AT",
   StartAt = "START_AT",
 }
 
-export type S0_Eternum_ResourceTransferLockWhereInput = {
+export type s1_eternum_ResourceTransferLockWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -5247,7 +5154,7 @@ export type S0_Eternum_ResourceTransferLockWhereInput = {
   start_atNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_ResourceWhereInput = {
+export type s1_eternum_ResourceWhereInput = {
   balance?: InputMaybe<Scalars["u128"]["input"]>;
   balanceEQ?: InputMaybe<Scalars["u128"]["input"]>;
   balanceGT?: InputMaybe<Scalars["u128"]["input"]>;
@@ -5283,19 +5190,19 @@ export type S0_Eternum_ResourceWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_SeasonAddressesConfigOrder = {
+export type s1_eternum_SeasonAddressesConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_SeasonAddressesConfigOrderField;
+  field: s1_eternum_SeasonAddressesConfigOrderField;
 };
 
-export enum S0_Eternum_SeasonAddressesConfigOrderField {
+export enum s1_eternum_SeasonAddressesConfigOrderField {
   ConfigId = "CONFIG_ID",
   LordsAddress = "LORDS_ADDRESS",
   RealmsAddress = "REALMS_ADDRESS",
   SeasonPassAddress = "SEASON_PASS_ADDRESS",
 }
 
-export type S0_Eternum_SeasonAddressesConfigWhereInput = {
+export type s1_eternum_SeasonAddressesConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -5342,17 +5249,17 @@ export type S0_Eternum_SeasonAddressesConfigWhereInput = {
   season_pass_addressNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
 };
 
-export type S0_Eternum_SeasonBridgeConfigOrder = {
+export type s1_eternum_SeasonBridgeConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_SeasonBridgeConfigOrderField;
+  field: s1_eternum_SeasonBridgeConfigOrderField;
 };
 
-export enum S0_Eternum_SeasonBridgeConfigOrderField {
+export enum s1_eternum_SeasonBridgeConfigOrderField {
   CloseAfterEndSeconds = "CLOSE_AFTER_END_SECONDS",
   ConfigId = "CONFIG_ID",
 }
 
-export type S0_Eternum_SeasonBridgeConfigWhereInput = {
+export type s1_eternum_SeasonBridgeConfigWhereInput = {
   close_after_end_seconds?: InputMaybe<Scalars["u64"]["input"]>;
   close_after_end_secondsEQ?: InputMaybe<Scalars["u64"]["input"]>;
   close_after_end_secondsGT?: InputMaybe<Scalars["u64"]["input"]>;
@@ -5377,19 +5284,19 @@ export type S0_Eternum_SeasonBridgeConfigWhereInput = {
   config_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_SeasonOrder = {
+export type s1_eternum_SeasonOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_SeasonOrderField;
+  field: s1_eternum_SeasonOrderField;
 };
 
-export enum S0_Eternum_SeasonOrderField {
+export enum s1_eternum_SeasonOrderField {
   ConfigId = "CONFIG_ID",
   EndedAt = "ENDED_AT",
   IsOver = "IS_OVER",
   StartAt = "START_AT",
 }
 
-export type S0_Eternum_SeasonWhereInput = {
+export type s1_eternum_SeasonWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -5426,12 +5333,12 @@ export type S0_Eternum_SeasonWhereInput = {
   start_atNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_SettleRealmDataOrder = {
+export type s1_eternum_SettleRealmDataOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_SettleRealmDataOrderField;
+  field: s1_eternum_SettleRealmDataOrderField;
 };
 
-export enum S0_Eternum_SettleRealmDataOrderField {
+export enum s1_eternum_SettleRealmDataOrderField {
   Cities = "CITIES",
   EntityId = "ENTITY_ID",
   EventId = "EVENT_ID",
@@ -5450,7 +5357,7 @@ export enum S0_Eternum_SettleRealmDataOrderField {
   Y = "Y",
 }
 
-export type S0_Eternum_SettleRealmDataWhereInput = {
+export type s1_eternum_SettleRealmDataWhereInput = {
   cities?: InputMaybe<Scalars["u8"]["input"]>;
   citiesEQ?: InputMaybe<Scalars["u8"]["input"]>;
   citiesGT?: InputMaybe<Scalars["u8"]["input"]>;
@@ -5619,12 +5526,12 @@ export type S0_Eternum_SettleRealmDataWhereInput = {
   yNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_SettlementConfigOrder = {
+export type s1_eternum_SettlementConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_SettlementConfigOrderField;
+  field: s1_eternum_SettlementConfigOrderField;
 };
 
-export enum S0_Eternum_SettlementConfigOrderField {
+export enum s1_eternum_SettlementConfigOrderField {
   BaseDistance = "BASE_DISTANCE",
   Center = "CENTER",
   ConfigId = "CONFIG_ID",
@@ -5635,7 +5542,7 @@ export enum S0_Eternum_SettlementConfigOrderField {
   PointsPlaced = "POINTS_PLACED",
 }
 
-export type S0_Eternum_SettlementConfigWhereInput = {
+export type s1_eternum_SettlementConfigWhereInput = {
   base_distance?: InputMaybe<Scalars["u32"]["input"]>;
   base_distanceEQ?: InputMaybe<Scalars["u32"]["input"]>;
   base_distanceGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -5726,19 +5633,19 @@ export type S0_Eternum_SettlementConfigWhereInput = {
   points_placedNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_SpeedConfigOrder = {
+export type s1_eternum_SpeedConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_SpeedConfigOrderField;
+  field: s1_eternum_SpeedConfigOrderField;
 };
 
-export enum S0_Eternum_SpeedConfigOrderField {
+export enum s1_eternum_SpeedConfigOrderField {
   ConfigId = "CONFIG_ID",
   EntityType = "ENTITY_TYPE",
   SecPerKm = "SEC_PER_KM",
   SpeedConfigId = "SPEED_CONFIG_ID",
 }
 
-export type S0_Eternum_SpeedConfigWhereInput = {
+export type s1_eternum_SpeedConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -5785,18 +5692,18 @@ export type S0_Eternum_SpeedConfigWhereInput = {
   speed_config_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_StaminaConfigOrder = {
+export type s1_eternum_StaminaConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_StaminaConfigOrderField;
+  field: s1_eternum_StaminaConfigOrderField;
 };
 
-export enum S0_Eternum_StaminaConfigOrderField {
+export enum s1_eternum_StaminaConfigOrderField {
   ConfigId = "CONFIG_ID",
   MaxStamina = "MAX_STAMINA",
   UnitType = "UNIT_TYPE",
 }
 
-export type S0_Eternum_StaminaConfigWhereInput = {
+export type s1_eternum_StaminaConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -5832,29 +5739,29 @@ export type S0_Eternum_StaminaConfigWhereInput = {
   unit_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_StaminaOrder = {
+export type s1_eternum_StaminaOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_StaminaOrderField;
+  field: s1_eternum_StaminaOrderField;
 };
 
-export enum S0_Eternum_StaminaOrderField {
+export enum s1_eternum_StaminaOrderField {
   Amount = "AMOUNT",
   EntityId = "ENTITY_ID",
   LastRefillTick = "LAST_REFILL_TICK",
 }
 
-export type S0_Eternum_StaminaRefillConfigOrder = {
+export type s1_eternum_StaminaRefillConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_StaminaRefillConfigOrderField;
+  field: s1_eternum_StaminaRefillConfigOrderField;
 };
 
-export enum S0_Eternum_StaminaRefillConfigOrderField {
+export enum s1_eternum_StaminaRefillConfigOrderField {
   AmountPerTick = "AMOUNT_PER_TICK",
   ConfigId = "CONFIG_ID",
   StartBoostTickCount = "START_BOOST_TICK_COUNT",
 }
 
-export type S0_Eternum_StaminaRefillConfigWhereInput = {
+export type s1_eternum_StaminaRefillConfigWhereInput = {
   amount_per_tick?: InputMaybe<Scalars["u16"]["input"]>;
   amount_per_tickEQ?: InputMaybe<Scalars["u16"]["input"]>;
   amount_per_tickGT?: InputMaybe<Scalars["u16"]["input"]>;
@@ -5890,7 +5797,7 @@ export type S0_Eternum_StaminaRefillConfigWhereInput = {
   start_boost_tick_countNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_StaminaWhereInput = {
+export type s1_eternum_StaminaWhereInput = {
   amount?: InputMaybe<Scalars["u16"]["input"]>;
   amountEQ?: InputMaybe<Scalars["u16"]["input"]>;
   amountGT?: InputMaybe<Scalars["u16"]["input"]>;
@@ -5926,17 +5833,17 @@ export type S0_Eternum_StaminaWhereInput = {
   last_refill_tickNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_StatusOrder = {
+export type s1_eternum_StatusOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_StatusOrderField;
+  field: s1_eternum_StatusOrderField;
 };
 
-export enum S0_Eternum_StatusOrderField {
+export enum s1_eternum_StatusOrderField {
   TradeId = "TRADE_ID",
   Value = "VALUE",
 }
 
-export type S0_Eternum_StatusWhereInput = {
+export type s1_eternum_StatusWhereInput = {
   trade_id?: InputMaybe<Scalars["u32"]["input"]>;
   trade_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   trade_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -5961,17 +5868,17 @@ export type S0_Eternum_StatusWhereInput = {
   valueNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_StructureCountOrder = {
+export type s1_eternum_StructureCountOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_StructureCountOrderField;
+  field: s1_eternum_StructureCountOrderField;
 };
 
-export enum S0_Eternum_StructureCountOrderField {
+export enum s1_eternum_StructureCountOrderField {
   Coord = "COORD",
   Count = "COUNT",
 }
 
-export type S0_Eternum_StructureCountWhereInput = {
+export type s1_eternum_StructureCountWhereInput = {
   count?: InputMaybe<Scalars["u8"]["input"]>;
   countEQ?: InputMaybe<Scalars["u8"]["input"]>;
   countGT?: InputMaybe<Scalars["u8"]["input"]>;
@@ -5985,18 +5892,18 @@ export type S0_Eternum_StructureCountWhereInput = {
   countNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_StructureOrder = {
+export type s1_eternum_StructureOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_StructureOrderField;
+  field: s1_eternum_StructureOrderField;
 };
 
-export enum S0_Eternum_StructureOrderField {
+export enum s1_eternum_StructureOrderField {
   Category = "CATEGORY",
   CreatedAt = "CREATED_AT",
   EntityId = "ENTITY_ID",
 }
 
-export type S0_Eternum_StructureWhereInput = {
+export type s1_eternum_StructureWhereInput = {
   category?: InputMaybe<Scalars["Enum"]["input"]>;
   created_at?: InputMaybe<Scalars["u64"]["input"]>;
   created_atEQ?: InputMaybe<Scalars["u64"]["input"]>;
@@ -6022,12 +5929,12 @@ export type S0_Eternum_StructureWhereInput = {
   entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_SwapEventOrder = {
+export type s1_eternum_SwapEventOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_SwapEventOrderField;
+  field: s1_eternum_SwapEventOrderField;
 };
 
-export enum S0_Eternum_SwapEventOrderField {
+export enum s1_eternum_SwapEventOrderField {
   BankEntityId = "BANK_ENTITY_ID",
   BankOwnerFees = "BANK_OWNER_FEES",
   Buy = "BUY",
@@ -6041,7 +5948,7 @@ export enum S0_Eternum_SwapEventOrderField {
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_SwapEventWhereInput = {
+export type s1_eternum_SwapEventWhereInput = {
   bank_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   bank_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   bank_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -6155,18 +6062,18 @@ export type S0_Eternum_SwapEventWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_TickConfigOrder = {
+export type s1_eternum_TickConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TickConfigOrderField;
+  field: s1_eternum_TickConfigOrderField;
 };
 
-export enum S0_Eternum_TickConfigOrderField {
+export enum s1_eternum_TickConfigOrderField {
   ConfigId = "CONFIG_ID",
   TickId = "TICK_ID",
   TickIntervalInSeconds = "TICK_INTERVAL_IN_SECONDS",
 }
 
-export type S0_Eternum_TickConfigWhereInput = {
+export type s1_eternum_TickConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -6202,12 +6109,12 @@ export type S0_Eternum_TickConfigWhereInput = {
   tick_interval_in_secondsNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_TileOrder = {
+export type s1_eternum_TileOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TileOrderField;
+  field: s1_eternum_TileOrderField;
 };
 
-export enum S0_Eternum_TileOrderField {
+export enum s1_eternum_TileOrderField {
   Biome = "BIOME",
   Col = "COL",
   ExploredAt = "EXPLORED_AT",
@@ -6215,7 +6122,7 @@ export enum S0_Eternum_TileOrderField {
   Row = "ROW",
 }
 
-export type S0_Eternum_TileWhereInput = {
+export type s1_eternum_TileWhereInput = {
   biome?: InputMaybe<Scalars["Enum"]["input"]>;
   col?: InputMaybe<Scalars["u32"]["input"]>;
   colEQ?: InputMaybe<Scalars["u32"]["input"]>;
@@ -6263,12 +6170,12 @@ export type S0_Eternum_TileWhereInput = {
   rowNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_TradeOrder = {
+export type s1_eternum_TradeOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TradeOrderField;
+  field: s1_eternum_TradeOrderField;
 };
 
-export enum S0_Eternum_TradeOrderField {
+export enum s1_eternum_TradeOrderField {
   ExpiresAt = "EXPIRES_AT",
   MakerGivesResourcesHash = "MAKER_GIVES_RESOURCES_HASH",
   MakerGivesResourcesId = "MAKER_GIVES_RESOURCES_ID",
@@ -6283,7 +6190,7 @@ export enum S0_Eternum_TradeOrderField {
   TradeId = "TRADE_ID",
 }
 
-export type S0_Eternum_TradeWhereInput = {
+export type s1_eternum_TradeWhereInput = {
   expires_at?: InputMaybe<Scalars["u64"]["input"]>;
   expires_atEQ?: InputMaybe<Scalars["u64"]["input"]>;
   expires_atGT?: InputMaybe<Scalars["u64"]["input"]>;
@@ -6418,12 +6325,12 @@ export type S0_Eternum_TradeWhereInput = {
   trade_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
-export type S0_Eternum_TransferOrder = {
+export type s1_eternum_TransferOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TransferOrderField;
+  field: s1_eternum_TransferOrderField;
 };
 
-export enum S0_Eternum_TransferOrderField {
+export enum s1_eternum_TransferOrderField {
   RecipientEntityId = "RECIPIENT_ENTITY_ID",
   Resources = "RESOURCES",
   SenderEntityId = "SENDER_ENTITY_ID",
@@ -6431,7 +6338,7 @@ export enum S0_Eternum_TransferOrderField {
   Timestamp = "TIMESTAMP",
 }
 
-export type S0_Eternum_TransferWhereInput = {
+export type s1_eternum_TransferWhereInput = {
   recipient_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   recipient_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   recipient_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -6478,12 +6385,12 @@ export type S0_Eternum_TransferWhereInput = {
   timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_TravelFoodCostConfigOrder = {
+export type s1_eternum_TravelFoodCostConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TravelFoodCostConfigOrderField;
+  field: s1_eternum_TravelFoodCostConfigOrderField;
 };
 
-export enum S0_Eternum_TravelFoodCostConfigOrderField {
+export enum s1_eternum_TravelFoodCostConfigOrderField {
   ConfigId = "CONFIG_ID",
   ExploreFishBurnAmount = "EXPLORE_FISH_BURN_AMOUNT",
   ExploreWheatBurnAmount = "EXPLORE_WHEAT_BURN_AMOUNT",
@@ -6492,7 +6399,7 @@ export enum S0_Eternum_TravelFoodCostConfigOrderField {
   UnitType = "UNIT_TYPE",
 }
 
-export type S0_Eternum_TravelFoodCostConfigWhereInput = {
+export type s1_eternum_TravelFoodCostConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -6561,12 +6468,12 @@ export type S0_Eternum_TravelFoodCostConfigWhereInput = {
   unit_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_TravelOrder = {
+export type s1_eternum_TravelOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TravelOrderField;
+  field: s1_eternum_TravelOrderField;
 };
 
-export enum S0_Eternum_TravelOrderField {
+export enum s1_eternum_TravelOrderField {
   DestinationCoordX = "DESTINATION_COORD_X",
   DestinationCoordY = "DESTINATION_COORD_Y",
   EntityId = "ENTITY_ID",
@@ -6576,18 +6483,18 @@ export enum S0_Eternum_TravelOrderField {
   TravelTime = "TRAVEL_TIME",
 }
 
-export type S0_Eternum_TravelStaminaCostConfigOrder = {
+export type s1_eternum_TravelStaminaCostConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TravelStaminaCostConfigOrderField;
+  field: s1_eternum_TravelStaminaCostConfigOrderField;
 };
 
-export enum S0_Eternum_TravelStaminaCostConfigOrderField {
+export enum s1_eternum_TravelStaminaCostConfigOrderField {
   ConfigId = "CONFIG_ID",
   Cost = "COST",
   TravelType = "TRAVEL_TYPE",
 }
 
-export type S0_Eternum_TravelStaminaCostConfigWhereInput = {
+export type s1_eternum_TravelStaminaCostConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -6623,7 +6530,7 @@ export type S0_Eternum_TravelStaminaCostConfigWhereInput = {
   travel_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_TravelWhereInput = {
+export type s1_eternum_TravelWhereInput = {
   destination_coord_x?: InputMaybe<Scalars["u32"]["input"]>;
   destination_coord_xEQ?: InputMaybe<Scalars["u32"]["input"]>;
   destination_coord_xGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -6692,12 +6599,12 @@ export type S0_Eternum_TravelWhereInput = {
   travel_timeNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_TroopConfigOrder = {
+export type s1_eternum_TroopConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TroopConfigOrderField;
+  field: s1_eternum_TroopConfigOrderField;
 };
 
-export enum S0_Eternum_TroopConfigOrderField {
+export enum s1_eternum_TroopConfigOrderField {
   AdvantagePercent = "ADVANTAGE_PERCENT",
   ArmyExtraPerBuilding = "ARMY_EXTRA_PER_BUILDING",
   ArmyFreePerStructure = "ARMY_FREE_PER_STRUCTURE",
@@ -6716,7 +6623,7 @@ export enum S0_Eternum_TroopConfigOrderField {
   PillageHealthDivisor = "PILLAGE_HEALTH_DIVISOR",
 }
 
-export type S0_Eternum_TroopConfigWhereInput = {
+export type s1_eternum_TroopConfigWhereInput = {
   advantage_percent?: InputMaybe<Scalars["u16"]["input"]>;
   advantage_percentEQ?: InputMaybe<Scalars["u16"]["input"]>;
   advantage_percentGT?: InputMaybe<Scalars["u16"]["input"]>;
@@ -6895,12 +6802,12 @@ export type S0_Eternum_TroopConfigWhereInput = {
   pillage_health_divisorNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type S0_Eternum_TrophyCreationOrder = {
+export type s1_eternum_TrophyCreationOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TrophyCreationOrderField;
+  field: s1_eternum_TrophyCreationOrderField;
 };
 
-export enum S0_Eternum_TrophyCreationOrderField {
+export enum s1_eternum_TrophyCreationOrderField {
   Data = "DATA",
   Description = "DESCRIPTION",
   End = "END",
@@ -6915,7 +6822,7 @@ export enum S0_Eternum_TrophyCreationOrderField {
   Title = "TITLE",
 }
 
-export type S0_Eternum_TrophyCreationWhereInput = {
+export type s1_eternum_TrophyCreationWhereInput = {
   data?: InputMaybe<Scalars["ByteArray"]["input"]>;
   dataEQ?: InputMaybe<Scalars["ByteArray"]["input"]>;
   dataGT?: InputMaybe<Scalars["ByteArray"]["input"]>;
@@ -7029,19 +6936,19 @@ export type S0_Eternum_TrophyCreationWhereInput = {
   titleNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
 };
 
-export type S0_Eternum_TrophyProgressionOrder = {
+export type s1_eternum_TrophyProgressionOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_TrophyProgressionOrderField;
+  field: s1_eternum_TrophyProgressionOrderField;
 };
 
-export enum S0_Eternum_TrophyProgressionOrderField {
+export enum s1_eternum_TrophyProgressionOrderField {
   Count = "COUNT",
   PlayerId = "PLAYER_ID",
   TaskId = "TASK_ID",
   Time = "TIME",
 }
 
-export type S0_Eternum_TrophyProgressionWhereInput = {
+export type s1_eternum_TrophyProgressionWhereInput = {
   count?: InputMaybe<Scalars["u32"]["input"]>;
   countEQ?: InputMaybe<Scalars["u32"]["input"]>;
   countGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -7088,17 +6995,17 @@ export type S0_Eternum_TrophyProgressionWhereInput = {
   timeNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
-export type S0_Eternum_VrfConfigOrder = {
+export type s1_eternum_VrfConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_VrfConfigOrderField;
+  field: s1_eternum_VrfConfigOrderField;
 };
 
-export enum S0_Eternum_VrfConfigOrderField {
+export enum s1_eternum_VrfConfigOrderField {
   ConfigId = "CONFIG_ID",
   VrfProviderAddress = "VRF_PROVIDER_ADDRESS",
 }
 
-export type S0_Eternum_VrfConfigWhereInput = {
+export type s1_eternum_VrfConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -7123,19 +7030,19 @@ export type S0_Eternum_VrfConfigWhereInput = {
   vrf_provider_addressNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
 };
 
-export type S0_Eternum_WeightConfigOrder = {
+export type s1_eternum_WeightConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_WeightConfigOrderField;
+  field: s1_eternum_WeightConfigOrderField;
 };
 
-export enum S0_Eternum_WeightConfigOrderField {
+export enum s1_eternum_WeightConfigOrderField {
   ConfigId = "CONFIG_ID",
   EntityType = "ENTITY_TYPE",
   WeightConfigId = "WEIGHT_CONFIG_ID",
   WeightGram = "WEIGHT_GRAM",
 }
 
-export type S0_Eternum_WeightConfigWhereInput = {
+export type s1_eternum_WeightConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -7182,17 +7089,17 @@ export type S0_Eternum_WeightConfigWhereInput = {
   weight_gramNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_WeightOrder = {
+export type s1_eternum_WeightOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_WeightOrderField;
+  field: s1_eternum_WeightOrderField;
 };
 
-export enum S0_Eternum_WeightOrderField {
+export enum s1_eternum_WeightOrderField {
   EntityId = "ENTITY_ID",
   Value = "VALUE",
 }
 
-export type S0_Eternum_WeightWhereInput = {
+export type s1_eternum_WeightWhereInput = {
   entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -7217,18 +7124,18 @@ export type S0_Eternum_WeightWhereInput = {
   valueNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
 };
 
-export type S0_Eternum_WorldConfigOrder = {
+export type s1_eternum_WorldConfigOrder = {
   direction: OrderDirection;
-  field: S0_Eternum_WorldConfigOrderField;
+  field: s1_eternum_WorldConfigOrderField;
 };
 
-export enum S0_Eternum_WorldConfigOrderField {
+export enum s1_eternum_WorldConfigOrderField {
   AdminAddress = "ADMIN_ADDRESS",
   ConfigId = "CONFIG_ID",
   RealmL2Contract = "REALM_L2_CONTRACT",
 }
 
-export type S0_Eternum_WorldConfigWhereInput = {
+export type s1_eternum_WorldConfigWhereInput = {
   admin_address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   admin_addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   admin_addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -7272,17 +7179,17 @@ export type GetCapacitySpeedConfigQueryVariables = Exact<{
 export type GetCapacitySpeedConfigQuery = {
   __typename?: "World__Query";
   s0EternumCapacityConfigModels?: {
-    __typename?: "s0_eternum_CapacityConfigConnection";
+    __typename?: "s1_eternum_CapacityConfigConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_CapacityConfigEdge";
-      node?: { __typename?: "s0_eternum_CapacityConfig"; weight_gram?: any | null } | null;
+      __typename?: "s1_eternum_CapacityConfigEdge";
+      node?: { __typename?: "s1_eternum_CapacityConfig"; weight_gram?: any | null } | null;
     } | null> | null;
   } | null;
   s0EternumSpeedConfigModels?: {
-    __typename?: "s0_eternum_SpeedConfigConnection";
+    __typename?: "s1_eternum_SpeedConfigConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_SpeedConfigEdge";
-      node?: { __typename?: "s0_eternum_SpeedConfig"; sec_per_km?: any | null } | null;
+      __typename?: "s1_eternum_SpeedConfigEdge";
+      node?: { __typename?: "s1_eternum_SpeedConfig"; sec_per_km?: any | null } | null;
     } | null> | null;
   } | null;
 };
@@ -7294,132 +7201,131 @@ export type GetEternumOwnerRealmIdsQueryVariables = Exact<{
 export type GetEternumOwnerRealmIdsQuery = {
   __typename?: "World__Query";
   s0EternumOwnerModels?: {
-    __typename?: "s0_eternum_OwnerConnection";
+    __typename?: "s1_eternum_OwnerConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_OwnerEdge";
+      __typename?: "s1_eternum_OwnerEdge";
       node?: {
-        __typename?: "s0_eternum_Owner";
+        __typename?: "s1_eternum_Owner";
         address?: any | null;
         entity_id?: any | null;
         entity?: {
           __typename?: "World__Entity";
           models?: Array<
-            | { __typename: "s0_eternum_AcceptOrder" }
-            | { __typename: "s0_eternum_AcceptPartialOrder" }
-            | { __typename: "s0_eternum_AddressName" }
-            | { __typename: "s0_eternum_Army" }
-            | { __typename: "s0_eternum_ArrivalTime" }
-            | { __typename: "s0_eternum_Bank" }
-            | { __typename: "s0_eternum_BankConfig" }
-            | { __typename: "s0_eternum_Battle" }
-            | { __typename: "s0_eternum_BattleClaimData" }
-            | { __typename: "s0_eternum_BattleConfig" }
-            | { __typename: "s0_eternum_BattleJoinData" }
-            | { __typename: "s0_eternum_BattleLeaveData" }
-            | { __typename: "s0_eternum_BattlePillageData" }
-            | { __typename: "s0_eternum_BattleStartData" }
-            | { __typename: "s0_eternum_Building" }
-            | { __typename: "s0_eternum_BuildingCategoryPopConfig" }
-            | { __typename: "s0_eternum_BuildingConfig" }
-            | { __typename: "s0_eternum_BuildingGeneralConfig" }
-            | { __typename: "s0_eternum_BuildingQuantityv2" }
-            | { __typename: "s0_eternum_BurnDonkey" }
-            | { __typename: "s0_eternum_CancelOrder" }
-            | { __typename: "s0_eternum_CapacityCategory" }
-            | { __typename: "s0_eternum_CapacityConfig" }
-            | { __typename: "s0_eternum_Contribution" }
-            | { __typename: "s0_eternum_CreateGuild" }
-            | { __typename: "s0_eternum_CreateOrder" }
-            | { __typename: "s0_eternum_DetachedResource" }
-            | { __typename: "s0_eternum_EntityName" }
-            | { __typename: "s0_eternum_EntityOwner" }
-            | { __typename: "s0_eternum_Epoch" }
-            | { __typename: "s0_eternum_FragmentMineDiscovered" }
-            | { __typename: "s0_eternum_GameEnded" }
-            | { __typename: "s0_eternum_Guild" }
-            | { __typename: "s0_eternum_GuildMember" }
-            | { __typename: "s0_eternum_GuildWhitelist" }
-            | { __typename: "s0_eternum_Health" }
-            | { __typename: "s0_eternum_Hyperstructure" }
-            | { __typename: "s0_eternum_HyperstructureCoOwnersChange" }
-            | { __typename: "s0_eternum_HyperstructureConfig" }
-            | { __typename: "s0_eternum_HyperstructureContribution" }
-            | { __typename: "s0_eternum_HyperstructureFinished" }
-            | { __typename: "s0_eternum_HyperstructureResourceConfig" }
-            | { __typename: "s0_eternum_HyperstructureStarted" }
-            | { __typename: "s0_eternum_JoinGuild" }
-            | { __typename: "s0_eternum_Leaderboard" }
-            | { __typename: "s0_eternum_LeaderboardEntry" }
-            | { __typename: "s0_eternum_LeaderboardRegisterContribution" }
-            | { __typename: "s0_eternum_LeaderboardRegisterShare" }
-            | { __typename: "s0_eternum_LeaderboardRegistered" }
-            | { __typename: "s0_eternum_LeaderboardRewardClaimed" }
-            | { __typename: "s0_eternum_LevelingConfig" }
-            | { __typename: "s0_eternum_Liquidity" }
-            | { __typename: "s0_eternum_LiquidityEvent" }
-            | { __typename: "s0_eternum_MapConfig" }
-            | { __typename: "s0_eternum_MapExplored" }
-            | { __typename: "s0_eternum_Market" }
-            | { __typename: "s0_eternum_MercenariesConfig" }
-            | { __typename: "s0_eternum_Message" }
-            | { __typename: "s0_eternum_Movable" }
-            | { __typename: "s0_eternum_Orders" }
-            | { __typename: "s0_eternum_OwnedResourcesTracker" }
-            | { __typename: "s0_eternum_Owner" }
-            | { __typename: "s0_eternum_Population" }
-            | { __typename: "s0_eternum_PopulationConfig" }
-            | { __typename: "s0_eternum_Position" }
-            | { __typename: "s0_eternum_Production" }
-            | { __typename: "s0_eternum_ProductionConfig" }
-            | { __typename: "s0_eternum_ProductionDeadline" }
-            | { __typename: "s0_eternum_ProductionInput" }
-            | { __typename: "s0_eternum_ProductionOutput" }
-            | { __typename: "s0_eternum_Progress" }
-            | { __typename: "s0_eternum_Protectee" }
-            | { __typename: "s0_eternum_Protector" }
-            | { __typename: "s0_eternum_Quantity" }
-            | { __typename: "s0_eternum_QuantityTracker" }
-            | { __typename: "s0_eternum_Quest" }
-            | { __typename: "s0_eternum_QuestBonus" }
-            | { __typename: "s0_eternum_QuestConfig" }
-            | { __typename: "s0_eternum_QuestRewardConfig" }
-            | { __typename: "s0_eternum_Realm"; realm_id?: any | null }
-            | { __typename: "s0_eternum_RealmLevelConfig" }
-            | { __typename: "s0_eternum_RealmMaxLevelConfig" }
-            | { __typename: "s0_eternum_Resource" }
-            | { __typename: "s0_eternum_ResourceAllowance" }
-            | { __typename: "s0_eternum_ResourceBridgeConfig" }
-            | { __typename: "s0_eternum_ResourceBridgeFeeSplitConfig" }
-            | { __typename: "s0_eternum_ResourceBridgeWhitelistConfig" }
-            | { __typename: "s0_eternum_ResourceCost" }
-            | { __typename: "s0_eternum_ResourceTransferLock" }
-            | { __typename: "s0_eternum_Season" }
-            | { __typename: "s0_eternum_SeasonAddressesConfig" }
-            | { __typename: "s0_eternum_SeasonBridgeConfig" }
-            | { __typename: "s0_eternum_SettleRealmData" }
-            | { __typename: "s0_eternum_SettlementConfig" }
-            | { __typename: "s0_eternum_SpeedConfig" }
-            | { __typename: "s0_eternum_Stamina" }
-            | { __typename: "s0_eternum_StaminaConfig" }
-            | { __typename: "s0_eternum_StaminaRefillConfig" }
-            | { __typename: "s0_eternum_Status" }
-            | { __typename: "s0_eternum_Structure" }
-            | { __typename: "s0_eternum_StructureCount" }
-            | { __typename: "s0_eternum_SwapEvent" }
-            | { __typename: "s0_eternum_TickConfig" }
-            | { __typename: "s0_eternum_Tile" }
-            | { __typename: "s0_eternum_Trade" }
-            | { __typename: "s0_eternum_Transfer" }
-            | { __typename: "s0_eternum_Travel" }
-            | { __typename: "s0_eternum_TravelFoodCostConfig" }
-            | { __typename: "s0_eternum_TravelStaminaCostConfig" }
-            | { __typename: "s0_eternum_TroopConfig" }
-            | { __typename: "s0_eternum_TrophyCreation" }
-            | { __typename: "s0_eternum_TrophyProgression" }
-            | { __typename: "s0_eternum_VRFConfig" }
-            | { __typename: "s0_eternum_Weight" }
-            | { __typename: "s0_eternum_WeightConfig" }
-            | { __typename: "s0_eternum_WorldConfig" }
+            | { __typename: "s1_eternum_AcceptOrder" }
+            | { __typename: "s1_eternum_AcceptPartialOrder" }
+            | { __typename: "s1_eternum_AddressName" }
+            | { __typename: "s1_eternum_Army" }
+            | { __typename: "s1_eternum_ArrivalTime" }
+            | { __typename: "s1_eternum_Bank" }
+            | { __typename: "s1_eternum_BankConfig" }
+            | { __typename: "s1_eternum_Battle" }
+            | { __typename: "s1_eternum_BattleClaimData" }
+            | { __typename: "s1_eternum_BattleConfig" }
+            | { __typename: "s1_eternum_BattleJoinData" }
+            | { __typename: "s1_eternum_BattleLeaveData" }
+            | { __typename: "s1_eternum_BattlePillageData" }
+            | { __typename: "s1_eternum_BattleStartData" }
+            | { __typename: "s1_eternum_Building" }
+            | { __typename: "s1_eternum_BuildingCategoryPopConfig" }
+            | { __typename: "s1_eternum_BuildingConfig" }
+            | { __typename: "s1_eternum_BuildingGeneralConfig" }
+            | { __typename: "s1_eternum_BuildingQuantityv2" }
+            | { __typename: "s1_eternum_BurnDonkey" }
+            | { __typename: "s1_eternum_CancelOrder" }
+            | { __typename: "s1_eternum_CapacityCategory" }
+            | { __typename: "s1_eternum_CapacityConfig" }
+            | { __typename: "s1_eternum_Contribution" }
+            | { __typename: "s1_eternum_CreateGuild" }
+            | { __typename: "s1_eternum_CreateOrder" }
+            | { __typename: "s1_eternum_DetachedResource" }
+            | { __typename: "s1_eternum_EntityName" }
+            | { __typename: "s1_eternum_EntityOwner" }
+            | { __typename: "s1_eternum_Epoch" }
+            | { __typename: "s1_eternum_FragmentMineDiscovered" }
+            | { __typename: "s1_eternum_GameEnded" }
+            | { __typename: "s1_eternum_Guild" }
+            | { __typename: "s1_eternum_GuildMember" }
+            | { __typename: "s1_eternum_GuildWhitelist" }
+            | { __typename: "s1_eternum_Health" }
+            | { __typename: "s1_eternum_Hyperstructure" }
+            | { __typename: "s1_eternum_HyperstructureCoOwnersChange" }
+            | { __typename: "s1_eternum_HyperstructureConfig" }
+            | { __typename: "s1_eternum_HyperstructureContribution" }
+            | { __typename: "s1_eternum_HyperstructureFinished" }
+            | { __typename: "s1_eternum_HyperstructureResourceConfig" }
+            | { __typename: "s1_eternum_HyperstructureStarted" }
+            | { __typename: "s1_eternum_JoinGuild" }
+            | { __typename: "s1_eternum_Leaderboard" }
+            | { __typename: "s1_eternum_LeaderboardEntry" }
+            | { __typename: "s1_eternum_LeaderboardRegisterContribution" }
+            | { __typename: "s1_eternum_LeaderboardRegisterShare" }
+            | { __typename: "s1_eternum_LeaderboardRegistered" }
+            | { __typename: "s1_eternum_LeaderboardRewardClaimed" }
+            | { __typename: "s1_eternum_LevelingConfig" }
+            | { __typename: "s1_eternum_Liquidity" }
+            | { __typename: "s1_eternum_LiquidityEvent" }
+            | { __typename: "s1_eternum_MapConfig" }
+            | { __typename: "s1_eternum_MapExplored" }
+            | { __typename: "s1_eternum_Market" }
+            | { __typename: "s1_eternum_MercenariesConfig" }
+            | { __typename: "s1_eternum_Message" }
+            | { __typename: "s1_eternum_Movable" }
+            | { __typename: "s1_eternum_Orders" }
+            | { __typename: "s1_eternum_OwnedResourcesTracker" }
+            | { __typename: "s1_eternum_Owner" }
+            | { __typename: "s1_eternum_Population" }
+            | { __typename: "s1_eternum_PopulationConfig" }
+            | { __typename: "s1_eternum_Position" }
+            | { __typename: "s1_eternum_Production" }
+            | { __typename: "s1_eternum_ProductionConfig" }
+            | { __typename: "s1_eternum_ProductionDeadline" }
+            | { __typename: "s1_eternum_ProductionInput" }
+            | { __typename: "s1_eternum_ProductionOutput" }
+            | { __typename: "s1_eternum_Progress" }
+            | { __typename: "s1_eternum_Protectee" }
+            | { __typename: "s1_eternum_Protector" }
+            | { __typename: "s1_eternum_Quantity" }
+            | { __typename: "s1_eternum_QuantityTracker" }
+            | { __typename: "s1_eternum_Quest" }
+            | { __typename: "s1_eternum_QuestConfig" }
+            | { __typename: "s1_eternum_QuestRewardConfig" }
+            | { __typename: "s1_eternum_Realm"; realm_id?: any | null }
+            | { __typename: "s1_eternum_RealmLevelConfig" }
+            | { __typename: "s1_eternum_RealmMaxLevelConfig" }
+            | { __typename: "s1_eternum_Resource" }
+            | { __typename: "s1_eternum_ResourceAllowance" }
+            | { __typename: "s1_eternum_ResourceBridgeConfig" }
+            | { __typename: "s1_eternum_ResourceBridgeFeeSplitConfig" }
+            | { __typename: "s1_eternum_ResourceBridgeWhitelistConfig" }
+            | { __typename: "s1_eternum_ResourceCost" }
+            | { __typename: "s1_eternum_ResourceTransferLock" }
+            | { __typename: "s1_eternum_Season" }
+            | { __typename: "s1_eternum_SeasonAddressesConfig" }
+            | { __typename: "s1_eternum_SeasonBridgeConfig" }
+            | { __typename: "s1_eternum_SettleRealmData" }
+            | { __typename: "s1_eternum_SettlementConfig" }
+            | { __typename: "s1_eternum_SpeedConfig" }
+            | { __typename: "s1_eternum_Stamina" }
+            | { __typename: "s1_eternum_StaminaConfig" }
+            | { __typename: "s1_eternum_StaminaRefillConfig" }
+            | { __typename: "s1_eternum_Status" }
+            | { __typename: "s1_eternum_Structure" }
+            | { __typename: "s1_eternum_StructureCount" }
+            | { __typename: "s1_eternum_SwapEvent" }
+            | { __typename: "s1_eternum_TickConfig" }
+            | { __typename: "s1_eternum_Tile" }
+            | { __typename: "s1_eternum_Trade" }
+            | { __typename: "s1_eternum_Transfer" }
+            | { __typename: "s1_eternum_Travel" }
+            | { __typename: "s1_eternum_TravelFoodCostConfig" }
+            | { __typename: "s1_eternum_TravelStaminaCostConfig" }
+            | { __typename: "s1_eternum_TroopConfig" }
+            | { __typename: "s1_eternum_TrophyCreation" }
+            | { __typename: "s1_eternum_TrophyProgression" }
+            | { __typename: "s1_eternum_VRFConfig" }
+            | { __typename: "s1_eternum_Weight" }
+            | { __typename: "s1_eternum_WeightConfig" }
+            | { __typename: "s1_eternum_WorldConfig" }
             | null
           > | null;
         } | null;
@@ -7435,132 +7341,131 @@ export type GetEternumEntityOwnerQueryVariables = Exact<{
 export type GetEternumEntityOwnerQuery = {
   __typename?: "World__Query";
   s0EternumEntityOwnerModels?: {
-    __typename?: "s0_eternum_EntityOwnerConnection";
+    __typename?: "s1_eternum_EntityOwnerConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_EntityOwnerEdge";
+      __typename?: "s1_eternum_EntityOwnerEdge";
       node?: {
-        __typename?: "s0_eternum_EntityOwner";
+        __typename?: "s1_eternum_EntityOwner";
         entity_id?: any | null;
         entity_owner_id?: any | null;
         entity?: {
           __typename?: "World__Entity";
           models?: Array<
-            | { __typename: "s0_eternum_AcceptOrder" }
-            | { __typename: "s0_eternum_AcceptPartialOrder" }
-            | { __typename: "s0_eternum_AddressName" }
-            | { __typename: "s0_eternum_Army" }
-            | { __typename: "s0_eternum_ArrivalTime"; arrives_at?: any | null }
-            | { __typename: "s0_eternum_Bank" }
-            | { __typename: "s0_eternum_BankConfig" }
-            | { __typename: "s0_eternum_Battle" }
-            | { __typename: "s0_eternum_BattleClaimData" }
-            | { __typename: "s0_eternum_BattleConfig" }
-            | { __typename: "s0_eternum_BattleJoinData" }
-            | { __typename: "s0_eternum_BattleLeaveData" }
-            | { __typename: "s0_eternum_BattlePillageData" }
-            | { __typename: "s0_eternum_BattleStartData" }
-            | { __typename: "s0_eternum_Building" }
-            | { __typename: "s0_eternum_BuildingCategoryPopConfig" }
-            | { __typename: "s0_eternum_BuildingConfig" }
-            | { __typename: "s0_eternum_BuildingGeneralConfig" }
-            | { __typename: "s0_eternum_BuildingQuantityv2" }
-            | { __typename: "s0_eternum_BurnDonkey" }
-            | { __typename: "s0_eternum_CancelOrder" }
-            | { __typename: "s0_eternum_CapacityCategory" }
-            | { __typename: "s0_eternum_CapacityConfig" }
-            | { __typename: "s0_eternum_Contribution" }
-            | { __typename: "s0_eternum_CreateGuild" }
-            | { __typename: "s0_eternum_CreateOrder" }
-            | { __typename: "s0_eternum_DetachedResource" }
-            | { __typename: "s0_eternum_EntityName" }
-            | { __typename: "s0_eternum_EntityOwner" }
-            | { __typename: "s0_eternum_Epoch" }
-            | { __typename: "s0_eternum_FragmentMineDiscovered" }
-            | { __typename: "s0_eternum_GameEnded" }
-            | { __typename: "s0_eternum_Guild" }
-            | { __typename: "s0_eternum_GuildMember" }
-            | { __typename: "s0_eternum_GuildWhitelist" }
-            | { __typename: "s0_eternum_Health" }
-            | { __typename: "s0_eternum_Hyperstructure" }
-            | { __typename: "s0_eternum_HyperstructureCoOwnersChange" }
-            | { __typename: "s0_eternum_HyperstructureConfig" }
-            | { __typename: "s0_eternum_HyperstructureContribution" }
-            | { __typename: "s0_eternum_HyperstructureFinished" }
-            | { __typename: "s0_eternum_HyperstructureResourceConfig" }
-            | { __typename: "s0_eternum_HyperstructureStarted" }
-            | { __typename: "s0_eternum_JoinGuild" }
-            | { __typename: "s0_eternum_Leaderboard" }
-            | { __typename: "s0_eternum_LeaderboardEntry" }
-            | { __typename: "s0_eternum_LeaderboardRegisterContribution" }
-            | { __typename: "s0_eternum_LeaderboardRegisterShare" }
-            | { __typename: "s0_eternum_LeaderboardRegistered" }
-            | { __typename: "s0_eternum_LeaderboardRewardClaimed" }
-            | { __typename: "s0_eternum_LevelingConfig" }
-            | { __typename: "s0_eternum_Liquidity" }
-            | { __typename: "s0_eternum_LiquidityEvent" }
-            | { __typename: "s0_eternum_MapConfig" }
-            | { __typename: "s0_eternum_MapExplored" }
-            | { __typename: "s0_eternum_Market" }
-            | { __typename: "s0_eternum_MercenariesConfig" }
-            | { __typename: "s0_eternum_Message" }
-            | { __typename: "s0_eternum_Movable" }
-            | { __typename: "s0_eternum_Orders" }
-            | { __typename: "s0_eternum_OwnedResourcesTracker"; resource_types?: any | null }
-            | { __typename: "s0_eternum_Owner" }
-            | { __typename: "s0_eternum_Population" }
-            | { __typename: "s0_eternum_PopulationConfig" }
-            | { __typename: "s0_eternum_Position"; x?: any | null; y?: any | null }
-            | { __typename: "s0_eternum_Production" }
-            | { __typename: "s0_eternum_ProductionConfig" }
-            | { __typename: "s0_eternum_ProductionDeadline" }
-            | { __typename: "s0_eternum_ProductionInput" }
-            | { __typename: "s0_eternum_ProductionOutput" }
-            | { __typename: "s0_eternum_Progress" }
-            | { __typename: "s0_eternum_Protectee" }
-            | { __typename: "s0_eternum_Protector" }
-            | { __typename: "s0_eternum_Quantity" }
-            | { __typename: "s0_eternum_QuantityTracker" }
-            | { __typename: "s0_eternum_Quest" }
-            | { __typename: "s0_eternum_QuestBonus" }
-            | { __typename: "s0_eternum_QuestConfig" }
-            | { __typename: "s0_eternum_QuestRewardConfig" }
-            | { __typename: "s0_eternum_Realm" }
-            | { __typename: "s0_eternum_RealmLevelConfig" }
-            | { __typename: "s0_eternum_RealmMaxLevelConfig" }
-            | { __typename: "s0_eternum_Resource" }
-            | { __typename: "s0_eternum_ResourceAllowance" }
-            | { __typename: "s0_eternum_ResourceBridgeConfig" }
-            | { __typename: "s0_eternum_ResourceBridgeFeeSplitConfig" }
-            | { __typename: "s0_eternum_ResourceBridgeWhitelistConfig" }
-            | { __typename: "s0_eternum_ResourceCost" }
-            | { __typename: "s0_eternum_ResourceTransferLock" }
-            | { __typename: "s0_eternum_Season" }
-            | { __typename: "s0_eternum_SeasonAddressesConfig" }
-            | { __typename: "s0_eternum_SeasonBridgeConfig" }
-            | { __typename: "s0_eternum_SettleRealmData" }
-            | { __typename: "s0_eternum_SettlementConfig" }
-            | { __typename: "s0_eternum_SpeedConfig" }
-            | { __typename: "s0_eternum_Stamina" }
-            | { __typename: "s0_eternum_StaminaConfig" }
-            | { __typename: "s0_eternum_StaminaRefillConfig" }
-            | { __typename: "s0_eternum_Status" }
-            | { __typename: "s0_eternum_Structure" }
-            | { __typename: "s0_eternum_StructureCount" }
-            | { __typename: "s0_eternum_SwapEvent" }
-            | { __typename: "s0_eternum_TickConfig" }
-            | { __typename: "s0_eternum_Tile" }
-            | { __typename: "s0_eternum_Trade" }
-            | { __typename: "s0_eternum_Transfer" }
-            | { __typename: "s0_eternum_Travel" }
-            | { __typename: "s0_eternum_TravelFoodCostConfig" }
-            | { __typename: "s0_eternum_TravelStaminaCostConfig" }
-            | { __typename: "s0_eternum_TroopConfig" }
-            | { __typename: "s0_eternum_TrophyCreation" }
-            | { __typename: "s0_eternum_TrophyProgression" }
-            | { __typename: "s0_eternum_VRFConfig" }
-            | { __typename: "s0_eternum_Weight"; value?: any | null }
-            | { __typename: "s0_eternum_WeightConfig" }
-            | { __typename: "s0_eternum_WorldConfig" }
+            | { __typename: "s1_eternum_AcceptOrder" }
+            | { __typename: "s1_eternum_AcceptPartialOrder" }
+            | { __typename: "s1_eternum_AddressName" }
+            | { __typename: "s1_eternum_Army" }
+            | { __typename: "s1_eternum_ArrivalTime"; arrives_at?: any | null }
+            | { __typename: "s1_eternum_Bank" }
+            | { __typename: "s1_eternum_BankConfig" }
+            | { __typename: "s1_eternum_Battle" }
+            | { __typename: "s1_eternum_BattleClaimData" }
+            | { __typename: "s1_eternum_BattleConfig" }
+            | { __typename: "s1_eternum_BattleJoinData" }
+            | { __typename: "s1_eternum_BattleLeaveData" }
+            | { __typename: "s1_eternum_BattlePillageData" }
+            | { __typename: "s1_eternum_BattleStartData" }
+            | { __typename: "s1_eternum_Building" }
+            | { __typename: "s1_eternum_BuildingCategoryPopConfig" }
+            | { __typename: "s1_eternum_BuildingConfig" }
+            | { __typename: "s1_eternum_BuildingGeneralConfig" }
+            | { __typename: "s1_eternum_BuildingQuantityv2" }
+            | { __typename: "s1_eternum_BurnDonkey" }
+            | { __typename: "s1_eternum_CancelOrder" }
+            | { __typename: "s1_eternum_CapacityCategory" }
+            | { __typename: "s1_eternum_CapacityConfig" }
+            | { __typename: "s1_eternum_Contribution" }
+            | { __typename: "s1_eternum_CreateGuild" }
+            | { __typename: "s1_eternum_CreateOrder" }
+            | { __typename: "s1_eternum_DetachedResource" }
+            | { __typename: "s1_eternum_EntityName" }
+            | { __typename: "s1_eternum_EntityOwner" }
+            | { __typename: "s1_eternum_Epoch" }
+            | { __typename: "s1_eternum_FragmentMineDiscovered" }
+            | { __typename: "s1_eternum_GameEnded" }
+            | { __typename: "s1_eternum_Guild" }
+            | { __typename: "s1_eternum_GuildMember" }
+            | { __typename: "s1_eternum_GuildWhitelist" }
+            | { __typename: "s1_eternum_Health" }
+            | { __typename: "s1_eternum_Hyperstructure" }
+            | { __typename: "s1_eternum_HyperstructureCoOwnersChange" }
+            | { __typename: "s1_eternum_HyperstructureConfig" }
+            | { __typename: "s1_eternum_HyperstructureContribution" }
+            | { __typename: "s1_eternum_HyperstructureFinished" }
+            | { __typename: "s1_eternum_HyperstructureResourceConfig" }
+            | { __typename: "s1_eternum_HyperstructureStarted" }
+            | { __typename: "s1_eternum_JoinGuild" }
+            | { __typename: "s1_eternum_Leaderboard" }
+            | { __typename: "s1_eternum_LeaderboardEntry" }
+            | { __typename: "s1_eternum_LeaderboardRegisterContribution" }
+            | { __typename: "s1_eternum_LeaderboardRegisterShare" }
+            | { __typename: "s1_eternum_LeaderboardRegistered" }
+            | { __typename: "s1_eternum_LeaderboardRewardClaimed" }
+            | { __typename: "s1_eternum_LevelingConfig" }
+            | { __typename: "s1_eternum_Liquidity" }
+            | { __typename: "s1_eternum_LiquidityEvent" }
+            | { __typename: "s1_eternum_MapConfig" }
+            | { __typename: "s1_eternum_MapExplored" }
+            | { __typename: "s1_eternum_Market" }
+            | { __typename: "s1_eternum_MercenariesConfig" }
+            | { __typename: "s1_eternum_Message" }
+            | { __typename: "s1_eternum_Movable" }
+            | { __typename: "s1_eternum_Orders" }
+            | { __typename: "s1_eternum_OwnedResourcesTracker"; resource_types?: any | null }
+            | { __typename: "s1_eternum_Owner" }
+            | { __typename: "s1_eternum_Population" }
+            | { __typename: "s1_eternum_PopulationConfig" }
+            | { __typename: "s1_eternum_Position"; x?: any | null; y?: any | null }
+            | { __typename: "s1_eternum_Production" }
+            | { __typename: "s1_eternum_ProductionConfig" }
+            | { __typename: "s1_eternum_ProductionDeadline" }
+            | { __typename: "s1_eternum_ProductionInput" }
+            | { __typename: "s1_eternum_ProductionOutput" }
+            | { __typename: "s1_eternum_Progress" }
+            | { __typename: "s1_eternum_Protectee" }
+            | { __typename: "s1_eternum_Protector" }
+            | { __typename: "s1_eternum_Quantity" }
+            | { __typename: "s1_eternum_QuantityTracker" }
+            | { __typename: "s1_eternum_Quest" }
+            | { __typename: "s1_eternum_QuestConfig" }
+            | { __typename: "s1_eternum_QuestRewardConfig" }
+            | { __typename: "s1_eternum_Realm" }
+            | { __typename: "s1_eternum_RealmLevelConfig" }
+            | { __typename: "s1_eternum_RealmMaxLevelConfig" }
+            | { __typename: "s1_eternum_Resource" }
+            | { __typename: "s1_eternum_ResourceAllowance" }
+            | { __typename: "s1_eternum_ResourceBridgeConfig" }
+            | { __typename: "s1_eternum_ResourceBridgeFeeSplitConfig" }
+            | { __typename: "s1_eternum_ResourceBridgeWhitelistConfig" }
+            | { __typename: "s1_eternum_ResourceCost" }
+            | { __typename: "s1_eternum_ResourceTransferLock" }
+            | { __typename: "s1_eternum_Season" }
+            | { __typename: "s1_eternum_SeasonAddressesConfig" }
+            | { __typename: "s1_eternum_SeasonBridgeConfig" }
+            | { __typename: "s1_eternum_SettleRealmData" }
+            | { __typename: "s1_eternum_SettlementConfig" }
+            | { __typename: "s1_eternum_SpeedConfig" }
+            | { __typename: "s1_eternum_Stamina" }
+            | { __typename: "s1_eternum_StaminaConfig" }
+            | { __typename: "s1_eternum_StaminaRefillConfig" }
+            | { __typename: "s1_eternum_Status" }
+            | { __typename: "s1_eternum_Structure" }
+            | { __typename: "s1_eternum_StructureCount" }
+            | { __typename: "s1_eternum_SwapEvent" }
+            | { __typename: "s1_eternum_TickConfig" }
+            | { __typename: "s1_eternum_Tile" }
+            | { __typename: "s1_eternum_Trade" }
+            | { __typename: "s1_eternum_Transfer" }
+            | { __typename: "s1_eternum_Travel" }
+            | { __typename: "s1_eternum_TravelFoodCostConfig" }
+            | { __typename: "s1_eternum_TravelStaminaCostConfig" }
+            | { __typename: "s1_eternum_TroopConfig" }
+            | { __typename: "s1_eternum_TrophyCreation" }
+            | { __typename: "s1_eternum_TrophyProgression" }
+            | { __typename: "s1_eternum_VRFConfig" }
+            | { __typename: "s1_eternum_Weight"; value?: any | null }
+            | { __typename: "s1_eternum_WeightConfig" }
+            | { __typename: "s1_eternum_WorldConfig" }
             | null
           > | null;
         } | null;
@@ -7625,11 +7530,11 @@ export type EternumStatisticsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type EternumStatisticsQuery = {
   __typename?: "World__Query";
-  s0EternumAddressNameModels?: { __typename?: "s0_eternum_AddressNameConnection"; totalCount: number } | null;
-  s0EternumHyperstructureModels?: { __typename?: "s0_eternum_HyperstructureConnection"; totalCount: number } | null;
-  s0EternumRealmModels?: { __typename?: "s0_eternum_RealmConnection"; totalCount: number } | null;
+  s0EternumAddressNameModels?: { __typename?: "s1_eternum_AddressNameConnection"; totalCount: number } | null;
+  s0EternumHyperstructureModels?: { __typename?: "s1_eternum_HyperstructureConnection"; totalCount: number } | null;
+  s0EternumRealmModels?: { __typename?: "s1_eternum_RealmConnection"; totalCount: number } | null;
   s0EternumFragmentMineDiscoveredModels?: {
-    __typename?: "s0_eternum_FragmentMineDiscoveredConnection";
+    __typename?: "s1_eternum_FragmentMineDiscoveredConnection";
     totalCount: number;
   } | null;
 };
@@ -7639,10 +7544,10 @@ export type HasGameEndedQueryVariables = Exact<{ [key: string]: never }>;
 export type HasGameEndedQuery = {
   __typename?: "World__Query";
   s0EternumGameEndedModels?: {
-    __typename?: "s0_eternum_GameEndedConnection";
+    __typename?: "s1_eternum_GameEndedConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_GameEndedEdge";
-      node?: { __typename?: "s0_eternum_GameEnded"; winner_address?: any | null } | null;
+      __typename?: "s1_eternum_GameEndedEdge";
+      node?: { __typename?: "s1_eternum_GameEnded"; winner_address?: any | null } | null;
     } | null> | null;
   } | null;
 };
@@ -7654,10 +7559,10 @@ export type GetLeaderboardEntryQueryVariables = Exact<{
 export type GetLeaderboardEntryQuery = {
   __typename?: "World__Query";
   s0EternumLeaderboardEntryModels?: {
-    __typename?: "s0_eternum_LeaderboardEntryConnection";
+    __typename?: "s1_eternum_LeaderboardEntryConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_LeaderboardEntryEdge";
-      node?: { __typename?: "s0_eternum_LeaderboardEntry"; address?: any | null; points?: any | null } | null;
+      __typename?: "s1_eternum_LeaderboardEntryEdge";
+      node?: { __typename?: "s1_eternum_LeaderboardEntry"; address?: any | null; points?: any | null } | null;
     } | null> | null;
   } | null;
 };
@@ -7667,15 +7572,15 @@ export type GetLeaderboardQueryVariables = Exact<{ [key: string]: never }>;
 export type GetLeaderboardQuery = {
   __typename?: "World__Query";
   s0EternumLeaderboardModels?: {
-    __typename?: "s0_eternum_LeaderboardConnection";
+    __typename?: "s1_eternum_LeaderboardConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_LeaderboardEdge";
+      __typename?: "s1_eternum_LeaderboardEdge";
       node?: {
-        __typename?: "s0_eternum_Leaderboard";
+        __typename?: "s1_eternum_Leaderboard";
         total_points?: any | null;
         registration_end_timestamp?: any | null;
         distribution_started?: any | null;
-        total_price_pool?: { __typename?: "s0_eternum_Optionu256"; Some?: any | null; option?: any | null } | null;
+        total_price_pool?: { __typename?: "s1_eternum_Optionu256"; Some?: any | null; option?: any | null } | null;
       } | null;
     } | null> | null;
   } | null;
@@ -7688,11 +7593,11 @@ export type GetHyperstructureContributionsQueryVariables = Exact<{
 export type GetHyperstructureContributionsQuery = {
   __typename?: "World__Query";
   s0EternumContributionModels?: {
-    __typename?: "s0_eternum_ContributionConnection";
+    __typename?: "s1_eternum_ContributionConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_ContributionEdge";
+      __typename?: "s1_eternum_ContributionEdge";
       node?: {
-        __typename?: "s0_eternum_Contribution";
+        __typename?: "s1_eternum_Contribution";
         hyperstructure_entity_id?: any | null;
         amount?: any | null;
       } | null;
@@ -7705,16 +7610,16 @@ export type GetEpochsQueryVariables = Exact<{ [key: string]: never }>;
 export type GetEpochsQuery = {
   __typename?: "World__Query";
   s0EternumEpochModels?: {
-    __typename?: "s0_eternum_EpochConnection";
+    __typename?: "s1_eternum_EpochConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_EpochEdge";
+      __typename?: "s1_eternum_EpochEdge";
       node?: {
-        __typename?: "s0_eternum_Epoch";
+        __typename?: "s1_eternum_Epoch";
         start_timestamp?: any | null;
         hyperstructure_entity_id?: any | null;
         index?: any | null;
         owners?: Array<{
-          __typename?: "s0_eternum_ContractAddressu16";
+          __typename?: "s1_eternum_ContractAddressu16";
           _0?: any | null;
           _1?: any | null;
         } | null> | null;
@@ -7730,11 +7635,11 @@ export type GetEntityPositionQueryVariables = Exact<{
 export type GetEntityPositionQuery = {
   __typename?: "World__Query";
   s0EternumPositionModels?: {
-    __typename?: "s0_eternum_PositionConnection";
+    __typename?: "s1_eternum_PositionConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_PositionEdge";
+      __typename?: "s1_eternum_PositionEdge";
       node?: {
-        __typename?: "s0_eternum_Position";
+        __typename?: "s1_eternum_Position";
         x?: any | null;
         y?: any | null;
         entity_id?: any | null;
@@ -7751,11 +7656,11 @@ export type GetEntitiesResourcesQueryVariables = Exact<{
 export type GetEntitiesResourcesQuery = {
   __typename?: "World__Query";
   s0EternumResourceModels?: {
-    __typename?: "s0_eternum_ResourceConnection";
+    __typename?: "s1_eternum_ResourceConnection";
     edges?: Array<{
-      __typename?: "s0_eternum_ResourceEdge";
+      __typename?: "s1_eternum_ResourceEdge";
       node?: {
-        __typename?: "s0_eternum_Resource";
+        __typename?: "s1_eternum_Resource";
         entity_id?: any | null;
         resource_type?: any | null;
         balance?: any | null;
@@ -7811,7 +7716,7 @@ export const GetEternumOwnerRealmIdsDocument = new TypedDocumentString(`
         entity {
           models {
             __typename
-            ... on s0_eternum_Realm {
+            ... on s1_eternum_Realm {
               realm_id
             }
           }
@@ -7834,17 +7739,17 @@ export const GetEternumEntityOwnerDocument = new TypedDocumentString(`
         entity {
           models {
             __typename
-            ... on s0_eternum_OwnedResourcesTracker {
+            ... on s1_eternum_OwnedResourcesTracker {
               resource_types
             }
-            ... on s0_eternum_Position {
+            ... on s1_eternum_Position {
               x
               y
             }
-            ... on s0_eternum_ArrivalTime {
+            ... on s1_eternum_ArrivalTime {
               arrives_at
             }
-            ... on s0_eternum_Weight {
+            ... on s1_eternum_Weight {
               value
             }
           }

@@ -2,7 +2,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView, RightView } from "@/types";
 import { StepOptions } from "shepherd.js";
 import { StepButton, waitForElement } from "./utils";
-
 export const createTradeSteps: StepOptions[] = [
   {
     title: "The Lords Market",

@@ -1,6 +1,5 @@
 import { BattleViewInfo, LeftView, RightView } from "@/types";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import React from "react";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { tracks } from "../helpers/use-music";

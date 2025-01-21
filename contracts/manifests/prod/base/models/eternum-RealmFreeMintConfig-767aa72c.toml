@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x92a43c9c368570d80d7a167747b9606d95da18eb76d48f0d2d7ec31a8f96c7"
+original_class_hash = "0x92a43c9c368570d80d7a167747b9606d95da18eb76d48f0d2d7ec31a8f96c7"
+abi = "manifests/prod/base/abis/models/eternum-RealmFreeMintConfig-767aa72c.json"
+tag = "eternum-RealmFreeMintConfig"
+qualified_path = "eternum::models::config::realm_free_mint_config"
+manifest_name = "eternum-RealmFreeMintConfig-767aa72c"
+
+[[members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "detached_resource_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "detached_resource_count"
+type = "u32"
+key = false

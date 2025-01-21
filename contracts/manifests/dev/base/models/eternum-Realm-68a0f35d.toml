@@ -1,0 +1,32 @@
+kind = "DojoModel"
+class_hash = "0x69a929bc00cef87c088389192011719dfaaa467badf8032a3fa4d05aa846aac"
+original_class_hash = "0x69a929bc00cef87c088389192011719dfaaa467badf8032a3fa4d05aa846aac"
+abi = "manifests/dev/base/abis/models/eternum-Realm-68a0f35d.json"
+tag = "eternum-Realm"
+qualified_path = "eternum::models::realm::realm"
+manifest_name = "eternum-Realm-68a0f35d"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "realm_id"
+type = "ID"
+key = false
+
+[[members]]
+name = "produced_resources"
+type = "u128"
+key = false
+
+[[members]]
+name = "order"
+type = "u8"
+key = false
+
+[[members]]
+name = "level"
+type = "u8"
+key = false

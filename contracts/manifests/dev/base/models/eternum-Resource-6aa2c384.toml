@@ -1,0 +1,22 @@
+kind = "DojoModel"
+class_hash = "0x12144ea5cd5d1f216e3ed3697924ed710d09be5882fef8fea901335d03ae50e"
+original_class_hash = "0x12144ea5cd5d1f216e3ed3697924ed710d09be5882fef8fea901335d03ae50e"
+abi = "manifests/dev/base/abis/models/eternum-Resource-6aa2c384.json"
+tag = "eternum-Resource"
+qualified_path = "eternum::models::resources::resource"
+manifest_name = "eternum-Resource-6aa2c384"
+
+[[members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "balance"
+type = "u128"
+key = false

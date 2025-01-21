@@ -1,5 +1,5 @@
 import { formatNumberWithCommas } from "@/utils/formatting";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import { HYPERSTRUCTURE_POINTS_FOR_WIN } from "@bibliothecadao/eternum";
 
 # 🏛️ Hyperstructures
@@ -55,7 +55,7 @@ When a Hyperstructure is completed, contributors receive one-time point rewards 
 - The rarity value of their contributed resources
 
 Finishing the construction of a hyperstructure awards
-{formatNumberWithCommas(EternumGlobalConfig.hyperstructures.hyperstructurePointsOnCompletion)} Victory Points, divided
+{formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsOnCompletion)} Victory Points, divided
 between all contributors. Points are calculated and distributed automatically upon construction completion.
 
 ### Holding shares of the Hyperstructure
@@ -71,7 +71,7 @@ generated. If you don't set co-owners, NO POINTS WILL BE ACCRUED, even if the Hy
 
 Once co-owners are set, points are generated as follows:
 
-- **{EternumGlobalConfig.hyperstructures.hyperstructurePointsPerCycle} Victory Points** are generated each Eternum day
+- **{ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle} Victory Points** are generated each Eternum day
 
 - Distribution follows a **share-based** system
 - Victory Points are automatically distributed according to **share percentages**

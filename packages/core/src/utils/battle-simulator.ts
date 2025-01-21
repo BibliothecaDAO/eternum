@@ -1,4 +1,4 @@
-import { EternumGlobalConfig } from "../constants";
+import { RESOURCE_PRECISION } from "../constants";
 
 export class Percentage {
   static _100() {
@@ -237,21 +237,20 @@ export class BattleSimulator {
     let paladin_count = (health.current * currentTroops.paladin_count) / health.lifetime;
     let crossbowman_count = (health.current * currentTroops.crossbowman_count) / health.lifetime;
 
-    if (knight_count < EternumGlobalConfig.resources.resourcePrecision) {
+    if (knight_count < RESOURCE_PRECISION) {
       knight_count = 0n;
     }
-    if (paladin_count < EternumGlobalConfig.resources.resourcePrecision) {
+    if (paladin_count < RESOURCE_PRECISION) {
       paladin_count = 0n;
     }
-    if (crossbowman_count < EternumGlobalConfig.resources.resourcePrecision) {
+    if (crossbowman_count < RESOURCE_PRECISION) {
       crossbowman_count = 0n;
     }
 
     return {
-      knight_count: knight_count - (knight_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
-      paladin_count: paladin_count - (paladin_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
-      crossbowman_count:
-        crossbowman_count - (crossbowman_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+      knight_count: knight_count - (knight_count % BigInt(RESOURCE_PRECISION)),
+      paladin_count: paladin_count - (paladin_count % BigInt(RESOURCE_PRECISION)),
+      crossbowman_count: crossbowman_count - (crossbowman_count % BigInt(RESOURCE_PRECISION)),
     };
   };
 
@@ -357,7 +356,7 @@ export class TroopsSimulator {
   }
 
   static normalizationFactor() {
-    return BigInt(EternumGlobalConfig.resources.resourcePrecision);
+    return BigInt(RESOURCE_PRECISION);
   }
 }
 
