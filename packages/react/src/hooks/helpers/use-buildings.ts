@@ -1,12 +1,4 @@
-import {
-  Building,
-  BuildingType,
-  configManager,
-  getEntityIdFromKeys,
-  ID,
-  ResourceIdToMiningType,
-  ResourcesIds,
-} from "@bibliothecadao/eternum";
+import { Building, BuildingType, configManager, ResourceIdToMiningType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -60,27 +52,4 @@ export const useBuildings = (outerCol: number, outerRow: number) => {
   }, [buildingEntities]);
 
   return buildings as Building[];
-};
-
-export const useBuildingQuantities = (structureEntityId: ID | undefined) => {
-  const {
-    setup: {
-      components: { BuildingQuantityv2 },
-    },
-  } = useDojo();
-  const entityUpdate = useEntityQuery([HasValue(BuildingQuantityv2, { entity_id: structureEntityId || 0 })]);
-
-  const getBuildingQuantity = (buildingType: BuildingType) =>
-    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(buildingType)]))
-      ?.value || 0;
-
-  return useMemo(
-    () => ({
-      food: getBuildingQuantity(BuildingType.Farm) + getBuildingQuantity(BuildingType.FishingVillage),
-      resource: getBuildingQuantity(BuildingType.Resource),
-      workersHut: getBuildingQuantity(BuildingType.WorkersHut),
-      markets: getBuildingQuantity(BuildingType.Market),
-    }),
-    [structureEntityId, entityUpdate],
-  );
 };

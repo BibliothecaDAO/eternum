@@ -12,13 +12,13 @@ import {
   configManager,
   ContractAddress,
   getAddressNameFromEntity,
+  getGuildFromPlayerAddress,
   LeaderboardManager,
   MAX_NAME_LENGTH,
 } from "@bibliothecadao/eternum";
 import {
   ProgressWithPercentage,
   useDojo,
-  useGuilds,
   useHyperstructureData,
   useHyperstructureProgress,
   useHyperstructureUpdates,
@@ -52,8 +52,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
     },
   } = dojo;
 
-  const { getGuildFromPlayerAddress } = useGuilds();
-
   const updateLeaderboard = useHyperstructureData();
 
   const [isLoading, setIsLoading] = useState<Loading>(Loading.None);
@@ -76,7 +74,10 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const hyperstructure = useComponentValue(components.Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
 
-  const playerGuild = useMemo(() => getGuildFromPlayerAddress(ContractAddress(account.address)), []);
+  const playerGuild = useMemo(
+    () => getGuildFromPlayerAddress(ContractAddress(account.address), dojo.setup.components),
+    [],
+  );
 
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
@@ -123,7 +124,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   }, [progresses, myContributions]);
 
   const canContribute = useMemo(() => {
-    const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0));
+    const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
     return (
       entity.isOwner ||
       (hyperstructure?.access === Access[Access.GuildOnly] &&

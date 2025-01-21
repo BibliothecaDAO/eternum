@@ -16,11 +16,12 @@ import {
   configManager,
   ContractAddress,
   getArmy,
+  getGuildFromPlayerAddress,
   getStructureAtPosition,
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds, useQuery } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
@@ -44,8 +45,6 @@ export const StructureCard = ({
 
   const { handleUrlChange } = useQuery();
 
-  const { getGuildFromPlayerAddress } = useGuilds();
-
   const structure = useMemo(
     () =>
       getStructureAtPosition(
@@ -57,7 +56,7 @@ export const StructureCard = ({
   );
 
   const playerGuild = useMemo(
-    () => getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n)),
+    () => getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n), dojo.setup.components),
     [structure?.owner.address],
   );
 

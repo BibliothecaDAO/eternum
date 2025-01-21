@@ -2,7 +2,7 @@ import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
-import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
+import { sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
@@ -39,7 +39,7 @@ export const GuildMemberList = ({
     <div className="flex flex-col p-2 border rounded-xl h-full">
       <GuildMemberListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
       <div className="space-y-2 overflow-y-auto">
-        {sortItems(guildMembers, activeSort, { sortKey: "rank", sort: "asc" }).map((guildMember) => (
+        {sortItems(guildMembers, activeSort, { sortKey: "name", sort: "asc" }).map((guildMember) => (
           <GuildMemberRow
             key={guildMember.address}
             guildMember={guildMember}
@@ -62,18 +62,13 @@ const GuildMemberListHeader = ({
   setActiveSort: (sort: SortInterface) => void;
 }) => {
   const sortingParams = useMemo(() => {
-    return [
-      { label: "Rank", sortKey: "rank", className: "col-span-1 text-center px-1" },
-      { label: "Name", sortKey: "name", className: "col-span-2 px-1" },
-      { label: "Points", sortKey: "points", className: "col-span-2 text-center px-1" },
-      { label: "Age", sortKey: "age", className: "col-span-1 text-center px-1" },
-    ];
+    return [{ label: "Name", sortKey: "name", className: "col-span-2 px-1" }];
   }, []);
 
   const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
 
   return (
-    <SortPanel className="grid grid-cols-6 pb-3 border-b border-gold/20">
+    <SortPanel className="grid grid-cols-2 pb-3 border-b border-gold/20">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
           key={sortKey}
@@ -106,27 +101,22 @@ const GuildMemberRow = ({
   return (
     <div
       className={clsx(
-        "grid grid-cols-6 w-full py-1 cursor-pointer items-center hover:bg-gold/5 rounded-lg transition-colors duration-200 mb-1",
+        "grid grid-cols-2 w-full py-1 cursor-pointer items-center hover:bg-gold/5 rounded-lg transition-colors duration-200 mb-1",
         {
           "bg-blueish/20 hover:bg-blueish/30": guildMember.isUser,
         },
       )}
     >
       <div
-        className="col-span-6 grid grid-cols-6 items-center"
+        className="col-span-2 grid grid-cols-2 items-center"
         onClick={() => {
           viewPlayerInfo(ContractAddress(guildMember.address));
         }}
       >
-        <p className="col-span-1 text-center font-medium italic px-1">
-          {guildMember.rank === Number.MAX_SAFE_INTEGER ? `☠️` : `#${guildMember.rank}`}
-        </p>
         <p className="col-span-2 flex flex-row items-center truncate font-semibold text-gold/90 px-1">
           {guildMember.isGuildMaster && <Crown className="w-6 fill-gold" />}
           <span className="truncate">{guildMember.name}</span>
         </p>
-        <p className="col-span-2 font-medium text-amber-200/90 px-1">{currencyIntlFormat(guildMember.points)}</p>
-        <p className="col-span-1 font-medium px-1">{guildMember.age}</p>
       </div>
 
       <div className="flex justify-center">

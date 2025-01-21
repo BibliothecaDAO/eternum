@@ -19,12 +19,12 @@ import {
   getAddressFromEntity,
   getAddressNameFromEntity,
   getBalance,
+  getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
 import {
   useArmiesAtPosition,
   useDojo,
   useFragmentMines,
-  useGuilds,
   useHyperstructureProgress,
   useHyperstructures,
 } from "@bibliothecadao/react";
@@ -188,16 +188,14 @@ const BaseStructureExtraContent = ({
     setup: { components },
   } = useDojo();
 
-  const { getGuildFromPlayerAddress } = useGuilds();
-
   const armies = useArmiesAtPosition({ position: { x, y } });
 
   const structureOwner = useMemo(() => {
     const ownerName = getAddressNameFromEntity(entityId, components);
     const address = getAddressFromEntity(entityId, components);
-    const guildName = getGuildFromPlayerAddress(address || 0n)?.name;
+    const guildName = getGuildFromPlayerAddress(address || 0n, components)?.name;
     return { name: ownerName, guildName };
-  }, [entityId, getAddressNameFromEntity, getAddressFromEntity, getGuildFromPlayerAddress]);
+  }, [entityId]);
 
   const { defensiveArmy, attackingArmy } = useMemo(() => {
     const defensive = armies.find((army) => army.protectee?.protectee_id);
@@ -208,7 +206,7 @@ const BaseStructureExtraContent = ({
     const getArmyInfo = (army?: any) => {
       if (!army) return;
       const ownerName = getAddressNameFromEntity(army.entity_id || 0, components);
-      const guildName = getGuildFromPlayerAddress(army.owner?.address || 0n)?.name;
+      const guildName = getGuildFromPlayerAddress(army.owner?.address || 0n, components)?.name;
       const totalTroops =
         (army.troops?.knight_count || 0n) + (army.troops?.paladin_count || 0n) + (army.troops?.crossbowman_count || 0n);
       return { totalTroops, army, name: ownerName, guildName };
@@ -218,7 +216,7 @@ const BaseStructureExtraContent = ({
       defensiveArmy: getArmyInfo(defensive) || { totalTroops: 0n },
       attackingArmy: getArmyInfo(attacking),
     };
-  }, [armies, getAddressNameFromEntity, getGuildFromPlayerAddress]);
+  }, [armies]);
 
   return (
     <div className="grid grid-cols-2 gap-4 text-xs">

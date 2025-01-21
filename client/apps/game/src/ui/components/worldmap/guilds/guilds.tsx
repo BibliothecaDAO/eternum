@@ -1,4 +1,3 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { CreateGuildButton } from "@/ui/components/worldmap/guilds/create-guild-button";
 import { GuildListHeader, GuildRow } from "@/ui/components/worldmap/guilds/guild-list";
 import { PRIZE_POOL_GUILDS } from "@/ui/constants";
@@ -6,8 +5,14 @@ import Button from "@/ui/elements/button";
 import { SortInterface } from "@/ui/elements/sort-button";
 import TextInput from "@/ui/elements/text-input";
 import { sortItems } from "@/ui/utils/utils";
-import { calculateGuildLordsPrize, ContractAddress, ID, PlayerInfo } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds } from "@bibliothecadao/react";
+import {
+  calculateGuildLordsPrize,
+  ContractAddress,
+  getGuildFromPlayerAddress,
+  ID,
+  PlayerInfo,
+} from "@bibliothecadao/eternum";
+import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -20,18 +25,18 @@ export const Guilds = ({
 }) => {
   const {
     setup: {
+      components,
       systemCalls: { create_guild },
     },
     account: { account },
   } = useDojo();
 
-  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
-
-  const { useGuildQuery, getGuildFromPlayerAddress, usePlayerWhitelist } = useGuilds();
-
-  const { guilds } = useGuildQuery(nextBlockTimestamp || 0);
+  const guilds = useGuilds();
   const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
-  const playerGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
+  const playerGuild = useMemo(
+    () => getGuildFromPlayerAddress(ContractAddress(account.address), components),
+    [account.address, components],
+  );
 
   const showGuildButton = playerGuild?.entityId;
 
@@ -60,7 +65,7 @@ export const Guilds = ({
     >();
 
     players.forEach((player) => {
-      const guild = getGuildFromPlayerAddress(player.address);
+      const guild = getGuildFromPlayerAddress(player.address, components);
       if (guild) {
         const stats = guildStats.get(guild.entityId.toString()) || {
           totalPoints: 0,
@@ -115,7 +120,7 @@ export const Guilds = ({
         guildsWithStats.filter((guild) => {
           const nameMatch = guild.name.toLowerCase().startsWith(guildSearchTerm.toLowerCase());
           if (viewGuildInvites) {
-            return nameMatch && guildInvites.some((invite) => invite.guildEntityId === guild.entityId);
+            return nameMatch && guildInvites.some((invite) => invite.entityId === guild.entityId);
           }
           return nameMatch;
         }),

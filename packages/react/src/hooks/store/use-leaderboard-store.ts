@@ -1,7 +1,7 @@
-import { ContractAddress, ID, LeaderboardManager } from "@bibliothecadao/eternum";
+import { ContractAddress, getGuildFromPlayerAddress, ID, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useCallback } from "react";
 import { create } from "zustand";
-import { useDojo, useGuilds, useNextBlockTimestamp } from "..";
+import { useDojo, useNextBlockTimestamp } from "..";
 
 interface LeaderboardStore {
   playersByRank: [ContractAddress, number][];
@@ -22,8 +22,6 @@ export const useLeaderBoardStore = create<LeaderboardStore>((set) => {
 export const useHyperstructureData = () => {
   const dojo = useDojo();
 
-  const { getGuildFromPlayerAddress } = useGuilds();
-
   const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const setPlayersByRank = useLeaderBoardStore((state) => state.setPlayersByRank);
@@ -32,7 +30,7 @@ export const useHyperstructureData = () => {
   const updateLeaderboard = useCallback(() => {
     const leaderboardManager = LeaderboardManager.instance(dojo.setup.components);
     const playersByRank = leaderboardManager.getPlayersByRank(nextBlockTimestamp || 0);
-    const guildsByRank = leaderboardManager.getGuildsByRank(nextBlockTimestamp || 0, getGuildFromPlayerAddress);
+    const guildsByRank = leaderboardManager.getGuildsByRank(nextBlockTimestamp || 0);
     setPlayersByRank(playersByRank);
     setGuildsByRank(guildsByRank);
   }, [dojo, nextBlockTimestamp, getGuildFromPlayerAddress, setPlayersByRank, setGuildsByRank]);

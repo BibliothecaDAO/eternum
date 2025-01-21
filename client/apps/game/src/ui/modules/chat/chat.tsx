@@ -8,8 +8,8 @@ import { ChatMetadata, Tab } from "@/ui/modules/chat/types";
 import { useChatStore } from "@/ui/modules/chat/use-chat-store";
 import { getMessageKey } from "@/ui/modules/chat/utils";
 import { EventStream } from "@/ui/modules/stream/event-stream";
-import { ContractAddress, Player, toHexString } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds, usePlayers } from "@bibliothecadao/react";
+import { ContractAddress, getGuildFromPlayerAddress, Player, toHexString } from "@bibliothecadao/eternum";
+import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -19,15 +19,14 @@ import { shortString } from "starknet";
 export const Chat = () => {
   const {
     account: { account },
-    setup: {
-      components: { Message, AddressName },
-    },
+    setup: { components },
   } = useDojo();
+
+  const { Message, AddressName } = components;
 
   const [displayMessages, setDisplayMessages] = useState(false);
 
-  const { getGuildFromPlayerAddress } = useGuilds();
-  const guildName = getGuildFromPlayerAddress(ContractAddress(account.address))?.name;
+  const guildName = getGuildFromPlayerAddress(ContractAddress(account.address), components)?.name;
   const guildKey = guildName ? shortString.encodeShortString(guildName) : undefined;
 
   const bottomChatRef = useRef<HTMLDivElement>(null);

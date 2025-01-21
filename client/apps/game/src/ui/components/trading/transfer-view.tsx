@@ -5,9 +5,10 @@ import {
   RealmWithPosition,
   StructureType,
   getEntityName,
+  getGuildMembersFromPlayerAddress,
   getRealmNameById,
 } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds, usePlayerRealms, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo, usePlayerRealms, usePlayerStructures } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
@@ -24,10 +25,11 @@ export const TransferView = () => {
 
   const [guildOnly, setGuildOnly] = useState(false);
 
-  const { getPlayersInPlayersGuild } = useGuilds();
-
   const playersInPlayersGuildAddress = useMemo(() => {
-    return getPlayersInPlayersGuild(BigInt(account.address)).map((a) => BigInt(a.address));
+    return (
+      getGuildMembersFromPlayerAddress(ContractAddress(account.address), components)?.map((a) => BigInt(a.address)) ||
+      []
+    );
   }, [account.address]);
 
   const otherStructuresQuery = useEntityQuery([
