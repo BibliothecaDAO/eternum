@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { realmsAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
 import { GET_ACCOUNT_TOKENS } from "@/hooks/query/erc721";
-import useNftSelection from "@/hooks/useNftSelection";
+import useNftSelection from "@/hooks/use-nft-selection";
 import { displayAddress } from "@/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";

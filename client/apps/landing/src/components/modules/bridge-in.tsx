@@ -1,10 +1,10 @@
 import { execute } from "@/hooks/gql/execute";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacityConfig";
+import { useEntities } from "@/hooks/helpers/use-entities";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacity-config";
+import { useBridgeAsset } from "@/hooks/use-bridge";
 import { useLords } from "@/hooks/use-lords";
-import { useBridgeAsset } from "@/hooks/useBridge";
-import { useTravel } from "@/hooks/useTravel";
+import { useTravel } from "@/hooks/use-travel";
 import { displayAddress, divideByPrecision, multiplyByPrecision } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
@@ -23,7 +23,7 @@ import { uint256 } from "starknet";
 import { formatEther } from "viem";
 import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
-import { ResourceIcon } from "../ui/elements/ResourceIcon";
+import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";

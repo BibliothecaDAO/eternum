@@ -3,7 +3,7 @@ import { useAccount } from "@starknet-react/core";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { env } from "../../env";
-import { useDojo } from "./context/DojoContext";
+import { useDojo } from "./context/dojo-context";
 
 export const useBridgeAsset = () => {
   // todo; use starknet-react

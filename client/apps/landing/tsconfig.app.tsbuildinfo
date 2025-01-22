@@ -94,7 +94,6 @@
     "./src/routes/bridge.lazy.tsx",
     "./src/routes/index.lazy.tsx",
     "./src/routes/mint.lazy.tsx",
-    "./src/routes/my-empire.tsx",
     "./src/routes/passes.lazy.tsx",
     "./src/routes/trade.lazy.tsx",
     "./src/stories/button.stories.tsx",

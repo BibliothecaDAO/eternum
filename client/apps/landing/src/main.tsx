@@ -12,7 +12,7 @@ import { dojoConfig } from "../dojoConfig";
 import { StarknetProvider } from "./components/providers/starknet-provider";
 import { ThemeProvider } from "./components/providers/theme-provider";
 import { TypeH1 } from "./components/typography/type-h1";
-import { DojoProvider } from "./hooks/context/DojoContext";
+import { DojoProvider } from "./hooks/context/dojo-context";
 import { DojoEventListener } from "./hooks/subscriptions.tsx/dojo-event-listener";
 import { routeTree } from "./routeTree.gen";
 import { ETERNUM_CONFIG } from "./utils/config";

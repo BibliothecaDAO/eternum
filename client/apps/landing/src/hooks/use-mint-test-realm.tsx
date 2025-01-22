@@ -2,7 +2,7 @@ import { realmsAddress } from "@/config";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useDojo } from "./context/DojoContext";
+import { useDojo } from "./context/dojo-context";
 
 export const useMintTestRealm = () => {
   const {

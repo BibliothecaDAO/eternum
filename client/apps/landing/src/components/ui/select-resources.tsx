@@ -1,12 +1,12 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { ID, resources } from "@bibliothecadao/eternum";
 import { XIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
-import { divideByPrecision } from "../ui/utils/utils";
-import Button from "./elements/Button";
-import ListSelect from "./elements/ListSelect";
-import { NumberInput } from "./elements/NumberInput";
-import { ResourceCost } from "./elements/ResourceCost";
+import Button from "./elements/button";
+import ListSelect from "./elements/list-select";
+import { NumberInput } from "./elements/number-input";
+import { ResourceCost } from "./elements/resource-cost";
+import { divideByPrecision } from "./utils/utils";
 
 export const SelectResources = ({
   selectedResourceIds,

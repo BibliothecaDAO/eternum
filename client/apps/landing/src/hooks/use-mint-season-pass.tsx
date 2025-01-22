@@ -4,20 +4,18 @@ import { lordsAddress, seasonPassAddress } from "@/config";
 import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
 
 import { abi } from "@/abi/SeasonPass";
-import { useDojo } from "./context/DojoContext";
+import { useDojo } from "./context/dojo-context";
 
 export const useMintSeasonPass = () => {
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(["0"]);
-
-  const { address } = useAccount();
 
   const { contract } = useContract({
     abi,
     address: seasonPassAddress,
   });
 
-  const { send, error, isPending, isSuccess } = useSendTransaction({});
+  const { send, isPending, isSuccess } = useSendTransaction({});
   const {
     setup: {
       systemCalls: { attach_lords, detach_lords },

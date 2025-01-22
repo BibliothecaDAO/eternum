@@ -2,7 +2,7 @@ import { findResourceById } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { divideByPrecision, formatNumber } from "../utils/utils";
-import { ResourceIcon } from "./ResourceIcon";
+import { ResourceIcon } from "./resource-icon";
 
 type ResourceCostProps = {
   isLabor?: boolean;

@@ -6,7 +6,7 @@ import { useReadContract } from "@starknet-react/core";
 import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Checkbox } from "../ui/checkbox";
-import { ResourceIcon } from "../ui/elements/ResourceIcon";
+import { ResourceIcon } from "../ui/elements/resource-icon";
 interface RealmCardProps {
   realm: NonNullable<NonNullable<NonNullable<GetAccountTokensQuery>["tokenBalances"]>["edges"]>[0] & {
     seasonPassMinted?: boolean;

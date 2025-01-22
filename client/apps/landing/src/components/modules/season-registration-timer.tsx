@@ -1,4 +1,4 @@
-import { useLeaderboardStatus } from "@/hooks/usePrizeClaim";
+import { useLeaderboardStatus } from "@/hooks/use-prize-claim";
 import { useEffect, useState } from "react";
 
 export const SeasonRegistrationTimer = () => {

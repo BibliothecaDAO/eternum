@@ -1,6 +1,6 @@
 import { execute } from "@/hooks/gql/execute";
 import { GET_ERC_MINTS } from "@/hooks/query/erc721";
-import { useMintTestRealm } from "@/hooks/useMintTestRealm";
+import { useMintTestRealm } from "@/hooks/use-mint-test-realm";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronsUpDown, Loader } from "lucide-react";
 import { useMemo, useState } from "react";

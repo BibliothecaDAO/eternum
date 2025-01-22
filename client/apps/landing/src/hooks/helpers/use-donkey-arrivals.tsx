@@ -4,7 +4,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { execute } from "../gql/execute";
 import { GetEternumEntityOwnerQuery } from "../gql/graphql";
-import { GET_ETERNUM_ENTITY_OWNERS } from "../query/entityOwners";
+import { GET_ETERNUM_ENTITY_OWNERS } from "../query/entity-owners";
 import { GET_ENTITY_DISTANCE } from "../query/position";
 import { GET_ENTITIES_RESOURCES } from "../query/resources";
 

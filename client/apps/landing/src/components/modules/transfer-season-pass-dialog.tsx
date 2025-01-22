@@ -6,7 +6,7 @@ import { TypeH2 } from "../typography/type-h2";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Dialog, DialogContent } from "../ui/dialog";
-import { ResourceIcon } from "../ui/elements/ResourceIcon";
+import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Input } from "../ui/input";
 
 import { abi } from "@/abi/SeasonPass";

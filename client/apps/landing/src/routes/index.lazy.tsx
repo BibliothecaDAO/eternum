@@ -8,7 +8,7 @@ import {
   PRIZE_POOL_INDIVIDUAL_LEADERBOARD,
 } from "@/constants";
 import { execute } from "@/hooks/gql/execute";
-import { GET_ETERNUM_STATTISTICS } from "@/hooks/query/eternumStatistics";
+import { GET_ETERNUM_STATTISTICS } from "@/hooks/query/eternum-statistics";
 import { useDonkeysBurned } from "@/hooks/use-donkeys-burned";
 import { useLordsBridgeBalance } from "@/hooks/use-lords-bridged";
 import { usePlayerCount } from "@/hooks/use-player-count";

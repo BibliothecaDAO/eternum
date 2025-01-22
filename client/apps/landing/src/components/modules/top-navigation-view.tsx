@@ -7,7 +7,7 @@ import { Uint256, uint256 } from "starknet";
 import { formatEther } from "viem";
 import { env } from "../../../env";
 import { Button } from "../ui/button";
-import { ResourceIcon } from "../ui/elements/ResourceIcon";
+import { ResourceIcon } from "../ui/elements/resource-icon";
 import { SidebarTrigger } from "../ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
 import { SeasonRegistrationTimer } from "./season-registration-timer";
