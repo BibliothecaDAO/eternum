@@ -61,6 +61,7 @@ export default defineConfig({
       "@/assets": path.resolve(__dirname, "../../public/assets"),
       events: "events",
       "@": path.resolve(__dirname, "./src"),
+      "@config": path.resolve(__dirname, "../../../config/utils/utils"),
     },
   },
   build: {
