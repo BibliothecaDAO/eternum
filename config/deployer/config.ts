@@ -772,10 +772,10 @@ export const setupGlobals = async (config: Config) => {
       signer: config.account,
       config_id: 0,
       unit_type,
-      explore_wheat_burn_amount: costs.explore_wheat_burn_amount * config.config.resources.resourcePrecision,
-      explore_fish_burn_amount: costs.explore_fish_burn_amount * config.config.resources.resourcePrecision,
-      travel_wheat_burn_amount: costs.travel_wheat_burn_amount * config.config.resources.resourcePrecision,
-      travel_fish_burn_amount: costs.travel_fish_burn_amount * config.config.resources.resourcePrecision,
+      explore_wheat_burn_amount: costs.explore_wheat_burn_amount,
+      explore_fish_burn_amount: costs.explore_fish_burn_amount,
+      travel_wheat_burn_amount: costs.travel_wheat_burn_amount,
+      travel_fish_burn_amount: costs.travel_fish_burn_amount,
     };
   });
   console.log(

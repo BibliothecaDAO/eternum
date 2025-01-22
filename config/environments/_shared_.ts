@@ -144,7 +144,6 @@ export const MAX_BANK_FEE_ON_WITHDRAWAL = 0; // 10%
 export const SEASON_START_AFTER_SECONDS = 60 * 60 * 26; // 1 day
 export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = 48 * 60 * 60; // 2 days
 
-console.log("helloooo1");
 export const EternumGlobalConfig: Config = {
   stamina: {
     travelCost: STAMINA_TRAVEL_COST,
@@ -287,5 +286,3 @@ export const EternumGlobalConfig: Config = {
     manifest: manifest,
   },
 };
-
-console.log("helloooo2");
