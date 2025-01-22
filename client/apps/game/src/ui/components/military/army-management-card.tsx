@@ -15,20 +15,11 @@ import {
   getEntityIdFromKeys,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
-import {
-  ArmyInfo,
-  ArmyManager,
-  configManager,
-  getBalance,
-  ID,
-  Position,
-  ResourcesIds,
-  U32_MAX,
-} from "@bibliothecadao/eternum";
+import { ArmyInfo, ArmyManager, configManager, getBalance, ID, Position, ResourcesIds } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -80,29 +71,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     [ResourcesIds.Crossbowman]: 0,
     [ResourcesIds.Paladin]: 0,
   });
-
-  const remainingTroops = useMemo(() => {
-    return (
-      Math.max(0, maxTroopCountPerArmy - Object.values(troopCounts).reduce((a, b) => a + b, 0)) -
-      Number(army?.quantity.value)
-    );
-  }, [troopCounts]);
-
-  const getMaxTroopCount = useCallback(
-    (balance: number, troopName: number) => {
-      const balanceFloor = Math.floor(divideByPrecision(balance));
-      if (!balance) return 0;
-
-      const maxFromBalance = Math.min(balanceFloor, divideByPrecision(U32_MAX));
-
-      if (isDefendingArmy) {
-        return maxFromBalance;
-      } else {
-        return Math.min(maxFromBalance, remainingTroops + troopCounts[troopName]);
-      }
-    },
-    [isDefendingArmy, remainingTroops, troopCounts],
-  );
 
   const handleTroopCountChange = (troopName: number, count: number) => {
     setTroopCounts((prev) => ({ ...prev, [troopName]: count }));
@@ -273,7 +241,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                       Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
                     </div>
                     <NumberInput
-                      max={getMaxTroopCount(balance, troop.name)}
+                      max={divideByPrecision(balance)}
                       min={0}
                       step={100}
                       value={troopCounts[troop.name]}
