@@ -1,6 +1,6 @@
 /// <reference types="vite-plugin-pwa/client" />
 
-import { setup } from "@bibliothecadao/eternum";
+import { configManager, setup } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
@@ -20,6 +20,7 @@ import GameRenderer from "./three/game-renderer";
 import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
+import { ETERNUM_CONFIG } from "./utils/config";
 
 declare global {
   interface Window {
@@ -70,6 +71,9 @@ async function init() {
     { ...dojoConfig },
     { vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS, useBurner: env.VITE_PUBLIC_CHAIN === "local" },
   );
+
+  const eternumConfig = await ETERNUM_CONFIG();
+  configManager.setDojo(setupResult.components, eternumConfig);
 
   await initialSync(setupResult, state);
 

@@ -6,15 +6,16 @@ import "./index.css";
 // Import the generated route tree
 //import { ArkProvider } from '@ark-project/react';
 
+import { ClientConfigManager, setup } from "@bibliothecadao/eternum";
 import { NuqsAdapter } from "nuqs/adapters/react";
 import { dojoConfig } from "../dojoConfig";
 import { StarknetProvider } from "./components/providers/starknet-provider";
 import { ThemeProvider } from "./components/providers/theme-provider";
 import { TypeH1 } from "./components/typography/type-h1";
-import { setup } from "./dojo/setup";
 import { DojoProvider } from "./hooks/context/DojoContext";
 import { DojoEventListener } from "./hooks/subscriptions.tsx/dojo-event-listener";
 import { routeTree } from "./routeTree.gen";
+import { ETERNUM_CONFIG } from "./utils/config";
 // Create a new router instance
 const router = createRouter({ routeTree });
 
@@ -24,6 +25,16 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
+
+const initializeApp = async () => {
+  const setupResult = await setup(dojoConfig, {
+    vrfProviderAddress: import.meta.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+    useBurner: import.meta.env.VITE_PUBLIC_CHAIN === "local",
+  });
+  const eternumConfig = await ETERNUM_CONFIG();
+  ClientConfigManager.instance().setDojo(setupResult.components, eternumConfig);
+  return setupResult;
+};
 
 // Render the app
 const rootElement = document.getElementById("root")!;
@@ -40,7 +51,7 @@ if (!rootElement.innerHTML) {
     </div>,
   );
 
-  const setupResult = await setup(dojoConfig);
+  const setupResult = await initializeApp();
 
   root.render(
     <StrictMode>
