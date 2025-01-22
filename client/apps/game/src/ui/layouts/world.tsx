@@ -8,7 +8,6 @@ import { useFetchBlockchainData } from "@/hooks/helpers/use-fetch";
 import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { rewards } from "@/ui/components/navigation/config";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { ADMIN_BANK_ENTITY_ID, PlayerStructure } from "@bibliothecadao/eternum";
@@ -231,32 +230,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, []);
-
-  // useEffect(() => {
-  //   const fetch = async () => {
-  //     try {
-  //       setLoading(LoadingStateKey.Hyperstructure, true);
-  //       console.log("AddToSubscriptionStart - 4");
-  //       await Promise.all([
-  //         debouncedAddHyperstructureSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
-  //           setLoading(LoadingStateKey.Hyperstructure, false),
-  //         ),
-  //       ]);
-  //     } catch (error) {
-  //       console.error("Fetch failed", error);
-  //     } finally {
-  //       // Ensure loading states are reset even if there's an error
-  //       setLoading(LoadingStateKey.Hyperstructure, false);
-  //     }
-  //   };
-
-  //   fetch();
-  // }, []);
-
-  const openPopup = useUIStore((state) => state.openPopup);
-  useEffect(() => {
-    openPopup(rewards);
   }, []);
 
   const battleViewContent = useMemo(
