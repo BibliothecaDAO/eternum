@@ -1,10 +1,9 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { ClientComponents } from "../dojo/createClientComponents";
+import { type DojoAccount, type ID, type Resource } from "..";
+import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { type ID, type Resource } from "../types";
-import { DojoAccount } from "./types";
 
 export class ResourceInventoryManager {
   carrierEntityId: ID;

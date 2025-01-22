@@ -2,6 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
+import { DojoAccount } from "..";
 import {
   CapacityConfigCategory,
   FELT_CENTER,
@@ -9,15 +10,14 @@ import {
   getNeighborHexes,
   ResourcesIds,
 } from "../constants";
-import { ClientComponents } from "../dojo/createClientComponents";
+import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { ContractAddress, ID, TravelTypes, type HexPosition } from "../types";
+import { ContractAddress, HexPosition, ID, TravelTypes } from "../types";
 import { multiplyByPrecision } from "../utils";
-import { configManager } from "./ConfigManager";
-import { ResourceManager } from "./ResourceManager";
-import { StaminaManager } from "./StaminaManager";
-import { DojoAccount } from "./types";
-import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacity } from "./utils/ArmyMovementUtils";
+import { configManager } from "./config-manager";
+import { ResourceManager } from "./resource-manager";
+import { StaminaManager } from "./stamina-manager";
+import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacity } from "./utils";
 
 export class TravelPaths {
   private readonly paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;

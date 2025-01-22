@@ -14,7 +14,7 @@ import {
   StructureType,
   WORLD_CONFIG_ID,
 } from "../constants";
-import { ContractComponents } from "../dojo/contractComponents";
+import { ContractComponents } from "../dojo/contract-components";
 import { Config, TickIds, TravelTypes } from "../types";
 
 export class ClientConfigManager {

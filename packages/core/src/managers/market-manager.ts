@@ -1,9 +1,9 @@
 import { getComponentValue, HasValue, runQuery, type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ResourcesIds } from "../constants";
-import { ClientComponents } from "../dojo/createClientComponents";
+import { ClientComponents } from "../dojo/create-client-components";
 import { ContractAddress, ID } from "../types";
-import { configManager } from "./ConfigManager";
+import { configManager } from "./config-manager";
 
 export class MarketManager {
   constructor(

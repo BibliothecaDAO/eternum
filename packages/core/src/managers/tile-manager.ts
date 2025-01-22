@@ -2,6 +2,7 @@ import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@d
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
+import { type DojoAccount } from "..";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -14,11 +15,10 @@ import {
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
 } from "../constants";
-import { ClientComponents } from "../dojo/createClientComponents";
+import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
 import { ContractAddress, HexPosition, ID, Position } from "../types";
-import { configManager } from "./ConfigManager";
-import { DojoAccount } from "./types";
+import { configManager } from "./config-manager";
 
 export class TileManager {
   private col: number;

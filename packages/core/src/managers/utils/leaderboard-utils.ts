@@ -1,8 +1,8 @@
 import { ComponentValue } from "@dojoengine/recs";
-import { ClientComponents } from "../../dojo/createClientComponents";
+import { ClientConfigManager, configManager } from "..";
+import { ClientComponents } from "../../dojo";
 import { Resource } from "../../types";
 import { divideByPrecision } from "../../utils";
-import { ClientConfigManager, configManager } from "../ConfigManager";
 
 function computeInitialContributionPoints(
   hyperstructureId: number,

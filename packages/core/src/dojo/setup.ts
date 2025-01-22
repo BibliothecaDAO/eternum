@@ -1,6 +1,6 @@
 import { DojoConfig } from "@dojoengine/core";
+import { createClientComponents } from "..";
 import { createSystemCalls } from "./create-system-calls";
-import { createClientComponents } from "./createClientComponents";
 import { setupNetwork } from "./setupNetwork";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;

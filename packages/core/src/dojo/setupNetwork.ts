@@ -4,8 +4,8 @@ import { world } from "./world";
 import { BurnerManager } from "@dojoengine/create-burner";
 import * as torii from "@dojoengine/torii-client";
 import { Account } from "starknet";
+import { defineContractComponents } from "..";
 import { EternumProvider } from "../provider";
-import { defineContractComponents } from "./contractComponents";
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 

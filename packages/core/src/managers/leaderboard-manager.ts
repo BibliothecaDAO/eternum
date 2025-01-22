@@ -1,10 +1,10 @@
 import { ComponentValue, Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { RESOURCE_RARITY, ResourcesIds, WORLD_CONFIG_ID } from "../constants";
-import { ClientComponents } from "../dojo/createClientComponents";
+import { ClientComponents } from "../dojo/create-client-components";
 import { ContractAddress, ID, Resource, TickIds } from "../types";
 import { divideByPrecision, getGuildFromPlayerAddress } from "../utils";
-import { configManager } from "./ConfigManager";
+import { configManager } from "./config-manager";
 
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;

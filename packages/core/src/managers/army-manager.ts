@@ -3,10 +3,10 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
 import { ResourcesIds } from "../constants";
-import { ClientComponents } from "../dojo/createClientComponents";
+import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
 import { ID } from "../types";
-import { ResourceManager } from "./ResourceManager";
+import { ResourceManager } from "./resource-manager";
 
 interface Troops {
   [ResourcesIds.Paladin]: number;

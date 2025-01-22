@@ -2,8 +2,8 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BuildingType, RESOURCE_PRECISION, resources, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo";
-import { ResourceManager } from "../modelManager";
-import { configManager } from "../modelManager/ConfigManager";
+import { ResourceManager } from "../managers";
+import { configManager } from "../managers/config-manager";
 import { ID, Resource, ResourceInputs } from "../types";
 import { unpackResources } from "./packed-data";
 

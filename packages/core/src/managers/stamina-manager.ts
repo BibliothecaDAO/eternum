@@ -1,7 +1,7 @@
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ResourcesIds, WORLD_CONFIG_ID } from "../constants";
-import { ClientComponents } from "../dojo/createClientComponents";
+import { ClientComponents } from "../dojo/create-client-components";
 import { ID } from "../types";
 
 export class StaminaManager {

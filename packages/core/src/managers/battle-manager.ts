@@ -1,23 +1,25 @@
 import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { MIN_TROOPS_BATTLE, RESOURCE_PRECISION } from "../constants";
-import { ClientComponents } from "../dojo/createClientComponents";
-import { EternumProvider } from "../provider";
 import {
+  ArmyInfo,
   BattleSide,
   BattleStartStatus,
   BattleStatus,
   BattleType,
   ClaimStatus,
+  DojoAccount,
   Health,
   ID,
   LeaveStatus,
   RaidStatus,
-} from "../types";
+  Structure,
+} from "..";
+import { MIN_TROOPS_BATTLE, RESOURCE_PRECISION } from "../constants";
+import { ClientComponents } from "../dojo/create-client-components";
+import { EternumProvider } from "../provider";
 import { multiplyByPrecision } from "../utils";
-import { configManager } from "./ConfigManager";
-import { StaminaManager } from "./StaminaManager";
-import { ArmyInfo, DojoAccount, Structure } from "./types";
+import { configManager } from "./config-manager";
+import { StaminaManager } from "./stamina-manager";
 
 export class BattleManager {
   battleType: BattleType | undefined;

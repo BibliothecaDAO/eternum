@@ -1,8 +1,8 @@
 import { type ComponentValue } from "@dojoengine/recs";
+import { configManager } from "..";
 import { RESOURCE_PRECISION, ResourcesIds } from "../../constants";
-import { ClientComponents } from "../../dojo/createClientComponents";
+import { ClientComponents } from "../../dojo/create-client-components";
 import { divideByPrecision, gramToKg } from "../../utils";
-import { configManager } from "../ConfigManager";
 
 export const getRemainingCapacity = (
   army: ComponentValue<ClientComponents["Army"]["schema"]>,
