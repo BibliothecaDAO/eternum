@@ -86,7 +86,7 @@ export const NumberInput = ({
             if (match) {
               const parsedValue = parseNumber(match[0]);
               const maxValue = Math.min(Math.max(Math.floor(parsedValue), min), max);
-              setDisplayValue(match[0]);
+              setDisplayValue(formatNumber(maxValue));
               onChange(maxValue);
             } else {
               setDisplayValue(formatNumber(min));
