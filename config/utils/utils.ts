@@ -1,7 +1,18 @@
 import type { Config, SeasonAddresses } from "@bibliothecadao/eternum";
+import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
+import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
+import slotSeasonAddresses from "../../contracts/common/addresses/slot.json";
+
+import mainnetGameManifest from "../../contracts/game/manifest_mainnet.json";
+import sepoliaGameManifest from "../../contracts/game/manifest_sepolia.json";
+import slotGameManifest from "../../contracts/game/manifest_slot.json";
+
+import mainnetConfig from "../environments/data/mainnet.json";
+import sepoliaConfig from "../environments/data/sepolia.json";
+import slotConfig from "../environments/data/slot.json";
 
 /** Valid chain identifiers */
-export type Chain = "local" | "sepolia" | "mainnet" | "slot";
+export type Chain = "sepolia" | "mainnet" | "slot";
 
 /**
  * Retrieves the season addresses for a specific chain
@@ -9,10 +20,18 @@ export type Chain = "local" | "sepolia" | "mainnet" | "slot";
  * @returns The contract addresses for the specified chain
  * @throws Error if addresses cannot be loaded
  */
-export async function getSeasonAddresses(chain: Chain): Promise<SeasonAddresses> {
+export function getSeasonAddresses(chain: Chain): SeasonAddresses {
   try {
-    const seasonAddressesJson = await import(`../../contracts/common/addresses/${chain}.json`);
-    return seasonAddressesJson.default;
+    switch (chain) {
+      case "sepolia":
+        return sepoliaSeasonAddresses;
+      case "mainnet":
+        return mainnetSeasonAddresses;
+      case "slot":
+        return slotSeasonAddresses;
+      default:
+        throw new Error(`Invalid chain: ${chain}`);
+    }
   } catch (error) {
     throw new Error(`Failed to load season addresses for chain ${chain}: ${error}`);
   }
@@ -32,10 +51,18 @@ interface GameManifest {
  * @returns The game manifest configuration
  * @throws Error if manifest cannot be loaded
  */
-export async function getGameManifest(chain: Chain): Promise<GameManifest> {
+export function getGameManifest(chain: Chain): GameManifest {
   try {
-    const manifest = await import(`../../contracts/game/manifest_${chain}.json`);
-    return manifest.default;
+    switch (chain) {
+      case "sepolia":
+        return sepoliaGameManifest;
+      case "mainnet":
+        return mainnetGameManifest;
+      case "slot":
+        return slotGameManifest;
+      default:
+        throw new Error(`Invalid chain: ${chain}`);
+    }
   } catch (error) {
     throw new Error(`Failed to load game manifest for chain ${chain}: ${error}`);
   }
@@ -44,7 +71,6 @@ export async function getGameManifest(chain: Chain): Promise<GameManifest> {
 /**
  * Loads the environment-specific configuration based on the network type.
  *
- * @async
  * @remarks
  * Configuration files must follow these naming conventions:
  * - Located in environments/ directory
@@ -55,14 +81,21 @@ export async function getGameManifest(chain: Chain): Promise<GameManifest> {
  *
  * @example
  * ```typescript
- * const config = await getConfigFromNetwork('local'); // loads from environments/local.ts
+ * const config = getConfigFromNetwork('local'); // loads from environments/local.ts
  * ```
  */
-export async function getConfigFromNetwork(chain: Chain): Promise<Config> {
-  const CONFIGURATION_FILE = `../environments/data/${chain}.json`;
+export function getConfigFromNetwork(chain: Chain): Config {
   try {
-    const configurationJson = (await import(/* @vite-ignore */ CONFIGURATION_FILE)).default;
-    return configurationJson.configuration;
+    switch (chain) {
+      case "sepolia":
+        return sepoliaConfig.configuration;
+      case "mainnet":
+        return mainnetConfig.configuration;
+      case "slot":
+        return slotConfig.configuration;
+      default:
+        throw new Error(`Invalid chain: ${chain}`);
+    }
   } catch (error) {
     throw new Error(`Failed to load configuration for chain ${chain}: ${error}`);
   }
