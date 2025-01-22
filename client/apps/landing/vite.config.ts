@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
         "@/assets": path.resolve(__dirname, "../../public/assets"),
+        "@config": path.resolve(__dirname, "../../../config/utils/utils"),
       },
     },
     server: {
@@ -31,6 +32,6 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: ["../../contracts/game/manifest_*.json", "../../contracts/common/addresses/*.json"],
     },
-    publicDir: "../../common/public",
+    publicDir: "../../public",
   };
 });

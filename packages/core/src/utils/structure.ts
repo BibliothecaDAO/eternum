@@ -23,11 +23,11 @@ export const getStructureAtPosition = (
 };
 
 export const getStructure = (
-  entityId: ID,
+  entityId: Entity | ID,
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): Structure | undefined => {
-  const structureEntity = getEntityIdFromKeys([BigInt(entityId)]);
+  const structureEntity = typeof entityId === "string" ? entityId : getEntityIdFromKeys([BigInt(entityId)]);
   return getStructureInfo(structureEntity, playerAddress, components);
 };
 

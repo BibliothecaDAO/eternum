@@ -2,6 +2,7 @@ import { ClientConfigManager, createClientComponents } from "@bibliothecadao/ete
 import { DojoConfig } from "@dojoengine/core";
 import { createSystemCalls } from "./createSystemCalls";
 import { setupNetwork } from "./setupNetwork";
+import { ETERNUM_CONFIG } from "../utils/config";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
@@ -12,7 +13,8 @@ export async function setup({ ...config }: DojoConfig) {
 
   const configManager = ClientConfigManager.instance();
 
-  configManager.setDojo(components);
+  const eternumConfig = await ETERNUM_CONFIG();
+  configManager.setDojo(components, eternumConfig);
 
   return {
     network,
