@@ -2,7 +2,7 @@ import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { ID, resources } from "@bibliothecadao/eternum";
 import { XIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
-import Button from "./elements/button";
+import { Button } from "./button";
 import ListSelect from "./elements/list-select";
 import { NumberInput } from "./elements/number-input";
 import { ResourceCost } from "./elements/resource-cost";
@@ -51,7 +51,7 @@ export const SelectResources = ({
           <div key={id} className="flex items-center gap-4">
             {selectedResourceIds.length > 1 && (
               <Button
-                variant="red"
+                variant="destructive"
                 onClick={() => {
                   const updatedResourceIds = selectedResourceIds.filter((_: any, i: any) => i !== index);
                   setSelectedResourceIds(updatedResourceIds);
@@ -96,7 +96,7 @@ export const SelectResources = ({
         );
       })}
       <div className="mt-12">
-        <Button variant="primary" size="md" onClick={addResourceGive}>
+        <Button variant="default" onClick={addResourceGive}>
           Add Resourceabcd
         </Button>
       </div>
