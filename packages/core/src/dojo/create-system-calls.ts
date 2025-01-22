@@ -22,6 +22,38 @@ export function createSystemCalls({ provider }: { provider: EternumProvider }) {
     await provider.cancel_order(props);
   };
 
+  const mint_test_realm = async (props: SystemProps.MintTestRealmProps) => {
+    await provider.mint_test_realm(props);
+  };
+
+  const mint_season_passes = async (props: SystemProps.MintSeasonPassesProps) => {
+    await provider.mint_season_passes(props);
+  };
+
+  const attach_lords = async (props: SystemProps.AttachLordsProps) => {
+    await provider.attach_lords(props);
+  };
+
+  const detach_lords = async (props: SystemProps.DetachLordsProps) => {
+    await provider.detach_lords(props);
+  };
+
+  const mint_test_lords = async (props: SystemProps.MintTestLordsProps) => {
+    await provider.mint_test_lords(props);
+  };
+
+  const bridge_resources_into_realm = async (props: SystemProps.BridgeResourcesIntoRealmProps) => {
+    return await provider.bridge_resources_into_realm(props);
+  };
+
+  const bridge_start_withdraw_from_realm = async (props: SystemProps.BridgeStartWithdrawFromRealmProps) => {
+    return await provider.bridge_start_withdraw_from_realm(props);
+  };
+
+  const bridge_finish_withdraw_from_realm = async (props: SystemProps.BridgeFinishWithdrawFromRealmProps) => {
+    return await provider.bridge_finish_withdraw_from_realm(props);
+  };
+
   const upgrade_realm = async (props: SystemProps.UpgradeRealmProps) => {
     await provider.upgrade_realm(props);
   };
@@ -303,6 +335,15 @@ export function createSystemCalls({ provider }: { provider: EternumProvider }) {
     battle_pillage,
     battle_leave_and_claim,
     battle_leave_and_pillage,
+
+    mint_test_realm,
+    mint_season_passes,
+    attach_lords,
+    detach_lords,
+    mint_test_lords,
+    bridge_resources_into_realm,
+    bridge_start_withdraw_from_realm,
+    bridge_finish_withdraw_from_realm,
   };
 
   return systemCalls;

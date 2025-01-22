@@ -1,10 +1,9 @@
 import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
+import { ArmyInfo, getArmyTotalCapacity } from "..";
 import { CapacityConfigCategory, RESOURCE_PRECISION } from "../constants";
 import { ClientComponents } from "../dojo";
-import { ArmyInfo } from "../modelManager/types";
-import { getArmyTotalCapacity } from "../modelManager/utils";
 import { ContractAddress, ID } from "../types";
 
 export const formatArmies = (

@@ -15,7 +15,6 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import React from "react";
 
-// const eternumConfig = await ETERNUM_CONFIG();
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
   [StructureType.Bank]: STRUCTURE_IMAGE_PREFIX + "mine.png",

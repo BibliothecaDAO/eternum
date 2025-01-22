@@ -13,9 +13,8 @@ import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "@/three/scenes/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
-import { LeftView, SceneName } from "@/types";
+import { LeftView } from "@/types";
 import { Position } from "@/types/position";
-import { ArmySystemUpdate, TileSystemUpdate } from "@/types/systems";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import {
@@ -30,11 +29,11 @@ import {
   getNeighborOffsets,
 } from "@bibliothecadao/eternum";
 import { getEntities } from "@dojoengine/state";
-import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { ArmySystemUpdate, SceneName, TileSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 export default class WorldmapScene extends HexagonScene {
@@ -49,8 +48,6 @@ export default class WorldmapScene extends HexagonScene {
   private totalStructures: number = 0;
 
   private currentChunk: string = "null";
-
-  private subscription: torii.Subscription | null = null;
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;

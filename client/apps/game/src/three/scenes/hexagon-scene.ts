@@ -10,7 +10,7 @@ import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager"
 import { type SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, biomeModelPaths } from "@/three/scenes/constants";
 import { SystemManager } from "@/three/systems/system-manager";
-import { LeftView, RightView, type SceneName } from "@/types";
+import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type HexPosition, type SetupResult } from "@bibliothecadao/eternum";
 import gsap from "gsap";
@@ -18,6 +18,7 @@ import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { type MapControls } from "three/examples/jsm/controls/MapControls";
 import { env } from "../../../env";
+import { SceneName } from "../types";
 import { getWorldPositionForHex } from "../utils";
 export abstract class HexagonScene {
   protected scene!: THREE.Scene;

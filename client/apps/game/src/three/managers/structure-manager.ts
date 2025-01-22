@@ -3,11 +3,10 @@ import { gltfLoader, isAddressEqualToAccount } from "@/three/helpers/utils";
 import InstancedModel from "@/three/managers/instanced-model";
 import { LabelManager } from "@/three/managers/label-manager";
 import { StructureLabelPaths, StructureModelPaths } from "@/three/scenes/constants";
-import { RenderChunkSize, StructureInfo } from "@/types";
-import { StructureSystemUpdate } from "@/types/systems";
 import { FELT_CENTER } from "@/ui/config";
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
+import { RenderChunkSize, StructureInfo, StructureSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 const neutralColor = new THREE.Color(0xffffff);

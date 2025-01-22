@@ -2,40 +2,10 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
-import {
-  ContractAddress,
-  formatTime,
-  getGuildFromPlayerAddress,
-  getStructure,
-  getStructureImmunityTimer,
-  isStructureImmune,
-  Structure,
-} from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp, useQuery } from "@bibliothecadao/react";
+import { ContractAddress, getGuildFromPlayerAddress, getStructure, Structure } from "@bibliothecadao/eternum";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { memo, useMemo } from "react";
-
-export const ImmunityTimer = ({ structure, className }: { structure: Structure; className?: string }) => {
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
-
-  const isImmune = useMemo(
-    () => isStructureImmune(structure, nextBlockTimestamp || 0),
-    [structure, nextBlockTimestamp],
-  );
-
-  const timer = useMemo(
-    () => getStructureImmunityTimer(structure, nextBlockTimestamp || 0),
-    [structure, nextBlockTimestamp],
-  );
-
-  if (!isImmune) return null;
-
-  return (
-    <div className={`mt-2 p-2 bg-blue-500 bg-opacity-20 rounded-md ${className}`}>
-      <div className="text-sm font-semibold text-blue-300">Immune</div>
-      <div className="text-lg font-bold text-white animate-pulse">{formatTime(timer)}</div>
-    </div>
-  );
-};
+import { ImmunityTimer } from "./immunity-timer";
 
 export const StructureInfoLabel = memo(() => {
   const dojo = useDojo();

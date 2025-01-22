@@ -1,6 +1,4 @@
-import * as THREE from "three";
 import { BiomeType } from "@/three/managers/biome";
-import { HyperstructureTypesNames, StructureProgress } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import {
   BuildingType,
@@ -10,6 +8,8 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/eternum";
+import * as THREE from "three";
+import { HyperstructureTypesNames, StructureProgress } from "../types";
 
 export const HEX_SIZE = 1;
 

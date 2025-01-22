@@ -1,9 +1,9 @@
 import { execute } from "@/hooks/gql/execute";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacityConfig";
-import { useBridgeAsset } from "@/hooks/useBridge";
-import { useTravel } from "@/hooks/useTravel";
+import { useEntities } from "@/hooks/helpers/use-entities";
+import { useResourceBalance } from "@/hooks/helpers/use-resources";
+import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacity-config";
+import { useBridgeAsset } from "@/hooks/use-bridge";
+import { useTravel } from "@/hooks/use-travel";
 import { displayAddress, multiplyByPrecision } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
@@ -19,10 +19,10 @@ import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TypeP } from "../typography/type-p";
-import { SelectSingleResource } from "../ui/SelectResources";
 import { Button } from "../ui/button";
-import { ResourceIcon } from "../ui/elements/ResourceIcon";
+import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { SelectSingleResource } from "../ui/select-resources";
 import { Tooltip, TooltipProvider } from "../ui/tooltip";
 import { getResourceAddresses } from "../ui/utils/addresses";
 import { calculateDonkeysNeeded, divideByPrecision, getTotalResourceWeight } from "../ui/utils/utils";

@@ -1,6 +1,6 @@
 import { SceneManager } from "@/three/scene-manager";
-import { SceneName } from "@/types";
 import * as THREE from "three";
+import { SceneName } from "../types";
 
 type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mousedown";
 

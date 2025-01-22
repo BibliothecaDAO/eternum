@@ -1,9 +1,9 @@
 import { Entity, getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
+import { configManager, Structure } from "..";
 import { StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
-import { configManager, Structure } from "../modelManager";
 import { ContractAddress, ID, Position, TickIds } from "../types";
 import { getArmy } from "./army";
 import { getEntityName } from "./entities";

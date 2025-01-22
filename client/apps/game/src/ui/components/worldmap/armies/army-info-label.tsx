@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ArmyWarning } from "@/ui/components/worldmap/armies/army-warning";
-import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
+import { ImmunityTimer } from "@/ui/components/worldmap/structures/immunity-timer";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";

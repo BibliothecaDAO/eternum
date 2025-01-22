@@ -1,6 +1,6 @@
 import { defineQuery, getComponentValue, Has, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useState } from "react";
-import { useDojo } from "./context/DojoContext";
+import { useDojo } from "./context/dojo-context";
 
 export const useDonkeysBurned = () => {
   const {

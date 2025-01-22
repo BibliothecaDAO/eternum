@@ -1,6 +1,6 @@
 import { EternumConditionsModal } from "@/components/modules/eternum-conditions-modal";
 import { SwapPanel } from "@/components/modules/swap-panel";
-import { CountdownTimer } from "@/components/ui/elements/CountdownTimer";
+import { CountdownTimer } from "@/components/ui/elements/countdown-timer";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { env } from "../../env";
 

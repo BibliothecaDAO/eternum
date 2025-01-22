@@ -1,7 +1,7 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { GetRealmsQuery } from "@/hooks/gql/graphql";
 import { RealmMetadata } from "@/types";
-import { ResourceIcon } from "../ui/elements/ResourceIcon";
+import { ResourceIcon } from "../ui/elements/resource-icon";
 
 interface SeasonPassCardProps {
   pass: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["tokenBalances"]>["edges"]>[0];

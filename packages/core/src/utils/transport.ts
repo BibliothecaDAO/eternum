@@ -1,6 +1,6 @@
 import { divideByPrecision } from ".";
+import { ClientConfigManager } from "..";
 import { CapacityConfigCategory } from "../constants";
-import { ClientConfigManager } from "../modelManager";
 import { Resource } from "../types";
 
 export const calculateDonkeysNeeded = (orderWeight: number): number => {

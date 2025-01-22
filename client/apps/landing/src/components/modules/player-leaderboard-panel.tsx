@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { CardContent } from "../ui/card";
-import { ResourceIcon } from "../ui/elements/ResourceIcon";
+import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Input } from "../ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 

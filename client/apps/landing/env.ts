@@ -19,12 +19,6 @@ const envSchema = z.object({
   // Version and chain info
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "local"]), // Add other chains as needed
 
-  // Ark Marketplace API
-  // VITE_PUBLIC_ARK_MARKETPLACE_API: z.string().url(),
-  // VITE_PUBLIC_IMAGE_CDN_URL: z.string().url(),
-  // VITE_PUBLIC_IMAGE_PROXY_URL: z.string().url(),
-  // VITE_PUBLIC_IPFS_GATEWAY: z.string().url(),
-
   VITE_PUBLIC_SLOT: z.string(),
 });
 

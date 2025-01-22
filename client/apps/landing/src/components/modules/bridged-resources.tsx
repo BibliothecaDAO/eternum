@@ -1,11 +1,11 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { ArrowDownUp, Pickaxe } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { TypeH2 } from "../typography/type-h2";
 import { Card, CardHeader } from "../ui/card";
-import { ResourceIcon } from "../ui/elements/ResourceIcon";
+import { ResourceIcon } from "../ui/elements/resource-icon";
 import { getResourceAddresses } from "../ui/utils/addresses";
 
 type SortKey = "totalSupply" | "balance";

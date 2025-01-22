@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ResourceExchange } from "@/ui/components/hyperstructures/resource-exchange";
-import { ImmunityTimer } from "@/ui/components/worldmap/structures/structure-label";
+import { ImmunityTimer } from "@/ui/components/worldmap/structures/immunity-timer";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
