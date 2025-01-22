@@ -1,13 +1,4 @@
-import { StructureProgress } from "@/types";
 import { Position } from "@/types/position";
-import {
-  ArmySystemUpdate,
-  BattleSystemUpdate,
-  BuildingSystemUpdate,
-  RealmSystemUpdate,
-  StructureSystemUpdate,
-  TileSystemUpdate,
-} from "@/types/systems";
 import { divideByPrecision } from "@/ui/utils/utils";
 import {
   ClientComponents,
@@ -32,6 +23,15 @@ import {
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/constants";
+import {
+  ArmySystemUpdate,
+  BattleSystemUpdate,
+  BuildingSystemUpdate,
+  RealmSystemUpdate,
+  StructureProgress,
+  StructureSystemUpdate,
+  TileSystemUpdate,
+} from "../types";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.

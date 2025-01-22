@@ -1,4 +1,4 @@
-import { StructureInfo } from "@/types";
+import { StructureInfo } from "@/three/types";
 import { BuildingType, HexPosition, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {

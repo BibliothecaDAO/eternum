@@ -5,12 +5,11 @@ import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { Biome } from "@/three/managers/biome";
 import { LabelManager } from "@/three/managers/label-manager";
-import { ArmyData, MovingArmyData, MovingLabelData, RenderChunkSize } from "@/types";
 import { Position } from "@/types/position";
-import { ArmySystemUpdate } from "@/types/systems";
 import { BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { ArmyData, ArmySystemUpdate, MovingArmyData, MovingLabelData, RenderChunkSize } from "../types";
 import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 
 const myColor = new THREE.Color(0, 1.5, 0);

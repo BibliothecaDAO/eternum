@@ -2,9 +2,9 @@ import { GUIManager } from "@/three/helpers/gui-manager";
 import { BattleModel } from "@/three/managers/battle-model";
 import { LabelManager } from "@/three/managers/label-manager";
 import { Position } from "@/types/position";
-import { BattleSystemUpdate } from "@/types/systems";
 import { ID } from "@bibliothecadao/eternum";
 import * as THREE from "three";
+import { BattleSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 const LABEL_PATH = "textures/battle_label.png";
