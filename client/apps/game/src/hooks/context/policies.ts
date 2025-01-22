@@ -10,7 +10,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x52af4d4b243462e91f68309722dc42f9f970cdce2c80a4f0240b60c3f8dab44": {
+  "0x22fca458aa0869b4cacca2098ae8fe3cc462bc5cef9dd222a5a68055cb8906b": {
     methods: [
       {
         name: "dojo_name",
@@ -30,7 +30,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x267b8cc82862b1451652a1606629bcf3ad200973f0ca096493b4693f697c80e": {
+  "0x158114da9a538d75512dc29b3d1995ff551dfb61bee80996232abe54b8febc2": {
     methods: [
       {
         name: "dojo_name",
@@ -46,7 +46,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x1fd0b5233b521873898e99517a70f96a5023840692d189476c2550055fb8086": {
+  "0x66bc2d8ef45ce10d3847cc901a41af6a05db34c0ea0ab87fc332ca8c9b2ccb0": {
     methods: [
       {
         name: "dojo_name",
@@ -82,7 +82,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x477996a3e273e590b2a8bdbca65cc9f84be437872933e11dac1ef5090f7d32d": {
+  "0x73dff02735d7031496afb34d28f6fd935d8f8e2db14b0877aaf871b3d11f524": {
     methods: [
       {
         name: "dojo_name",
@@ -130,7 +130,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x62392a4777dde7362055349c5a2cafc49a1488a4a2bc634e2dbef55807fa2a0": {
+  "0x5827e314ca954f7eb04127a2a321e5c1f8fa6d51546b8fa6d6b38830f2b6d18": {
     methods: [
       {
         name: "dojo_name",
@@ -270,7 +270,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x730dc36e3ac2726d2373ae50965dd4ba793ab3bbfc4d51d73d5a8108cb80175": {
+  "0x6c0ae788bf4a46b49a57a67944bfb614c8da00b2b99c5d2917ec9bafb8ed460": {
     methods: [
       {
         name: "dojo_name",
@@ -302,7 +302,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x789a850d97d714ca0d2ebef8d61c25cd2342fc310fa10bb3b6c2edad1172351": {
+  "0x1c8793d542cb6fb3cb140279ece63cdb8265868874e2aed3dce8a7b7cffd256": {
     methods: [
       {
         name: "dojo_name",
@@ -330,7 +330,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x3920dbf33145cca955528fee24474def2f7e48b0071c04cd31572216e5abdce": {
+  "0x345779feb4e212431505dff8d8581c38de82201ad9cb6bc32d7bb547087f402": {
     methods: [
       {
         name: "dojo_name",
@@ -366,7 +366,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x67dfe2d094f457fc478568d433efcbbad8ed98f35351199f1aae72424727713": {
+  "0xd4a3c274fbdc8ca6fc0c0a2e1bdb9f4ef78ec6efe253592e936bd2e5db712f": {
     methods: [
       {
         name: "dojo_name",
@@ -402,7 +402,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x2cf9b074003aeae091861585eade1d1007641c95978cbc67170a6a7002c6117": {
+  "0x12b32981130d1089c5642125fbe96cdb4da0562e904eb8da590a30ea4f0aa9d": {
     methods: [
       {
         name: "dojo_name",
@@ -422,7 +422,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x1fd92361d6679473f165797c5285e1c346dc84246798f7e9459bb337531e56f": {
+  "0x43b2a3f4e47fa52ef2549162f89258dbcbd23bc62a51d0a331b80039a66bc9b": {
     methods: [
       {
         name: "dojo_name",
@@ -442,7 +442,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0xe63ce3d808072f67ac366cff1e44ff148eaf4ddd1e836b98a1ba44af66faa3": {
+  "0x6e173c5aca48a948de710aea5492c1df18a3f477b666a9af82281e1024e7bd2": {
     methods: [
       {
         name: "dojo_name",
@@ -458,7 +458,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x3e6ad1a5ca5dd74c4abfced52e6649cd7e99763f8aaa695175043cfa5aad8f7": {
+  "0x7ad2d6a7a566fece8c3cb08b96ca16c43f6981c77f7e1b2fa2112aac2976661": {
     methods: [
       {
         name: "dojo_name",
@@ -478,7 +478,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x368661fcdc42f68583bc09db6642918704fcea2a3c432bfdb508f7194537910": {
+  "0x5f20dfb2ac256e7b8394d2ac6bbd12288c2844c64143a87e27cb5bd3027ebc0": {
     methods: [
       {
         name: "dojo_name",
@@ -494,7 +494,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x395bd73f4abb836bb7eb6dc7f0f761be93596a6d892a118d2b82f77c54618b4": {
+  "0x30b9c5bf6c05b8e950901079bba39766f4a4d23466f2df0258e1ecca3731e19": {
     methods: [
       {
         name: "dojo_name",
@@ -514,7 +514,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x1e21e76506aff91e258bbe8cb8c80393faa1dcb72569b4a9ba72eb10c2c01b7": {
+  "0x1e859bd917c725f938d7ffecdd9f687e04af2b44cf534848895e7efa946378a": {
     methods: [
       {
         name: "dojo_name",
@@ -542,7 +542,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x3d266b405275aeb27660eeaa4e8d5c3e24f8c3075da67276e0300da1df66c33": {
+  "0x7e9f737c5c89d0f4e2c2b9f0ffda396da22b2c9fa14106f2d940dddae35497a": {
     methods: [
       {
         name: "dojo_name",
@@ -566,7 +566,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x14f385db5b18cd094d9b4961f4d2a4a170e305385e2a3d9c5a1bd7cd499928b": {
+  "0x6f2ca7adc33ebf6cbe7d539cb50dff53cffcc701ac252b65eadc9454e12e247": {
     methods: [
       {
         name: "dojo_name",
@@ -586,7 +586,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x5422c3c15cff91dedd781d6a24228dc7bdd65a0a9130e77375085c4fe6f06d4": {
+  "0x67d9fbdbb222b30679aa4b6d4d15f0e16f984603996111c6ef8b425293d29c7": {
     methods: [
       {
         name: "dojo_name",
@@ -606,7 +606,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0x675662c85d93e590ab147f5af80eb359b3a6cc388f44578b7aebdc2e735b43": {
+  "0x4949075e31363f02ac3d4374bf1cb726873cd55a3f572dc85ddc9f8ef89c351": {
     methods: [
       {
         name: "dojo_name",
@@ -634,7 +634,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0xef2b5150890396d22c3183a69b22b747ccac4429b5415ec35d9dab635a65b8": {
+  "0x5bb3ed403abb2ceeb6ce8911052a4f9c922f2d4777427454fcbea605192ddc9": {
     methods: [
       {
         name: "dojo_name",
@@ -650,7 +650,7 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-  "0xc592377a9b924df5d609994a7561dd989254b736d22085c9c78e6979a2969e": {
+  "0x4d6d43ec3fe5fb0d22398f9aee1846285e7c44bfa3900b7e490d18a9fb4eae4": {
     methods: [
       {
         name: "dojo_name",
@@ -678,4 +678,41 @@ export const policies: ContractPolicies = {
       },
     ],
   },
+  "0x47773b52867c0867b40b26408e3ff84fca0b1a9afe55c0cb0fe284c1a18c3d8": {
+    methods: [
+      {
+        name: "dojo_name",
+        entrypoint: "dojo_name",
+      },
+      {
+        name: "create_building",
+        entrypoint: "create_building",
+      },
+      {
+        name: "destroy_building",
+        entrypoint: "destroy_building",
+      },
+      {
+        name: "pause_building_production",
+        entrypoint: "pause_building_production",
+      },
+      {
+        name: "resume_building_production",
+        entrypoint: "resume_building_production",
+      },
+      {
+        name: "make_production_labor",
+        entrypoint: "make_production_labor",
+      },
+      {
+        name: "burn_production_labor",
+        entrypoint: "burn_production_labor",
+      },
+      {
+        name: "world_dispatcher",
+        entrypoint: "world_dispatcher",
+      },
+    ],
+  },
+
 };

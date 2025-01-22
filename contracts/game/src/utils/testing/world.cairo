@@ -72,7 +72,6 @@ use s1_eternum::systems::combat::contracts::troop_systems::troop_systems;
 
 use s1_eternum::systems::config::contracts::config_systems;
 use s1_eternum::systems::dev::contracts::bank::dev_bank_systems;
-use s1_eternum::systems::dev::contracts::realm::dev_realm_systems;
 use s1_eternum::systems::dev::contracts::resource::dev_resource_systems;
 
 use s1_eternum::systems::guild::contracts::guild_systems;
@@ -219,7 +218,6 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Contract(troop_systems::TEST_CLASS_HASH),
             TestResource::Contract(config_systems::TEST_CLASS_HASH),
             TestResource::Contract(dev_bank_systems::TEST_CLASS_HASH),
-            TestResource::Contract(dev_realm_systems::TEST_CLASS_HASH),
             TestResource::Contract(dev_resource_systems::TEST_CLASS_HASH),
             TestResource::Contract(guild_systems::TEST_CLASS_HASH),
             TestResource::Contract(hyperstructure_systems::TEST_CLASS_HASH),
@@ -261,8 +259,6 @@ fn contract_defs() -> Span<ContractDef> {
         ContractDefTrait::new(DEFAULT_NS(), @"config_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"dev_bank_systems")
-            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
-        ContractDefTrait::new(DEFAULT_NS(), @"dev_realm_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"dev_resource_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
