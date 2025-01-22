@@ -46,7 +46,7 @@ export const usePlayerStructures = (playerAddress?: ContractAddress) => {
 
   const playerStructures = useMemo(() => {
     return entities
-      .map((id) => getStructure(Number(id), ContractAddress(account.address), components))
+      .map((id) => getStructure(id, ContractAddress(account.address), components))
       .filter((structure): structure is Structure => structure !== undefined)
       .sort((a, b) => a.category.localeCompare(b.category));
   }, [entities]);

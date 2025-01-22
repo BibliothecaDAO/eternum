@@ -13,8 +13,6 @@ export const useArmiesByStructure = ({ structureEntityId }: { structureEntityId:
   const armies = useEntityQuery([
     Has(components.Army),
     Has(components.Position),
-    NotValue(components.Health, { current: 0n }),
-    Has(components.Quantity),
     HasValue(components.EntityOwner, { entity_owner_id: structureEntityId }),
   ]);
 
