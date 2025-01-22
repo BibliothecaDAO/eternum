@@ -15,10 +15,11 @@ enum StarknetChainId {
 
 const resourceAddresses = await getResourceAddresses();
 
-const LORDS = resourceAddresses["LORDS"][1];
+const LORDS = resourceAddresses["LORDS"][1].toString();
 const otherResources = Object.entries(resourceAddresses)
   .filter(([key]) => key !== "LORDS")
-  .map(([_, [__, address]]) => address);
+  .map(([_, [__, address]]) => address)
+  .toString();
 
 const preset: string = "eternum";
 const theme: string = "eternum";
