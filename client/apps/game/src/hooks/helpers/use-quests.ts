@@ -33,7 +33,7 @@ export const useQuests = () => {
       ...QUEST_DETAILS[type],
       status: questStatus.questClaimStatus[type] ? QuestStatus.Claimed : QuestStatus.InProgress,
     }));
-  }, []);
+  }, [questStatus]);
 
   return quests;
 };
