@@ -21,8 +21,6 @@ export const StructureInfoLabel = memo(() => {
     );
   }, [hoveredStructure]);
 
-  console.log({ structure });
-
   const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n), dojo.setup.components);
 
   return (
