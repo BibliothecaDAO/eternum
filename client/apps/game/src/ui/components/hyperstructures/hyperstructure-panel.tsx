@@ -1,3 +1,4 @@
+import { useHyperstructureData } from "@/hooks/store/use-leaderboard-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ContributionSummary } from "@/ui/components/hyperstructures/contribution-summary";
 import { HyperstructureDetails } from "@/ui/components/hyperstructures/hyperstructure-details";
@@ -19,7 +20,6 @@ import {
 import {
   ProgressWithPercentage,
   useDojo,
-  useHyperstructureData,
   useHyperstructureProgress,
   useHyperstructureUpdates,
   usePlayerContributions,

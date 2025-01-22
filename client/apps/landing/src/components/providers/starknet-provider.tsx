@@ -10,10 +10,10 @@ import { getResourceAddresses } from "../ui/utils/addresses";
 
 const resourceAddresses = await getResourceAddresses();
 
-const LORDS = resourceAddresses["LORDS"][1];
+const LORDS = resourceAddresses["LORDS"][1].toString();
 const otherResources = Object.entries(resourceAddresses)
   .filter(([key]) => key !== "LORDS")
-  .map(([_, [__, address]]) => address);
+  .map(([_, [__, address]]) => address.toString());
 
 const theme: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;

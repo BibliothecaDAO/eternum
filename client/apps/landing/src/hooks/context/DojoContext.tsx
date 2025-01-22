@@ -4,8 +4,7 @@ import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { env } from "../../../env";
-import { SetupResult } from "../../dojo/setup";
-
+import { SetupResult } from "@/dojo/setup";
 interface DojoAccount {
   account: Account | AccountInterface | null;
   accountDisplay: string;
@@ -49,7 +48,7 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
   const { account } = useAccount();
 
   return (
-    <DojoContextProvider value={value} controllerAccount={account}>
+    <DojoContextProvider value={value} controllerAccount={account || null}>
       {children}
     </DojoContextProvider>
   );

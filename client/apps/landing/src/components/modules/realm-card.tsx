@@ -52,7 +52,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     if (isSuccess && onSeasonPassStatusChange && tokenId) {
       onSeasonPassStatusChange(tokenId.toString(), !!data);
     }
-  }, [isSuccess, data, tokenId, onSeasonPassStatusChange]);
+  }, [isSuccess, data, tokenId]);
 
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
   const { attributes, name, image } = parsedMetadata ?? {};
