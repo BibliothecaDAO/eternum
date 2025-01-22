@@ -19,16 +19,12 @@
     "@starknet-react/core": "*",
     "react": "^18",
     "starknet": "^6",
-    "zustand": "^4.5.2",
-    "lodash": "^4",
-    "use-sound": "^4.0.1",
     "wouter": "^2.12.1"
   },
   "devDependencies": {
     "@types/react": "^18",
     "tsup": "^8",
     "typescript": "^5",
-    "@types/lodash": "^4",
     "vite-plugin-wasm": "^3.3.0",
     "vite-plugin-top-level-await": "^1.4.1"
   }

@@ -23,7 +23,7 @@ export interface SeasonAddresses {
   lords: string;
   /** Map of resource name to [resourceId, contractAddress] */
   resources: {
-    [key: string]: [number, string];
+    [key: string]: (string | number)[];
   };
 }
 
@@ -414,7 +414,7 @@ export interface Config {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number; // 1 hour
   };
-  carryCapacityGram: Record<CapacityConfigCategory, bigint | number>;
+  carryCapacityGram: Record<CapacityConfigCategory, bigint | number | string>;
   speed: {
     donkey: number;
     army: number;
@@ -487,8 +487,8 @@ export interface Config {
     season_pool_fee_on_wtdr_percent: number;
     client_fee_on_dpt_percent: number;
     client_fee_on_wtdr_percent: number;
-    velords_fee_recipient: ContractAddress;
-    season_pool_fee_recipient: ContractAddress;
+    velords_fee_recipient: string;
+    season_pool_fee_recipient: string;
     max_bank_fee_dpt_percent: number;
     max_bank_fee_wtdr_percent: number;
   };

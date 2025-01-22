@@ -1,7 +1,8 @@
+import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { configManager, ContractAddress, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo, useGetPlayerEpochs, useLeaderBoardStore } from "@bibliothecadao/react";
+import { useDojo, useGetPlayerEpochs } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useCallback, useMemo } from "react";
 

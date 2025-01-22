@@ -36,7 +36,7 @@ export const Rewards = () => {
   const [registrationTimeRemaining, setRegistrationTimeRemaining] = useState<string>("");
   const [bridgeOutTimeRemaining, setBridgeOutTimeRemaining] = useState<string>("");
 
-  const [lordsAddress, setLordsAddress] = useState<string>();
+  const [lordsAddress, setLordsAddress] = useState<string | undefined>();
 
   useEffect(() => {
     const init = async () => {
@@ -46,7 +46,7 @@ export const Rewards = () => {
     init();
   }, []);
 
-  const prizePool = usePrizePool(lordsAddress || "");
+  const prizePool = usePrizePool(lordsAddress);
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(rewards));
 

@@ -183,6 +183,7 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   console.log("[composite] single key query", end - start);
 
   const eternumConfig = await ETERNUM_CONFIG();
+  console.log({ eternumConfig });
   configManager.setDojo(setup.components, eternumConfig);
 
   setLoading(LoadingStateKey.Events, true);
