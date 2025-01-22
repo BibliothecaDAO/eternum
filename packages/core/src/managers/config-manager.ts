@@ -42,8 +42,6 @@ export class ClientConfigManager {
     this.initializeResourceBuildingCosts();
     this.initializeBuildingCosts();
     this.initializeStructureCosts();
-
-    console.log({ resourceBuildingCosts: this.resourceBuildingCosts });
   }
 
   public static instance(): ClientConfigManager {
