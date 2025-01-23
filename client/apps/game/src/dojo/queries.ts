@@ -3,11 +3,10 @@
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
-
+import { LogicalOperator } from "@dojoengine/torii-wasm";
 // on hexception -> fetch below queries based on entityID
 
-// background sync after load ->
-export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Schema>(
+export const getTwoKeyModelbyRealmEntityIdFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityID: string[],
@@ -20,9 +19,9 @@ export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Sche
         clauses: [
           ...entityID.map((id) => ({
             Keys: {
-              keys: [id],
+              keys: [id, undefined],
               pattern_matching: "VariableLen" as PatternMatching,
-              models: ["s1_eternum-ArrivalTime", "s1_eternum-OwnedResourcesTracker"],
+              models: ["s1_eternum-BuildingQuantityv2"],
             },
           })),
         ],
@@ -30,20 +29,16 @@ export const addToSubscriptionOneKeyModelbyRealmEntityId = async <S extends Sche
     },
     components,
     [],
-    [],
-    5_000,
+    ["s1_eternum-BuildingQuantityv2"],
+    20_000,
   );
 };
 
-export const addToSubscription = async <S extends Schema>(
+export const getOneKeyModelbyRealmEntityIdFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   entityID: string[],
-  position?: { x: number; y: number }[],
 ) => {
-  const start = performance.now();
-
-  console.log("AddToSubscriptionStart", entityID);
   await getEntities(
     client,
     {
@@ -57,33 +52,64 @@ export const addToSubscription = async <S extends Schema>(
               models: [],
             },
           })),
-          ...(position
-            ? position.map((position) => ({
-                Keys: {
-                  keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
-                  pattern_matching: "FixedLen" as PatternMatching,
-                  models: [],
-                },
-              }))
-            : []),
         ],
       },
     },
-    components as any,
+    components,
     [],
-    [],
-    5_000,
+    ["s1_eternum-ArrivalTime", "s1_eternum-OwnedResourcesTracker"],
+    20_000,
   );
-  const end = performance.now();
-  console.log("AddToSubscriptionEnd", end - start);
 };
 
-export const addMarketSubscription = async <S extends Schema>(
+export const getEntitiesFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityIDs: string[],
+  entityModels: string[],
+  positions?: { x: number; y: number }[],
+) => {
+  const query =
+    !positions && entityIDs.length === 1
+      ? {
+          Keys: {
+            keys: [entityIDs[0]],
+            pattern_matching: "VariableLen" as PatternMatching,
+            models: [],
+          },
+        }
+      : {
+          Composite: {
+            operator: "Or" as LogicalOperator,
+            clauses: [
+              ...entityIDs.map((id) => ({
+                Keys: {
+                  keys: [id],
+                  pattern_matching: "VariableLen" as PatternMatching,
+                  models: [],
+                },
+              })),
+              ...(positions
+                ? positions.map((position) => ({
+                    Keys: {
+                      keys: [String(position?.x || 0), String(position?.y || 0), undefined, undefined],
+                      pattern_matching: "FixedLen" as PatternMatching,
+                      models: [],
+                    },
+                  }))
+                : []),
+            ],
+          },
+        };
+  await getEntities(client, query, components as any, [], entityModels, 40_000);
+};
+
+export const getMarketFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
-  const start = performance.now();
-  await getEntities(
+  let start = performance.now();
+  const resourcePromise = await getEntities(
     client,
     {
       Member: {
@@ -95,50 +121,32 @@ export const addMarketSubscription = async <S extends Schema>(
     },
     components,
     [],
-    [],
+    ["s1_eternum-DetachedResource"],
     30_000,
     false,
   );
-  const end = performance.now();
-  console.log("MarketEnd", end - start);
-};
+  let end = performance.now();
+  console.log("[keys] detached resource query", end - start);
 
-export const addHyperstructureSubscription = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-) => {
-  const start = performance.now();
-  await getEntities(
+  start = performance.now();
+  const marketPromise = await getEntities(
     client,
     {
-      Composite: {
-        operator: "Or",
-        clauses: [
-          {
-            Keys: {
-              keys: [undefined, undefined],
-              pattern_matching: "FixedLen",
-              models: ["s1_eternum-Epoch", "s1_eternum-Progress"],
-            },
-          },
-          {
-            Keys: {
-              keys: [undefined, undefined, undefined],
-              pattern_matching: "FixedLen",
-              models: ["s1_eternum-Contribution"],
-            },
-          },
-        ],
+      Keys: {
+        keys: [undefined],
+        pattern_matching: "VariableLen",
+        models: [],
       },
     },
-    components as any,
+    components,
     [],
-    [],
-    40_000,
+    ["s1_eternum-Market", "s1_eternum-Liquidity"],
+    30_000,
     false,
   );
-  const end = performance.now();
-  console.log("HyperstructureEnd", end - start);
+  await Promise.all([resourcePromise, marketPromise]);
+  end = performance.now();
+  console.log("[keys] market query", end - start);
 };
 
 export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
@@ -146,8 +154,6 @@ export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
   components: Component<S, Metadata, undefined>[],
   entityIds: number[],
 ) => {
-  const start = performance.now();
-  console.log("ArrivalsEnd: starting resource arrivals");
   await getEntities(
     client,
     {
@@ -163,7 +169,6 @@ export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
         })),
       },
     },
-
     components,
     [],
     [
@@ -181,6 +186,4 @@ export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
     1000,
     false,
   );
-  const end = performance.now();
-  console.log("ArrivalsEnd", end - start);
 };
