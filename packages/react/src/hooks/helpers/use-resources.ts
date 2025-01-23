@@ -8,7 +8,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { useDojo } from "../context";
-import { useNextBlockTimestamp } from "./use-next-block-timestamp";
 
 export const useResourceManager = (entityId: ID, resourceId: ResourcesIds) => {
   const dojo = useDojo();
@@ -20,9 +19,8 @@ export const useResourceManager = (entityId: ID, resourceId: ResourcesIds) => {
   return resourceManager;
 };
 
-export const useIsStructureResourcesLocked = (structureEntityId: ID) => {
+export const useIsStructureResourcesLocked = (structureEntityId: ID, currentBlockTimestamp: number) => {
   const dojo = useDojo();
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
 
   const structure = getStructure(
     structureEntityId,
@@ -36,6 +34,6 @@ export const useIsStructureResourcesLocked = (structureEntityId: ID) => {
       dojo.network.provider,
       structure?.protector?.battle_id || 0,
     );
-    return battleManager.isResourcesLocked(nextBlockTimestamp!);
-  }, [structure, nextBlockTimestamp]);
+    return battleManager.isResourcesLocked(currentBlockTimestamp!);
+  }, [structure, currentBlockTimestamp]);
 };

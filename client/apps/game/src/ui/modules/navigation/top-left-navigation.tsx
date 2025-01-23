@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
@@ -9,6 +10,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { gramToKg, kgToGram } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BuildingType,
   CapacityConfigCategory,
@@ -21,7 +23,7 @@ import {
   ResourcesIds,
   TickIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp, useQuery } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -104,14 +106,14 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     setup,
     account: { account },
   } = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
 
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -182,13 +184,13 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
       )?.value || 0;
     const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
     return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
-  }, [structureEntityId, nextBlockTimestamp]);
+  }, [structureEntityId, currentBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % configManager.getTick(TickIds.Armies);
+    const timeLeft = currentBlockTimestamp % configManager.getTick(TickIds.Armies);
     const progressValue = (timeLeft / configManager.getTick(TickIds.Armies)) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
-  }, [nextBlockTimestamp]);
+  }, [currentBlockTimestamp]);
 
   return (
     <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
@@ -353,7 +355,7 @@ ProgressBar.displayName = "ProgressBar";
 
 const TickProgress = memo(() => {
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const cycleTime = configManager.getTick(TickIds.Armies);
   const { play } = useUiSounds(soundSelector.gong);
@@ -363,9 +365,9 @@ const TickProgress = memo(() => {
 
   // Calculate progress once and memoize
   const progress = useMemo(() => {
-    const elapsedTime = nextBlockTimestamp % cycleTime;
+    const elapsedTime = currentBlockTimestamp % cycleTime;
     return (elapsedTime / cycleTime) * 100;
-  }, [nextBlockTimestamp, cycleTime]);
+  }, [currentBlockTimestamp, cycleTime]);
 
   // Play sound when progress resets
   useEffect(() => {
@@ -384,11 +386,11 @@ const TickProgress = memo(() => {
         </div>
         <div>
           Time left until next cycle:{" "}
-          <span className="font-bold">{formatTime(cycleTime - (nextBlockTimestamp % cycleTime))}</span>
+          <span className="font-bold">{formatTime(cycleTime - (currentBlockTimestamp % cycleTime))}</span>
         </div>
       </div>
     ),
-    [cycleTime, nextBlockTimestamp],
+    [cycleTime, currentBlockTimestamp],
   );
 
   // Handle tooltip visibility

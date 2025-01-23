@@ -2,14 +2,14 @@ import { TypeH1 } from "@/components/typography/type-h1";
 import { useSeasonStart } from "@/hooks/use-season-start";
 
 export function CountdownTimer() {
-  const { seasonStart, countdown, nextBlockTimestamp } = useSeasonStart();
+  const { seasonStart, countdown, currentBlockTimestamp } = useSeasonStart();
 
   const days = Math.floor(Number(countdown) / (3600 * 24));
   const hours = Math.floor((Number(countdown) % (3600 * 24)) / 3600);
   const minutes = Math.floor((Number(countdown) % 3600) / 60);
   const seconds = Number(countdown) % 60;
 
-  if (countdown < 0 || nextBlockTimestamp === 0n || seasonStart === 0n) return null;
+  if (countdown < 0 || currentBlockTimestamp === 0n || seasonStart === 0n) return null;
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center">

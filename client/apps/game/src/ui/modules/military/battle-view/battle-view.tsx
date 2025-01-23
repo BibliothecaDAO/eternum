@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Battle } from "@/ui/modules/military/battle-view/battle";
 import {
@@ -10,13 +11,13 @@ import {
   getStructureAtPosition,
   Structure,
 } from "@bibliothecadao/eternum";
-import { useBattleManager, useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useBattleManager, useDojo } from "@bibliothecadao/react";
 import { memo, useMemo } from "react";
 
 export const BattleView = memo(() => {
   const dojo = useDojo();
 
-  const { nextBlockTimestamp: currentTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp: currentTimestamp } = useBlockTimestamp();
   const battleView = useUIStore((state) => state.battleView);
   const selectedHex = useUIStore((state) => state.selectedHex);
 

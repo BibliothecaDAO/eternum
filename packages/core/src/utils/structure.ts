@@ -88,13 +88,13 @@ export const isStructureImmune = (
   return false;
 };
 
-export const getStructureImmunityTimer = (structure: Structure | undefined, nextBlockTimestamp: number) => {
+export const getStructureImmunityTimer = (structure: Structure | undefined, currentBlockTimestamp: number) => {
   const structureType = StructureType[(structure?.category as keyof typeof StructureType) || 0];
 
   const immunityEndTimestamp =
     Number(structure?.created_at || 0) +
     (structure ? configManager.getBattleGraceTickCount(structureType) * configManager.getTick(TickIds.Armies) : 0);
 
-  if (!nextBlockTimestamp) return 0;
-  return immunityEndTimestamp - nextBlockTimestamp!;
+  if (!currentBlockTimestamp) return 0;
+  return immunityEndTimestamp - currentBlockTimestamp!;
 };

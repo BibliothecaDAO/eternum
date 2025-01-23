@@ -152,13 +152,13 @@ export enum EntityState {
 }
 
 export function determineEntityState(
-  nextBlockTimestamp: number | undefined,
+  currentBlockTimestamp: number | undefined,
   blocked: boolean | undefined,
   arrivalTime: bigint | undefined,
   hasResources: boolean,
 ): EntityState {
   const isTraveling =
-    !blocked && nextBlockTimestamp !== undefined && arrivalTime !== undefined && arrivalTime > nextBlockTimestamp;
+    !blocked && currentBlockTimestamp !== undefined && arrivalTime !== undefined && arrivalTime > currentBlockTimestamp;
   const isWaitingForDeparture = blocked;
   const isIdle = !isTraveling && !isWaitingForDeparture && !hasResources;
   const isWaitingToOffload = !blocked && !isTraveling && hasResources;

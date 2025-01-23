@@ -1,18 +1,18 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { Structure, formatTime, getStructureImmunityTimer, isStructureImmune } from "@bibliothecadao/eternum";
-import { useNextBlockTimestamp } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
 export const ImmunityTimer = ({ structure, className }: { structure: Structure; className?: string }) => {
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const isImmune = useMemo(
-    () => isStructureImmune(structure, nextBlockTimestamp || 0),
-    [structure, nextBlockTimestamp],
+    () => isStructureImmune(structure, currentBlockTimestamp || 0),
+    [structure, currentBlockTimestamp],
   );
 
   const timer = useMemo(
-    () => getStructureImmunityTimer(structure, nextBlockTimestamp || 0),
-    [structure, nextBlockTimestamp],
+    () => getStructureImmunityTimer(structure, currentBlockTimestamp || 0),
+    [structure, currentBlockTimestamp],
   );
 
   if (!isImmune) return null;

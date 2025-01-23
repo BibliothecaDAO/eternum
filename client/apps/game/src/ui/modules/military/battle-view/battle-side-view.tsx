@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/elements/button";
 import { BattleHistory } from "@/ui/modules/military/battle-view/battle-history";
 import { EntityAvatar } from "@/ui/modules/military/battle-view/entity-avatar";
@@ -13,7 +14,7 @@ import {
   ID,
   Structure,
 } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 
@@ -49,7 +50,7 @@ export const BattleSideView = ({
 
   const [confirmLeaveWithAllArmies, setConfirmLeaveWithAllArmies] = useState(false);
 
-  const { nextBlockTimestamp: currentTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp: currentTimestamp } = useBlockTimestamp();
 
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 

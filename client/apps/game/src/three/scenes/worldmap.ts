@@ -17,6 +17,7 @@ import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyMovementManager,
   BiomeType,
@@ -337,6 +338,8 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
+
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0 && hexCoords) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
@@ -354,8 +357,8 @@ export default class WorldmapScene extends HexagonScene {
             useAccountStore.getState().account!,
             selectedPath,
             isExplored,
-            this.state.nextBlockTimestamp || 0,
-            this.state.currentArmiesTick,
+            currentBlockTimestamp,
+            currentArmiesTick,
           );
           this.state.updateHoveredHex(null);
         }
@@ -374,11 +377,9 @@ export default class WorldmapScene extends HexagonScene {
       this.dojo.network.provider,
       selectedEntityId,
     );
-    const travelPaths = armyMovementManager.findPaths(
-      this.exploredTiles,
-      this.state.currentDefaultTick,
-      this.state.currentArmiesTick,
-    );
+
+    const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+    const travelPaths = armyMovementManager.findPaths(this.exploredTiles, currentDefaultTick, currentArmiesTick);
     this.state.updateTravelPaths(travelPaths.getPaths());
     this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
   }

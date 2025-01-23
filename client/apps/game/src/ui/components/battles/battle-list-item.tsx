@@ -1,12 +1,13 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { ArmyInfo, BattleManager, getAddressNameFromEntity, ID } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import React, { useMemo, useState } from "react";
 
 type BattleListItemProps = {
@@ -18,7 +19,7 @@ type BattleListItemProps = {
 export const BattleListItem = ({ battleEntityId, ownArmySelected, showCompass = false }: BattleListItemProps) => {
   const dojo = useDojo();
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const [showInventory, setShowInventory] = useState(false);
 
@@ -31,9 +32,9 @@ export const BattleListItem = ({ battleEntityId, ownArmySelected, showCompass = 
   );
 
   const updatedBattle = useMemo(() => {
-    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
+    const updatedBattle = battleManager.getUpdatedBattle(currentBlockTimestamp!);
     return updatedBattle;
-  }, [nextBlockTimestamp, battleManager]);
+  }, [currentBlockTimestamp, battleManager]);
 
   const armiesInBattle = useMemo(() => {
     return battleManager.getArmiesInBattle();
@@ -48,8 +49,8 @@ export const BattleListItem = ({ battleEntityId, ownArmySelected, showCompass = 
   }, [battleManager]);
 
   const buttons = useMemo(() => {
-    if (!nextBlockTimestamp) return [];
-    const isBattleOngoing = battleManager.isBattleOngoing(nextBlockTimestamp);
+    if (!currentBlockTimestamp) return [];
+    const isBattleOngoing = battleManager.isBattleOngoing(currentBlockTimestamp);
     const eyeButton = (
       <Eye
         key="eye-0"
@@ -85,7 +86,7 @@ export const BattleListItem = ({ battleEntityId, ownArmySelected, showCompass = 
       // just check
       return [eyeButton];
     }
-  }, [nextBlockTimestamp, battleManager, ownArmySelected]);
+  }, [currentBlockTimestamp, battleManager, ownArmySelected]);
 
   return (
     !battleManager.isEmpty() && (

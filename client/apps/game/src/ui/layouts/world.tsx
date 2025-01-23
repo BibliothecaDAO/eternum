@@ -4,7 +4,6 @@ import {
   debouncedAddToSubscription,
   debouncedAddToSubscriptionOneKey,
 } from "@/dojo/debounced-queries";
-import { useFetchBlockchainData } from "@/hooks/helpers/use-fetch";
 import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -103,7 +102,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const battleView = useUIStore((state) => state.battleView);
 
   // Setup hooks
-  useFetchBlockchainData();
   useStructureEntityId();
 
   // We could optimise this deeper....

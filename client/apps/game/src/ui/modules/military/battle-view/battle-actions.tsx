@@ -2,6 +2,7 @@ import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
 import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
 import { ReactComponent as Castle } from "@/assets/icons/castle.svg";
 import { ReactComponent as Flag } from "@/assets/icons/flag.svg";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useModalStore } from "@/hooks/store/use-modal-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
@@ -25,7 +26,7 @@ import {
   Structure,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -69,7 +70,7 @@ export const BattleActions = ({
   const { toggleModal } = useModalStore();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const { nextBlockTimestamp: currentTimestamp, currentArmiesTick } = useNextBlockTimestamp();
+  const { currentBlockTimestamp: currentTimestamp, currentArmiesTick } = useBlockTimestamp();
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 

@@ -1,5 +1,6 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, ID } from "@bibliothecadao/eternum";
-import { useNextBlockTimestamp, useStaminaManager } from "@bibliothecadao/react";
+import { useStaminaManager } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -12,7 +13,7 @@ export const StaminaResourceCost = ({
   travelLength: number;
   isExplored: boolean;
 }) => {
-  const { currentArmiesTick } = useNextBlockTimestamp();
+  const { currentArmiesTick } = useBlockTimestamp();
   const staminaManager = useStaminaManager(travelingEntityId || 0);
 
   const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);

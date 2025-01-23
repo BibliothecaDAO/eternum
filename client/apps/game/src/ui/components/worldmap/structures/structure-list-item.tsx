@@ -1,6 +1,7 @@
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
@@ -14,7 +15,7 @@ import {
   Structure,
   StructureType,
 } from "@bibliothecadao/eternum";
-import { useDojo, useGetHyperstructureProgress, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo, useGetHyperstructureProgress } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -43,7 +44,7 @@ export const StructureListItem = ({
 }: StructureListItemProps) => {
   const dojo = useDojo();
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setBattleView = useUIStore((state) => state.setBattleView);
@@ -61,10 +62,10 @@ export const StructureListItem = ({
   );
 
   const { updatedBattle } = useMemo(() => {
-    if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
-    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
+    if (!currentBlockTimestamp) throw new Error("Current timestamp is undefined");
+    const updatedBattle = battleManager.getUpdatedBattle(currentBlockTimestamp!);
     return { updatedBattle };
-  }, [nextBlockTimestamp]);
+  }, [currentBlockTimestamp]);
 
   const armiesInBattle = useMemo(
     () =>
@@ -81,11 +82,14 @@ export const StructureListItem = ({
     return armiesInBattle.filter((army) => army.isMine);
   }, [armiesInBattle]);
 
-  const isImmune = useMemo(() => isStructureImmune(structure, nextBlockTimestamp!), [structure, nextBlockTimestamp]);
+  const isImmune = useMemo(
+    () => isStructureImmune(structure, currentBlockTimestamp!),
+    [structure, currentBlockTimestamp],
+  );
 
   const battleButtons = useMemo(() => {
-    if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
-    const isBattleOngoing = battleManager.isBattleOngoing(nextBlockTimestamp);
+    if (!currentBlockTimestamp) throw new Error("Current timestamp is undefined");
+    const isBattleOngoing = battleManager.isBattleOngoing(currentBlockTimestamp);
     const eyeButton = (
       <Eye
         key={"eye-0"}
@@ -178,7 +182,7 @@ export const StructureListItem = ({
       ];
     }
   }, [
-    nextBlockTimestamp,
+    currentBlockTimestamp,
     playerArmiesInBattle,
     ownArmySelected,
     updatedBattle,
