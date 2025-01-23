@@ -642,18 +642,6 @@ mod config_systems {
         }
     }
 
-    // #[derive(IntrospectPacked, Copy, Drop, Serde)]
-    // #[dojo::model]
-    // pub struct LaborConfig {
-    //     #[key]
-    //     // e.g when configuring stone labor, resource_type = stone
-    //     resource_type: u8,
-    //     // uuid used to get the ResourceCost
-    //     input_id: ID,
-    //     // number of resources required to make labor
-    //     input_count: u8,
-    // }
-
     #[abi(embed_v0)]
     impl TransportConfigImpl of super::ITransportConfig<ContractState> {
         fn set_speed_config(ref self: ContractState, entity_type: ID, sec_per_km: u16) {

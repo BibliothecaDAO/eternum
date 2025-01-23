@@ -84,7 +84,6 @@ mod production_systems {
                 }
             };
 
-            // todo: check that entity is a realm
             let (building, building_quantity) = BuildingImpl::create(
                 ref world, entity_id, building_category, produce_resource_type, building_coord
             );

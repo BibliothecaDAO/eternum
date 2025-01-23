@@ -780,7 +780,6 @@ struct ResourceBridgeWhitelistConfig {
     resource_type: u8
 }
 
-// speed
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct RealmMaxLevelConfig {
