@@ -72,10 +72,10 @@ async function init() {
     { vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS, useBurner: env.VITE_PUBLIC_CHAIN === "local" },
   );
 
+  await initialSync(setupResult, state);
+
   const eternumConfig = await ETERNUM_CONFIG();
   configManager.setDojo(setupResult.components, eternumConfig);
-
-  await initialSync(setupResult, state);
 
   const graphic = new GameRenderer(setupResult);
 
