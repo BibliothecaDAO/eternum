@@ -1,4 +1,4 @@
-import { addToSubscription } from "@/dojo/queries";
+import { getEntitiesFromTorii } from "@/dojo/queries";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { EntityArrival } from "@/ui/components/entities/entity";
 import { HintSection } from "@/ui/components/hints/hint-modal";
@@ -47,7 +47,7 @@ export const AllResourceArrivals = memo(
       addSubscribedIds(unsubscribedIds);
 
       // Move API call outside of state updates
-      addToSubscription(dojo.network.toriiClient, dojo.network.contractComponents as any, unsubscribedIds).catch(
+      getEntitiesFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, unsubscribedIds, ["s1_eternum-DetachedResource"]).catch(
         (error) => console.error("Fetch failed", error),
       );
       console.log("AddToSubscriptionStart - 5");

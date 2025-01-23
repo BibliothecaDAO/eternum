@@ -3,10 +3,10 @@ import { ToriiClient } from "@dojoengine/torii-client";
 import debounce from "lodash/debounce";
 import {
   addDonkeysAndArmiesSubscription,
-  addHyperstructureSubscription,
-  addMarketSubscription,
-  addToSubscription,
-  addToSubscriptionOneKeyModelbyRealmEntityId,
+  getEntitiesFromTorii,
+  getMarketFromTorii,
+  getOneKeyModelbyRealmEntityIdFromTorii,
+  getTwoKeyModelbyRealmEntityIdFromTorii,
 } from "./queries";
 
 // Queue class to manage requests
@@ -52,25 +52,34 @@ class RequestQueue {
 
 const subscriptionQueue = new RequestQueue();
 const marketQueue = new RequestQueue();
-const hyperstructureQueue = new RequestQueue();
 
-export const debouncedAddToSubscriptionOneKey = debounce(
+export const debouncedTwoKeyEntitiesFromTorii = debounce(
   async <S extends Schema>(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
     entityID: string[],
     onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(
-      () => addToSubscriptionOneKeyModelbyRealmEntityId(client, components, entityID),
-      onComplete,
-    );
+    await subscriptionQueue.add(() => getTwoKeyModelbyRealmEntityIdFromTorii(client, components, entityID), onComplete);
   },
   250,
   { leading: true },
 );
 
-export const debounceAddDonkeysAndArmiesSubscription = debounce(
+export const debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii = debounce(
+  async <S extends Schema>(
+    client: ToriiClient,
+    components: Component<S, Metadata, undefined>[],
+    entityID: string[],
+    onComplete?: () => void,
+  ) => {
+    await subscriptionQueue.add(() => getOneKeyModelbyRealmEntityIdFromTorii(client, components, entityID), onComplete);
+  },
+  250,
+  { leading: true },
+);
+
+export const debouncedGetDonkeysAndArmiesFromTorii = debounce(
   async <S extends Schema>(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
@@ -83,39 +92,31 @@ export const debounceAddDonkeysAndArmiesSubscription = debounce(
   { leading: true },
 );
 
-export const debouncedAddToSubscription = debounce(
+export const debouncedGetEntitiesFromTorii = debounce(
   async <S extends Schema>(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
     entityID: string[],
-    position?: { x: number; y: number }[],
+    entityModels: string[],
+    positions?: { x: number; y: number }[],
     onComplete?: () => void,
   ) => {
-    await subscriptionQueue.add(() => addToSubscription(client, components, entityID, position), onComplete);
+    await subscriptionQueue.add(
+      () => getEntitiesFromTorii(client, components, entityID, entityModels, positions),
+      onComplete,
+    );
   },
   250,
   { leading: true },
 );
 
-export const debouncedAddMarketSubscription = debounce(
+export const debouncedGetMarketFromTorii = debounce(
   async <S extends Schema>(
     client: ToriiClient,
     components: Component<S, Metadata, undefined>[],
     onComplete?: () => void,
   ) => {
-    await marketQueue.add(() => addMarketSubscription(client, components), onComplete);
-  },
-  500,
-  { leading: true },
-);
-
-const debouncedAddHyperstructureSubscription = debounce(
-  async <S extends Schema>(
-    client: ToriiClient,
-    components: Component<S, Metadata, undefined>[],
-    onComplete?: () => void,
-  ) => {
-    await hyperstructureQueue.add(() => addHyperstructureSubscription(client, components), onComplete);
+    await marketQueue.add(() => getMarketFromTorii(client, components), onComplete);
   },
   500,
   { leading: true },

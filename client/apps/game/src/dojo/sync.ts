@@ -74,74 +74,50 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   // const sync = await syncEntitiesDebounced(
   await syncEntitiesDebounced(setup.network.toriiClient, setup.network.contractComponents as any, [], false);
 
-  const configClauses: Clause[] = [
-    {
-      Keys: {
-        keys: [WORLD_CONFIG_ID.toString()],
-        pattern_matching: "FixedLen",
-        models: [],
-      },
-    },
-    {
-      Keys: {
-        keys: [WORLD_CONFIG_ID.toString(), undefined],
-        pattern_matching: "FixedLen",
-        models: [],
-      },
-    },
-    {
-      Keys: {
-        keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
-        pattern_matching: "FixedLen",
-        models: [],
-      },
-    },
-    {
-      Keys: {
-        keys: [BUILDING_CATEGORY_POPULATION_CONFIG_ID.toString(), undefined],
-        pattern_matching: "FixedLen",
-        models: [],
-      },
-    },
-    {
-      Keys: {
-        keys: [HYPERSTRUCTURE_CONFIG_ID.toString()],
-        pattern_matching: "VariableLen",
-        models: [],
-      },
-    },
-  ];
-
   setLoading(LoadingStateKey.Config, true);
   try {
-    await Promise.all([
-      getEntities(
+    let start = performance.now();
+    Promise.all([
+      await getEntities(
         setup.network.toriiClient,
         { Composite: { operator: "Or", clauses: configClauses } },
         setup.network.contractComponents as any,
+        [],
+        configModels,
+        40_000,
+        false,
       ),
-      getEntities(
+      await getEntities(
         setup.network.toriiClient,
         {
           Keys: {
             keys: [undefined, undefined],
-            pattern_matching: "FixedLen",
-            models: ["s1_eternum-CapacityConfigCategory", "s1_eternum-ResourceCost"],
+            pattern_matching: "VariableLen",
+            models: [],
           },
         },
         setup.network.contractComponents as any,
         [],
-        [],
+        [
+          "s1_eternum-CapacityConfig",
+          "s1_eternum-ResourceCost",
+          "s1_eternum-LeaderboardRegisterContribution",
+          "s1_eternum-LeaderboardRegisterShare",
+          "s1_eternum-CapacityConfigCategory",
+          "s1_eternum-ResourceCost",
+        ],
         40_000,
         false,
       ),
     ]);
+    let end = performance.now();
+    console.log("[composite] big config query", end - start);
   } finally {
     setLoading(LoadingStateKey.Config, false);
   }
 
-  // fetch all existing entities from torii
   setLoading(LoadingStateKey.Hyperstructure, true);
+  let start = performance.now();
   await getEntities(
     setup.network.toriiClient,
     {
@@ -152,14 +128,14 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
             Keys: {
               keys: [undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s1_eternum-Epoch", "s1_eternum-Progress", "s1_eternum-LeaderboardRegisterContribution"],
+              models: [],
             },
           },
           {
             Keys: {
               keys: [undefined, undefined, undefined],
               pattern_matching: "FixedLen",
-              models: ["s1_eternum-Contribution", "s1_eternum-LeaderboardRegisterShare"],
+              models: [],
             },
           },
         ],
@@ -167,94 +143,69 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
     },
     setup.network.contractComponents as any,
     [],
-    [],
+    [
+      "s1_eternum-Contribution",
+      "s1_eternum-LeaderboardRegisterShare",
+      "s1_eternum-Epoch",
+      "s1_eternum-Progress",
+      "s1_eternum-LeaderboardRegisterContribution",
+    ],
     40_000,
     false,
   ).finally(() => {
     setLoading(LoadingStateKey.Hyperstructure, false);
   });
+  let end = performance.now();
+  console.log("[composite] hyperstructure query", end - start);
 
   setLoading(LoadingStateKey.SingleKey, true);
+  start = performance.now();
   await getEntities(
     setup.network.toriiClient,
     {
       Keys: {
         keys: [undefined],
         pattern_matching: "FixedLen",
-        models: [
-          "s1_eternum-AddressName",
-          "s1_eternum-Realm",
-          "s1_eternum-PopulationConfig",
-          "s1_eternum-CapacityConfig",
-          "s1_eternum-ProductionConfig",
-          "s1_eternum-RealmLevelConfig",
-          "s1_eternum-BankConfig",
-          "s1_eternum-Bank",
-          "s1_eternum-Trade",
-          "s1_eternum-Structure",
-          "s1_eternum-Battle",
-          "s1_eternum-Guild",
-          "s1_eternum-LeaderboardRegistered",
-          "s1_eternum-Leaderboard",
-          "s1_eternum-LeaderboardRewardClaimed",
-          "s1_eternum-LeaderboardEntry",
-        ],
+        models: [],
       },
     },
     setup.network.contractComponents as any,
     [],
-    [],
+    singleKeyModels,
     40_000,
     false,
   ).finally(() => {
     setLoading(LoadingStateKey.SingleKey, false);
   });
+  end = performance.now();
+  console.log("[composite] single key query", end - start);
 
   setLoading(LoadingStateKey.Events, true);
 
-  await getEvents(
-    setup.network.toriiClient,
-    setup.network.contractComponents.events as any,
-    [],
-    [],
-    20000,
-    {
-      Keys: {
-        keys: [undefined],
-        pattern_matching: "VariableLen",
-        models: ["s1_eternum-GameEnded"],
-      },
-    },
-    false,
-    false,
-  ).finally(() => {
-    setLoading(LoadingStateKey.Events, false);
-  });
-
-  // const eventSync = getEvents(
+  start = performance.now();
   getEvents(
     setup.network.toriiClient,
     setup.network.contractComponents.events as any,
     [],
-    [],
+    [
+      "s1_eternum-GameEnded",
+      "s1_eternum-HyperstructureFinished",
+      "s1_eternum-BattleClaimData",
+      "s1_eternum-BattleJoinData",
+      "s1_eternum-BattleLeaveData",
+      "s1_eternum-BattlePillageData",
+      "s1_eternum-BattleStartData",
+      "s1_eternum-AcceptOrder",
+      "s1_eternum-SwapEvent",
+      "s1_eternum-LiquidityEvent",
+      "s1_eternum-HyperstructureContribution",
+    ],
     20000,
     {
       Keys: {
         keys: [undefined],
         pattern_matching: "VariableLen",
-        models: [
-          // "s1_eternum-GameEnded",
-          "s1_eternum-HyperstructureFinished",
-          "s1_eternum-BattleClaimData",
-          "s1_eternum-BattleJoinData",
-          "s1_eternum-BattleLeaveData",
-          "s1_eternum-BattlePillageData",
-          "s1_eternum-BattleStartData",
-          "s1_eternum-AcceptOrder",
-          "s1_eternum-SwapEvent",
-          "s1_eternum-LiquidityEvent",
-          "s1_eternum-HyperstructureContribution",
-        ],
+        models: [],
       },
     },
     false,
@@ -262,4 +213,102 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   ).finally(() => {
     setLoading(LoadingStateKey.Events, false);
   });
+  end = performance.now();
+  console.log("event query", end - start);
 };
+
+const configClauses: Clause[] = [
+  {
+    Keys: {
+      keys: [WORLD_CONFIG_ID.toString()],
+      pattern_matching: "FixedLen",
+      models: [],
+    },
+  },
+  {
+    Keys: {
+      keys: [WORLD_CONFIG_ID.toString(), undefined],
+      pattern_matching: "FixedLen",
+      models: [],
+    },
+  },
+  {
+    Keys: {
+      keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
+      pattern_matching: "FixedLen",
+      models: [],
+    },
+  },
+  {
+    Keys: {
+      keys: [BUILDING_CATEGORY_POPULATION_CONFIG_ID.toString(), undefined],
+      pattern_matching: "FixedLen",
+      models: [],
+    },
+  },
+  {
+    Keys: {
+      keys: [HYPERSTRUCTURE_CONFIG_ID.toString()],
+      pattern_matching: "VariableLen",
+      models: [],
+    },
+  },
+];
+
+const configModels = [
+  "s1_eternum-WorldConfig",
+  "s1_eternum-SeasonAddressesConfig",
+  "s1_eternum-SeasonBridgeConfig",
+  "s1_eternum-HyperstructureResourceConfig",
+  "s1_eternum-HyperstructureConfig",
+  "s1_eternum-CapacityConfig",
+  "s1_eternum-TravelStaminaCostConfig",
+  "s1_eternum-SpeedConfig",
+  "s1_eternum-MapConfig",
+  "s1_eternum-SettlementConfig",
+  "s1_eternum-TickConfig",
+  "s1_eternum-StaminaRefillConfig",
+  "s1_eternum-StaminaConfig",
+  "s1_eternum-TravelFoodCostConfig",
+  "s1_eternum-MercenariesConfig",
+  "s1_eternum-WeightConfig",
+  "s1_eternum-LevelingConfig",
+  "s1_eternum-ProductionConfig",
+  "s1_eternum-VRFConfig",
+  "s1_eternum-BankConfig",
+  "s1_eternum-BuildingGeneralConfig",
+  "s1_eternum-BuildingConfig",
+  "s1_eternum-TroopConfig",
+  "s1_eternum-BattleConfig",
+  "s1_eternum-BuildingCategoryPopConfig",
+  "s1_eternum-PopulationConfig",
+  "s1_eternum-QuestConfig",
+  "s1_eternum-QuestRewardConfig",
+  "s1_eternum-ResourceBridgeConfig",
+  "s1_eternum-ResourceBridgeFeeSplitConfig",
+  "s1_eternum-ResourceBridgeWhitelistConfig",
+  "s1_eternum-RealmMaxLevelConfig",
+  "s1_eternum-RealmLevelConfig",
+];
+
+const singleKeyModels = [
+  "s1_eternum-AddressName",
+  "s1_eternum-Realm",
+  "s1_eternum-Bank",
+  "s1_eternum-Trade",
+  "s1_eternum-Status",
+  "s1_eternum-Structure",
+  "s1_eternum-Battle",
+  "s1_eternum-Owner",
+  "s1_eternum-Position",
+  "s1_eternum-Population",
+  "s1_eternum-Hyperstructure",
+  "s1_eternum-Guild",
+  "s1_eternum-GuildMember",
+  "s1_eternum-EntityName",
+  "s1_eternum-Season",
+  "s1_eternum-Leaderboard",
+  "s1_eternum-LeaderboardRegistered",
+  "s1_eternum-LeaderboardRewardClaimed",
+  "s1_eternum-LeaderboardEntry",
+];
