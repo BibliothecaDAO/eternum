@@ -1,9 +1,11 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
   configManager,
@@ -17,13 +19,7 @@ import {
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/eternum";
-import {
-  useDojo,
-  useIsStructureResourcesLocked,
-  useNextBlockTimestamp,
-  useResourceManager,
-  useTravel,
-} from "@bibliothecadao/react";
+import { useDojo, useIsStructureResourcesLocked, useResourceManager, useTravel } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -46,7 +42,7 @@ export const MarketResource = memo(
     bidPrice: number;
     ammPrice: number;
   }) => {
-    const { currentDefaultTick } = useNextBlockTimestamp();
+    const { currentDefaultTick } = useBlockTimestamp();
     const resourceManager = useResourceManager(entityId, resourceId);
 
     const production = useMemo(() => {
@@ -112,7 +108,7 @@ export const MarketOrderPanel = memo(
         .sort((a, b) => b.ratio - a.ratio);
     }, [resourceAskOffers, resourceId]);
 
-    const isResourcesLocked = useIsStructureResourcesLocked(entityId);
+    const isResourcesLocked = useIsStructureResourcesLocked(entityId, getBlockTimestamp().currentBlockTimestamp);
 
     return (
       <div className="order-book-selector grid grid-cols-2 gap-4 p-4 h-full">
@@ -263,7 +259,10 @@ const OrderRow = memo(
       [entityId, updateBalance],
     );
 
-    const isMakerResourcesLocked = useIsStructureResourcesLocked(offer.makerId);
+    const isMakerResourcesLocked = useIsStructureResourcesLocked(
+      offer.makerId,
+      getBlockTimestamp().currentBlockTimestamp,
+    );
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
@@ -298,7 +297,7 @@ const OrderRow = memo(
       return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
     }, [entityId, offer.makerId, offer.tradeId, offer]);
 
-    const { currentDefaultTick } = useNextBlockTimestamp();
+    const { currentDefaultTick } = useBlockTimestamp();
 
     const resourceBalanceRatio = useMemo(
       () => (resourceBalance < getsDisplayNumber ? resourceBalance / getsDisplayNumber : 1),
@@ -496,7 +495,7 @@ const OrderCreation = memo(
     const [resource, setResource] = useState(RESOURCE_PRECISION);
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
-    const { nextBlockTimestamp } = useNextBlockTimestamp();
+    const { currentBlockTimestamp } = useBlockTimestamp();
 
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
@@ -531,7 +530,7 @@ const OrderCreation = memo(
     }, [resource, resourceId, lords]);
 
     const createOrder = async () => {
-      if (!nextBlockTimestamp) return;
+      if (!currentBlockTimestamp) return;
       setLoading(true);
 
       await create_order({
@@ -540,7 +539,7 @@ const OrderCreation = memo(
         maker_gives_resources: makerGives,
         taker_id: 0,
         taker_gives_resources: takerGives,
-        expires_at: nextBlockTimestamp + ONE_MONTH,
+        expires_at: currentBlockTimestamp + ONE_MONTH,
       }).finally(() => {
         playLordsSound();
         setLoading(false);
@@ -558,7 +557,7 @@ const OrderCreation = memo(
       return calculateDonkeysNeeded(multiplyByPrecision(orderWeight));
     }, [orderWeight]);
 
-    const { currentDefaultTick } = useNextBlockTimestamp();
+    const { currentDefaultTick } = useBlockTimestamp();
 
     const donkeyProductionManager = useResourceManager(entityId, ResourcesIds.Donkey);
 

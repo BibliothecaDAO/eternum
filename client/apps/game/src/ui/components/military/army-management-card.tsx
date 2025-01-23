@@ -15,6 +15,7 @@ import {
   getEntityIdFromKeys,
   multiplyByPrecision,
 } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { ArmyInfo, ArmyManager, configManager, getBalance, ID, Position, ResourcesIds } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
@@ -38,7 +39,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   } = useDojo();
 
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 

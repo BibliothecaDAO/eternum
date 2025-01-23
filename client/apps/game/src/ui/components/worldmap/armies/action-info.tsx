@@ -4,6 +4,7 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { StaminaResourceCost } from "@/ui/elements/stamina-resource-cost";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   computeExploreFoodCosts,
   computeTravelFoodCosts,
@@ -86,7 +87,7 @@ export const ActionInfo = memo(() => {
   const hoveredHex = useUIStore(useCallback((state) => state.armyActions.hoveredHex, []));
   const selectedEntityId = useUIStore(useCallback((state) => state.armyActions.selectedEntityId, []));
   const structureEntityId = useUIStore(useCallback((state) => state.structureEntityId, []));
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const {
     setup: { components },
   } = useDojo();

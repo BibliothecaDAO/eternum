@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 
 export const useSeasonStart = () => {
   const seasonStart = BigInt(configManager.getSeasonConfig().startAt || 0);
-  const nextBlockTimestamp = BigInt(Math.floor(Date.now() / 1000));
+  const currentBlockTimestamp = BigInt(Math.floor(Date.now() / 1000));
 
   const [countdown, setCountdown] = useState<bigint>(0n);
 
   useEffect(() => {
-    if (nextBlockTimestamp === 0n || seasonStart === 0n) return;
+    if (currentBlockTimestamp === 0n || seasonStart === 0n) return;
 
-    const initialCountdown = seasonStart - nextBlockTimestamp;
+    const initialCountdown = seasonStart - currentBlockTimestamp;
     setCountdown(initialCountdown);
 
     const timer = setInterval(() => {
@@ -18,7 +18,7 @@ export const useSeasonStart = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [nextBlockTimestamp, seasonStart]);
+  }, [currentBlockTimestamp, seasonStart]);
 
-  return { seasonStart, countdown, nextBlockTimestamp };
+  return { seasonStart, countdown, currentBlockTimestamp };
 };

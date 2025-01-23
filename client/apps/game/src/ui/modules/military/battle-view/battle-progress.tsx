@@ -1,6 +1,6 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { ArmyInfo, BattleManager, BattleStatus, BattleType, Structure, type Health } from "@bibliothecadao/eternum";
-import { useNextBlockTimestamp } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
@@ -132,7 +132,7 @@ export const BattleProgress = ({
   defenderArmies: (ArmyInfo | undefined)[];
   structure: Structure | undefined;
 }) => {
-  const { nextBlockTimestamp: currentTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp: currentTimestamp } = useBlockTimestamp();
 
   const playUnitSelectedOne = useUiSounds(soundSelector.unitSelected1).play;
   const playUnitSelectedTwo = useUiSounds(soundSelector.unitSelected2).play;

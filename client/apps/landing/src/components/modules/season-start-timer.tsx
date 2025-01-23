@@ -1,8 +1,8 @@
 import { useSeasonStart } from "@/hooks/use-season-start";
 
 export const SeasonStartTimer = () => {
-  const { seasonStart, countdown, nextBlockTimestamp } = useSeasonStart();
-  if (countdown < 0 || nextBlockTimestamp === 0n || seasonStart === 0n) return null;
+  const { seasonStart, countdown, currentBlockTimestamp } = useSeasonStart();
+  if (countdown < 0 || currentBlockTimestamp === 0n || seasonStart === 0n) return null;
 
   const hours = Math.floor(Number(countdown) / 3600);
   const minutes = Math.floor((Number(countdown) % 3600) / 60);

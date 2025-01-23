@@ -17,7 +17,7 @@ import { multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
-import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacity } from "./utils";
+import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacityInKg } from "./utils";
 
 export class TravelPaths {
   private readonly paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
@@ -432,10 +432,11 @@ export class ArmyMovementManager {
       getEntityIdFromKeys([BigInt(CapacityConfigCategory.Army)]),
     );
     const armyWeight = getComponentValue(this.components.Weight, this.entity);
+
     const armyEntity = getComponentValue(this.components.Army, this.entity);
 
     if (!armyEntity || !armyCapacity) return 0n;
 
-    return getRemainingCapacity(armyEntity, armyCapacity, armyWeight);
+    return getRemainingCapacityInKg(armyEntity, armyCapacity, armyWeight);
   };
 }

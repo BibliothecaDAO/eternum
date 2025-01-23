@@ -8,7 +8,6 @@ export * from "./use-entities";
 export * from "./use-fragment-mines";
 export * from "./use-guilds";
 export * from "./use-hyperstructures";
-export * from "./use-next-block-timestamp";
 export * from "./use-players";
 export * from "./use-query";
 export * from "./use-realm";

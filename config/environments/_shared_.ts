@@ -190,6 +190,7 @@ export const EternumGlobalConfig: Config = {
     [CapacityConfigCategory.None]: 0,
     [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
     [CapacityConfigCategory.Donkey]: 500_000,
+    // 10_000 gr per army
     [CapacityConfigCategory.Army]: 10_000,
     [CapacityConfigCategory.Storehouse]: 300_000_000,
   },

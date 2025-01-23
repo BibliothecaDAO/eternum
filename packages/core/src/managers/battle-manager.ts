@@ -63,8 +63,8 @@ export class BattleManager {
     return battle !== undefined;
   }
 
-  public isResourcesLocked(nextBlockTimestamp: number): boolean {
-    return this.isBattleOngoing(nextBlockTimestamp!) && !this.isSiege(nextBlockTimestamp!);
+  public isResourcesLocked(currentBlockTimestamp: number): boolean {
+    return this.isBattleOngoing(currentBlockTimestamp!) && !this.isSiege(currentBlockTimestamp!);
   }
 
   public getElapsedTime(currentTimestamp: number): number {

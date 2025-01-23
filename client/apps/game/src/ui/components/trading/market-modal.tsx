@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { formatTimeDifference } from "@/ui/modules/military/battle-view/battle-progress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BattleManager,
   ContractAddress,
@@ -63,11 +64,12 @@ export const MarketModal = () => {
   const playerStructures = usePlayerStructures();
   const { toggleModal } = useModalStore();
   const bank = useBank();
-  const { bidOffers, askOffers } = useSetMarket();
 
   const battles = useBattlesAtPosition(bank?.position || { x: 0, y: 0 });
 
-  const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
+  const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
+
+  const { bidOffers, askOffers } = useSetMarket(currentBlockTimestamp);
 
   const bankStructure = useMemo(
     () =>

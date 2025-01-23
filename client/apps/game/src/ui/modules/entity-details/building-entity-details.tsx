@@ -5,6 +5,7 @@ import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/select-
 import Button from "@/ui/elements/button";
 import { RealmDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -25,7 +26,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const [isLoading, setIsLoading] = useState(false);
   const [buildingState, setBuildingState] = useState<{

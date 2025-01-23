@@ -1,7 +1,8 @@
 import { ContractAddress, getGuildFromPlayerAddress, ID, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useCallback } from "react";
 import { create } from "zustand";
+import { useBlockTimestamp } from "../helpers/use-block-timestamp";
 
 interface LeaderboardStore {
   playersByRank: [ContractAddress, number][];
@@ -22,18 +23,18 @@ export const useLeaderBoardStore = create<LeaderboardStore>((set) => {
 export const useHyperstructureData = () => {
   const dojo = useDojo();
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const setPlayersByRank = useLeaderBoardStore((state) => state.setPlayersByRank);
   const setGuildsByRank = useLeaderBoardStore((state) => state.setGuildsByRank);
 
   const updateLeaderboard = useCallback(() => {
     const leaderboardManager = LeaderboardManager.instance(dojo.setup.components);
-    const playersByRank = leaderboardManager.getPlayersByRank(nextBlockTimestamp || 0);
-    const guildsByRank = leaderboardManager.getGuildsByRank(nextBlockTimestamp || 0);
+    const playersByRank = leaderboardManager.getPlayersByRank(currentBlockTimestamp || 0);
+    const guildsByRank = leaderboardManager.getGuildsByRank(currentBlockTimestamp || 0);
     setPlayersByRank(playersByRank);
     setGuildsByRank(guildsByRank);
-  }, [dojo, nextBlockTimestamp, getGuildFromPlayerAddress, setPlayersByRank, setGuildsByRank]);
+  }, [dojo, currentBlockTimestamp, getGuildFromPlayerAddress, setPlayersByRank, setGuildsByRank]);
 
   return updateLeaderboard;
 };

@@ -1,9 +1,10 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/elements/button";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, getAddressName, ID, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo, useHyperstructureUpdates, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 
@@ -20,14 +21,14 @@ export const Leaderboard = ({
     setup: { components },
   } = dojo;
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const playerPointsLeaderboard = useMemo(() => {
     return LeaderboardManager.instance(dojo.setup.components).getPlayersByRank(
-      nextBlockTimestamp || 0,
+      currentBlockTimestamp || 0,
       hyperstructureEntityId,
     );
-  }, [hyperstructureEntityId, nextBlockTimestamp]);
+  }, [hyperstructureEntityId, currentBlockTimestamp]);
 
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);
 

@@ -1,7 +1,7 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArrivalInfo,
   BattleManager,
@@ -40,7 +40,7 @@ export const DepositResources = ({ arrival, resources, armyInBattle }: DepositRe
     if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0) {
       return false;
     }
-    const currentTimestamp = useUIStore.getState().nextBlockTimestamp;
+    const currentTimestamp = getBlockTimestamp().currentBlockTimestamp;
     const battleManager = new BattleManager(
       dojo.setup.components,
       dojo.network.provider,
@@ -51,7 +51,7 @@ export const DepositResources = ({ arrival, resources, armyInBattle }: DepositRe
     return battleOngoing && !battleManager.isSiege(currentTimestamp!);
   }, [structureAtPosition?.protector?.battle_id, dojo]);
 
-  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
+  const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
   const weight =
     useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(arrival.entityId)]))?.value || 0n;
@@ -76,7 +76,9 @@ export const DepositResources = ({ arrival, resources, armyInBattle }: DepositRe
         size="xs"
         className="w-full"
         isLoading={isLoading}
-        disabled={arrival.arrivesAt > nextBlockTimestamp || battleInProgress || armyInBattle || resources.length === 0}
+        disabled={
+          arrival.arrivesAt > currentBlockTimestamp || battleInProgress || armyInBattle || resources.length === 0
+        }
         onClick={() => onOffload(arrival.recipientEntityId)}
         variant="primary"
         withoutSound

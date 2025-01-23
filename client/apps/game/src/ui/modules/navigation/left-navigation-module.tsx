@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useModalStore } from "@/hooks/store/use-modal-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
@@ -8,6 +9,7 @@ import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { Chat } from "@/ui/modules/chat/chat";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { ContractAddress, getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerArrivalsNotifications, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
@@ -44,7 +46,6 @@ export const LeftNavigationModule = memo(() => {
     setup: { components },
   } = useDojo();
 
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -55,14 +56,19 @@ export const LeftNavigationModule = memo(() => {
 
   const { toggleModal } = useModalStore();
   const { isMapView } = useQuery();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
-  const { arrivedNotificationLength, arrivals } = usePlayerArrivalsNotifications();
+  const { arrivedNotificationLength, arrivals } = usePlayerArrivalsNotifications(currentBlockTimestamp);
 
-  const structureInfo = getEntityInfo(
-    structureEntityId,
-    ContractAddress(account.address),
-    currentDefaultTick,
-    components,
+  const structureInfo = useMemo(
+    () =>
+      getEntityInfo(
+        structureEntityId,
+        ContractAddress(account.address),
+        getBlockTimestamp().currentDefaultTick,
+        components,
+      ),
+    [structureEntityId, account.address, components],
   );
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 

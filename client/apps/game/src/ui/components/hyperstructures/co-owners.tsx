@@ -1,4 +1,5 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
@@ -14,7 +15,7 @@ import {
   HYPERSTRUCTURE_CONFIG_ID,
   ID,
 } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp, usePlayers } from "@bibliothecadao/react";
+import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -63,7 +64,7 @@ const CoOwnersRows = ({
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const hyperstructureConfig = useMemo(() => {
     return getComponentValue(HyperstructureConfig, getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]));
@@ -72,16 +73,16 @@ const CoOwnersRows = ({
   const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]));
 
   const canUpdate = useMemo(() => {
-    if (!hyperstructureConfig || !nextBlockTimestamp) return false;
+    if (!hyperstructureConfig || !currentBlockTimestamp) return false;
     if (!hyperstructure) return true;
     if (ContractAddress(hyperstructure.last_updated_by) === ContractAddress(account.address)) {
       return (
-        nextBlockTimestamp > hyperstructure.last_updated_timestamp + hyperstructureConfig.time_between_shares_change
+        currentBlockTimestamp > hyperstructure.last_updated_timestamp + hyperstructureConfig.time_between_shares_change
       );
     } else {
       return true;
     }
-  }, [hyperstructure, hyperstructureConfig, nextBlockTimestamp]);
+  }, [hyperstructure, hyperstructureConfig, currentBlockTimestamp]);
 
   const structure = useMemo(
     () => getStructure(hyperstructureEntityId, ContractAddress(account.address), components),
@@ -145,7 +146,7 @@ const CoOwnersRows = ({
               setTooltip({
                 content: `Wait ${formatTime(
                   Number(hyperstructureConfig?.time_between_shares_change) -
-                    Number((nextBlockTimestamp || 0) - (hyperstructure?.last_updated_timestamp ?? 0)),
+                    Number((currentBlockTimestamp || 0) - (hyperstructure?.last_updated_timestamp ?? 0)),
                 )} to change`,
                 position: "top",
               });

@@ -1,14 +1,15 @@
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager, ID } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp, useStaminaManager } from "@bibliothecadao/react";
+import { useDojo, useStaminaManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const { setup } = useDojo();
-  const { currentArmiesTick } = useNextBlockTimestamp();
+  const { currentArmiesTick } = useBlockTimestamp();
 
   const staminaManager = useStaminaManager(entityId || 0);
   const setTooltip = useUIStore((state) => state.setTooltip);

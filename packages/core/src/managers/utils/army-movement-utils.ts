@@ -4,24 +4,28 @@ import { RESOURCE_PRECISION, ResourcesIds } from "../../constants";
 import { ClientComponents } from "../../dojo/create-client-components";
 import { divideByPrecision, gramToKg } from "../../utils";
 
-export const getRemainingCapacity = (
+export const getRemainingCapacityInKg = (
   army: ComponentValue<ClientComponents["Army"]["schema"]>,
   capacity: ComponentValue<ClientComponents["CapacityConfig"]["schema"]>,
   armyWeight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined,
 ) => {
-  return getArmyTotalCapacity(army, capacity) - getArmyWeight(armyWeight);
+  const totalCapacity = getArmyTotalCapacityInKg(army, capacity); // in kg
+  const weight = getArmyWeightInKg(armyWeight); // in kg
+  console.log({ totalCapacity, weight });
+  return totalCapacity - weight; // in kg
 };
 
-export const getArmyTotalCapacity = (
+export const getArmyTotalCapacityInKg = (
   army: ComponentValue<ClientComponents["Army"]["schema"]>,
   capacity: ComponentValue<ClientComponents["CapacityConfig"]["schema"]>,
 ) => {
-  return BigInt(gramToKg(Number(capacity.weight_gram))) * getArmyNumberOfTroops(army);
+  // Convert weight_gram to kg and multiply by number of troops
+  return BigInt(gramToKg(Number(capacity.weight_gram))) * getArmyNumberOfTroops(army); // in kg
 };
 
-const getArmyWeight = (weight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined) => {
+const getArmyWeightInKg = (weight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined) => {
   if (!weight) return 0n;
-  return BigInt(divideByPrecision(Number(weight.value)));
+  return BigInt(gramToKg(Number(weight.value))); // in kg
 };
 
 export const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
