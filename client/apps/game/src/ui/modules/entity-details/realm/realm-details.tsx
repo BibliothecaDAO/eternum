@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
@@ -15,13 +16,13 @@ import {
   isStructureImmune,
   toHexString,
 } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const RealmDetails = () => {
   const dojo = useDojo();
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -57,12 +58,12 @@ export const RealmDetails = () => {
   );
 
   const isImmune = useMemo(
-    () => isStructureImmune(structure, nextBlockTimestamp || 0),
-    [structure, nextBlockTimestamp],
+    () => isStructureImmune(structure, currentBlockTimestamp || 0),
+    [structure, currentBlockTimestamp],
   );
   const timer = useMemo(
-    () => getStructureImmunityTimer(structure as Structure, nextBlockTimestamp || 0),
-    [structure, nextBlockTimestamp],
+    () => getStructureImmunityTimer(structure as Structure, currentBlockTimestamp || 0),
+    [structure, currentBlockTimestamp],
   );
 
   return (

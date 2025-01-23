@@ -8,9 +8,8 @@ import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
-import { LeftView, SceneName, StructureProgress } from "@/types";
+import { LeftView } from "@/types";
 import { Position } from "@/types/position";
-import { BuildingSystemUpdate, RealmSystemUpdate } from "@/types/systems";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
@@ -33,6 +32,7 @@ import clsx from "clsx";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { BuildingSystemUpdate, RealmSystemUpdate, SceneName, StructureProgress } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import {
   BUILDINGS_CATEGORIES_TYPES,

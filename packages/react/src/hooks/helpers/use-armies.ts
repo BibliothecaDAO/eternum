@@ -34,6 +34,7 @@ export const useArmiesAtPosition = ({ position }: { position: Position }) => {
 
     const armiesAtPosition = useEntityQuery([
       Has(components.Army),
+      Has(components.Health),
       NotValue(components.Health, { current: 0n }),
       HasValue(components.Position, { x: position.x, y: position.y }),
       Not(components.Protectee),

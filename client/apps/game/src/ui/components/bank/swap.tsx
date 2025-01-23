@@ -1,12 +1,12 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import { TravelInfo } from "@/ui/components/resources/travel-info";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   ContractAddress,
@@ -37,7 +37,7 @@ export const ResourceSwap = ({
     setup,
   } = useDojo();
 
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const { computeTravelTime } = useTravel();
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
@@ -91,8 +91,8 @@ export const ResourceSwap = ({
     return multiplyByPrecision(amount) <= balance;
   }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
-  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId);
-  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId);
+  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId, currentDefaultTick);
+  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId, currentDefaultTick);
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
 
   const canSwap = useMemo(

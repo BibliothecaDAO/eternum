@@ -4,7 +4,7 @@ import { lordsAddress } from "@/config";
 import { useEffect, useState } from "react";
 import { Chain, getGameManifest } from "../../../../../config/utils/utils";
 import { env } from "../../env";
-import { useDojo } from "./context/DojoContext";
+import { useDojo } from "./context/dojo-context";
 
 const { VITE_PUBLIC_CHAIN } = env;
 

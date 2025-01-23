@@ -3,6 +3,7 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { DurationLeft, ProgressBar } from "@/ui/modules/military/battle-view/battle-progress";
 import { divideByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { BattleManager, ContractAddress, getStructureAtPosition, Structure } from "@bibliothecadao/eternum";
 import { useBattlesAtPosition, useDojo, useQuery } from "@bibliothecadao/react";
 import { useMemo } from "react";
@@ -12,7 +13,7 @@ export const BattleInfoLabel = () => {
 
   const { isMapView } = useQuery();
   const hoveredBattlePosition = useUIStore((state) => state.hoveredBattle);
-  const currentTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
+  const currentTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
   const battles = useBattlesAtPosition({ x: hoveredBattlePosition?.x || 0, y: hoveredBattlePosition?.y || 0 });
   const structure = getStructureAtPosition(

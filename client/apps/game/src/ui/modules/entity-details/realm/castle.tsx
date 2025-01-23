@@ -17,11 +17,12 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 // todo: fix this
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { REALM_MAX_LEVEL } from "../../../../../../../../config/environments/utils/levels";
 
 export const Castle = () => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const [isLoading, setIsLoading] = useState(false);

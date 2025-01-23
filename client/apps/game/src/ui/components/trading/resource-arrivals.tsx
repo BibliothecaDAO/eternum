@@ -1,4 +1,5 @@
 import { getEntitiesFromTorii } from "@/dojo/queries";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { EntityArrival } from "@/ui/components/entities/entity";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import Button from "@/ui/elements/button";
@@ -6,7 +7,7 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ArrivalInfo } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { memo, useEffect, useState } from "react";
 import { create } from "zustand";
 
@@ -30,7 +31,7 @@ export const AllResourceArrivals = memo(
     const [displayCount, setDisplayCount] = useState(DISPLAYED_ARRIVALS);
     const [showOnlyArrived, setShowOnlyArrived] = useState(true);
 
-    const { nextBlockTimestamp } = useNextBlockTimestamp();
+    const { currentBlockTimestamp } = useBlockTimestamp();
     const { subscribedIds, addSubscribedIds } = useSubscribedIdsStore();
 
     useEffect(() => {
@@ -53,7 +54,7 @@ export const AllResourceArrivals = memo(
     }, [arrivals, subscribedIds, addSubscribedIds]);
 
     const filteredArrivals = showOnlyArrived
-      ? arrivals.filter((arrival) => arrival.arrivesAt < nextBlockTimestamp)
+      ? arrivals.filter((arrival) => arrival.arrivesAt < currentBlockTimestamp)
       : arrivals;
 
     const displayedArrivals = filteredArrivals.slice(0, displayCount);

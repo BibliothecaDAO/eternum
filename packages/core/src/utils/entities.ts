@@ -1,5 +1,6 @@
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { divideByPrecision } from ".";
 import { CAPACITY_CONFIG_CATEGORY_STRING_MAP } from "../constants";
 import { ClientComponents } from "../dojo";
@@ -79,7 +80,7 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
   }
 
   if (entityName) {
-    return entityName.name.toString();
+    return shortString.decodeShortString(entityName.name.toString());
   }
 
   if (abbreviate && structure) {

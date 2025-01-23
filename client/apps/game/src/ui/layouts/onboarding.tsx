@@ -180,9 +180,6 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
 const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const {
     account: { account },
-    setup: {
-      systemCalls: { create_multiple_realms_dev },
-    },
   } = useDojo();
 
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);

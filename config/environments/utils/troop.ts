@@ -6,6 +6,8 @@ export const TROOPS_STAMINAS = {
   [ResourcesIds.Crossbowman]: 80,
 };
 
+// Food consumption rates (wheat/fish) per troop unit, scaled by resource precision
+// Example: explore_wheat_burn_amount of 10 means 10 * RESOURCE_PRECISION wheat consumed per troop during exploration
 export const TROOPS_FOOD_CONSUMPTION: Record<number, TroopFoodConsumption> = {
   [ResourcesIds.Paladin]: {
     explore_wheat_burn_amount: 10,

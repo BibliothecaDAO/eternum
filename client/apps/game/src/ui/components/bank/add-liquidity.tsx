@@ -1,4 +1,3 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
 import { LiquidityTableHeader } from "@/ui/components/bank/liquidity-table";
@@ -6,6 +5,7 @@ import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { ContractAddress, ID, MarketManager, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
 import { useDojo, useIsStructureResourcesLocked, usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
@@ -23,7 +23,7 @@ const AddLiquidity = ({
     account: { account },
     setup,
   } = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
@@ -65,8 +65,8 @@ const AddLiquidity = ({
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
-  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId);
-  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId);
+  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId, currentDefaultTick);
+  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId, currentDefaultTick);
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
   const canAdd = hasEnough && isNotZero && !isBankResourcesLocked && !isMyResourcesLocked;
 

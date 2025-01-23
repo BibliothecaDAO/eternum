@@ -1,4 +1,4 @@
-import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
+import { useMintSeasonPass } from "@/hooks/use-mint-season-pass";
 import { displayAddress } from "@/lib/utils";
 import { useAccount } from "@starknet-react/core";
 import { Link } from "@tanstack/react-router";

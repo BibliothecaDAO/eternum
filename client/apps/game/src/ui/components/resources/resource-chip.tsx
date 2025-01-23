@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision, gramToKg } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   findResourceById,
@@ -53,7 +54,7 @@ export const ResourceChip = ({
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const timeUntilValueReached = useMemo(() => {
-    return resourceManager.timeUntilValueReached(useUIStore.getState().currentDefaultTick, 0);
+    return resourceManager.timeUntilValueReached(getBlockTimestamp().currentDefaultTick, 0);
   }, [resourceManager, production?.production_rate]);
 
   const productionRate = useMemo(() => {
@@ -67,7 +68,7 @@ export const ResourceChip = ({
   useEffect(() => {
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
 
-    let realTick = useUIStore.getState().currentDefaultTick;
+    let realTick = getBlockTimestamp().currentDefaultTick;
 
     const newBalance = resourceManager.balance(realTick);
     setBalance(newBalance);
@@ -135,7 +136,7 @@ export const ResourceChip = ({
               : ""}
           </div>
 
-          {Math.abs(productionRate) > 0 && productionEndsAt > useUIStore.getState().currentDefaultTick ? (
+          {Math.abs(productionRate) > 0 && productionEndsAt > getBlockTimestamp().currentDefaultTick ? (
             <div
               className={`${
                 productionRate < 0 ? "text-light-red" : "text-green/80"

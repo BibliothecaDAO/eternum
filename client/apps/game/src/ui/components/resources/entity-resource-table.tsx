@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
 import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import {
@@ -8,7 +9,7 @@ import {
   RESOURCE_TIERS,
   StructureType,
 } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -16,7 +17,7 @@ import { useMemo } from "react";
 export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();
 
-  const { currentDefaultTick: tick } = useNextBlockTimestamp();
+  const { currentDefaultTick: tick } = useBlockTimestamp();
 
   const quantity =
     useComponentValue(

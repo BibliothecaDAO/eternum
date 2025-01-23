@@ -1,10 +1,9 @@
 import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
+import { ArmyInfo, getArmyTotalCapacityInKg } from "..";
 import { CapacityConfigCategory, RESOURCE_PRECISION } from "../constants";
 import { ClientComponents } from "../dojo";
-import { ArmyInfo } from "../modelManager/types";
-import { getArmyTotalCapacity } from "../modelManager/utils";
 import { ContractAddress, ID } from "../types";
 
 export const formatArmies = (
@@ -52,7 +51,7 @@ export const formatArmies = (
 
       const armyCapacityConfigEntityId = getEntityIdFromKeys([BigInt(CapacityConfigCategory.Army)]);
       const capacity = getComponentValue(components.CapacityConfig, armyCapacityConfigEntityId);
-      const totalCapacity = capacity ? getArmyTotalCapacity(army, capacity) : 0n;
+      const totalCapacity = capacity ? getArmyTotalCapacityInKg(army, capacity) : 0n;
 
       const weightComponentValue = getComponentValue(components.Weight, armyEntityId);
       const weight = weightComponentValue ? weightComponentValue.value / BigInt(RESOURCE_PRECISION) : 0n;

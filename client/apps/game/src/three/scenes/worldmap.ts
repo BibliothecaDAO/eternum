@@ -13,11 +13,11 @@ import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "@/three/scenes/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
-import { LeftView, SceneName } from "@/types";
+import { LeftView } from "@/types";
 import { Position } from "@/types/position";
-import { ArmySystemUpdate, TileSystemUpdate } from "@/types/systems";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyMovementManager,
   BiomeType,
@@ -30,11 +30,11 @@ import {
   getNeighborOffsets,
 } from "@bibliothecadao/eternum";
 import { getEntities } from "@dojoengine/state";
-import * as torii from "@dojoengine/torii-client";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { ArmySystemUpdate, SceneName, TileSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 export default class WorldmapScene extends HexagonScene {
@@ -49,8 +49,6 @@ export default class WorldmapScene extends HexagonScene {
   private totalStructures: number = 0;
 
   private currentChunk: string = "null";
-
-  private subscription: torii.Subscription | null = null;
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
@@ -340,6 +338,8 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
+
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0 && hexCoords) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
@@ -357,8 +357,8 @@ export default class WorldmapScene extends HexagonScene {
             useAccountStore.getState().account!,
             selectedPath,
             isExplored,
-            this.state.nextBlockTimestamp || 0,
-            this.state.currentArmiesTick,
+            currentBlockTimestamp,
+            currentArmiesTick,
           );
           this.state.updateHoveredHex(null);
         }
@@ -377,11 +377,9 @@ export default class WorldmapScene extends HexagonScene {
       this.dojo.network.provider,
       selectedEntityId,
     );
-    const travelPaths = armyMovementManager.findPaths(
-      this.exploredTiles,
-      this.state.currentDefaultTick,
-      this.state.currentArmiesTick,
-    );
+
+    const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+    const travelPaths = armyMovementManager.findPaths(this.exploredTiles, currentDefaultTick, currentArmiesTick);
     this.state.updateTravelPaths(travelPaths.getPaths());
     this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
   }

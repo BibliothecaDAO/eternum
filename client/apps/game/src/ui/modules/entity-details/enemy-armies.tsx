@@ -1,7 +1,9 @@
 import { ReactComponent as Swords } from "@/assets/icons/common/cross-swords.svg";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ArmyChip } from "@/ui/components/military/army-chip";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyInfo,
   BattleManager,
@@ -10,7 +12,7 @@ import {
   getStructureAtPosition,
   isStructureImmune,
 } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
 import React, { useCallback, useMemo } from "react";
 
@@ -24,7 +26,7 @@ export const EnemyArmies = ({
   position: Position;
 }) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const structureAtPosition = useMemo(
     () =>
@@ -36,7 +38,7 @@ export const EnemyArmies = ({
     [position, dojo.account.account.address, dojo.setup.components],
   );
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -53,8 +55,8 @@ export const EnemyArmies = ({
   }, [ownArmySelected, entityInfo]);
 
   const structureImmune = useMemo(
-    () => isStructureImmune(ownArmystructure, nextBlockTimestamp!),
-    [ownArmystructure, nextBlockTimestamp],
+    () => isStructureImmune(ownArmystructure, currentBlockTimestamp!),
+    [ownArmystructure, currentBlockTimestamp],
   );
 
   const ownArmyIsImmune = useMemo(() => {
@@ -69,7 +71,7 @@ export const EnemyArmies = ({
         currentDefaultTick,
         dojo.setup.components,
       ).structure;
-      const isImmune = isStructureImmune(structure, nextBlockTimestamp!) || ownArmyIsImmune;
+      const isImmune = isStructureImmune(structure, currentBlockTimestamp!) || ownArmyIsImmune;
 
       const button = ownArmySelected && (
         <Swords
@@ -101,8 +103,8 @@ export const EnemyArmies = ({
       armyClone.name = army.protectee ? `${structureAtPosition?.name}` : army.name;
       const battleManager = new BattleManager(dojo.setup.components, dojo.network.provider, army.battle_id);
       if (
-        battleManager.isBattleOngoing(nextBlockTimestamp!) ||
-        battleManager.getUpdatedArmy(army, battleManager.getUpdatedBattle(nextBlockTimestamp!))!.health.current <= 0
+        battleManager.isBattleOngoing(currentBlockTimestamp!) ||
+        battleManager.getUpdatedArmy(army, battleManager.getUpdatedBattle(currentBlockTimestamp!))!.health.current <= 0
       ) {
         return null; // Changed to return null instead of undefined
       }
@@ -114,7 +116,7 @@ export const EnemyArmies = ({
       );
     },
     [
-      nextBlockTimestamp,
+      currentBlockTimestamp,
       ownArmySelected,
       ownArmySelected?.entity_id,
       position,

@@ -651,39 +651,6 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async create_multiple_realms_dev(props: SystemProps.CreateMultipleRealmsDevProps) {
-    let { realm_ids, signer } = props;
-
-    let calldata = realm_ids.flatMap((realm_id) => {
-      let calldata = [
-        {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
-          entrypoint: "create",
-          calldata: [realm_id, "0x46f957b7fe3335010607174edd5c4c3fae87b12c3760dc167ac738959d8c03b"],
-        },
-      ];
-      return calldata;
-    });
-
-    return await this.executeAndCheckTransaction(signer, calldata);
-  }
-  /**
-   * Create multiple realms at once
-   *
-   * @param props - Properties for creating realms
-   * @param props.realm_ids - Array of realm IDs to create
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Create realms with IDs 123, 456, 789
-   * {
-   *   realm_ids: [123, 456, 789],
-   *   signer: account
-   * }
-   * ```
-   */
   public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
     let { realm_ids, owner, frontend, signer, season_pass_address } = props;
 

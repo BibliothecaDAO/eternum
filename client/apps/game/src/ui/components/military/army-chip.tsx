@@ -2,6 +2,7 @@ import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
 import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
 import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
 import { ArmyManagementCard, ViewOnMapIcon } from "@/ui/components/military/army-management-card";
@@ -12,7 +13,7 @@ import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { armyHasTroops, ArmyInfo, BattleManager, Position } from "@bibliothecadao/eternum";
-import { useArmiesAtPosition, useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useArmiesAtPosition, useDojo } from "@bibliothecadao/react";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -67,7 +68,7 @@ export const ArmyChip = ({
   const [showInventory, setShowInventory] = useState(false);
   const [showTroopSwap, setShowTroopSwap] = useState(false);
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const [editMode, setEditMode] = useState(false);
 
@@ -79,10 +80,10 @@ export const ArmyChip = ({
   const isHome = army.isHome;
 
   const updatedArmy = useMemo(() => {
-    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
+    const updatedBattle = battleManager.getUpdatedBattle(currentBlockTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
     return updatedArmy;
-  }, [nextBlockTimestamp, army]);
+  }, [currentBlockTimestamp, army]);
 
   const [location] = useLocation();
   const isOnMap = useMemo(() => location.includes("map"), [location]);

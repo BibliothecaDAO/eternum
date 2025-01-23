@@ -1,9 +1,7 @@
 import { AppStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
-  configManager,
   HYPERSTRUCTURE_CONFIG_ID,
   SetupResult,
   WORLD_CONFIG_ID,
@@ -181,10 +179,6 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   });
   end = performance.now();
   console.log("[composite] single key query", end - start);
-
-  const eternumConfig = await ETERNUM_CONFIG();
-  console.log({ eternumConfig });
-  configManager.setDojo(setup.components, eternumConfig);
 
   setLoading(LoadingStateKey.Events, true);
 

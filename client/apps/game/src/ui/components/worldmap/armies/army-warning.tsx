@@ -1,5 +1,5 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyInfo,
   ArmyMovementManager,
@@ -20,7 +20,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   const armyManager = useMemo(() => {
     return new ArmyMovementManager(dojo.setup.components, dojo.network.provider, army.entity_id);
   }, [army]);
-  const food = armyManager.getFood(useUIStore.getState().currentDefaultTick);
+  const food = useMemo(() => armyManager.getFood(getBlockTimestamp().currentDefaultTick), [armyManager]);
 
   const exploreFoodCosts = useMemo(() => computeExploreFoodCosts(army.troops), [army]);
 
@@ -33,7 +33,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
 
   const stamina = useMemo(() => {
     const staminaManager = new StaminaManager(dojo.setup.components, army.entity_id);
-    return staminaManager.getStamina(useUIStore.getState().currentArmiesTick);
+    return staminaManager.getStamina(getBlockTimestamp().currentArmiesTick);
   }, [army]);
 
   return (

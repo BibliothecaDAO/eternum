@@ -4,11 +4,9 @@ import {
   debouncedGetMarketFromTorii,
   debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii,
 } from "@/dojo/debounced-queries";
-import { useFetchBlockchainData } from "@/hooks/helpers/use-fetch";
 import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { rewards } from "@/ui/components/navigation/config";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { ADMIN_BANK_ENTITY_ID, PlayerStructure } from "@bibliothecadao/eternum";
@@ -104,7 +102,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const battleView = useUIStore((state) => state.battleView);
 
   // Setup hooks
-  useFetchBlockchainData();
   useStructureEntityId();
 
   // We could optimise this deeper....
@@ -261,11 +258,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, []);
-
-  const openPopup = useUIStore((state) => state.openPopup);
-  useEffect(() => {
-    openPopup(rewards);
   }, []);
 
   const battleViewContent = useMemo(

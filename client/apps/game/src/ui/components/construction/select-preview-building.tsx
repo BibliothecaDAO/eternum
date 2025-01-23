@@ -8,6 +8,7 @@ import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs } from "@/ui/elements/tab";
 import { adjustWonderLordsCost, divideByPrecision, getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BuildingEnumToString,
   BuildingType,
@@ -36,7 +37,7 @@ import React, { useMemo, useState } from "react";
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
 
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
@@ -389,7 +390,7 @@ export const ResourceInfo = ({
   hintModal?: boolean;
 }) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   let cost = configManager.resourceInputs[resourceId];
 
   const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
@@ -524,7 +525,7 @@ export const BuildingInfo = ({
   isPaused?: boolean;
 }) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const buildingCost = getBuildingCosts(entityId ?? 0, dojo, buildingId) || [];
 

@@ -9,7 +9,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, NotValue, defineQuery, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDojo, useNextBlockTimestamp } from "../";
+import { useDojo } from "../";
 
 const getCurrentDonkeyWeightMinimum = () => {
   return Number(localStorage.getItem("WEIGHT_MINIMUM") || 0) * 1000;
@@ -149,24 +149,22 @@ const usePlayerArrivals = () => {
   );
 };
 
-export const usePlayerArrivalsNotifications = () => {
+export const usePlayerArrivalsNotifications = (currentBlockTimestamp: number) => {
   const [arrivedNotificationLength, setArrivedNotificationLength] = useState(0);
   const [nonArrivedNotificationLength, setNonArrivedNotificationLength] = useState(0);
 
   const arrivals = usePlayerArrivals();
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
-
   useEffect(() => {
     const arrivedCount = arrivals.filter(
-      (arrival) => Number(arrival.arrivesAt) <= (nextBlockTimestamp || 0) && arrival.hasResources,
+      (arrival) => Number(arrival.arrivesAt) <= (currentBlockTimestamp || 0) && arrival.hasResources,
     ).length;
     const nonArrivedCount = arrivals.filter(
-      (arrival) => Number(arrival.arrivesAt) > (nextBlockTimestamp || 0) && arrival.hasResources,
+      (arrival) => Number(arrival.arrivesAt) > (currentBlockTimestamp || 0) && arrival.hasResources,
     ).length;
     setArrivedNotificationLength(arrivedCount);
     setNonArrivedNotificationLength(nonArrivedCount);
-  }, [arrivals, nextBlockTimestamp]);
+  }, [arrivals, currentBlockTimestamp]);
 
   return { arrivedNotificationLength, nonArrivedNotificationLength, arrivals };
 };

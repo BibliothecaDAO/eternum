@@ -1,4 +1,4 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { DepositResources } from "@/ui/components/resources/deposit-resources";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { ResourceCost } from "@/ui/elements/resource-cost";
@@ -13,7 +13,7 @@ import {
   getEntityName,
   getResourcesFromBalance,
 } from "@bibliothecadao/eternum";
-import { useDojo, useNextBlockTimestamp } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import React, { useMemo } from "react";
@@ -36,19 +36,22 @@ type EntityProps = {
 
 export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
 
   const components = dojo.setup.components;
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
+  const { currentBlockTimestamp, currentDefaultTick } = useBlockTimestamp();
 
   const weight = useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(arrival.entityId)]));
 
-  const entity = getEntityInfo(
-    arrival.entityId,
-    ContractAddress(dojo.account.account.address),
-    currentDefaultTick,
-    dojo.setup.components,
+  const entity = useMemo(
+    () =>
+      getEntityInfo(
+        arrival.entityId,
+        ContractAddress(dojo.account.account.address),
+        currentDefaultTick,
+        dojo.setup.components,
+      ),
+    [arrival.entityId, dojo.account.account.address],
   );
 
   const entityResources = useMemo(() => {
@@ -61,19 +64,19 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   );
 
   const renderEntityStatus = useMemo(() => {
-    return nextBlockTimestamp ? (
-      arrival.arrivesAt <= nextBlockTimestamp ? (
+    return currentBlockTimestamp ? (
+      arrival.arrivesAt <= currentBlockTimestamp ? (
         <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
           Waiting to offload to {getEntityName(arrival.recipientEntityId, components)}
         </div>
       ) : (
         <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
-          Arriving in {formatTime(Number(entity.arrivalTime) - nextBlockTimestamp)} to{" "}
+          Arriving in {formatTime(Number(entity.arrivalTime) - currentBlockTimestamp)} to{" "}
           {getEntityName(arrival.recipientEntityId, components)}
         </div>
       )
     ) : null;
-  }, [nextBlockTimestamp, arrival.recipientEntityId, arrival.hasResources, entity.arrivalTime]);
+  }, [currentBlockTimestamp, arrival.recipientEntityId, arrival.hasResources, entity.arrivalTime]);
 
   const renderedResources = useMemo(() => {
     return entityResources

@@ -6,7 +6,6 @@ import { tracks } from "../helpers/use-music";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_build-mode-store";
 import { createPopupsSlice, PopupsStore } from "./_popups-store";
 import { createThreeStoreSlice, ThreeStore } from "./_three-store";
-import { BlockchainStore, createBlockchainStore } from "./use-blockchain-store";
 import { createRealmStoreSlice, RealmStore } from "./use-realm-store";
 import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 
@@ -69,7 +68,7 @@ interface UIStore {
   setShowToS: (show: boolean) => void;
 }
 
-export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore & WorldStore;
+export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
 
 const initialTrackIndex = Math.floor(Math.random() * tracks.length);
 
@@ -139,7 +138,6 @@ export const useUIStore = create(
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
     ...createRealmStoreSlice(set),
-    ...createBlockchainStore(set),
     ...createWorldStoreSlice(set),
   })),
 );

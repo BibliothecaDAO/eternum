@@ -1,4 +1,3 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { FragmentMinePanel } from "@/ui/components/fragmentMines/fragment-mine-panel";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/hyperstructure-panel";
@@ -9,6 +8,7 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BattleSide,
   ContractAddress,
@@ -279,7 +279,7 @@ const HyperStructureExtraContent = ({
 
 const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const { balance } = getBalance(entityId, ResourcesIds.AncientFragment, currentDefaultTick, dojo.setup.components);
   const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);

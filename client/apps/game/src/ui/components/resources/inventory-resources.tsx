@@ -1,7 +1,7 @@
 import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { divideByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { getBalance, getInventoryResources, ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
@@ -25,7 +25,7 @@ export const InventoryResources = ({
   textSize?: "xxs" | "xs" | "sm" | "md" | "lg";
 }) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const [showAll, setShowAll] = useState(false);
 
   const inventoriesResources = useMemo(

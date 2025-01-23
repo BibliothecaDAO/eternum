@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { lordsAddress } from "@/config";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useDojo } from "@/hooks/context/dojo-context";
 import {
   useGameWinner,
   useGetEpochs,
   useGetPlayerHyperstructureContributions,
   useLeaderboardEntry,
   useLeaderboardStatus,
-} from "@/hooks/usePrizeClaim";
+} from "@/hooks/use-prize-claim";
 import { useAccount } from "@starknet-react/core";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";

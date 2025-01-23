@@ -3,6 +3,7 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { findResourceById, getBalance, getIconResourceId, ID } from "@bibliothecadao/eternum";
 import { ProgressWithPercentage, useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
@@ -25,7 +26,7 @@ export const HyperstructureResourceChip = ({
   resetContributions,
 }: HyperstructureResourceChipProps) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const [inputValue, setInputValue] = useState<number>(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 

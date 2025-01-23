@@ -1,7 +1,7 @@
 import { StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@dojoengine/recs";
-import { useDojo } from "./context/DojoContext";
+import { useDojo } from "./context/dojo-context";
 
 export const useStructuresNumber = () => {
   const {

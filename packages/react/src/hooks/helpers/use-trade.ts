@@ -11,7 +11,7 @@ import { Entity, getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
-import { useDojo, useNextBlockTimestamp, usePlayerRealms } from "../";
+import { useDojo, usePlayerRealms } from "../";
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -72,7 +72,7 @@ export function useTrade() {
     return { resourcesGet, resourcesGive };
   };
 
-  function computeTrades(entityIds: Entity[], nextBlockTimestamp: number) {
+  function computeTrades(entityIds: Entity[], currentBlockTimestamp: number) {
     const trades = entityIds
       .map((id) => {
         let trade = getComponentValue(Trade, id);
@@ -83,7 +83,7 @@ export function useTrade() {
           const makerName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(trade.maker_id)]))?.name;
 
           const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
-          if (trade.expires_at > nextBlockTimestamp) {
+          if (trade.expires_at > currentBlockTimestamp) {
             return {
               makerName: shortString.decodeShortString(makerName?.toString() || ""),
               originName: getRealmNameById(realm?.realm_id || 0),
@@ -135,7 +135,7 @@ export function useTrade() {
   };
 }
 
-export function useSetMarket() {
+export function useSetMarket(currentBlockTimestamp: number) {
   const {
     account: { account },
     setup: {
@@ -145,13 +145,11 @@ export function useSetMarket() {
 
   const playerRealms = usePlayerRealms(ContractAddress(account.address));
 
-  const { nextBlockTimestamp } = useNextBlockTimestamp();
-
   const { computeTrades } = useTrade();
 
   const allMarket = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0 })]);
   const allTrades = useMemo(() => {
-    return computeTrades(allMarket, nextBlockTimestamp!);
+    return computeTrades(allMarket, currentBlockTimestamp!);
   }, [allMarket]);
 
   const userTrades = useMemo(() => {

@@ -3,6 +3,7 @@ import { StructureCard } from "@/ui/components/structures/construction/structure
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 // import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   ID,
@@ -15,7 +16,6 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import React from "react";
 
-// const eternumConfig = await ETERNUM_CONFIG();
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
   [StructureType.Bank]: STRUCTURE_IMAGE_PREFIX + "mine.png",
@@ -27,7 +27,7 @@ export const STRUCTURE_IMAGE_PATHS = {
 
 export const StructureConstructionMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
@@ -94,7 +94,7 @@ const StructureInfo = ({
   extraButtons?: React.ReactNode[];
 }) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   // if is hyperstructure, the construction cost are only fragments
   const isHyperstructure = structureId === StructureType["Hyperstructure"];
   const cost = configManager.structureCosts[structureId];

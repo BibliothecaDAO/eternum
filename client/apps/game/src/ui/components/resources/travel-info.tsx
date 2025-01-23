@@ -1,7 +1,7 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
   configManager,
@@ -28,7 +28,7 @@ export const TravelInfo = ({
   isAmm?: boolean;
 }) => {
   const dojo = useDojo();
-  const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
   const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);

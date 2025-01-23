@@ -1,10 +1,10 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ID,
   Resources,
@@ -43,7 +43,7 @@ export const ResourceBar = memo(
     max?: number;
   }) => {
     const dojo = useDojo();
-    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+    const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
     const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
     const [searchInput, setSearchInput] = useState("");

@@ -7,7 +7,6 @@ import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
 import { SystemManager } from "@/three/systems/system-manager";
-import { SceneName } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
@@ -25,6 +24,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+import { SceneName } from "./types";
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;

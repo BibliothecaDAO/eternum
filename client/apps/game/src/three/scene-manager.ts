@@ -1,6 +1,6 @@
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
-import { SceneName } from "@/types";
+import { SceneName } from "./types";
 
 export class SceneManager {
   private currentScene: SceneName | undefined = undefined;

@@ -28,7 +28,6 @@ export const SettingsWindow = () => {
   } = useDojo();
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
 
   const addressName = getAddressName(ContractAddress(account.address), components);
 
