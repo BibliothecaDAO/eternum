@@ -88,7 +88,7 @@ export const ResourceChip = ({
       <ResourceIcon
         isLabor={isLabor}
         withTooltip={false}
-        resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
+        resource={findResourceById(resourceId)?.trait as string}
         size="sm"
         className="mr-3 self-center"
       />
@@ -103,7 +103,7 @@ export const ResourceChip = ({
   const handleMouseEnter = useCallback(() => {
     setTooltip({
       position: "top",
-      content: <>{findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}</>,
+      content: <>{findResourceById(resourceId)?.trait as string}</>,
     });
     setShowPerHour(false);
   }, [resourceId, isLabor, setTooltip]);

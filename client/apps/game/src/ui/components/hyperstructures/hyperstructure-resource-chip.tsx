@@ -4,7 +4,7 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { findResourceById, getBalance, getIconResourceId, ID } from "@bibliothecadao/eternum";
+import { findResourceById, getBalance, ID } from "@bibliothecadao/eternum";
 import { ProgressWithPercentage, useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 
@@ -70,7 +70,7 @@ export const HyperstructureResourceChip = ({
             position: "top",
             content: (
               <>
-                {findResourceById(getIconResourceId(resourceId, false))?.trait as string} ({currencyIntlFormat(balance)}
+                {findResourceById(resourceId)?.trait as string} ({currencyIntlFormat(balance)}
                 )
               </>
             ),
@@ -83,7 +83,7 @@ export const HyperstructureResourceChip = ({
         <ResourceIcon
           isLabor={false}
           withTooltip={false}
-          resource={findResourceById(getIconResourceId(resourceId, false))?.trait as string}
+          resource={findResourceById(resourceId)?.trait as string}
           size="xs"
           className="mr-2 self-center"
         />
