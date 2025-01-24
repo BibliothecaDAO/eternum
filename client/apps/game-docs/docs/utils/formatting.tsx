@@ -33,11 +33,3 @@ export function formatNumberWithCommas(number: number): string {
 export const currencyFormat = (num: number, decimals: number): string => {
   return formatNumber(num / ETERNUM_CONFIG().resources.resourcePrecision, decimals);
 };
-
-export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * ETERNUM_CONFIG().resources.resourcePrecision);
-}
-
-export function divideByPrecision(value: number): number {
-  return value / ETERNUM_CONFIG().resources.resourcePrecision;
-}

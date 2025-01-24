@@ -1,7 +1,7 @@
-import { findResourceById } from "@bibliothecadao/eternum";
+import { divideByPrecision, findResourceById } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
-import { divideByPrecision, formatNumber } from "../utils/utils";
+import { formatNumber } from "../utils/utils";
 import { ResourceIcon } from "./resource-icon";
 
 type ResourceCostProps = {

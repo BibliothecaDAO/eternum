@@ -2,10 +2,10 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision } from "@/ui/utils/utils";
 import {
   configManager,
   ContractAddress,
+  divideByPrecision,
   getBalance,
   getEntityIdFromKeys,
   getRealmInfo,

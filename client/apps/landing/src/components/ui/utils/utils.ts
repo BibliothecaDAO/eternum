@@ -39,14 +39,6 @@ export function displayAddress(string: string) {
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
 
-export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * ETERNUM_CONFIG().resources.resourcePrecision);
-}
-
-export function divideByPrecision(value: number): number {
-  return value / ETERNUM_CONFIG().resources.resourcePrecision;
-}
-
 export function roundDownToPrecision(value: bigint, precision: number) {
   return BigInt(Number(value) - (Number(value) % Number(precision)));
 }

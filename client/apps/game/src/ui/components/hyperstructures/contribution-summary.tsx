@@ -1,7 +1,14 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
-import { copyPlayerAddressToClipboard, currencyIntlFormat, divideByPrecision, formatNumber } from "@/ui/utils/utils";
-import { ContractAddress, getAddressName, ID, LeaderboardManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { copyPlayerAddressToClipboard, currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
+import {
+  ContractAddress,
+  divideByPrecision,
+  getAddressName,
+  ID,
+  LeaderboardManager,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 

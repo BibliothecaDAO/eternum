@@ -1,8 +1,8 @@
 import { Position } from "@/types/position";
-import { divideByPrecision } from "@/ui/utils/utils";
 import {
   ClientComponents,
   configManager,
+  divideByPrecision,
   ID,
   RealmLevels,
   SetupResult,

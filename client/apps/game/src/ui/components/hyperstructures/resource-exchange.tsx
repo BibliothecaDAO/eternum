@@ -1,9 +1,16 @@
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ArmyInfo, getResourcesFromBalance, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  divideByPrecision,
+  getResourcesFromBalance,
+  ID,
+  multiplyByPrecision,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";

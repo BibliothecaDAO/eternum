@@ -1,11 +1,12 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
-import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
+import { getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
 import {
   BuildingType,
   CapacityConfigCategory,
   configManager,
   ID,
+  multiplyByPrecision,
   RESOURCE_TIERS,
   StructureType,
 } from "@bibliothecadao/eternum";

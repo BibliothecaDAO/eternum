@@ -7,26 +7,27 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs } from "@/ui/elements/tab";
-import { adjustWonderLordsCost, divideByPrecision, getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
+import { adjustWonderLordsCost, getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BuildingEnumToString,
   BuildingType,
   CapacityConfigCategory,
   ClientComponents,
-  ID,
-  ResourceCost as ResourceCostType,
-  ResourceIdToMiningType,
-  ResourceMiningTypes,
-  ResourcesIds,
-  WORLD_CONFIG_ID,
   configManager,
+  divideByPrecision,
   findResourceById,
   getBalance,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
+  ID,
   isResourceProductionBuilding,
+  ResourceCost as ResourceCostType,
+  ResourceIdToMiningType,
+  ResourceMiningTypes,
+  ResourcesIds,
   unpackResources,
+  WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoResult, useDojo } from "@bibliothecadao/react";
 import { Component, getComponentValue } from "@dojoengine/recs";

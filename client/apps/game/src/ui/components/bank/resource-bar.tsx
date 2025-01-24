@@ -3,12 +3,13 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
-import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
+import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ID,
   Resources,
   ResourcesIds,
+  divideByPrecision,
   findResourceById,
   findResourceIdByTrait,
   getBalance,
