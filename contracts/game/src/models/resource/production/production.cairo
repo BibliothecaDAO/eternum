@@ -50,7 +50,6 @@ impl ProductionImpl of ProductionTrait {
     }
 
     fn spend_labor_resource(ref self: Production, production_config: @ProductionConfig, labor_amount: u128) {
-        // assert!(self.resource_type == *production_config.resource_type, "mismatched resource type when using labor");
         assert!(labor_amount.is_non_zero(), "zero labor amount");
         assert!(
             labor_amount % (*production_config).labor_cost == 0, "labor amount not exactly divisible by labor cost"
