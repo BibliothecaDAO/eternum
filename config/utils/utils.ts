@@ -1,18 +1,20 @@
 import type { Config, SeasonAddresses } from "@bibliothecadao/eternum";
+import localSeasonAddresses from "../../contracts/common/addresses/local.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
 import slotSeasonAddresses from "../../contracts/common/addresses/slot.json";
-
+import localGameManifest from "../../contracts/game/manifest_local.json";
 import mainnetGameManifest from "../../contracts/game/manifest_mainnet.json";
 import sepoliaGameManifest from "../../contracts/game/manifest_sepolia.json";
 import slotGameManifest from "../../contracts/game/manifest_slot.json";
 
+import localConfig from "../environments/data/local.json";
 import mainnetConfig from "../environments/data/mainnet.json";
 import sepoliaConfig from "../environments/data/sepolia.json";
 import slotConfig from "../environments/data/slot.json";
 
 /** Valid chain identifiers */
-export type Chain = "sepolia" | "mainnet" | "slot";
+export type Chain = "sepolia" | "mainnet" | "slot" | "local";
 
 /**
  * Retrieves the season addresses for a specific chain
@@ -29,6 +31,8 @@ export function getSeasonAddresses(chain: Chain): SeasonAddresses {
         return mainnetSeasonAddresses;
       case "slot":
         return slotSeasonAddresses;
+      case "local":
+        return localSeasonAddresses;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
@@ -60,6 +64,8 @@ export function getGameManifest(chain: Chain): GameManifest {
         return mainnetGameManifest;
       case "slot":
         return slotGameManifest;
+      case "local":
+        return localGameManifest;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
@@ -92,7 +98,9 @@ export function getConfigFromNetwork(chain: Chain): Config {
       case "mainnet":
         return mainnetConfig.configuration;
       case "slot":
-        return slotConfig.configuration;
+        return slotConfig.configuration ;
+      case "local":
+        return localConfig.configuration;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
