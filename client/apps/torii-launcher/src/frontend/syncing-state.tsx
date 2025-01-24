@@ -1,3 +1,4 @@
+import ProgressBar from "@ramonak/react-progress-bar";
 import { useEffect, useMemo, useState } from "react";
 import { RpcProvider } from "starknet";
 
@@ -61,17 +62,24 @@ export const SyncingState = ({ reset }: { reset: boolean }) => {
   }, [reset]);
 
   return isNaN(progress) || gameSynced ? (
-    <div className="text-gold text-center text-sm italic">
+    <div className="text-gold text-center text-sm">
       Game is fully synced, <br />
       do not close this window
     </div>
   ) : (
     <div className="flex flex-col items-center">
-      <div className="text-gold text-center text-sm italic mb-4">
+      <div className="text-gold text-center text-sm mb-4">
         Game is syncing, <br />
         do not close this window
       </div>
-      <progress className="rounded-sm" value={progress} max={1} />
+      <ProgressBar
+        className="text-base w-full"
+        labelSize="9px"
+        height="14px"
+        completed={Math.ceil(progress * 100)}
+        bgColor="#F6C297"
+        borderRadius="10px"
+      />
     </div>
   );
 };

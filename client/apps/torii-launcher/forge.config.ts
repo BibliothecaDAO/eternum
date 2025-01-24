@@ -10,7 +10,7 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: false,
-    icon: "assets/icon",
+    icon: "public/icon",
   },
   rebuildConfig: {},
   makers: [
@@ -21,9 +21,9 @@ const config: ForgeConfig = {
     {
       name: "@electron-forge/maker-dmg",
       config: {
-        background: "./assets/icon.png",
+        background: "./public/icon.png",
         format: "ULFO",
-        icon: "./assets/icon.png",
+        icon: "./public/icon.png",
         name: "Eternum Launcher",
       },
     },

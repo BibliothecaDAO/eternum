@@ -1,9 +1,11 @@
+import EternumLogo from "@public/eternum-new.svg?react";
+import Refresh from "@public/refresh.svg?react";
+import TrashCan from "@public/trashcan.svg?react";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import EternumLogo from "../assets/eternum-new.svg?react";
 import { IpcMethod } from "../types";
-import Button from "./Button";
-import { SyncingState } from "./SyncingState";
+import Button from "./button";
+import { SyncingState } from "./syncing-state";
 
 export const App = () => {
   const [reset, setReset] = useState(false);
@@ -56,13 +58,18 @@ export const App = () => {
           transition-all duration-300 ease-in-out 
           ${isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
           >
-            <p className="text-sm rounded-md bg-white text-brown p-4 text-center w-full">{showWarning.alertMessage}</p>
+            <p className="text-xs rounded-md text-white p-4 text-center w-full">{showWarning.alertMessage}</p>
             <div className="flex flex-row gap-4 mt-2">
-              <Button className="hover:bg-brown/10 !hover:text-gold" size="sm" variant="default" onClick={handleClose}>
+              <Button
+                className="hover:bg-brown/90 hover:text-gold/90"
+                size="sm"
+                variant="default"
+                onClick={handleClose}
+              >
                 Cancel
               </Button>
               <Button
-                className="hover:bg-red/90 !hover:text-white"
+                className="hover:bg-red/90 hover:text-white"
                 variant="default"
                 size="sm"
                 onClick={() => {
@@ -86,32 +93,25 @@ export const App = () => {
         <SyncingState reset={reset} />
       </div>
       <div className="flex flex-row items-center mb-4 gap-4">
-        <Button
-          size="sm"
-          variant="default"
-          className="hover:bg-brown/10 hover:text-gold"
+        <Refresh
+          className="hover:bg-brown/10 w-4 h-4 fill-gold transition-all duration-300 ease-in-out hover:scale-125"
           onClick={() =>
             setShowWarning({
               method: IpcMethod.KillTorii,
               alertMessage: killToriiAlertMessage,
             })
           }
-        >
-          Restart indexer
-        </Button>
-        <Button
-          size="sm"
-          variant="default"
-          className="hover:bg-brown/10 hover:text-gold"
+        />
+
+        <TrashCan
+          className="hover:bg-brown/10 w-4 h-4 fill-red transition-all duration-300 ease-in-out hover:scale-125"
           onClick={() =>
             setShowWarning({
               method: IpcMethod.ResetDatabase,
               alertMessage: resetDatabaseAlertMessage,
             })
           }
-        >
-          Restart syncing
-        </Button>
+        />
       </div>
     </>
   );

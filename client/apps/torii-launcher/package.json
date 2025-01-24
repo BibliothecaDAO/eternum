@@ -59,6 +59,7 @@
   "license": "MIT",
   "dependencies": {
     "@electron-forge/shared-types": "^7.6.0",
+    "@ramonak/react-progress-bar": "^5.3.0",
     "electron-squirrel-startup": "^1.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

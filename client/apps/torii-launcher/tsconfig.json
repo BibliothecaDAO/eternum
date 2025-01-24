@@ -11,11 +11,11 @@
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-	"types": ["vite-plugin-svgr/client"],
-	"paths": {
-      "*": ["node_modules/*"]
+    "types": ["vite-plugin-svgr/client"],
+    "paths": {
+      "*": ["node_modules/*"],
     },
-	"jsx": "react-jsx"
+    "jsx": "react-jsx"
   },
   "include": ["src/**/*"]
 }

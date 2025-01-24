@@ -426,6 +426,9 @@ importers:
       '@electron-forge/shared-types':
         specifier: ^7.6.0
         version: 7.6.0
+      '@ramonak/react-progress-bar':
+        specifier: ^5.3.0
+        version: 5.3.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       electron-squirrel-startup:
         specifier: ^1.0.1
         version: 1.0.1
@@ -3616,6 +3619,12 @@ packages:
 
   '@radix-ui/rect@1.1.0':
     resolution: {integrity: sha512-A9+lCBZoaMJlVKcRBz2YByCG+Cp2t6nAnMnNba+XiWxnj6r4JUFqfsgwocMBZU9LPtdxC6wB56ySYpc7LQIoJg==}
+
+  '@ramonak/react-progress-bar@5.3.0':
+    resolution: {integrity: sha512-PjpOcSBAVSQNyx2cvYyBCI14Tg2eFM0psC9m2ic33PYBIdOzO9/DieWndq9BUQTSjIIarhSpa/lqJ33W/mFJMw==}
+    peerDependencies:
+      react: ^16.0.0 || ^17 || ^18
+      react-dom: ^16.0.0 || ^17 || ^18
 
   '@react-aria/focus@3.19.1':
     resolution: {integrity: sha512-bix9Bu1Ue7RPcYmjwcjhB14BMu2qzfJ3tMQLqDc9pweJA66nOw8DThy3IfVr8Z7j2PHktOLf9kcbiZpydKHqzg==}
@@ -15426,6 +15435,11 @@ snapshots:
       '@babel/runtime': 7.26.0
 
   '@radix-ui/rect@1.1.0': {}
+
+  '@ramonak/react-progress-bar@5.3.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
 
   '@react-aria/focus@3.19.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
