@@ -84,22 +84,27 @@ impl ProductionImpl of ProductionTrait {
     // to ensure that the balance is accurate
     fn harvest(
         ref self: Production, ref resource: Resource, tick: @TickConfig, production_config: @ProductionConfig
-    ) {
+    ) -> bool {
+
+        // get start tick before updating last updated tick
+        let start_tick = self.last_updated_tick;
+
+        // last updated tick must always be updated
+        let current_tick = (*tick).current();
+        self.set_last_updated_tick(current_tick.try_into().unwrap());
+
         // ensure lords can not be produced
         if resource.resource_type == ResourceTypes::LORDS {
-            return;
+            return false;
         }
         // stop if production is not active
         if !self.has_building() {
-            return;
+            return false;
         }
-
-        // check production duration
-        let current_tick = (*tick).current();
         
         // total units produced by all buildings
         let mut labor_units_burned: u128 
-            = (current_tick.into() - self.last_updated_tick.into())
+            = (current_tick.into() - start_tick.into())
                     * self.building_count.into();
         
         // limit units produced by labor units left
@@ -117,10 +122,7 @@ impl ProductionImpl of ProductionTrait {
         // update resource balance
         resource.add(total_produced_amount);
 
-
-        // update last updated tick
-        self.set_last_updated_tick(current_tick.try_into().unwrap());
-
         // todo add event here
+        return total_produced_amount.is_non_zero();
     }
 }
