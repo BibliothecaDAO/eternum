@@ -107,6 +107,8 @@ impl ProductionImpl of ProductionTrait {
             if labor_units_burned > self.labor_units_left.into() {
                 labor_units_burned = self.labor_units_left.into();
             }
+            // update labor cycles left
+            self.decrease_labor_units(labor_units_burned.try_into().unwrap());
         }
 
         // get total produced amount
@@ -115,8 +117,6 @@ impl ProductionImpl of ProductionTrait {
         // update resource balance
         resource.add(total_produced_amount);
 
-        // update labor cycles left
-        self.decrease_labor_units(labor_units_burned.try_into().unwrap());
 
         // update last updated tick
         self.set_last_updated_tick(current_tick.try_into().unwrap());
