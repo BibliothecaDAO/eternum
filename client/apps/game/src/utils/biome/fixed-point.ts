@@ -70,6 +70,14 @@ export class FixedTrait {
   static ONE = new Fixed(ONE_64x64);
   static ZERO = new Fixed(0n);
 
+
+  /**
+   * Convert a ratio to a fixed point number
+   */
+  static fromRatio(numerator: bigint, denominator: bigint): Fixed {
+    return FixedTrait.divi(FixedTrait.fromInt(numerator), FixedTrait.fromInt(denominator));
+  }
+
   /**
    * Convert signed integer to 64.64 fixed point
    */
@@ -341,16 +349,4 @@ export class FixedTrait {
     return new Fixed(-a.value);
   }
 
-  static constants() {
-    return {
-      _1: new Fixed(ONE_64x64),
-      _0_1: FixedTrait.divi(FixedTrait.fromInt(10n), FixedTrait.fromInt(100n)), // 0.1
-      _0_4: FixedTrait.divi(FixedTrait.fromInt(40n), FixedTrait.fromInt(100n)), // 0.4
-      _0_5: FixedTrait.divi(FixedTrait.fromInt(50n), FixedTrait.fromInt(100n)), // 0.5
-      _0_33: FixedTrait.divi(FixedTrait.fromInt(33n), FixedTrait.fromInt(100n)), // 0.33
-      _0_66: FixedTrait.divi(FixedTrait.fromInt(66n), FixedTrait.fromInt(100n)), // 0.66
-      _0_16: FixedTrait.divi(FixedTrait.fromInt(16n), FixedTrait.fromInt(100n)), // 0.16
-      _0_83: FixedTrait.divi(FixedTrait.fromInt(83n), FixedTrait.fromInt(100n)), // 0.83
-    }
-  }
 }

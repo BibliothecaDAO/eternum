@@ -7,29 +7,30 @@ const MAP_AMPLITUDE = FixedTrait.fromInt(60n);
 const MOISTURE_OCTAVE = FixedTrait.fromInt(2n);
 const ELEVATION_OCTAVES = [
   FixedTrait.fromInt(1n),  // 1
-  FixedTrait.divi(FixedTrait.fromInt(1n), FixedTrait.fromInt(4n)),  // 0.25
-  FixedTrait.divi(FixedTrait.fromInt(1n), FixedTrait.fromInt(10n))  // 0.1
+  FixedTrait.fromRatio(1n, 4n),  // 0.25
+  FixedTrait.fromRatio(1n, 10n)  // 0.1
 ];
 const ELEVATION_OCTAVES_SUM = ELEVATION_OCTAVES.reduce((a, b) => a.add(b), FixedTrait.ZERO);
 
 
-export type BiomeType =
-  | "DeepOcean"
-  | "Ocean"
-  | "Beach"
-  | "Scorched"
-  | "Bare"
-  | "Tundra"
-  | "Snow"
-  | "TemperateDesert"
-  | "Shrubland"
-  | "Taiga"
-  | "Grassland"
-  | "TemperateDeciduousForest"
-  | "TemperateRainForest"
-  | "SubtropicalDesert"
-  | "TropicalSeasonalForest"
-  | "TropicalRainForest";
+export enum BiomeType {
+  DeepOcean = "DeepOcean",
+  Ocean = "Ocean",
+  Beach = "Beach",
+  Scorched = "Scorched",
+  Bare = "Bare",
+  Tundra = "Tundra",
+  Snow = "Snow",
+  TemperateDesert = "TemperateDesert",
+  Shrubland = "Shrubland",
+  Taiga = "Taiga",
+  Grassland = "Grassland",
+  TemperateDeciduousForest = "TemperateDeciduousForest",
+  TemperateRainForest = "TemperateRainForest",
+  SubtropicalDesert = "SubtropicalDesert",
+  TropicalSeasonalForest = "TropicalSeasonalForest",
+  TropicalRainForest = "TropicalRainForest"
+}
 
 export const BIOME_COLORS: Record<BiomeType, THREE.Color> = {
   DeepOcean: new THREE.Color("#4a6b63"),
@@ -51,12 +52,12 @@ export const BIOME_COLORS: Record<BiomeType, THREE.Color> = {
 };
 
 const LEVEL = {
-  DEEP_OCEAN: FixedTrait.divi(FixedTrait.fromInt(25n), FixedTrait.fromInt(100n)), // 0.25
-  OCEAN: FixedTrait.divi(FixedTrait.fromInt(50n), FixedTrait.fromInt(100n)), // 0.5
-  SAND: FixedTrait.divi(FixedTrait.fromInt(53n), FixedTrait.fromInt(100n)), // 0.53
-  FOREST: FixedTrait.divi(FixedTrait.fromInt(60n), FixedTrait.fromInt(100n)), // 0.6
-  DESERT: FixedTrait.divi(FixedTrait.fromInt(72n), FixedTrait.fromInt(100n)), // 0.72
-  MOUNTAIN: FixedTrait.divi(FixedTrait.fromInt(80n), FixedTrait.fromInt(100n)), // 0.8
+  DEEP_OCEAN: FixedTrait.fromRatio(25n, 100n), // 0.25
+  OCEAN: FixedTrait.fromRatio(50n, 100n), // 0.5
+  SAND: FixedTrait.fromRatio(53n, 100n), // 0.53
+  FOREST: FixedTrait.fromRatio(60n, 100n), // 0.6
+  DESERT: FixedTrait.fromRatio(72n, 100n), // 0.72
+  MOUNTAIN: FixedTrait.fromRatio(80n, 100n), // 0.8
 };
 
 export class Biome {
@@ -99,30 +100,31 @@ export class Biome {
   }
 
   private determineBiome(elevation: Fixed, moisture: Fixed, level: typeof LEVEL): BiomeType {
-    if (elevation.value < level.DEEP_OCEAN.value) return "DeepOcean";
-    if (elevation.value < level.OCEAN.value) return "Ocean";
-    if (elevation.value < level.SAND.value) return "Beach";
+    if (elevation.value < level.DEEP_OCEAN.value) return BiomeType.DeepOcean;
+    if (elevation.value < level.OCEAN.value) return BiomeType.Ocean;
+    if (elevation.value < level.SAND.value) return BiomeType.Beach;
+
     if (elevation.value > level.MOUNTAIN.value) {
-      if (moisture.value < FixedTrait.constants()._0_1.value) return "Scorched";
-      if (moisture.value < FixedTrait.constants()._0_4.value) return "Bare";
-      if (moisture.value < FixedTrait.constants()._0_5.value) return "Tundra";
-      return "Snow";
+      if (moisture.value < FixedTrait.fromRatio(10n, 100n).value) return BiomeType.Scorched;
+      if (moisture.value < FixedTrait.fromRatio(40n, 100n).value) return BiomeType.Bare;
+      if (moisture.value < FixedTrait.fromRatio(50n, 100n).value) return BiomeType.Tundra;
+      return BiomeType.Snow;
     }
     if (elevation.value > level.DESERT.value) {
-      if (moisture.value < FixedTrait.constants()._0_33.value) return "TemperateDesert";
-      if (moisture.value < FixedTrait.constants()._0_66.value) return "Shrubland";
-      return "Taiga";
+      if (moisture.value < FixedTrait.fromRatio(33n, 100n).value) return BiomeType.TemperateDesert;
+      if (moisture.value < FixedTrait.fromRatio(66n, 100n).value) return BiomeType.Shrubland;
+      return BiomeType.Taiga;
     }
     if (elevation.value > level.FOREST.value) {
-      if (moisture.value < FixedTrait.constants()._0_16.value) return "TemperateDesert";
-      if (moisture.value < FixedTrait.constants()._0_5.value) return "Grassland";
-      if (moisture.value < FixedTrait.constants()._0_83.value) return "TemperateDeciduousForest";
-      return "TemperateRainForest";
+      if (moisture.value < FixedTrait.fromRatio(16n, 100n).value) return BiomeType.TemperateDesert;
+      if (moisture.value < FixedTrait.fromRatio(50n, 100n).value) return BiomeType.Grassland;
+      if (moisture.value < FixedTrait.fromRatio(83n, 100n).value) return BiomeType.TemperateDeciduousForest;
+      return BiomeType.TemperateRainForest;
     }
-    if (moisture.value < FixedTrait.constants()._0_16.value) return "SubtropicalDesert";
-    if (moisture.value < FixedTrait.constants()._0_33.value) return "Grassland";
-    if (moisture.value < FixedTrait.constants()._0_66.value) return "TropicalSeasonalForest";
-    return "TropicalRainForest";
+    if (moisture.value < FixedTrait.fromRatio(16n, 100n).value) return BiomeType.SubtropicalDesert;
+    if (moisture.value < FixedTrait.fromRatio(33n, 100n).value) return BiomeType.Grassland;
+    if (moisture.value < FixedTrait.fromRatio(66n, 100n).value) return BiomeType.TropicalSeasonalForest;
+    return BiomeType.TropicalRainForest;
   }
 }
 
