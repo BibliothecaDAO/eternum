@@ -238,16 +238,10 @@ export interface ResumeProductionProps extends SystemSigner {
   };
 }
 
-export interface MakeProductionLaborProps extends SystemSigner {
+export interface StartProductionProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
-  labor_amount: num.BigNumberish;
-}
-
-export interface BurnProductionLaborProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  resource_type: num.BigNumberish;
-  labor_amount: num.BigNumberish;
+  amount: num.BigNumberish;
 }
 
 export interface CreateBankProps extends SystemSigner {

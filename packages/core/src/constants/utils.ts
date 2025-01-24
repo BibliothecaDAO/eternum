@@ -1,4 +1,4 @@
-import { ResourcesIds } from ".";
+import { LaborIds, ResourcesIds } from ".";
 import { resources } from "./resources";
 
 export const findResourceById = (value: number) => {
@@ -12,11 +12,11 @@ export const findResourceIdByTrait = (trait: string) => {
 
 export const getLaborIdFromResourceId = (resourceType: ResourcesIds) => {
   return 255 - resourceType;
-}
+};
 
-export const getResourceIdFromLaborId = (laborType: ResourcesIds) => {
+export const getResourceIdFromLaborId = (laborType: LaborIds) => {
   return 255 - laborType;
-}
+};
 
 export const RESOURCE_PRECISION = 1_000_000_000;
 export const RESOURCE_MULTIPLIER = 1000;

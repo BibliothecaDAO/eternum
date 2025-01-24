@@ -5,14 +5,7 @@ import { ResourceCost } from "@/ui/elements/resource-cost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 // import { ETERNUM_CONFIG } from "@/utils/config";
-import {
-  ID,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  StructureType,
-  configManager,
-  getBalance,
-} from "@bibliothecadao/eternum";
+import { ID, ResourcesIds, StructureType, configManager, getBalance } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import React from "react";
 
@@ -49,13 +42,8 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
       {buildingTypes.map((structureType, index) => {
         const building = StructureType[structureType as keyof typeof StructureType];
 
-        // if is hyperstructure, the construction cost are only fragments
         const isHyperstructure = building === StructureType["Hyperstructure"];
         const cost = configManager.structureCosts[building];
-        // scaleResourceCostMinMax(
-        //   configManager.getHyperstructureConstructionCosts(),
-        //   RESOURCE_PRECISION,
-        // );
 
         const hasBalance = checkBalance(isHyperstructure ? cost : []);
 
@@ -95,12 +83,7 @@ const StructureInfo = ({
 }) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  // if is hyperstructure, the construction cost are only fragments
-  const isHyperstructure = structureId === StructureType["Hyperstructure"];
   const cost = configManager.structureCosts[structureId];
-  // eternumConfig.hyperstructures.hyperstructureCreationCosts.filter(
-  //   (cost) => !isHyperstructure || cost.resource_tier === ResourceTier.Lords,
-  // );
 
   const perTick =
     structureId == StructureType.Hyperstructure
@@ -132,8 +115,7 @@ const StructureInfo = ({
               key={index}
               type="horizontal"
               resourceId={ResourcesIds.AncientFragment}
-              // amount={cost[Number(resourceId)].min_amount * RESOURCE_PRECISION}
-              amount={cost[Number(resourceId)].amount * RESOURCE_PRECISION}
+              amount={cost[Number(resourceId)].amount}
               balance={balance.balance}
             />
           );

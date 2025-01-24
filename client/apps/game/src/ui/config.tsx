@@ -104,4 +104,5 @@ export enum MenuEnum {
   resourceArrivals = "resourceArrivals",
   trade = "trade",
   resourceTable = "resourceTable",
+  laborTable = "laborTable",
 }

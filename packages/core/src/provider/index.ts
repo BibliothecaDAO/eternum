@@ -1119,69 +1119,43 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Create Labor for a resource
-   *
-   * @param props - Properties for creating labor
-   * @param props.entity_id - ID of the entity that owns the building
-   * @param props.resource_type - Type of resource to create labor for
-   * @param props.labor_amount - Amount of labor to create
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Create 100 units of labor for resource type 1
-   * {
-   *   entity_id: 123,
-   *   resource_type: 1,
-   *   labor_amount: 100,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async make_production_labor(props: SystemProps.MakeProductionLaborProps) {
-    const { entity_id, resource_type, labor_amount, signer } = props;
+  //  * Start production of a resource
+  //  *
+  //  * @param props - Properties for starting production
+  //  * @param props.entity_id - ID of the entity that owns the production building
+  //  * @param props.resource_type - Type of resource to start production of
+  //  * @param props.labor_amount - Amount of resources to produce
+  //  * @param props.signer - Account executing the transaction
+  //  * @returns Transaction receipt
+  //  *
+  //  * @example
+  //  * ```typescript
+  //  * // Burn 100 units of labor for resource type 1
+  //  * {
+  //  *   entity_id: 123,
+  //  *   resource_type: 1,
+  //  *   labor_amount: 100,
+  //  *   signer: account
+  //  * }
+  //  * ```
+  //  */
+  public async start_production(props: SystemProps.StartProductionProps) {
+    const { entity_id, resource_type, amount, signer } = props;
 
-    const call = this.createProviderCall(signer, {
+    const makeProductionLaborCallData = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "make_production_labor",
-      calldata: [entity_id, resource_type, labor_amount],
-    });
+      calldata: [entity_id, resource_type, amount],
+    };
 
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  /**
-   * Burn labor to start production
-   *
-   * @param props - Properties for burning labor
-   * @param props.entity_id - ID of the entity that owns the building
-   * @param props.resource_type - Type of resource to burn labor for
-   * @param props.labor_amount - Amount of labor to burn
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Burn 100 units of labor for resource type 1
-   * {
-   *   entity_id: 123,
-   *   resource_type: 1,
-   *   labor_amount: 100,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async burn_production_labor(props: SystemProps.BurnProductionLaborProps) {
-    const { entity_id, resource_type, labor_amount, signer } = props;
-
-    const call = this.createProviderCall(signer, {
+    const burnProductionLaborCallData = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "burn_production_labor",
-      calldata: [entity_id, resource_type, labor_amount],
-    });
+      calldata: [entity_id, resource_type, amount],
+    };
 
-    return await this.promiseQueue.enqueue(call);
+    const calldataArray = [makeProductionLaborCallData, burnProductionLaborCallData];
+    return await this.executeAndCheckTransaction(signer, calldataArray);
   }
 
   /**

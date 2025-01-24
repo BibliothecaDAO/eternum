@@ -1,7 +1,12 @@
-// import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { BuildingType, CapacityConfigCategory, ResourcesIds, StructureType } from "../constants";
+import {
+  BuildingType,
+  CapacityConfigCategory,
+  getLaborIdFromResourceId,
+  ResourcesIds,
+  StructureType,
+} from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { ID } from "../types";
 import { gramToKg, multiplyByPrecision } from "../utils";
@@ -26,6 +31,14 @@ export class ResourceManager {
 
   public getResource() {
     return this._getResource();
+  }
+
+  public getLabor() {
+    const labor = getComponentValue(
+      this.components.Resource,
+      getEntityIdFromKeys([BigInt(this.entityId), BigInt(getLaborIdFromResourceId(this.resourceId))]),
+    );
+    return labor;
   }
 
   public isActive(): boolean {

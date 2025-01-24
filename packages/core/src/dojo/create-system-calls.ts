@@ -58,7 +58,6 @@ export function createSystemCalls({ provider }: { provider: EternumProvider }) {
     await provider.upgrade_realm(props);
   };
 
-
   const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
     await provider.create_multiple_realms(props);
   };
@@ -111,12 +110,8 @@ export function createSystemCalls({ provider }: { provider: EternumProvider }) {
     await provider.resume_production(props);
   };
 
-  const make_production_labor = async (props: SystemProps.MakeProductionLaborProps) => {
-    await provider.make_production_labor(props);
-  };
-
-  const burn_production_labor = async (props: SystemProps.BurnProductionLaborProps) => {
-    await provider.burn_production_labor(props);
+  const start_production = async (props: SystemProps.StartProductionProps) => {
+    await provider.start_production(props);
   };
 
   const create_bank = async (props: SystemProps.CreateBankProps) => {
@@ -302,8 +297,7 @@ export function createSystemCalls({ provider }: { provider: EternumProvider }) {
     destroy_building,
     pause_production,
     resume_production,
-    make_production_labor,
-    burn_production_labor,
+    start_production,
     create_building,
     create_army,
     delete_army,

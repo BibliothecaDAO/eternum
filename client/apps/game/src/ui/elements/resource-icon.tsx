@@ -1,4 +1,4 @@
-import People from "@/assets/icons/common/people.svg?react";
+import { ReactComponent as People } from "@/assets/icons/common/people.svg";
 import clsx from "clsx";
 import type { ReactElement } from "react";
 

@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
+import { EntityLaborTable } from "@/ui/components/resources/entity-labor-table";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import CircleButton from "@/ui/elements/circle-button";
@@ -25,11 +26,27 @@ export const RightNavigationModule = () => {
           <CircleButton
             className="resource-table-selector"
             image={BuildingThumbs.resources}
+            disabled={!structureEntityId}
             size="xl"
             tooltipLocation="top"
             label="Balance"
             active={view === RightView.ResourceTable}
             onClick={() => setView(view === RightView.ResourceTable ? RightView.None : RightView.ResourceTable)}
+          />
+        ),
+      },
+      {
+        name: MenuEnum.laborTable,
+        button: (
+          <CircleButton
+            className="labor-table-selector"
+            image={BuildingThumbs.construction}
+            disabled={!structureEntityId}
+            size="xl"
+            tooltipLocation="top"
+            label="Labor"
+            active={view === RightView.LaborTable}
+            onClick={() => setView(view === RightView.LaborTable ? RightView.None : RightView.LaborTable)}
           />
         ),
       },
@@ -65,24 +82,23 @@ export const RightNavigationModule = () => {
         className={`w-full pointer-events-auto overflow-y-scroll h-[60vh] rounded-l-2xl border-l-2 border-y-2 border-gold/20`}
       >
         <Suspense fallback={<div className="p-8">Loading...</div>}>
-          {!!structureEntityId && (
-            <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-              <a
-                className="text-brown cursor-pointer text-lg w-full"
-                href={`https://empire.realms.world/trade`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="secondary" className="w-full">
-                  <div className="flex items-center gap-2">
-                    <ResourceIcon resource="Lords" size="xs" />
-                    Bridge Lords & Resources
-                  </div>
-                </Button>
-              </a>
-              <EntityResourceTable entityId={structureEntityId} />
-            </div>
-          )}
+          <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+            <a
+              className="text-brown cursor-pointer text-lg w-full"
+              href={`https://empire.realms.world/trade`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="secondary" className="w-full">
+                <div className="flex items-center gap-2">
+                  <ResourceIcon resource="Lords" size="xs" />
+                  Bridge Lords & Resources
+                </div>
+              </Button>
+            </a>
+            {view === RightView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
+            {view === RightView.LaborTable && <EntityLaborTable entityId={structureEntityId} />}
+          </div>
         </Suspense>
       </BaseContainer>
     </div>

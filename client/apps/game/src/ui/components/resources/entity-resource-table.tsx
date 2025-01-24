@@ -7,6 +7,7 @@ import {
   configManager,
   ID,
   RESOURCE_TIERS,
+  ResourcesIds,
   StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -38,7 +39,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
   }
 
   return Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
-    const resources = resourceIds.map((resourceId: any) => (
+    const resources = resourceIds.map((resourceId: ResourcesIds) => (
       <ResourceChip
         key={resourceId}
         resourceId={resourceId}

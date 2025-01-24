@@ -2,21 +2,12 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, divideByPrecision, gramToKg } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import {
-  configManager,
-  findResourceById,
-  formatTime,
-  getIconResourceId,
-  ID,
-  TickIds,
-  TimeFormat,
-} from "@bibliothecadao/eternum";
+import { configManager, findResourceById, formatTime, ID, TickIds, TimeFormat } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RealmTransfer } from "./realm-transfer";
 
 export const ResourceChip = ({
-  isLabor = false,
   resourceId,
   entityId,
   maxStorehouseCapacityKg,
@@ -86,7 +77,6 @@ export const ResourceChip = ({
   const icon = useMemo(
     () => (
       <ResourceIcon
-        isLabor={isLabor}
         withTooltip={false}
         resource={findResourceById(resourceId)?.trait as string}
         size="sm"
@@ -106,7 +96,7 @@ export const ResourceChip = ({
       content: <>{findResourceById(resourceId)?.trait as string}</>,
     });
     setShowPerHour(false);
-  }, [resourceId, isLabor, setTooltip]);
+  }, [resourceId, setTooltip]);
 
   const handleMouseLeave = useCallback(() => {
     setTooltip(null);
