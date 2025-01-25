@@ -2,16 +2,16 @@ import { graphql } from "../gql";
 
 export const GET_ETERNUM_STATTISTICS = graphql(`
   query eternumStatistics {
-    s0EternumAddressNameModels {
+    s1EternumAddressNameModels {
       totalCount
     }
-    s0EternumHyperstructureModels {
+    s1EternumHyperstructureModels {
       totalCount
     }
-    s0EternumRealmModels {
+    s1EternumRealmModels {
       totalCount
     }
-    s0EternumFragmentMineDiscoveredModels {
+    s1EternumFragmentMineDiscoveredModels {
       totalCount
     }
   }

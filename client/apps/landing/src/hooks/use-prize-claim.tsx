@@ -16,7 +16,7 @@ export const useLeaderboardEntry = (playerAddress: string) => {
     refetchInterval: 10_000,
   });
 
-  const points = data?.s0EternumLeaderboardEntryModels?.edges?.[0]?.node?.points ?? 0;
+  const points = data?.s1EternumLeaderboardEntryModels?.edges?.[0]?.node?.points ?? 0;
 
   return { points, isLoading };
 };
@@ -28,7 +28,7 @@ export const useLeaderboardStatus = () => {
     refetchInterval: 10_000,
   });
 
-  const leaderboard = data?.s0EternumLeaderboardModels?.edges?.[0]?.node ?? null;
+  const leaderboard = data?.s1EternumLeaderboardModels?.edges?.[0]?.node ?? null;
 
   return { leaderboard, isLoading };
 };
@@ -40,7 +40,7 @@ export const useGameWinner = () => {
     refetchInterval: 10_000,
   });
 
-  const winnerAddress = data?.s0EternumGameEndedModels?.edges?.[0]?.node?.winner_address ?? null;
+  const winnerAddress = data?.s1EternumGameEndedModels?.edges?.[0]?.node?.winner_address ?? null;
 
   return { winnerAddress, isLoading };
 };
@@ -53,7 +53,7 @@ export const useGetPlayerHyperstructureContributions = (playerAddress: string) =
   });
 
   const hyperstructures =
-    data?.s0EternumContributionModels?.edges?.map((edge) => edge?.node?.hyperstructure_entity_id) ?? ([] as number[]);
+    data?.s1EternumContributionModels?.edges?.map((edge) => edge?.node?.hyperstructure_entity_id) ?? ([] as number[]);
 
   return { hyperstructures: [...new Set(hyperstructures)], isLoading };
 };
@@ -66,9 +66,9 @@ export const useGetEpochs = (playerAddress: string) => {
   });
 
   const epochs = useMemo(() => {
-    if (!data?.s0EternumEpochModels?.edges) return [];
+    if (!data?.s1EternumEpochModels?.edges) return [];
 
-    return data?.s0EternumEpochModels?.edges
+    return data?.s1EternumEpochModels?.edges
       ?.map((edge) => {
         if (edge?.node?.owners?.find((owner) => owner?._0 === playerAddress)) {
           return {

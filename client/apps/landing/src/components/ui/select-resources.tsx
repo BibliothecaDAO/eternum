@@ -62,7 +62,7 @@ export const SelectResources = ({
               </Button>
             )}
             <ListSelect
-              className="overflow-hidden"
+              className="overflow-hidden h-10"
               options={options}
               value={selectedResourceIds[index]}
               onChange={(value) => {
@@ -76,11 +76,10 @@ export const SelectResources = ({
                   ...remainingAmounts,
                   [value]: divideByPrecision(getBalance(value) || 0),
                 });
-                // playResourceSound(value);
               }}
             />
             <NumberInput
-              className="h-14 "
+              className="h-10"
               max={divideByPrecision(resource?.balance || 0)}
               min={1}
               value={selectedResourceAmounts[id]}

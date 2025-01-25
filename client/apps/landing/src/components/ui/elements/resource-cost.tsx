@@ -5,7 +5,6 @@ import { formatNumber } from "../utils/utils";
 import { ResourceIcon } from "./resource-icon";
 
 type ResourceCostProps = {
-  isLabor?: boolean;
   resourceId: number;
   amount: number;
   color?: string;
@@ -20,7 +19,6 @@ type ResourceCostProps = {
 
 export const ResourceCost = ({
   type = "horizontal",
-  isLabor = false,
   className,
   withTooltip = false,
   onClick,
@@ -42,7 +40,6 @@ export const ResourceCost = ({
     >
       <ResourceIcon
         className="self-center justify-center"
-        isLabor={isLabor}
         withTooltip={withTooltip}
         resource={trait || ""}
         size={size}

@@ -7178,14 +7178,14 @@ export type GetCapacitySpeedConfigQueryVariables = Exact<{
 
 export type GetCapacitySpeedConfigQuery = {
   __typename?: "World__Query";
-  s0EternumCapacityConfigModels?: {
+  s1EternumCapacityConfigModels?: {
     __typename?: "s1_eternum_CapacityConfigConnection";
     edges?: Array<{
       __typename?: "s1_eternum_CapacityConfigEdge";
       node?: { __typename?: "s1_eternum_CapacityConfig"; weight_gram?: any | null } | null;
     } | null> | null;
   } | null;
-  s0EternumSpeedConfigModels?: {
+  s1EternumSpeedConfigModels?: {
     __typename?: "s1_eternum_SpeedConfigConnection";
     edges?: Array<{
       __typename?: "s1_eternum_SpeedConfigEdge";
@@ -7200,7 +7200,7 @@ export type GetEternumOwnerRealmIdsQueryVariables = Exact<{
 
 export type GetEternumOwnerRealmIdsQuery = {
   __typename?: "World__Query";
-  s0EternumOwnerModels?: {
+  s1EternumOwnerModels?: {
     __typename?: "s1_eternum_OwnerConnection";
     edges?: Array<{
       __typename?: "s1_eternum_OwnerEdge";
@@ -7340,7 +7340,7 @@ export type GetEternumEntityOwnerQueryVariables = Exact<{
 
 export type GetEternumEntityOwnerQuery = {
   __typename?: "World__Query";
-  s0EternumEntityOwnerModels?: {
+  s1EternumEntityOwnerModels?: {
     __typename?: "s1_eternum_EntityOwnerConnection";
     edges?: Array<{
       __typename?: "s1_eternum_EntityOwnerEdge";
@@ -7530,10 +7530,10 @@ export type EternumStatisticsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type EternumStatisticsQuery = {
   __typename?: "World__Query";
-  s0EternumAddressNameModels?: { __typename?: "s1_eternum_AddressNameConnection"; totalCount: number } | null;
-  s0EternumHyperstructureModels?: { __typename?: "s1_eternum_HyperstructureConnection"; totalCount: number } | null;
-  s0EternumRealmModels?: { __typename?: "s1_eternum_RealmConnection"; totalCount: number } | null;
-  s0EternumFragmentMineDiscoveredModels?: {
+  s1EternumAddressNameModels?: { __typename?: "s1_eternum_AddressNameConnection"; totalCount: number } | null;
+  s1EternumHyperstructureModels?: { __typename?: "s1_eternum_HyperstructureConnection"; totalCount: number } | null;
+  s1EternumRealmModels?: { __typename?: "s1_eternum_RealmConnection"; totalCount: number } | null;
+  s1EternumFragmentMineDiscoveredModels?: {
     __typename?: "s1_eternum_FragmentMineDiscoveredConnection";
     totalCount: number;
   } | null;
@@ -7543,7 +7543,7 @@ export type HasGameEndedQueryVariables = Exact<{ [key: string]: never }>;
 
 export type HasGameEndedQuery = {
   __typename?: "World__Query";
-  s0EternumGameEndedModels?: {
+  s1EternumGameEndedModels?: {
     __typename?: "s1_eternum_GameEndedConnection";
     edges?: Array<{
       __typename?: "s1_eternum_GameEndedEdge";
@@ -7558,7 +7558,7 @@ export type GetLeaderboardEntryQueryVariables = Exact<{
 
 export type GetLeaderboardEntryQuery = {
   __typename?: "World__Query";
-  s0EternumLeaderboardEntryModels?: {
+  s1EternumLeaderboardEntryModels?: {
     __typename?: "s1_eternum_LeaderboardEntryConnection";
     edges?: Array<{
       __typename?: "s1_eternum_LeaderboardEntryEdge";
@@ -7571,7 +7571,7 @@ export type GetLeaderboardQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetLeaderboardQuery = {
   __typename?: "World__Query";
-  s0EternumLeaderboardModels?: {
+  s1EternumLeaderboardModels?: {
     __typename?: "s1_eternum_LeaderboardConnection";
     edges?: Array<{
       __typename?: "s1_eternum_LeaderboardEdge";
@@ -7592,7 +7592,7 @@ export type GetHyperstructureContributionsQueryVariables = Exact<{
 
 export type GetHyperstructureContributionsQuery = {
   __typename?: "World__Query";
-  s0EternumContributionModels?: {
+  s1EternumContributionModels?: {
     __typename?: "s1_eternum_ContributionConnection";
     edges?: Array<{
       __typename?: "s1_eternum_ContributionEdge";
@@ -7609,7 +7609,7 @@ export type GetEpochsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetEpochsQuery = {
   __typename?: "World__Query";
-  s0EternumEpochModels?: {
+  s1EternumEpochModels?: {
     __typename?: "s1_eternum_EpochConnection";
     edges?: Array<{
       __typename?: "s1_eternum_EpochEdge";
@@ -7634,7 +7634,7 @@ export type GetEntityPositionQueryVariables = Exact<{
 
 export type GetEntityPositionQuery = {
   __typename?: "World__Query";
-  s0EternumPositionModels?: {
+  s1EternumPositionModels?: {
     __typename?: "s1_eternum_PositionConnection";
     edges?: Array<{
       __typename?: "s1_eternum_PositionEdge";
@@ -7655,7 +7655,7 @@ export type GetEntitiesResourcesQueryVariables = Exact<{
 
 export type GetEntitiesResourcesQuery = {
   __typename?: "World__Query";
-  s0EternumResourceModels?: {
+  s1EternumResourceModels?: {
     __typename?: "s1_eternum_ResourceConnection";
     edges?: Array<{
       __typename?: "s1_eternum_ResourceEdge";
@@ -7690,14 +7690,14 @@ export class TypedDocumentString<TResult, TVariables>
 
 export const GetCapacitySpeedConfigDocument = new TypedDocumentString(`
     query getCapacitySpeedConfig($category: Enum!, $entityType: u32!) {
-  s0EternumCapacityConfigModels(where: {category: $category}) {
+  s1EternumCapacityConfigModels(where: {category: $category}) {
     edges {
       node {
         weight_gram
       }
     }
   }
-  s0EternumSpeedConfigModels(where: {entity_type: $entityType}) {
+  s1EternumSpeedConfigModels(where: {entity_type: $entityType}) {
     edges {
       node {
         sec_per_km
@@ -7708,7 +7708,7 @@ export const GetCapacitySpeedConfigDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetCapacitySpeedConfigQuery, GetCapacitySpeedConfigQueryVariables>;
 export const GetEternumOwnerRealmIdsDocument = new TypedDocumentString(`
     query getEternumOwnerRealmIds($accountAddress: ContractAddress!) {
-  s0EternumOwnerModels(where: {address: $accountAddress}, limit: 8000) {
+  s1EternumOwnerModels(where: {address: $accountAddress}, limit: 8000) {
     edges {
       node {
         address
@@ -7728,7 +7728,7 @@ export const GetEternumOwnerRealmIdsDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetEternumOwnerRealmIdsQuery, GetEternumOwnerRealmIdsQueryVariables>;
 export const GetEternumEntityOwnerDocument = new TypedDocumentString(`
     query getEternumEntityOwner($entityOwnerIds: [u32!]!) {
-  s0EternumEntityOwnerModels(
+  s1EternumEntityOwnerModels(
     where: {entity_owner_idIN: $entityOwnerIds}
     limit: 10000
   ) {
@@ -7801,23 +7801,23 @@ export const GetErc721MintsDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetErc721MintsQuery, GetErc721MintsQueryVariables>;
 export const EternumStatisticsDocument = new TypedDocumentString(`
     query eternumStatistics {
-  s0EternumAddressNameModels {
+  s1EternumAddressNameModels {
     totalCount
   }
-  s0EternumHyperstructureModels {
+  s1EternumHyperstructureModels {
     totalCount
   }
-  s0EternumRealmModels {
+  s1EternumRealmModels {
     totalCount
   }
-  s0EternumFragmentMineDiscoveredModels {
+  s1EternumFragmentMineDiscoveredModels {
     totalCount
   }
 }
     `) as unknown as TypedDocumentString<EternumStatisticsQuery, EternumStatisticsQueryVariables>;
 export const HasGameEndedDocument = new TypedDocumentString(`
     query hasGameEnded {
-  s0EternumGameEndedModels {
+  s1EternumGameEndedModels {
     edges {
       node {
         winner_address
@@ -7828,7 +7828,7 @@ export const HasGameEndedDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<HasGameEndedQuery, HasGameEndedQueryVariables>;
 export const GetLeaderboardEntryDocument = new TypedDocumentString(`
     query getLeaderboardEntry($accountAddress: ContractAddress!) {
-  s0EternumLeaderboardEntryModels(where: {address: $accountAddress}) {
+  s1EternumLeaderboardEntryModels(where: {address: $accountAddress}) {
     edges {
       node {
         address
@@ -7840,7 +7840,7 @@ export const GetLeaderboardEntryDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetLeaderboardEntryQuery, GetLeaderboardEntryQueryVariables>;
 export const GetLeaderboardDocument = new TypedDocumentString(`
     query getLeaderboard {
-  s0EternumLeaderboardModels {
+  s1EternumLeaderboardModels {
     edges {
       node {
         total_points
@@ -7857,7 +7857,7 @@ export const GetLeaderboardDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetLeaderboardQuery, GetLeaderboardQueryVariables>;
 export const GetHyperstructureContributionsDocument = new TypedDocumentString(`
     query getHyperstructureContributions($accountAddress: ContractAddress!) {
-  s0EternumContributionModels(
+  s1EternumContributionModels(
     where: {player_address: $accountAddress}
     limit: 1000
   ) {
@@ -7875,7 +7875,7 @@ export const GetHyperstructureContributionsDocument = new TypedDocumentString(`
 >;
 export const GetEpochsDocument = new TypedDocumentString(`
     query getEpochs {
-  s0EternumEpochModels(limit: 1000) {
+  s1EternumEpochModels(limit: 1000) {
     edges {
       node {
         owners {
@@ -7892,7 +7892,7 @@ export const GetEpochsDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetEpochsQuery, GetEpochsQueryVariables>;
 export const GetEntityPositionDocument = new TypedDocumentString(`
     query getEntityPosition($entityIds: [u32!]!) {
-  s0EternumPositionModels(where: {entity_idIN: $entityIds}, limit: 8000) {
+  s1EternumPositionModels(where: {entity_idIN: $entityIds}, limit: 8000) {
     edges {
       node {
         x
@@ -7908,7 +7908,7 @@ export const GetEntityPositionDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetEntityPositionQuery, GetEntityPositionQueryVariables>;
 export const GetEntitiesResourcesDocument = new TypedDocumentString(`
     query getEntitiesResources($entityIds: [u32!]!) {
-  s0EternumResourceModels(where: {entity_idIN: $entityIds}, limit: 8000) {
+  s1EternumResourceModels(where: {entity_idIN: $entityIds}, limit: 8000) {
     edges {
       node {
         entity_id

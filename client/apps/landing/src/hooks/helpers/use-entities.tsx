@@ -5,16 +5,16 @@ import { useMemo } from "react";
 import { execute } from "../gql/execute";
 import { GET_ETERNUM_OWNER_REALM_IDS } from "../query/entities";
 
-interface S0EternumRealm {
+interface s1EternumRealm {
   __typename: "s1_eternum_Realm";
   realm_id: number;
 }
 
-function isS0EternumRealm(model: any): model is S0EternumRealm {
+function iss1EternumRealm(model: any): model is s1EternumRealm {
   return model?.__typename === "s1_eternum_Realm";
 }
 
-function isS0EternumStructure(model: any) {
+function iss1EternumStructure(model: any) {
   return model?.__typename === "s1_eternum_Structure";
 }
 
@@ -27,12 +27,14 @@ export const useEntities = () => {
     refetchInterval: 10_000,
   });
 
+  console.log({ data });
+
   const playerRealms = useMemo(() => {
     if (!data) return [];
 
-    return data.s0EternumOwnerModels?.edges
+    return data.s1EternumOwnerModels?.edges
       ?.map((realm) => {
-        const realmModel = realm?.node?.entity?.models?.find(isS0EternumRealm);
+        const realmModel = realm?.node?.entity?.models?.find(iss1EternumRealm);
         if (!realmModel) return null;
         return {
           realmId: realmModel?.realm_id,
@@ -46,11 +48,11 @@ export const useEntities = () => {
   const playerStructures = useMemo(() => {
     if (!data) return [];
 
-    return data.s0EternumOwnerModels?.edges
+    return data.s1EternumOwnerModels?.edges
       ?.map((structure) => {
-        const structureModel = structure?.node?.entity?.models?.find(isS0EternumStructure);
+        const structureModel = structure?.node?.entity?.models?.find(iss1EternumStructure);
         if (!structureModel) return null;
-        const realmModel = structure?.node?.entity?.models?.find(isS0EternumRealm);
+        const realmModel = structure?.node?.entity?.models?.find(iss1EternumRealm);
         const entityId = structure?.node?.entity_id;
         return {
           realmId: realmModel?.realm_id || entityId,

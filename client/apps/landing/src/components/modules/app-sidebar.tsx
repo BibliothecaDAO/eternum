@@ -11,11 +11,6 @@ import { Link } from "@tanstack/react-router";
 import { Castle, Coins, Gamepad2, Home, PlayCircle, Scale, Sheet, Ship, Twitter } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
-// import { default as Discord } from "@/assets/icons/discord.svg?react";
-// import { default as EternumLogo } from "@/assets/icons/eternum-new-logo.svg?react";
-// import Discord from "@/assets/icons/discord.svg?react";
-// import EternumLogo from "@/assets/icons/eternum-new-logo.svg?react";
-
 // Menu items.
 const items = [
   {
