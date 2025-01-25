@@ -1,5 +1,5 @@
-import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
-import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
+import ArrowLeft from "@/assets/icons/common/arrow-left.svg?react";
+import ArrowRight from "@/assets/icons/common/arrow-right.svg?react";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 

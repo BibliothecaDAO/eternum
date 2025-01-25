@@ -4,13 +4,15 @@ import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacity-config";
 import { useBridgeAsset } from "@/hooks/use-bridge";
 import { useTravel } from "@/hooks/use-travel";
-import { displayAddress, multiplyByPrecision } from "@/lib/utils";
+import { displayAddress } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
   DONKEY_ENTITY_TYPE,
   RESOURCE_PRECISION,
   ResourcesIds,
   configManager,
+  divideByPrecision,
+  multiplyByPrecision,
   resources,
 } from "@bibliothecadao/eternum";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
@@ -25,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { SelectSingleResource } from "../ui/select-resources";
 import { Tooltip, TooltipProvider } from "../ui/tooltip";
 import { getResourceAddresses } from "../ui/utils/addresses";
-import { calculateDonkeysNeeded, divideByPrecision, getTotalResourceWeight } from "../ui/utils/utils";
+import { calculateDonkeysNeeded, getTotalResourceWeight } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeOutStep1 = () => {
@@ -133,7 +135,7 @@ export const BridgeOutStep1 = () => {
             .filter(([id, amount]) => amount > 0)
             .map(async ([id, amount]) => {
               const tokenAddress =
-                resourceAddresses[ResourcesIds[id].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
+                resourceAddresses[ResourcesIds[Number(id)].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
               return {
                 tokenAddress: tokenAddress as string,
                 amount: BigInt(amount * RESOURCE_PRECISION),
@@ -285,11 +287,11 @@ export const BridgeOutStep1 = () => {
           </div>
           {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
             if (amount === 0) return null;
-            const resourceName = ResourcesIds[id as keyof typeof ResourcesIds];
+            const resource = ResourcesIds[Number(id)];
             return (
               <div key={id} className="flex justify-between text-sm font-normal">
                 <div className="flex items-center gap-2">
-                  <ResourceIcon resource={resourceName} size="md" /> {resourceName}
+                  <ResourceIcon resource={resource} size="md" /> {resource}
                 </div>
                 <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
               </div>

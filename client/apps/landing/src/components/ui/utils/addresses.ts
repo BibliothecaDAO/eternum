@@ -3,7 +3,9 @@ import { env } from "../../../../env";
 
 export const getResourceAddresses = async () => {
   const addresses = (await getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)).resources;
-  return addresses;
+  return addresses as {
+    [key: string]: [number, string];
+  };
 };
 
 export const getSeasonPassAddress = async () => {

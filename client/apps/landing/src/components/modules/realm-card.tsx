@@ -18,7 +18,10 @@ interface RealmCardProps {
 }
 
 export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassStatusChange }: RealmCardProps) => {
-  const { tokenId, contractAddress, metadata } = realm.node?.tokenMetadata ?? {};
+  const { tokenId, contractAddress, metadata } =
+    realm.node?.tokenMetadata.__typename === "ERC721__Token"
+      ? realm.node.tokenMetadata
+      : { tokenId: "", contractAddress: "", metadata: "" };
   const [isError, setIsError] = useState(true);
   const { data, error, isSuccess, refetch, isFetching } = useReadContract({
     abi: [
@@ -31,7 +34,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
       },
     ] as const,
     functionName: "owner_of",
-    address: seasonPassAddress,
+    address: seasonPassAddress as `0x${string}`,
     args: [tokenId],
     watch: isError ? true : false,
   });

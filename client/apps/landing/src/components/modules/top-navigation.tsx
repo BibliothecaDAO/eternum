@@ -2,7 +2,6 @@ import { useAccount, useConnect, useDisconnect, useSendTransaction } from "@star
 
 import { lordsAddress } from "@/config";
 import { useLords } from "@/hooks/use-lords";
-import { Uint256 } from "starknet";
 import { TopNavigationView } from "./top-navigation-view";
 
 export const TopNavigation = () => {
@@ -35,7 +34,7 @@ export const TopNavigation = () => {
 
   return (
     <TopNavigationView
-      lordsBalance={lordsBalance as Uint256}
+      lordsBalance={lordsBalance}
       onMintTestLords={handleMintTestLords}
       connectors={connectors}
       onConnect={handleConnect}

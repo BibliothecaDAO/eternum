@@ -14,7 +14,7 @@ type SortDirection = "asc" | "desc";
 export const BridgedResources = () => {
   const [sortKey, setSortKey] = useState<SortKey>("totalSupply");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [sortedResources, setSortedResources] = useState<[string, [number, string]][]>([]);
+  const [sortedResources, setSortedResources] = useState<Array<[string, [number, string]]>>([]);
   const [resourceData, setResourceData] = useState<Record<string, { totalSupply: bigint; balance: bigint }>>({});
 
   useEffect(() => {
@@ -93,9 +93,9 @@ export const BridgedResources = () => {
         {sortedResources.map(([key, [id, address]]) => (
           <BridgeResource
             key={key}
-            resourceId={id}
+            resourceId={Number(id)}
             name={key}
-            contractAddress={address}
+            contractAddress={address.toString()}
             onDataUpdate={updateResourceData}
           />
         ))}

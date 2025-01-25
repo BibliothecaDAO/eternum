@@ -94,7 +94,7 @@ function Mint() {
                 <RealmsGrid
                   isNftSelected={isNftSelected}
                   toggleNftSelection={toggleNftSelection}
-                  realms={realmsErcBalance}
+                  realms={realmsErcBalance ?? []}
                   onSeasonPassStatusChange={handleSeasonPassStatusChange}
                 />
               </Suspense>
@@ -114,9 +114,15 @@ function Mint() {
                   totalSelectedNfts={totalSelectedNfts}
                   selectBatchNfts={selectBatchNftsFiltered}
                   deselectAllNfts={deselectAllNfts}
-                  contractAddress={realmsErcBalance?.[0]?.node?.tokenMetadata.contractAddress ?? ""}
+                  contractAddress={
+                    realmsErcBalance?.[0]?.node?.tokenMetadata.__typename === "ERC721__Token"
+                      ? realmsErcBalance[0].node.tokenMetadata.contractAddress
+                      : ""
+                  }
                   batchTokenIds={realmsErcBalance
-                    ?.map((token) => token?.node?.tokenMetadata?.tokenId ?? "")
+                    ?.map((token) =>
+                      token?.node?.tokenMetadata.__typename === "ERC721__Token" ? token.node.tokenMetadata.tokenId : "",
+                    )
                     .filter((tokenId): tokenId is string => tokenId !== "")}
                 />
               )}

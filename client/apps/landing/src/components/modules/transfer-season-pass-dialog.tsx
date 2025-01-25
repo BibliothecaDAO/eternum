@@ -43,7 +43,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
   const { address } = useAccount();
   const { contract } = useContract({
     abi,
-    address: seasonPassAddress,
+    address: seasonPassAddress as `0x${string}`,
   });
 
   const { address: cartridgeAddress, fetchAddress, loading: cartridgeLoading } = useCartridgeAddress();
@@ -103,7 +103,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
       setSelectedRealms([]);
     } else {
       // Select all realms
-      setSelectedRealms(seasonPassMints.map((mint) => mint.node.tokenMetadata.tokenId || ""));
+      setSelectedRealms(seasonPassMints.map((mint) => mint?.node?.tokenMetadata?.tokenId || ""));
     }
   };
 

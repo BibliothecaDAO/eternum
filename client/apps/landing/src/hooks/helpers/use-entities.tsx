@@ -30,7 +30,7 @@ export const useEntities = () => {
   const playerRealms = useMemo(() => {
     if (!data) return [];
 
-    return data.s0EternumResourceModels?.edges
+    return data.s0EternumOwnerModels?.edges
       ?.map((realm) => {
         const realmModel = realm?.node?.entity?.models?.find(isS0EternumRealm);
         if (!realmModel) return null;

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
+import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { GET_ACCOUNT_TOKENS } from "@/hooks/query/erc721";
 import { displayAddress } from "@/lib/utils";
 import { SeasonPassMint } from "@/types";
@@ -17,6 +18,17 @@ import { addAddressPadding } from "starknet";
 export const Route = createLazyFileRoute("/season-passes")({
   component: SeasonPasses,
 });
+
+const getSeasonPassNfts = (data: GetAccountTokensQuery | null) => {
+  return data?.tokenBalances?.edges?.filter(
+    (token) =>
+      token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
+      addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
+        addAddressPadding(seasonPassAddress ?? "0x0"),
+  );
+};
+
+export type TokenBalance = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
 
 function SeasonPasses() {
   const { connectors } = useConnect();
@@ -32,22 +44,11 @@ function SeasonPasses() {
     refetchInterval: 10_000,
   });
 
-  const seasonPassNfts = useMemo(
-    () =>
-      data?.tokenBalances?.edges?.filter(
-        (token) =>
-          token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
-          addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-            addAddressPadding(seasonPassAddress ?? "0x0"),
-      ),
-    [data, seasonPassAddress],
-  );
-
-  const loading = isPassesLoading;
+  const seasonPassNfts: TokenBalance[] | undefined = useMemo(() => getSeasonPassNfts(data), [data]);
 
   return (
     <div className="flex flex-col h-full">
-      {loading && (
+      {isPassesLoading && (
         <div className="flex-grow flex items-center justify-center absolute inset-0 bg-background/50 z-50">
           <Loader2 className="w-10 h-10 animate-spin" />
         </div>
@@ -56,7 +57,7 @@ function SeasonPasses() {
         {controllerAddress && (
           <div className="text-xl py-4 flex items-center">
             Minting to:{" "}
-            <Badge variant="secondary" className="text-lg ml-4 py-1.5">
+            <Badge fontVariant="secondary" className="text-lg ml-4 py-1.5">
               <img className="w-6 pr-2" src={connectors[2].icon as string} alt="Connector Icon" />
               {displayAddress(controllerAddress)}
             </Badge>
@@ -67,7 +68,7 @@ function SeasonPasses() {
           <div className="flex-grow overflow-y-auto p-4">
             <div className="flex flex-col gap-2">
               <Suspense fallback={<Skeleton>Loading</Skeleton>}>
-                <SeasonPassesGrid seasonPasses={seasonPassNfts} />
+                {seasonPassNfts && <SeasonPassesGrid seasonPasses={seasonPassNfts} />}
               </Suspense>
             </div>
           </div>

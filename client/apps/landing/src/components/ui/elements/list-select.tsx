@@ -1,5 +1,5 @@
-import { ReactComponent as CaretDown } from "@/assets/icons/common/caret-down-fill.svg";
-import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
+import CaretDown from "@/assets/icons/common/caret-down-fill.svg?react";
+import Checkmark from "@/assets/icons/common/checkmark.svg?react";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from "@headlessui/react";
 import clsx from "clsx";
 import { Fragment, ReactNode, useMemo } from "react";
