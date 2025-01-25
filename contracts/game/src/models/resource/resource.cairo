@@ -278,16 +278,17 @@ impl ResourceImpl of ResourceTrait {
         let tick = TickImpl::get_default_tick_config(ref world);
         let current_tick = tick.current().try_into().unwrap();
         let mut production: Production = self.production;
-        if production.has_building() && production.last_updated_tick != current_tick {
+        if production.last_updated_tick != current_tick {
             // harvest the production
             let production_config: ProductionConfig = world.read_model(self.resource_type);
-            production.harvest(ref self, @tick, @production_config);
-
-            // update the resource production
-            self.production = production;
-
+            let non_zero_harvest : bool = production.harvest(ref self, @tick, @production_config);
             // limit balance by storehouse capacity
-            self.limit_balance_by_storehouse_capacity(ref world);
+            if non_zero_harvest {
+                self.limit_balance_by_storehouse_capacity(ref world);
+            }
+
+            // update the resource production 
+            self.production = production;
 
             // save the updated resource model
             world.write_model(@self);

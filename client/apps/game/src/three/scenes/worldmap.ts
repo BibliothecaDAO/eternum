@@ -190,15 +190,13 @@ export default class WorldmapScene extends HexagonScene {
         if (this.isNavigationViewOpen()) {
           this.closeNavigationViews();
         } else {
-          this.clearEntitySelection();
-          this.clearHexSelection();
+          this.clearSelection();
         }
       }
     });
 
     window.addEventListener("urlChanged", () => {
-      this.clearEntitySelection();
-      this.clearHexSelection();
+      this.clearSelection();
     });
   }
 
@@ -313,7 +311,7 @@ export default class WorldmapScene extends HexagonScene {
         this.clearCache();
         this.updateVisibleChunks(true);
       });
-    this.clearEntitySelection();
+    this.clearSelection();
   }
 
   protected handleHexSelection(hexCoords: HexPosition) {
@@ -368,7 +366,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private onArmySelection(selectedEntityId: ID | null) {
     if (!selectedEntityId) {
-      this.clearEntitySelection();
+      this.clearSelection();
       return;
     }
 
@@ -384,13 +382,11 @@ export default class WorldmapScene extends HexagonScene {
     this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
   }
 
-  private clearEntitySelection() {
+  private clearSelection() {
     this.highlightHexManager.highlightHexes([]);
     this.state.updateTravelPaths(new Map());
     this.structurePreview?.clearPreviewStructure();
-  }
-
-  private clearHexSelection() {
+    this.state.updateSelectedEntityId(null);
     this.state.setSelectedHex(null);
   }
 
