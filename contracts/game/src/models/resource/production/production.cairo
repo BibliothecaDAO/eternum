@@ -7,7 +7,7 @@ use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{ProductionConfig};
 use s1_eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTypes, ResourceFoodImpl};
+use s1_eternum::models::resource::resource::{Resource, RESOURCE_PRECISION, ResourceImpl, ResourceTypes, ResourceFoodImpl};
 use starknet::get_block_timestamp;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -52,11 +52,9 @@ impl ProductionImpl of ProductionTrait {
     fn spend_labor_resource(ref self: Production, production_config: @ProductionConfig, labor_amount: u128) {
         assert!(labor_amount.is_non_zero(), "zero labor amount");
         assert!(
-            labor_amount % (*production_config).labor_cost == 0, "labor amount not exactly divisible by labor cost"
+            labor_amount % RESOURCE_PRECISION == 0, "labor amount not exactly divisible by resource precision"
         );
-
-        let additional_labor_units: u64 = (labor_amount / (*production_config).labor_cost).try_into().unwrap();
-        self.increase_labor_units(additional_labor_units);
+        self.increase_labor_units(labor_amount.try_into().unwrap());
     }
 
     #[inline(always)]
