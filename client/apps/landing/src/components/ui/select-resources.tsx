@@ -165,7 +165,6 @@ export const SelectSingleResource = ({
                     ...remainingAmounts,
                     [value]: divideByPrecision(getBalance(value) || 0),
                   });
-                  // playResourceSound(value);
                 }}
               />
               <NumberInput
