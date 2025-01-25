@@ -23,7 +23,7 @@ function ListSelect(props: ListSelectProps) {
   const selectedOption = useMemo(
     () =>
       props.options.find((option) => option.id === props.value) ||
-      props.options[0] || { id: "", label: "Select a wallet..." },
+      props.options[0] || { id: "", label: "Select a resource..." },
     [props.value],
   );
   return (
