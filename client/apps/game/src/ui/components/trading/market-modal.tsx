@@ -27,7 +27,7 @@ import {
   getArmy,
   getStructureAtPosition,
 } from "@bibliothecadao/eternum";
-import { useBank, useBattlesAtPosition, useDojo, usePlayerStructures, useSetMarket } from "@bibliothecadao/react";
+import { useBank, useBattlesAtPosition, useDojo, useMarket, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 
@@ -69,7 +69,7 @@ export const MarketModal = () => {
 
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
-  const { bidOffers, askOffers } = useSetMarket(currentBlockTimestamp);
+  const { bidOffers, askOffers } = useMarket(currentBlockTimestamp);
 
   const bankStructure = useMemo(
     () =>

@@ -4,13 +4,15 @@ import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacity-config";
 import { useBridgeAsset } from "@/hooks/use-bridge";
 import { useTravel } from "@/hooks/use-travel";
-import { displayAddress, multiplyByPrecision } from "@/lib/utils";
+import { displayAddress } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
   DONKEY_ENTITY_TYPE,
   RESOURCE_PRECISION,
   ResourcesIds,
   configManager,
+  divideByPrecision,
+  multiplyByPrecision,
   resources,
 } from "@bibliothecadao/eternum";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
@@ -25,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { SelectSingleResource } from "../ui/select-resources";
 import { Tooltip, TooltipProvider } from "../ui/tooltip";
 import { getResourceAddresses } from "../ui/utils/addresses";
-import { calculateDonkeysNeeded, divideByPrecision, getTotalResourceWeight } from "../ui/utils/utils";
+import { calculateDonkeysNeeded, getTotalResourceWeight } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeOutStep1 = () => {

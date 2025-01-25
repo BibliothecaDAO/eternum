@@ -5,13 +5,15 @@ import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacity-config";
 import { useBridgeAsset } from "@/hooks/use-bridge";
 import { useLords } from "@/hooks/use-lords";
 import { useTravel } from "@/hooks/use-travel";
-import { displayAddress, divideByPrecision, multiplyByPrecision } from "@/lib/utils";
+import { displayAddress } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
   DONKEY_ENTITY_TYPE,
   Resources,
   ResourcesIds,
   configManager,
+  divideByPrecision,
+  multiplyByPrecision,
   resources,
 } from "@bibliothecadao/eternum";
 import { useAccount, useBalance } from "@starknet-react/core";

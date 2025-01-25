@@ -1,8 +1,8 @@
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/components/trading/trade-history-event";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { SelectResource } from "@/ui/elements/select-resource";
-import { ID, Resource, ResourcesIds, world } from "@bibliothecadao/eternum";
-import { useDojo, useTrade } from "@bibliothecadao/react";
+import { getTradeResources, ID, Resource, ResourcesIds, world } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useEffect, useMemo, useState } from "react";
@@ -29,8 +29,6 @@ export const MarketTradingHistory = memo(() => {
     setup: { components },
   } = useDojo();
 
-  const { getTradeResources } = useTrade();
-
   const [tradeEvents, setTradeEvents] = useState<TradeEvent[]>([]);
   const [showOnlyYourSwaps, setShowOnlyYourSwaps] = useState(false);
 
@@ -49,7 +47,7 @@ export const MarketTradingHistory = memo(() => {
         const makerOwner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(event.maker_id)]));
         if (!makerOwner) return;
 
-        const { makerGets, takerGets } = getTradeResources(trade.trade_id);
+        const { makerGets, takerGets } = getTradeResources(trade.trade_id, components);
 
         setTradeEvents((prevTradeEvents) => {
           return [

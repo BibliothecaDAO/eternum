@@ -7,8 +7,14 @@ import Button from "@/ui/elements/button";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import TextInput from "@/ui/elements/text-input";
-import { multiplyByPrecision, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { configManager, DONKEY_ENTITY_TYPE, getRealmAddressName, ID } from "@bibliothecadao/eternum";
+import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
+import {
+  configManager,
+  DONKEY_ENTITY_TYPE,
+  getRealmAddressName,
+  ID,
+  multiplyByPrecision,
+} from "@bibliothecadao/eternum";
 import { useDojo, useTravel } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";

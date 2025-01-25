@@ -7,19 +7,20 @@ import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BattleSide,
   ContractAddress,
-  ID,
-  LeaderboardManager,
-  ResourcesIds,
+  divideByPrecision,
   findResourceById,
   getAddressFromEntity,
   getAddressNameFromEntity,
   getBalance,
   getGuildFromPlayerAddress,
+  ID,
+  LeaderboardManager,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import {
   useArmiesAtPosition,

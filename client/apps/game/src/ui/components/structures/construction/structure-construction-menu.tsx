@@ -2,9 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { StructureCard } from "@/ui/components/structures/construction/structure-card";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { multiplyByPrecision } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-// import { ETERNUM_CONFIG } from "@/utils/config";
 import {
   ID,
   RESOURCE_PRECISION,
@@ -12,6 +10,7 @@ import {
   StructureType,
   configManager,
   getBalance,
+  multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import React from "react";

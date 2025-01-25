@@ -7,16 +7,19 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import TextInput from "@/ui/elements/text-input";
-import {
-  currencyFormat,
-  divideByPrecision,
-  formatNumber,
-  formatStringNumber,
-  getEntityIdFromKeys,
-  multiplyByPrecision,
-} from "@/ui/utils/utils";
+import { currencyFormat, formatNumber, formatStringNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ArmyInfo, ArmyManager, configManager, getBalance, ID, Position, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  ArmyManager,
+  configManager,
+  divideByPrecision,
+  getBalance,
+  ID,
+  multiplyByPrecision,
+  Position,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";

@@ -1,10 +1,11 @@
-import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyInfo,
   ArmyMovementManager,
   computeExploreFoodCosts,
   configManager,
+  multiplyByPrecision,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
