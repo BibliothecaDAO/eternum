@@ -1,12 +1,10 @@
-import { configManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { BRIDGE_FEE_DENOMINATOR, configManager, ResourcesIds } from "@bibliothecadao/eternum";
+
 import { Minus, Plus } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { ResourceIcon } from "../ui/elements/resource-icon";
-
-// todo : get it directly from the config
-export const BRIDGE_FEE_DENOMINATOR = 10_000;
 
 interface FeesCollapsibleProps {
   isOpen: boolean;

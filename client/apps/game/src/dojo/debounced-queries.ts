@@ -6,7 +6,6 @@ import {
   getEntitiesFromTorii,
   getMarketFromTorii,
   getOneKeyModelbyRealmEntityIdFromTorii,
-  getTwoKeyModelbyRealmEntityIdFromTorii,
 } from "./queries";
 
 // Queue class to manage requests
@@ -52,19 +51,6 @@ class RequestQueue {
 
 const subscriptionQueue = new RequestQueue();
 const marketQueue = new RequestQueue();
-
-export const debouncedTwoKeyEntitiesFromTorii = debounce(
-  async <S extends Schema>(
-    client: ToriiClient,
-    components: Component<S, Metadata, undefined>[],
-    entityID: string[],
-    onComplete?: () => void,
-  ) => {
-    await subscriptionQueue.add(() => getTwoKeyModelbyRealmEntityIdFromTorii(client, components, entityID), onComplete);
-  },
-  250,
-  { leading: true },
-);
 
 export const debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii = debounce(
   async <S extends Schema>(

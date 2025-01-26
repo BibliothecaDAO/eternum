@@ -140,18 +140,3 @@ export function noise(v: Vec3): Fixed {
     
 }
 
-
-export function noise_octaves(v: Vec3, octaves: bigint, persistence: Fixed): Fixed {
-    let s = FixedTrait.ONE;
-    let t = FixedTrait.ZERO;
-    let n = FixedTrait.ZERO;
-
-    while (octaves > 0n) {
-        octaves -= 1n;
-        n = n.add(noise(v.div(Vec3.splat(s))).mul(s));
-        t = t.add(s);
-        s = s.mul(persistence);
-    }
-
-    return n.div(t);
-}

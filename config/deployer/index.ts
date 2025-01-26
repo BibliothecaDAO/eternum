@@ -1,8 +1,9 @@
 import { EternumProvider } from "@bibliothecadao/eternum";
+import { getGameManifest } from "@contracts";
 import { Account } from "starknet";
 import { confirmNonLocalDeployment } from "../utils/confirmation";
 import { logNetwork, saveConfigJsonFromConfigTsFile, type NetworkType } from "../utils/environment";
-import { getConfigFromNetwork, getGameManifest, type Chain } from "../utils/utils";
+import { getConfigFromNetwork, type Chain } from "../utils/utils";
 import { GameConfigDeployer } from "./config";
 
 const {

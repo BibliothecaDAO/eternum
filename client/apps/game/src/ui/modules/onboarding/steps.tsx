@@ -102,7 +102,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         owner: account.address,
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
         signer: account,
-        season_pass_address: await getSeasonPassAddress(),
+        season_pass_address: getSeasonPassAddress(),
       });
       setSelectedRealms([]);
       onPrevious();

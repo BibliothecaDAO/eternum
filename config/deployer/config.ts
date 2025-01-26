@@ -1,6 +1,7 @@
 import {
   ADMIN_BANK_ENTITY_ID,
   ARMY_ENTITY_TYPE,
+  BRIDGE_FEE_DENOMINATOR,
   BuildingType,
   CapacityConfigCategory,
   DONKEY_ENTITY_TYPE,
@@ -23,7 +24,7 @@ import {
 
 import chalk from "chalk";
 import { Account } from "starknet";
-import { BRIDGE_FEE_DENOMINATOR, SHARDS_MINES_WIN_PROBABILITY } from "../environments/_shared_";
+import { SHARDS_MINES_WIN_PROBABILITY } from "../environments/_shared_";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
 interface Config {
