@@ -12,7 +12,7 @@ const policiesPath = "apps/game/src/hooks/context/policies.ts";
 
 function updatePoliciesWithManifestAddresses(network, policiesPath) {
   if (!Object.keys(MANIFEST_PATHS).includes(network)) {
-    throw new Error(`Invalid network. Must be one of: ${Object.keys(MANIFEST_PATHS).join(', ')}`);
+    throw new Error(`Invalid network. Must be one of: ${Object.keys(MANIFEST_PATHS).join(", ")}`);
   }
 
   const manifestPath = MANIFEST_PATHS[network];

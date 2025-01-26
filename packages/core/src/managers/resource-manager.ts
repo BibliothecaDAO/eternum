@@ -40,7 +40,6 @@ export class ResourceManager {
   public balance(currentTick: number): number {
     return Number(this._balance(currentTick));
   }
-  
 
   public optimisticResourceUpdate = (overrideId: string, change: bigint) => {
     const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(this.resourceId)]);
