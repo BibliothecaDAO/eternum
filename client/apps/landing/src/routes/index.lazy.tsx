@@ -8,12 +8,10 @@ import {
   PRIZE_POOL_INDIVIDUAL_LEADERBOARD,
 } from "@/constants";
 import { execute } from "@/hooks/gql/execute";
-import { GET_ETERNUM_STATTISTICS } from "@/hooks/query/eternum-statistics";
+import { GET_ETERNUM_STATISTICS } from "@/hooks/query/eternum-statistics";
 import { useDonkeysBurned } from "@/hooks/use-donkeys-burned";
 import { useLordsBridgeBalance } from "@/hooks/use-lords-bridged";
-import { usePlayerCount } from "@/hooks/use-player-count";
 import { usePrizePool } from "@/hooks/use-rewards";
-import { useStructuresNumber } from "@/hooks/use-structures";
 import { currencyFormat, formatNumber } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
@@ -35,15 +33,13 @@ interface GridItemType {
 }
 
 function Index() {
-  const { data, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ["eternumStatistics"],
-    queryFn: () => execute(GET_ETERNUM_STATTISTICS),
+    queryFn: () => execute(GET_ETERNUM_STATISTICS),
     refetchInterval: 30_000,
   });
 
   const donkeysBurned = useDonkeysBurned();
-  const playerCount = usePlayerCount();
-  const { realmsCount, hyperstructuresCount, fragmentMinesCount } = useStructuresNumber();
   const lordsBalance = useLordsBridgeBalance();
 
   const prizePoolPlayers = usePrizePool();
