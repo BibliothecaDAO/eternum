@@ -1,9 +1,7 @@
-import People from "@/assets/icons/common/people.svg?react";
 import clsx from "clsx";
 import type { ReactElement } from "react";
 
 type Props = {
-  isLabor?: boolean;
   resource: string;
   size: keyof (typeof STYLES)["size"];
   className?: string;
@@ -72,12 +70,11 @@ const STYLES = {
   },
 } as const;
 
-export const ResourceIcon = ({ isLabor = false, withTooltip = true, tooltipText, ...props }: Props) => {
+export const ResourceIcon = ({ withTooltip = true, tooltipText, ...props }: Props) => {
   const Icon = (
     <div className={`flex paper relative group rounded-xl justify-center ${props.className}`}>
       <div className={`relative ${clsx(STYLES.size[props.size], props.className)} `}>
         {Components[props.resource.replace(" ", "").replace("'", "")]?.component}
-        {isLabor && <People className="absolute left-4 h-2.5 top-3"></People>}
       </div>
 
       {props.label && (

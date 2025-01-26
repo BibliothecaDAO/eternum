@@ -8,12 +8,10 @@ import {
   PRIZE_POOL_INDIVIDUAL_LEADERBOARD,
 } from "@/constants";
 import { execute } from "@/hooks/gql/execute";
-import { GET_ETERNUM_STATTISTICS } from "@/hooks/query/eternum-statistics";
+import { GET_ETERNUM_STATISTICS } from "@/hooks/query/eternum-statistics";
 import { useDonkeysBurned } from "@/hooks/use-donkeys-burned";
 import { useLordsBridgeBalance } from "@/hooks/use-lords-bridged";
-import { usePlayerCount } from "@/hooks/use-player-count";
 import { usePrizePool } from "@/hooks/use-rewards";
-import { useStructuresNumber } from "@/hooks/use-structures";
 import { currencyFormat, formatNumber } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
@@ -35,15 +33,13 @@ interface GridItemType {
 }
 
 function Index() {
-  const { data, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ["eternumStatistics"],
-    queryFn: () => execute(GET_ETERNUM_STATTISTICS),
+    queryFn: () => execute(GET_ETERNUM_STATISTICS),
     refetchInterval: 30_000,
   });
 
   const donkeysBurned = useDonkeysBurned();
-  const playerCount = usePlayerCount();
-  const { realmsCount, hyperstructuresCount, fragmentMinesCount } = useStructuresNumber();
   const lordsBalance = useLordsBridgeBalance();
 
   const prizePoolPlayers = usePrizePool();
@@ -55,7 +51,7 @@ function Index() {
         rowSpan: { sm: 1, md: 1, lg: 2 },
         data: {
           title: "players",
-          value: formatNumber(data?.s0EternumAddressNameModels?.totalCount ?? 0, 0),
+          value: formatNumber(data?.s1EternumAddressNameModels?.totalCount ?? 0, 0),
           icon: <UsersIcon />,
           backgroundImage: "/images/avatars/12.png",
         },
@@ -64,7 +60,7 @@ function Index() {
         colSpan: { sm: 2, md: 2, lg: 2 },
         data: {
           title: "realms settled",
-          value: formatNumber(data?.s0EternumRealmModels?.totalCount ?? 0, 0),
+          value: formatNumber(data?.s1EternumRealmModels?.totalCount ?? 0, 0),
           icon: <Castle />,
           backgroundImage: "/images/avatars/09.png",
         },
@@ -73,7 +69,7 @@ function Index() {
         colSpan: { sm: 2, md: 2, lg: 2 },
         data: {
           title: "hyperstructures",
-          value: formatNumber(data?.s0EternumHyperstructureModels?.totalCount ?? 0, 0),
+          value: formatNumber(data?.s1EternumHyperstructureModels?.totalCount ?? 0, 0),
           icon: <Sparkles />,
           backgroundImage: "/images/avatars/06.png",
         },
@@ -82,7 +78,7 @@ function Index() {
         colSpan: { sm: 2, md: 2, lg: 2 },
         data: {
           title: "mines discovered",
-          value: formatNumber(data?.s0EternumFragmentMineDiscoveredModels?.totalCount ?? 0, 0),
+          value: formatNumber(data?.s1EternumFragmentMineDiscoveredModels?.totalCount ?? 0, 0),
           icon: <Pickaxe />,
           backgroundImage: "/images/covers/03.png",
         },
@@ -122,7 +118,7 @@ function Index() {
         },
       },
     ],
-    [data?.s0EternumAddressNameModels, prizePoolPlayers, donkeysBurned, lordsBalance],
+    [data?.s1EternumAddressNameModels, prizePoolPlayers, donkeysBurned, lordsBalance],
   );
 
   return (

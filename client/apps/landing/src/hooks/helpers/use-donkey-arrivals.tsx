@@ -50,10 +50,10 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
 
   const donkeyEntities = useMemo(
     () => ({
-      s0EternumEntityOwnerModels: {
+      s1EternumEntityOwnerModels: {
         edges: donkeyQueriesResults
           .filter((result) => result.data)
-          .flatMap((result) => result.data?.s0EternumEntityOwnerModels?.edges || []),
+          .flatMap((result) => result.data?.s1EternumEntityOwnerModels?.edges || []),
       },
     }),
     [donkeyQueriesResults],
@@ -64,15 +64,15 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
 
   const bankPosition = useMemo(
     () =>
-      entityPositions?.s0EternumPositionModels?.edges?.find((entity) => entity?.node?.entity_id == ADMIN_BANK_ENTITY_ID)
+      entityPositions?.s1EternumPositionModels?.edges?.find((entity) => entity?.node?.entity_id == ADMIN_BANK_ENTITY_ID)
         ?.node,
     [entityPositions],
   );
 
   const donkeysAtBank = useMemo(() => {
-    if (!donkeyEntities?.s0EternumEntityOwnerModels?.edges || !bankPosition) return [];
+    if (!donkeyEntities?.s1EternumEntityOwnerModels?.edges || !bankPosition) return [];
 
-    return donkeyEntities.s0EternumEntityOwnerModels.edges.filter((edge) => {
+    return donkeyEntities.s1EternumEntityOwnerModels.edges.filter((edge) => {
       const position = edge?.node?.entity?.models?.find((model) => model?.__typename === "s1_eternum_Position");
       const resource = edge?.node?.entity?.models?.find(
         (model) => model?.__typename === "s1_eternum_OwnedResourcesTracker",
@@ -97,7 +97,7 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
 
   const getDonkeyInfo = (
     donkeyEntity: NonNullable<
-      NonNullable<NonNullable<GetEternumEntityOwnerQuery["s0EternumEntityOwnerModels"]>["edges"]>[number]
+      NonNullable<NonNullable<GetEternumEntityOwnerQuery["s1EternumEntityOwnerModels"]>["edges"]>[number]
     >,
   ) => {
     const donkeyEntityId = donkeyEntity?.node?.entity_id;
@@ -106,7 +106,7 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
     )?.arrives_at;
 
     const donkeyResourceBalances =
-      donkeyResources?.s0EternumResourceModels?.edges
+      donkeyResources?.s1EternumResourceModels?.edges
         ?.filter((edge) => edge?.node?.entity_id === donkeyEntityId)
         ?.map((edge) => edge?.node)
         ?.map((node) => ({

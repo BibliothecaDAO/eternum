@@ -2,7 +2,7 @@ import { graphql } from "../gql";
 
 export const GET_GAME_WINNER = graphql(`
   query hasGameEnded {
-    s0EternumGameEndedModels {
+    s1EternumGameEndedModels {
       edges {
         node {
           winner_address
@@ -14,7 +14,7 @@ export const GET_GAME_WINNER = graphql(`
 
 export const GET_LEADERBOARD_ENTRY = graphql(`
   query getLeaderboardEntry($accountAddress: ContractAddress!) {
-    s0EternumLeaderboardEntryModels(where: { address: $accountAddress }) {
+    s1EternumLeaderboardEntryModels(where: { address: $accountAddress }) {
       edges {
         node {
           address
@@ -27,7 +27,7 @@ export const GET_LEADERBOARD_ENTRY = graphql(`
 
 export const GET_LEADERBOARD = graphql(`
   query getLeaderboard {
-    s0EternumLeaderboardModels {
+    s1EternumLeaderboardModels {
       edges {
         node {
           total_points
@@ -45,7 +45,7 @@ export const GET_LEADERBOARD = graphql(`
 
 export const GET_PLAYER_HYPERSTRUCTURE_CONTRIBUTIONS = graphql(`
   query getHyperstructureContributions($accountAddress: ContractAddress!) {
-    s0EternumContributionModels(where: { player_address: $accountAddress }, limit: 1000) {
+    s1EternumContributionModels(where: { player_address: $accountAddress }, limit: 1000) {
       edges {
         node {
           hyperstructure_entity_id
@@ -58,7 +58,7 @@ export const GET_PLAYER_HYPERSTRUCTURE_CONTRIBUTIONS = graphql(`
 
 export const GET_HYPERSTRUCTURE_EPOCHS = graphql(`
   query getEpochs {
-    s0EternumEpochModels(limit: 1000) {
+    s1EternumEpochModels(limit: 1000) {
       edges {
         node {
           owners {

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { GetRealmsQuery } from "@/hooks/gql/graphql";
+import { TokenBalance } from "@/routes/season-passes.lazy";
 import { Crown, Grid2X2, Grid3X3 } from "lucide-react";
 import { useState } from "react";
 import { AnimatedGrid } from "./animated-grid";
@@ -11,16 +11,15 @@ interface RealmGridItem {
     md?: number;
     lg?: number;
   };
-  data: NonNullable<NonNullable<GetRealmsQuery["tokenBalances"]>["edges"]>[number];
+  data: TokenBalance;
 }
 
 interface SeasonPassRowProps {
-  seasonPasses?: NonNullable<GetRealmsQuery["tokenBalances"]>["edges"];
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
-  isNftSelected?: (tokenId: string, contractAddress: string) => boolean;
+  seasonPasses: TokenBalance[];
 }
 
-export const SeasonPassesGrid = ({ toggleNftSelection, isNftSelected, seasonPasses }: SeasonPassRowProps) => {
+export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses }: SeasonPassRowProps) => {
   const [isCompactGrid, setIsCompactGrid] = useState(false);
 
   if (!seasonPasses?.length) {
@@ -93,7 +92,7 @@ export const SeasonPassesGrid = ({ toggleNftSelection, isNftSelected, seasonPass
           return (
             <SeasonPassCard
               toggleNftSelection={toggleNftSelection}
-              key={`${pass.node.tokenMetadata.tokenId}`}
+              key={`${(pass.node.tokenMetadata.__typename === "ERC721__Token" && pass.node.tokenMetadata.tokenId) || ""}`}
               pass={pass}
             />
           );

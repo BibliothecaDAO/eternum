@@ -1,17 +1,20 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { GetRealmsQuery } from "@/hooks/gql/graphql";
+import { TokenBalance } from "@/routes/season-passes.lazy";
 import { RealmMetadata } from "@/types";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 
 interface SeasonPassCardProps {
-  pass: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["tokenBalances"]>["edges"]>[0];
+  pass: TokenBalance;
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   isSelected?: boolean;
   metadata?: RealmMetadata;
 }
 
 export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonPassCardProps) => {
-  const { tokenId, contractAddress, metadata } = pass!.node?.tokenMetadata ?? {};
+  const { tokenId, contractAddress, metadata } =
+    pass?.node?.tokenMetadata.__typename === "ERC721__Token"
+      ? pass.node.tokenMetadata
+      : { tokenId: "", contractAddress: "", metadata: "" };
 
   const handleCardClick = () => {
     if (toggleNftSelection) {
@@ -21,8 +24,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
 
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
   const { attributes, name, image } = parsedMetadata ?? {};
-
-  const realmSettled = false;
 
   return (
     <Card

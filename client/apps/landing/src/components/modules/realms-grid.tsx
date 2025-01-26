@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { GetRealmsQuery } from "@/hooks/gql/graphql";
+import { TokenBalance } from "@/routes/season-passes.lazy";
 import { Castle, Grid2X2, Grid3X3 } from "lucide-react";
 import { useState } from "react";
 import { AnimatedGrid } from "./animated-grid";
@@ -11,11 +11,11 @@ interface RealmGridItem {
     md?: number;
     lg?: number;
   };
-  data: NonNullable<NonNullable<GetRealmsQuery["tokenBalances"]>["edges"]>[number];
+  data: TokenBalance;
 }
 
 interface SeasonPassRowProps {
-  realms?: NonNullable<GetRealmsQuery["tokenBalances"]>["edges"];
+  realms: TokenBalance[];
   seasonPassTokenIds?: string[];
   toggleNftSelection: (tokenId: string, collectionAddress: string) => void;
   isNftSelected?: (tokenId: string, contractAddress: string) => boolean;
@@ -85,12 +85,15 @@ export const RealmsGrid = ({
           if (!realm?.node) return null;
 
           const isSelected =
-            isNftSelected?.(realm.node.tokenMetadata.tokenId, realm.node.tokenMetadata.contractAddress) ?? false;
+            isNftSelected?.(
+              realm.node.tokenMetadata.__typename === "ERC721__Token" ? realm.node.tokenMetadata.tokenId : "",
+              realm.node.tokenMetadata.__typename === "ERC721__Token" ? realm.node.tokenMetadata.contractAddress : "",
+            ) ?? false;
 
           return (
             <RealmCard
               toggleNftSelection={toggleNftSelection}
-              key={`${realm.node.tokenMetadata.tokenId}`}
+              key={`${realm.node.tokenMetadata.__typename === "ERC721__Token" ? realm.node.tokenMetadata.tokenId : ""}`}
               isSelected={isSelected}
               realm={realm}
               onSeasonPassStatusChange={onSeasonPassStatusChange}

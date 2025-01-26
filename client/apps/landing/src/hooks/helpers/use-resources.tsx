@@ -16,11 +16,11 @@ export function useResourceBalance({ entityId, resourceId }: { entityId?: ID; re
   const getBalance = useMemo(
     () => (resourceId: ResourcesIds) => {
       return (
-        data?.s0EternumResourceModels?.edges?.find((r) => r?.node?.resource_type === resourceId)?.node?.balance ?? 0
+        data?.s1EternumResourceModels?.edges?.find((r) => r?.node?.resource_type === resourceId)?.node?.balance ?? 0
       );
     },
     [data],
   );
 
-  return { data: data?.s0EternumResourceModels?.edges, isLoading, error, getBalance };
+  return { data: data?.s1EternumResourceModels?.edges, isLoading, error, getBalance };
 }

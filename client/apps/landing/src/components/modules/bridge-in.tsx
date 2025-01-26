@@ -21,7 +21,6 @@ import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { uint256 } from "starknet";
 import { formatEther } from "viem";
 import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
@@ -46,8 +45,8 @@ export const BridgeIn = () => {
 
   const donkeyConfig = useMemo(
     () => ({
-      capacity: Number(data?.s0EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
-      speed: data?.s0EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
+      capacity: Number(data?.s1EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
+      speed: data?.s1EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
     }),
     [data],
   );
@@ -151,9 +150,7 @@ export const BridgeIn = () => {
           .filter(([id, amount]) => amount > 0)
           .map(async ([id, amount]) => {
             const tokenAddress =
-              resourceAddresses[
-                ResourcesIds[id as keyof typeof ResourcesIds].toLocaleUpperCase() as keyof typeof resourceAddresses
-              ][1];
+              resourceAddresses[ResourcesIds[Number(id)].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
             return {
               tokenAddress: tokenAddress as string,
               amount: BigInt(amount * 10 ** 18),
@@ -329,12 +326,12 @@ export const BridgeIn = () => {
             </div>
             {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
               if (amount === 0) return null;
-              const resourceName = ResourcesIds[id as keyof typeof ResourcesIds];
+              const resource = ResourcesIds[Number(id)];
               return (
                 <div key={id} className="flex justify-between text-sm font-normal">
                   <div className="flex items-center gap-2">
-                    <ResourceIcon resource={resourceName} size="sm" className="md:w-5 md:h-5" withTooltip={false} />{" "}
-                    {resourceName}
+                    <ResourceIcon resource={resource} size="sm" className="md:w-5 md:h-5" withTooltip={false} />{" "}
+                    {resource}
                   </div>
                   <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
                 </div>
@@ -387,13 +384,13 @@ const ResourceInputRow = ({
   const { data: balance } = useBalance({ token: resourceAddress as `0x${string}`, address: address });
   const { lordsBalance } = useLords({ disabled: id !== ResourcesIds.Lords });
 
-  const { data, getBalance } = useResourceBalance({ entityId: realmEntityId });
+  const { getBalance } = useResourceBalance({ entityId: realmEntityId });
 
   const fetchedBalance =
     id !== ResourcesIds.Lords
       ? balance?.formatted.toString()
       : lordsBalance
-        ? Number(formatEther(uint256.uint256ToBN(lordsBalance))).toFixed(2)
+        ? Number(formatEther(lordsBalance)).toFixed(2)
         : "0";
   return (
     <div key={id} className="rounded-lg p-3 border border-gold/15 shadow-lg bg-background flex gap-3 items-center">

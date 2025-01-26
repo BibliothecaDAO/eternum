@@ -49,8 +49,8 @@ export const BridgeOutStep1 = () => {
 
   const donkeyConfig = useMemo(
     () => ({
-      capacity: Number(data?.s0EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
-      speed: data?.s0EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
+      capacity: Number(data?.s1EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
+      speed: data?.s1EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
     }),
     [data],
   );
@@ -135,7 +135,7 @@ export const BridgeOutStep1 = () => {
             .filter(([id, amount]) => amount > 0)
             .map(async ([id, amount]) => {
               const tokenAddress =
-                resourceAddresses[ResourcesIds[id].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
+                resourceAddresses[ResourcesIds[Number(id)].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
               return {
                 tokenAddress: tokenAddress as string,
                 amount: BigInt(amount * RESOURCE_PRECISION),
@@ -287,11 +287,11 @@ export const BridgeOutStep1 = () => {
           </div>
           {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
             if (amount === 0) return null;
-            const resourceName = ResourcesIds[id as keyof typeof ResourcesIds];
+            const resource = ResourcesIds[Number(id)];
             return (
               <div key={id} className="flex justify-between text-sm font-normal">
                 <div className="flex items-center gap-2">
-                  <ResourceIcon resource={resourceName} size="md" /> {resourceName}
+                  <ResourceIcon resource={resource} size="md" /> {resource}
                 </div>
                 <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
               </div>
