@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "paths": {
+      "@/*": ["./docs/*"],
+      "@config/*": ["../../../config/utils/utils/*"],
+      "@config": ["../../../config/utils/utils"]
+    },
+    "baseUrl": ".",
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts", "**/*.tsx", "**/*.md", "**/*.mdx"],
+  "exclude": ["node_modules"]
+}
