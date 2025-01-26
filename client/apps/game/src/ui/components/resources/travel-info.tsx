@@ -1,12 +1,14 @@
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
   configManager,
+  divideByPrecision,
   getBalance,
   getTotalResourceWeight,
+  multiplyByPrecision,
   ResourcesIds,
   type ID,
   type Resource,

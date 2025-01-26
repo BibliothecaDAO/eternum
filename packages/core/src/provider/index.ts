@@ -1918,7 +1918,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       return {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
         entrypoint: "set_production_config",
-        calldata: [call.resource_type, call.amount, call.amount],
+        calldata: [call.resource_type, call.amount],
       };
     });
 

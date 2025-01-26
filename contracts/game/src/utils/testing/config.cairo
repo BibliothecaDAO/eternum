@@ -141,7 +141,7 @@ fn set_battle_config(config_systems_address: ContractAddress) {
 
 fn set_mine_production_config(config_systems_address: ContractAddress) {
     IProductionConfigDispatcher { contract_address: config_systems_address }
-        .set_production_config(ResourceTypes::EARTHEN_SHARD, EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK, array![].span());
+        .set_production_config(ResourceTypes::EARTHEN_SHARD, EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK);
 }
 
 fn set_stamina_config(config_systems_address: ContractAddress) {

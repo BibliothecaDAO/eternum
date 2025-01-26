@@ -4,15 +4,17 @@ import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
   configManager,
+  divideByPrecision,
   DONKEY_ENTITY_TYPE,
   findResourceById,
   getRealmAddressName,
   getTotalResourceWeight,
+  multiplyByPrecision,
   RESOURCE_PRECISION,
   ResourceManager,
   ResourcesIds,

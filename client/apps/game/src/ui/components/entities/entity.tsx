@@ -2,10 +2,11 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { DepositResources } from "@/ui/components/resources/deposit-resources";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   ArrivalInfo,
   ContractAddress,
+  divideByPrecision,
   EntityType,
   formatTime,
   getArmy,

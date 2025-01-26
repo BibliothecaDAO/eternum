@@ -3,7 +3,7 @@ import { TravelInfo } from "@/ui/components/resources/travel-info";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { divideByPrecision, formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   ContractAddress,
   EntityType,
@@ -11,6 +11,7 @@ import {
   MarketManager,
   ResourcesIds,
   configManager,
+  divideByPrecision,
   resources,
 } from "@bibliothecadao/eternum";
 import { useDojo, useTravel } from "@bibliothecadao/react";

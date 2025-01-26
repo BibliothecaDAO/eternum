@@ -131,7 +131,7 @@ trait IMapConfig<T> {
 
 #[starknet::interface]
 trait IProductionConfig<T> {
-    fn set_production_config(ref self: T, resource_type: u8, produced_amount: u128, labor_amount: u128);
+    fn set_production_config(ref self: T, resource_type: u8, produced_amount: u128);
 }
 
 #[starknet::interface]
@@ -601,14 +601,13 @@ mod config_systems {
     #[abi(embed_v0)]
     impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
         fn set_production_config(
-            ref self: ContractState, resource_type: u8, produced_amount: u128, labor_amount: u128
+            ref self: ContractState, resource_type: u8, produced_amount: u128
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
             resource_production_config.produced_amount = produced_amount;
-            resource_production_config.labor_cost = labor_amount;
             world.write_model(@resource_production_config);
         }
     }

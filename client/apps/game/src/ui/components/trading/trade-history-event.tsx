@@ -1,6 +1,6 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
-import { getAddressNameFromEntity, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { currencyIntlFormat } from "@/ui/utils/utils";
+import { divideByPrecision, getAddressNameFromEntity, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { TradeEvent } from "./market-trading-history";
 

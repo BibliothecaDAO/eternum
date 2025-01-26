@@ -6,7 +6,7 @@ import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/hype
 import Button from "@/ui/elements/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
-import { currencyIntlFormat, getEntityIdFromKeys, multiplyByPrecision, separateCamelCase } from "@/ui/utils/utils";
+import { currencyIntlFormat, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
 import {
   Access,
   calculateCompletionPoints,
@@ -16,6 +16,7 @@ import {
   getGuildFromPlayerAddress,
   LeaderboardManager,
   MAX_NAME_LENGTH,
+  multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import {
   ProgressWithPercentage,

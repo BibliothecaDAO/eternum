@@ -2382,7 +2382,7 @@
     },
     {
       "address": "0x5827e314ca954f7eb04127a2a321e5c1f8fa6d51546b8fa6d6b38830f2b6d18",
-      "class_hash": "0x7fb2e9574aa693d81a15f3734dd0a8612ba8d64057b2aef692bd3117118a446",
+      "class_hash": "0x37798122f6085a277eedb203c93fe5ee2fbc99afe7427e4508b79000301dc2c",
       "abi": [
         {
           "type": "impl",
@@ -2994,10 +2994,6 @@
                 },
                 {
                   "name": "produced_amount",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "labor_amount",
                   "type": "core::integer::u128"
                 }
               ],
@@ -5405,7 +5401,7 @@
     },
     {
       "address": "0x43b2a3f4e47fa52ef2549162f89258dbcbd23bc62a51d0a331b80039a66bc9b",
-      "class_hash": "0x48a8ae3f6841aed95fb3186cf390db19854c8174fea69fdca19c88fd8c58c63",
+      "class_hash": "0x1829437a65fddf03e8f1322558035b38be8c06a5dd81f6a863a68569364b4cc",
       "abi": [
         {
           "type": "impl",
@@ -6345,7 +6341,7 @@
     },
     {
       "address": "0x47773b52867c0867b40b26408e3ff84fca0b1a9afe55c0cb0fe284c1a18c3d8",
-      "class_hash": "0x72be272c9af1769ad38beaf68495533628fdb4ead0a7879760d17b1f6bab196",
+      "class_hash": "0x580ae58de580e41af4107e2b651ba52fa4ebeb5266568c6658cfa95fdecf48b",
       "abi": [
         {
           "type": "impl",

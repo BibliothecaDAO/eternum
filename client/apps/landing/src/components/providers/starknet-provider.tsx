@@ -26,7 +26,6 @@ const cartridgeController = new ControllerConnector({
   tokens: {
     erc20: [LORDS, ...otherResources],
   },
-  // namespace,
 });
 
 export function StarknetProvider({ children, onlyCartridge }: { children: React.ReactNode; onlyCartridge?: boolean }) {

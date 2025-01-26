@@ -1,6 +1,6 @@
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientConfigManager } from "..";
-import { ResourcesIds } from "../constants";
+import { RESOURCE_PRECISION, ResourcesIds } from "../constants";
 import { Position, ResourceMiningTypes, TickIds } from "../types";
 
 export { getEntityIdFromKeys };
@@ -94,4 +94,16 @@ export function calculateDistance(start: Position, destination: Position): numbe
 
     return distance;
   }
+}
+
+export const gramToKg = (value: number) => {
+  return value / 1000;
+};
+
+export function multiplyByPrecision(value: number): number {
+  return Math.floor(value * RESOURCE_PRECISION);
+}
+
+export function divideByPrecision(value: number): number {
+  return value / RESOURCE_PRECISION;
 }

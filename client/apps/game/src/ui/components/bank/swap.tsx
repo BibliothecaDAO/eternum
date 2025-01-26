@@ -5,16 +5,18 @@ import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import { TravelInfo } from "@/ui/components/resources/travel-info";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
+import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   ContractAddress,
+  divideByPrecision,
   DONKEY_ENTITY_TYPE,
   getBalance,
   getStructure,
   ID,
   MarketManager,
+  multiplyByPrecision,
   RESOURCE_TIERS,
   Resources,
   resources,

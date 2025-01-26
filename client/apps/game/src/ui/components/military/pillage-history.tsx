@@ -1,10 +1,11 @@
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { divideByPrecision, formatNumber, formatResources } from "@/ui/utils/utils";
+import { formatNumber, formatResources } from "@/ui/utils/utils";
 import {
   BattleSide,
   ClientComponents,
+  divideByPrecision,
   formatTime,
   getAddressNameFromEntity,
   ID,
