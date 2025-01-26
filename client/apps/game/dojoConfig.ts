@@ -1,5 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { Chain, getGameManifest } from "@config";
+import { Chain, getGameManifest } from "@contracts";
 import { createDojoConfig } from "@dojoengine/core";
 import { env } from "./env";
 
@@ -14,7 +14,7 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-const manifest = await getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
+const manifest = getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
 
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,
@@ -28,6 +28,6 @@ export const dojoConfig = createDojoConfig({
   manifest,
 });
 
-const config = await ETERNUM_CONFIG();
+const config = ETERNUM_CONFIG();
 console.log("logging eternum configuration json from file");
 console.log({ config });

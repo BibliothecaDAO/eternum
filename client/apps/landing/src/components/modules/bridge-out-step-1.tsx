@@ -129,7 +129,7 @@ export const BridgeOutStep1 = () => {
       try {
         setIsLoading(true);
 
-        const resourceAddresses = await getResourceAddresses();
+        const resourceAddresses = getResourceAddresses();
         const validResources = await Promise.all(
           Object.entries(selectedResourceAmounts)
             .filter(([id, amount]) => amount > 0)

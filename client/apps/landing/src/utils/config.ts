@@ -2,6 +2,6 @@ import { Chain, getConfigFromNetwork } from "@config";
 import { env } from "./../../env";
 
 export const ETERNUM_CONFIG = async () => {
-  const config = await getConfigFromNetwork(env.VITE_PUBLIC_CHAIN! as Chain);
+  const config = getConfigFromNetwork(env.VITE_PUBLIC_CHAIN! as Chain);
   return config;
 };

@@ -1,8 +1,8 @@
-import { Chain, getSeasonAddresses } from "@config";
+import { Chain, getSeasonAddresses } from "@contracts";
 import { env } from "../../env";
 
 export const getResourceAddresses = async () => {
-  const addresses = (await getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)).resources;
+  const addresses = getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).resources;
   return addresses;
 };
 

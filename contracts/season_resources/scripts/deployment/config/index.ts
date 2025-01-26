@@ -1,13 +1,10 @@
-import { manifestLocal, manifestMainnet, manifestSepolia } from "@bibliothecadao/assets";
 import { EternumProvider, ResourceWhitelistConfig } from "@bibliothecadao/eternum";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { getSeasonAddresses } from "@config";
 import { Account } from "starknet";
 
-const getResourceAddresses = () => {
-  const network = process.env.STARKNET_NETWORK;
-  const filePath = join(__dirname, `../addresses/${network}/resource_addresses.json`);
-  return JSON.parse(readFileSync(filePath, "utf-8"));
+export const getResourceAddresses = () => {
+  const addresses = getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).resources;
+  return addresses;
 };
 
 const resourceAddresses = getResourceAddresses();

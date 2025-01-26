@@ -129,7 +129,7 @@ export const BridgeIn = () => {
 
   useEffect(() => {
     const fetchAddresses = async () => {
-      const addresses = await getResourceAddresses();
+      const addresses = getResourceAddresses();
       setResourceAddresses(addresses);
     };
     fetchAddresses();

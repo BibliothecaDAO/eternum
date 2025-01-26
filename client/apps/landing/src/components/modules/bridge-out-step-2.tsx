@@ -44,7 +44,7 @@ export const BridgeOutStep2 = () => {
 
   const onFinishWithdrawFromBank = async () => {
     if (selectedResourceIds.length) {
-      const resourceAddresses = await getResourceAddresses();
+      const resourceAddresses = getResourceAddresses();
       const donkeyResources = selectedResourceIds.map((id, index) => ({
         tokenAddress: resourceAddresses[ResourcesIds[id].toUpperCase() as keyof typeof resourceAddresses][1],
         from_entity_id: Array.from(selectedDonkeys)[index],

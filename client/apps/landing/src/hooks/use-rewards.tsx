@@ -8,7 +8,7 @@ export const usePrizePool = () => {
   const { account } = useAccount();
 
   const getBalance = async (address: string) => {
-    const lordsAddress = await getLordsAddress();
+    const lordsAddress = getLordsAddress();
     const balance = await account?.callContract({
       contractAddress: lordsAddress,
       entrypoint: "balance_of",

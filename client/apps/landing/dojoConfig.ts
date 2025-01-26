@@ -1,7 +1,6 @@
+import { Chain, getGameManifest } from "@contracts";
 import { createDojoConfig } from "@dojoengine/core";
-import { Chain, getGameManifest } from "../../../config/utils/utils";
 import { env } from "./env";
-
 const {
   VITE_PUBLIC_NODE_URL,
   VITE_PUBLIC_TORII,
