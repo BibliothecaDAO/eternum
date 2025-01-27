@@ -6,7 +6,7 @@ import { constants } from "starknet";
 import { env } from "../../../env";
 import { getResourceAddresses } from "../ui/utils/addresses";
 
-const resourceAddresses = await getResourceAddresses();
+const resourceAddresses = getResourceAddresses();
 
 const LORDS = resourceAddresses["LORDS"][1].toString();
 const otherResources = Object.entries(resourceAddresses)

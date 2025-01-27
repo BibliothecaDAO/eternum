@@ -1,3 +1,4 @@
+import { ETERNUM_CONFIG } from "@/utils/config";
 import { QuestType, findResourceById } from "@bibliothecadao/eternum";
 import { addSpacesBeforeCapitals, formatAmount } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";

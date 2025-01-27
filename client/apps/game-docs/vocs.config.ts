@@ -21,6 +21,7 @@ export default defineConfig({
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./docs"),
+        "@config": path.resolve(__dirname, "../../../config/utils/utils"),
       },
     },
     publicDir: "../../common/public",

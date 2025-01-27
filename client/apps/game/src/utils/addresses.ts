@@ -1,19 +1,15 @@
-import { Chain, getSeasonAddresses } from "@config";
+import { Chain, getSeasonAddresses } from "@contracts";
 import { env } from "../../env";
 
-export const getResourceAddresses = async () => {
-  const addresses = (await getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)).resources;
+export const getResourceAddresses = () => {
+  const addresses = getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).resources;
   return addresses;
 };
 
-export const getSeasonPassAddress = async () => {
-  return (await getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)).seasonPass;
+export const getSeasonPassAddress = () => {
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).seasonPass;
 };
 
-export const getLordsAddress = async () => {
-  return (await getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)).lords;
-};
-
-export const getRealmsAddress = async () => {
-  return (await getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain)).realms;
+export const getLordsAddress = () => {
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lords;
 };

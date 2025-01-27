@@ -17,7 +17,7 @@ export const SelectedArmy = () => {
   return <SelectedArmyContent selectedHex={selectedHex} />;
 };
 
-export const SelectedArmyContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
+const SelectedArmyContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
   const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
   const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
 

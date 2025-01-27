@@ -6,12 +6,11 @@ import * as THREE from "three";
 const MAP_AMPLITUDE = FixedTrait.fromInt(60n);
 const MOISTURE_OCTAVE = FixedTrait.fromInt(2n);
 const ELEVATION_OCTAVES = [
-  FixedTrait.fromInt(1n),  // 1
-  FixedTrait.fromRatio(1n, 4n),  // 0.25
-  FixedTrait.fromRatio(1n, 10n)  // 0.1
+  FixedTrait.fromInt(1n), // 1
+  FixedTrait.fromRatio(1n, 4n), // 0.25
+  FixedTrait.fromRatio(1n, 10n), // 0.1
 ];
 const ELEVATION_OCTAVES_SUM = ELEVATION_OCTAVES.reduce((a, b) => a.add(b), FixedTrait.ZERO);
-
 
 export enum BiomeType {
   DeepOcean = "DeepOcean",
@@ -29,7 +28,7 @@ export enum BiomeType {
   TemperateRainForest = "TemperateRainForest",
   SubtropicalDesert = "SubtropicalDesert",
   TropicalSeasonalForest = "TropicalSeasonalForest",
-  TropicalRainForest = "TropicalRainForest"
+  TropicalRainForest = "TropicalRainForest",
 }
 
 export const BIOME_COLORS: Record<BiomeType, THREE.Color> = {
@@ -91,11 +90,13 @@ export class Biome {
     return elevation.div(octavesSum).div(FixedTrait.fromInt(100n));
   }
 
-
   private calculateMoisture(col: number, row: number, mapAmplitude: Fixed, moistureOctave: Fixed): Fixed {
     const moistureX = moistureOctave.mul(FixedTrait.fromInt(BigInt(col))).div(mapAmplitude);
     const moistureZ = moistureOctave.mul(FixedTrait.fromInt(BigInt(row))).div(mapAmplitude);
-    const noise = snoise(Vec3.new(moistureX, FixedTrait.ZERO, moistureZ)).add(FixedTrait.ONE).mul(FixedTrait.fromInt(100n)).div(FixedTrait.fromInt(2n));
+    const noise = snoise(Vec3.new(moistureX, FixedTrait.ZERO, moistureZ))
+      .add(FixedTrait.ONE)
+      .mul(FixedTrait.fromInt(100n))
+      .div(FixedTrait.fromInt(2n));
     return FixedTrait.floor(noise).div(FixedTrait.fromInt(100n));
   }
 

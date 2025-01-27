@@ -1,13 +1,10 @@
-import { manifestLocal, manifestMainnet, manifestSepolia } from "@bibliothecadao/assets";
 import { EternumProvider, ResourceWhitelistConfig } from "@bibliothecadao/eternum";
-import { readFileSync } from "fs";
-import { join } from "path";
 import { Account } from "starknet";
+import { Chain, getGameManifest, getSeasonAddresses } from "../../../../utils/utils";
 
-const getResourceAddresses = () => {
-  const network = process.env.STARKNET_NETWORK;
-  const filePath = join(__dirname, `../addresses/${network}/resource_addresses.json`);
-  return JSON.parse(readFileSync(filePath, "utf-8"));
+export const getResourceAddresses = () => {
+  const addresses = getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN as Chain).resources;
+  return addresses;
 };
 
 const resourceAddresses = getResourceAddresses();
@@ -50,14 +47,7 @@ const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_
 if (!VITE_PUBLIC_MASTER_ADDRESS || !VITE_PUBLIC_MASTER_PRIVATE_KEY || !VITE_PUBLIC_NODE_URL) {
   throw new Error("VITE_PUBLIC_MASTER_ADDRESS is required");
 }
-const manifest =
-  process.env.VITE_PUBLIC_CHAIN === "mainnet"
-    ? manifestMainnet
-    : process.env.VITE_PUBLIC_CHAIN === "sepolia"
-      ? manifestSepolia
-      : process.env.VITE_PUBLIC_CHAIN === "local"
-        ? manifestLocal
-        : manifestLocal;
+const manifest = getGameManifest(process.env.VITE_PUBLIC_CHAIN as Chain);
 
 if (process.env.VITE_PUBLIC_CHAIN !== "local") {
   const userConfirmation = prompt(

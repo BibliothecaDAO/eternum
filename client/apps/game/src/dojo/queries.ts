@@ -4,35 +4,6 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { LogicalOperator } from "@dojoengine/torii-wasm";
-// on hexception -> fetch below queries based on entityID
-
-export const getTwoKeyModelbyRealmEntityIdFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityID: string[],
-) => {
-  await getEntities(
-    client,
-    {
-      Composite: {
-        operator: "Or",
-        clauses: [
-          ...entityID.map((id) => ({
-            Keys: {
-              keys: [id, undefined],
-              pattern_matching: "VariableLen" as PatternMatching,
-              models: ["s1_eternum-BuildingQuantityv2"],
-            },
-          })),
-        ],
-      },
-    },
-    components,
-    [],
-    ["s1_eternum-BuildingQuantityv2"],
-    20_000,
-  );
-};
 
 export const getOneKeyModelbyRealmEntityIdFromTorii = async <S extends Schema>(
   client: ToriiClient,

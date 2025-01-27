@@ -16,3 +16,5 @@ export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
 
 export const RESOURCE_PRECISION = 1_000_000_000;
 export const RESOURCE_MULTIPLIER = 1000;
+// Bridge Fees (using 10_000 precision)
+export const BRIDGE_FEE_DENOMINATOR = 10_000;

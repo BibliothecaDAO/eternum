@@ -714,5 +714,4 @@ export const policies: ContractPolicies = {
       },
     ],
   },
-
 };

@@ -19,7 +19,7 @@ export const BridgedResources = () => {
 
   useEffect(() => {
     const getResources = async () => {
-      const addresses = await getResourceAddresses();
+      const addresses = getResourceAddresses();
       setSortedResources(Object.entries(addresses));
     };
     void getResources();

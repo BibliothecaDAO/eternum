@@ -1,7 +1,6 @@
+import { Chain, getGameManifest } from "@contracts";
 import { createDojoConfig } from "@dojoengine/core";
-import { Chain, getGameManifest } from "../../../config/utils/utils";
 import { env } from "./env";
-
 const {
   VITE_PUBLIC_NODE_URL,
   VITE_PUBLIC_TORII,
@@ -13,7 +12,7 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-const manifest = await getGameManifest(VITE_PUBLIC_CHAIN as Chain);
+const manifest = getGameManifest(VITE_PUBLIC_CHAIN as Chain);
 
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,
