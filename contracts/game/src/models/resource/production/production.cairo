@@ -186,18 +186,18 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
 
         // get the amount of produced resource the specified labor can create
         let produced_resource_rarity: u128 = produced_resource_labor_burn_strategy.resource_rarity * RESOURCE_PRECISION;
-        let produced_resource_deprecation_num: u128 = produced_resource_labor_burn_strategy
-            .deprecation_percent_num
+        let produced_resource_depreciation_num: u128 = produced_resource_labor_burn_strategy
+            .depreciation_percent_num
             .into();
-        let produced_resource_deprecation_denom: u128 = produced_resource_labor_burn_strategy
-            .deprecation_percent_denom
+        let produced_resource_depreciation_denom: u128 = produced_resource_labor_burn_strategy
+            .depreciation_percent_denom
             .into();
-        let produced_resource_deprecation_diff: u128 = (produced_resource_deprecation_denom
-            - produced_resource_deprecation_num);
+        let produced_resource_depreciation_diff: u128 = (produced_resource_depreciation_denom
+            - produced_resource_depreciation_num);
         let produced_resource_amount: u128 = (labor_amount
-            * produced_resource_deprecation_diff
+            * produced_resource_depreciation_diff
             / produced_resource_rarity
-            / produced_resource_deprecation_denom);
+            / produced_resource_depreciation_denom);
 
         // add produced resource amount to factory
         let mut produced_resource = ResourceImpl::get(ref world, (from_entity_id, produced_resource_type));

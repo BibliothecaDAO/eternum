@@ -2989,11 +2989,11 @@
               "type": "core::integer::u128"
             },
             {
-              "name": "deprecation_percent_num",
+              "name": "depreciation_percent_num",
               "type": "core::integer::u16"
             },
             {
-              "name": "deprecation_percent_denom",
+              "name": "depreciation_percent_denom",
               "type": "core::integer::u16"
             },
             {

@@ -474,8 +474,8 @@ export interface SetProductionConfigProps extends SystemSigner {
 
 interface LaborBurnProductionStrategy {
   resource_rarity: num.BigNumberish;
-  deprecation_percent_num: num.BigNumberish;
-  deprecation_percent_denom: num.BigNumberish;
+  depreciation_percent_num: num.BigNumberish;
+  depreciation_percent_denom: num.BigNumberish;
   wheat_burn_per_labor: num.BigNumberish;
   fish_burn_per_labor: num.BigNumberish;
 }

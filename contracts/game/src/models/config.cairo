@@ -539,12 +539,12 @@ pub struct ProductionConfig {
 
 /// A strategy for converting resources using a labor-based intermediary system.
 /// This system allows for resource conversion while maintaining economic balance
-/// through resource rarity and deprecation mechanics.
+/// through resource rarity and depreciation mechanics.
 ///
 /// # Fields
 /// * `resource_rarity` - Defines both the resource's relative value and its labor conversion rate
-/// * `deprecation_percent_num` - Numerator of deprecation fraction (e.g., 2 for 20%)
-/// * `deprecation_percent_denom` - Denominator of deprecation fraction (e.g., 10 for 20%)
+/// * `depreciation_percent_num` - Numerator of depreciation fraction (e.g., 2 for 20%)
+/// * `depreciation_percent_denom` - Denominator of depreciation fraction (e.g., 10 for 20%)
 ///
 /// # Resource to Labor Conversion
 /// When converting a resource to labor, the formula is:
@@ -553,15 +553,15 @@ pub struct ProductionConfig {
 /// ```
 ///
 /// # Labor to Resource Conversion
-/// When converting labor to a resource, the formula includes deprecation:
+/// When converting labor to a resource, the formula includes depreciation:
 /// ```
-/// resource_amount = labor_amount / target_resource_rarity * (1 - deprecation)
+/// resource_amount = labor_amount / target_resource_rarity * (1 - depreciation)
 /// ```
 ///
 /// # Example
 /// Given the following configuration:
 /// ```
-/// Resource      Rarity      Deprecation
+/// Resource      Rarity      Depreciation
 /// Wood         100         20% (2/10)
 /// Gold         1000        10% (1/10)
 /// ```
@@ -569,17 +569,17 @@ pub struct ProductionConfig {
 /// ## Converting Wood to Gold
 /// 1. Convert 3 wood to labor:
 ///    * Labor = 3 * 100 = 300 labor
-/// 2. Convert labor to gold (with 10% deprecation):
+/// 2. Convert labor to gold (with 10% depreciation):
 ///    * Gold = 300 / 1000 * (1 - 1/10) = 0.27 gold
 ///
 /// ## Converting Gold to Wood
 /// 1. Convert 7 gold to labor:
 ///    * Labor = 7 * 1000 = 7000 labor
-/// 2. Convert labor to wood (with 20% deprecation):
+/// 2. Convert labor to wood (with 20% depreciation):
 ///    * Wood = 7000 / 100 * (1 - 2/10) = 56 wood
 ///
 /// # Note
-/// The deprecation is always applied based on the target resource's deprecation rate,
+/// The depreciation is always applied based on the target resource's depreciation rate,
 /// creating an intentional loss in the conversion process
 ///
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -587,10 +587,10 @@ pub struct LaborBurnPrStrategy {
     /// Represents the resource's rarity and determines labor conversion rate.
     /// Higher values indicate rarer resources that yield more labor when converted.
     resource_rarity: u128,
-    /// Numerator of the deprecation percentage fraction.
-    deprecation_percent_num: u16,
-    /// Denominator of the deprecation percentage fraction.
-    deprecation_percent_denom: u16,
+    /// Numerator of the depreciation percentage fraction.
+    depreciation_percent_num: u16,
+    /// Denominator of the depreciation percentage fraction.
+    depreciation_percent_denom: u16,
     /// Amount of wheat to burn per labor
     wheat_burn_per_labor: u128,
     /// Amount of fish to burn per labor

@@ -874,8 +874,8 @@ export function defineContractComponents(world: World) {
           amount_per_building_per_tick: RecsType.BigInt,
           labor_burn_strategy: {
             resource_rarity: RecsType.BigInt,
-            deprecation_percent_num: RecsType.Number,
-            deprecation_percent_denom: RecsType.Number,
+            depreciation_percent_num: RecsType.Number,
+            depreciation_percent_denom: RecsType.Number,
             wheat_burn_per_labor: RecsType.BigInt,
             fish_burn_per_labor: RecsType.BigInt,
           },

@@ -415,8 +415,8 @@ export interface ResourceOutputs {
 export interface ProductionByLaborParams {
   [key: number]: {
     resource_rarity: number;
-    deprecation_percent_num: number;
-    deprecation_percent_denom: number;
+    depreciation_percent_num: number;
+    depreciation_percent_denom: number;
     wheat_burn_per_labor: number;
     fish_burn_per_labor: number;
   };

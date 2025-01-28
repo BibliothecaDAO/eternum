@@ -218,7 +218,7 @@ export const setProductionConfig = async (config: Config) => {
     │     ${chalk.gray(``)} ${calldata.labor_burn_strategy.resource_rarity === 0 ? 
            chalk.red("Cannot be produced with labor") : `
     │     ${chalk.gray(`Resource Rarity:`)} ${chalk.white(` ${calldata.labor_burn_strategy.resource_rarity}`)}
-    │     ${chalk.gray(`Deprecation Rate:`)} ${chalk.white(` ${calldata.labor_burn_strategy.deprecation_percent_num / calldata.labor_burn_strategy.deprecation_percent_denom * 100}%`)}
+    │     ${chalk.gray(`Depreciation Rate:`)} ${chalk.white(` ${calldata.labor_burn_strategy.depreciation_percent_num / calldata.labor_burn_strategy.depreciation_percent_denom * 100}%`)}
     │     ${chalk.gray(`Wheat Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.wheat_burn_per_labor, config.config))}
     │     ${chalk.gray(`Fish Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.fish_burn_per_labor, config.config))}`}
     │  ${chalk.gray(``)}
