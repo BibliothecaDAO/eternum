@@ -126,10 +126,12 @@ const DojoContextProvider = ({
     }
   };
 
-  const [accountToUse, setAccountToUse] = useState<Account | AccountInterface | null>();
+  const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
+    new Account(value.network.provider.provider, "0x0", "0x0"),
+  );
 
   useEffect(() => {
-    if (isSpectatorMode) {
+    if (isSpectatorMode || !controllerAccount) {
       setAccountToUse(new Account(value.network.provider.provider, "0x0", "0x0"));
     } else {
       setAccountToUse(controllerAccount);
@@ -228,7 +230,7 @@ const DojoContextProvider = ({
         ...value,
         masterAccount,
         account: {
-          account: accountToUse as Account | AccountInterface,
+          account: accountToUse,
           accountDisplay: displayAddress((accountToUse as Account | AccountInterface)?.address || ""),
         },
       }}

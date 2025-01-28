@@ -1,4 +1,5 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
@@ -152,12 +153,13 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     });
   }, []);
 
-  // todo: refactor this
+  const navigateToHexView = useNavigateToHexView();
+
   const goToHexView = (entityId: ID) => {
-    const structure = structures.find((structure) => structure.entity_id === entityId);
-    const url = new Position(structure!.position).toHexLocationUrl();
+    const structurePosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+    if (!structurePosition) return;
     setPreviewBuilding(null);
-    handleUrlChange(url);
+    navigateToHexView(structurePosition);
   };
 
   // todo: refactor this

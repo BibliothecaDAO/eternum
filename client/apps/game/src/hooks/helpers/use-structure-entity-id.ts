@@ -13,7 +13,7 @@ export const useStructureEntityId = () => {
   } = useDojo();
 
   const { hexPosition } = useQuery();
-  const { setStructureEntityId } = useUIStore();
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
 
   useEffect(() => {
     const position = new PositionInterface({
