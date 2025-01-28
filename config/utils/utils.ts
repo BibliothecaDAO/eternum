@@ -27,11 +27,11 @@ export function getConfigFromNetwork(chain: Chain): Config {
   try {
     switch (chain) {
       case "sepolia":
-        return sepoliaConfig.configuration;
+        return sepoliaConfig.configuration as any; // as any to avoid type errors
       case "mainnet":
-        return mainnetConfig.configuration;
+        return mainnetConfig.configuration as any;
       case "slot":
-        return slotConfig.configuration;
+        return slotConfig.configuration as any;
       case "local":
         return localConfig.configuration;
       default:

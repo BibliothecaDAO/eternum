@@ -102,10 +102,7 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Coal, amount: 75_000 },
   ],
   [BuildingType.WatchTower]: [],
-  [BuildingType.Walls]: [
-    { resource: ResourcesIds.Fish, amount: 300_000 },
-    { resource: ResourcesIds.Wheat, amount: 300_000 },
-  ],
+  [BuildingType.Walls]: [],
   [BuildingType.Storehouse]: [
     { resource: ResourcesIds.Fish, amount: 1_000_000 },
     { resource: ResourcesIds.Coal, amount: 75_000 },
