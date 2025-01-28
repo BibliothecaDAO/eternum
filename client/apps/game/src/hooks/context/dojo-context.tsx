@@ -6,12 +6,13 @@ import { Position } from "@/types/position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
-import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/steps";
+import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
+import { getRandomRealmEntity } from "@/utils/realms";
 import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext, useQuery } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { HasValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
@@ -81,7 +82,7 @@ export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderP
     <DojoContextProvider
       value={value}
       masterAccount={masterAccount}
-      controllerAccount={controllerAccount!}
+      controllerAccount={controllerAccount || null}
       backgroundImage={backgroundImage}
     >
       {children}
@@ -102,8 +103,9 @@ const DojoContextProvider = ({
 }) => {
   const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
-  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setAddressName = useAddressStore((state) => state.setAddressName);
+  const showHomeScreen = useUIStore((state) => state.showHomeScreen);
+  const setShowHomeScreen = useUIStore((state) => state.setShowHomeScreen);
 
   const { handleUrlChange } = useQuery();
 
@@ -117,6 +119,17 @@ const DojoContextProvider = ({
 
   const [retries, setRetries] = useState(0);
 
+  useEffect(() => {
+    setSpectatorMode(true);
+    const randomRealmEntity = getRandomRealmEntity(value.components);
+    const position = randomRealmEntity ? getComponentValue(value.components.Position, randomRealmEntity) : undefined;
+    handleUrlChange(
+      new Position({ x: randomRealmPosition?.x || 0, y: randomRealmPosition?.y || 0 }).toHexLocationUrl(),
+    );
+    window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+    showBlankOverlay(false);
+  }, []);
+
   const connectWallet = async () => {
     try {
       console.log("Attempting to connect wallet...");
@@ -128,13 +141,37 @@ const DojoContextProvider = ({
   };
 
   const onSpectatorModeClick = () => {
-    setSpectatorMode(true);
-    handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
-    window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-    showBlankOverlay(false);
+    // setShowHomeScreen(false);
+    // setSpectatorMode(true);
+    // handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
+    // window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+    // showBlankOverlay(false);
   };
 
-  const accountToUse = isSpectatorMode ? new Account(value.network.provider.provider, "0x0", "0x0") : controllerAccount;
+  const [accountToUse, setAccountToUse] = useState<Account | AccountInterface | null>(
+    new Account(value.network.provider.provider, "0x0", "0x0"),
+  );
+
+  useEffect(() => {
+    if (isSpectatorMode || !controllerAccount) {
+      setAccountToUse(new Account(value.network.provider.provider, "0x0", "0x0"));
+    } else {
+      setAccountToUse(controllerAccount);
+    }
+  }, [isSpectatorMode, controllerAccount]);
+
+  // useEffect(() => {
+  //   if (isConnected) {
+  //     console.log("isConnected so showing home screen", isConnected);
+  //     setShowHomeScreen(false);
+  //   } else {
+  //     const randomRealmPosition = getRandomRealmPosition(value.components);
+  //     handleUrlChange(
+  //       new Position({ x: randomRealmPosition?.x || 0, y: randomRealmPosition?.y || 0 }).toHexLocationUrl(),
+  //     );
+  //     window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+  //   }
+  // }, [isConnected]);
 
   useEffect(() => {
     const setUserName = async () => {
@@ -188,7 +225,9 @@ const DojoContextProvider = ({
     );
   }
 
-  if (!isConnected && !isConnecting && !controllerAccount && !isSpectatorMode) {
+  console.log("showHomeScreen", showHomeScreen);
+
+  if (showHomeScreen) {
     return (
       <>
         <CountdownTimer backgroundImage={backgroundImage} />
@@ -218,6 +257,8 @@ const DojoContextProvider = ({
     // Connected but controllerAccount is not set yet
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
+
+  console.log("go to game");
 
   // Once account is set, render the children
   return (

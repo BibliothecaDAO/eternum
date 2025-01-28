@@ -98,6 +98,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const showModal = useUIStore((state) => state.showModal);
+  const showHomeScreen = useUIStore((state) => state.showHomeScreen);
   const modalContent = useUIStore((state) => state.modalContent);
   const battleView = useUIStore((state) => state.battleView);
 
@@ -295,9 +296,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         {IS_MOBILE && <OrientationOverlay />}
         <LoadingOroborus loading={isLoadingScreenEnabled} />
         <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
-        <BlankOverlayContainer open={showBlankOverlay}>
-          <Onboarding backgroundImage={backgroundImage} />
-        </BlankOverlayContainer>
+        {showHomeScreen && (
+          <BlankOverlayContainer open={showBlankOverlay}>
+            <Onboarding backgroundImage={backgroundImage} />
+          </BlankOverlayContainer>
+        )}
         <ActionInstructions />
         {!IS_MOBILE && (
           <>

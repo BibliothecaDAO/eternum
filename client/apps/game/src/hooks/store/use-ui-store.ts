@@ -50,6 +50,8 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
+  showHomeScreen: boolean;
+  setShowHomeScreen: (show: boolean) => void;
   battleView: BattleViewInfo | null;
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
@@ -134,6 +136,8 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
+    showHomeScreen: false,
+    setShowHomeScreen: (show: boolean) => set({ showHomeScreen: show }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
