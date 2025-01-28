@@ -1,0 +1,23 @@
+{
+  "name": "@realms-world/constants",
+  "version": "0.1.0",
+  "types": "./src/index.ts",
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "type": "module",
+  "files": [
+    "dist/**",
+    "src/**"
+  ],
+  "scripts": {
+    "lint": "eslint",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+  },
+  "prettier": "@realms-world/prettier-config"
+}

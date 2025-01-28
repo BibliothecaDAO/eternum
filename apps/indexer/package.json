@@ -1,0 +1,45 @@
+{
+  "name": "apibara",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "scripts": {
+    "build": "apibara build",
+    "dev": "apibara dev",
+    "start": "apibara start",
+    "lint": "biome check .",
+    "lint:fix": "pnpm lint --write",
+    "test": "vitest",
+    "drizzle:generate": "drizzle-kit generate",
+    "drizzle:migrate": "drizzle-kit migrate",
+    "drizzle:push": "drizzle-kit push"
+  },
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/node": "^20.5.2",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.29.0",
+    "typescript": "^5.6.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "@apibara/evm": "2.0.1-beta.29",
+    "@apibara/indexer": "2.0.0-beta.37",
+    "@apibara/plugin-drizzle": "2.0.0-beta.36",
+    "@apibara/protocol": "2.0.0-beta.37",
+    "@apibara/starknet": "2.0.0-beta.37",
+    "@realms-world/constants": "workspace:*",
+    "@realms-world/db": "workspace:*",
+    "apibara": "2.0.0-beta.37",
+    "drizzle-orm": "^0.37",
+    "pg": "^8.13.1",
+    "starknet": "^6.11.0",
+    "viem": "^2.21.53",
+    "zod": "^3.24.1"
+
+  }
+}
