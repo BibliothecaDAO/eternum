@@ -10,7 +10,7 @@ use s1_eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use s1_eternum::models::resource::resource::{
     Resource, RESOURCE_PRECISION, ResourceImpl, ResourceTypes, ResourceFoodImpl, ResourceCost
 };
-use s1_eternum::models::structure::{Structure, StructureTrait, StructureImpl};
+use s1_eternum::models::structure::{Structure, StructureTrait, StructureImpl, StructureCategory};
 use s1_eternum::utils::math::{min};
 use starknet::get_block_timestamp;
 
@@ -124,7 +124,7 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
 
         // ensure entity is a structure
         let from_entity_structure: Structure = world.read_model(from_entity_id);
-        from_entity_structure.assert_is_structure();
+        assert!(from_entity_structure.category == StructureCategory::Realm, "structure is not a realm");
 
         // ensure rarity has been set for resource
         let from_resource_production_config: ProductionConfig = world.read_model(from_resource_type);
@@ -159,7 +159,7 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
 
         // ensure entity is a structure
         let from_entity_structure: Structure = world.read_model(from_entity_id);
-        from_entity_structure.assert_is_structure();
+        assert!(from_entity_structure.category == StructureCategory::Realm, "structure is not a realm");
 
         // burn labor from balance
         let mut labor_resource = ResourceImpl::get(ref world, (from_entity_id, ResourceTypes::LABOR));
@@ -220,7 +220,8 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
 
         // ensure entity is a structure
         let from_entity_structure: Structure = world.read_model(from_entity_id);
-        from_entity_structure.assert_is_structure();
+        assert!(from_entity_structure.category == StructureCategory::Realm, "structure is not a realm");
+
 
         // ensure there is a config for this labor resource
         let produced_resource_production_config: ProductionConfig = world.read_model(produced_resource_type);
