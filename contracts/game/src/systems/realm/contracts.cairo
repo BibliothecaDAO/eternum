@@ -48,7 +48,6 @@ mod realm_systems {
         Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl, RealmNameAndAttrsDecodingTrait,
         RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
     };
-    use s1_eternum::models::resource::production::labor::{LaborImpl};
     use s1_eternum::models::resource::resource::{
         DetachedResource, Resource, ResourceImpl, ResourceTrait, ResourceFoodImpl, ResourceFoodTrait
     };

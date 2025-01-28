@@ -22,6 +22,6 @@ export const BUILDING_INFORMATION: {
   [BuildingType.WorkersHut]:
     "Workers Huts, blessed by the ancestors, expand the heart of your realm allowing for greater capacity.",
   [BuildingType.WatchTower]: "Watch Towers, piercing the veils of fog, extend the gaze of your kingdom.",
-  [BuildingType.Walls]: "Walls, imbued with the strength of titans, fortify your domain against the shadows.",
+  [BuildingType.Labor]: "Labor Houses, where mystical energies and mortal toil combine, transform raw materials into crafted wonders.",
   [BuildingType.Storehouse]: "Storehouses, where abundance flows, swell with the wealth of the land.",
 };

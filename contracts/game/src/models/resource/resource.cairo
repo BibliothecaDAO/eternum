@@ -5,7 +5,7 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
-    LAST_REGULAR_RESOURCE_ID, FIRST_LABOR_RESOURCE_ID, get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG,
+    get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG,
     ResourceTypes, resource_type_name, WORLD_CONFIG_ID
 };
 use s1_eternum::models::config::{
@@ -14,7 +14,6 @@ use s1_eternum::models::config::{
 use s1_eternum::models::config::{WeightConfigImpl, WeightConfig};
 use s1_eternum::models::realm::Realm;
 use s1_eternum::models::resource::production::building::{Building, BuildingTrait, BuildingCategory, BuildingQuantityv2};
-use s1_eternum::models::resource::production::labor::{LaborImpl, LaborTrait};
 
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
 use s1_eternum::models::structure::StructureTrait;
@@ -176,14 +175,7 @@ impl ResourceImpl of ResourceTrait {
     fn get(ref world: WorldStorage, key: (ID, u8)) -> Resource {
         let mut resource: Resource = world.read_model(key);
         assert!(resource.entity_id.is_non_zero(), "entity id not found");
-        assert!(
-            resource.resource_type != 0 && resource.resource_type != Bounded::MAX, "invalid resource specified (1)"
-        );
-        assert!(
-            resource.resource_type <= LAST_REGULAR_RESOURCE_ID // regular resources
-                || resource.resource_type >= FIRST_LABOR_RESOURCE_ID, // labor resources
-            "invalid resource specified (2)"
-        );
+        assert!(resource.resource_type.is_non_zero(), "invalid resource specified");
 
         let entity_structure: Structure = world.read_model(resource.entity_id);
         let entity_is_structure = entity_structure.is_structure();

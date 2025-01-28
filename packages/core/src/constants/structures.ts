@@ -27,8 +27,7 @@ export enum BuildingType {
   WorkersHut = 10,
   // unused
   WatchTower = 11,
-  // unused
-  Walls = 12,
+  Labor = 12,
   Storehouse = 13,
   Bank = 14,
   FragmentMine = 15,
@@ -47,7 +46,7 @@ export const BuildingEnumToString: Record<BuildingType, string> = {
   [BuildingType.TradingPost]: "Trading Post",
   [BuildingType.WorkersHut]: "Workers Hut",
   [BuildingType.WatchTower]: "Watch Tower",
-  [BuildingType.Walls]: "Walls",
+  [BuildingType.Labor]: "Labor",
   [BuildingType.Storehouse]: "Storehouse",
   [BuildingType.Bank]: "Bank",
   [BuildingType.FragmentMine]: "Fragment Mine",
@@ -79,8 +78,8 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ WorkersHut: {} });
     case BuildingType.WatchTower:
       return new CairoCustomEnum({ WatchTower: {} });
-    case BuildingType.Walls:
-      return new CairoCustomEnum({ Walls: {} });
+    case BuildingType.Labor:
+      return new CairoCustomEnum({ Labor: {} });
     case BuildingType.Storehouse:
       return new CairoCustomEnum({ Storehouse: {} });
     case BuildingType.Bank:
@@ -116,7 +115,7 @@ export function getProducedResource(name: BuildingType): number {
       return 0;
     case BuildingType.WatchTower:
       return 0;
-    case BuildingType.Walls:
+    case BuildingType.Labor:
       return 0;
     case BuildingType.Storehouse:
       return 0;

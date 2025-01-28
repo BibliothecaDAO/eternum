@@ -64,7 +64,7 @@ enum BuildingCategory {
     TradingPost,
     WorkersHut,
     WatchTower,
-    Walls,
+    Labor,
     Storehouse,
 }
 
@@ -83,7 +83,7 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::TradingPost => 9,
             BuildingCategory::WorkersHut => 10,
             BuildingCategory::WatchTower => 11,
-            BuildingCategory::Walls => 12,
+            BuildingCategory::Labor => 12,
             BuildingCategory::Storehouse => 13,
         }
     }
@@ -114,7 +114,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::TradingPost => 0,
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::WatchTower => 0,
-            BuildingCategory::Walls => 0,
+            BuildingCategory::Labor => ResourceTypes::LABOR,
             BuildingCategory::Storehouse => 0,
         }
     }
@@ -133,7 +133,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::TradingPost => 0,
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::WatchTower => 0,
-            BuildingCategory::Walls => 0,
+            BuildingCategory::Labor => 0,
             BuildingCategory::Storehouse => 0,
         }
     }
@@ -218,10 +218,10 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
         let produced_resource_type = (*self).produced_resource();
         let production_config: ProductionConfig = world.read_model(produced_resource_type);
-        let bonus_amount: u128 = (production_config.produced_amount * (*self.bonus_percent).into())
+        let bonus_amount: u128 = (production_config.amount_per_building_per_tick * (*self.bonus_percent).into())
             / PercentageValueImpl::_100().into();
 
-        production_config.produced_amount + bonus_amount
+        production_config.amount_per_building_per_tick + bonus_amount
     }
 
 

@@ -30,7 +30,6 @@ mod resource {
     mod resource;
     mod production {
         mod building;
-        mod labor;
         mod production;
     }
 }

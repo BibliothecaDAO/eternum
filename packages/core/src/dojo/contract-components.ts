@@ -1059,7 +1059,7 @@ export function defineContractComponents(world: World) {
           production: {
             building_count: RecsType.Number,
             production_rate: RecsType.BigInt,
-            labor_units_left: RecsType.BigInt,
+            output_amount_left: RecsType.BigInt,
             last_updated_tick: RecsType.Number,
           },
         },
