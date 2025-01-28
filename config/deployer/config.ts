@@ -376,14 +376,14 @@ export const setBuildingConfig = async (config: Config) => {
 
   const calldataArray = [];
   const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
-  const buildingCosts = config.config.buildings.nonResourceBuildingCosts;
-  const scaledNonResourceBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
+  const buildingCosts = config.config.buildings.otherBuildingCosts;
+  const scaledOtherBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
   const BUILDING_COST_DISPLAY_ROWS = 6;
 
   // Non Resource Building Config
   for (const buildingId of Object.keys(buildingResourceProduced) as unknown as BuildingType[]) {
-    if (scaledNonResourceBuildingCosts[buildingId].length !== 0) {
-      const costs = scaledNonResourceBuildingCosts[buildingId];
+    if (scaledOtherBuildingCosts[buildingId].length !== 0) {
+      const costs = scaledOtherBuildingCosts[buildingId];
       const calldata = {
         building_category: buildingId,
         building_resource_type: buildingResourceProduced[buildingId] as ResourcesIds,

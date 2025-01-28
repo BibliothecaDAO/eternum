@@ -13,7 +13,7 @@ import {
   BUILDING_CAPACITY,
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
-  NON_RESOURCE_BUILDING_COSTS,
+  OTHER_BUILDING_COSTS,
   RESOURCE_BUILDING_COSTS,
 } from "./utils/building";
 import {
@@ -246,7 +246,7 @@ export const EternumGlobalConfig: Config = {
     buildingCapacity: BUILDING_CAPACITY,
     buildingPopulation: BUILDING_POPULATION,
     buildingResourceProduced: BUILDING_RESOURCE_PRODUCED,
-    nonResourceBuildingCosts: NON_RESOURCE_BUILDING_COSTS,
+    otherBuildingCosts: OTHER_BUILDING_COSTS,
     resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },

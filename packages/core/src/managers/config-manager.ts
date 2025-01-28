@@ -157,7 +157,7 @@ export class ClientConfigManager {
 
   private initializeBuildingCosts() {
     this.buildingCosts = Object.fromEntries(
-      Object.entries(this.config.buildings.nonResourceBuildingCosts).map(([key, costs]) => [
+      Object.entries(this.config.buildings.otherBuildingCosts).map(([key, costs]) => [
         key,
         costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
       ]),

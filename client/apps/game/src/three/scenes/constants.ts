@@ -126,7 +126,7 @@ export const buildingModelPaths = {
     [BuildingType.Stable]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
     [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
     [BuildingType.TradingPost]: BUILDINGS_MODELS_PATH + BuildingFilenames.TradingPost,
-    [BuildingType.Labor]: BUILDINGS_MODELS_PATH + BuildingFilenames.Labor,
+    [BuildingType.Walls]: BUILDINGS_MODELS_PATH + BuildingFilenames.Labor,
     [BuildingType.WatchTower]: BUILDINGS_MODELS_PATH + BuildingFilenames.WatchTower,
     [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
   },

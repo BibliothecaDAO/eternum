@@ -122,10 +122,6 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         assert!(from_resource_amount.is_non_zero(), "zero resource amount");
         assert!(from_entity_id.is_non_zero(), "zero entity id");
 
-        // ensure entity is a structure
-        let from_entity_structure: Structure = world.read_model(from_entity_id);
-        assert!(from_entity_structure.category == StructureCategory::Realm, "structure is not a realm");
-
         // ensure rarity has been set for resource
         let from_resource_production_config: ProductionConfig = world.read_model(from_resource_type);
         let from_resource_labor_burn_strategy: LaborBurnPrStrategy = from_resource_production_config
@@ -156,10 +152,6 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         assert!(labor_amount % RESOURCE_PRECISION == 0, "labor amount must be exactly divisible by RESOURCE_PRECISION");
         assert!(labor_amount.is_non_zero(), "zero labor amount");
         assert!(from_entity_id.is_non_zero(), "zero entity id");
-
-        // ensure entity is a structure
-        let from_entity_structure: Structure = world.read_model(from_entity_id);
-        assert!(from_entity_structure.category == StructureCategory::Realm, "structure is not a realm");
 
         // burn labor from balance
         let mut labor_resource = ResourceImpl::get(ref world, (from_entity_id, ResourceTypes::LABOR));
@@ -217,11 +209,6 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         assert!(produced_resource_type.is_non_zero(), "wrong resource type");
         assert!(production_tick_count.is_non_zero(), "zero production tick count");
         assert!(from_entity_id.is_non_zero(), "zero entity id");
-
-        // ensure entity is a structure
-        let from_entity_structure: Structure = world.read_model(from_entity_id);
-        assert!(from_entity_structure.category == StructureCategory::Realm, "structure is not a realm");
-
 
         // ensure there is a config for this labor resource
         let produced_resource_production_config: ProductionConfig = world.read_model(produced_resource_type);

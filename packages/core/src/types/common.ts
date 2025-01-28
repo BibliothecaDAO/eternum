@@ -549,7 +549,7 @@ export interface Config {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
     buildingResourceProduced: Partial<{ [key in BuildingType]: number }>;
-    nonResourceBuildingCosts: ResourceInputs;
+    otherBuildingCosts: ResourceInputs;
     resourceBuildingCosts: ResourceInputs;
     buildingFixedCostScalePercent: number;
   };

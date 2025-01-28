@@ -64,7 +64,7 @@ enum BuildingCategory {
     TradingPost,
     WorkersHut,
     WatchTower,
-    Labor,
+    Walls,
     Storehouse,
 }
 
@@ -83,7 +83,7 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::TradingPost => 9,
             BuildingCategory::WorkersHut => 10,
             BuildingCategory::WatchTower => 11,
-            BuildingCategory::Labor => 12,
+            BuildingCategory::Walls => 12,
             BuildingCategory::Storehouse => 13,
         }
     }
@@ -103,7 +103,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     fn produced_resource(self: Building) -> u8 {
         match self.category {
             BuildingCategory::None => 0,
-            BuildingCategory::Castle => 0,
+            BuildingCategory::Castle => ResourceTypes::LABOR,
             BuildingCategory::Resource => self.produced_resource_type,
             BuildingCategory::Farm => ResourceTypes::WHEAT,
             BuildingCategory::FishingVillage => ResourceTypes::FISH,
@@ -114,7 +114,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::TradingPost => 0,
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::WatchTower => 0,
-            BuildingCategory::Labor => ResourceTypes::LABOR,
+            BuildingCategory::Walls => 0,
             BuildingCategory::Storehouse => 0,
         }
     }
@@ -133,7 +133,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::TradingPost => 0,
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::WatchTower => 0,
-            BuildingCategory::Labor => 0,
+            BuildingCategory::Walls => 0,
             BuildingCategory::Storehouse => 0,
         }
     }

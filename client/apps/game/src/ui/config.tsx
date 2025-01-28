@@ -68,7 +68,7 @@ export const BUILDING_IMAGES_PATH = {
   [BuildingType.TradingPost]: `${BUILD_IMAGES_PREFIX}trading_post.png`,
   [BuildingType.WorkersHut]: `${BUILD_IMAGES_PREFIX}workers_hut.png`,
   [BuildingType.WatchTower]: `${BUILD_IMAGES_PREFIX}watch_tower.png`,
-  [BuildingType.Labor]: `${BUILD_IMAGES_PREFIX}walls.png`,
+  [BuildingType.Walls]: `${BUILD_IMAGES_PREFIX}walls.png`,
   [BuildingType.Storehouse]: `${BUILD_IMAGES_PREFIX}storehouse.png`,
   [ResourceMiningTypes.Forge]: `${BUILD_IMAGES_PREFIX}forge.png`,
   [ResourceMiningTypes.Mine]: `${BUILD_IMAGES_PREFIX}mine.png`,

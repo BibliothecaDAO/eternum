@@ -15,7 +15,7 @@ export const BUILDING_CAPACITY: { [key in BuildingType]: number } = {
   [BuildingType.TradingPost]: 0,
   [BuildingType.WorkersHut]: 5,
   [BuildingType.WatchTower]: 0,
-  [BuildingType.Labor]: 0,
+  [BuildingType.Walls]: 0,
   [BuildingType.Storehouse]: 0,
 };
 
@@ -34,13 +34,13 @@ export const BUILDING_POPULATION: { [key in BuildingType]: number } = {
   [BuildingType.TradingPost]: 2,
   [BuildingType.WorkersHut]: 0,
   [BuildingType.WatchTower]: 2,
-  [BuildingType.Labor]: 2,
+  [BuildingType.Walls]: 2,
   [BuildingType.Storehouse]: 2,
 };
 
 export const BUILDING_RESOURCE_PRODUCED: { [key in BuildingType]: number } = {
   [BuildingType.None]: 0,
-  [BuildingType.Castle]: 0,
+  [BuildingType.Castle]: ResourcesIds.Labor,
   [BuildingType.Bank]: 0,
   [BuildingType.FragmentMine]: ResourcesIds.AncientFragment,
   [BuildingType.Resource]: 0,
@@ -53,11 +53,11 @@ export const BUILDING_RESOURCE_PRODUCED: { [key in BuildingType]: number } = {
   [BuildingType.TradingPost]: 0,
   [BuildingType.WorkersHut]: 0,
   [BuildingType.WatchTower]: 0,
-  [BuildingType.Labor]: ResourcesIds.Labor,
+  [BuildingType.Walls]: 0,
   [BuildingType.Storehouse]: 0,
 };
 
-export const NON_RESOURCE_BUILDING_COSTS: ResourceInputs = {
+export const OTHER_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.None]: [],
   [BuildingType.Castle]: [],
   [BuildingType.Bank]: [],
@@ -102,7 +102,7 @@ export const NON_RESOURCE_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Coal, amount: 75_000 },
   ],
   [BuildingType.WatchTower]: [],
-  [BuildingType.Labor]: [
+  [BuildingType.Walls]: [
     { resource: ResourcesIds.Fish, amount: 300_000 },
     { resource: ResourcesIds.Wheat, amount: 300_000 },
   ],
