@@ -100,7 +100,7 @@ mod ResourceTypes {
     const ETHEREAL_SILICA: u8 = 21;
     const DRAGONHIDE: u8 = 22;
 
-    // THE RESOURCE IDS ABOVE MUST MATCH THE 
+    // THE RESOURCE IDS ABOVE MUST MATCH THE
     // RESOURCE IDS IN THE SEASON PASS
 
     const LABOR: u8 = 23;

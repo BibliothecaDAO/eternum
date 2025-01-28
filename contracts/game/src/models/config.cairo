@@ -581,18 +581,20 @@ pub struct ProductionConfig {
 /// # Note
 /// The deprecation is always applied based on the target resource's deprecation rate,
 /// creating an intentional loss in the conversion process
-/// 
+///
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct LaborBurnPrStrategy {
     /// Represents the resource's rarity and determines labor conversion rate.
     /// Higher values indicate rarer resources that yield more labor when converted.
     resource_rarity: u128,
-
     /// Numerator of the deprecation percentage fraction.
     deprecation_percent_num: u16,
-
     /// Denominator of the deprecation percentage fraction.
     deprecation_percent_denom: u16,
+    /// Amount of wheat to burn per labor
+    wheat_burn_per_labor: u128,
+    /// Amount of fish to burn per labor
+    fish_burn_per_labor: u128,
 }
 
 /// A simple production strategy that requires burning multiple resources to produce output.
@@ -609,7 +611,7 @@ pub struct LaborBurnPrStrategy {
 /// Then:
 /// - required_resources_id would point to the id of ResourceCost
 /// - required_resources_count would be 3
-/// 
+///
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct MultipleResourceBurnPrStrategy {
     /// ID referencing the list of required input resources
@@ -799,7 +801,6 @@ impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
         return (min_amount + additional_amount).try_into().unwrap();
     }
 }
-
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

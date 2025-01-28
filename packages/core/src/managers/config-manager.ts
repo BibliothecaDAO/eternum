@@ -138,33 +138,6 @@ export class ClientConfigManager {
   }
 
   private initializeRealmUpgradeCosts() {
-    // const realmMaxLevel =
-    //   getComponentValue(this.components.RealmMaxLevelConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.max_level ?? 0;
-
-    // for (let index = 1; index <= realmMaxLevel; index++) {
-    //   const realmLevelConfig = getComponentValue(
-    //     this.components.RealmLevelConfig,
-    //     getEntityIdFromKeys([BigInt(index)]),
-    //   );
-
-    //   const resourcesCount = realmLevelConfig?.required_resource_count ?? 0;
-    //   const detachedResourceId = realmLevelConfig?.required_resources_id ?? 0;
-
-    //   const resources: { resource: ResourcesIds; amount: number }[] = [];
-
-    //   for (let index = 0; index < resourcesCount; index++) {
-    //     const resource = getComponentValue(
-    //       this.components.DetachedResource,
-    //       getEntityIdFromKeys([BigInt(detachedResourceId), BigInt(index)]),
-    //     );
-    //     if (resource) {
-    //       const resourceId = resource.resource_type;
-    //       const amount = this.divideByPrecision(Number(resource.resource_amount));
-    //       resources.push({ resource: resourceId, amount });
-    //     }
-    //   }
-    //   this.realmUpgradeCosts[index] = resources;
-    // }
     this.realmUpgradeCosts = Object.fromEntries(
       Object.entries(this.config.realmUpgradeCosts).map(([key, costs]) => [
         key,
@@ -174,35 +147,8 @@ export class ClientConfigManager {
   }
 
   private initializeResourceBuildingCosts() {
-    // for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
-    // const buildingConfig = getComponentValue(
-    //   this.components.BuildingConfig,
-    //   getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(BuildingType.Resource), BigInt(resourceId)]),
-    // );
-
-    // const resourceCostCount = buildingConfig?.resource_cost_count || 0;
-    // const resourceCostId = buildingConfig?.resource_cost_id || 0;
-
-    // const resourceCosts: { resource: ResourcesIds; amount: number }[] = [];
-    // for (let index = 0; index < resourceCostCount; index++) {
-    //   const resourceCost = getComponentValue(
-    //     this.components.ResourceCost,
-    //     getEntityIdFromKeys([BigInt(resourceCostId), BigInt(index)]),
-    //   );
-    //   if (!resourceCost) {
-    //     continue;
-    //   }
-
-    //   const resourceType = resourceCost.resource_type;
-    //   const amount = Number(resourceCost.amount) / RESOURCE_PRECISION;
-
-    //   resourceCosts.push({ resource: resourceType, amount });
-    // }
-    // this.resourceBuildingCosts[Number(resourceId)] = resourceCosts;
-
-    // }
     this.resourceBuildingCosts = Object.fromEntries(
-      Object.entries(this.config.resources.resourceBuildingCosts).map(([key, costs]) => [
+      Object.entries(this.config.buildings.resourceBuildingCosts).map(([key, costs]) => [
         key,
         costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
       ]),
@@ -210,36 +156,8 @@ export class ClientConfigManager {
   }
 
   private initializeBuildingCosts() {
-    // for (const buildingType of Object.values(BuildingType).filter(Number.isInteger)) {
-    //   const resourceType = this.getResourceBuildingProduced(Number(buildingType));
-
-    //   const buildingConfig = getComponentValue(
-    //     this.components.BuildingConfig,
-    //     getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(buildingType), BigInt(resourceType)]),
-    //   );
-
-    //   const resourceCostCount = buildingConfig?.resource_cost_count || 0;
-    //   const resourceCostId = buildingConfig?.resource_cost_id || 0;
-
-    //   const resourceCosts: { resource: ResourcesIds; amount: number }[] = [];
-    //   for (let index = 0; index < resourceCostCount; index++) {
-    //     const resourceCost = getComponentValue(
-    //       this.components.ResourceCost,
-    //       getEntityIdFromKeys([BigInt(resourceCostId), BigInt(index)]),
-    //     );
-    //     if (!resourceCost) {
-    //       continue;
-    //     }
-
-    //     const resourceType = resourceCost.resource_type;
-    //     const amount = Number(resourceCost.amount) / this.getResourcePrecision();
-
-    //     resourceCosts.push({ resource: resourceType, amount });
-    //   }
-    //   this.buildingCosts[Number(buildingType)] = resourceCosts;
-    // }
     this.buildingCosts = Object.fromEntries(
-      Object.entries(this.config.buildings.buildingCosts).map(([key, costs]) => [
+      Object.entries(this.config.buildings.nonResourceBuildingCosts).map(([key, costs]) => [
         key,
         costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
       ]),

@@ -181,7 +181,6 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         // save production
         produced_resource.production = production;
         world.write_model(@produced_resource);
-        
         // todo add event here
     }
 
@@ -288,9 +287,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             // first so that we can recalculate and add the new production rate
             let recipient_building_resource_production_amount: u128 = recipient_building.production_amount(ref world);
             let mut recipient_building_resource_production: Production = recipient_building_resource.production;
-            recipient_building_resource_production.decrease_production_rate(
-                recipient_building_resource_production_amount
-            );
+            recipient_building_resource_production
+                .decrease_production_rate(recipient_building_resource_production_amount);
 
             // update the recipient building's bonus percent
             if delete {
@@ -301,9 +299,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             world.write_model(@recipient_building);
 
             // update the global resource production to reflect the new production rate
-            recipient_building_resource_production.increase_production_rate(
-                recipient_building.production_amount(ref world)
-            );
+            recipient_building_resource_production
+                .increase_production_rate(recipient_building.production_amount(ref world));
             recipient_building_resource.production = recipient_building_resource_production;
             world.write_model(@recipient_building_resource);
         }

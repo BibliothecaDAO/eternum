@@ -5,8 +5,7 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
-    get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG,
-    ResourceTypes, resource_type_name, WORLD_CONFIG_ID
+    get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG, ResourceTypes, resource_type_name, WORLD_CONFIG_ID
 };
 use s1_eternum::models::config::{
     ProductionConfig, TickConfig, TickImpl, TickTrait, CapacityConfig, CapacityConfigCategory, CapacityConfigTrait
@@ -86,7 +85,7 @@ pub struct DetachedResource {
 pub struct OwnedResourcesTracker {
     #[key]
     entity_id: ID,
-    // todo: use felt252 instead 
+    // todo: use felt252 instead
     resource_types: u256
 }
 
@@ -273,18 +272,17 @@ impl ResourceImpl of ResourceTrait {
         if production.last_updated_tick != current_tick {
             // harvest the production
             let production_config: ProductionConfig = world.read_model(self.resource_type);
-            let non_zero_harvest : bool = production.harvest(ref self, @tick, @production_config);
+            let non_zero_harvest: bool = production.harvest(ref self, @tick, @production_config);
             // limit balance by storehouse capacity
             if non_zero_harvest {
                 self.limit_balance_by_storehouse_capacity(ref world);
             }
 
-            // update the resource production 
+            // update the resource production
             self.production = production;
 
             // save the updated resource model
             world.write_model(@self);
-
             // todo add event here to show amount burnt
         }
     }

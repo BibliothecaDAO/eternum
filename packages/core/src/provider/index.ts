@@ -1911,6 +1911,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+
   public async set_production_config(props: SystemProps.SetProductionConfigProps) {
     const { signer, calls } = props;
 
@@ -1918,23 +1919,21 @@ export class EternumProvider extends EnhancedDojoProvider {
       return {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
         entrypoint: "set_production_config",
-        calldata: [call.resource_type, call.amount],
-      };
-    });
-
-    const laborCalldataArray = calls.map((call) => {
-      return {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-        entrypoint: "set_labor_config",
         calldata: [
-          call.resource_type,
-          call.cost.length,
-          ...call.cost.flatMap(({ resource, amount }) => [resource, amount]),
+          call.resource_type, 
+          call.amount_per_building_per_tick, 
+          call.labor_burn_strategy.resource_rarity,
+          call.labor_burn_strategy.deprecation_percent_num,
+          call.labor_burn_strategy.deprecation_percent_denom,
+          call.labor_burn_strategy.wheat_burn_per_labor,
+          call.labor_burn_strategy.fish_burn_per_labor,
+          call.predefined_resource_burn_cost.length,
+          ...call.predefined_resource_burn_cost.flatMap(({ resource, amount }) => [resource, amount]),
         ],
       };
     });
-    const calldataArray = [...productionCalldataArray, ...laborCalldataArray];
-    return await this.executeAndCheckTransaction(signer, calldataArray);
+
+    return await this.executeAndCheckTransaction(signer, productionCalldataArray);
   }
 
   public async set_bank_config(props: SystemProps.SetBankConfigProps) {

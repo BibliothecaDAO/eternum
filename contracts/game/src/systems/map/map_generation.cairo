@@ -36,8 +36,8 @@ mod map_generation_systems {
     use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use s1_eternum::models::quantity::Quantity;
     use s1_eternum::models::realm::{Realm};
-    use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
     use s1_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
+    use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
     use s1_eternum::models::resource::resource::{
         Resource, ResourceImpl, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };
@@ -193,11 +193,12 @@ mod map_generation_systems {
                     ref world, 0, mine_structure_entity_id, mercenaries_config.rewards, 0, false, false
                 );
 
-                let shards_reward_amount 
-                    = Self::get_shards_reward(ref world, vrf_seed, mine_structure_entity_id);
+                let shards_reward_amount = Self::get_shards_reward(ref world, vrf_seed, mine_structure_entity_id);
 
                 // add earthenshard labor to mine balance
-                let mut shards_resource = ResourceImpl::get(ref world, (mine_structure_entity_id, ResourceTypes::EARTHEN_SHARD));
+                let mut shards_resource = ResourceImpl::get(
+                    ref world, (mine_structure_entity_id, ResourceTypes::EARTHEN_SHARD)
+                );
                 let mut shards_resource_production = shards_resource.production;
                 shards_resource_production.increase_output_amout_left(shards_reward_amount);
                 shards_resource.production = shards_resource_production;

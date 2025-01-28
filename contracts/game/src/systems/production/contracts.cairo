@@ -20,24 +20,15 @@ trait IProductionContract<TContractState> {
     fn resume_building_production(ref self: TContractState, entity_id: ID, building_coord: Coord);
 
     fn burn_other_resource_for_labor_production(
-        ref self: TContractState, 
-        entity_id: ID, 
-        resource_type: u8, 
-        resource_amount: u128
+        ref self: TContractState, entity_id: ID, resource_type: u8, resource_amount: u128
     );
 
     fn burn_labor_resource_for_other_production(
-        ref self: TContractState, 
-        from_entity_id: ID, 
-        labor_amount: u128,
-        produced_resource_type: u8, 
+        ref self: TContractState, from_entity_id: ID, labor_amount: u128, produced_resource_type: u8,
     );
 
     fn burn_other_predefined_resources_for_resource(
-        ref self: TContractState, 
-        from_entity_id: ID, 
-        produced_resource_type: u8, 
-        production_tick_count: u128
+        ref self: TContractState, from_entity_id: ID, produced_resource_type: u8, production_tick_count: u128
     );
 }
 
@@ -51,8 +42,7 @@ mod production_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::{
-        owner::{EntityOwner, EntityOwnerTrait},
-        resource::resource::{Resource, ResourceCost},
+        owner::{EntityOwner, EntityOwnerTrait}, resource::resource::{Resource, ResourceCost},
         position::{Coord, CoordTrait, Position, PositionTrait, Direction},
         resource::production::building::{BuildingCategory, Building, BuildingImpl},
         resource::production::production::{Production, ProductionTrait, ProductionStrategyImpl},
@@ -133,7 +123,9 @@ mod production_systems {
         }
 
         /// Burn other resource for production of labor
-        fn burn_other_resource_for_labor_production(ref self: ContractState, entity_id: ID, resource_type: u8, resource_amount: u128) {
+        fn burn_other_resource_for_labor_production(
+            ref self: ContractState, entity_id: ID, resource_type: u8, resource_amount: u128
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -147,10 +139,7 @@ mod production_systems {
 
         // Burn production labor resource and add to production
         fn burn_labor_resource_for_other_production(
-            ref self: ContractState, 
-            from_entity_id: ID, 
-            labor_amount: u128,
-            produced_resource_type: u8, 
+            ref self: ContractState, from_entity_id: ID, labor_amount: u128, produced_resource_type: u8,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -167,10 +156,7 @@ mod production_systems {
         // Burn other predefined resources for resource
         // e.g. Wood, Stone, Coal for Gold
         fn burn_other_predefined_resources_for_resource(
-            ref self: ContractState, 
-            from_entity_id: ID, 
-            produced_resource_type: u8, 
-            production_tick_count: u128
+            ref self: ContractState, from_entity_id: ID, produced_resource_type: u8, production_tick_count: u128
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);

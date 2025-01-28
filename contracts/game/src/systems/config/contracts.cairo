@@ -132,11 +132,12 @@ trait IMapConfig<T> {
 
 #[starknet::interface]
 trait IProductionConfig<T> {
-    fn set_production_config(ref self: T, 
-        resource_type: u8, 
+    fn set_production_config(
+        ref self: T,
+        resource_type: u8,
         amount_per_building_per_tick: u128,
         labor_burn_strategy: LaborBurnPrStrategy,
-        multiple_resource_burn_cost: Span<(u8, u128)>
+        predefined_resource_burn_cost: Span<(u8, u128)>
     );
 }
 
@@ -230,14 +231,13 @@ mod config_systems {
     use s1_eternum::models::combat::{Troops};
 
     use s1_eternum::models::config::{
-        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestRewardConfig,
-        MapConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
+        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestRewardConfig, MapConfig,
+        TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
         RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig,
         MultipleResourceBurnPrStrategy, LaborBurnPrStrategy
-
     };
 
     use s1_eternum::models::position::{Position, PositionTrait, Coord};
@@ -368,7 +368,6 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl QuestConfigImpl of super::IQuestConfig<ContractState> {
-
         fn set_quest_reward_config(ref self: ContractState, quest_id: ID, resources: Span<(u8, u128)>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -605,27 +604,27 @@ mod config_systems {
     #[abi(embed_v0)]
     impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
         fn set_production_config(
-            ref self: ContractState, 
-            resource_type: u8, 
+            ref self: ContractState,
+            resource_type: u8,
             amount_per_building_per_tick: u128,
             labor_burn_strategy: LaborBurnPrStrategy,
-            multiple_resource_burn_cost: Span<(u8, u128)>
+            predefined_resource_burn_cost: Span<(u8, u128)>
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            // save multiple resource burn cost 
-            let multiple_resource_burn_cost_id = world.dispatcher.uuid();
+            // save multiple resource burn cost
+            let predefined_resource_burn_cost_id = world.dispatcher.uuid();
             for i in 0
-                ..multiple_resource_burn_cost
+                ..predefined_resource_burn_cost
                     .len() {
-                        let (resource_type, resource_amount) 
-                            = *multiple_resource_burn_cost.at(i);
+                        let (resource_type, resource_amount) = *predefined_resource_burn_cost.at(i);
                         world
                             .write_model(
                                 @ResourceCost {
-                                    entity_id: multiple_resource_burn_cost_id, 
-                                    index: i, resource_type, 
+                                    entity_id: predefined_resource_burn_cost_id,
+                                    index: i,
+                                    resource_type,
                                     amount: resource_amount
                                 }
                             );
@@ -635,11 +634,12 @@ mod config_systems {
             let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
             resource_production_config.amount_per_building_per_tick = amount_per_building_per_tick;
             resource_production_config.labor_burn_strategy = labor_burn_strategy;
-            resource_production_config.multiple_resource_burn_strategy 
-            = MultipleResourceBurnPrStrategy {
-                required_resources_id: multiple_resource_burn_cost_id,
-                required_resources_count: multiple_resource_burn_cost.len().try_into().unwrap()
-            };
+            resource_production_config
+                .multiple_resource_burn_strategy =
+                    MultipleResourceBurnPrStrategy {
+                        required_resources_id: predefined_resource_burn_cost_id,
+                        required_resources_count: predefined_resource_burn_cost.len().try_into().unwrap()
+                    };
             world.write_model(@resource_production_config);
         }
     }

@@ -26,6 +26,7 @@ import { QUEST_RESOURCES } from "./utils/quest";
 import {
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+  RESOURCE_PRODUCTION_THROUGH_LABOR,
   RESOURCES_WEIGHTS_GRAM,
 } from "./utils/resource";
 import { TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS } from "./utils/troop";
@@ -156,9 +157,9 @@ export const EternumGlobalConfig: Config = {
     startingResourcesInputProductionFactor: STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR,
     resourceInputs: RESOURCE_PRODUCTION_INPUT_RESOURCES,
     resourceOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+    resourceProductionByLaborParams: RESOURCE_PRODUCTION_THROUGH_LABOR,
     resourceWeightsGrams: RESOURCES_WEIGHTS_GRAM,
     resourceRarity: RESOURCE_RARITY,
-    resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
   },
   banks: {
     name: BANK_NAME,
@@ -245,7 +246,8 @@ export const EternumGlobalConfig: Config = {
     buildingCapacity: BUILDING_CAPACITY,
     buildingPopulation: BUILDING_POPULATION,
     buildingResourceProduced: BUILDING_RESOURCE_PRODUCED,
-    buildingCosts: NON_RESOURCE_BUILDING_COSTS,
+    nonResourceBuildingCosts: NON_RESOURCE_BUILDING_COSTS,
+    resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },
   hyperstructures: {

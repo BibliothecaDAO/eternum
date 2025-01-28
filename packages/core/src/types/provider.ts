@@ -466,9 +466,18 @@ export interface SetTickConfigProps extends SystemSigner {
 export interface SetProductionConfigProps extends SystemSigner {
   calls: {
     resource_type: num.BigNumberish;
-    amount: num.BigNumberish;
-    cost: ResourceCosts[];
+    amount_per_building_per_tick: num.BigNumberish;
+    labor_burn_strategy: LaborBurnProductionStrategy;
+    predefined_resource_burn_cost: ResourceCosts[];
   }[];
+}
+
+interface LaborBurnProductionStrategy {
+  resource_rarity: num.BigNumberish;
+  deprecation_percent_num: num.BigNumberish;
+  deprecation_percent_denom: num.BigNumberish;
+  wheat_burn_per_labor: num.BigNumberish;
+  fish_burn_per_labor: num.BigNumberish;
 }
 
 export interface SetBankConfigProps extends SystemSigner {
