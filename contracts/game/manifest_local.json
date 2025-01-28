@@ -1481,8 +1481,8 @@
       ]
     },
     {
-      "address": "0x18b969a04fcd1aafc32fd32f4c3257b225d312c539904b51b0544e5d104e8ad",
-      "class_hash": "0x6892c4821cdf85b6c7b61d6c102d1c13f286212b75b4d394ed301cf1a1b1add",
+      "address": "0x3b81b30bbf30c2f91e6948449a778e748e2481df5dfac2cdd91d00ebb9d1ce9",
+      "class_hash": "0x205d037fb517aca51484f6d89dae7b11c6dceed1d55943c21ea1e70bc62cc",
       "abi": [
         {
           "type": "impl",
@@ -2381,8 +2381,8 @@
       ]
     },
     {
-      "address": "0x71117b74dbeb20245a8af6d252331a7e262ba75e72622c8fe6001619c711a65",
-      "class_hash": "0x6fe9ec7476e4744419cb39b37d1ac37e900df33b38b13ed20db8ce253afe943",
+      "address": "0x7a9fc055d71b905595cc7f9d63331906ce3ea9fa9fa82b7ed9c5e8114fa3938",
+      "class_hash": "0x747b7a6788796c5f9899d3b7db8931ba43475a5c3393eff28f156c8761a31c3",
       "abi": [
         {
           "type": "impl",
@@ -3294,7 +3294,7 @@
               "type": "()"
             },
             {
-              "name": "Labor",
+              "name": "Walls",
               "type": "()"
             },
             {
@@ -5406,8 +5406,8 @@
       ]
     },
     {
-      "address": "0x67b8a933b11e73f5a1b856bf378e3c6c450e9a78013be5cafe779c7c14550b2",
-      "class_hash": "0x4eb0f2e50304bd51f48c0d858de8f087773121ddc85e1c3d063ad2102d02c79",
+      "address": "0x71ae361edf33ada5d5b6e946d1b5c68ea880f13557dccfbd5e199637d2abb73",
+      "class_hash": "0x43b25f249e159cfbe93bb91651c5833cc04dda10534c2b6a64eab6ec260cd63",
       "abi": [
         {
           "type": "impl",
@@ -6346,8 +6346,8 @@
       ]
     },
     {
-      "address": "0x5efe7c0a77aa9a9d7b4c07015ee472e767529d80e395c04cac035c31886c65b",
-      "class_hash": "0x2b86fff9a754aef501390d7fc801c4c215b4bb8d963a4c04e33fe90b6bff8bb",
+      "address": "0x494564ed0fb05d3137060064c4fb6a7216bf31c8e45639ae313ff80db5b29c1",
+      "class_hash": "0x35557504fbd9f5c2e6a8f2aa174cff1ec997ce480b872464c120a345d4dfb40",
       "abi": [
         {
           "type": "impl",
@@ -6497,7 +6497,7 @@
               "type": "()"
             },
             {
-              "name": "Labor",
+              "name": "Walls",
               "type": "()"
             },
             {
@@ -6531,6 +6531,26 @@
             {
               "name": "y",
               "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u128>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u128>"
             }
           ]
         },
@@ -6612,19 +6632,19 @@
             },
             {
               "type": "function",
-              "name": "burn_other_resource_for_labor_production",
+              "name": "burn_other_resources_for_labor_production",
               "inputs": [
                 {
                   "name": "entity_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "resource_type",
-                  "type": "core::integer::u8"
+                  "name": "resource_types",
+                  "type": "core::array::Span::<core::integer::u8>"
                 },
                 {
-                  "name": "resource_amount",
-                  "type": "core::integer::u128"
+                  "name": "resource_amounts",
+                  "type": "core::array::Span::<core::integer::u128>"
                 }
               ],
               "outputs": [],
@@ -6632,19 +6652,19 @@
             },
             {
               "type": "function",
-              "name": "burn_labor_resource_for_other_production",
+              "name": "burn_labor_resources_for_other_production",
               "inputs": [
                 {
                   "name": "from_entity_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "labor_amount",
-                  "type": "core::integer::u128"
+                  "name": "labor_amounts",
+                  "type": "core::array::Span::<core::integer::u128>"
                 },
                 {
-                  "name": "produced_resource_type",
-                  "type": "core::integer::u8"
+                  "name": "produced_resource_types",
+                  "type": "core::array::Span::<core::integer::u8>"
                 }
               ],
               "outputs": [],
@@ -6652,19 +6672,19 @@
             },
             {
               "type": "function",
-              "name": "burn_other_predefined_resources_for_resource",
+              "name": "burn_other_predefined_resources_for_resources",
               "inputs": [
                 {
                   "name": "from_entity_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "produced_resource_type",
-                  "type": "core::integer::u8"
+                  "name": "produced_resource_types",
+                  "type": "core::array::Span::<core::integer::u8>"
                 },
                 {
-                  "name": "production_tick_count",
-                  "type": "core::integer::u128"
+                  "name": "production_tick_counts",
+                  "type": "core::array::Span::<core::integer::u128>"
                 }
               ],
               "outputs": [],
@@ -6795,15 +6815,15 @@
         "destroy_building",
         "pause_building_production",
         "resume_building_production",
-        "burn_other_resource_for_labor_production",
-        "burn_labor_resource_for_other_production",
-        "burn_other_predefined_resources_for_resource",
+        "burn_other_resources_for_labor_production",
+        "burn_labor_resources_for_other_production",
+        "burn_other_predefined_resources_for_resources",
         "upgrade"
       ]
     },
     {
-      "address": "0xd3aca30688b6bd02b4d7df1bf6dcfafe3d78080bfef3ab4da0e6fa349b1a00",
-      "class_hash": "0x2858e850e333fbd7a4d4da14d4fd113f8131502320713aa976792b6fe30171e",
+      "address": "0x58b1609142c8f9e547124a7c628bd2b7b16d4fd75086b0fc2745f5531436bad",
+      "class_hash": "0x624789ed60dbb1ffa7075f19b968fe21082b4a2e24649624450f6a032867404",
       "abi": [
         {
           "type": "impl",
@@ -8980,19 +9000,19 @@
     },
     {
       "members": [],
-      "class_hash": "0x4633280e356276d5389bd8c26a072b0f05f97d04b881f44c2ff6eb3ef3ab239",
+      "class_hash": "0x26132d9d528638aa4fdc6377b4f342982e15a796292ee9d8a7d9ff443f035b0",
       "tag": "s1_eternum-Building",
       "selector": "0x383bc83e69df10c0e58ce05aef021bb904346af8b28de6dd09ed16a497fae29"
     },
     {
       "members": [],
-      "class_hash": "0x3cad9b074af013ee974f567a8edb87d9345d1bc2865a54ea2d32afa5a90b3ff",
+      "class_hash": "0x369a5260d31d6edd5c3d19b487fa8a2c4bd293845e804cd794a7f00f1fcc35c",
       "tag": "s1_eternum-BuildingCategoryPopConfig",
       "selector": "0x2b847fd482c7e77364e1a29d18c690661dee59631db5538e063065cd28a9157"
     },
     {
       "members": [],
-      "class_hash": "0x5a6910d54a32d665fb47b164f8898e4a024150c7157e8e610993375534742db",
+      "class_hash": "0xbcb13c22c1c2e177c9a7953f6db153d0b1435baa293e2d7fdc7aa22f380f53",
       "tag": "s1_eternum-BuildingConfig",
       "selector": "0x10ab036ccd4d1e968f0b3b3333d59911fd7f96cbd0fe73c9d639b80aaf10ef4"
     },
@@ -9004,7 +9024,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x791daf17e9f5c25f630de4ad1bfe8dd21ca8194af7a63b0517cf534dd0ada0d",
+      "class_hash": "0x6ad15a23139b6577c1adfc3d8d2ad5cf4f55230f17f2ed957cef9a70bdac286",
       "tag": "s1_eternum-BuildingQuantityv2",
       "selector": "0x7f0d990d9539f02e2536fb9077c112528c214d6250597813b5637fcdf4faea1"
     },
@@ -9474,7 +9494,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x50808d8dadca896a715e57c1380e5f87c68c5bc9da5a2b770834167f9e1eab9",
+      "class_hash": "0x4c4c86484c191574bc777bd9f0a4f0fd42cea3723ebcce1262ae4a6206099a8",
       "tag": "s1_eternum-BattlePillageData",
       "selector": "0x20e12ccd908df9671ef87e056aeb9225412ed7710b218cf196c2069a36509ca"
     },
