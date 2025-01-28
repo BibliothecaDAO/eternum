@@ -3,6 +3,7 @@ import { ReactComponent as CheckboxMinus } from "@/assets/icons/checkbox-minus.s
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
+import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/settle-realm-component";
@@ -23,6 +24,8 @@ export const StepOne = () => {
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
   const setShowToS = useUIStore((state) => state.setShowToS);
 
+  console.log("im in the step onnneee");
+
   const { handleUrlChange } = useQuery();
 
   const realms = usePlayerOwnedRealms();
@@ -37,18 +40,10 @@ export const StepOne = () => {
     }, 250);
   };
 
-  const playUrl = useMemo(() => {
-    if (realms.length <= 0) {
-      return;
-    }
-    return new Position(realms[0]?.position).toHexLocationUrl();
-  }, [realms]);
+  const navigateToRealmView = useNavigateToHexView();
 
   const onPlayModeClick = () => {
-    setIsLoadingScreenEnabled(true);
-    showBlankOverlay(false);
-    handleUrlChange(playUrl!);
-    window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+    navigateToRealmView(realms[0]?.position);
   };
 
   return (

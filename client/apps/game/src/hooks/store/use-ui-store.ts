@@ -50,8 +50,6 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
-  showHomeScreen: boolean;
-  setShowHomeScreen: (show: boolean) => void;
   battleView: BattleViewInfo | null;
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
@@ -81,7 +79,10 @@ export const useUIStore = create(
     showBlurOverlay: false,
     setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
     showBlankOverlay: true,
-    setShowBlankOverlay: (show) => set({ showBlankOverlay: show }),
+    setShowBlankOverlay: (show) => {
+      console.log("Setting showBlankOverlay:", show);
+      set({ showBlankOverlay: show });
+    },
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
     isSoundOn: localStorage.getItem("soundEnabled") ? localStorage.getItem("soundEnabled") === "true" : true,
@@ -136,8 +137,6 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
-    showHomeScreen: false,
-    setShowHomeScreen: (show: boolean) => set({ showHomeScreen: show }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),

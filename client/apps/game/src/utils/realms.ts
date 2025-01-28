@@ -1,5 +1,5 @@
-import { ClientComponents } from "@bibliothecadao/eternum";
-import { Has, runQuery } from "@dojoengine/recs";
+import { ClientComponents, ContractAddress } from "@bibliothecadao/eternum";
+import { Has, HasValue, runQuery } from "@dojoengine/recs";
 
 export const getRandomRealmEntity = (components: ClientComponents) => {
   const realms = runQuery([Has(components.Realm)]);
@@ -14,4 +14,16 @@ export const getRandomRealmEntity = (components: ClientComponents) => {
   const randomRealmEntity = realmEntities[randomIndex];
 
   return randomRealmEntity;
+};
+
+export const getPlayerFirstRealm = (components: ClientComponents, address: ContractAddress) => {
+  const realms = runQuery([
+    Has(components.Structure),
+    Has(components.Realm),
+    HasValue(components.Owner, { address: address }),
+  ]);
+
+  const realm = realms.values().next().value;
+
+  return realm;
 };

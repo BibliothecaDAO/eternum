@@ -2,6 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useModalStore } from "@/hooks/store/use-modal-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintModal } from "@/ui/components/hints/hint-modal";
+import { HomeButton } from "@/ui/components/home-button";
 import { rewards, settings } from "@/ui/components/navigation/config";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
@@ -110,6 +111,7 @@ export const SecondaryMenuItems = () => {
           onClick={() => togglePopup(settings)}
         />
         <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
+        <HomeButton />
       </div>
     </div>
   );

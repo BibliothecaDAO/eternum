@@ -152,6 +152,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     });
   }, []);
 
+  // todo: refactor this
   const goToHexView = (entityId: ID) => {
     const structure = structures.find((structure) => structure.entity_id === entityId);
     const url = new Position(structure!.position).toHexLocationUrl();
@@ -159,6 +160,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     handleUrlChange(url);
   };
 
+  // todo: refactor this
   const goToMapView = (entityId?: ID) => {
     const newPosition = entityId
       ? getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]))
@@ -271,11 +273,6 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
               ) : (
                 <div className="self-center">{storehouses.capacityKg.toLocaleString()} kg</div>
               )}
-              {/* {IS_MOBILE ? (
-                <div className="self-center">{storehouses.quantity.toLocaleString()}</div>
-              ) : (
-                <div className="self-center">{storehouses.capacityKg.toLocaleString()} kg</div>
-              )} */}
             </div>
           )}
 

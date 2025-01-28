@@ -15,7 +15,6 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Leva } from "leva";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { Redirect } from "wouter";
 import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
 
@@ -98,9 +97,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const showModal = useUIStore((state) => state.showModal);
-  const showHomeScreen = useUIStore((state) => state.showHomeScreen);
   const modalContent = useUIStore((state) => state.modalContent);
   const battleView = useUIStore((state) => state.battleView);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  console.log("rerender world");
 
   // Setup hooks
   useStructureEntityId();
@@ -109,7 +110,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const setLoading = useUIStore((state) => state.setLoading);
 
   const dojo = useDojo();
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const playerStructures = usePlayerStructures();
 
@@ -296,11 +296,10 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         {IS_MOBILE && <OrientationOverlay />}
         <LoadingOroborus loading={isLoadingScreenEnabled} />
         <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
-        {showHomeScreen && (
-          <BlankOverlayContainer open={showBlankOverlay}>
-            <Onboarding backgroundImage={backgroundImage} />
-          </BlankOverlayContainer>
-        )}
+        <BlankOverlayContainer open={showBlankOverlay}>
+          <Onboarding backgroundImage={backgroundImage} />
+        </BlankOverlayContainer>
+        {/* <Onboarding backgroundImage={backgroundImage} /> */}
         <ActionInstructions />
         {!IS_MOBILE && (
           <>
@@ -342,7 +341,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           </TopLeftContainer>
         </div>
 
-        <Redirect to="/" />
+        {/* todo: put this somewhere else maybe ? */}
+        {/* <Redirect to="/" /> */}
         <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
         <Tooltip />
         <VersionDisplay />

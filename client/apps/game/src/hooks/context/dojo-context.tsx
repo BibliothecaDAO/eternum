@@ -2,22 +2,21 @@ import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
-import { getRandomRealmEntity } from "@/utils/realms";
 import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
-import { DojoContext, useQuery } from "@bibliothecadao/react";
+import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { HasValue, runQuery } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
+import { useNavigateToRealmViewByAccount } from "../helpers/use-navigate-to-realm-view-by-account";
 
 const requiredEnvs: (keyof Env)[] = [
   "VITE_PUBLIC_MASTER_ADDRESS",
@@ -101,13 +100,11 @@ const DojoContextProvider = ({
   controllerAccount: AccountInterface | null;
   backgroundImage: string;
 }) => {
-  const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
+  useNavigateToRealmViewByAccount(value.components);
+
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const setAddressName = useAddressStore((state) => state.setAddressName);
-  const showHomeScreen = useUIStore((state) => state.showHomeScreen);
-  const setShowHomeScreen = useUIStore((state) => state.setShowHomeScreen);
-
-  const { handleUrlChange } = useQuery();
 
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
@@ -119,17 +116,6 @@ const DojoContextProvider = ({
 
   const [retries, setRetries] = useState(0);
 
-  useEffect(() => {
-    setSpectatorMode(true);
-    const randomRealmEntity = getRandomRealmEntity(value.components);
-    const position = randomRealmEntity ? getComponentValue(value.components.Position, randomRealmEntity) : undefined;
-    handleUrlChange(
-      new Position({ x: randomRealmPosition?.x || 0, y: randomRealmPosition?.y || 0 }).toHexLocationUrl(),
-    );
-    window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-    showBlankOverlay(false);
-  }, []);
-
   const connectWallet = async () => {
     try {
       console.log("Attempting to connect wallet...");
@@ -140,38 +126,15 @@ const DojoContextProvider = ({
     }
   };
 
-  const onSpectatorModeClick = () => {
-    // setShowHomeScreen(false);
-    // setSpectatorMode(true);
-    // handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
-    // window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-    // showBlankOverlay(false);
-  };
-
-  const [accountToUse, setAccountToUse] = useState<Account | AccountInterface | null>(
-    new Account(value.network.provider.provider, "0x0", "0x0"),
-  );
+  const [accountToUse, setAccountToUse] = useState<Account | AccountInterface | null>();
 
   useEffect(() => {
-    if (isSpectatorMode || !controllerAccount) {
+    if (isSpectatorMode) {
       setAccountToUse(new Account(value.network.provider.provider, "0x0", "0x0"));
     } else {
       setAccountToUse(controllerAccount);
     }
   }, [isSpectatorMode, controllerAccount]);
-
-  // useEffect(() => {
-  //   if (isConnected) {
-  //     console.log("isConnected so showing home screen", isConnected);
-  //     setShowHomeScreen(false);
-  //   } else {
-  //     const randomRealmPosition = getRandomRealmPosition(value.components);
-  //     handleUrlChange(
-  //       new Position({ x: randomRealmPosition?.x || 0, y: randomRealmPosition?.y || 0 }).toHexLocationUrl(),
-  //     );
-  //     window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-  //   }
-  // }, [isConnected]);
 
   useEffect(() => {
     const setUserName = async () => {
@@ -225,9 +188,7 @@ const DojoContextProvider = ({
     );
   }
 
-  console.log("showHomeScreen", showHomeScreen);
-
-  if (showHomeScreen) {
+  if (!isConnected && !isConnecting && showBlankOverlay) {
     return (
       <>
         <CountdownTimer backgroundImage={backgroundImage} />
@@ -236,7 +197,7 @@ const DojoContextProvider = ({
             <div className="flex justify-center space-x-8 mt-2 md:mt-4">
               {!isConnected && (
                 <>
-                  <SpectateButton onClick={onSpectatorModeClick} />
+                  <SpectateButton onClick={() => {}} />
                   <OnboardingButton
                     onClick={connectWallet}
                     className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80"
