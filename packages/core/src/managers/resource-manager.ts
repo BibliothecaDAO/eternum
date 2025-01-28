@@ -96,21 +96,16 @@ export class ResourceManager {
     if (!resource) return 0n;
     const production = resource.production!;
 
-    let laborUnitsBurned = this._laborUnitsBurned(resource, currentTick);
-    let totalProducedAmount = laborUnitsBurned * production.production_rate;
-    return totalProducedAmount;
-  }
-
-  private _laborUnitsBurned(resource: any, currentTick: number): bigint {
-    const production = resource?.production;
-    if (!production) return 0n;
-    let laborUnitsBurned = BigInt(currentTick - production.last_updated_tick) * BigInt(production.building_count);
-    if (!this.isFood() && laborUnitsBurned > production.output_amount_left) {
-      laborUnitsBurned = production.output_amount_left;
+    if (!production || production.building_count == 0) return 0n;
+    
+    let totalAmountProduced = BigInt(currentTick - production.last_updated_tick) * BigInt(production.production_rate);
+    if (!this.isFood() && totalAmountProduced > production.output_amount_left) {
+      totalAmountProduced = production.output_amount_left;
     }
 
-    return laborUnitsBurned;
+    return totalAmountProduced;
   }
+
 
   private _productionEndsAt(): number {
     const resource = this._getResource();
@@ -118,7 +113,7 @@ export class ResourceManager {
     if (!production) return 0;
     if (production.building_count === 0) return 0;
 
-    let productionTicksLeft = BigInt(production.output_amount_left) / BigInt(production.building_count);
+    let productionTicksLeft = BigInt(production.output_amount_left) / BigInt(production.production_rate);
     if (this.isFood()) {
       productionTicksLeft = BigInt(1) << BigInt(64);
     }
