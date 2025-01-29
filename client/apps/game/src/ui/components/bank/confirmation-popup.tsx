@@ -1,4 +1,7 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
+import { NoAccountModal } from "@/ui/layouts/no-account-modal";
+import { useAccount } from "@starknet-react/core";
 import { X } from "lucide-react";
 import React from "react";
 
@@ -21,6 +24,19 @@ export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({
   isLoading = false,
   disabled,
 }) => {
+  const { account } = useAccount();
+  const setModal = useUIStore((state) => state.setModal);
+
+  const handleConfirm = () => {
+    if (!account) {
+      setModal(null, false);
+      setModal(<NoAccountModal />, true);
+      return;
+    }
+
+    onConfirm();
+  };
+
   return (
     <div className="fixed bottom-100 inset-0 bg-brown bg-opacity-60 z-50 flex justify-center items-center">
       <div className="border border-gold/10 bg-brown/90 bg-hex-bg rounded p-8 w-full max-w-md mx-auto flex flex-col items-center relative">
@@ -33,7 +49,7 @@ export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({
         {children && <div className="text-center mt-4 w-full">{children}</div>}
         <div className="flex justify-center mt-4 w-full">
           <div className="flex justify-center space-x-4">
-            <Button disabled={disabled} isLoading={isLoading} variant="primary" className={""} onClick={onConfirm}>
+            <Button disabled={disabled} isLoading={isLoading} variant="primary" className={""} onClick={handleConfirm}>
               Confirm
             </Button>
           </div>
