@@ -1,20 +1,39 @@
-import ProgressBar from "@ramonak/react-progress-bar";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { RpcProvider } from "starknet";
-
-let initialToriiBlock: number | undefined = undefined;
-let gameSynced = false;
+import { IpcMethod } from "../../types";
 
 const SYNC_INTERVAL = 4000;
 
-export const SyncingState = ({ reset }: { reset: boolean }) => {
+export const SyncingState = React.memo(({ reset }: { reset: boolean }) => {
+  const [gameSynced, setGameSynced] = useState(false);
+  const [initialToriiBlock, setInitialToriiBlock] = useState<number | null>(null);
+  const [receivedFirstBlock, setReceivedFirstBlock] = useState<number | null>(null);
+
   const [currentChainBlock, setCurrentChainBlock] = useState<number>(0);
   const [currentToriiBlock, setCurrentToriiBlock] = useState<number>(0);
 
   useEffect(() => {
+    const requestStoredStateFirstBlock = async (receivedFirstBlock: number) => {
+      const firstBlock = await window.electronAPI.invoke(IpcMethod.RequestFirstBlock, null);
+      if (!firstBlock) {
+        setInitialToriiBlock(receivedFirstBlock);
+        await window.electronAPI.sendMessage(IpcMethod.SetFirstBlock, receivedFirstBlock);
+      } else {
+        setInitialToriiBlock(firstBlock);
+      }
+    };
+
+    if (receivedFirstBlock) {
+      requestStoredStateFirstBlock(receivedFirstBlock);
+    }
+  }, [receivedFirstBlock]);
+
+  useEffect(() => {
     if (reset) {
-      initialToriiBlock = undefined;
-      gameSynced = false;
+      setGameSynced(false);
+      setInitialToriiBlock(null);
+      setReceivedFirstBlock(null);
+      setCurrentChainBlock(0);
       setCurrentToriiBlock(0);
     }
   }, [reset]);
@@ -24,14 +43,15 @@ export const SyncingState = ({ reset }: { reset: boolean }) => {
       return 0;
     }
     if (currentChainBlock === initialToriiBlock) {
-      gameSynced = true;
+      setGameSynced(true);
       return 1;
     }
 
     const progress = (currentToriiBlock - initialToriiBlock) / (currentChainBlock - initialToriiBlock);
     if (Math.ceil(progress * 100) === 100) {
-      gameSynced = true;
+      setGameSynced(true);
     }
+    console.log(progress);
     return progress;
   }, [currentToriiBlock, currentChainBlock, initialToriiBlock, reset]);
 
@@ -47,10 +67,7 @@ export const SyncingState = ({ reset }: { reset: boolean }) => {
     const interval = setInterval(async () => {
       try {
         let currentBlock = await getToriiCurrentBlock();
-        console.log(`torii currentBlock ${currentBlock}`);
-        if (initialToriiBlock === undefined) {
-          initialToriiBlock = currentBlock;
-        }
+        setReceivedFirstBlock((prev) => (prev === null ? currentBlock : prev));
         setCurrentToriiBlock(currentBlock);
       } catch (error) {
         console.error("Error getting torii current block", error);
@@ -61,28 +78,26 @@ export const SyncingState = ({ reset }: { reset: boolean }) => {
     };
   }, [reset]);
 
-  return isNaN(progress) || gameSynced ? (
-    <div className="text-gold text-center text-sm">
+  return gameSynced ? (
+    <div className="text-gold text-center text-xs noselect">
       Game is fully synced, <br />
       do not close this window
     </div>
   ) : (
-    <div className="flex flex-col items-center">
-      <div className="text-gold text-center text-sm mb-4">
+    <div className="flex flex-col items-center noselect">
+      <div className="text-gold text-center text-xs mb-4">
         Game is syncing, <br />
         do not close this window
       </div>
-      <ProgressBar
-        className="text-base w-full"
-        labelSize="9px"
-        height="14px"
-        completed={Math.ceil(progress * 100)}
-        bgColor="#F6C297"
-        borderRadius="10px"
-      />
+      <div className="w-48 h-1 bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-gold/50 to-gold transition-all duration-300 ease-out"
+          style={{ width: `${Math.min(Math.max(progress * 100, 0), 100)}%` }}
+        ></div>
+      </div>
     </div>
   );
-};
+});
 
 const getChainCurrentBlock = async () => {
   const provider = new RpcProvider({

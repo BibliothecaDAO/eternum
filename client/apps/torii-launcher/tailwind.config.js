@@ -4,9 +4,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brown: "#0C0A08",
         gold: "#F6C297",
         red: "#FC4C4C",
+        grey: "#121212",
+        brown: "#14100D",
       },
       keyframes: {
         "fade-in": {
@@ -24,5 +25,21 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function ({ addUtilities }) {
+      addUtilities({
+        ".noselect": {
+          "-webkit-touch-callout": "none",
+          "-webkit-user-select": "none",
+          "-khtml-user-select": "none",
+          "-moz-user-select": "none",
+          "-ms-user-select": "none",
+          "user-select": "none",
+        },
+        ".border-gradient": {
+          borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",
+        },
+      });
+    },
+  ],
 };

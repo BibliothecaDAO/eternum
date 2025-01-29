@@ -53,14 +53,14 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
 };
 
 export function CountdownTimer({ backgroundImage }: { backgroundImage: string }) {
-  const { seasonStart, countdown, currentBlockTimestamp } = useSeasonStart();
+  const { seasonStart, countdown, nextBlockTimestamp } = useSeasonStart();
 
   const days = Math.floor(Number(countdown) / (3600 * 24));
   const hours = Math.floor((Number(countdown) % (3600 * 24)) / 3600);
   const minutes = Math.floor((Number(countdown) % 3600) / 60);
   const seconds = Number(countdown) % 60;
 
-  if (countdown < 0 || currentBlockTimestamp === 0n || seasonStart === 0n) return null;
+  if (countdown < 0 || nextBlockTimestamp === 0n || seasonStart === 0n) return null;
 
   return (
     <div className="relative min-h-screen w-full pointer-events-auto">

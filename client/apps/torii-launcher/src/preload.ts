@@ -6,5 +6,12 @@ import { IpcMethod } from "./types";
 const { contextBridge, ipcRenderer } = require("electron/renderer");
 
 contextBridge.exposeInMainWorld("electronAPI", {
-  sendMessage: (message: IpcMethod) => ipcRenderer.send(message, {}),
+  sendMessage: (message: IpcMethod, data?: any) => ipcRenderer.send(message, data),
+  invoke: (message: IpcMethod, data?: any) => ipcRenderer.invoke(message, data),
+  onMessage: (message: IpcMethod, callback: (data: any) => void) => {
+    ipcRenderer.on(message, (_event: any, data: any) => {
+      callback(data);
+    });
+    return () => ipcRenderer.removeListener(message, callback);
+  },
 });
