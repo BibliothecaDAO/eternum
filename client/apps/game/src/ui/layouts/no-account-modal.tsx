@@ -1,7 +1,7 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
-import { ModalContainer } from "../modal-container";
+import { ModalContainer } from "../components/modal-container";
 
 export const NoAccountModal = () => {
   console.log(" this is the no account modal");

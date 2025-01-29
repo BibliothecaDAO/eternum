@@ -10,9 +10,9 @@ import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
-import { NoAccountModal } from "@/ui/components/hints/no-account-modal";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { NoAccountModal } from "@/ui/layouts/no-account-modal";
 import {
   BUILDINGS_CENTER,
   BuildingType,

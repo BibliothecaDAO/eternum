@@ -7,7 +7,7 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { BuildingType, configManager, PlayerStructure, StructureType, TileManager } from "@bibliothecadao/eternum";
 import { useArmiesByStructure, useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
-import { NoAccountModal } from "../hints/no-account-modal";
+import { NoAccountModal } from "../../layouts/no-account-modal";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
 

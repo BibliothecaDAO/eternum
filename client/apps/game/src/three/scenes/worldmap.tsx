@@ -15,9 +15,9 @@ import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
-import { NoAccountModal } from "@/ui/components/hints/no-account-modal";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { NoAccountModal } from "@/ui/layouts/no-account-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyMovementManager,
