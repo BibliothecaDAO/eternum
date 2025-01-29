@@ -10,6 +10,7 @@ import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
+import { NoAccountModal } from "@/ui/components/hints/no-account-modal";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
@@ -304,17 +305,24 @@ export default class HexceptionScene extends HexagonScene {
 
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
+
+    // Check if account exists before allowing actions
+    const account = useAccountStore.getState().account;
+    console.log({ account });
+
+    if (!account) {
+      console.log("toggale no account modals");
+      useUIStore.getState().setModal(null, false);
+      useUIStore.getState().setModal(<NoAccountModal />, true);
+      return;
+    }
+
     if (buildingType) {
       // if building mode
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
         this.clearBuildingMode();
         try {
-          await this.tileManager.placeBuilding(
-            useAccountStore.getState().account!,
-            buildingType.type,
-            normalizedCoords,
-            buildingType.resource,
-          );
+          await this.tileManager.placeBuilding(account, buildingType.type, normalizedCoords, buildingType.resource);
         } catch (error) {
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
         }

@@ -103,6 +103,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   console.log("rerender world");
 
+  console.log({ showModal, modalContent });
+
   // Setup hooks
   useStructureEntityId();
 

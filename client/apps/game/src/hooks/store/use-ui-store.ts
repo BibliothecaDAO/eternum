@@ -66,6 +66,7 @@ interface UIStore {
   setHasAcceptedToS: (accepted: boolean) => void;
   showToS: boolean;
   setShowToS: (show: boolean) => void;
+  setModal: (content: React.ReactNode | null, show: boolean) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -137,6 +138,7 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
+    setModal: (content: React.ReactNode | null, show: boolean) => set({ modalContent: content, showModal: show }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),

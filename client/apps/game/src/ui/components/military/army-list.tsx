@@ -7,6 +7,7 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { BuildingType, configManager, PlayerStructure, StructureType, TileManager } from "@bibliothecadao/eternum";
 import { useArmiesByStructure, useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
+import { NoAccountModal } from "../hints/no-account-modal";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
 
@@ -73,6 +74,10 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
 
   const handleCreateArmy = (is_defensive_army: boolean) => {
     if (!structure.entity_id) throw new Error("Structure's entity id is undefined");
+    if (!account || account.address === "0x0") {
+      useUIStore.getState().setModal(<NoAccountModal />, true);
+      return;
+    }
     setLoading(is_defensive_army ? Loading.CreateDefensive : Loading.CreateAttacking);
     create_army({
       signer: account,

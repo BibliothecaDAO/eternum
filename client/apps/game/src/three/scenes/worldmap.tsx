@@ -15,6 +15,7 @@ import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
+import { NoAccountModal } from "@/ui/components/hints/no-account-modal";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -298,13 +299,16 @@ export default class WorldmapScene extends HexagonScene {
     this.clearCache();
     this.totalStructures = this.structureManager.getTotalStructures() + 1;
 
+    const account = useAccountStore.getState().account;
+
+    if (!account) {
+      useUIStore.getState().setModal(null, false);
+      useUIStore.getState().setModal(<NoAccountModal />, true);
+      return;
+    }
+
     this.tileManager
-      .placeStructure(
-        useAccountStore.getState().account!,
-        this.structureEntityId,
-        buildingType.type,
-        contractHexPosition,
-      )
+      .placeStructure(account, this.structureEntityId, buildingType.type, contractHexPosition)
       .catch(() => {
         this.structureManager.structures.removeStructureFromPosition(hexCoords);
         this.structureManager.structureHexCoords.get(hexCoords.col)?.delete(hexCoords.row);
@@ -336,6 +340,14 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    // Check if account exists before allowing actions
+    const account = useAccountStore.getState().account;
+    if (!account) {
+      useUIStore.getState().setModal(null, false);
+      useUIStore.getState().setModal(<NoAccountModal />, true);
+      return;
+    }
+
     const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
 
     const { selectedEntityId, travelPaths } = this.state.armyActions;
@@ -351,13 +363,7 @@ export default class WorldmapScene extends HexagonScene {
             selectedEntityId,
           );
           playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-          armyMovementManager.moveArmy(
-            useAccountStore.getState().account!,
-            selectedPath,
-            isExplored,
-            currentBlockTimestamp,
-            currentArmiesTick,
-          );
+          armyMovementManager.moveArmy(account, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
           this.state.updateHoveredHex(null);
         }
       }
