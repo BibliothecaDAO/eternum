@@ -448,7 +448,7 @@ const OrderRow = memo(
           <ConfirmationPopup
             title="Confirm Trade"
             onConfirm={onAccept}
-            disabled={!isBuy && donkeysNeeded > donkeyBalance}
+            disabled={(!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0}
             onCancel={() => {
               setConfirmOrderModal(false);
             }}
