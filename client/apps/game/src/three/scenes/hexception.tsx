@@ -12,7 +12,6 @@ import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { NoAccountModal } from "@/ui/layouts/no-account-modal";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -138,7 +137,7 @@ export default class HexceptionScene extends HexagonScene {
     this.loadBuildingModels();
     this.loadBiomeModels(900);
 
-    this.tileManager = new TileManager(this.dojo.components, this.dojo.network.provider, { col: 0, row: 0 });
+    this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
     this.setup();
 
@@ -308,21 +307,18 @@ export default class HexceptionScene extends HexagonScene {
 
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
-    console.log({ account });
-
-    if (!account) {
-      console.log("toggale no account modals");
-      useUIStore.getState().setModal(null, false);
-      useUIStore.getState().setModal(<NoAccountModal />, true);
-      return;
-    }
-
     if (buildingType) {
       // if building mode
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
         this.clearBuildingMode();
         try {
-          await this.tileManager.placeBuilding(account, buildingType.type, normalizedCoords, buildingType.resource);
+          await this.tileManager.placeBuilding(
+            account!,
+            this.state.structureEntityId,
+            buildingType.type,
+            normalizedCoords,
+            buildingType.resource,
+          );
         } catch (error) {
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
         }

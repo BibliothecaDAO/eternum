@@ -2,7 +2,7 @@ import { Account, AccountInterface, BigNumberish, CairoOption, num } from "stark
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
 
-interface SystemSigner {
+export interface SystemSigner {
   signer: AccountInterface | Account;
 }
 

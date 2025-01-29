@@ -50,13 +50,13 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
   const handlePauseResumeProduction = (paused: boolean, innerCol: number, innerRow: number) => {
     setIsLoading({ isLoading: true, innerCol, innerRow });
-    const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
+    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
       col: structure.position!.x,
       row: structure.position!.y,
     });
 
     const action = paused ? tileManager.resumeProduction : tileManager.pauseProduction;
-    action(dojo.account.account, innerCol, innerRow).then(() => {
+    action(dojo.account.account, structureEntityId, innerCol, innerRow).then(() => {
       setIsLoading({ isLoading: false, innerCol, innerRow });
     });
   };

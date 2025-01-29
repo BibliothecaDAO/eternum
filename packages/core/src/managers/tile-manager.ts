@@ -16,8 +16,8 @@ import {
   getNeighborHexes,
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
-import { EternumProvider } from "../provider";
-import { ContractAddress, HexPosition, ID, Position } from "../types";
+import { SystemCalls } from "../dojo/create-system-calls";
+import { HexPosition, ID, Position } from "../types";
 import { configManager } from "./config-manager";
 
 export class TileManager {
@@ -26,7 +26,7 @@ export class TileManager {
 
   constructor(
     private readonly components: ClientComponents,
-    private readonly provider: EternumProvider,
+    private readonly systemCalls: SystemCalls,
     hexCoords: HexPosition,
   ) {
     this.col = hexCoords.col;
@@ -102,20 +102,6 @@ export class TileManager {
       const structure = getComponentValue(this.components.Structure, structures[0])!;
       let category = structure.category;
       return StructureType[category as keyof typeof StructureType];
-    }
-  };
-
-  private _getOwnerEntityId = (address: ContractAddress) => {
-    const entities = Array.from(
-      runQuery([
-        Has(this.components.Owner),
-        HasValue(this.components.Owner, { address }),
-        HasValue(this.components.Position, { x: this.col, y: this.row }),
-      ]),
-    );
-
-    if (entities.length === 1) {
-      return getComponentValue(this.components.Owner, entities[0])!.entity_id;
     }
   };
 
@@ -354,12 +340,11 @@ export class TileManager {
 
   placeBuilding = async (
     signer: DojoAccount,
+    structureEntityId: ID,
     buildingType: BuildingType,
     hexCoords: HexPosition,
     resourceType?: number,
   ) => {
-    const entityId = this._getOwnerEntityId(ContractAddress(signer.address));
-    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
     const { col, row } = hexCoords;
 
     const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
@@ -368,20 +353,17 @@ export class TileManager {
 
     // add optimistic rendering
     const { overrideId, populationOverrideId, quantityOverrideId } = this._optimisticBuilding(
-      entityId,
+      structureEntityId,
       col,
       row,
       buildingType,
       resourceType,
     );
 
-    // const { isSoundOn, effectsLevel } = useUIStore.getState();
-    // playBuildingSound(buildingType, isSoundOn, effectsLevel);
-
     try {
-      await this.provider.create_building({
+      await this.systemCalls.create_building({
         signer,
-        entity_id: entityId,
+        entity_id: structureEntityId,
         directions: directions,
         building_category: buildingType,
         produce_resource_type:
@@ -399,16 +381,13 @@ export class TileManager {
     }
   };
 
-  destroyBuilding = async (signer: DojoAccount, col: number, row: number) => {
-    const entityId = this._getOwnerEntityId(ContractAddress(signer.address));
-
-    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
+  destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
     // add optimistic rendering
-    this._optimisticDestroy(entityId, col, row);
+    this._optimisticDestroy(structureEntityId, col, row);
 
-    await this.provider.destroy_building({
+    await this.systemCalls.destroy_building({
       signer,
-      entity_id: entityId,
+      entity_id: structureEntityId,
       building_coord: {
         x: col,
         y: row,
@@ -416,15 +395,12 @@ export class TileManager {
     });
   };
 
-  pauseProduction = async (signer: DojoAccount, col: number, row: number) => {
-    const entityId = this._getOwnerEntityId(ContractAddress(signer.address));
-    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
-
+  pauseProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
     this._optimisticPause(col, row);
 
-    await this.provider.pause_production({
+    await this.systemCalls.pause_production({
       signer,
-      entity_id: entityId,
+      entity_id: structureEntityId,
       building_coord: {
         x: col,
         y: row,
@@ -432,15 +408,12 @@ export class TileManager {
     });
   };
 
-  resumeProduction = async (signer: DojoAccount, col: number, row: number) => {
-    const entityId = this._getOwnerEntityId(ContractAddress(signer.address));
-    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
-
+  resumeProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
     this._optimisticResume(col, row);
 
-    await this.provider.resume_production({
+    await this.systemCalls.resume_production({
       signer,
-      entity_id: entityId,
+      entity_id: structureEntityId,
       building_coord: {
         x: col,
         y: row,
@@ -449,10 +422,11 @@ export class TileManager {
   };
 
   placeStructure = async (signer: DojoAccount, entityId: ID, structureType: StructureType, coords: Position) => {
+    console.log({ signer });
     const { overrideId } = this._optimisticStructure(coords, structureType);
     try {
       if (structureType == StructureType.Hyperstructure) {
-        return await this.provider.create_hyperstructure({
+        return await this.systemCalls.create_hyperstructure({
           signer,
           creator_entity_id: entityId,
           coords,
