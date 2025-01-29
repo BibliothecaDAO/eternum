@@ -166,7 +166,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.worldStructures,
         button: (
           <CircleButton
-            disabled={!structureIsMine}
+            disabled={disableButtons}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"
             label={worldStructures}
@@ -182,7 +182,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.trade,
         button: (
           <CircleButton
-            disabled={!structureIsMine}
+            disabled={disableButtons}
             className="trade-selector"
             image={BuildingThumbs.scale}
             tooltipLocation="top"
