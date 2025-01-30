@@ -72,6 +72,9 @@ export const LeftNavigationModule = memo(() => {
   );
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
+  const disableButtons = !structureIsMine && account.address !== "0x0";
+  console.log({ account, structureIsMine, disableButtons });
+
   const isRealm = useMemo(
     () => Boolean(structureInfo) && String(structureInfo?.structureCategory) === "Realm",
     [structureInfo],
@@ -118,7 +121,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.military,
         button: (
           <CircleButton
-            disabled={!structureIsMine}
+            disabled={disableButtons}
             className="military-selector"
             image={BuildingThumbs.military}
             tooltipLocation="top"
@@ -133,7 +136,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.construction,
         button: (
           <CircleButton
-            disabled={!structureIsMine || !isRealm}
+            disabled={disableButtons || !isRealm}
             className="construction-selector"
             image={BuildingThumbs.construction}
             tooltipLocation="top"
@@ -148,7 +151,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.resourceArrivals,
         button: (
           <CircleButton
-            disabled={!structureIsMine}
+            disabled={disableButtons}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label="Resource Arrivals"
@@ -163,7 +166,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.worldStructures,
         button: (
           <CircleButton
-            disabled={!structureIsMine}
+            disabled={disableButtons}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"
             label={worldStructures}
@@ -179,7 +182,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.trade,
         button: (
           <CircleButton
-            disabled={!structureIsMine}
+            disabled={disableButtons}
             className="trade-selector"
             image={BuildingThumbs.scale}
             tooltipLocation="top"
@@ -218,7 +221,7 @@ export const LeftNavigationModule = memo(() => {
     );
 
     return filteredNavigation;
-  }, [view, openedPopups, structureEntityId, isMapView, structureIsMine, isRealm, arrivedNotificationLength]);
+  }, [view, openedPopups, structureEntityId, isMapView, disableButtons, isRealm, arrivedNotificationLength]);
 
   const slideLeft = {
     hidden: { x: "-100%" },

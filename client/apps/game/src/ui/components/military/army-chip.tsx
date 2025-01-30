@@ -4,7 +4,7 @@ import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
 import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position as PositionInterface } from "@/types/position";
+import { Position } from "@/types/position";
 import { ArmyManagementCard, ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
@@ -12,7 +12,7 @@ import { Exchange } from "@/ui/components/structures/worldmap/structure-card";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
-import { armyHasTroops, ArmyInfo, BattleManager, Position } from "@bibliothecadao/eternum";
+import { armyHasTroops, ArmyInfo, BattleManager } from "@bibliothecadao/eternum";
 import { useArmiesAtPosition, useDojo } from "@bibliothecadao/react";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
@@ -33,7 +33,7 @@ export const NavigateToPositionIcon = ({
     <Compass
       className={`w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
       onClick={() => {
-        const { x, y } = new PositionInterface(position).getNormalized();
+        const { x, y } = position.getNormalized();
         setNavigationTarget({
           col: x,
           row: y,
@@ -139,9 +139,14 @@ export const ArmyChip = ({
                             <>
                               <ViewOnMapIcon
                                 className="w-5 h-5 hover:scale-110 transition-all duration-300"
-                                position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
+                                position={
+                                  new Position({
+                                    x: Number(updatedArmy!.position.x),
+                                    y: Number(updatedArmy!.position.y),
+                                  })
+                                }
                               />
-                              {isOnMap && <NavigateToPositionIcon position={updatedArmy!.position} />}
+                              {isOnMap && <NavigateToPositionIcon position={new Position(updatedArmy!.position)} />}
                               <Swap
                                 className={`w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
                                   army.protectee ? "defensive-army-swap-selector" : "attacking-army-swap-selector"

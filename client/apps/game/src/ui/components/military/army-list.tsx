@@ -20,7 +20,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const dojo = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
+  const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
     col: structure.position.x,
     row: structure.position.y,
   });

@@ -1,3 +1,4 @@
+import { Position } from "@/types/position";
 import { FragmentMinePanel } from "@/ui/components/fragmentMines/fragment-mine-panel";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/hyperstructure-panel";
@@ -324,8 +325,8 @@ const EntityHeader = ({ entity }: { entity: any }) => {
             <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${getAccessStyle(access)}`}>{access}</span>
           )}
           <div className="flex flex-row">
-            <ViewOnMapIcon className="my-auto" position={position} />
-            <NavigateToPositionIcon className="h-6 w-6" position={position} />
+            <ViewOnMapIcon className="my-auto" position={new Position(position)} />
+            <NavigateToPositionIcon className="h-6 w-6" position={new Position(position)} />
           </div>
         </div>
       </div>

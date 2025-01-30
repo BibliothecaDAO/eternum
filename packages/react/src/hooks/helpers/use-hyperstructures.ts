@@ -188,7 +188,6 @@ export const useGetUnregisteredEpochs = () => {
 
   const getUnregisteredShares = useCallback(() => {
     const epochs = getEpochs();
-    console.log("epochs", epochs);
 
     const registeredSharesEntities = runQuery([
       Has(LeaderboardRegisterShare),
@@ -201,7 +200,6 @@ export const useGetUnregisteredEpochs = () => {
       .filter(
         (share): share is ComponentValue<ClientComponents["LeaderboardRegisterShare"]["schema"]> => share !== undefined,
       );
-    console.log("registeredShares", registeredShares);
 
     return epochs.filter(
       (epoch) =>

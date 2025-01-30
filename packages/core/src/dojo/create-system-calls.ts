@@ -1,7 +1,39 @@
 import type { EternumProvider } from "../provider";
 import * as SystemProps from "../types";
 
-export function createSystemCalls({ provider }: { provider: EternumProvider }) {
+export type SystemCallAuthHandler = {
+  onNoAccount?: () => void;
+  onError?: (error: Error) => void;
+};
+
+export type SystemCalls = ReturnType<typeof createSystemCalls>;
+
+export function createSystemCalls({
+  provider,
+  authHandler,
+}: {
+  provider: EternumProvider;
+  authHandler?: SystemCallAuthHandler;
+}) {
+  const withAuth = <T extends (...args: any[]) => Promise<any>>(fn: T): T => {
+    return (async (...args: Parameters<T>) => {
+      try {
+        const props = args[0] as SystemProps.SystemSigner;
+
+        // Check for signer specifically
+        if (!props?.signer || props?.signer.address === "0x0") {
+          authHandler?.onNoAccount?.();
+          throw new Error("No account connected");
+        }
+
+        return await fn(...args);
+      } catch (error) {
+        authHandler?.onError?.(error as Error);
+        throw error;
+      }
+    }) as T;
+  };
+
   const uuid = async () => {
     return await provider.uuid();
   };
@@ -56,10 +88,6 @@ export function createSystemCalls({ provider }: { provider: EternumProvider }) {
 
   const upgrade_realm = async (props: SystemProps.UpgradeRealmProps) => {
     await provider.upgrade_realm(props);
-  };
-
-  const create_multiple_realms_dev = async (props: SystemProps.CreateMultipleRealmsDevProps) => {
-    await provider.create_multiple_realms_dev(props);
   };
 
   const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
@@ -272,78 +300,77 @@ export function createSystemCalls({ provider }: { provider: EternumProvider }) {
   };
 
   const systemCalls = {
-    send_resources,
-    send_resources_multiple,
-    pickup_resources,
-    remove_liquidity,
-    add_liquidity,
-    sell_resources,
-    buy_resources,
-    change_bank_owner_fee,
-    open_account,
-    create_bank,
-    explore,
-    set_address_name,
-    set_entity_name,
-    isLive,
-    create_order,
-    accept_order,
-    cancel_order,
-    accept_partial_order,
-    upgrade_realm,
-    create_multiple_realms,
-    create_multiple_realms_dev,
-    transfer_resources,
-    travel_hex,
-    destroy_building,
-    pause_production,
-    resume_production,
-    create_building,
-    create_army,
-    delete_army,
-    uuid,
+    send_resources: withAuth(send_resources),
+    send_resources_multiple: withAuth(send_resources_multiple),
+    pickup_resources: withAuth(pickup_resources),
+    remove_liquidity: withAuth(remove_liquidity),
+    add_liquidity: withAuth(add_liquidity),
+    sell_resources: withAuth(sell_resources),
+    buy_resources: withAuth(buy_resources),
+    change_bank_owner_fee: withAuth(change_bank_owner_fee),
+    open_account: withAuth(open_account),
+    create_bank: withAuth(create_bank),
+    explore: withAuth(explore),
+    set_address_name: withAuth(set_address_name),
+    set_entity_name: withAuth(set_entity_name),
+    isLive: isLive,
+    create_order: withAuth(create_order),
+    accept_order: withAuth(accept_order),
+    cancel_order: withAuth(cancel_order),
+    accept_partial_order: withAuth(accept_partial_order),
+    upgrade_realm: withAuth(upgrade_realm),
+    create_multiple_realms: withAuth(create_multiple_realms),
+    transfer_resources: withAuth(transfer_resources),
+    travel_hex: withAuth(travel_hex),
+    destroy_building: withAuth(destroy_building),
+    pause_production: withAuth(pause_production),
+    resume_production: withAuth(resume_production),
+    create_building: withAuth(create_building),
+    create_army: withAuth(create_army),
+    delete_army: withAuth(delete_army),
+    uuid: uuid,
 
-    create_hyperstructure,
-    contribute_to_construction,
-    set_access,
-    set_co_owners,
-    get_points,
-    end_game,
-    register_to_leaderboard,
-    claim_leaderboard_rewards,
+    create_hyperstructure: withAuth(create_hyperstructure),
+    contribute_to_construction: withAuth(contribute_to_construction),
+    set_access: withAuth(set_access),
+    set_co_owners: withAuth(set_co_owners),
+    get_points: withAuth(get_points),
+    end_game: withAuth(end_game),
+    register_to_leaderboard: withAuth(register_to_leaderboard),
+    claim_leaderboard_rewards: withAuth(claim_leaderboard_rewards),
 
-    claim_quest,
-    mint_resources,
+    claim_quest: withAuth(claim_quest),
+    mint_resources: withAuth(mint_resources),
 
-    army_buy_troops,
-    army_merge_troops,
+    army_buy_troops: withAuth(army_buy_troops),
+    army_merge_troops: withAuth(army_merge_troops),
 
-    create_guild,
-    join_guild,
-    whitelist_player,
-    transfer_guild_ownership,
-    remove_guild_member,
-    disband_guild,
-    remove_player_from_whitelist,
+    create_guild: withAuth(create_guild),
+    join_guild: withAuth(join_guild),
+    whitelist_player: withAuth(whitelist_player),
+    transfer_guild_ownership: withAuth(transfer_guild_ownership),
+    remove_guild_member: withAuth(remove_guild_member),
+    disband_guild: withAuth(disband_guild),
+    remove_player_from_whitelist: withAuth(remove_player_from_whitelist),
 
-    battle_start,
-    battle_force_start,
-    battle_resolve,
-    battle_leave,
-    battle_join,
-    battle_claim,
-    battle_pillage,
-    battle_leave_and_claim,
-    battle_leave_and_pillage,
+    battle_start: withAuth(battle_start),
+    battle_force_start: withAuth(battle_force_start),
+    battle_resolve: withAuth(battle_resolve),
+    battle_leave: withAuth(battle_leave),
+    battle_join: withAuth(battle_join),
+    battle_claim: withAuth(battle_claim),
+    battle_pillage: withAuth(battle_pillage),
+    battle_leave_and_claim: withAuth(battle_leave_and_claim),
+    battle_leave_and_pillage: withAuth(battle_leave_and_pillage),
 
-    mint_test_realm,
-    mint_season_passes,
-    attach_lords,
-    detach_lords,
-    mint_test_lords,
-    bridge_resources_into_realm,
-    bridge_start_withdraw_from_realm,
-    bridge_finish_withdraw_from_realm,
+    mint_test_realm: withAuth(mint_test_realm),
+    mint_season_passes: withAuth(mint_season_passes),
+    attach_lords: withAuth(attach_lords),
+    detach_lords: withAuth(detach_lords),
+    mint_test_lords: withAuth(mint_test_lords),
+    bridge_resources_into_realm: withAuth(bridge_resources_into_realm),
+    bridge_start_withdraw_from_realm: withAuth(bridge_start_withdraw_from_realm),
+    bridge_finish_withdraw_from_realm: withAuth(bridge_finish_withdraw_from_realm),
   };
 
   return systemCalls;

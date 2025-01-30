@@ -18,6 +18,7 @@ import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
 import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
+import { NoAccountModal } from "./ui/layouts/no-account-modal";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 import { ETERNUM_CONFIG } from "./utils/config";
@@ -69,10 +70,23 @@ async function init() {
 
   const setupResult = await setup(
     { ...dojoConfig },
-    { vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS, useBurner: env.VITE_PUBLIC_CHAIN === "local" },
+    {
+      vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+      useBurner: env.VITE_PUBLIC_CHAIN === "local",
+    },
+    {
+      onNoAccount: () => {
+        state.setModal(null, false);
+        state.setModal(<NoAccountModal />, true);
+      },
+      onError: (error) => {
+        console.error("System call error:", error);
+        // Handle other types of errors if needed
+      },
+    },
   );
 
-  const eternumConfig = await ETERNUM_CONFIG();
+  const eternumConfig = ETERNUM_CONFIG();
   configManager.setDojo(setupResult.components, eternumConfig);
 
   await initialSync(setupResult, state);
