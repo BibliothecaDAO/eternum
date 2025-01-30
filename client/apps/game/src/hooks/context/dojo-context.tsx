@@ -18,6 +18,7 @@ import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
+import { useNavigateToHexView } from "../helpers/use-navigate";
 import { useNavigateToRealmViewByAccount } from "../helpers/use-navigate-to-realm-view-by-account";
 
 export const NULL_ACCOUNT = {
@@ -119,6 +120,8 @@ const DojoContextProvider = ({
   const { isConnected, isConnecting, connector } = useAccount();
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
+
+  const navigateToHexView = useNavigateToHexView();
 
   const [retries, setRetries] = useState(0);
 
@@ -249,6 +252,3 @@ const DojoContextProvider = ({
     </DojoContext.Provider>
   );
 };
-function navigateToHexView(arg0: Position) {
-  throw new Error("Function not implemented.");
-}
