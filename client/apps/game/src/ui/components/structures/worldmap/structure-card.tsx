@@ -1,3 +1,4 @@
+import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ResourceExchange } from "@/ui/components/hyperstructures/resource-exchange";
@@ -21,7 +22,7 @@ import {
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
@@ -41,9 +42,7 @@ export const StructureCard = ({
 
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
 
-  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
-
-  const { handleUrlChange } = useQuery();
+  const navigateToHexView = useNavigateToHexView();
 
   const structure = useMemo(
     () =>
@@ -60,12 +59,6 @@ export const StructureCard = ({
     [structure?.owner.address],
   );
 
-  const goToHexView = () => {
-    const url = position.toHexLocationUrl();
-    setPreviewBuilding(null);
-    handleUrlChange(url);
-  };
-
   return (
     structure && (
       <div className={`px-2 py-2 ${className}`}>
@@ -75,7 +68,7 @@ export const StructureCard = ({
             size="xs"
             className={clsx("self-center")}
             onClick={() => {
-              goToHexView();
+              navigateToHexView(position);
             }}
           >
             View {structure?.category}

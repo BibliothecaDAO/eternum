@@ -10,40 +10,33 @@ import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { getSeasonPassAddress } from "@/utils/addresses";
-import { useDojo, usePlayerOwnedRealms, useQuery } from "@bibliothecadao/react";
+import { getRandomRealmEntity } from "@/utils/realms";
+import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
 
-export const ACCOUNT_CHANGE_EVENT = "addressChanged";
-
 export const StepOne = () => {
-  const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
-  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const {
+    setup: { components },
+  } = useDojo();
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
   const setShowToS = useUIStore((state) => state.setShowToS);
 
-  console.log("im in the step onnneee");
-
-  const { handleUrlChange } = useQuery();
-
   const realms = usePlayerOwnedRealms();
 
+  const navigateToHexView = useNavigateToHexView();
+
   const onSpectatorModeClick = () => {
-    setIsLoadingScreenEnabled(true);
-    setSpectatorMode(true);
-    setTimeout(() => {
-      showBlankOverlay(false);
-      handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
-      window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-    }, 250);
+    const randomRealmEntity = getRandomRealmEntity(components);
+    const position = randomRealmEntity && getComponentValue(components.Position, randomRealmEntity);
+    position && navigateToHexView(new Position(position));
   };
 
-  const navigateToRealmView = useNavigateToHexView();
-
   const onPlayModeClick = () => {
-    navigateToRealmView(realms[0]?.position);
+    const realmPosition = new Position(realms[0]?.position);
+    navigateToHexView(realmPosition);
   };
 
   return (

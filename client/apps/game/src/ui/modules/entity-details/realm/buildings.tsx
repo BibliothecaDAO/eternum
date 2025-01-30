@@ -164,7 +164,6 @@ interface BuildingRowProps {
   handlePauseResumeProduction: (paused: boolean, innerCol: number, innerRow: number) => void;
 }
 const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction }: BuildingRowProps) => {
-  console.log(building.category);
   return (
     <div className="flex flex-col p-2 mb-4 text-md rounded transition-colors border border-gold/10">
       <div className="flex justify-between items-center mb-4">

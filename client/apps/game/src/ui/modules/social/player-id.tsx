@@ -173,8 +173,8 @@ export const PlayerId = ({
                 <div className="flex flex-col justify-between text-xs font-bold break-words">
                   {structure.structureName}
                   <div className="flex flex-row items-center">
-                    <NavigateToPositionIcon className="!w-5 !h-5" position={structure.position.getNormalized()} />
-                    <ViewOnMapIcon className="!w-4 !h-4" position={structure.position.getNormalized()} />
+                    <NavigateToPositionIcon className="!w-5 !h-5" position={structure.position} />
+                    <ViewOnMapIcon className="!w-4 !h-4" position={structure.position} />
                   </div>
                 </div>
                 {structureSpecificElement}

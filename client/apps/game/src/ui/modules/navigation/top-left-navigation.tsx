@@ -1,5 +1,5 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
+import { useNavigateToHexView, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
@@ -45,7 +45,7 @@ const structureIcons: Record<string, JSX.Element> = {
   Bank: <Landmark />,
   Hyperstructure: <Sparkles />,
   FragmentMine: <Pickaxe />,
-  SpectatorMode: <EyeIcon />,
+  ReadOnly: <EyeIcon />,
 };
 
 const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: number }) => {
@@ -109,11 +109,9 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const { isMapView, handleUrlChange, hexPosition } = useQuery();
+  const { isMapView, hexPosition } = useQuery();
 
-  const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const { currentBlockTimestamp } = useBlockTimestamp();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -125,12 +123,12 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
 
   const entityInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), currentDefaultTick, setup.components),
-    [structureEntityId, currentDefaultTick],
+    [structureEntityId, currentDefaultTick, account.address],
   );
 
   const structure = useMemo(() => {
     return { ...entityInfo, isFavorite: favorites.includes(entityInfo.entityId) };
-  }, [structureEntityId, favorites]);
+  }, [structureEntityId, favorites, entityInfo]);
 
   const structurePosition = useMemo(() => {
     return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();
@@ -154,26 +152,28 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   }, []);
 
   const navigateToHexView = useNavigateToHexView();
+  const navigateToMapView = useNavigateToMapView();
 
-  const goToHexView = (entityId: ID) => {
-    const structurePosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
-    if (!structurePosition) return;
-    setPreviewBuilding(null);
-    navigateToHexView(structurePosition);
-  };
+  const goToHexView = useCallback(
+    (entityId: ID) => {
+      const structurePosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+      if (!structurePosition) return;
+      navigateToHexView(new Position(structurePosition));
+    },
+    [navigateToHexView],
+  );
 
-  // todo: refactor this
-  const goToMapView = (entityId?: ID) => {
-    const newPosition = entityId
-      ? getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]))
-      : { x: hexPosition.col, y: hexPosition.row };
+  const goToMapView = useCallback(
+    (entityId?: ID) => {
+      const position = entityId
+        ? getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]))
+        : { x: hexPosition.col, y: hexPosition.row };
 
-    if (!newPosition) throw new Error("No position found");
-
-    const url = new Position({ x: newPosition.x, y: newPosition.y }).toMapLocationUrl();
-    setPreviewBuilding(null);
-    handleUrlChange(url);
-  };
+      if (!position) return;
+      navigateToMapView(new Position(position));
+    },
+    [navigateToMapView, hexPosition.col, hexPosition.row],
+  );
 
   const population = useComponentValue(
     setup.components.Population,
@@ -239,17 +239,14 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
             ) : (
               <div className="w-full px-4 py-2">
                 <h5 className="flex items-center gap-4 truncate">
-                  {isSpectatorMode ? (
-                    <>
-                      {structureIcons.SpectatorMode}
-                      <span>Spectator Mode</span>
-                    </>
-                  ) : (
-                    <>
-                      {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
-                      <span>{structure.name}</span>
-                    </>
-                  )}
+                  <>
+                    {!account || account.address === "0x0"
+                      ? structureIcons.ReadOnly
+                      : structure.structureCategory
+                        ? structureIcons[structure.structureCategory]
+                        : structureIcons.None}
+                    <span>{structure.name}</span>
+                  </>
                 </h5>
               </div>
             )}
@@ -320,11 +317,11 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
             <div className="flex justify-center md:justify-start items-center gap-1">
               <NavigateToPositionIcon
                 className={`h-6 w-6 md:h-8 md:w-8 ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
-                position={{ x: structurePosition.x, y: structurePosition.y }}
+                position={new Position(structurePosition)}
               />
               <ViewOnMapIcon
                 className={`h-5 w-5 md:h-7 md:w-7 ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
-                position={{ x: structurePosition.x, y: structurePosition.y }}
+                position={new Position(structurePosition)}
               />
             </div>
           </div>

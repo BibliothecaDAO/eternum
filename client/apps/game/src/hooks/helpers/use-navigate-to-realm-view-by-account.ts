@@ -1,3 +1,4 @@
+import { Position } from "@/types/position";
 import { getPlayerFirstRealm, getRandomRealmEntity } from "@/utils/realms";
 import { ClientComponents, ContractAddress } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
@@ -14,11 +15,11 @@ export const useNavigateToRealmViewByAccount = (components: ClientComponents) =>
     if (!account) {
       const randomRealmEntity = getRandomRealmEntity(components);
       const position = randomRealmEntity ? getComponentValue(components.Position, randomRealmEntity) : undefined;
-      position && navigateToHexView(position);
+      position && navigateToHexView(new Position(position));
     } else {
       const playerRealm = getPlayerFirstRealm(components, ContractAddress(account?.address || "0x0"));
       const position = playerRealm ? getComponentValue(components.Position, playerRealm) : undefined;
-      position && navigateToHexView(position);
+      position && navigateToHexView(new Position(position));
     }
   }, [account?.address]);
 };

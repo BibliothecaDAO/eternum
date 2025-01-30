@@ -102,10 +102,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const battleView = useUIStore((state) => state.battleView);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  console.log("rerender world");
-
-  console.log({ showModal, modalContent });
-
   // Setup hooks
   useStructureEntityId();
 

@@ -3,6 +3,7 @@ import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg"
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { TroopDisplay } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
@@ -98,7 +99,9 @@ export const BattleListItem = ({ battleEntityId, ownArmySelected, showCompass = 
                 <TroopDisplay troops={updatedBattle?.attack_army?.troops} />
               </div>
               <div className="flex flex-col font-bold m-auto relative">
-                {showCompass && battlePosition && <ViewOnMapIcon hideTooltip={true} position={battlePosition} />}
+                {showCompass && battlePosition && (
+                  <ViewOnMapIcon hideTooltip={true} position={new Position(battlePosition)} />
+                )}
                 <div
                   className="font-bold m-auto animate-pulse"
                   onMouseEnter={() =>

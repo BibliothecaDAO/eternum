@@ -1,21 +1,35 @@
 import { Position } from "@/types/position";
-import { ACCOUNT_CHANGE_EVENT } from "@/ui/modules/onboarding/steps";
-import { type Position as PositionType } from "@bibliothecadao/eternum";
 import { useQuery } from "@bibliothecadao/react";
 import { useUIStore } from "../store/use-ui-store";
 
 export const useNavigateToHexView = () => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const { handleUrlChange } = useQuery();
 
-  return (position: PositionType) => {
-    const url = new Position(position).toHexLocationUrl();
+  return (position: Position) => {
+    const url = position.toHexLocationUrl();
 
     setIsLoadingScreenEnabled(true);
     showBlankOverlay(false);
+    setPreviewBuilding(null);
     handleUrlChange(url);
-    window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+  };
+};
+
+export const useNavigateToMapView = () => {
+  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  const { handleUrlChange, isMapView } = useQuery();
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+
+  return (position: Position) => {
+    showBlankOverlay(false);
+    setPreviewBuilding(null);
+    handleUrlChange(position.toMapLocationUrl());
+    if (!isMapView) {
+      setIsLoadingScreenEnabled(true);
+    }
   };
 };

@@ -4,8 +4,6 @@ import Button from "@/ui/elements/button";
 import { ModalContainer } from "../components/modal-container";
 
 export const NoAccountModal = () => {
-  console.log(" this is the no account modal");
-
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
   const handleHomeClick = () => {

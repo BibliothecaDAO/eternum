@@ -60,8 +60,6 @@ interface UIStore {
   setShowMinimap: (show: boolean) => void;
   selectedPlayer: ContractAddress | null;
   setSelectedPlayer: (player: ContractAddress | null) => void;
-  isSpectatorMode: boolean;
-  setSpectatorMode: (enabled: boolean) => void;
   hasAcceptedToS: boolean;
   setHasAcceptedToS: (accepted: boolean) => void;
   showToS: boolean;
@@ -81,7 +79,6 @@ export const useUIStore = create(
     setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
     showBlankOverlay: true,
     setShowBlankOverlay: (show) => {
-      console.log("Setting showBlankOverlay:", show);
       set({ showBlankOverlay: show });
     },
     isSideMenuOpened: true,
@@ -129,8 +126,6 @@ export const useUIStore = create(
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
-    isSpectatorMode: false,
-    setSpectatorMode: (enabled: boolean) => set({ isSpectatorMode: enabled }),
     hasAcceptedToS: localStorage.getItem("hasAcceptedToS") ? localStorage.getItem("hasAcceptedToS") === "true" : false,
     setHasAcceptedToS: (accepted: boolean) => {
       set({ hasAcceptedToS: accepted });

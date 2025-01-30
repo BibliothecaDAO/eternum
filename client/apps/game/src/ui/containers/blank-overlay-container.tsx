@@ -7,8 +7,6 @@ type BlurOverlayContainerProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const BlankOverlayContainer = memo(({ children, open }: BlurOverlayContainerProps) => {
-  console.log({ open });
-
   return (
     <Transition
       show={open}

@@ -157,7 +157,6 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
 );
 
 export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
-  console.log("im in the onboarding");
   const [settleRealm, setSettleRealm] = useState(false);
   const bottomChildren = useMemo(() => <SeasonPassButton setSettleRealm={setSettleRealm} />, [setSettleRealm]);
 

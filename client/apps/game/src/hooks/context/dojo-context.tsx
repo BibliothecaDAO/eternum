@@ -103,7 +103,6 @@ const DojoContextProvider = ({
   useNavigateToRealmViewByAccount(value.components);
 
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const setAddressName = useAddressStore((state) => state.setAddressName);
 
   const currentValue = useContext(DojoContext);
@@ -131,12 +130,12 @@ const DojoContextProvider = ({
   );
 
   useEffect(() => {
-    if (isSpectatorMode || !controllerAccount) {
+    if (!controllerAccount) {
       setAccountToUse(new Account(value.network.provider.provider, "0x0", "0x0"));
     } else {
       setAccountToUse(controllerAccount);
     }
-  }, [isSpectatorMode, controllerAccount]);
+  }, [controllerAccount]);
 
   useEffect(() => {
     const setUserName = async () => {
@@ -220,8 +219,6 @@ const DojoContextProvider = ({
     // Connected but controllerAccount is not set yet
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
-
-  console.log("go to game");
 
   // Once account is set, render the children
   return (
