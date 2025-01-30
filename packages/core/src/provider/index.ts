@@ -244,7 +244,6 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     if (isMultipleTransactions) {
       // For multiple calls, use the first call's entrypoint
-      // console.log({ entrypoint: transactionDetails[0].entrypoint });
       txType =
         TransactionType[
           transactionDetails

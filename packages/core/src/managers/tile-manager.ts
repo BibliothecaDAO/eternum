@@ -231,8 +231,6 @@ export class TileManager {
 
     const currentBuilding = getComponentValue(this.components.Building, entity);
 
-    console.log(currentBuilding);
-
     this.components.Building.addOverride(overrideId, {
       entity,
       value: {
@@ -422,7 +420,6 @@ export class TileManager {
   };
 
   placeStructure = async (signer: DojoAccount, entityId: ID, structureType: StructureType, coords: Position) => {
-    console.log({ signer });
     const { overrideId } = this._optimisticStructure(coords, structureType);
     try {
       if (structureType == StructureType.Hyperstructure) {
