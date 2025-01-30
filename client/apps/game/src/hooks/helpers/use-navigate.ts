@@ -25,11 +25,11 @@ export const useNavigateToMapView = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   return (position: Position) => {
-    showBlankOverlay(false);
-    setPreviewBuilding(null);
-    handleUrlChange(position.toMapLocationUrl());
     if (!isMapView) {
       setIsLoadingScreenEnabled(true);
     }
+    showBlankOverlay(false);
+    setPreviewBuilding(null);
+    handleUrlChange(position.toMapLocationUrl());
   };
 };

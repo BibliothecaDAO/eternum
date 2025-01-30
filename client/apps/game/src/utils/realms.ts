@@ -2,18 +2,26 @@ import { ClientComponents, ContractAddress } from "@bibliothecadao/eternum";
 import { Has, HasValue, runQuery } from "@dojoengine/recs";
 
 export const getRandomRealmEntity = (components: ClientComponents) => {
+  if (!components?.Realm) {
+    throw new Error("Invalid components: Realm component is required");
+  }
+
   const realms = runQuery([Has(components.Realm)]);
 
   if (realms.size === 0) {
-    return undefined;
+    throw new Error("No realm entities found");
   }
 
-  // Get a random realm entity from the set
-  const realmEntities = Array.from(realms);
-  const randomIndex = Math.floor(Math.random() * realmEntities.length);
-  const randomRealmEntity = realmEntities[randomIndex];
+  // Optimize for large sets by avoiding Array.from
+  const randomIndex = Math.floor(Math.random() * realms.size);
+  let i = 0;
+  for (const entity of realms) {
+    if (i === randomIndex) return entity;
+    i++;
+  }
 
-  return randomRealmEntity;
+  // This should never happen due to the size check above
+  throw new Error("Failed to get random realm entity");
 };
 
 export const getPlayerFirstRealm = (components: ClientComponents, address: ContractAddress) => {

@@ -2,21 +2,28 @@ import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
+import { getRandomRealmEntity } from "@/utils/realms";
 import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { HasValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { useNavigateToRealmViewByAccount } from "../helpers/use-navigate-to-realm-view-by-account";
+
+export const NULL_ACCOUNT = {
+  address: "0x0",
+  privateKey: "0x0",
+} as const;
 
 const requiredEnvs: (keyof Env)[] = [
   "VITE_PUBLIC_MASTER_ADDRESS",
@@ -126,12 +133,18 @@ const DojoContextProvider = ({
   };
 
   const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
-    new Account(value.network.provider.provider, "0x0", "0x0"),
+    new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey),
   );
+
+  const onSpectatorModeClick = () => {
+    const randomRealmEntity = getRandomRealmEntity(value.components);
+    const position = randomRealmEntity && getComponentValue(value.components.Position, randomRealmEntity);
+    position && navigateToHexView(new Position(position));
+  };
 
   useEffect(() => {
     if (!controllerAccount) {
-      setAccountToUse(new Account(value.network.provider.provider, "0x0", "0x0"));
+      setAccountToUse(new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey));
     } else {
       setAccountToUse(controllerAccount);
     }
@@ -198,7 +211,7 @@ const DojoContextProvider = ({
             <div className="flex justify-center space-x-8 mt-2 md:mt-4">
               {!isConnected && (
                 <>
-                  <SpectateButton onClick={() => {}} />
+                  <SpectateButton onClick={onSpectatorModeClick} />
                   <OnboardingButton
                     onClick={connectWallet}
                     className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80"
@@ -236,3 +249,6 @@ const DojoContextProvider = ({
     </DojoContext.Provider>
   );
 };
+function navigateToHexView(arg0: Position) {
+  throw new Error("Function not implemented.");
+}

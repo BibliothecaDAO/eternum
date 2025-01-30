@@ -4,6 +4,7 @@ import { ClientComponents, ContractAddress } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useAccount } from "@starknet-react/core";
 import { useEffect } from "react";
+import { NULL_ACCOUNT } from "../context/dojo-context";
 import { useNavigateToHexView } from "./use-navigate";
 
 export const useNavigateToRealmViewByAccount = (components: ClientComponents) => {
@@ -15,9 +16,9 @@ export const useNavigateToRealmViewByAccount = (components: ClientComponents) =>
     if (!account) {
       const randomRealmEntity = getRandomRealmEntity(components);
       const position = randomRealmEntity ? getComponentValue(components.Position, randomRealmEntity) : undefined;
-      position && navigateToHexView(new Position(position));
+      navigateToHexView(new Position(position || { x: 0, y: 0 }));
     } else {
-      const playerRealm = getPlayerFirstRealm(components, ContractAddress(account?.address || "0x0"));
+      const playerRealm = getPlayerFirstRealm(components, ContractAddress(account?.address || NULL_ACCOUNT.address));
       const position = playerRealm ? getComponentValue(components.Position, playerRealm) : undefined;
       position && navigateToHexView(new Position(position));
     }

@@ -381,42 +381,60 @@ export class TileManager {
 
   destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
     // add optimistic rendering
-    this._optimisticDestroy(structureEntityId, col, row);
+    const overrideId = this._optimisticDestroy(structureEntityId, col, row);
 
-    await this.systemCalls.destroy_building({
-      signer,
-      entity_id: structureEntityId,
-      building_coord: {
-        x: col,
-        y: row,
-      },
-    });
+    try {
+      await this.systemCalls.destroy_building({
+        signer,
+        entity_id: structureEntityId,
+        building_coord: {
+          x: col,
+          y: row,
+        },
+      });
+    } catch (error) {
+      this.components.Building.removeOverride(overrideId);
+      console.error(error);
+      throw error;
+    }
   };
 
   pauseProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    this._optimisticPause(col, row);
+    const overrideId = this._optimisticPause(col, row);
 
-    await this.systemCalls.pause_production({
-      signer,
-      entity_id: structureEntityId,
-      building_coord: {
-        x: col,
-        y: row,
-      },
-    });
+    try {
+      await this.systemCalls.pause_production({
+        signer,
+        entity_id: structureEntityId,
+        building_coord: {
+          x: col,
+          y: row,
+        },
+      });
+    } catch (error) {
+      this.components.Building.removeOverride(overrideId);
+      console.error(error);
+      throw error;
+    }
   };
 
   resumeProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    this._optimisticResume(col, row);
+    const overrideId = this._optimisticResume(col, row);
 
-    await this.systemCalls.resume_production({
-      signer,
-      entity_id: structureEntityId,
-      building_coord: {
-        x: col,
-        y: row,
-      },
-    });
+    try {
+      await this.systemCalls.resume_production({
+        signer,
+        entity_id: structureEntityId,
+        building_coord: {
+          x: col,
+          y: row,
+        },
+      });
+    } catch (error) {
+      this.components.Building.removeOverride(overrideId);
+      console.error(error);
+      throw error;
+    }
   };
 
   placeStructure = async (signer: DojoAccount, entityId: ID, structureType: StructureType, coords: Position) => {

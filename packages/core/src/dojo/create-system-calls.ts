@@ -313,7 +313,7 @@ export function createSystemCalls({
     explore: withAuth(explore),
     set_address_name: withAuth(set_address_name),
     set_entity_name: withAuth(set_entity_name),
-    isLive: withAuth(isLive),
+    isLive: isLive,
     create_order: withAuth(create_order),
     accept_order: withAuth(accept_order),
     cancel_order: withAuth(cancel_order),
@@ -328,7 +328,7 @@ export function createSystemCalls({
     create_building: withAuth(create_building),
     create_army: withAuth(create_army),
     delete_army: withAuth(delete_army),
-    uuid: withAuth(uuid),
+    uuid: uuid,
 
     create_hyperstructure: withAuth(create_hyperstructure),
     contribute_to_construction: withAuth(contribute_to_construction),

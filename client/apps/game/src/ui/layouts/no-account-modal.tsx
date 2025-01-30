@@ -5,8 +5,10 @@ import { ModalContainer } from "../components/modal-container";
 
 export const NoAccountModal = () => {
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const setModal = useUIStore((state) => state.setModal);
 
   const handleHomeClick = () => {
+    setModal(null, false);
     setShowBlankOverlay(true);
   };
 
