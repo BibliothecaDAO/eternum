@@ -23,6 +23,8 @@
 
     "client/apps/game/src/ui/modules/chat/**",
 
+    "client/apps/game-docs/env.ts",
+
     "config/**",
     "contracts/**",
 
