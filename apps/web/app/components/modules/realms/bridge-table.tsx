@@ -8,21 +8,12 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { PortfolioCollectionApiResponse } from "@/lib/ark/getPortfolioTokens";
 import {
   ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
+  Table as ReactTable,
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
 } from "@tanstack/react-table";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
 import RealmResources from "./realm-resources";
 import { TokenMetadataAttribute } from "@/types/ark";
 
@@ -37,6 +28,7 @@ export const columns: ColumnDef<Realm>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
+        className="ml-1"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -47,6 +39,7 @@ export const columns: ColumnDef<Realm>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        className="ml-1"
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
@@ -84,32 +77,10 @@ export const columns: ColumnDef<Realm>[] = [
 ];
 
 type BridgeTableProps = {
-  onSelectedRowsChange: (selectedRows: any[]) => void; // Add this prop
-  realms?: Realm[];
+  table: ReactTable<Realm>;
 };
 
-export const BridgeTable: React.FC<BridgeTableProps> = ({
-  onSelectedRowsChange,
-  realms,
-}) => {
-  const [rowSelection, setRowSelection] = useState({});
-
-  const table = useReactTable({
-    data: realms ?? [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onRowSelectionChange: setRowSelection,
-    state: {
-      rowSelection,
-    },
-  });
-
-  useEffect(() => {
-    const selectedRows = table.getFilteredSelectedRowModel().rows;
-    onSelectedRowsChange(selectedRows); // Emit selected rows to parent
-  }, [rowSelection, onSelectedRowsChange]); // Trigger effect on row
-
+export const BridgeTable: React.FC<BridgeTableProps> = ({ table }) => {
   return (
     <div>
       <div className="rounded-md border">

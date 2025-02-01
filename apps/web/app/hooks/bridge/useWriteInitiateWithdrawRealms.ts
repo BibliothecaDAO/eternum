@@ -1,7 +1,6 @@
 import type { Abi, Call } from "starknet";
 import { useMemo } from "react";
 import { RealmsBridge } from "@/abi/L2/RealmsBridge";
-import { SUPPORTED_L2_CHAIN_ID } from "@/constants/env";
 import {
   useContract,
   useNetwork,
@@ -10,6 +9,7 @@ import {
 import { useAccount as useL1Account } from "wagmi";
 
 import { REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 
 export const useWriteInitiateWithdrawRealms = ({
   selectedTokenIds,
@@ -20,7 +20,7 @@ export const useWriteInitiateWithdrawRealms = ({
 
   const { contract } = useContract({
     abi: RealmsBridge,
-    address: REALMS_BRIDGE_ADDRESS[SUPPORTED_L2_CHAIN_ID],
+    address: REALMS_BRIDGE_ADDRESS[SUPPORTED_L2_CHAIN_ID] as `0x${string}`,
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -35,16 +35,11 @@ export const useWriteInitiateWithdrawRealms = ({
       ]),
     ];
   }, [selectedTokenIds, addressL1, contract]);
-  const {
-    sendAsync,
-    data: withdrawHash,
-    ...writeReturn
-  } = useSendTransaction({ calls });
+
+  const sendTx = useSendTransaction({ calls });
 
   return {
     calls,
-    sendAsync,
-    withdrawHash,
-    ...writeReturn,
+    ...sendTx
   };
 };

@@ -26,7 +26,6 @@ import { WagmiProvider } from "wagmi";
 import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
 export interface RouterAppContext {
   trpcQueryUtils: typeof trpcQueryUtils;
-  queryClient: typeof queryClient;
   arkClient: ArkClient;
 }
 
@@ -46,6 +45,7 @@ function RootComponent() {
     <>
       <div className={`[--header-height:calc(theme(spacing.14))]`}>
         <WagmiProvider config={config}>
+          <StarknetProvider>
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
               <SidebarProvider className="flex flex-col">
                 <Header />
@@ -68,6 +68,7 @@ function RootComponent() {
                 </div>
               </SidebarProvider>
             </ThemeProvider>
+          </StarknetProvider>
         </WagmiProvider>
       </div>
       <TanStackRouterDevtools position="bottom-left" />

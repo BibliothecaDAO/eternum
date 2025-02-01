@@ -1,10 +1,11 @@
 import ControllerConnector from "@cartridge/connector/controller";
-import { ColorMode } from "@cartridge/controller";
+import { Chain, ColorMode } from "@cartridge/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 import React, { useCallback } from "react";
 import { env } from "../../env";
 import { queryClient } from "@/router";
+import { ChainId } from "@realms-world/constants";
 /*import { getSeasonAddresses } from "../ui/utils/utils";
 //import { cartridgeController } from "./cartridge-controller";
 
@@ -21,8 +22,15 @@ const namespace: string = "eternum";
 const colorMode: ColorMode = "dark";
 
 const cartridgeController = new ControllerConnector({
-  policies: [],
-  rpc: "https://api.cartridge.gg/x/starknet/" + env.VITE_PUBLIC_CHAIN,
+  //policies: [],
+  chains: [
+    {
+      rpcUrl:
+      env.VITE_PUBLIC_CHAIN == 'sepolia' ?
+        "https://api.cartridge.gg/x/starknet/sepolia" :"https://api.cartridge.gg/x/starknet/mainnet",
+    },
+  ],
+  defaultChainId: env.VITE_PUBLIC_CHAIN == 'sepolia' ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN as string,
   theme,
   colorMode,
   /*tokens: {

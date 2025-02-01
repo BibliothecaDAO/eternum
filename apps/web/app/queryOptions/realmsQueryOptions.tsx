@@ -7,11 +7,11 @@ export const realmsQueryOptions = ({
   client,
   collectionAddress
 }: {
-  walletAddress: string;
+  walletAddress?: string;
   collectionAddress?: string;
   client: ArkClient;
 }) =>
   queryOptions({
     queryKey: ["realms" + walletAddress + collectionAddress],
-    queryFn: () => getPortfolioTokens({walletAddress, client, collectionAddress}),
+    queryFn: () => walletAddress ? getPortfolioTokens({walletAddress, client, collectionAddress}) : null,
   });

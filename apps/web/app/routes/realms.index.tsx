@@ -19,14 +19,7 @@ import React from "react";
 export class RealmsNotFoundError extends Error {}
 
 export const Route = createFileRoute("/realms/")({
-  loader: ({ context: { queryClient, arkClient }, params: {} }) => {
-    return queryClient.ensureQueryData(
-      realmsQueryOptions({
-        walletAddress:"",
-        client: arkClient,
-      })
-    );
-  },
+ 
   errorComponent: PostErrorComponent,
   component: RealmsComponent,
 });
@@ -61,14 +54,14 @@ function RealmsComponent() {
 
   const { data: realms } = useSuspenseQuery(
     realmsQueryOptions({
-      walletAddress: address ?? "",
+      walletAddress: address,
       client: arkClient,
       collectionAddress: CollectionAddresses.realms[ChainId.SN_MAIN] as string,
     })
   );
   return (
     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-4">
-      {realms.data.map((realm) => {
+      {realms?.data.map((realm) => {
         return (
           <RealmCard key={realm.token_id} token={realm} isGrid={true} />
         );

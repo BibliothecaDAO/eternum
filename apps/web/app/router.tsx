@@ -1,19 +1,40 @@
-import { createRouter as createTanStackRouter } from '@tanstack/react-router'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { httpBatchLink } from '@trpc/client'
-import { createTRPCQueryUtils, createTRPCReact } from '@trpc/react-query'
-import { routerWithQueryClient } from '@tanstack/react-router-with-query';
+import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import {
+  defaultShouldDehydrateQuery,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import { httpBatchLink } from "@trpc/client";
+import { createTRPCQueryUtils, createTRPCReact } from "@trpc/react-query";
+import { routerWithQueryClient } from "@tanstack/react-router-with-query";
 
 // Import the generated route tree
-import { routeTree } from './routeTree.gen'
+import { routeTree } from "./routeTree.gen";
 
-import { Spinner } from './routes/-components/spinner'
-import type { AppRouter } from '../trpc-server.handler'
-import { marketPlaceClientBuilder } from './lib/ark/client';
+import { Spinner } from "./routes/-components/spinner";
+import type { AppRouter } from "../trpc-server.handler";
+import { marketPlaceClientBuilder } from "./lib/ark/client";
+import SuperJSON from "superjson";
 
-export const queryClient = new QueryClient()
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // With SSR, we usually want to set some default staleTime
+      // above 0 to avoid refetching immediately on the client
+      staleTime: 30 * 1000,
+    },
+    dehydrate: {
+      serializeData: SuperJSON.serialize,
+      shouldDehydrateQuery: (query) =>
+        defaultShouldDehydrateQuery(query) || query.state.status === "pending",
+    },
+    hydrate: {
+      deserializeData: SuperJSON.deserialize,
+    },
+  },
+});
 
-export const trpc = createTRPCReact<AppRouter>({})
+export const trpc = createTRPCReact<AppRouter>({});
 
 export const trpcClient = trpc.createClient({
   links: [
@@ -21,27 +42,26 @@ export const trpcClient = trpc.createClient({
       // since we are using Vinxi, the server is running on the same port,
       // this means in dev the url is `http://localhost:3000/trpc`
       // and since its from the same origin, we don't need to explicitly set the full URL
-      url: '/trpc',
+      url: "/trpc",
+      transformer: SuperJSON,
     }),
   ],
-})
+});
 
 export const trpcQueryUtils = createTRPCQueryUtils({
   queryClient,
   client: trpcClient,
-})
+});
 
 export const arkClient = marketPlaceClientBuilder(window.fetch.bind(window));
 
 export function createRouter() {
-  
   const router = createTanStackRouter({
     routeTree,
-    defaultPreload: 'intent',
+    defaultPreload: "intent",
     context: {
       trpcQueryUtils,
-      queryClient,
-      arkClient
+      arkClient,
     },
     defaultPendingComponent: () => (
       <div className={`p-2 text-2xl`}>
@@ -55,16 +75,16 @@ export function createRouter() {
             {children}
           </QueryClientProvider>
         </trpc.Provider>
-      )
+      );
     },
-  })
+  });
 
-  return routerWithQueryClient(router, queryClient)
+  return router;
 }
 
 // Register the router instance for type safety
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof createRouter>
+    router: ReturnType<typeof createRouter>;
   }
 }
