@@ -12,5 +12,6 @@
     "moduleResolution": "Bundler",
     "skipLibCheck": true,
     "lib": ["DOM", "DOM.Iterable", "ES2022"]
-  }
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
 }

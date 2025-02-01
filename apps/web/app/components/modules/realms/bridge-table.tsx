@@ -24,11 +24,12 @@ import {
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import RealmResources from "./realm-resources";
+import { TokenMetadataAttribute } from "@/types/ark";
 
 export type Realm = {
   token_id: string;
-  name: string;
-  attributes: string[];
+  name?: string;
+  attributes?: TokenMetadataAttribute[];
 };
 
 export const columns: ColumnDef<Realm>[] = [
@@ -108,6 +109,7 @@ export const BridgeTable: React.FC<BridgeTableProps> = ({
     const selectedRows = table.getFilteredSelectedRowModel().rows;
     onSelectedRowsChange(selectedRows); // Emit selected rows to parent
   }, [rowSelection, onSelectedRowsChange]); // Trigger effect on row
+
   return (
     <div>
       <div className="rounded-md border">

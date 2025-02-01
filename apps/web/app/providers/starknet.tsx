@@ -4,6 +4,7 @@ import { mainnet, sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 import React, { useCallback } from "react";
 import { env } from "../../env";
+import { queryClient } from "@/router";
 /*import { getSeasonAddresses } from "../ui/utils/utils";
 //import { cartridgeController } from "./cartridge-controller";
 
@@ -52,6 +53,7 @@ export function StarknetProvider({ children, onlyCartridge }: { children: React.
       connectors={[cartridgeController, ...(onlyCartridge ? [] : [...connectors])]}
       explorer={voyager}
       autoConnect={true}
+      //queryClient={queryClient}
     >
       {children}
     </StarknetConfig>

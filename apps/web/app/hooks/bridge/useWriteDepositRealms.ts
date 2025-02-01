@@ -1,10 +1,9 @@
 import { useCallback } from "react";
 import { StarknetBridgeRealms as L1_REALMS_BRIDGE_ABI } from "@/abi/L1/StarknetBridgeRealms";
-import { SUPPORTED_L1_CHAIN_ID } from "@/constants/env";
 import { parseGwei } from "viem";
 import { useWriteContract } from "wagmi";
 
-import { REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
+import { ChainId, REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
 
 const FUNCTION = "depositTokens";
 
@@ -32,7 +31,7 @@ export function useWriteDepositRealms({
       if (!l2Address) throw new Error("Missing L2 Address");
 
       return await writeContractAsync({
-        address: REALMS_BRIDGE_ADDRESS[SUPPORTED_L1_CHAIN_ID] as `0x${string}`,
+        address: REALMS_BRIDGE_ADDRESS[ChainId.MAINNET] as `0x${string}`,
         abi: L1_REALMS_BRIDGE_ABI,
         functionName: FUNCTION,
         args: [BigInt(Date.now()), BigInt(l2Address), tokenIds],

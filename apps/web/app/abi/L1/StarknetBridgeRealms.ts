@@ -1,0 +1,256 @@
+export const StarknetBridgeRealms = [
+  { inputs: [], name: "CairoWrapError", type: "error" },
+  { inputs: [], name: "NotEscrowedError", type: "error" },
+  { inputs: [], name: "NotPayableError", type: "error" },
+  { inputs: [], name: "NotSupportedError", type: "error" },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "address",
+        name: "previousAdmin",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "newAdmin",
+        type: "address",
+      },
+    ],
+    name: "AdminChanged",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "beacon",
+        type: "address",
+      },
+    ],
+    name: "BeaconUpgraded",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "hash", type: "uint256" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "blockTimestamp",
+        type: "uint256",
+      },
+    ],
+    name: "CancelRequestCompleted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "hash", type: "uint256" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "blockTimestamp",
+        type: "uint256",
+      },
+    ],
+    name: "CancelRequestStarted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "hash", type: "uint256" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "blockTimestamp",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256[]",
+        name: "reqContent",
+        type: "uint256[]",
+      },
+    ],
+    name: "DepositRequestInitiated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "previousOwner",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "OwnershipTransferred",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "implementation",
+        type: "address",
+      },
+    ],
+    name: "Upgraded",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "hash", type: "uint256" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "blockTimestamp",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256[]",
+        name: "reqContent",
+        type: "uint256[]",
+      },
+    ],
+    name: "WithdrawRequestCompleted",
+    type: "event",
+  },
+  { stateMutability: "payable", type: "fallback" },
+  {
+    inputs: [
+      { internalType: "uint256[]", name: "payload", type: "uint256[]" },
+      { internalType: "uint256", name: "nonce", type: "uint256" },
+    ],
+    name: "cancelRequest",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "salt", type: "uint256" },
+      { internalType: "snaddress", name: "ownerL2", type: "uint256" },
+      { internalType: "uint256[]", name: "ids", type: "uint256[]" },
+    ],
+    name: "depositTokens",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "bytes", name: "data", type: "bytes" }],
+    name: "initialize",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "l2Info",
+    outputs: [
+      { internalType: "snaddress", name: "", type: "uint256" },
+      { internalType: "felt252", name: "", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "proxiableUUID",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "renounceOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "l2Address", type: "uint256" }],
+    name: "setL2BridgeAddress",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "l2Selector", type: "uint256" }],
+    name: "setL2BridgeSelector",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256[]", name: "payload", type: "uint256[]" },
+      { internalType: "uint256", name: "nonce", type: "uint256" },
+    ],
+    name: "startRequestCancellation",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "newOwner", type: "address" }],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "newImplementation", type: "address" },
+    ],
+    name: "upgradeTo",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "newImplementation", type: "address" },
+      { internalType: "bytes", name: "data", type: "bytes" },
+    ],
+    name: "upgradeToAndCall",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256[]", name: "request", type: "uint256[]" }],
+    name: "withdrawTokens",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  { stateMutability: "payable", type: "receive" },
+] as const;

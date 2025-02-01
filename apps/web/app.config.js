@@ -1,8 +1,9 @@
 import { createApp } from "vinxi";
 import reactRefresh from "@vitejs/plugin-react";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
-import tsconfigPaths from "vite-tsconfig-paths";
+//import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
+import viteTsConfigPaths from 'vite-tsconfig-paths'
 
 export default createApp({
   server: {
@@ -23,7 +24,7 @@ export default createApp({
       base: "/trpc",
       handler: "./trpc-server.handler.ts",
       target: "server",
-      plugins: () => [reactRefresh()],
+      plugins: () => [],
     },
     {
       type: "spa",
@@ -31,13 +32,15 @@ export default createApp({
       handler: "./index.html",
       target: "browser",
       plugins: () => [
-        tsconfigPaths(),
         TanStackRouterVite({
           routesDirectory: "./app/routes",
           generatedRouteTree: "./app/routeTree.gen.ts",
           autoCodeSplitting: true,
         }),
         reactRefresh(),
+        viteTsConfigPaths({
+          projects: ['./tsconfig.json'],
+        }),
         svgr({
           // svgr options: https://react-svgr.com/docs/options/
           svgrOptions: {

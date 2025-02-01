@@ -8,7 +8,7 @@ import { routerWithQueryClient } from '@tanstack/react-router-with-query';
 import { routeTree } from './routeTree.gen'
 
 import { Spinner } from './routes/-components/spinner'
-import type { AppRouter } from '../../trpc-server.handler'
+import type { AppRouter } from '../trpc-server.handler'
 import { marketPlaceClientBuilder } from './lib/ark/client';
 
 export const queryClient = new QueryClient()
@@ -51,7 +51,9 @@ export function createRouter() {
     Wrap: function WrapComponent({ children }) {
       return (
         <trpc.Provider client={trpcClient} queryClient={queryClient}>
+          <QueryClientProvider client={queryClient}>
             {children}
+          </QueryClientProvider>
         </trpc.Provider>
       )
     },

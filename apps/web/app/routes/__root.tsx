@@ -12,24 +12,18 @@ import type { queryClient, trpcQueryUtils } from "../router";
 import {
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb";
+
 import { Header } from "@/components/layout/header";
 import { StarknetProvider } from "@/providers/starknet";
 import { ArkClient } from "@/lib/ark/client";
-import { useAccount, UseAccountResult } from "@starknet-react/core";
 import { ThemeProvider } from "@/providers/theme";
+import "@rainbow-me/rainbowkit/styles.css";
 
+import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import { WagmiProvider } from "wagmi";
+import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
 export interface RouterAppContext {
   trpcQueryUtils: typeof trpcQueryUtils;
   queryClient: typeof queryClient;
@@ -42,33 +36,39 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 function RootComponent() {
   const isFetching = useRouterState({ select: (s) => s.isLoading });
-
+  const config = getDefaultConfig({
+    appName: "Realms.World",
+    projectId: "c8d27e7d62b1bb4d1ea2e6d4ed1604ee",
+    chains: [mainnet],
+    //ssr: true, // If your dApp uses server side rendering (SSR)
+  });
   return (
     <>
-      <div
-        className={`[--header-height:calc(theme(spacing.14))]`}
-      >
-        <StarknetProvider>
-          <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-            <SidebarProvider className="flex flex-col">
-              <Header />
-              <div className="flex flex-1">
-                <AppSidebar />
+      <div className={`[--header-height:calc(theme(spacing.14))]`}>
+        <WagmiProvider config={config}>
+            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+              <SidebarProvider className="flex flex-col">
+                <Header />
+                <div className="flex flex-1">
+                  <AppSidebar />
 
-                <SidebarInset>
-                  <Outlet />
-                  {/*<div
+                  <SidebarInset>
+                    <RainbowKitProvider>
+                      <Outlet />
+                    </RainbowKitProvider>
+
+                    {/*<div
             className={`text-3xl duration-300 delay-0 opacity-0 ${
               isFetching ? ` duration-1000 opacity-40` : ''
             }`}
           >
             <Spinner />
           </div>*/}
-                </SidebarInset>
-              </div>
-            </SidebarProvider>
-          </ThemeProvider>
-        </StarknetProvider>
+                  </SidebarInset>
+                </div>
+              </SidebarProvider>
+            </ThemeProvider>
+        </WagmiProvider>
       </div>
       <TanStackRouterDevtools position="bottom-left" />
       <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />

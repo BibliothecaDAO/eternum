@@ -12,14 +12,14 @@ export const Route = createFileRoute('/dashboard/')({
 
 function DashboardIndexComponent() {
   const postsQuery = trpc.posts.useQuery()
-
-  const posts = postsQuery.data || []
+  console.log(postsQuery)
+  const posts =  []
 
   return (
     <div className="p-2">
       <div className="p-2">
         Welcome to the dashboard! You have{' '}
-        <strong>{posts.length} total posts</strong>.
+        <strong>{posts?.length} total posts</strong>.
       </div>
     </div>
   )

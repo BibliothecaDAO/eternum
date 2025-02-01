@@ -9,8 +9,9 @@ const envSchema = z.object({
   VITE_PUBLIC_IMAGE_CDN_URL: z.string().url().optional(),
   VITE_PUBLIC_IMAGE_PROXY_URL: z.string().url().optional(),
   VITE_PUBLIC_IPFS_GATEWAY: z.string().url().optional(),
-
+  VITE_PUBLIC_RESERVOIR_API_URL: z.string().url().optional(),
   VITE_PUBLIC_SLOT: z.string(),
+  VITE_PUBLIC_RESERVOIR_API_KEY: z.string(),
 });
 
 let env: z.infer<typeof envSchema>;
