@@ -20,6 +20,7 @@ import { trpc } from "@/router";
 import BridgeSidebar from "@/components/modules/realms/bridge-sidebar";
 import { getCoreRowModel, getPaginationRowModel, RowSelectionState, useReactTable } from "@tanstack/react-table";
 import { CollectionAddresses, ChainId } from "@realms-world/constants";
+import { SUPPORTED_L1_CHAIN_ID, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 
 export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
@@ -38,7 +39,7 @@ function RouteComponent() {
     realmsQueryOptions({
       walletAddress: l2Address ?? "",
       client: arkClient,
-      collectionAddress: CollectionAddresses.realms[ChainId.SN_MAIN] as string,
+      collectionAddress: CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as string,
     })
   );
 

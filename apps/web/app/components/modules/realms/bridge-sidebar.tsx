@@ -34,6 +34,8 @@ import {
 import { useMemo } from "react";
 import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
 import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
+import { TransactionChains } from "./bridge-tx-chains";
+
 
 interface BridgeSidebarProps {
   selectedRows: Row<Realm>[];
@@ -165,15 +167,9 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
                       <div className="flex w-full justify-between px-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            {[ChainId.MAINNET, ChainId.SEPOLIA].includes(transaction.from_chain as ChainId)
-                              ? "Ethereum"
-                              : "Starknet"}
-                            <ArrowRight />
-                            {[ChainId.MAINNET, ChainId.SEPOLIA].includes(transaction.from_chain as ChainId)
-                              ? "Starknet"
-                              : "Ethereum"}
+                          <TransactionChains fromChain={transaction.from_chain} />
                           </div>
-                          <span className="text-sm text-muted">
+                          <span className="text-sm text-muted-foreground">
                             {transaction.timestamp.toLocaleString()}
                           </span>
                         </div>
@@ -189,6 +185,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
                             </Badge>
                           )}
                         </div>
+                        {transaction.events[0].type === "withdraw_available_l1" && <Button variant="outline" className="border-green-500" >Complete Withdraw</Button>}
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>

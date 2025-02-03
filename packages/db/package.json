@@ -30,16 +30,16 @@
     },
     "dependencies": {
       "@neondatabase/serverless": "0.10.4",
-      "drizzle-orm": "^0.37",
+      "drizzle-orm": "catalog:",
       "drizzle-zod": "^0.6.1",
       "zod": "catalog:"
     },
     "devDependencies": {
-      "dotenv-cli": "^7.4.2",
-      "drizzle-kit": "^0.30.1",
+      "dotenv-cli": "catalog:",
+      "drizzle-kit": "catalog:",
       "pg": "^8.13.1",
       "postgres-range": "^1.1.4",
-      "typescript": "^5.6.2"
+      "typescript": "catalog:"
     }
   }
   

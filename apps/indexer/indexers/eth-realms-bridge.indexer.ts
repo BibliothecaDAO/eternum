@@ -23,6 +23,7 @@ import {
   STARKNET_MESSAGING,
   REALMS_BRIDGE_ADDRESS,
 } from "@realms-world/constants";
+import { number } from "zod";
 
 const abi = parseAbi([
   "event LogMessageToL2(address indexed fromAddress, uint256 indexed toAddress,uint256 indexed selector,uint256[] payload,uint256 nonce,uint256 fee)",
@@ -137,7 +138,7 @@ export function createIndexer<
         const decoded = decodeEventLog({
           abi,
           data: log.data,
-          topics: log.topics,
+          topics: [...log.topics] as [`0x${string}`, ...`0x${string}`[]],
         });
 
         const tokenCount = Number(decoded.args.payload[4]);
@@ -166,8 +167,8 @@ export function createIndexer<
             .insert(realmsBridgeRequests)
             .values({
               from_chain: fromChain,
-              from_address: numberToHex(decoded.args.payload[2]),
-              to_address: numberToHex(decoded.args.payload[3]),
+              from_address:numberToHex(decoded.args.payload[2]),
+              to_address:numberToHex(decoded.args.payload[3]),
               token_ids: tokenIds,
               timestamp: header?.timestamp,
               hash: log.transactionHash,
