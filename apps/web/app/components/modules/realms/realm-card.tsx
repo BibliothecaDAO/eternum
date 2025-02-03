@@ -2,8 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CollectionToken, PortfolioToken } from "@/types/ark";
 import Media from "./media";
 import { AnimatedMap } from "@/components/icons/AnimatedMap";
-import { ChainId, CollectionAddresses } from "@/lib/contracts";
 import RealmResources from "./realm-resources";
+import { CollectionAddresses, ChainId } from "@realms-world/constants";
 
 export const RealmCard = ({
   token,
@@ -64,7 +64,7 @@ const GridDetails = ({
       {token.metadata?.attributes &&
         [
           CollectionAddresses.realms[ChainId.SN_MAIN],
-        ].includes(token.collection_address) && (
+        ].includes(token.collection_address as `0x${string}`) && (
           <RealmResources traits={token.metadata.attributes} />
         )}
     </div>

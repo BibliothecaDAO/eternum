@@ -18,7 +18,7 @@ import RealmResources from "./realm-resources";
 import { TokenMetadataAttribute } from "@/types/ark";
 
 export type Realm = {
-  token_id: string;
+  token_id?: string;
   name?: string;
   attributes?: TokenMetadataAttribute[];
 };

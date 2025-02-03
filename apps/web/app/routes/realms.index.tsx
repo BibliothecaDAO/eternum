@@ -1,8 +1,7 @@
 import { RealmCard } from "@/components/modules/realms/realm-card";
-import { Card } from "@/components/ui/card";
 import { marketPlaceClientBuilder } from "@/lib/ark/client";
-import { ChainId, CollectionAddresses } from "@/lib/contracts";
 import { realmsQueryOptions } from "@/queryOptions/realmsQueryOptions";
+import { CollectionAddresses, ChainId } from "@realms-world/constants";
 import { useAccount } from "@starknet-react/core";
 import {
   useQueryErrorResetBoundary,

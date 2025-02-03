@@ -1,6 +1,6 @@
-import { CollectionAddresses, ChainId } from "@/lib/contracts";
+import { CollectionAddresses, ChainId } from "@realms-world/constants";
 import type { paths } from "@reservoir0x/reservoir-sdk";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { env } from "env";
 
 export const useL1Tokens = ({
@@ -18,7 +18,7 @@ export const useL1Tokens = ({
   return useSuspenseQuery({
     queryKey: ["userTokens" + address],
     queryFn: async () =>
-      await fetch("/api", {
+      await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

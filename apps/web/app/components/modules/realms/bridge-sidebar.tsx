@@ -18,20 +18,22 @@ import { Row } from "@tanstack/react-table";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { Realm } from "./bridge-table";
 import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
-import { useWriteInitiateWithdrawRealms } from "@/hooks/bridge/useWriteInitiateWithdrawRealms";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount as useL1Account } from "wagmi";
 import { useAccount } from "@starknet-react/core";
 import { trpc } from "@/router";
 import { shortenAddress } from "@/utils/utils";
 import { Badge } from "@/components/ui/badge";
-import { ChainId } from "@realms-world/constants";
+import { ChainId} from "@realms-world/constants";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useMemo } from "react";
+import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
+import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
 
 interface BridgeSidebarProps {
   selectedRows: Row<Realm>[];
@@ -65,26 +67,32 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
     },
   });
 
-  const tokenIds = selectedRows.map(
+
+
+  const tokenIds = useMemo(() => selectedRows.map(
     (row) => row.getValue("token_id") as string
-  );
-  console.log(bridgeTxs);
+  ), [selectedRows]);
+
+  const {isApprovedForAll, approveForAll, approveForAllLoading} = useERC721Approval();
+  
   const {
-    sendAsync: initiateWithdraw,
+    initiateWithdraw,
     isPending: isWithdrawPending,
     data: withdrawData,
-  } = useWriteInitiateWithdrawRealms({
-    selectedTokenIds: tokenIds,
-  });
+  } = useBridgeL2Realms({ selectedTokenIds: tokenIds });
 
   const onBridge = async () => {
     let hash;
     if (selectedAsset === "Ethereum") {
       if (!l2Address) throw new Error("Missing L2 Address");
+      if (!isApprovedForAll) {
+        await approveForAll();
+      }
       hash = await depositRealms({
         tokenIds: tokenIds.map((id) => BigInt(id)),
         l2Address: l2Address,
       });
+      console.log(hash);
     } else {
       hash = await initiateWithdraw();
     }
@@ -133,7 +141,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           >
             {!selectedRows.length
               ? "Select Realms"
-              : `Bridge to ${selectedAsset}`}
+              : isApprovedForAll ? `Bridge` : `Approve Bridge`}
           </Button>
         </SidebarGroup>
         <SidebarSeparator className="mx-0 mt-4" />

@@ -12,6 +12,7 @@ export const SUPPORTED_L2_CHAIN_ID =
     ? ChainId.SN_SEPOLIA
     : ChainId.SN_MAIN;
 
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }

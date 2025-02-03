@@ -1,19 +1,4 @@
-export enum ChainId {
-    MAINNET = 1,
-    SEPOLIA = 11155111,
-    MISSISSIPPI_TESTNET = 33784,
-  
-    SN_MAIN = "0x534e5f4d41494e",
-    SN_SEPOLIA = "0x534e5f5345504f4c4941",
-  
-    REALMS_L3 = "420",
-  
-    SLOT_TESTNET = 555, // TODO: update with the real value
-  
-    SN_DEVNET = 556, // TODO: update with the real value
-  }
-  
-
+import { ChainId } from "./chains";
 export enum Collections {
     REALMS = "realms",
     BEASTS = "beasts",
@@ -24,7 +9,7 @@ export enum Collections {
   }
   
   export const CollectionAddresses: {
-    readonly [key in Collections]: Partial<{ [key in ChainId]: string }>;
+    readonly [key in Collections]: Partial<{ [key in ChainId]: `0x${string}` }>;
   } = {
     [Collections.REALMS]: {
       [ChainId.MAINNET]: "0x07afe30cb3e53dba6801aa0ea647a0ecea7cbe18d",
@@ -55,7 +40,7 @@ export enum Collections {
     [Collections.BANNERS]: {
       [ChainId.SN_MAIN]:
         "0x02d66679de61a5c6d57afd21e005a8c96118bd60315fd79a4521d68f5e5430d1",
-      [ChainId.SN_SEPOLIA]: "",
+      //[ChainId.SN_SEPOLIA]: "",
     },
     [Collections.ETERNUM_0]: {
       [ChainId.SN_MAIN]:

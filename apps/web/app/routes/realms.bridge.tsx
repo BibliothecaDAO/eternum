@@ -9,21 +9,17 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+
 import { marketPlaceClientBuilder } from "@/lib/ark/client";
 import { useAccount } from "@starknet-react/core";
 import { realmsQueryOptions } from "@/queryOptions/realmsQueryOptions";
-import { CollectionAddresses, ChainId } from "@/lib/contracts";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useAccount as useL1Account } from "wagmi";
 import { trpc } from "@/router";
 
 import BridgeSidebar from "@/components/modules/realms/bridge-sidebar";
 import { getCoreRowModel, getPaginationRowModel, RowSelectionState, useReactTable } from "@tanstack/react-table";
+import { CollectionAddresses, ChainId } from "@realms-world/constants";
 
 export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
@@ -35,8 +31,7 @@ function RouteComponent() {
 
 
   const l1RealmsQuery = trpc.l1Realms.useQuery({address: l1Address});
-  const l1Realms = l1RealmsQuery.data || []
-  console.log(l1Realms)
+  const l1Realms = l1RealmsQuery.data
 
   const arkClient = marketPlaceClientBuilder(window.fetch.bind(window));
   const { data: realms } = useSuspenseQuery(
@@ -52,16 +47,15 @@ function RouteComponent() {
   );
 
   const mappedRealms = useMemo(() => {
-    if (selectedAsset === "Ethereum") {
-      console.log(l1Realms)
+    if (selectedAsset === "Ethereum" && l1Realms) {
       return (
         l1Realms?.tokens?.map((realm) => ({
-          token_id: realm.token.tokenId,
-          name: realm.token?.name,
-          attributes: realm.token?.attributes.map((attribute) => ({
+          token_id: realm?.token?.tokenId,
+          name: realm?.token?.name,
+          attributes: realm?.token?.attributes?.map((attribute) => ({
             ...attribute,
             trait_type: attribute.key,
-          })),
+          })) ?? [],
         })) ?? []
       );
     } else {
@@ -73,7 +67,7 @@ function RouteComponent() {
         })) ?? []
       );
     }
-  }, [selectedAsset, realms]);
+  }, [selectedAsset, realms, l1Realms]);
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 

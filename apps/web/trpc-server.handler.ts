@@ -9,8 +9,9 @@ import type { SQL } from "@realms-world/db";
 import { eq, or, desc } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 import { realmsBridgeRequests } from "@realms-world/db/schema";
-import { env } from "env";
-;
+import { CollectionAddresses, Collections, ChainId } from "@realms-world/constants";
+const SUPPORTED_L1_CHAIN_ID =
+process.env.VITE_PUBLIC_CHAIN == "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
 /**
  * 1. CONTEXT
  *
@@ -117,7 +118,7 @@ const appRouter = t.router({
     .query(async (req) => {
       if (req.input?.address) {
         const response = await fetch(
-          `${RESERVOIR_API_URL}/users/${req.input.address}/tokens/v10?collection=0x7afe30cb3e53dba6801aa0ea647a0ecea7cbe18d&limit=100&includeAttributes=true`,
+          `${RESERVOIR_API_URL}/users/${req.input.address}/tokens/v10?collection=${CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID]}&limit=100&includeAttributes=true`,
           {
             method: "GET",
             headers: {
