@@ -224,14 +224,13 @@ export const resources: Array<Resources> = [
     ticker: "$DRGNHD",
   },
   {
-    trait: "Demonhide",
+    trait: "Labor",
     value: 23,
     colour: "#ec4899",
     id: 23,
-    description:
-      "Demonhide are the hidden guardians of our reality. No mortal can witness their work, lest they be purged by dragonfire. If you find one of these scales, flee. Only death can be found in their presence or by the forces they fight in secret.",
+    description: "Labor",
     img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/23.png?raw=true",
-    ticker: "$DEMONHD",
+    ticker: "$LABOR",
   },
   {
     trait: "Ancient Fragment",
