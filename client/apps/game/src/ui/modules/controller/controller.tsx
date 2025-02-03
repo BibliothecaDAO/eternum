@@ -63,14 +63,16 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
       </Button>
     </>
   ) : (
-    <Button
-      className={`flex items-center hover:scale-105 hover:-translate-y-1 shadow-[0px_4px_4px_0px_#00000040] rounded-md !h-8 !bg-[#FCB843] !text-black !text-md !px-3 ${className}`}
-      variant="default"
-      size="md"
-      onClick={handleConnect}
-    >
-      <CartridgeSmall className={`w-10 md:w-6 mr-1 md:mr-1 fill-gold self-center ${iconClassName}`} />
-      <div className="align-center">Log In</div>
-    </Button>
+    <div>
+      <Button
+        className={`flex items-center hover:scale-105 hover:-translate-y-1 shadow-[0px_4px_4px_0px_#00000040] rounded-md !h-8 !bg-[#FCB843] !text-black !text-md !px-3 ${className}`}
+        variant="default"
+        size="md"
+        onClick={handleConnect}
+      >
+        <CartridgeSmall className={`w-10 md:w-6 mr-1 md:mr-1 fill-gold self-center ${iconClassName}`} />
+        <div className="align-center">Log In</div>
+      </Button>
+    </div>
   );
 };

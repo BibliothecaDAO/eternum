@@ -92,14 +92,16 @@ export const BuildingEntityDetails = () => {
 
   const handlePauseResumeProduction = useCallback(() => {
     setIsLoading(true);
-    const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
+    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
       col: selectedBuildingHex.outerCol,
       row: selectedBuildingHex.outerRow,
     });
     const action = !isPaused ? tileManager.pauseProduction : tileManager.resumeProduction;
-    action(dojo.account.account, selectedBuildingHex.innerCol, selectedBuildingHex.innerRow).then(() => {
-      setIsLoading(false);
-    });
+    action(dojo.account.account, structureEntityId, selectedBuildingHex.innerCol, selectedBuildingHex.innerRow).then(
+      () => {
+        setIsLoading(false);
+      },
+    );
   }, [selectedBuildingHex, isPaused]);
 
   const handleDestroyBuilding = useCallback(() => {
@@ -108,11 +110,16 @@ export const BuildingEntityDetails = () => {
       return;
     }
 
-    const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
+    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
       col: selectedBuildingHex.outerCol,
       row: selectedBuildingHex.outerRow,
     });
-    tileManager.destroyBuilding(dojo.account.account, selectedBuildingHex.innerCol, selectedBuildingHex.innerRow);
+    tileManager.destroyBuilding(
+      dojo.account.account,
+      structureEntityId,
+      selectedBuildingHex.innerCol,
+      selectedBuildingHex.innerRow,
+    );
     if (
       buildingState.buildingType === BuildingType.Resource &&
       (ResourceIdToMiningType[buildingState.resource!] === ResourceMiningTypes.Forge ||

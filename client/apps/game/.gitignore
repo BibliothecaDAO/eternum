@@ -26,3 +26,4 @@ yarn.lock
 dev-dist
 .env
 .env.local
+*.ts.timestamp-*.mjs
