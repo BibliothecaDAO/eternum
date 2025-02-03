@@ -7,9 +7,9 @@
   "license": "ISC",
   "type": "module",
   "scripts": {
-    "build": "pnpm apibara build",
+    "build": "apibara build",
     "dev": "pnpm with-env apibara dev",
-    "start": "pnpm apibara start",
+    "start": "apibara start",
     "lint": "biome check .",
     "lint:fix": "pnpm lint --write",
     "test": "vitest",
