@@ -97,7 +97,7 @@ export class ResourceManager {
     const production = resource.production!;
 
     if (!production || production.building_count == 0) return 0n;
-    
+
     let totalAmountProduced = BigInt(currentTick - production.last_updated_tick) * BigInt(production.production_rate);
     if (!this.isFood() && totalAmountProduced > production.output_amount_left) {
       totalAmountProduced = production.output_amount_left;
@@ -105,7 +105,6 @@ export class ResourceManager {
 
     return totalAmountProduced;
   }
-
 
   private _productionEndsAt(): number {
     const resource = this._getResource();
