@@ -4,6 +4,7 @@ import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 //import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
 import viteTsConfigPaths from 'vite-tsconfig-paths'
+import tailwindcss from "@tailwindcss/vite";
 
 export default createApp({
   server: {
@@ -51,6 +52,7 @@ export default createApp({
           },
           include: "**/*.svg",
         }),
+        tailwindcss(),
       ],
     },
   ],
