@@ -9,6 +9,8 @@ import type { SQL } from "@realms-world/db";
 import { eq, or, desc } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 import { realmsBridgeRequests } from "@realms-world/db/schema";
+import { env } from "env";
+;
 /**
  * 1. CONTEXT
  *
@@ -65,6 +67,9 @@ const POSTS = [
   { id: "10", title: "Tenth post" },
 ];
 
+const RESERVOIR_API_URL = `https://api${process.env.VITE_PUBLIC_CHAIN === "sepolia" ? "-sepolia" : ""
+}.reservoir.tools`;
+
 const appRouter = t.router({
   hello: t.procedure.query(() => "Hello world!"),
   posts: t.procedure.query(async (_) => {
@@ -98,6 +103,9 @@ const appRouter = t.router({
       return ctx.db.query.realmsBridgeRequests.findMany({
         where: or(...whereFilter),
         orderBy: desc(realmsBridgeRequests.timestamp),
+        with: {
+          events: true,
+        },
       });
     }),
   l1Realms: t.procedure
@@ -109,7 +117,7 @@ const appRouter = t.router({
     .query(async (req) => {
       if (req.input?.address) {
         const response = await fetch(
-          `https://api.reservoir.tools/users/${req.input.address}/tokens/v10?collection=0x7afe30cb3e53dba6801aa0ea647a0ecea7cbe18d&limit=100&includeAttributes=true`,
+          `${RESERVOIR_API_URL}/users/${req.input.address}/tokens/v10?collection=0x7afe30cb3e53dba6801aa0ea647a0ecea7cbe18d&limit=100&includeAttributes=true`,
           {
             method: "GET",
             headers: {
@@ -120,6 +128,7 @@ const appRouter = t.router({
           }
         );
         const data = await response.json();
+        console.log(data)
         return data as paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"];
       }
     }),

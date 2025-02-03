@@ -23,7 +23,8 @@ import "@rainbow-me/rainbowkit/styles.css";
 
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
+import { mainnet, sepolia} from "wagmi/chains";
+import { env } from "env";
 export interface RouterAppContext {
   trpcQueryUtils: typeof trpcQueryUtils;
   arkClient: ArkClient;
@@ -38,7 +39,7 @@ function RootComponent() {
   const config = getDefaultConfig({
     appName: "Realms.World",
     projectId: "c8d27e7d62b1bb4d1ea2e6d4ed1604ee",
-    chains: [mainnet],
+    chains: [env.VITE_PUBLIC_CHAIN === "sepolia" ? sepolia : mainnet],
     //ssr: true, // If your dApp uses server side rendering (SSR)
   });
   return (

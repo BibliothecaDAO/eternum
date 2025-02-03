@@ -8,7 +8,7 @@ import type {
   ExtractTablesWithRelations,
   TablesRelationalConfig,
 } from "drizzle-orm";
-import { db } from "../lib/db";
+import { db } from "@realms-world/db/client";
 import { hash } from "starknet";
 import { ChainId, REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
 import { env } from "../env";

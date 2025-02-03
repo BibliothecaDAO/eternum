@@ -44,6 +44,7 @@ export const realmsBridgeEvents = pgTable(
     id: text("id").notNull(),
     hash: text("hash"),
     type: bridgeEventTypeEnum().notNull(),
+    timestamp: timestamp("timestamp").notNull(),
   },
   (t) => [primaryKey({ columns: [t.id, t.type] })]
 );

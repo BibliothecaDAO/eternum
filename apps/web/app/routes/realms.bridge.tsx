@@ -36,6 +36,7 @@ function RouteComponent() {
 
   const l1RealmsQuery = trpc.l1Realms.useQuery({address: l1Address});
   const l1Realms = l1RealmsQuery.data || []
+  console.log(l1Realms)
 
   const arkClient = marketPlaceClientBuilder(window.fetch.bind(window));
   const { data: realms } = useSuspenseQuery(
@@ -102,7 +103,7 @@ function RouteComponent() {
   return (
     <SidebarProvider
       style={{
-        "--sidebar-width": "26rem",
+        "--sidebar-width": "32rem",
         "--sidebar-width-mobile": "26rem",
       }}
       className="flex flex-1"

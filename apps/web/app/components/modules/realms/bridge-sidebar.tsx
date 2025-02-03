@@ -15,7 +15,7 @@ import {
   CollapsibleContent,
 } from "@radix-ui/react-collapsible";
 import { Row } from "@tanstack/react-table";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { Realm } from "./bridge-table";
 import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
 import { useWriteInitiateWithdrawRealms } from "@/hooks/bridge/useWriteInitiateWithdrawRealms";
@@ -23,34 +23,21 @@ import { useToast } from "@/hooks/use-toast";
 import { useAccount as useL1Account } from "wagmi";
 import { useAccount } from "@starknet-react/core";
 import { trpc } from "@/router";
+import { shortenAddress } from "@/utils/utils";
+import { Badge } from "@/components/ui/badge";
+import { ChainId } from "@realms-world/constants";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface BridgeSidebarProps {
   selectedRows: Row<Realm>[];
   selectedAsset: string;
 }
-export type Transaction = {
-  txHash: string;
-  time: string;
-  status: string;
-};
 
-const data: Transaction[] = [
-  {
-    txHash: "0x1234567890abcdef",
-    time: "2023-10-01 12:00:00",
-    status: "Pending",
-  },
-  {
-    txHash: "0xabcdef1234567890",
-    time: "2023-10-01 12:05:00",
-    status: "Confirmed",
-  },
-  {
-    txHash: "0x7890abcdef123456",
-    time: "2023-10-01 12:10:00",
-    status: "Failed",
-  },
-];
 const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   selectedRows,
   selectedAsset,
@@ -59,10 +46,12 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   const { address: l2Address } = useAccount();
   const { toast } = useToast();
 
+  const bridgeTxsQuery = trpc.bridgeTransactions.useQuery({
+    l1Account: l1Address,
+    l2Account: l2Address,
+  });
+  const bridgeTxs = bridgeTxsQuery.data || [];
 
-  const bridgeTxsQuery = trpc.bridgeTransactions.useQuery({l1Account: l1Address, l2Account: l2Address});
-  const bridgeTxs = bridgeTxsQuery.data || []
-  
   const {
     writeAsync: depositRealms,
     isPending: isDepositPending,
@@ -76,8 +65,10 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
     },
   });
 
-  const tokenIds = selectedRows.map((row) => row.getValue("token_id") as string);
-  console.log(bridgeTxs)
+  const tokenIds = selectedRows.map(
+    (row) => row.getValue("token_id") as string
+  );
+  console.log(bridgeTxs);
   const {
     sendAsync: initiateWithdraw,
     isPending: isWithdrawPending,
@@ -87,7 +78,6 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   });
 
   const onBridge = async () => {
-
     let hash;
     if (selectedAsset === "Ethereum") {
       if (!l2Address) throw new Error("Missing L2 Address");
@@ -160,26 +150,50 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           </SidebarGroupLabel>
           <CollapsibleContent>
             <SidebarGroupContent>
-              <div>
-                <ul>
-                  {bridgeTxs?.map((transaction) => (
-                    <li
-                      key={transaction.id}
-                      className="flex items-center justify-between p-2 border-b"
-                    >
-                      <div className="flex-1">
-                        <div>Tx Hash: {transaction.hash}</div>
-                        <div>Time: {transaction.timestamp.toLocaleString()}</div>
-                        <div>From chain: {transaction.from_chain}</div>
+              <Accordion type="single" collapsible className="grid gap-4">
+                {bridgeTxs?.map((transaction) => (
+                  <AccordionItem key={transaction.id} value={transaction.id}>
+                    <AccordionTrigger className="flex hover:no-underline w-full justify-between">
+                      <div className="flex w-full justify-between px-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            {[ChainId.MAINNET, ChainId.SEPOLIA].includes(transaction.from_chain as ChainId)
+                              ? "Ethereum"
+                              : "Starknet"}
+                            <ArrowRight />
+                            {[ChainId.MAINNET, ChainId.SEPOLIA].includes(transaction.from_chain as ChainId)
+                              ? "Starknet"
+                              : "Ethereum"}
+                          </div>
+                          <span className="text-sm text-muted">
+                            {transaction.timestamp.toLocaleString()}
+                          </span>
+                        </div>
+                        <div>
+                          {transaction.token_ids.slice(0, 3).map((id) => (
+                            <Badge variant="outline" className="w-fit" key={id}>
+                              #{id}
+                            </Badge>
+                          ))}
+                          {transaction.token_ids.length > 3 && (
+                            <Badge key="more">
+                              +{transaction.token_ids.length - 3}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <Badge variant="outline" className="w-fit">
+                        {shortenAddress(transaction.hash)}
+                      </Badge>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </SidebarGroupContent>
           </CollapsibleContent>
         </Collapsible>
-        <SidebarSeparator className="mx-0" />
       </SidebarContent>
     </Sidebar>
   );

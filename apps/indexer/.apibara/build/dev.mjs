@@ -3173,7 +3173,7 @@ const array$1 = item => make$r((self, that) => {
   return true;
 });
 
-let moduleVersion = "3.12.4";
+let moduleVersion = "3.12.7";
 const getCurrentVersion = () => moduleVersion;
 
 /**
@@ -4077,9 +4077,6 @@ const isEqual = u => hasProperty(u, symbol);
  */
 const equivalence = () => equals$2;
 
-/**
- * @since 2.0.0
- */
 /**
  * @since 2.0.0
  * @category symbols
@@ -12288,7 +12285,7 @@ const tap = /*#__PURE__*/dual(args => args.length === 3 || args.length === 2 && 
     return as(b, a);
   } else if (isPromiseLike(b)) {
     return unsafeAsync(resume => {
-      b.then(_ => resume(succeed$3(a)), e => resume(fail$1(new UnknownException(e))));
+      b.then(_ => resume(succeed$3(a)), e => resume(fail$1(new UnknownException(e, "An unknown error occurred in Effect.tap"))));
     });
   }
   return succeed$3(a);
@@ -12575,9 +12572,12 @@ const YieldableError = /*#__PURE__*/function () {
       return fail$1(this);
     }
     toJSON() {
-      return {
+      const obj = {
         ...this
       };
+      if (this.message) obj.message = this.message;
+      if (this.cause) obj.cause = this.cause;
+      return obj;
     }
     [NodeInspectSymbol]() {
       if (this.toString !== globalThis.Error.prototype.toString) {
@@ -12622,14 +12622,12 @@ const UnknownExceptionTypeId = /*#__PURE__*/Symbol.for("effect/Cause/errors/Unkn
 /** @internal */
 const UnknownException = /*#__PURE__*/function () {
   class UnknownException extends YieldableError {
-    cause;
     _tag = "UnknownException";
     error;
     constructor(cause, message) {
       super(message ?? "An unknown error occurred", {
         cause
       });
-      this.cause = cause;
       this.error = cause;
     }
   }
@@ -17948,6 +17946,47 @@ const close = scopeClose;
  */
 const fork = scopeFork;
 
+/**
+ * Provides a constructor for a Case Class.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const Error$1 = /*#__PURE__*/function () {
+  const plainArgsSymbol = /*#__PURE__*/Symbol.for("effect/Data/Error/plainArgs");
+  return class Base extends YieldableError {
+    constructor(args) {
+      super(args?.message, args?.cause ? {
+        cause: args.cause
+      } : undefined);
+      if (args) {
+        Object.assign(this, args);
+        Object.defineProperty(this, plainArgsSymbol, {
+          value: args,
+          enumerable: false
+        });
+      }
+    }
+    toJSON() {
+      return {
+        ...this[plainArgsSymbol],
+        ...this
+      };
+    }
+  };
+}();
+/**
+ * @since 2.0.0
+ * @category constructors
+ */
+const TaggedError = tag => {
+  class Base extends Error$1 {
+    _tag = tag;
+  }
+  Base.prototype.name = tag;
+  return Base;
+};
+
 // circular with Layer
 /** @internal */
 const TypeId$2 = /*#__PURE__*/Symbol.for("effect/ManagedRuntime");
@@ -18020,19 +18059,13 @@ class FiberFailureImpl extends Error {
   [FiberFailureId];
   [FiberFailureCauseId];
   constructor(cause) {
-    super();
+    const head = prettyErrors(cause)[0];
+    super(head?.message || "An error has occurred");
     this[FiberFailureId] = FiberFailureId;
     this[FiberFailureCauseId] = cause;
-    const prettyErrors$1 = prettyErrors(cause);
-    if (prettyErrors$1.length > 0) {
-      const head = prettyErrors$1[0];
-      this.name = head.name;
-      this.message = head.message;
+    this.name = head ? `(FiberFailure) ${head.name}` : "FiberFailure";
+    if (head?.stack) {
       this.stack = head.stack;
-    }
-    this.name = `(FiberFailure) ${this.name}`;
-    if (this.message === undefined || this.message.length === 0) {
-      this.message = "An error has occurred";
     }
   }
   toJSON() {
@@ -18042,7 +18075,9 @@ class FiberFailureImpl extends Error {
     };
   }
   toString() {
-    return "(FiberFailure) " + (this.stack ?? this.message);
+    return "(FiberFailure) " + pretty(this[FiberFailureCauseId], {
+      renderErrorCause: true
+    });
   }
   [NodeInspectSymbol]() {
     return this.toString();
@@ -18476,18 +18511,24 @@ const mapError$1 = mapError$2;
  *
  * This function converts an effect that may fail into an effect that always
  * succeeds, wrapping the outcome in an `Either` type. The result will be
- * `Either.Left` if the effect fails, containing the error, or `Either.Right` if
- * it succeeds, containing the result.
+ * `Either.Left` if the effect fails, containing the recoverable error, or
+ * `Either.Right` if it succeeds, containing the result.
  *
- * Using this function, you can handle errors explicitly without causing the
- * effect to fail. This can be especially useful in scenarios where you want to
- * chain effects and deal with success and failure in the same logical flow.
+ * Using this function, you can handle recoverable errors explicitly without
+ * causing the effect to fail. This is particularly useful in scenarios where
+ * you want to chain effects and manage both success and failure in the same
+ * logical flow.
  *
- * The resulting effect cannot fail directly because failures are represented
- * inside the `Either` type.
+ * It's important to note that unrecoverable errors, often referred to as
+ * "defects," are still thrown and not captured within the `Either` type. Only
+ * failures that are explicitly represented as recoverable errors in the effect
+ * are encapsulated.
+ *
+ * The resulting effect cannot fail directly because all recoverable failures
+ * are represented inside the `Either` type.
  *
  * @see {@link option} for a version that uses `Option` instead.
- * @see {@link exit} for a version that uses `Exit` instead.
+ * @see {@link exit} for a version that encapsulates both recoverable errors and defects in an `Exit`.
  *
  * @example
  * ```ts
@@ -18903,47 +18944,6 @@ const go$1 = e => {
         return shouldSkipDefaultMessage ? go$1(error) : map$1(go$1(error), tree => make$3(getParseIssueTitle(e), [tree]));
       });
   }
-};
-
-/**
- * Provides a constructor for a Case Class.
- *
- * @since 2.0.0
- * @category constructors
- */
-const Error$1 = /*#__PURE__*/function () {
-  const plainArgsSymbol = /*#__PURE__*/Symbol.for("effect/Data/Error/plainArgs");
-  return class Base extends YieldableError {
-    constructor(args) {
-      super(args?.message, args?.cause ? {
-        cause: args.cause
-      } : undefined);
-      if (args) {
-        Object.assign(this, args);
-        Object.defineProperty(this, plainArgsSymbol, {
-          value: args,
-          enumerable: false
-        });
-      }
-    }
-    toJSON() {
-      return {
-        ...this[plainArgsSymbol],
-        ...this
-      };
-    }
-  };
-}();
-/**
- * @since 2.0.0
- * @category constructors
- */
-const TaggedError = tag => {
-  class Base extends Error$1 {
-    _tag = tag;
-  }
-  Base.prototype.name = tag;
-  return Base;
 };
 
 /**
@@ -22668,7 +22668,7 @@ const resourceVariance = {
 /** @internal */
 const get = self => flatMap$3(get$1(self.scopedRef), identity);
 
-const version$3 = '1.0.7';
+const version$3 = '1.0.8';
 
 let BaseError$1 = class BaseError extends Error {
     constructor(shortMessage, args = {}) {
@@ -22874,6 +22874,9 @@ function execConstructorSignature(signature) {
 const fallbackSignatureRegex = /^fallback\(\) external(?:\s(?<stateMutability>payable{1}))?$/;
 function isFallbackSignature(signature) {
     return fallbackSignatureRegex.test(signature);
+}
+function execFallbackSignature(signature) {
+    return execTyped(fallbackSignatureRegex, signature);
 }
 // https://regexr.com/78u1k
 const receiveSignatureRegex = /^receive\(\) external payable$/;
@@ -23148,92 +23151,106 @@ const parameterCache = new Map([
 ]);
 
 function parseSignature(signature, structs = {}) {
-    if (isFunctionSignature(signature)) {
-        const match = execFunctionSignature(signature);
-        if (!match)
-            throw new InvalidSignatureError({ signature, type: 'function' });
-        const inputParams = splitParameters(match.parameters);
-        const inputs = [];
-        const inputLength = inputParams.length;
-        for (let i = 0; i < inputLength; i++) {
-            inputs.push(parseAbiParameter(inputParams[i], {
-                modifiers: functionModifiers,
-                structs,
-                type: 'function',
-            }));
-        }
-        const outputs = [];
-        if (match.returns) {
-            const outputParams = splitParameters(match.returns);
-            const outputLength = outputParams.length;
-            for (let i = 0; i < outputLength; i++) {
-                outputs.push(parseAbiParameter(outputParams[i], {
-                    modifiers: functionModifiers,
-                    structs,
-                    type: 'function',
-                }));
-            }
-        }
-        return {
-            name: match.name,
-            type: 'function',
-            stateMutability: match.stateMutability ?? 'nonpayable',
-            inputs,
-            outputs,
-        };
-    }
-    if (isEventSignature(signature)) {
-        const match = execEventSignature(signature);
-        if (!match)
-            throw new InvalidSignatureError({ signature, type: 'event' });
-        const params = splitParameters(match.parameters);
-        const abiParameters = [];
-        const length = params.length;
-        for (let i = 0; i < length; i++) {
-            abiParameters.push(parseAbiParameter(params[i], {
-                modifiers: eventModifiers,
-                structs,
-                type: 'event',
-            }));
-        }
-        return { name: match.name, type: 'event', inputs: abiParameters };
-    }
-    if (isErrorSignature(signature)) {
-        const match = execErrorSignature(signature);
-        if (!match)
-            throw new InvalidSignatureError({ signature, type: 'error' });
-        const params = splitParameters(match.parameters);
-        const abiParameters = [];
-        const length = params.length;
-        for (let i = 0; i < length; i++) {
-            abiParameters.push(parseAbiParameter(params[i], { structs, type: 'error' }));
-        }
-        return { name: match.name, type: 'error', inputs: abiParameters };
-    }
-    if (isConstructorSignature(signature)) {
-        const match = execConstructorSignature(signature);
-        if (!match)
-            throw new InvalidSignatureError({ signature, type: 'constructor' });
-        const params = splitParameters(match.parameters);
-        const abiParameters = [];
-        const length = params.length;
-        for (let i = 0; i < length; i++) {
-            abiParameters.push(parseAbiParameter(params[i], { structs, type: 'constructor' }));
-        }
-        return {
-            type: 'constructor',
-            stateMutability: match.stateMutability ?? 'nonpayable',
-            inputs: abiParameters,
-        };
-    }
+    if (isFunctionSignature(signature))
+        return parseFunctionSignature(signature, structs);
+    if (isEventSignature(signature))
+        return parseEventSignature(signature, structs);
+    if (isErrorSignature(signature))
+        return parseErrorSignature(signature, structs);
+    if (isConstructorSignature(signature))
+        return parseConstructorSignature(signature, structs);
     if (isFallbackSignature(signature))
-        return { type: 'fallback' };
+        return parseFallbackSignature(signature);
     if (isReceiveSignature(signature))
         return {
             type: 'receive',
             stateMutability: 'payable',
         };
     throw new UnknownSignatureError({ signature });
+}
+function parseFunctionSignature(signature, structs = {}) {
+    const match = execFunctionSignature(signature);
+    if (!match)
+        throw new InvalidSignatureError({ signature, type: 'function' });
+    const inputParams = splitParameters(match.parameters);
+    const inputs = [];
+    const inputLength = inputParams.length;
+    for (let i = 0; i < inputLength; i++) {
+        inputs.push(parseAbiParameter(inputParams[i], {
+            modifiers: functionModifiers,
+            structs,
+            type: 'function',
+        }));
+    }
+    const outputs = [];
+    if (match.returns) {
+        const outputParams = splitParameters(match.returns);
+        const outputLength = outputParams.length;
+        for (let i = 0; i < outputLength; i++) {
+            outputs.push(parseAbiParameter(outputParams[i], {
+                modifiers: functionModifiers,
+                structs,
+                type: 'function',
+            }));
+        }
+    }
+    return {
+        name: match.name,
+        type: 'function',
+        stateMutability: match.stateMutability ?? 'nonpayable',
+        inputs,
+        outputs,
+    };
+}
+function parseEventSignature(signature, structs = {}) {
+    const match = execEventSignature(signature);
+    if (!match)
+        throw new InvalidSignatureError({ signature, type: 'event' });
+    const params = splitParameters(match.parameters);
+    const abiParameters = [];
+    const length = params.length;
+    for (let i = 0; i < length; i++)
+        abiParameters.push(parseAbiParameter(params[i], {
+            modifiers: eventModifiers,
+            structs,
+            type: 'event',
+        }));
+    return { name: match.name, type: 'event', inputs: abiParameters };
+}
+function parseErrorSignature(signature, structs = {}) {
+    const match = execErrorSignature(signature);
+    if (!match)
+        throw new InvalidSignatureError({ signature, type: 'error' });
+    const params = splitParameters(match.parameters);
+    const abiParameters = [];
+    const length = params.length;
+    for (let i = 0; i < length; i++)
+        abiParameters.push(parseAbiParameter(params[i], { structs, type: 'error' }));
+    return { name: match.name, type: 'error', inputs: abiParameters };
+}
+function parseConstructorSignature(signature, structs = {}) {
+    const match = execConstructorSignature(signature);
+    if (!match)
+        throw new InvalidSignatureError({ signature, type: 'constructor' });
+    const params = splitParameters(match.parameters);
+    const abiParameters = [];
+    const length = params.length;
+    for (let i = 0; i < length; i++)
+        abiParameters.push(parseAbiParameter(params[i], { structs, type: 'constructor' }));
+    return {
+        type: 'constructor',
+        stateMutability: match.stateMutability ?? 'nonpayable',
+        inputs: abiParameters,
+    };
+}
+function parseFallbackSignature(signature) {
+    const match = execFallbackSignature(signature);
+    if (!match)
+        throw new InvalidSignatureError({ signature, type: 'fallback' });
+    return {
+        type: 'fallback',
+        stateMutability: match.stateMutability ?? 'nonpayable',
+    };
 }
 const abiParameterWithoutTupleRegex = /^(?<type>[a-zA-Z$_][a-zA-Z0-9$_]*)(?<array>(?:\[\d*?\])+?)?(?:\s(?<modifier>calldata|indexed|memory|storage{1}))?(?:\s(?<name>[a-zA-Z$_][a-zA-Z0-9$_]*))?$/;
 const abiParameterWithTupleRegex = /^\((?<type>.+?)\)(?<array>(?:\[\d*?\])+?)?(?:\s(?<modifier>calldata|indexed|memory|storage{1}))?(?:\s(?<name>[a-zA-Z$_][a-zA-Z0-9$_]*))?$/;
@@ -23494,7 +23511,7 @@ function size(value) {
     return value.length;
 }
 
-const version$2 = '2.22.8';
+const version$2 = '2.22.17';
 
 let errorConfig = {
     getDocsUrl: ({ docsBaseUrl, docsPath = '', docsSlug, }) => docsPath
@@ -24279,26 +24296,34 @@ function stringToBytes(value, opts = {}) {
     return bytes;
 }
 
+/**
+ * Internal assertion helpers.
+ * @module
+ */
+/** Asserts something is positive integer. */
 function anumber$2(n) {
     if (!Number.isSafeInteger(n) || n < 0)
         throw new Error('positive integer expected, got ' + n);
 }
-// copied from utils
+/** Is number an Uint8Array? Copied from utils for perf. */
 function isBytes$9(a) {
     return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
 }
+/** Asserts something is Uint8Array. */
 function abytes$4(b, ...lengths) {
     if (!isBytes$9(b))
         throw new Error('Uint8Array expected');
     if (lengths.length > 0 && !lengths.includes(b.length))
         throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
 }
+/** Asserts a hash instance has not been destroyed / finished */
 function aexists$2(instance, checkFinished = true) {
     if (instance.destroyed)
         throw new Error('Hash instance has been destroyed');
     if (checkFinished && instance.finished)
         throw new Error('Hash#digest() has already been called');
 }
+/** Asserts output is properly-sized byte array */
 function aoutput$1(out, instance) {
     abytes$4(out);
     const min = instance.outputLen;
@@ -24307,10 +24332,13 @@ function aoutput$1(out, instance) {
     }
 }
 
+/**
+ * Internal helpers for u64. BigUint64Array is too slow as per 2025, so we implement it using Uint32Array.
+ * @todo re-check https://issues.chromium.org/issues/42212588
+ * @module
+ */
 const U32_MASK64$2 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
 const _32n$2 = /* @__PURE__ */ BigInt(32);
-// BigUint64Array is too slow as per 2024, so we implement it using Uint32Array.
-// TODO: re-check https://issues.chromium.org/issues/42212588
 function fromBig$2(n, le = false) {
     if (le)
         return { h: Number(n & U32_MASK64$2), l: Number((n >> _32n$2) & U32_MASK64$2) };
@@ -24332,6 +24360,10 @@ const rotlSL$2 = (h, l, s) => (l << s) | (h >>> (32 - s));
 const rotlBH$2 = (h, l, s) => (l << (s - 32)) | (h >>> (64 - s));
 const rotlBL$2 = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
 
+/**
+ * Utilities for hex, bytes, CSPRNG.
+ * @module
+ */
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 // We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
 // node.js versions earlier than v19 don't declare it in global scope.
@@ -24339,24 +24371,26 @@ const rotlBL$2 = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
 // from `crypto` to `cryptoNode`, which imports native module.
 // Makes the utils un-importable in browsers without a bundler.
 // Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
-const u32$2 = (arr) => new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
-// Cast array to view
-const createView$2 = (arr) => new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
-// The rotate right (circular right shift) operation for uint32
-const rotr$2 = (word, shift) => (word << (32 - shift)) | (word >>> shift);
+function u32$2(arr) {
+    return new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
+}
+/** Is current platform little-endian? Most are. Big-Endian platform: IBM */
 const isLE$2 = /* @__PURE__ */ (() => new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
 // The byte swap operation for uint32
-const byteSwap$1 = (word) => ((word << 24) & 0xff000000) |
-    ((word << 8) & 0xff0000) |
-    ((word >>> 8) & 0xff00) |
-    ((word >>> 24) & 0xff);
-// In place byte swap for Uint32Array
+function byteSwap$1(word) {
+    return (((word << 24) & 0xff000000) |
+        ((word << 8) & 0xff0000) |
+        ((word >>> 8) & 0xff00) |
+        ((word >>> 24) & 0xff));
+}
+/** In place byte swap for Uint32Array */
 function byteSwap32$1(arr) {
     for (let i = 0; i < arr.length; i++) {
         arr[i] = byteSwap$1(arr[i]);
     }
 }
 /**
+ * Convert JS string to byte array.
  * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
  */
 function utf8ToBytes$7(str) {
@@ -24375,13 +24409,14 @@ function toBytes$4(data) {
     abytes$4(data);
     return data;
 }
-// For runtime check if class implements interface
+/** For runtime check if class implements interface */
 let Hash$4 = class Hash {
     // Safe version that clones internal state
     clone() {
         return this._cloneInto();
     }
 };
+/** Wraps hash function, creating an interface on top of it */
 function wrapConstructor$3(hashCons) {
     const hashC = (msg) => hashCons().update(toBytes$4(msg)).digest();
     const tmp = hashCons();
@@ -24391,8 +24426,17 @@ function wrapConstructor$3(hashCons) {
     return hashC;
 }
 
-// SHA3 (keccak) is based on a new design: basically, the internal state is bigger than output size.
-// It's called a sponge function.
+/**
+ * SHA3 (keccak) hash function, based on a new "Sponge function" design.
+ * Different from older hashes, the internal state is bigger than output size.
+ *
+ * Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
+ * [Website](https://keccak.team/keccak.html),
+ * [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub).
+ *
+ * Check out `sha3-addons` module for cSHAKE, k12, and others.
+ * @module
+ */
 // Various per round constants calculations
 const SHA3_PI$2 = [];
 const SHA3_ROTL$2 = [];
@@ -24422,7 +24466,7 @@ const [SHA3_IOTA_H$2, SHA3_IOTA_L$2] = /* @__PURE__ */ split$2(_SHA3_IOTA$2, tru
 // Left rotation (without 0, 32, 64)
 const rotlH$2 = (h, l, s) => (s > 32 ? rotlBH$2(h, l, s) : rotlSH$2(h, l, s));
 const rotlL$2 = (h, l, s) => (s > 32 ? rotlBL$2(h, l, s) : rotlSL$2(h, l, s));
-// Same as keccakf1600, but allows to skip some rounds
+/** `keccakf1600` internal function, additionally allows to adjust round count. */
 function keccakP$2(s, rounds = 24) {
     const B = new Uint32Array(5 * 2);
     // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
@@ -24468,6 +24512,7 @@ function keccakP$2(s, rounds = 24) {
     }
     B.fill(0);
 }
+/** Keccak sponge function. */
 let Keccak$2 = class Keccak extends Hash$4 {
     // NOTE: we accept arguments in bytes instead of bits here.
     constructor(blockLen, suffix, outputLen, enableXOF = false, rounds = 24) {
@@ -24484,6 +24529,7 @@ let Keccak$2 = class Keccak extends Hash$4 {
         // Can be passed from user as dkLen
         anumber$2(outputLen);
         // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
+        // 0 < blockLen < 200
         if (0 >= this.blockLen || this.blockLen >= 200)
             throw new Error('Sha3 supports only keccak-f1600 function');
         this.state = new Uint8Array(200);
@@ -24582,10 +24628,7 @@ let Keccak$2 = class Keccak extends Hash$4 {
     }
 };
 const gen$2 = (suffix, blockLen, outputLen) => wrapConstructor$3(() => new Keccak$2(blockLen, suffix, outputLen));
-/**
- * keccak-256 hash function. Different from SHA3-256.
- * @param message - that would be hashed
- */
+/** keccak-256 hash function. Different from SHA3-256. */
 const keccak_256$2 = /* @__PURE__ */ gen$2(0x01, 136, 256 / 8);
 
 function keccak256(value, to_) {
@@ -25303,7 +25346,9 @@ function encodeEventTopics(parameters) {
                 indexedInputs?.map((param, i) => {
                     if (Array.isArray(args_[i]))
                         return args_[i].map((_, j) => encodeArg({ param, value: args_[i][j] }));
-                    return args_[i] ? encodeArg({ param, value: args_[i] }) : null;
+                    return typeof args_[i] !== 'undefined' && args_[i] !== null
+                        ? encodeArg({ param, value: args_[i] })
+                        : null;
                 }) ?? [];
         }
     }
@@ -25822,237 +25867,6 @@ function hasDynamicChild(param) {
     return false;
 }
 
-/**
- * Polyfill for Safari 14
- */
-function setBigUint64$2(view, byteOffset, value, isLE) {
-    if (typeof view.setBigUint64 === 'function')
-        return view.setBigUint64(byteOffset, value, isLE);
-    const _32n = BigInt(32);
-    const _u32_max = BigInt(0xffffffff);
-    const wh = Number((value >> _32n) & _u32_max);
-    const wl = Number(value & _u32_max);
-    const h = isLE ? 4 : 0;
-    const l = isLE ? 0 : 4;
-    view.setUint32(byteOffset + h, wh, isLE);
-    view.setUint32(byteOffset + l, wl, isLE);
-}
-/**
- * Choice: a ? b : c
- */
-const Chi$2 = (a, b, c) => (a & b) ^ (~a & c);
-/**
- * Majority function, true if any two inputs is true
- */
-const Maj$2 = (a, b, c) => (a & b) ^ (a & c) ^ (b & c);
-/**
- * Merkle-Damgard hash construction base class.
- * Could be used to create MD5, RIPEMD, SHA1, SHA2.
- */
-let HashMD$1 = class HashMD extends Hash$4 {
-    constructor(blockLen, outputLen, padOffset, isLE) {
-        super();
-        this.blockLen = blockLen;
-        this.outputLen = outputLen;
-        this.padOffset = padOffset;
-        this.isLE = isLE;
-        this.finished = false;
-        this.length = 0;
-        this.pos = 0;
-        this.destroyed = false;
-        this.buffer = new Uint8Array(blockLen);
-        this.view = createView$2(this.buffer);
-    }
-    update(data) {
-        aexists$2(this);
-        const { view, buffer, blockLen } = this;
-        data = toBytes$4(data);
-        const len = data.length;
-        for (let pos = 0; pos < len;) {
-            const take = Math.min(blockLen - this.pos, len - pos);
-            // Fast path: we have at least one block in input, cast it to view and process
-            if (take === blockLen) {
-                const dataView = createView$2(data);
-                for (; blockLen <= len - pos; pos += blockLen)
-                    this.process(dataView, pos);
-                continue;
-            }
-            buffer.set(data.subarray(pos, pos + take), this.pos);
-            this.pos += take;
-            pos += take;
-            if (this.pos === blockLen) {
-                this.process(view, 0);
-                this.pos = 0;
-            }
-        }
-        this.length += data.length;
-        this.roundClean();
-        return this;
-    }
-    digestInto(out) {
-        aexists$2(this);
-        aoutput$1(out, this);
-        this.finished = true;
-        // Padding
-        // We can avoid allocation of buffer for padding completely if it
-        // was previously not allocated here. But it won't change performance.
-        const { buffer, view, blockLen, isLE } = this;
-        let { pos } = this;
-        // append the bit '1' to the message
-        buffer[pos++] = 0b10000000;
-        this.buffer.subarray(pos).fill(0);
-        // we have less than padOffset left in buffer, so we cannot put length in
-        // current block, need process it and pad again
-        if (this.padOffset > blockLen - pos) {
-            this.process(view, 0);
-            pos = 0;
-        }
-        // Pad until full block byte with zeros
-        for (let i = pos; i < blockLen; i++)
-            buffer[i] = 0;
-        // Note: sha512 requires length to be 128bit integer, but length in JS will overflow before that
-        // You need to write around 2 exabytes (u64_max / 8 / (1024**6)) for this to happen.
-        // So we just write lowest 64 bits of that value.
-        setBigUint64$2(view, blockLen - 8, BigInt(this.length * 8), isLE);
-        this.process(view, 0);
-        const oview = createView$2(out);
-        const len = this.outputLen;
-        // NOTE: we do division by 4 later, which should be fused in single op with modulo by JIT
-        if (len % 4)
-            throw new Error('_sha2: outputLen should be aligned to 32bit');
-        const outLen = len / 4;
-        const state = this.get();
-        if (outLen > state.length)
-            throw new Error('_sha2: outputLen bigger than state');
-        for (let i = 0; i < outLen; i++)
-            oview.setUint32(4 * i, state[i], isLE);
-    }
-    digest() {
-        const { buffer, outputLen } = this;
-        this.digestInto(buffer);
-        const res = buffer.slice(0, outputLen);
-        this.destroy();
-        return res;
-    }
-    _cloneInto(to) {
-        to || (to = new this.constructor());
-        to.set(...this.get());
-        const { blockLen, buffer, length, finished, destroyed, pos } = this;
-        to.length = length;
-        to.pos = pos;
-        to.finished = finished;
-        to.destroyed = destroyed;
-        if (length % blockLen)
-            to.buffer.set(buffer);
-        return to;
-    }
-};
-
-// SHA2-256 need to try 2^128 hashes to execute birthday attack.
-// BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per late 2024.
-// Round constants:
-// first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
-// prettier-ignore
-const SHA256_K$2 = /* @__PURE__ */ new Uint32Array([
-    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-]);
-// Initial state:
-// first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
-// prettier-ignore
-const SHA256_IV$1 = /* @__PURE__ */ new Uint32Array([
-    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
-]);
-// Temporary buffer, not used to store anything between runs
-// Named this way because it matches specification.
-const SHA256_W$2 = /* @__PURE__ */ new Uint32Array(64);
-let SHA256$2 = class SHA256 extends HashMD$1 {
-    constructor() {
-        super(64, 32, 8, false);
-        // We cannot use array here since array allows indexing by variable
-        // which means optimizer/compiler cannot use registers.
-        this.A = SHA256_IV$1[0] | 0;
-        this.B = SHA256_IV$1[1] | 0;
-        this.C = SHA256_IV$1[2] | 0;
-        this.D = SHA256_IV$1[3] | 0;
-        this.E = SHA256_IV$1[4] | 0;
-        this.F = SHA256_IV$1[5] | 0;
-        this.G = SHA256_IV$1[6] | 0;
-        this.H = SHA256_IV$1[7] | 0;
-    }
-    get() {
-        const { A, B, C, D, E, F, G, H } = this;
-        return [A, B, C, D, E, F, G, H];
-    }
-    // prettier-ignore
-    set(A, B, C, D, E, F, G, H) {
-        this.A = A | 0;
-        this.B = B | 0;
-        this.C = C | 0;
-        this.D = D | 0;
-        this.E = E | 0;
-        this.F = F | 0;
-        this.G = G | 0;
-        this.H = H | 0;
-    }
-    process(view, offset) {
-        // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
-        for (let i = 0; i < 16; i++, offset += 4)
-            SHA256_W$2[i] = view.getUint32(offset, false);
-        for (let i = 16; i < 64; i++) {
-            const W15 = SHA256_W$2[i - 15];
-            const W2 = SHA256_W$2[i - 2];
-            const s0 = rotr$2(W15, 7) ^ rotr$2(W15, 18) ^ (W15 >>> 3);
-            const s1 = rotr$2(W2, 17) ^ rotr$2(W2, 19) ^ (W2 >>> 10);
-            SHA256_W$2[i] = (s1 + SHA256_W$2[i - 7] + s0 + SHA256_W$2[i - 16]) | 0;
-        }
-        // Compression function main loop, 64 rounds
-        let { A, B, C, D, E, F, G, H } = this;
-        for (let i = 0; i < 64; i++) {
-            const sigma1 = rotr$2(E, 6) ^ rotr$2(E, 11) ^ rotr$2(E, 25);
-            const T1 = (H + sigma1 + Chi$2(E, F, G) + SHA256_K$2[i] + SHA256_W$2[i]) | 0;
-            const sigma0 = rotr$2(A, 2) ^ rotr$2(A, 13) ^ rotr$2(A, 22);
-            const T2 = (sigma0 + Maj$2(A, B, C)) | 0;
-            H = G;
-            G = F;
-            F = E;
-            E = (D + T1) | 0;
-            D = C;
-            C = B;
-            B = A;
-            A = (T1 + T2) | 0;
-        }
-        // Add the compressed chunk to the current hash value
-        A = (A + this.A) | 0;
-        B = (B + this.B) | 0;
-        C = (C + this.C) | 0;
-        D = (D + this.D) | 0;
-        E = (E + this.E) | 0;
-        F = (F + this.F) | 0;
-        G = (G + this.G) | 0;
-        H = (H + this.H) | 0;
-        this.set(A, B, C, D, E, F, G, H);
-    }
-    roundClean() {
-        SHA256_W$2.fill(0);
-    }
-    destroy() {
-        this.set(0, 0, 0, 0, 0, 0, 0, 0);
-        this.buffer.fill(0);
-    }
-};
-/**
- * SHA2-256 hash function
- * @param message - data that would be hashed
- */
-const sha256$2 = /* @__PURE__ */ wrapConstructor$3(() => new SHA256$2());
-
 const docsPath = '/docs/contract/decodeEventLog';
 function decodeEventLog(parameters) {
     const { abi, data, strict: strict_, topics, } = parameters;
@@ -26135,2221 +25949,6 @@ function decodeTopic({ param, value }) {
         return value;
     const decodedArg = decodeAbiParameters([param], value) || [];
     return decodedArg[0];
-}
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// 100 lines of code in the file are duplicated from noble-hashes (utils).
-// This is OK: `abstract` directory does not use noble-hashes.
-// User may opt-in into using different hashing library. This way, noble-hashes
-// won't be included into their bundle.
-const _0n$d = /* @__PURE__ */ BigInt(0);
-const _1n$e = /* @__PURE__ */ BigInt(1);
-const _2n$9 = /* @__PURE__ */ BigInt(2);
-function isBytes$8(a) {
-    return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
-}
-function abytes$3(item) {
-    if (!isBytes$8(item))
-        throw new Error('Uint8Array expected');
-}
-function abool(title, value) {
-    if (typeof value !== 'boolean')
-        throw new Error(title + ' boolean expected, got ' + value);
-}
-// Array where index 0xf0 (240) is mapped to string 'f0'
-const hexes$2 = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
-/**
- * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
- */
-function bytesToHex$2(bytes) {
-    abytes$3(bytes);
-    // pre-caching improves the speed 6x
-    let hex = '';
-    for (let i = 0; i < bytes.length; i++) {
-        hex += hexes$2[bytes[i]];
-    }
-    return hex;
-}
-function numberToHexUnpadded$2(num) {
-    const hex = num.toString(16);
-    return hex.length & 1 ? '0' + hex : hex;
-}
-function hexToNumber$2(hex) {
-    if (typeof hex !== 'string')
-        throw new Error('hex string expected, got ' + typeof hex);
-    return hex === '' ? _0n$d : BigInt('0x' + hex); // Big Endian
-}
-// We use optimized technique to convert hex string to byte array
-const asciis$2 = { _0: 48, _9: 57, A: 65, F: 70, a: 97, f: 102 };
-function asciiToBase16$2(ch) {
-    if (ch >= asciis$2._0 && ch <= asciis$2._9)
-        return ch - asciis$2._0; // '2' => 50-48
-    if (ch >= asciis$2.A && ch <= asciis$2.F)
-        return ch - (asciis$2.A - 10); // 'B' => 66-(65-10)
-    if (ch >= asciis$2.a && ch <= asciis$2.f)
-        return ch - (asciis$2.a - 10); // 'b' => 98-(97-10)
-    return;
-}
-/**
- * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
- */
-function hexToBytes$4(hex) {
-    if (typeof hex !== 'string')
-        throw new Error('hex string expected, got ' + typeof hex);
-    const hl = hex.length;
-    const al = hl / 2;
-    if (hl % 2)
-        throw new Error('hex string expected, got unpadded hex of length ' + hl);
-    const array = new Uint8Array(al);
-    for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
-        const n1 = asciiToBase16$2(hex.charCodeAt(hi));
-        const n2 = asciiToBase16$2(hex.charCodeAt(hi + 1));
-        if (n1 === undefined || n2 === undefined) {
-            const char = hex[hi] + hex[hi + 1];
-            throw new Error('hex string expected, got non-hex character "' + char + '" at index ' + hi);
-        }
-        array[ai] = n1 * 16 + n2; // multiply first octet, e.g. 'a3' => 10*16+3 => 160 + 3 => 163
-    }
-    return array;
-}
-// BE: Big Endian, LE: Little Endian
-function bytesToNumberBE$2(bytes) {
-    return hexToNumber$2(bytesToHex$2(bytes));
-}
-function bytesToNumberLE$2(bytes) {
-    abytes$3(bytes);
-    return hexToNumber$2(bytesToHex$2(Uint8Array.from(bytes).reverse()));
-}
-function numberToBytesBE$2(n, len) {
-    return hexToBytes$4(n.toString(16).padStart(len * 2, '0'));
-}
-function numberToBytesLE$2(n, len) {
-    return numberToBytesBE$2(n, len).reverse();
-}
-// Unpadded, rarely used
-function numberToVarBytesBE$2(n) {
-    return hexToBytes$4(numberToHexUnpadded$2(n));
-}
-/**
- * Takes hex string or Uint8Array, converts to Uint8Array.
- * Validates output length.
- * Will throw error for other types.
- * @param title descriptive title for an error e.g. 'private key'
- * @param hex hex string or Uint8Array
- * @param expectedLength optional, will compare to result array's length
- * @returns
- */
-function ensureBytes$3(title, hex, expectedLength) {
-    let res;
-    if (typeof hex === 'string') {
-        try {
-            res = hexToBytes$4(hex);
-        }
-        catch (e) {
-            throw new Error(title + ' must be hex string or Uint8Array, cause: ' + e);
-        }
-    }
-    else if (isBytes$8(hex)) {
-        // Uint8Array.from() instead of hash.slice() because node.js Buffer
-        // is instance of Uint8Array, and its slice() creates **mutable** copy
-        res = Uint8Array.from(hex);
-    }
-    else {
-        throw new Error(title + ' must be hex string or Uint8Array');
-    }
-    const len = res.length;
-    if (typeof expectedLength === 'number' && len !== expectedLength)
-        throw new Error(title + ' of length ' + expectedLength + ' expected, got ' + len);
-    return res;
-}
-/**
- * Copies several Uint8Arrays into one.
- */
-function concatBytes$5(...arrays) {
-    let sum = 0;
-    for (let i = 0; i < arrays.length; i++) {
-        const a = arrays[i];
-        abytes$3(a);
-        sum += a.length;
-    }
-    const res = new Uint8Array(sum);
-    for (let i = 0, pad = 0; i < arrays.length; i++) {
-        const a = arrays[i];
-        res.set(a, pad);
-        pad += a.length;
-    }
-    return res;
-}
-// Compares 2 u8a-s in kinda constant time
-function equalBytes$2(a, b) {
-    if (a.length !== b.length)
-        return false;
-    let diff = 0;
-    for (let i = 0; i < a.length; i++)
-        diff |= a[i] ^ b[i];
-    return diff === 0;
-}
-/**
- * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
- */
-function utf8ToBytes$6(str) {
-    if (typeof str !== 'string')
-        throw new Error('string expected');
-    return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
-}
-// Is positive bigint
-const isPosBig = (n) => typeof n === 'bigint' && _0n$d <= n;
-function inRange(n, min, max) {
-    return isPosBig(n) && isPosBig(min) && isPosBig(max) && min <= n && n < max;
-}
-/**
- * Asserts min <= n < max. NOTE: It's < max and not <= max.
- * @example
- * aInRange('x', x, 1n, 256n); // would assume x is in (1n..255n)
- */
-function aInRange(title, n, min, max) {
-    // Why min <= n < max and not a (min < n < max) OR b (min <= n <= max)?
-    // consider P=256n, min=0n, max=P
-    // - a for min=0 would require -1:          `inRange('x', x, -1n, P)`
-    // - b would commonly require subtraction:  `inRange('x', x, 0n, P - 1n)`
-    // - our way is the cleanest:               `inRange('x', x, 0n, P)
-    if (!inRange(n, min, max))
-        throw new Error('expected valid ' + title + ': ' + min + ' <= n < ' + max + ', got ' + n);
-}
-// Bit operations
-/**
- * Calculates amount of bits in a bigint.
- * Same as `n.toString(2).length`
- */
-function bitLen$2(n) {
-    let len;
-    for (len = 0; n > _0n$d; n >>= _1n$e, len += 1)
-        ;
-    return len;
-}
-/**
- * Gets single bit at position.
- * NOTE: first bit position is 0 (same as arrays)
- * Same as `!!+Array.from(n.toString(2)).reverse()[pos]`
- */
-function bitGet$2(n, pos) {
-    return (n >> BigInt(pos)) & _1n$e;
-}
-/**
- * Sets single bit at position.
- */
-function bitSet$2(n, pos, value) {
-    return n | ((value ? _1n$e : _0n$d) << BigInt(pos));
-}
-/**
- * Calculate mask for N bits. Not using ** operator with bigints because of old engines.
- * Same as BigInt(`0b${Array(i).fill('1').join('')}`)
- */
-const bitMask$2 = (n) => (_2n$9 << BigInt(n - 1)) - _1n$e;
-// DRBG
-const u8n$2 = (data) => new Uint8Array(data); // creates Uint8Array
-const u8fr$2 = (arr) => Uint8Array.from(arr); // another shortcut
-/**
- * Minimal HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
- * @returns function that will call DRBG until 2nd arg returns something meaningful
- * @example
- *   const drbg = createHmacDRBG<Key>(32, 32, hmac);
- *   drbg(seed, bytesToKey); // bytesToKey must return Key or undefined
- */
-function createHmacDrbg$2(hashLen, qByteLen, hmacFn) {
-    if (typeof hashLen !== 'number' || hashLen < 2)
-        throw new Error('hashLen must be a number');
-    if (typeof qByteLen !== 'number' || qByteLen < 2)
-        throw new Error('qByteLen must be a number');
-    if (typeof hmacFn !== 'function')
-        throw new Error('hmacFn must be a function');
-    // Step B, Step C: set hashLen to 8*ceil(hlen/8)
-    let v = u8n$2(hashLen); // Minimal non-full-spec HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
-    let k = u8n$2(hashLen); // Steps B and C of RFC6979 3.2: set hashLen, in our case always same
-    let i = 0; // Iterations counter, will throw when over 1000
-    const reset = () => {
-        v.fill(1);
-        k.fill(0);
-        i = 0;
-    };
-    const h = (...b) => hmacFn(k, v, ...b); // hmac(k)(v, ...values)
-    const reseed = (seed = u8n$2()) => {
-        // HMAC-DRBG reseed() function. Steps D-G
-        k = h(u8fr$2([0x00]), seed); // k = hmac(k || v || 0x00 || seed)
-        v = h(); // v = hmac(k || v)
-        if (seed.length === 0)
-            return;
-        k = h(u8fr$2([0x01]), seed); // k = hmac(k || v || 0x01 || seed)
-        v = h(); // v = hmac(k || v)
-    };
-    const gen = () => {
-        // HMAC-DRBG generate() function
-        if (i++ >= 1000)
-            throw new Error('drbg: tried 1000 values');
-        let len = 0;
-        const out = [];
-        while (len < qByteLen) {
-            v = h();
-            const sl = v.slice();
-            out.push(sl);
-            len += v.length;
-        }
-        return concatBytes$5(...out);
-    };
-    const genUntil = (seed, pred) => {
-        reset();
-        reseed(seed); // Steps D-G
-        let res = undefined; // Step H: grind until k is in [1..n-1]
-        while (!(res = pred(gen())))
-            reseed();
-        reset();
-        return res;
-    };
-    return genUntil;
-}
-// Validating curves and fields
-const validatorFns$2 = {
-    bigint: (val) => typeof val === 'bigint',
-    function: (val) => typeof val === 'function',
-    boolean: (val) => typeof val === 'boolean',
-    string: (val) => typeof val === 'string',
-    stringOrUint8Array: (val) => typeof val === 'string' || isBytes$8(val),
-    isSafeInteger: (val) => Number.isSafeInteger(val),
-    array: (val) => Array.isArray(val),
-    field: (val, object) => object.Fp.isValid(val),
-    hash: (val) => typeof val === 'function' && Number.isSafeInteger(val.outputLen),
-};
-// type Record<K extends string | number | symbol, T> = { [P in K]: T; }
-function validateObject$2(object, validators, optValidators = {}) {
-    const checkField = (fieldName, type, isOptional) => {
-        const checkVal = validatorFns$2[type];
-        if (typeof checkVal !== 'function')
-            throw new Error('invalid validator function');
-        const val = object[fieldName];
-        if (isOptional && val === undefined)
-            return;
-        if (!checkVal(val, object)) {
-            throw new Error('param ' + String(fieldName) + ' is invalid. Expected ' + type + ', got ' + val);
-        }
-    };
-    for (const [fieldName, type] of Object.entries(validators))
-        checkField(fieldName, type, false);
-    for (const [fieldName, type] of Object.entries(optValidators))
-        checkField(fieldName, type, true);
-    return object;
-}
-// validate type tests
-// const o: { a: number; b: number; c: number } = { a: 1, b: 5, c: 6 };
-// const z0 = validateObject(o, { a: 'isSafeInteger' }, { c: 'bigint' }); // Ok!
-// // Should fail type-check
-// const z1 = validateObject(o, { a: 'tmp' }, { c: 'zz' });
-// const z2 = validateObject(o, { a: 'isSafeInteger' }, { c: 'zz' });
-// const z3 = validateObject(o, { test: 'boolean', z: 'bug' });
-// const z4 = validateObject(o, { a: 'boolean', z: 'bug' });
-/**
- * throws not implemented error
- */
-const notImplemented = () => {
-    throw new Error('not implemented');
-};
-/**
- * Memoizes (caches) computation result.
- * Uses WeakMap: the value is going auto-cleaned by GC after last reference is removed.
- */
-function memoized(fn) {
-    const map = new WeakMap();
-    return (arg, ...args) => {
-        const val = map.get(arg);
-        if (val !== undefined)
-            return val;
-        const computed = fn(arg, ...args);
-        map.set(arg, computed);
-        return computed;
-    };
-}
-
-const ut$2 = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	aInRange: aInRange,
-	abool: abool,
-	abytes: abytes$3,
-	bitGet: bitGet$2,
-	bitLen: bitLen$2,
-	bitMask: bitMask$2,
-	bitSet: bitSet$2,
-	bytesToHex: bytesToHex$2,
-	bytesToNumberBE: bytesToNumberBE$2,
-	bytesToNumberLE: bytesToNumberLE$2,
-	concatBytes: concatBytes$5,
-	createHmacDrbg: createHmacDrbg$2,
-	ensureBytes: ensureBytes$3,
-	equalBytes: equalBytes$2,
-	hexToBytes: hexToBytes$4,
-	hexToNumber: hexToNumber$2,
-	inRange: inRange,
-	isBytes: isBytes$8,
-	memoized: memoized,
-	notImplemented: notImplemented,
-	numberToBytesBE: numberToBytesBE$2,
-	numberToBytesLE: numberToBytesLE$2,
-	numberToHexUnpadded: numberToHexUnpadded$2,
-	numberToVarBytesBE: numberToVarBytesBE$2,
-	utf8ToBytes: utf8ToBytes$6,
-	validateObject: validateObject$2
-});
-
-function anumber$1(n) {
-    if (!Number.isSafeInteger(n) || n < 0)
-        throw new Error('positive integer expected, got ' + n);
-}
-// copied from utils
-function isBytes$7(a) {
-    return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
-}
-function abytes$2(b, ...lengths) {
-    if (!isBytes$7(b))
-        throw new Error('Uint8Array expected');
-    if (lengths.length > 0 && !lengths.includes(b.length))
-        throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
-}
-function ahash(h) {
-    if (typeof h !== 'function' || typeof h.create !== 'function')
-        throw new Error('Hash should be wrapped by utils.wrapConstructor');
-    anumber$1(h.outputLen);
-    anumber$1(h.blockLen);
-}
-function aexists$1(instance, checkFinished = true) {
-    if (instance.destroyed)
-        throw new Error('Hash instance has been destroyed');
-    if (checkFinished && instance.finished)
-        throw new Error('Hash#digest() has already been called');
-}
-
-const crypto$4 = typeof globalThis === 'object' && 'crypto' in globalThis ? globalThis.crypto : undefined;
-
-/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
-// node.js versions earlier than v19 don't declare it in global scope.
-// For node.js, package.json#exports field mapping rewrites import
-// from `crypto` to `cryptoNode`, which imports native module.
-// Makes the utils un-importable in browsers without a bundler.
-// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
-/**
- * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
- */
-function utf8ToBytes$5(str) {
-    if (typeof str !== 'string')
-        throw new Error('utf8ToBytes expected string, got ' + typeof str);
-    return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
-}
-/**
- * Normalizes (non-hex) string or Uint8Array to Uint8Array.
- * Warning: when Uint8Array is passed, it would NOT get copied.
- * Keep in mind for future mutable operations.
- */
-function toBytes$3(data) {
-    if (typeof data === 'string')
-        data = utf8ToBytes$5(data);
-    abytes$2(data);
-    return data;
-}
-/**
- * Copies several Uint8Arrays into one.
- */
-function concatBytes$4(...arrays) {
-    let sum = 0;
-    for (let i = 0; i < arrays.length; i++) {
-        const a = arrays[i];
-        abytes$2(a);
-        sum += a.length;
-    }
-    const res = new Uint8Array(sum);
-    for (let i = 0, pad = 0; i < arrays.length; i++) {
-        const a = arrays[i];
-        res.set(a, pad);
-        pad += a.length;
-    }
-    return res;
-}
-// For runtime check if class implements interface
-let Hash$3 = class Hash {
-    // Safe version that clones internal state
-    clone() {
-        return this._cloneInto();
-    }
-};
-/**
- * Secure PRNG. Uses `crypto.getRandomValues`, which defers to OS.
- */
-function randomBytes$2(bytesLength = 32) {
-    if (crypto$4 && typeof crypto$4.getRandomValues === 'function') {
-        return crypto$4.getRandomValues(new Uint8Array(bytesLength));
-    }
-    // Legacy Node.js compatibility
-    if (crypto$4 && typeof crypto$4.randomBytes === 'function') {
-        return crypto$4.randomBytes(bytesLength);
-    }
-    throw new Error('crypto.getRandomValues must be defined');
-}
-
-// HMAC (RFC 2104)
-let HMAC$2 = class HMAC extends Hash$3 {
-    constructor(hash, _key) {
-        super();
-        this.finished = false;
-        this.destroyed = false;
-        ahash(hash);
-        const key = toBytes$3(_key);
-        this.iHash = hash.create();
-        if (typeof this.iHash.update !== 'function')
-            throw new Error('Expected instance of class which extends utils.Hash');
-        this.blockLen = this.iHash.blockLen;
-        this.outputLen = this.iHash.outputLen;
-        const blockLen = this.blockLen;
-        const pad = new Uint8Array(blockLen);
-        // blockLen can be bigger than outputLen
-        pad.set(key.length > blockLen ? hash.create().update(key).digest() : key);
-        for (let i = 0; i < pad.length; i++)
-            pad[i] ^= 0x36;
-        this.iHash.update(pad);
-        // By doing update (processing of first block) of outer hash here we can re-use it between multiple calls via clone
-        this.oHash = hash.create();
-        // Undo internal XOR && apply outer XOR
-        for (let i = 0; i < pad.length; i++)
-            pad[i] ^= 0x36 ^ 0x5c;
-        this.oHash.update(pad);
-        pad.fill(0);
-    }
-    update(buf) {
-        aexists$1(this);
-        this.iHash.update(buf);
-        return this;
-    }
-    digestInto(out) {
-        aexists$1(this);
-        abytes$2(out, this.outputLen);
-        this.finished = true;
-        this.iHash.digestInto(out);
-        this.oHash.update(out);
-        this.oHash.digestInto(out);
-        this.destroy();
-    }
-    digest() {
-        const out = new Uint8Array(this.oHash.outputLen);
-        this.digestInto(out);
-        return out;
-    }
-    _cloneInto(to) {
-        // Create new instance without calling constructor since key already in state and we don't know it.
-        to || (to = Object.create(Object.getPrototypeOf(this), {}));
-        const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
-        to = to;
-        to.finished = finished;
-        to.destroyed = destroyed;
-        to.blockLen = blockLen;
-        to.outputLen = outputLen;
-        to.oHash = oHash._cloneInto(to.oHash);
-        to.iHash = iHash._cloneInto(to.iHash);
-        return to;
-    }
-    destroy() {
-        this.destroyed = true;
-        this.oHash.destroy();
-        this.iHash.destroy();
-    }
-};
-/**
- * HMAC: RFC2104 message authentication code.
- * @param hash - function that would be used e.g. sha256
- * @param key - message key
- * @param message - message data
- * @example
- * import { hmac } from '@noble/hashes/hmac';
- * import { sha256 } from '@noble/hashes/sha2';
- * const mac1 = hmac(sha256, 'key', 'message');
- */
-const hmac$2 = (hash, key, message) => new HMAC$2(hash, key).update(message).digest();
-hmac$2.create = (hash, key) => new HMAC$2(hash, key);
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// Utilities for modular arithmetics and finite fields
-// prettier-ignore
-const _0n$c = BigInt(0), _1n$d = BigInt(1), _2n$8 = /* @__PURE__ */ BigInt(2), _3n$5 = /* @__PURE__ */ BigInt(3);
-// prettier-ignore
-const _4n$3 = /* @__PURE__ */ BigInt(4), _5n$2 = /* @__PURE__ */ BigInt(5), _8n$2 = /* @__PURE__ */ BigInt(8);
-// Calculates a modulo b
-function mod$2(a, b) {
-    const result = a % b;
-    return result >= _0n$c ? result : b + result;
-}
-/**
- * Efficiently raise num to power and do modular division.
- * Unsafe in some contexts: uses ladder, so can expose bigint bits.
- * @example
- * pow(2n, 6n, 11n) // 64n % 11n == 9n
- */
-// TODO: use field version && remove
-function pow$2(num, power, modulo) {
-    if (power < _0n$c)
-        throw new Error('invalid exponent, negatives unsupported');
-    if (modulo <= _0n$c)
-        throw new Error('invalid modulus');
-    if (modulo === _1n$d)
-        return _0n$c;
-    let res = _1n$d;
-    while (power > _0n$c) {
-        if (power & _1n$d)
-            res = (res * num) % modulo;
-        num = (num * num) % modulo;
-        power >>= _1n$d;
-    }
-    return res;
-}
-// Inverses number over modulo
-function invert$2(number, modulo) {
-    if (number === _0n$c)
-        throw new Error('invert: expected non-zero number');
-    if (modulo <= _0n$c)
-        throw new Error('invert: expected positive modulus, got ' + modulo);
-    // Euclidean GCD https://brilliant.org/wiki/extended-euclidean-algorithm/
-    // Fermat's little theorem "CT-like" version inv(n) = n^(m-2) mod m is 30x slower.
-    let a = mod$2(number, modulo);
-    let b = modulo;
-    // prettier-ignore
-    let x = _0n$c, u = _1n$d;
-    while (a !== _0n$c) {
-        // JIT applies optimization if those two lines follow each other
-        const q = b / a;
-        const r = b % a;
-        const m = x - u * q;
-        // prettier-ignore
-        b = a, a = r, x = u, u = m;
-    }
-    const gcd = b;
-    if (gcd !== _1n$d)
-        throw new Error('invert: does not exist');
-    return mod$2(x, modulo);
-}
-/**
- * Tonelli-Shanks square root search algorithm.
- * 1. https://eprint.iacr.org/2012/685.pdf (page 12)
- * 2. Square Roots from 1; 24, 51, 10 to Dan Shanks
- * Will start an infinite loop if field order P is not prime.
- * @param P field order
- * @returns function that takes field Fp (created from P) and number n
- */
-function tonelliShanks$2(P) {
-    // Legendre constant: used to calculate Legendre symbol (a | p),
-    // which denotes the value of a^((p-1)/2) (mod p).
-    // (a | p) ≡ 1    if a is a square (mod p)
-    // (a | p) ≡ -1   if a is not a square (mod p)
-    // (a | p) ≡ 0    if a ≡ 0 (mod p)
-    const legendreC = (P - _1n$d) / _2n$8;
-    let Q, S, Z;
-    // Step 1: By factoring out powers of 2 from p - 1,
-    // find q and s such that p - 1 = q*(2^s) with q odd
-    for (Q = P - _1n$d, S = 0; Q % _2n$8 === _0n$c; Q /= _2n$8, S++)
-        ;
-    // Step 2: Select a non-square z such that (z | p) ≡ -1 and set c ≡ zq
-    for (Z = _2n$8; Z < P && pow$2(Z, legendreC, P) !== P - _1n$d; Z++) {
-        // Crash instead of infinity loop, we cannot reasonable count until P.
-        if (Z > 1000)
-            throw new Error('Cannot find square root: likely non-prime P');
-    }
-    // Fast-path
-    if (S === 1) {
-        const p1div4 = (P + _1n$d) / _4n$3;
-        return function tonelliFast(Fp, n) {
-            const root = Fp.pow(n, p1div4);
-            if (!Fp.eql(Fp.sqr(root), n))
-                throw new Error('Cannot find square root');
-            return root;
-        };
-    }
-    // Slow-path
-    const Q1div2 = (Q + _1n$d) / _2n$8;
-    return function tonelliSlow(Fp, n) {
-        // Step 0: Check that n is indeed a square: (n | p) should not be ≡ -1
-        if (Fp.pow(n, legendreC) === Fp.neg(Fp.ONE))
-            throw new Error('Cannot find square root');
-        let r = S;
-        // TODO: will fail at Fp2/etc
-        let g = Fp.pow(Fp.mul(Fp.ONE, Z), Q); // will update both x and b
-        let x = Fp.pow(n, Q1div2); // first guess at the square root
-        let b = Fp.pow(n, Q); // first guess at the fudge factor
-        while (!Fp.eql(b, Fp.ONE)) {
-            if (Fp.eql(b, Fp.ZERO))
-                return Fp.ZERO; // https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm (4. If t = 0, return r = 0)
-            // Find m such b^(2^m)==1
-            let m = 1;
-            for (let t2 = Fp.sqr(b); m < r; m++) {
-                if (Fp.eql(t2, Fp.ONE))
-                    break;
-                t2 = Fp.sqr(t2); // t2 *= t2
-            }
-            // NOTE: r-m-1 can be bigger than 32, need to convert to bigint before shift, otherwise there will be overflow
-            const ge = Fp.pow(g, _1n$d << BigInt(r - m - 1)); // ge = 2^(r-m-1)
-            g = Fp.sqr(ge); // g = ge * ge
-            x = Fp.mul(x, ge); // x *= ge
-            b = Fp.mul(b, g); // b *= g
-            r = m;
-        }
-        return x;
-    };
-}
-function FpSqrt$2(P) {
-    // NOTE: different algorithms can give different roots, it is up to user to decide which one they want.
-    // For example there is FpSqrtOdd/FpSqrtEven to choice root based on oddness (used for hash-to-curve).
-    // P ≡ 3 (mod 4)
-    // √n = n^((P+1)/4)
-    if (P % _4n$3 === _3n$5) {
-        // Not all roots possible!
-        // const ORDER =
-        //   0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn;
-        // const NUM = 72057594037927816n;
-        const p1div4 = (P + _1n$d) / _4n$3;
-        return function sqrt3mod4(Fp, n) {
-            const root = Fp.pow(n, p1div4);
-            // Throw if root**2 != n
-            if (!Fp.eql(Fp.sqr(root), n))
-                throw new Error('Cannot find square root');
-            return root;
-        };
-    }
-    // Atkin algorithm for q ≡ 5 (mod 8), https://eprint.iacr.org/2012/685.pdf (page 10)
-    if (P % _8n$2 === _5n$2) {
-        const c1 = (P - _5n$2) / _8n$2;
-        return function sqrt5mod8(Fp, n) {
-            const n2 = Fp.mul(n, _2n$8);
-            const v = Fp.pow(n2, c1);
-            const nv = Fp.mul(n, v);
-            const i = Fp.mul(Fp.mul(nv, _2n$8), v);
-            const root = Fp.mul(nv, Fp.sub(i, Fp.ONE));
-            if (!Fp.eql(Fp.sqr(root), n))
-                throw new Error('Cannot find square root');
-            return root;
-        };
-    }
-    // Other cases: Tonelli-Shanks algorithm
-    return tonelliShanks$2(P);
-}
-// prettier-ignore
-const FIELD_FIELDS$2 = [
-    'create', 'isValid', 'is0', 'neg', 'inv', 'sqrt', 'sqr',
-    'eql', 'add', 'sub', 'mul', 'pow', 'div',
-    'addN', 'subN', 'mulN', 'sqrN'
-];
-function validateField$2(field) {
-    const initial = {
-        ORDER: 'bigint',
-        MASK: 'bigint',
-        BYTES: 'isSafeInteger',
-        BITS: 'isSafeInteger',
-    };
-    const opts = FIELD_FIELDS$2.reduce((map, val) => {
-        map[val] = 'function';
-        return map;
-    }, initial);
-    return validateObject$2(field, opts);
-}
-// Generic field functions
-/**
- * Same as `pow` but for Fp: non-constant-time.
- * Unsafe in some contexts: uses ladder, so can expose bigint bits.
- */
-function FpPow$2(f, num, power) {
-    // Should have same speed as pow for bigints
-    // TODO: benchmark!
-    if (power < _0n$c)
-        throw new Error('invalid exponent, negatives unsupported');
-    if (power === _0n$c)
-        return f.ONE;
-    if (power === _1n$d)
-        return num;
-    let p = f.ONE;
-    let d = num;
-    while (power > _0n$c) {
-        if (power & _1n$d)
-            p = f.mul(p, d);
-        d = f.sqr(d);
-        power >>= _1n$d;
-    }
-    return p;
-}
-/**
- * Efficiently invert an array of Field elements.
- * `inv(0)` will return `undefined` here: make sure to throw an error.
- */
-function FpInvertBatch$2(f, nums) {
-    const tmp = new Array(nums.length);
-    // Walk from first to last, multiply them by each other MOD p
-    const lastMultiplied = nums.reduce((acc, num, i) => {
-        if (f.is0(num))
-            return acc;
-        tmp[i] = acc;
-        return f.mul(acc, num);
-    }, f.ONE);
-    // Invert last element
-    const inverted = f.inv(lastMultiplied);
-    // Walk from last to first, multiply them by inverted each other MOD p
-    nums.reduceRight((acc, num, i) => {
-        if (f.is0(num))
-            return acc;
-        tmp[i] = f.mul(acc, tmp[i]);
-        return f.mul(acc, num);
-    }, inverted);
-    return tmp;
-}
-// CURVE.n lengths
-function nLength$2(n, nBitLength) {
-    // Bit size, byte size of CURVE.n
-    const _nBitLength = nBitLength !== undefined ? nBitLength : n.toString(2).length;
-    const nByteLength = Math.ceil(_nBitLength / 8);
-    return { nBitLength: _nBitLength, nByteLength };
-}
-/**
- * Initializes a finite field over prime. **Non-primes are not supported.**
- * Do not init in loop: slow. Very fragile: always run a benchmark on a change.
- * Major performance optimizations:
- * * a) denormalized operations like mulN instead of mul
- * * b) same object shape: never add or remove keys
- * * c) Object.freeze
- * NOTE: operations don't check 'isValid' for all elements for performance reasons,
- * it is caller responsibility to check this.
- * This is low-level code, please make sure you know what you doing.
- * @param ORDER prime positive bigint
- * @param bitLen how many bits the field consumes
- * @param isLE (def: false) if encoding / decoding should be in little-endian
- * @param redef optional faster redefinitions of sqrt and other methods
- */
-function Field$2(ORDER, bitLen, isLE = false, redef = {}) {
-    if (ORDER <= _0n$c)
-        throw new Error('invalid field: expected ORDER > 0, got ' + ORDER);
-    const { nBitLength: BITS, nByteLength: BYTES } = nLength$2(ORDER, bitLen);
-    if (BYTES > 2048)
-        throw new Error('invalid field: expected ORDER of <= 2048 bytes');
-    let sqrtP; // cached sqrtP
-    const f = Object.freeze({
-        ORDER,
-        BITS,
-        BYTES,
-        MASK: bitMask$2(BITS),
-        ZERO: _0n$c,
-        ONE: _1n$d,
-        create: (num) => mod$2(num, ORDER),
-        isValid: (num) => {
-            if (typeof num !== 'bigint')
-                throw new Error('invalid field element: expected bigint, got ' + typeof num);
-            return _0n$c <= num && num < ORDER; // 0 is valid element, but it's not invertible
-        },
-        is0: (num) => num === _0n$c,
-        isOdd: (num) => (num & _1n$d) === _1n$d,
-        neg: (num) => mod$2(-num, ORDER),
-        eql: (lhs, rhs) => lhs === rhs,
-        sqr: (num) => mod$2(num * num, ORDER),
-        add: (lhs, rhs) => mod$2(lhs + rhs, ORDER),
-        sub: (lhs, rhs) => mod$2(lhs - rhs, ORDER),
-        mul: (lhs, rhs) => mod$2(lhs * rhs, ORDER),
-        pow: (num, power) => FpPow$2(f, num, power),
-        div: (lhs, rhs) => mod$2(lhs * invert$2(rhs, ORDER), ORDER),
-        // Same as above, but doesn't normalize
-        sqrN: (num) => num * num,
-        addN: (lhs, rhs) => lhs + rhs,
-        subN: (lhs, rhs) => lhs - rhs,
-        mulN: (lhs, rhs) => lhs * rhs,
-        inv: (num) => invert$2(num, ORDER),
-        sqrt: redef.sqrt ||
-            ((n) => {
-                if (!sqrtP)
-                    sqrtP = FpSqrt$2(ORDER);
-                return sqrtP(f, n);
-            }),
-        invertBatch: (lst) => FpInvertBatch$2(f, lst),
-        // TODO: do we really need constant cmov?
-        // We don't have const-time bigints anyway, so probably will be not very useful
-        cmov: (a, b, c) => (c ? b : a),
-        toBytes: (num) => (isLE ? numberToBytesLE$2(num, BYTES) : numberToBytesBE$2(num, BYTES)),
-        fromBytes: (bytes) => {
-            if (bytes.length !== BYTES)
-                throw new Error('Field.fromBytes: expected ' + BYTES + ' bytes, got ' + bytes.length);
-            return isLE ? bytesToNumberLE$2(bytes) : bytesToNumberBE$2(bytes);
-        },
-    });
-    return Object.freeze(f);
-}
-/**
- * Returns total number of bytes consumed by the field element.
- * For example, 32 bytes for usual 256-bit weierstrass curve.
- * @param fieldOrder number of field elements, usually CURVE.n
- * @returns byte length of field
- */
-function getFieldBytesLength$2(fieldOrder) {
-    if (typeof fieldOrder !== 'bigint')
-        throw new Error('field order must be bigint');
-    const bitLength = fieldOrder.toString(2).length;
-    return Math.ceil(bitLength / 8);
-}
-/**
- * Returns minimal amount of bytes that can be safely reduced
- * by field order.
- * Should be 2^-128 for 128-bit curve such as P256.
- * @param fieldOrder number of field elements, usually CURVE.n
- * @returns byte length of target hash
- */
-function getMinHashLength$2(fieldOrder) {
-    const length = getFieldBytesLength$2(fieldOrder);
-    return length + Math.ceil(length / 2);
-}
-/**
- * "Constant-time" private key generation utility.
- * Can take (n + n/2) or more bytes of uniform input e.g. from CSPRNG or KDF
- * and convert them into private scalar, with the modulo bias being negligible.
- * Needs at least 48 bytes of input for 32-byte private key.
- * https://research.kudelskisecurity.com/2020/07/28/the-definitive-guide-to-modulo-bias-and-how-to-avoid-it/
- * FIPS 186-5, A.2 https://csrc.nist.gov/publications/detail/fips/186/5/final
- * RFC 9380, https://www.rfc-editor.org/rfc/rfc9380#section-5
- * @param hash hash output from SHA3 or a similar function
- * @param groupOrder size of subgroup - (e.g. secp256k1.CURVE.n)
- * @param isLE interpret hash bytes as LE num
- * @returns valid private scalar
- */
-function mapHashToField$2(key, fieldOrder, isLE = false) {
-    const len = key.length;
-    const fieldLen = getFieldBytesLength$2(fieldOrder);
-    const minLen = getMinHashLength$2(fieldOrder);
-    // No small numbers: need to understand bias story. No huge numbers: easier to detect JS timings.
-    if (len < 16 || len < minLen || len > 1024)
-        throw new Error('expected ' + minLen + '-1024 bytes of input, got ' + len);
-    const num = isLE ? bytesToNumberBE$2(key) : bytesToNumberLE$2(key);
-    // `mod(x, 11)` can sometimes produce 0. `mod(x, 10) + 1` is the same, but no 0
-    const reduced = mod$2(num, fieldOrder - _1n$d) + _1n$d;
-    return isLE ? numberToBytesLE$2(reduced, fieldLen) : numberToBytesBE$2(reduced, fieldLen);
-}
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// Abelian group utilities
-const _0n$b = BigInt(0);
-const _1n$c = BigInt(1);
-function constTimeNegate(condition, item) {
-    const neg = item.negate();
-    return condition ? neg : item;
-}
-function validateW(W, bits) {
-    if (!Number.isSafeInteger(W) || W <= 0 || W > bits)
-        throw new Error('invalid window size, expected [1..' + bits + '], got W=' + W);
-}
-function calcWOpts(W, bits) {
-    validateW(W, bits);
-    const windows = Math.ceil(bits / W) + 1; // +1, because
-    const windowSize = 2 ** (W - 1); // -1 because we skip zero
-    return { windows, windowSize };
-}
-function validateMSMPoints(points, c) {
-    if (!Array.isArray(points))
-        throw new Error('array expected');
-    points.forEach((p, i) => {
-        if (!(p instanceof c))
-            throw new Error('invalid point at index ' + i);
-    });
-}
-function validateMSMScalars(scalars, field) {
-    if (!Array.isArray(scalars))
-        throw new Error('array of scalars expected');
-    scalars.forEach((s, i) => {
-        if (!field.isValid(s))
-            throw new Error('invalid scalar at index ' + i);
-    });
-}
-// Since points in different groups cannot be equal (different object constructor),
-// we can have single place to store precomputes
-const pointPrecomputes = new WeakMap();
-const pointWindowSizes = new WeakMap(); // This allows use make points immutable (nothing changes inside)
-function getW(P) {
-    return pointWindowSizes.get(P) || 1;
-}
-// Elliptic curve multiplication of Point by scalar. Fragile.
-// Scalars should always be less than curve order: this should be checked inside of a curve itself.
-// Creates precomputation tables for fast multiplication:
-// - private scalar is split by fixed size windows of W bits
-// - every window point is collected from window's table & added to accumulator
-// - since windows are different, same point inside tables won't be accessed more than once per calc
-// - each multiplication is 'Math.ceil(CURVE_ORDER / 𝑊) + 1' point additions (fixed for any scalar)
-// - +1 window is neccessary for wNAF
-// - wNAF reduces table size: 2x less memory + 2x faster generation, but 10% slower multiplication
-// TODO: Research returning 2d JS array of windows, instead of a single window. This would allow
-// windows to be in different memory locations
-function wNAF$2(c, bits) {
-    return {
-        constTimeNegate,
-        hasPrecomputes(elm) {
-            return getW(elm) !== 1;
-        },
-        // non-const time multiplication ladder
-        unsafeLadder(elm, n, p = c.ZERO) {
-            let d = elm;
-            while (n > _0n$b) {
-                if (n & _1n$c)
-                    p = p.add(d);
-                d = d.double();
-                n >>= _1n$c;
-            }
-            return p;
-        },
-        /**
-         * Creates a wNAF precomputation window. Used for caching.
-         * Default window size is set by `utils.precompute()` and is equal to 8.
-         * Number of precomputed points depends on the curve size:
-         * 2^(𝑊−1) * (Math.ceil(𝑛 / 𝑊) + 1), where:
-         * - 𝑊 is the window size
-         * - 𝑛 is the bitlength of the curve order.
-         * For a 256-bit curve and window size 8, the number of precomputed points is 128 * 33 = 4224.
-         * @param elm Point instance
-         * @param W window size
-         * @returns precomputed point tables flattened to a single array
-         */
-        precomputeWindow(elm, W) {
-            const { windows, windowSize } = calcWOpts(W, bits);
-            const points = [];
-            let p = elm;
-            let base = p;
-            for (let window = 0; window < windows; window++) {
-                base = p;
-                points.push(base);
-                // =1, because we skip zero
-                for (let i = 1; i < windowSize; i++) {
-                    base = base.add(p);
-                    points.push(base);
-                }
-                p = base.double();
-            }
-            return points;
-        },
-        /**
-         * Implements ec multiplication using precomputed tables and w-ary non-adjacent form.
-         * @param W window size
-         * @param precomputes precomputed tables
-         * @param n scalar (we don't check here, but should be less than curve order)
-         * @returns real and fake (for const-time) points
-         */
-        wNAF(W, precomputes, n) {
-            // TODO: maybe check that scalar is less than group order? wNAF behavious is undefined otherwise
-            // But need to carefully remove other checks before wNAF. ORDER == bits here
-            const { windows, windowSize } = calcWOpts(W, bits);
-            let p = c.ZERO;
-            let f = c.BASE;
-            const mask = BigInt(2 ** W - 1); // Create mask with W ones: 0b1111 for W=4 etc.
-            const maxNumber = 2 ** W;
-            const shiftBy = BigInt(W);
-            for (let window = 0; window < windows; window++) {
-                const offset = window * windowSize;
-                // Extract W bits.
-                let wbits = Number(n & mask);
-                // Shift number by W bits.
-                n >>= shiftBy;
-                // If the bits are bigger than max size, we'll split those.
-                // +224 => 256 - 32
-                if (wbits > windowSize) {
-                    wbits -= maxNumber;
-                    n += _1n$c;
-                }
-                // This code was first written with assumption that 'f' and 'p' will never be infinity point:
-                // since each addition is multiplied by 2 ** W, it cannot cancel each other. However,
-                // there is negate now: it is possible that negated element from low value
-                // would be the same as high element, which will create carry into next window.
-                // It's not obvious how this can fail, but still worth investigating later.
-                // Check if we're onto Zero point.
-                // Add random point inside current window to f.
-                const offset1 = offset;
-                const offset2 = offset + Math.abs(wbits) - 1; // -1 because we skip zero
-                const cond1 = window % 2 !== 0;
-                const cond2 = wbits < 0;
-                if (wbits === 0) {
-                    // The most important part for const-time getPublicKey
-                    f = f.add(constTimeNegate(cond1, precomputes[offset1]));
-                }
-                else {
-                    p = p.add(constTimeNegate(cond2, precomputes[offset2]));
-                }
-            }
-            // JIT-compiler should not eliminate f here, since it will later be used in normalizeZ()
-            // Even if the variable is still unused, there are some checks which will
-            // throw an exception, so compiler needs to prove they won't happen, which is hard.
-            // At this point there is a way to F be infinity-point even if p is not,
-            // which makes it less const-time: around 1 bigint multiply.
-            return { p, f };
-        },
-        /**
-         * Implements ec unsafe (non const-time) multiplication using precomputed tables and w-ary non-adjacent form.
-         * @param W window size
-         * @param precomputes precomputed tables
-         * @param n scalar (we don't check here, but should be less than curve order)
-         * @param acc accumulator point to add result of multiplication
-         * @returns point
-         */
-        wNAFUnsafe(W, precomputes, n, acc = c.ZERO) {
-            const { windows, windowSize } = calcWOpts(W, bits);
-            const mask = BigInt(2 ** W - 1); // Create mask with W ones: 0b1111 for W=4 etc.
-            const maxNumber = 2 ** W;
-            const shiftBy = BigInt(W);
-            for (let window = 0; window < windows; window++) {
-                const offset = window * windowSize;
-                if (n === _0n$b)
-                    break; // No need to go over empty scalar
-                // Extract W bits.
-                let wbits = Number(n & mask);
-                // Shift number by W bits.
-                n >>= shiftBy;
-                // If the bits are bigger than max size, we'll split those.
-                // +224 => 256 - 32
-                if (wbits > windowSize) {
-                    wbits -= maxNumber;
-                    n += _1n$c;
-                }
-                if (wbits === 0)
-                    continue;
-                let curr = precomputes[offset + Math.abs(wbits) - 1]; // -1 because we skip zero
-                if (wbits < 0)
-                    curr = curr.negate();
-                // NOTE: by re-using acc, we can save a lot of additions in case of MSM
-                acc = acc.add(curr);
-            }
-            return acc;
-        },
-        getPrecomputes(W, P, transform) {
-            // Calculate precomputes on a first run, reuse them after
-            let comp = pointPrecomputes.get(P);
-            if (!comp) {
-                comp = this.precomputeWindow(P, W);
-                if (W !== 1)
-                    pointPrecomputes.set(P, transform(comp));
-            }
-            return comp;
-        },
-        wNAFCached(P, n, transform) {
-            const W = getW(P);
-            return this.wNAF(W, this.getPrecomputes(W, P, transform), n);
-        },
-        wNAFCachedUnsafe(P, n, transform, prev) {
-            const W = getW(P);
-            if (W === 1)
-                return this.unsafeLadder(P, n, prev); // For W=1 ladder is ~x2 faster
-            return this.wNAFUnsafe(W, this.getPrecomputes(W, P, transform), n, prev);
-        },
-        // We calculate precomputes for elliptic curve point multiplication
-        // using windowed method. This specifies window size and
-        // stores precomputed values. Usually only base point would be precomputed.
-        setWindowSize(P, W) {
-            validateW(W, bits);
-            pointWindowSizes.set(P, W);
-            pointPrecomputes.delete(P);
-        },
-    };
-}
-/**
- * Pippenger algorithm for multi-scalar multiplication (MSM, Pa + Qb + Rc + ...).
- * 30x faster vs naive addition on L=4096, 10x faster with precomputes.
- * For N=254bit, L=1, it does: 1024 ADD + 254 DBL. For L=5: 1536 ADD + 254 DBL.
- * Algorithmically constant-time (for same L), even when 1 point + scalar, or when scalar = 0.
- * @param c Curve Point constructor
- * @param fieldN field over CURVE.N - important that it's not over CURVE.P
- * @param points array of L curve points
- * @param scalars array of L scalars (aka private keys / bigints)
- */
-function pippenger(c, fieldN, points, scalars) {
-    // If we split scalars by some window (let's say 8 bits), every chunk will only
-    // take 256 buckets even if there are 4096 scalars, also re-uses double.
-    // TODO:
-    // - https://eprint.iacr.org/2024/750.pdf
-    // - https://tches.iacr.org/index.php/TCHES/article/view/10287
-    // 0 is accepted in scalars
-    validateMSMPoints(points, c);
-    validateMSMScalars(scalars, fieldN);
-    if (points.length !== scalars.length)
-        throw new Error('arrays of points and scalars must have equal length');
-    const zero = c.ZERO;
-    const wbits = bitLen$2(BigInt(points.length));
-    const windowSize = wbits > 12 ? wbits - 3 : wbits > 4 ? wbits - 2 : wbits ? 2 : 1; // in bits
-    const MASK = (1 << windowSize) - 1;
-    const buckets = new Array(MASK + 1).fill(zero); // +1 for zero array
-    const lastBits = Math.floor((fieldN.BITS - 1) / windowSize) * windowSize;
-    let sum = zero;
-    for (let i = lastBits; i >= 0; i -= windowSize) {
-        buckets.fill(zero);
-        for (let j = 0; j < scalars.length; j++) {
-            const scalar = scalars[j];
-            const wbits = Number((scalar >> BigInt(i)) & BigInt(MASK));
-            buckets[wbits] = buckets[wbits].add(points[j]);
-        }
-        let resI = zero; // not using this will do small speed-up, but will lose ct
-        // Skip first bucket, because it is zero
-        for (let j = buckets.length - 1, sumI = zero; j > 0; j--) {
-            sumI = sumI.add(buckets[j]);
-            resI = resI.add(sumI);
-        }
-        sum = sum.add(resI);
-        if (i !== 0)
-            for (let j = 0; j < windowSize; j++)
-                sum = sum.double();
-    }
-    return sum;
-}
-function validateBasic$2(curve) {
-    validateField$2(curve.Fp);
-    validateObject$2(curve, {
-        n: 'bigint',
-        h: 'bigint',
-        Gx: 'field',
-        Gy: 'field',
-    }, {
-        nBitLength: 'isSafeInteger',
-        nByteLength: 'isSafeInteger',
-    });
-    // Set defaults
-    return Object.freeze({
-        ...nLength$2(curve.n, curve.nBitLength),
-        ...curve,
-        ...{ p: curve.Fp.ORDER },
-    });
-}
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// Short Weierstrass curve. The formula is: y² = x³ + ax + b
-function validateSigVerOpts(opts) {
-    if (opts.lowS !== undefined)
-        abool('lowS', opts.lowS);
-    if (opts.prehash !== undefined)
-        abool('prehash', opts.prehash);
-}
-function validatePointOpts$2(curve) {
-    const opts = validateBasic$2(curve);
-    validateObject$2(opts, {
-        a: 'field',
-        b: 'field',
-    }, {
-        allowedPrivateKeyLengths: 'array',
-        wrapPrivateKey: 'boolean',
-        isTorsionFree: 'function',
-        clearCofactor: 'function',
-        allowInfinityPoint: 'boolean',
-        fromBytes: 'function',
-        toBytes: 'function',
-    });
-    const { endo, Fp, a } = opts;
-    if (endo) {
-        if (!Fp.eql(a, Fp.ZERO)) {
-            throw new Error('invalid endomorphism, can only be defined for Koblitz curves that have a=0');
-        }
-        if (typeof endo !== 'object' ||
-            typeof endo.beta !== 'bigint' ||
-            typeof endo.splitScalar !== 'function') {
-            throw new Error('invalid endomorphism, expected beta: bigint and splitScalar: function');
-        }
-    }
-    return Object.freeze({ ...opts });
-}
-const { bytesToNumberBE: b2n$2, hexToBytes: h2b$2 } = ut$2;
-/**
- * ASN.1 DER encoding utilities. ASN is very complex & fragile. Format:
- *
- *     [0x30 (SEQUENCE), bytelength, 0x02 (INTEGER), intLength, R, 0x02 (INTEGER), intLength, S]
- *
- * Docs: https://letsencrypt.org/docs/a-warm-welcome-to-asn1-and-der/, https://luca.ntop.org/Teaching/Appunti/asn1.html
- */
-const DER$2 = {
-    // asn.1 DER encoding utils
-    Err: class DERErr extends Error {
-        constructor(m = '') {
-            super(m);
-        }
-    },
-    // Basic building block is TLV (Tag-Length-Value)
-    _tlv: {
-        encode: (tag, data) => {
-            const { Err: E } = DER$2;
-            if (tag < 0 || tag > 256)
-                throw new E('tlv.encode: wrong tag');
-            if (data.length & 1)
-                throw new E('tlv.encode: unpadded data');
-            const dataLen = data.length / 2;
-            const len = numberToHexUnpadded$2(dataLen);
-            if ((len.length / 2) & 128)
-                throw new E('tlv.encode: long form length too big');
-            // length of length with long form flag
-            const lenLen = dataLen > 127 ? numberToHexUnpadded$2((len.length / 2) | 128) : '';
-            const t = numberToHexUnpadded$2(tag);
-            return t + lenLen + len + data;
-        },
-        // v - value, l - left bytes (unparsed)
-        decode(tag, data) {
-            const { Err: E } = DER$2;
-            let pos = 0;
-            if (tag < 0 || tag > 256)
-                throw new E('tlv.encode: wrong tag');
-            if (data.length < 2 || data[pos++] !== tag)
-                throw new E('tlv.decode: wrong tlv');
-            const first = data[pos++];
-            const isLong = !!(first & 128); // First bit of first length byte is flag for short/long form
-            let length = 0;
-            if (!isLong)
-                length = first;
-            else {
-                // Long form: [longFlag(1bit), lengthLength(7bit), length (BE)]
-                const lenLen = first & 127;
-                if (!lenLen)
-                    throw new E('tlv.decode(long): indefinite length not supported');
-                if (lenLen > 4)
-                    throw new E('tlv.decode(long): byte length is too big'); // this will overflow u32 in js
-                const lengthBytes = data.subarray(pos, pos + lenLen);
-                if (lengthBytes.length !== lenLen)
-                    throw new E('tlv.decode: length bytes not complete');
-                if (lengthBytes[0] === 0)
-                    throw new E('tlv.decode(long): zero leftmost byte');
-                for (const b of lengthBytes)
-                    length = (length << 8) | b;
-                pos += lenLen;
-                if (length < 128)
-                    throw new E('tlv.decode(long): not minimal encoding');
-            }
-            const v = data.subarray(pos, pos + length);
-            if (v.length !== length)
-                throw new E('tlv.decode: wrong value length');
-            return { v, l: data.subarray(pos + length) };
-        },
-    },
-    // https://crypto.stackexchange.com/a/57734 Leftmost bit of first byte is 'negative' flag,
-    // since we always use positive integers here. It must always be empty:
-    // - add zero byte if exists
-    // - if next byte doesn't have a flag, leading zero is not allowed (minimal encoding)
-    _int: {
-        encode(num) {
-            const { Err: E } = DER$2;
-            if (num < _0n$a)
-                throw new E('integer: negative integers are not allowed');
-            let hex = numberToHexUnpadded$2(num);
-            // Pad with zero byte if negative flag is present
-            if (Number.parseInt(hex[0], 16) & 0b1000)
-                hex = '00' + hex;
-            if (hex.length & 1)
-                throw new E('unexpected DER parsing assertion: unpadded hex');
-            return hex;
-        },
-        decode(data) {
-            const { Err: E } = DER$2;
-            if (data[0] & 128)
-                throw new E('invalid signature integer: negative');
-            if (data[0] === 0x00 && !(data[1] & 128))
-                throw new E('invalid signature integer: unnecessary leading zero');
-            return b2n$2(data);
-        },
-    },
-    toSig(hex) {
-        // parse DER signature
-        const { Err: E, _int: int, _tlv: tlv } = DER$2;
-        const data = typeof hex === 'string' ? h2b$2(hex) : hex;
-        abytes$3(data);
-        const { v: seqBytes, l: seqLeftBytes } = tlv.decode(0x30, data);
-        if (seqLeftBytes.length)
-            throw new E('invalid signature: left bytes after parsing');
-        const { v: rBytes, l: rLeftBytes } = tlv.decode(0x02, seqBytes);
-        const { v: sBytes, l: sLeftBytes } = tlv.decode(0x02, rLeftBytes);
-        if (sLeftBytes.length)
-            throw new E('invalid signature: left bytes after parsing');
-        return { r: int.decode(rBytes), s: int.decode(sBytes) };
-    },
-    hexFromSig(sig) {
-        const { _tlv: tlv, _int: int } = DER$2;
-        const rs = tlv.encode(0x02, int.encode(sig.r));
-        const ss = tlv.encode(0x02, int.encode(sig.s));
-        const seq = rs + ss;
-        return tlv.encode(0x30, seq);
-    },
-};
-// Be friendly to bad ECMAScript parsers by not using bigint literals
-// prettier-ignore
-const _0n$a = BigInt(0), _1n$b = BigInt(1); BigInt(2); const _3n$4 = BigInt(3); BigInt(4);
-function weierstrassPoints$2(opts) {
-    const CURVE = validatePointOpts$2(opts);
-    const { Fp } = CURVE; // All curves has same field / group length as for now, but they can differ
-    const Fn = Field$2(CURVE.n, CURVE.nBitLength);
-    const toBytes = CURVE.toBytes ||
-        ((_c, point, _isCompressed) => {
-            const a = point.toAffine();
-            return concatBytes$5(Uint8Array.from([0x04]), Fp.toBytes(a.x), Fp.toBytes(a.y));
-        });
-    const fromBytes = CURVE.fromBytes ||
-        ((bytes) => {
-            // const head = bytes[0];
-            const tail = bytes.subarray(1);
-            // if (head !== 0x04) throw new Error('Only non-compressed encoding is supported');
-            const x = Fp.fromBytes(tail.subarray(0, Fp.BYTES));
-            const y = Fp.fromBytes(tail.subarray(Fp.BYTES, 2 * Fp.BYTES));
-            return { x, y };
-        });
-    /**
-     * y² = x³ + ax + b: Short weierstrass curve formula
-     * @returns y²
-     */
-    function weierstrassEquation(x) {
-        const { a, b } = CURVE;
-        const x2 = Fp.sqr(x); // x * x
-        const x3 = Fp.mul(x2, x); // x2 * x
-        return Fp.add(Fp.add(x3, Fp.mul(x, a)), b); // x3 + a * x + b
-    }
-    // Validate whether the passed curve params are valid.
-    // We check if curve equation works for generator point.
-    // `assertValidity()` won't work: `isTorsionFree()` is not available at this point in bls12-381.
-    // ProjectivePoint class has not been initialized yet.
-    if (!Fp.eql(Fp.sqr(CURVE.Gy), weierstrassEquation(CURVE.Gx)))
-        throw new Error('bad generator point: equation left != right');
-    // Valid group elements reside in range 1..n-1
-    function isWithinCurveOrder(num) {
-        return inRange(num, _1n$b, CURVE.n);
-    }
-    // Validates if priv key is valid and converts it to bigint.
-    // Supports options allowedPrivateKeyLengths and wrapPrivateKey.
-    function normPrivateKeyToScalar(key) {
-        const { allowedPrivateKeyLengths: lengths, nByteLength, wrapPrivateKey, n: N } = CURVE;
-        if (lengths && typeof key !== 'bigint') {
-            if (isBytes$8(key))
-                key = bytesToHex$2(key);
-            // Normalize to hex string, pad. E.g. P521 would norm 130-132 char hex to 132-char bytes
-            if (typeof key !== 'string' || !lengths.includes(key.length))
-                throw new Error('invalid private key');
-            key = key.padStart(nByteLength * 2, '0');
-        }
-        let num;
-        try {
-            num =
-                typeof key === 'bigint'
-                    ? key
-                    : bytesToNumberBE$2(ensureBytes$3('private key', key, nByteLength));
-        }
-        catch (error) {
-            throw new Error('invalid private key, expected hex or ' + nByteLength + ' bytes, got ' + typeof key);
-        }
-        if (wrapPrivateKey)
-            num = mod$2(num, N); // disabled by default, enabled for BLS
-        aInRange('private key', num, _1n$b, N); // num in range [1..N-1]
-        return num;
-    }
-    function assertPrjPoint(other) {
-        if (!(other instanceof Point))
-            throw new Error('ProjectivePoint expected');
-    }
-    // Memoized toAffine / validity check. They are heavy. Points are immutable.
-    // Converts Projective point to affine (x, y) coordinates.
-    // Can accept precomputed Z^-1 - for example, from invertBatch.
-    // (x, y, z) ∋ (x=x/z, y=y/z)
-    const toAffineMemo = memoized((p, iz) => {
-        const { px: x, py: y, pz: z } = p;
-        // Fast-path for normalized points
-        if (Fp.eql(z, Fp.ONE))
-            return { x, y };
-        const is0 = p.is0();
-        // If invZ was 0, we return zero point. However we still want to execute
-        // all operations, so we replace invZ with a random number, 1.
-        if (iz == null)
-            iz = is0 ? Fp.ONE : Fp.inv(z);
-        const ax = Fp.mul(x, iz);
-        const ay = Fp.mul(y, iz);
-        const zz = Fp.mul(z, iz);
-        if (is0)
-            return { x: Fp.ZERO, y: Fp.ZERO };
-        if (!Fp.eql(zz, Fp.ONE))
-            throw new Error('invZ was invalid');
-        return { x: ax, y: ay };
-    });
-    // NOTE: on exception this will crash 'cached' and no value will be set.
-    // Otherwise true will be return
-    const assertValidMemo = memoized((p) => {
-        if (p.is0()) {
-            // (0, 1, 0) aka ZERO is invalid in most contexts.
-            // In BLS, ZERO can be serialized, so we allow it.
-            // (0, 0, 0) is invalid representation of ZERO.
-            if (CURVE.allowInfinityPoint && !Fp.is0(p.py))
-                return;
-            throw new Error('bad point: ZERO');
-        }
-        // Some 3rd-party test vectors require different wording between here & `fromCompressedHex`
-        const { x, y } = p.toAffine();
-        // Check if x, y are valid field elements
-        if (!Fp.isValid(x) || !Fp.isValid(y))
-            throw new Error('bad point: x or y not FE');
-        const left = Fp.sqr(y); // y²
-        const right = weierstrassEquation(x); // x³ + ax + b
-        if (!Fp.eql(left, right))
-            throw new Error('bad point: equation left != right');
-        if (!p.isTorsionFree())
-            throw new Error('bad point: not in prime-order subgroup');
-        return true;
-    });
-    /**
-     * Projective Point works in 3d / projective (homogeneous) coordinates: (x, y, z) ∋ (x=x/z, y=y/z)
-     * Default Point works in 2d / affine coordinates: (x, y)
-     * We're doing calculations in projective, because its operations don't require costly inversion.
-     */
-    class Point {
-        constructor(px, py, pz) {
-            this.px = px;
-            this.py = py;
-            this.pz = pz;
-            if (px == null || !Fp.isValid(px))
-                throw new Error('x required');
-            if (py == null || !Fp.isValid(py))
-                throw new Error('y required');
-            if (pz == null || !Fp.isValid(pz))
-                throw new Error('z required');
-            Object.freeze(this);
-        }
-        // Does not validate if the point is on-curve.
-        // Use fromHex instead, or call assertValidity() later.
-        static fromAffine(p) {
-            const { x, y } = p || {};
-            if (!p || !Fp.isValid(x) || !Fp.isValid(y))
-                throw new Error('invalid affine point');
-            if (p instanceof Point)
-                throw new Error('projective point not allowed');
-            const is0 = (i) => Fp.eql(i, Fp.ZERO);
-            // fromAffine(x:0, y:0) would produce (x:0, y:0, z:1), but we need (x:0, y:1, z:0)
-            if (is0(x) && is0(y))
-                return Point.ZERO;
-            return new Point(x, y, Fp.ONE);
-        }
-        get x() {
-            return this.toAffine().x;
-        }
-        get y() {
-            return this.toAffine().y;
-        }
-        /**
-         * Takes a bunch of Projective Points but executes only one
-         * inversion on all of them. Inversion is very slow operation,
-         * so this improves performance massively.
-         * Optimization: converts a list of projective points to a list of identical points with Z=1.
-         */
-        static normalizeZ(points) {
-            const toInv = Fp.invertBatch(points.map((p) => p.pz));
-            return points.map((p, i) => p.toAffine(toInv[i])).map(Point.fromAffine);
-        }
-        /**
-         * Converts hash string or Uint8Array to Point.
-         * @param hex short/long ECDSA hex
-         */
-        static fromHex(hex) {
-            const P = Point.fromAffine(fromBytes(ensureBytes$3('pointHex', hex)));
-            P.assertValidity();
-            return P;
-        }
-        // Multiplies generator point by privateKey.
-        static fromPrivateKey(privateKey) {
-            return Point.BASE.multiply(normPrivateKeyToScalar(privateKey));
-        }
-        // Multiscalar Multiplication
-        static msm(points, scalars) {
-            return pippenger(Point, Fn, points, scalars);
-        }
-        // "Private method", don't use it directly
-        _setWindowSize(windowSize) {
-            wnaf.setWindowSize(this, windowSize);
-        }
-        // A point on curve is valid if it conforms to equation.
-        assertValidity() {
-            assertValidMemo(this);
-        }
-        hasEvenY() {
-            const { y } = this.toAffine();
-            if (Fp.isOdd)
-                return !Fp.isOdd(y);
-            throw new Error("Field doesn't support isOdd");
-        }
-        /**
-         * Compare one point to another.
-         */
-        equals(other) {
-            assertPrjPoint(other);
-            const { px: X1, py: Y1, pz: Z1 } = this;
-            const { px: X2, py: Y2, pz: Z2 } = other;
-            const U1 = Fp.eql(Fp.mul(X1, Z2), Fp.mul(X2, Z1));
-            const U2 = Fp.eql(Fp.mul(Y1, Z2), Fp.mul(Y2, Z1));
-            return U1 && U2;
-        }
-        /**
-         * Flips point to one corresponding to (x, -y) in Affine coordinates.
-         */
-        negate() {
-            return new Point(this.px, Fp.neg(this.py), this.pz);
-        }
-        // Renes-Costello-Batina exception-free doubling formula.
-        // There is 30% faster Jacobian formula, but it is not complete.
-        // https://eprint.iacr.org/2015/1060, algorithm 3
-        // Cost: 8M + 3S + 3*a + 2*b3 + 15add.
-        double() {
-            const { a, b } = CURVE;
-            const b3 = Fp.mul(b, _3n$4);
-            const { px: X1, py: Y1, pz: Z1 } = this;
-            let X3 = Fp.ZERO, Y3 = Fp.ZERO, Z3 = Fp.ZERO; // prettier-ignore
-            let t0 = Fp.mul(X1, X1); // step 1
-            let t1 = Fp.mul(Y1, Y1);
-            let t2 = Fp.mul(Z1, Z1);
-            let t3 = Fp.mul(X1, Y1);
-            t3 = Fp.add(t3, t3); // step 5
-            Z3 = Fp.mul(X1, Z1);
-            Z3 = Fp.add(Z3, Z3);
-            X3 = Fp.mul(a, Z3);
-            Y3 = Fp.mul(b3, t2);
-            Y3 = Fp.add(X3, Y3); // step 10
-            X3 = Fp.sub(t1, Y3);
-            Y3 = Fp.add(t1, Y3);
-            Y3 = Fp.mul(X3, Y3);
-            X3 = Fp.mul(t3, X3);
-            Z3 = Fp.mul(b3, Z3); // step 15
-            t2 = Fp.mul(a, t2);
-            t3 = Fp.sub(t0, t2);
-            t3 = Fp.mul(a, t3);
-            t3 = Fp.add(t3, Z3);
-            Z3 = Fp.add(t0, t0); // step 20
-            t0 = Fp.add(Z3, t0);
-            t0 = Fp.add(t0, t2);
-            t0 = Fp.mul(t0, t3);
-            Y3 = Fp.add(Y3, t0);
-            t2 = Fp.mul(Y1, Z1); // step 25
-            t2 = Fp.add(t2, t2);
-            t0 = Fp.mul(t2, t3);
-            X3 = Fp.sub(X3, t0);
-            Z3 = Fp.mul(t2, t1);
-            Z3 = Fp.add(Z3, Z3); // step 30
-            Z3 = Fp.add(Z3, Z3);
-            return new Point(X3, Y3, Z3);
-        }
-        // Renes-Costello-Batina exception-free addition formula.
-        // There is 30% faster Jacobian formula, but it is not complete.
-        // https://eprint.iacr.org/2015/1060, algorithm 1
-        // Cost: 12M + 0S + 3*a + 3*b3 + 23add.
-        add(other) {
-            assertPrjPoint(other);
-            const { px: X1, py: Y1, pz: Z1 } = this;
-            const { px: X2, py: Y2, pz: Z2 } = other;
-            let X3 = Fp.ZERO, Y3 = Fp.ZERO, Z3 = Fp.ZERO; // prettier-ignore
-            const a = CURVE.a;
-            const b3 = Fp.mul(CURVE.b, _3n$4);
-            let t0 = Fp.mul(X1, X2); // step 1
-            let t1 = Fp.mul(Y1, Y2);
-            let t2 = Fp.mul(Z1, Z2);
-            let t3 = Fp.add(X1, Y1);
-            let t4 = Fp.add(X2, Y2); // step 5
-            t3 = Fp.mul(t3, t4);
-            t4 = Fp.add(t0, t1);
-            t3 = Fp.sub(t3, t4);
-            t4 = Fp.add(X1, Z1);
-            let t5 = Fp.add(X2, Z2); // step 10
-            t4 = Fp.mul(t4, t5);
-            t5 = Fp.add(t0, t2);
-            t4 = Fp.sub(t4, t5);
-            t5 = Fp.add(Y1, Z1);
-            X3 = Fp.add(Y2, Z2); // step 15
-            t5 = Fp.mul(t5, X3);
-            X3 = Fp.add(t1, t2);
-            t5 = Fp.sub(t5, X3);
-            Z3 = Fp.mul(a, t4);
-            X3 = Fp.mul(b3, t2); // step 20
-            Z3 = Fp.add(X3, Z3);
-            X3 = Fp.sub(t1, Z3);
-            Z3 = Fp.add(t1, Z3);
-            Y3 = Fp.mul(X3, Z3);
-            t1 = Fp.add(t0, t0); // step 25
-            t1 = Fp.add(t1, t0);
-            t2 = Fp.mul(a, t2);
-            t4 = Fp.mul(b3, t4);
-            t1 = Fp.add(t1, t2);
-            t2 = Fp.sub(t0, t2); // step 30
-            t2 = Fp.mul(a, t2);
-            t4 = Fp.add(t4, t2);
-            t0 = Fp.mul(t1, t4);
-            Y3 = Fp.add(Y3, t0);
-            t0 = Fp.mul(t5, t4); // step 35
-            X3 = Fp.mul(t3, X3);
-            X3 = Fp.sub(X3, t0);
-            t0 = Fp.mul(t3, t1);
-            Z3 = Fp.mul(t5, Z3);
-            Z3 = Fp.add(Z3, t0); // step 40
-            return new Point(X3, Y3, Z3);
-        }
-        subtract(other) {
-            return this.add(other.negate());
-        }
-        is0() {
-            return this.equals(Point.ZERO);
-        }
-        wNAF(n) {
-            return wnaf.wNAFCached(this, n, Point.normalizeZ);
-        }
-        /**
-         * Non-constant-time multiplication. Uses double-and-add algorithm.
-         * It's faster, but should only be used when you don't care about
-         * an exposed private key e.g. sig verification, which works over *public* keys.
-         */
-        multiplyUnsafe(sc) {
-            const { endo, n: N } = CURVE;
-            aInRange('scalar', sc, _0n$a, N);
-            const I = Point.ZERO;
-            if (sc === _0n$a)
-                return I;
-            if (this.is0() || sc === _1n$b)
-                return this;
-            // Case a: no endomorphism. Case b: has precomputes.
-            if (!endo || wnaf.hasPrecomputes(this))
-                return wnaf.wNAFCachedUnsafe(this, sc, Point.normalizeZ);
-            // Case c: endomorphism
-            let { k1neg, k1, k2neg, k2 } = endo.splitScalar(sc);
-            let k1p = I;
-            let k2p = I;
-            let d = this;
-            while (k1 > _0n$a || k2 > _0n$a) {
-                if (k1 & _1n$b)
-                    k1p = k1p.add(d);
-                if (k2 & _1n$b)
-                    k2p = k2p.add(d);
-                d = d.double();
-                k1 >>= _1n$b;
-                k2 >>= _1n$b;
-            }
-            if (k1neg)
-                k1p = k1p.negate();
-            if (k2neg)
-                k2p = k2p.negate();
-            k2p = new Point(Fp.mul(k2p.px, endo.beta), k2p.py, k2p.pz);
-            return k1p.add(k2p);
-        }
-        /**
-         * Constant time multiplication.
-         * Uses wNAF method. Windowed method may be 10% faster,
-         * but takes 2x longer to generate and consumes 2x memory.
-         * Uses precomputes when available.
-         * Uses endomorphism for Koblitz curves.
-         * @param scalar by which the point would be multiplied
-         * @returns New point
-         */
-        multiply(scalar) {
-            const { endo, n: N } = CURVE;
-            aInRange('scalar', scalar, _1n$b, N);
-            let point, fake; // Fake point is used to const-time mult
-            if (endo) {
-                const { k1neg, k1, k2neg, k2 } = endo.splitScalar(scalar);
-                let { p: k1p, f: f1p } = this.wNAF(k1);
-                let { p: k2p, f: f2p } = this.wNAF(k2);
-                k1p = wnaf.constTimeNegate(k1neg, k1p);
-                k2p = wnaf.constTimeNegate(k2neg, k2p);
-                k2p = new Point(Fp.mul(k2p.px, endo.beta), k2p.py, k2p.pz);
-                point = k1p.add(k2p);
-                fake = f1p.add(f2p);
-            }
-            else {
-                const { p, f } = this.wNAF(scalar);
-                point = p;
-                fake = f;
-            }
-            // Normalize `z` for both points, but return only real one
-            return Point.normalizeZ([point, fake])[0];
-        }
-        /**
-         * Efficiently calculate `aP + bQ`. Unsafe, can expose private key, if used incorrectly.
-         * Not using Strauss-Shamir trick: precomputation tables are faster.
-         * The trick could be useful if both P and Q are not G (not in our case).
-         * @returns non-zero affine point
-         */
-        multiplyAndAddUnsafe(Q, a, b) {
-            const G = Point.BASE; // No Strauss-Shamir trick: we have 10% faster G precomputes
-            const mul = (P, a // Select faster multiply() method
-            ) => (a === _0n$a || a === _1n$b || !P.equals(G) ? P.multiplyUnsafe(a) : P.multiply(a));
-            const sum = mul(this, a).add(mul(Q, b));
-            return sum.is0() ? undefined : sum;
-        }
-        // Converts Projective point to affine (x, y) coordinates.
-        // Can accept precomputed Z^-1 - for example, from invertBatch.
-        // (x, y, z) ∋ (x=x/z, y=y/z)
-        toAffine(iz) {
-            return toAffineMemo(this, iz);
-        }
-        isTorsionFree() {
-            const { h: cofactor, isTorsionFree } = CURVE;
-            if (cofactor === _1n$b)
-                return true; // No subgroups, always torsion-free
-            if (isTorsionFree)
-                return isTorsionFree(Point, this);
-            throw new Error('isTorsionFree() has not been declared for the elliptic curve');
-        }
-        clearCofactor() {
-            const { h: cofactor, clearCofactor } = CURVE;
-            if (cofactor === _1n$b)
-                return this; // Fast-path
-            if (clearCofactor)
-                return clearCofactor(Point, this);
-            return this.multiplyUnsafe(CURVE.h);
-        }
-        toRawBytes(isCompressed = true) {
-            abool('isCompressed', isCompressed);
-            this.assertValidity();
-            return toBytes(Point, this, isCompressed);
-        }
-        toHex(isCompressed = true) {
-            abool('isCompressed', isCompressed);
-            return bytesToHex$2(this.toRawBytes(isCompressed));
-        }
-    }
-    Point.BASE = new Point(CURVE.Gx, CURVE.Gy, Fp.ONE);
-    Point.ZERO = new Point(Fp.ZERO, Fp.ONE, Fp.ZERO);
-    const _bits = CURVE.nBitLength;
-    const wnaf = wNAF$2(Point, CURVE.endo ? Math.ceil(_bits / 2) : _bits);
-    // Validate if generator point is on curve
-    return {
-        CURVE,
-        ProjectivePoint: Point,
-        normPrivateKeyToScalar,
-        weierstrassEquation,
-        isWithinCurveOrder,
-    };
-}
-function validateOpts$5(curve) {
-    const opts = validateBasic$2(curve);
-    validateObject$2(opts, {
-        hash: 'hash',
-        hmac: 'function',
-        randomBytes: 'function',
-    }, {
-        bits2int: 'function',
-        bits2int_modN: 'function',
-        lowS: 'boolean',
-    });
-    return Object.freeze({ lowS: true, ...opts });
-}
-/**
- * Creates short weierstrass curve and ECDSA signature methods for it.
- * @example
- * import { Field } from '@noble/curves/abstract/modular';
- * // Before that, define BigInt-s: a, b, p, n, Gx, Gy
- * const curve = weierstrass({ a, b, Fp: Field(p), n, Gx, Gy, h: 1n })
- */
-function weierstrass$3(curveDef) {
-    const CURVE = validateOpts$5(curveDef);
-    const { Fp, n: CURVE_ORDER } = CURVE;
-    const compressedLen = Fp.BYTES + 1; // e.g. 33 for 32
-    const uncompressedLen = 2 * Fp.BYTES + 1; // e.g. 65 for 32
-    function modN(a) {
-        return mod$2(a, CURVE_ORDER);
-    }
-    function invN(a) {
-        return invert$2(a, CURVE_ORDER);
-    }
-    const { ProjectivePoint: Point, normPrivateKeyToScalar, weierstrassEquation, isWithinCurveOrder, } = weierstrassPoints$2({
-        ...CURVE,
-        toBytes(_c, point, isCompressed) {
-            const a = point.toAffine();
-            const x = Fp.toBytes(a.x);
-            const cat = concatBytes$5;
-            abool('isCompressed', isCompressed);
-            if (isCompressed) {
-                return cat(Uint8Array.from([point.hasEvenY() ? 0x02 : 0x03]), x);
-            }
-            else {
-                return cat(Uint8Array.from([0x04]), x, Fp.toBytes(a.y));
-            }
-        },
-        fromBytes(bytes) {
-            const len = bytes.length;
-            const head = bytes[0];
-            const tail = bytes.subarray(1);
-            // this.assertValidity() is done inside of fromHex
-            if (len === compressedLen && (head === 0x02 || head === 0x03)) {
-                const x = bytesToNumberBE$2(tail);
-                if (!inRange(x, _1n$b, Fp.ORDER))
-                    throw new Error('Point is not on curve');
-                const y2 = weierstrassEquation(x); // y² = x³ + ax + b
-                let y;
-                try {
-                    y = Fp.sqrt(y2); // y = y² ^ (p+1)/4
-                }
-                catch (sqrtError) {
-                    const suffix = sqrtError instanceof Error ? ': ' + sqrtError.message : '';
-                    throw new Error('Point is not on curve' + suffix);
-                }
-                const isYOdd = (y & _1n$b) === _1n$b;
-                // ECDSA
-                const isHeadOdd = (head & 1) === 1;
-                if (isHeadOdd !== isYOdd)
-                    y = Fp.neg(y);
-                return { x, y };
-            }
-            else if (len === uncompressedLen && head === 0x04) {
-                const x = Fp.fromBytes(tail.subarray(0, Fp.BYTES));
-                const y = Fp.fromBytes(tail.subarray(Fp.BYTES, 2 * Fp.BYTES));
-                return { x, y };
-            }
-            else {
-                const cl = compressedLen;
-                const ul = uncompressedLen;
-                throw new Error('invalid Point, expected length of ' + cl + ', or uncompressed ' + ul + ', got ' + len);
-            }
-        },
-    });
-    const numToNByteStr = (num) => bytesToHex$2(numberToBytesBE$2(num, CURVE.nByteLength));
-    function isBiggerThanHalfOrder(number) {
-        const HALF = CURVE_ORDER >> _1n$b;
-        return number > HALF;
-    }
-    function normalizeS(s) {
-        return isBiggerThanHalfOrder(s) ? modN(-s) : s;
-    }
-    // slice bytes num
-    const slcNum = (b, from, to) => bytesToNumberBE$2(b.slice(from, to));
-    /**
-     * ECDSA signature with its (r, s) properties. Supports DER & compact representations.
-     */
-    class Signature {
-        constructor(r, s, recovery) {
-            this.r = r;
-            this.s = s;
-            this.recovery = recovery;
-            this.assertValidity();
-        }
-        // pair (bytes of r, bytes of s)
-        static fromCompact(hex) {
-            const l = CURVE.nByteLength;
-            hex = ensureBytes$3('compactSignature', hex, l * 2);
-            return new Signature(slcNum(hex, 0, l), slcNum(hex, l, 2 * l));
-        }
-        // DER encoded ECDSA signature
-        // https://bitcoin.stackexchange.com/questions/57644/what-are-the-parts-of-a-bitcoin-transaction-input-script
-        static fromDER(hex) {
-            const { r, s } = DER$2.toSig(ensureBytes$3('DER', hex));
-            return new Signature(r, s);
-        }
-        assertValidity() {
-            aInRange('r', this.r, _1n$b, CURVE_ORDER); // r in [1..N]
-            aInRange('s', this.s, _1n$b, CURVE_ORDER); // s in [1..N]
-        }
-        addRecoveryBit(recovery) {
-            return new Signature(this.r, this.s, recovery);
-        }
-        recoverPublicKey(msgHash) {
-            const { r, s, recovery: rec } = this;
-            const h = bits2int_modN(ensureBytes$3('msgHash', msgHash)); // Truncate hash
-            if (rec == null || ![0, 1, 2, 3].includes(rec))
-                throw new Error('recovery id invalid');
-            const radj = rec === 2 || rec === 3 ? r + CURVE.n : r;
-            if (radj >= Fp.ORDER)
-                throw new Error('recovery id 2 or 3 invalid');
-            const prefix = (rec & 1) === 0 ? '02' : '03';
-            const R = Point.fromHex(prefix + numToNByteStr(radj));
-            const ir = invN(radj); // r^-1
-            const u1 = modN(-h * ir); // -hr^-1
-            const u2 = modN(s * ir); // sr^-1
-            const Q = Point.BASE.multiplyAndAddUnsafe(R, u1, u2); // (sr^-1)R-(hr^-1)G = -(hr^-1)G + (sr^-1)
-            if (!Q)
-                throw new Error('point at infinify'); // unsafe is fine: no priv data leaked
-            Q.assertValidity();
-            return Q;
-        }
-        // Signatures should be low-s, to prevent malleability.
-        hasHighS() {
-            return isBiggerThanHalfOrder(this.s);
-        }
-        normalizeS() {
-            return this.hasHighS() ? new Signature(this.r, modN(-this.s), this.recovery) : this;
-        }
-        // DER-encoded
-        toDERRawBytes() {
-            return hexToBytes$4(this.toDERHex());
-        }
-        toDERHex() {
-            return DER$2.hexFromSig({ r: this.r, s: this.s });
-        }
-        // padded bytes of r, then padded bytes of s
-        toCompactRawBytes() {
-            return hexToBytes$4(this.toCompactHex());
-        }
-        toCompactHex() {
-            return numToNByteStr(this.r) + numToNByteStr(this.s);
-        }
-    }
-    const utils = {
-        isValidPrivateKey(privateKey) {
-            try {
-                normPrivateKeyToScalar(privateKey);
-                return true;
-            }
-            catch (error) {
-                return false;
-            }
-        },
-        normPrivateKeyToScalar: normPrivateKeyToScalar,
-        /**
-         * Produces cryptographically secure private key from random of size
-         * (groupLen + ceil(groupLen / 2)) with modulo bias being negligible.
-         */
-        randomPrivateKey: () => {
-            const length = getMinHashLength$2(CURVE.n);
-            return mapHashToField$2(CURVE.randomBytes(length), CURVE.n);
-        },
-        /**
-         * Creates precompute table for an arbitrary EC point. Makes point "cached".
-         * Allows to massively speed-up `point.multiply(scalar)`.
-         * @returns cached point
-         * @example
-         * const fast = utils.precompute(8, ProjectivePoint.fromHex(someonesPubKey));
-         * fast.multiply(privKey); // much faster ECDH now
-         */
-        precompute(windowSize = 8, point = Point.BASE) {
-            point._setWindowSize(windowSize);
-            point.multiply(BigInt(3)); // 3 is arbitrary, just need any number here
-            return point;
-        },
-    };
-    /**
-     * Computes public key for a private key. Checks for validity of the private key.
-     * @param privateKey private key
-     * @param isCompressed whether to return compact (default), or full key
-     * @returns Public key, full when isCompressed=false; short when isCompressed=true
-     */
-    function getPublicKey(privateKey, isCompressed = true) {
-        return Point.fromPrivateKey(privateKey).toRawBytes(isCompressed);
-    }
-    /**
-     * Quick and dirty check for item being public key. Does not validate hex, or being on-curve.
-     */
-    function isProbPub(item) {
-        const arr = isBytes$8(item);
-        const str = typeof item === 'string';
-        const len = (arr || str) && item.length;
-        if (arr)
-            return len === compressedLen || len === uncompressedLen;
-        if (str)
-            return len === 2 * compressedLen || len === 2 * uncompressedLen;
-        if (item instanceof Point)
-            return true;
-        return false;
-    }
-    /**
-     * ECDH (Elliptic Curve Diffie Hellman).
-     * Computes shared public key from private key and public key.
-     * Checks: 1) private key validity 2) shared key is on-curve.
-     * Does NOT hash the result.
-     * @param privateA private key
-     * @param publicB different public key
-     * @param isCompressed whether to return compact (default), or full key
-     * @returns shared public key
-     */
-    function getSharedSecret(privateA, publicB, isCompressed = true) {
-        if (isProbPub(privateA))
-            throw new Error('first arg must be private key');
-        if (!isProbPub(publicB))
-            throw new Error('second arg must be public key');
-        const b = Point.fromHex(publicB); // check for being on-curve
-        return b.multiply(normPrivateKeyToScalar(privateA)).toRawBytes(isCompressed);
-    }
-    // RFC6979: ensure ECDSA msg is X bytes and < N. RFC suggests optional truncating via bits2octets.
-    // FIPS 186-4 4.6 suggests the leftmost min(nBitLen, outLen) bits, which matches bits2int.
-    // bits2int can produce res>N, we can do mod(res, N) since the bitLen is the same.
-    // int2octets can't be used; pads small msgs with 0: unacceptatble for trunc as per RFC vectors
-    const bits2int = CURVE.bits2int ||
-        function (bytes) {
-            // Our custom check "just in case"
-            if (bytes.length > 8192)
-                throw new Error('input is too large');
-            // For curves with nBitLength % 8 !== 0: bits2octets(bits2octets(m)) !== bits2octets(m)
-            // for some cases, since bytes.length * 8 is not actual bitLength.
-            const num = bytesToNumberBE$2(bytes); // check for == u8 done here
-            const delta = bytes.length * 8 - CURVE.nBitLength; // truncate to nBitLength leftmost bits
-            return delta > 0 ? num >> BigInt(delta) : num;
-        };
-    const bits2int_modN = CURVE.bits2int_modN ||
-        function (bytes) {
-            return modN(bits2int(bytes)); // can't use bytesToNumberBE here
-        };
-    // NOTE: pads output with zero as per spec
-    const ORDER_MASK = bitMask$2(CURVE.nBitLength);
-    /**
-     * Converts to bytes. Checks if num in `[0..ORDER_MASK-1]` e.g.: `[0..2^256-1]`.
-     */
-    function int2octets(num) {
-        aInRange('num < 2^' + CURVE.nBitLength, num, _0n$a, ORDER_MASK);
-        // works with order, can have different size than numToField!
-        return numberToBytesBE$2(num, CURVE.nByteLength);
-    }
-    // Steps A, D of RFC6979 3.2
-    // Creates RFC6979 seed; converts msg/privKey to numbers.
-    // Used only in sign, not in verify.
-    // NOTE: we cannot assume here that msgHash has same amount of bytes as curve order,
-    // this will be invalid at least for P521. Also it can be bigger for P224 + SHA256
-    function prepSig(msgHash, privateKey, opts = defaultSigOpts) {
-        if (['recovered', 'canonical'].some((k) => k in opts))
-            throw new Error('sign() legacy options not supported');
-        const { hash, randomBytes } = CURVE;
-        let { lowS, prehash, extraEntropy: ent } = opts; // generates low-s sigs by default
-        if (lowS == null)
-            lowS = true; // RFC6979 3.2: we skip step A, because we already provide hash
-        msgHash = ensureBytes$3('msgHash', msgHash);
-        validateSigVerOpts(opts);
-        if (prehash)
-            msgHash = ensureBytes$3('prehashed msgHash', hash(msgHash));
-        // We can't later call bits2octets, since nested bits2int is broken for curves
-        // with nBitLength % 8 !== 0. Because of that, we unwrap it here as int2octets call.
-        // const bits2octets = (bits) => int2octets(bits2int_modN(bits))
-        const h1int = bits2int_modN(msgHash);
-        const d = normPrivateKeyToScalar(privateKey); // validate private key, convert to bigint
-        const seedArgs = [int2octets(d), int2octets(h1int)];
-        // extraEntropy. RFC6979 3.6: additional k' (optional).
-        if (ent != null && ent !== false) {
-            // K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1) || k')
-            const e = ent === true ? randomBytes(Fp.BYTES) : ent; // generate random bytes OR pass as-is
-            seedArgs.push(ensureBytes$3('extraEntropy', e)); // check for being bytes
-        }
-        const seed = concatBytes$5(...seedArgs); // Step D of RFC6979 3.2
-        const m = h1int; // NOTE: no need to call bits2int second time here, it is inside truncateHash!
-        // Converts signature params into point w r/s, checks result for validity.
-        function k2sig(kBytes) {
-            // RFC 6979 Section 3.2, step 3: k = bits2int(T)
-            const k = bits2int(kBytes); // Cannot use fields methods, since it is group element
-            if (!isWithinCurveOrder(k))
-                return; // Important: all mod() calls here must be done over N
-            const ik = invN(k); // k^-1 mod n
-            const q = Point.BASE.multiply(k).toAffine(); // q = Gk
-            const r = modN(q.x); // r = q.x mod n
-            if (r === _0n$a)
-                return;
-            // Can use scalar blinding b^-1(bm + bdr) where b ∈ [1,q−1] according to
-            // https://tches.iacr.org/index.php/TCHES/article/view/7337/6509. We've decided against it:
-            // a) dependency on CSPRNG b) 15% slowdown c) doesn't really help since bigints are not CT
-            const s = modN(ik * modN(m + r * d)); // Not using blinding here
-            if (s === _0n$a)
-                return;
-            let recovery = (q.x === r ? 0 : 2) | Number(q.y & _1n$b); // recovery bit (2 or 3, when q.x > n)
-            let normS = s;
-            if (lowS && isBiggerThanHalfOrder(s)) {
-                normS = normalizeS(s); // if lowS was passed, ensure s is always
-                recovery ^= 1; // // in the bottom half of N
-            }
-            return new Signature(r, normS, recovery); // use normS, not s
-        }
-        return { seed, k2sig };
-    }
-    const defaultSigOpts = { lowS: CURVE.lowS, prehash: false };
-    const defaultVerOpts = { lowS: CURVE.lowS, prehash: false };
-    /**
-     * Signs message hash with a private key.
-     * ```
-     * sign(m, d, k) where
-     *   (x, y) = G × k
-     *   r = x mod n
-     *   s = (m + dr)/k mod n
-     * ```
-     * @param msgHash NOT message. msg needs to be hashed to `msgHash`, or use `prehash`.
-     * @param privKey private key
-     * @param opts lowS for non-malleable sigs. extraEntropy for mixing randomness into k. prehash will hash first arg.
-     * @returns signature with recovery param
-     */
-    function sign(msgHash, privKey, opts = defaultSigOpts) {
-        const { seed, k2sig } = prepSig(msgHash, privKey, opts); // Steps A, D of RFC6979 3.2.
-        const C = CURVE;
-        const drbg = createHmacDrbg$2(C.hash.outputLen, C.nByteLength, C.hmac);
-        return drbg(seed, k2sig); // Steps B, C, D, E, F, G
-    }
-    // Enable precomputes. Slows down first publicKey computation by 20ms.
-    Point.BASE._setWindowSize(8);
-    // utils.precompute(8, ProjectivePoint.BASE)
-    /**
-     * Verifies a signature against message hash and public key.
-     * Rejects lowS signatures by default: to override,
-     * specify option `{lowS: false}`. Implements section 4.1.4 from https://www.secg.org/sec1-v2.pdf:
-     *
-     * ```
-     * verify(r, s, h, P) where
-     *   U1 = hs^-1 mod n
-     *   U2 = rs^-1 mod n
-     *   R = U1⋅G - U2⋅P
-     *   mod(R.x, n) == r
-     * ```
-     */
-    function verify(signature, msgHash, publicKey, opts = defaultVerOpts) {
-        const sg = signature;
-        msgHash = ensureBytes$3('msgHash', msgHash);
-        publicKey = ensureBytes$3('publicKey', publicKey);
-        const { lowS, prehash, format } = opts;
-        // Verify opts, deduce signature format
-        validateSigVerOpts(opts);
-        if ('strict' in opts)
-            throw new Error('options.strict was renamed to lowS');
-        if (format !== undefined && format !== 'compact' && format !== 'der')
-            throw new Error('format must be compact or der');
-        const isHex = typeof sg === 'string' || isBytes$8(sg);
-        const isObj = !isHex &&
-            !format &&
-            typeof sg === 'object' &&
-            sg !== null &&
-            typeof sg.r === 'bigint' &&
-            typeof sg.s === 'bigint';
-        if (!isHex && !isObj)
-            throw new Error('invalid signature, expected Uint8Array, hex string or Signature instance');
-        let _sig = undefined;
-        let P;
-        try {
-            if (isObj)
-                _sig = new Signature(sg.r, sg.s);
-            if (isHex) {
-                // Signature can be represented in 2 ways: compact (2*nByteLength) & DER (variable-length).
-                // Since DER can also be 2*nByteLength bytes, we check for it first.
-                try {
-                    if (format !== 'compact')
-                        _sig = Signature.fromDER(sg);
-                }
-                catch (derError) {
-                    if (!(derError instanceof DER$2.Err))
-                        throw derError;
-                }
-                if (!_sig && format !== 'der')
-                    _sig = Signature.fromCompact(sg);
-            }
-            P = Point.fromHex(publicKey);
-        }
-        catch (error) {
-            return false;
-        }
-        if (!_sig)
-            return false;
-        if (lowS && _sig.hasHighS())
-            return false;
-        if (prehash)
-            msgHash = CURVE.hash(msgHash);
-        const { r, s } = _sig;
-        const h = bits2int_modN(msgHash); // Cannot use fields methods, since it is group element
-        const is = invN(s); // s^-1
-        const u1 = modN(h * is); // u1 = hs^-1 mod n
-        const u2 = modN(r * is); // u2 = rs^-1 mod n
-        const R = Point.BASE.multiplyAndAddUnsafe(P, u1, u2)?.toAffine(); // R = u1⋅G + u2⋅P
-        if (!R)
-            return false;
-        const v = modN(R.x);
-        return v === r;
-    }
-    return {
-        CURVE,
-        getPublicKey,
-        getSharedSecret,
-        sign,
-        verify,
-        ProjectivePoint: Point,
-        Signature,
-        utils,
-    };
-}
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// connects noble-curves to noble-hashes
-function getHash$2(hash) {
-    return {
-        hash,
-        hmac: (key, ...msgs) => hmac$2(hash, key, concatBytes$4(...msgs)),
-        randomBytes: randomBytes$2,
-    };
 }
 
 /**
@@ -64823,6 +62422,32 @@ async function runMain(cmd, opts = {}) {
 
 function defineIndexerPlugin(def) {
   return def;
+}
+
+const INTERNAL_CONTEXT_PROPERTY = "_internal";
+function internalContext(values) {
+  return defineIndexerPlugin((indexer) => {
+    indexer.hooks.hook("run:before", () => {
+      try {
+        const ctx = useIndexerContext();
+        ctx[INTERNAL_CONTEXT_PROPERTY] = {
+          ...ctx[INTERNAL_CONTEXT_PROPERTY] || {},
+          ...values
+        };
+      } catch (error) {
+        throw new Error("Failed to set internal context", {
+          cause: error
+        });
+      }
+    });
+  });
+}
+function useInternalContext() {
+  const ctx = useIndexerContext();
+  if (!ctx[INTERNAL_CONTEXT_PROPERTY]) {
+    throw new Error("Internal context is not available");
+  }
+  return ctx[INTERNAL_CONTEXT_PROPERTY];
 }
 
 function logger({
@@ -267654,7 +265279,7 @@ var child_process$1 = true;
 var cluster$1 = ">= 0.5";
 var console$2 = true;
 var constants$5 = true;
-var crypto$3 = true;
+var crypto$4 = true;
 var _debug_agent$1 = ">= 1 && < 8";
 var _debugger$1 = "< 8";
 var dgram$1 = true;
@@ -267758,7 +265383,7 @@ const require$$1$2 = {
 	">= 14.18 && < 15",
 	">= 16"
 ],
-	crypto: crypto$3,
+	crypto: crypto$4,
 	"node:crypto": [
 	">= 14.18 && < 15",
 	">= 16"
@@ -268514,7 +266139,7 @@ var child_process = true;
 var cluster = ">= 0.5";
 var console$1 = true;
 var constants$4 = true;
-var crypto$2 = true;
+var crypto$3 = true;
 var _debug_agent = ">= 1 && < 8";
 var _debugger = "< 8";
 var dgram = true;
@@ -268618,7 +266243,7 @@ const require$$1$1 = {
 	">= 14.18 && < 15",
 	">= 16"
 ],
-	crypto: crypto$2,
+	crypto: crypto$3,
 	"node:crypto": [
 	">= 14.18 && < 15",
 	">= 16"
@@ -273351,6 +270976,13 @@ const EvmStream = new StreamConfig(
   mergeFilter$1
 );
 
+function generateIndexerId(fileBasedName, identifier) {
+  return `indexer_${fileBasedName}_${identifier || "default"}`.replace(
+    /[^a-zA-Z0-9_]/g,
+    "_"
+  );
+}
+
 const entityKind = Symbol.for("drizzle:entityKind");
 function is(value, type) {
   if (!value || typeof value !== "object") {
@@ -275485,7 +273117,7 @@ function point(a, b) {
   return new PgPointObjectBuilder(name);
 }
 
-function hexToBytes$3(hex) {
+function hexToBytes$4(hex) {
   const bytes = [];
   for (let c = 0; c < hex.length; c += 2) {
     bytes.push(Number.parseInt(hex.slice(c, c + 2), 16));
@@ -275501,7 +273133,7 @@ function bytesToFloat64(bytes, offset) {
   return view.getFloat64(0, true);
 }
 function parseEWKB(hex) {
-  const bytes = hexToBytes$3(hex);
+  const bytes = hexToBytes$4(hex);
   let offset = 0;
   const byteOrder = bytes[offset];
   offset += 1;
@@ -279577,6 +277209,9 @@ function serialize(obj) {
     "	"
   );
 }
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 const CHECKPOINTS_TABLE_NAME = "__indexer_checkpoints";
 const FILTERS_TABLE_NAME = "__indexer_filters";
@@ -279665,11 +277300,11 @@ async function initializePersistentState(tx) {
   }
 }
 async function persistState(props) {
-  const { tx, endCursor, filter, indexerName } = props;
+  const { tx, endCursor, filter, indexerId } = props;
   try {
     if (endCursor) {
       await tx.insert(checkpoints).values({
-        id: indexerName,
+        id: indexerId,
         orderKey: Number(endCursor.orderKey),
         uniqueKey: endCursor.uniqueKey
       }).onConflictDoUpdate({
@@ -279680,9 +277315,9 @@ async function persistState(props) {
         }
       });
       if (filter) {
-        await tx.update(filters).set({ toBlock: Number(endCursor.orderKey) }).where(and(eq(filters.id, indexerName), isNull(filters.toBlock)));
+        await tx.update(filters).set({ toBlock: Number(endCursor.orderKey) }).where(and(eq(filters.id, indexerId), isNull(filters.toBlock)));
         await tx.insert(filters).values({
-          id: indexerName,
+          id: indexerId,
           filter: serialize(filter),
           fromBlock: Number(endCursor.orderKey),
           toBlock: null
@@ -279703,14 +277338,14 @@ async function persistState(props) {
   }
 }
 async function getState(props) {
-  const { tx, indexerName } = props;
+  const { tx, indexerId } = props;
   try {
-    const checkpointRows = await tx.select().from(checkpoints).where(eq(checkpoints.id, indexerName));
+    const checkpointRows = await tx.select().from(checkpoints).where(eq(checkpoints.id, indexerId));
     const cursor = checkpointRows[0] ? {
       orderKey: BigInt(checkpointRows[0].orderKey),
       uniqueKey: checkpointRows[0].uniqueKey
     } : void 0;
-    const filterRows = await tx.select().from(filters).where(and(eq(filters.id, indexerName), isNull(filters.toBlock)));
+    const filterRows = await tx.select().from(filters).where(and(eq(filters.id, indexerId), isNull(filters.toBlock)));
     const filter = filterRows[0] ? deserialize(filterRows[0].filter) : void 0;
     return { cursor, filter };
   } catch (error) {
@@ -279720,17 +277355,17 @@ async function getState(props) {
   }
 }
 async function invalidateState(props) {
-  const { tx, cursor, indexerName } = props;
+  const { tx, cursor, indexerId } = props;
   try {
     await tx.delete(filters).where(
       and(
-        eq(filters.id, indexerName),
+        eq(filters.id, indexerId),
         gt(filters.fromBlock, Number(cursor.orderKey))
       )
     );
     await tx.update(filters).set({ toBlock: null }).where(
       and(
-        eq(filters.id, indexerName),
+        eq(filters.id, indexerId),
         gt(filters.toBlock, Number(cursor.orderKey))
       )
     );
@@ -279741,11 +277376,11 @@ async function invalidateState(props) {
   }
 }
 async function finalizeState(props) {
-  const { tx, cursor, indexerName } = props;
+  const { tx, cursor, indexerId } = props;
   try {
     await tx.delete(filters).where(
       and(
-        eq(filters.id, indexerName),
+        eq(filters.id, indexerId),
         lt(filters.toBlock, Number(cursor.orderKey))
       )
     );
@@ -279756,15 +277391,19 @@ async function finalizeState(props) {
   }
 }
 
+function getReorgTriggerName(table, indexerId) {
+  return `${table}_reorg_${indexerId}`;
+}
 pgTable("__reorg_rollback", {
   n: serial("n").primaryKey(),
   op: char("op", { length: 1 }).$type().notNull(),
   table_name: text("table_name").notNull(),
   cursor: integer("cursor").notNull(),
   row_id: text("row_id"),
-  row_value: jsonb("row_value")
+  row_value: jsonb("row_value"),
+  indexer_id: text("indexer_id").notNull()
 });
-async function initializeReorgRollbackTable(tx) {
+async function initializeReorgRollbackTable(tx, indexerId) {
   try {
     await tx.execute(
       sql.raw(`
@@ -279774,33 +277413,14 @@ async function initializeReorgRollbackTable(tx) {
           table_name TEXT NOT NULL,
           cursor INTEGER NOT NULL,
           row_id TEXT,
-          row_value JSONB
+          row_value JSONB,
+          indexer_id TEXT NOT NULL
         );
       `)
     );
     await tx.execute(
       sql.raw(`
-        CREATE OR REPLACE FUNCTION reorg_checkpoint()
-        RETURNS TRIGGER AS $$
-        DECLARE
-          id_col TEXT := TG_ARGV[0]::TEXT;
-          order_key INTEGER := TG_ARGV[1]::INTEGER;
-          new_id_value TEXT := row_to_json(NEW.*)->>id_col;
-          old_id_value TEXT := row_to_json(OLD.*)->>id_col;
-        BEGIN
-          IF (TG_OP = 'DELETE') THEN
-            INSERT INTO __reorg_rollback(op, table_name, cursor, row_id, row_value)
-              SELECT 'D', TG_TABLE_NAME, order_key, old_id_value, row_to_json(OLD.*);
-          ELSIF (TG_OP = 'UPDATE') THEN
-            INSERT INTO __reorg_rollback(op, table_name, cursor, row_id, row_value)
-              SELECT 'U', TG_TABLE_NAME, order_key, new_id_value, row_to_json(OLD.*);
-          ELSIF (TG_OP = 'INSERT') THEN
-            INSERT INTO __reorg_rollback(op, table_name, cursor, row_id, row_value)
-              SELECT 'I', TG_TABLE_NAME, order_key, new_id_value, null;
-          END IF;
-          RETURN NULL;
-        END;
-        $$ LANGUAGE plpgsql;
+        CREATE INDEX IF NOT EXISTS idx_reorg_rollback_indexer_id_cursor ON __reorg_rollback(indexer_id, cursor);
       `)
     );
   } catch (error) {
@@ -279808,19 +277428,56 @@ async function initializeReorgRollbackTable(tx) {
       cause: error
     });
   }
+  try {
+    await tx.execute(
+      sql.raw(`
+      CREATE OR REPLACE FUNCTION reorg_checkpoint()
+      RETURNS TRIGGER AS $$
+      DECLARE
+        id_col TEXT := TG_ARGV[0]::TEXT;
+        order_key INTEGER := TG_ARGV[1]::INTEGER;
+        indexer_id TEXT := TG_ARGV[2]::TEXT;
+        new_id_value TEXT := row_to_json(NEW.*)->>id_col;
+        old_id_value TEXT := row_to_json(OLD.*)->>id_col;
+      BEGIN
+        IF (TG_OP = 'DELETE') THEN
+          INSERT INTO __reorg_rollback(op, table_name, cursor, row_id, row_value, indexer_id)
+            SELECT 'D', TG_TABLE_NAME, order_key, old_id_value, row_to_json(OLD.*), indexer_id;
+        ELSIF (TG_OP = 'UPDATE') THEN
+          INSERT INTO __reorg_rollback(op, table_name, cursor, row_id, row_value, indexer_id)
+            SELECT 'U', TG_TABLE_NAME, order_key, new_id_value, row_to_json(OLD.*), indexer_id;
+        ELSIF (TG_OP = 'INSERT') THEN
+          INSERT INTO __reorg_rollback(op, table_name, cursor, row_id, row_value, indexer_id)
+            SELECT 'I', TG_TABLE_NAME, order_key, new_id_value, null, indexer_id;
+        END IF;
+        RETURN NULL;
+      END;
+      $$ LANGUAGE plpgsql;
+    `)
+    );
+  } catch (error) {
+    throw new DrizzleStorageError(
+      "Failed to create reorg checkpoint function",
+      {
+        cause: error
+      }
+    );
+  }
 }
-async function registerTriggers(tx, tables, endCursor, idColumn) {
+async function registerTriggers(tx, tables, endCursor, idColumn, indexerId) {
   try {
     for (const table of tables) {
       await tx.execute(
-        sql.raw(`DROP TRIGGER IF EXISTS ${table}_reorg ON ${table};`)
+        sql.raw(
+          `DROP TRIGGER IF EXISTS ${getReorgTriggerName(table, indexerId)} ON ${table};`
+        )
       );
       await tx.execute(
         sql.raw(`
-          CREATE CONSTRAINT TRIGGER ${table}_reorg
+          CREATE CONSTRAINT TRIGGER ${getReorgTriggerName(table, indexerId)}
           AFTER INSERT OR UPDATE OR DELETE ON ${table}
           DEFERRABLE INITIALLY DEFERRED
-          FOR EACH ROW EXECUTE FUNCTION reorg_checkpoint('${idColumn}', ${`${Number(endCursor.orderKey)}`});
+          FOR EACH ROW EXECUTE FUNCTION reorg_checkpoint('${idColumn}', ${`${Number(endCursor.orderKey)}`}, '${indexerId}');
         `)
       );
     }
@@ -279830,11 +277487,13 @@ async function registerTriggers(tx, tables, endCursor, idColumn) {
     });
   }
 }
-async function removeTriggers(db, tables) {
+async function removeTriggers(db, tables, indexerId) {
   try {
     for (const table of tables) {
       await db.execute(
-        sql.raw(`DROP TRIGGER IF EXISTS ${table}_reorg ON ${table};`)
+        sql.raw(
+          `DROP TRIGGER IF EXISTS ${getReorgTriggerName(table, indexerId)} ON ${table};`
+        )
       );
     }
   } catch (error) {
@@ -279843,12 +277502,13 @@ async function removeTriggers(db, tables) {
     });
   }
 }
-async function invalidate(tx, cursor, idColumn) {
+async function invalidate(tx, cursor, idColumn, indexerId) {
   const { rows: result } = await tx.execute(
     sql.raw(`
       WITH deleted AS (
         DELETE FROM __reorg_rollback
         WHERE cursor > ${Number(cursor.orderKey)}
+        AND indexer_id = '${indexerId}'
         RETURNING *
       )
       SELECT * FROM deleted ORDER BY n DESC;
@@ -279935,12 +277595,13 @@ async function invalidate(tx, cursor, idColumn) {
     }
   }
 }
-async function finalize(tx, cursor) {
+async function finalize(tx, cursor, indexerId) {
   try {
     await tx.execute(
       sql.raw(`
       DELETE FROM __reorg_rollback
       WHERE cursor <= ${Number(cursor.orderKey)}
+      AND indexer_id = '${indexerId}'
     `)
     );
   } catch (error) {
@@ -279951,6 +277612,7 @@ async function finalize(tx, cursor) {
 }
 
 const DRIZZLE_PROPERTY = "_drizzle";
+const MAX_RETRIES = 5;
 function useDrizzleStorage(_db) {
   const context = useIndexerContext();
   if (!context[DRIZZLE_PROPERTY]) {
@@ -279963,12 +277625,13 @@ function useDrizzleStorage(_db) {
 function drizzleStorage({
   db,
   persistState: enablePersistence = true,
-  indexerName = "default",
+  indexerName: identifier = "default",
   schema,
   idColumn = "id"
 }) {
   return defineIndexerPlugin((indexer) => {
     let tableNames = [];
+    let indexerId = "";
     try {
       tableNames = Object.values(schema ?? db._.schema ?? {}).map(
         (table) => table.dbName
@@ -279979,12 +277642,31 @@ function drizzleStorage({
       });
     }
     indexer.hooks.hook("run:before", async () => {
-      await withTransaction(db, async (tx) => {
-        await initializeReorgRollbackTable(tx);
-        if (enablePersistence) {
-          await initializePersistentState(tx);
+      const { indexerName: indexerFileName, availableIndexers } = useInternalContext();
+      indexerId = generateIndexerId(indexerFileName, identifier);
+      let retries = 0;
+      while (retries <= MAX_RETRIES) {
+        try {
+          await withTransaction(db, async (tx) => {
+            await initializeReorgRollbackTable(tx, indexerId);
+            if (enablePersistence) {
+              await initializePersistentState(tx);
+            }
+          });
+          break;
+        } catch (error) {
+          if (retries === MAX_RETRIES) {
+            throw new DrizzleStorageError(
+              "Initialization failed after 5 retries",
+              {
+                cause: error
+              }
+            );
+          }
+          await sleep(retries * 1e3);
+          retries++;
         }
-      });
+      }
     });
     indexer.hooks.hook("connect:before", async ({ request }) => {
       if (!enablePersistence) {
@@ -279993,7 +277675,7 @@ function drizzleStorage({
       await withTransaction(db, async (tx) => {
         const { cursor, filter } = await getState({
           tx,
-          indexerName
+          indexerId
         });
         if (cursor) {
           request.startingCursor = cursor;
@@ -280009,9 +277691,9 @@ function drizzleStorage({
         return;
       }
       await withTransaction(db, async (tx) => {
-        await invalidate(tx, cursor, idColumn);
+        await invalidate(tx, cursor, idColumn, indexerId);
         if (enablePersistence) {
-          await invalidateState({ tx, cursor, indexerName });
+          await invalidateState({ tx, cursor, indexerId });
         }
       });
     });
@@ -280025,7 +277707,7 @@ function drizzleStorage({
           tx,
           endCursor,
           filter: request.filter[1],
-          indexerName
+          indexerId
         });
       }
     });
@@ -280035,9 +277717,9 @@ function drizzleStorage({
         throw new DrizzleStorageError("Finalized Cursor is undefined");
       }
       await withTransaction(db, async (tx) => {
-        await finalize(tx, cursor);
+        await finalize(tx, cursor, indexerId);
         if (enablePersistence) {
-          await finalizeState({ tx, cursor, indexerName });
+          await finalizeState({ tx, cursor, indexerId });
         }
       });
     });
@@ -280047,9 +277729,9 @@ function drizzleStorage({
         throw new DrizzleStorageError("Invalidate Cursor is undefined");
       }
       await withTransaction(db, async (tx) => {
-        await invalidate(tx, cursor, idColumn);
+        await invalidate(tx, cursor, idColumn, indexerId);
         if (enablePersistence) {
-          await invalidateState({ tx, cursor, indexerName });
+          await invalidateState({ tx, cursor, indexerId });
         }
       });
     });
@@ -280063,7 +277745,13 @@ function drizzleStorage({
           await withTransaction(db, async (tx) => {
             context[DRIZZLE_PROPERTY] = { db: tx };
             if (finality !== "finalized") {
-              await registerTriggers(tx, tableNames, endCursor, idColumn);
+              await registerTriggers(
+                tx,
+                tableNames,
+                endCursor,
+                idColumn,
+                indexerId
+              );
             }
             await next();
             delete context[DRIZZLE_PROPERTY];
@@ -280071,15 +277759,15 @@ function drizzleStorage({
               await persistState({
                 tx,
                 endCursor,
-                indexerName
+                indexerId
               });
             }
           });
           if (finality !== "finalized") {
-            await removeTriggers(db, tableNames);
+            await removeTriggers(db, tableNames, indexerId);
           }
         } catch (error) {
-          await removeTriggers(db, tableNames);
+          await removeTriggers(db, tableNames, indexerId);
           throw new DrizzleStorageError("Failed to run handler:middleware", {
             cause: error
           });
@@ -280229,7 +277917,7 @@ const starknet_types_07_star = /*#__PURE__*/Object.freeze({
 /*! scure-base - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 // Utilities
 
-function isBytes$6(a) {
+function isBytes$8(a) {
     return (a instanceof Uint8Array ||
         (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array'));
 }
@@ -280384,7 +278072,7 @@ function radix2(bits, revPadding = false) {
         throw new Error('radix2: carry overflow');
     return {
         encode: (bytes) => {
-            if (!isBytes$6(bytes))
+            if (!isBytes$8(bytes))
                 throw new Error('radix2.encode input should be Uint8Array');
             return convertRadix2(Array.from(bytes), 8, bits, !revPadding);
         },
@@ -280402,56 +278090,56 @@ const base64 = /* @__PURE__ */ chain(radix2(6), alphabet('ABCDEFGHIJKLMNOPQRSTUV
 // This is OK: `abstract` directory does not use noble-hashes.
 // User may opt-in into using different hashing library. This way, noble-hashes
 // won't be included into their bundle.
-const _0n$9 = /* @__PURE__ */ BigInt(0);
-const _1n$a = /* @__PURE__ */ BigInt(1);
-const _2n$7 = /* @__PURE__ */ BigInt(2);
-function isBytes$5(a) {
+const _0n$d = /* @__PURE__ */ BigInt(0);
+const _1n$e = /* @__PURE__ */ BigInt(1);
+const _2n$9 = /* @__PURE__ */ BigInt(2);
+function isBytes$7(a) {
     return (a instanceof Uint8Array ||
         (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array'));
 }
-function abytes$1(item) {
-    if (!isBytes$5(item))
+function abytes$3(item) {
+    if (!isBytes$7(item))
         throw new Error('Uint8Array expected');
 }
 // Array where index 0xf0 (240) is mapped to string 'f0'
-const hexes$1 = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
+const hexes$2 = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
 /**
  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
  */
-function bytesToHex$1(bytes) {
-    abytes$1(bytes);
+function bytesToHex$2(bytes) {
+    abytes$3(bytes);
     // pre-caching improves the speed 6x
     let hex = '';
     for (let i = 0; i < bytes.length; i++) {
-        hex += hexes$1[bytes[i]];
+        hex += hexes$2[bytes[i]];
     }
     return hex;
 }
-function numberToHexUnpadded$1(num) {
+function numberToHexUnpadded$2(num) {
     const hex = num.toString(16);
     return hex.length & 1 ? `0${hex}` : hex;
 }
-function hexToNumber$1(hex) {
+function hexToNumber$2(hex) {
     if (typeof hex !== 'string')
         throw new Error('hex string expected, got ' + typeof hex);
     // Big Endian
     return BigInt(hex === '' ? '0' : `0x${hex}`);
 }
 // We use optimized technique to convert hex string to byte array
-const asciis$1 = { _0: 48, _9: 57, _A: 65, _F: 70, _a: 97, _f: 102 };
-function asciiToBase16$1(char) {
-    if (char >= asciis$1._0 && char <= asciis$1._9)
-        return char - asciis$1._0;
-    if (char >= asciis$1._A && char <= asciis$1._F)
-        return char - (asciis$1._A - 10);
-    if (char >= asciis$1._a && char <= asciis$1._f)
-        return char - (asciis$1._a - 10);
+const asciis$2 = { _0: 48, _9: 57, _A: 65, _F: 70, _a: 97, _f: 102 };
+function asciiToBase16$2(char) {
+    if (char >= asciis$2._0 && char <= asciis$2._9)
+        return char - asciis$2._0;
+    if (char >= asciis$2._A && char <= asciis$2._F)
+        return char - (asciis$2._A - 10);
+    if (char >= asciis$2._a && char <= asciis$2._f)
+        return char - (asciis$2._a - 10);
     return;
 }
 /**
  * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
  */
-function hexToBytes$2(hex) {
+function hexToBytes$3(hex) {
     if (typeof hex !== 'string')
         throw new Error('hex string expected, got ' + typeof hex);
     const hl = hex.length;
@@ -280460,8 +278148,8 @@ function hexToBytes$2(hex) {
         throw new Error('padded hex string expected, got unpadded hex of length ' + hl);
     const array = new Uint8Array(al);
     for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
-        const n1 = asciiToBase16$1(hex.charCodeAt(hi));
-        const n2 = asciiToBase16$1(hex.charCodeAt(hi + 1));
+        const n1 = asciiToBase16$2(hex.charCodeAt(hi));
+        const n2 = asciiToBase16$2(hex.charCodeAt(hi + 1));
         if (n1 === undefined || n2 === undefined) {
             const char = hex[hi] + hex[hi + 1];
             throw new Error('hex string expected, got non-hex character "' + char + '" at index ' + hi);
@@ -280471,22 +278159,22 @@ function hexToBytes$2(hex) {
     return array;
 }
 // BE: Big Endian, LE: Little Endian
-function bytesToNumberBE$1(bytes) {
-    return hexToNumber$1(bytesToHex$1(bytes));
+function bytesToNumberBE$2(bytes) {
+    return hexToNumber$2(bytesToHex$2(bytes));
 }
-function bytesToNumberLE$1(bytes) {
-    abytes$1(bytes);
-    return hexToNumber$1(bytesToHex$1(Uint8Array.from(bytes).reverse()));
+function bytesToNumberLE$2(bytes) {
+    abytes$3(bytes);
+    return hexToNumber$2(bytesToHex$2(Uint8Array.from(bytes).reverse()));
 }
-function numberToBytesBE$1(n, len) {
-    return hexToBytes$2(n.toString(16).padStart(len * 2, '0'));
+function numberToBytesBE$2(n, len) {
+    return hexToBytes$3(n.toString(16).padStart(len * 2, '0'));
 }
-function numberToBytesLE$1(n, len) {
-    return numberToBytesBE$1(n, len).reverse();
+function numberToBytesLE$2(n, len) {
+    return numberToBytesBE$2(n, len).reverse();
 }
 // Unpadded, rarely used
-function numberToVarBytesBE$1(n) {
-    return hexToBytes$2(numberToHexUnpadded$1(n));
+function numberToVarBytesBE$2(n) {
+    return hexToBytes$3(numberToHexUnpadded$2(n));
 }
 /**
  * Takes hex string or Uint8Array, converts to Uint8Array.
@@ -280497,17 +278185,17 @@ function numberToVarBytesBE$1(n) {
  * @param expectedLength optional, will compare to result array's length
  * @returns
  */
-function ensureBytes$2(title, hex, expectedLength) {
+function ensureBytes$3(title, hex, expectedLength) {
     let res;
     if (typeof hex === 'string') {
         try {
-            res = hexToBytes$2(hex);
+            res = hexToBytes$3(hex);
         }
         catch (e) {
             throw new Error(`${title} must be valid hex string, got "${hex}". Cause: ${e}`);
         }
     }
-    else if (isBytes$5(hex)) {
+    else if (isBytes$7(hex)) {
         // Uint8Array.from() instead of hash.slice() because node.js Buffer
         // is instance of Uint8Array, and its slice() creates **mutable** copy
         res = Uint8Array.from(hex);
@@ -280523,11 +278211,11 @@ function ensureBytes$2(title, hex, expectedLength) {
 /**
  * Copies several Uint8Arrays into one.
  */
-function concatBytes$3(...arrays) {
+function concatBytes$5(...arrays) {
     let sum = 0;
     for (let i = 0; i < arrays.length; i++) {
         const a = arrays[i];
-        abytes$1(a);
+        abytes$3(a);
         sum += a.length;
     }
     const res = new Uint8Array(sum);
@@ -280539,7 +278227,7 @@ function concatBytes$3(...arrays) {
     return res;
 }
 // Compares 2 u8a-s in kinda constant time
-function equalBytes$1(a, b) {
+function equalBytes$2(a, b) {
     if (a.length !== b.length)
         return false;
     let diff = 0;
@@ -280550,7 +278238,7 @@ function equalBytes$1(a, b) {
 /**
  * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
  */
-function utf8ToBytes$4(str) {
+function utf8ToBytes$6(str) {
     if (typeof str !== 'string')
         throw new Error(`utf8ToBytes expected string, got ${typeof str}`);
     return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
@@ -280560,9 +278248,9 @@ function utf8ToBytes$4(str) {
  * Calculates amount of bits in a bigint.
  * Same as `n.toString(2).length`
  */
-function bitLen$1(n) {
+function bitLen$2(n) {
     let len;
-    for (len = 0; n > _0n$9; n >>= _1n$a, len += 1)
+    for (len = 0; n > _0n$d; n >>= _1n$e, len += 1)
         ;
     return len;
 }
@@ -280571,23 +278259,23 @@ function bitLen$1(n) {
  * NOTE: first bit position is 0 (same as arrays)
  * Same as `!!+Array.from(n.toString(2)).reverse()[pos]`
  */
-function bitGet$1(n, pos) {
-    return (n >> BigInt(pos)) & _1n$a;
+function bitGet$2(n, pos) {
+    return (n >> BigInt(pos)) & _1n$e;
 }
 /**
  * Sets single bit at position.
  */
-function bitSet$1(n, pos, value) {
-    return n | ((value ? _1n$a : _0n$9) << BigInt(pos));
+function bitSet$2(n, pos, value) {
+    return n | ((value ? _1n$e : _0n$d) << BigInt(pos));
 }
 /**
  * Calculate mask for N bits. Not using ** operator with bigints because of old engines.
  * Same as BigInt(`0b${Array(i).fill('1').join('')}`)
  */
-const bitMask$1 = (n) => (_2n$7 << BigInt(n - 1)) - _1n$a;
+const bitMask$2 = (n) => (_2n$9 << BigInt(n - 1)) - _1n$e;
 // DRBG
-const u8n$1 = (data) => new Uint8Array(data); // creates Uint8Array
-const u8fr$1 = (arr) => Uint8Array.from(arr); // another shortcut
+const u8n$2 = (data) => new Uint8Array(data); // creates Uint8Array
+const u8fr$2 = (arr) => Uint8Array.from(arr); // another shortcut
 /**
  * Minimal HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
  * @returns function that will call DRBG until 2nd arg returns something meaningful
@@ -280595,7 +278283,7 @@ const u8fr$1 = (arr) => Uint8Array.from(arr); // another shortcut
  *   const drbg = createHmacDRBG<Key>(32, 32, hmac);
  *   drbg(seed, bytesToKey); // bytesToKey must return Key or undefined
  */
-function createHmacDrbg$1(hashLen, qByteLen, hmacFn) {
+function createHmacDrbg$2(hashLen, qByteLen, hmacFn) {
     if (typeof hashLen !== 'number' || hashLen < 2)
         throw new Error('hashLen must be a number');
     if (typeof qByteLen !== 'number' || qByteLen < 2)
@@ -280603,8 +278291,8 @@ function createHmacDrbg$1(hashLen, qByteLen, hmacFn) {
     if (typeof hmacFn !== 'function')
         throw new Error('hmacFn must be a function');
     // Step B, Step C: set hashLen to 8*ceil(hlen/8)
-    let v = u8n$1(hashLen); // Minimal non-full-spec HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
-    let k = u8n$1(hashLen); // Steps B and C of RFC6979 3.2: set hashLen, in our case always same
+    let v = u8n$2(hashLen); // Minimal non-full-spec HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
+    let k = u8n$2(hashLen); // Steps B and C of RFC6979 3.2: set hashLen, in our case always same
     let i = 0; // Iterations counter, will throw when over 1000
     const reset = () => {
         v.fill(1);
@@ -280612,13 +278300,13 @@ function createHmacDrbg$1(hashLen, qByteLen, hmacFn) {
         i = 0;
     };
     const h = (...b) => hmacFn(k, v, ...b); // hmac(k)(v, ...values)
-    const reseed = (seed = u8n$1()) => {
+    const reseed = (seed = u8n$2()) => {
         // HMAC-DRBG reseed() function. Steps D-G
-        k = h(u8fr$1([0x00]), seed); // k = hmac(k || v || 0x00 || seed)
+        k = h(u8fr$2([0x00]), seed); // k = hmac(k || v || 0x00 || seed)
         v = h(); // v = hmac(k || v)
         if (seed.length === 0)
             return;
-        k = h(u8fr$1([0x01]), seed); // k = hmac(k || v || 0x01 || seed)
+        k = h(u8fr$2([0x01]), seed); // k = hmac(k || v || 0x01 || seed)
         v = h(); // v = hmac(k || v)
     };
     const gen = () => {
@@ -280633,7 +278321,7 @@ function createHmacDrbg$1(hashLen, qByteLen, hmacFn) {
             out.push(sl);
             len += v.length;
         }
-        return concatBytes$3(...out);
+        return concatBytes$5(...out);
     };
     const genUntil = (seed, pred) => {
         reset();
@@ -280647,21 +278335,21 @@ function createHmacDrbg$1(hashLen, qByteLen, hmacFn) {
     return genUntil;
 }
 // Validating curves and fields
-const validatorFns$1 = {
+const validatorFns$2 = {
     bigint: (val) => typeof val === 'bigint',
     function: (val) => typeof val === 'function',
     boolean: (val) => typeof val === 'boolean',
     string: (val) => typeof val === 'string',
-    stringOrUint8Array: (val) => typeof val === 'string' || isBytes$5(val),
+    stringOrUint8Array: (val) => typeof val === 'string' || isBytes$7(val),
     isSafeInteger: (val) => Number.isSafeInteger(val),
     array: (val) => Array.isArray(val),
     field: (val, object) => object.Fp.isValid(val),
     hash: (val) => typeof val === 'function' && Number.isSafeInteger(val.outputLen),
 };
 // type Record<K extends string | number | symbol, T> = { [P in K]: T; }
-function validateObject$1(object, validators, optValidators = {}) {
+function validateObject$2(object, validators, optValidators = {}) {
     const checkField = (fieldName, type, isOptional) => {
-        const checkVal = validatorFns$1[type];
+        const checkVal = validatorFns$2[type];
         if (typeof checkVal !== 'function')
             throw new Error(`Invalid validator "${type}", expected function`);
         const val = object[fieldName];
@@ -280686,70 +278374,69 @@ function validateObject$1(object, validators, optValidators = {}) {
 // const z3 = validateObject(o, { test: 'boolean', z: 'bug' });
 // const z4 = validateObject(o, { a: 'boolean', z: 'bug' });
 
-const ut$1 = /*#__PURE__*/Object.freeze({
+const ut$2 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
-	abytes: abytes$1,
-	bitGet: bitGet$1,
-	bitLen: bitLen$1,
-	bitMask: bitMask$1,
-	bitSet: bitSet$1,
-	bytesToHex: bytesToHex$1,
-	bytesToNumberBE: bytesToNumberBE$1,
-	bytesToNumberLE: bytesToNumberLE$1,
-	concatBytes: concatBytes$3,
-	createHmacDrbg: createHmacDrbg$1,
-	ensureBytes: ensureBytes$2,
-	equalBytes: equalBytes$1,
-	hexToBytes: hexToBytes$2,
-	hexToNumber: hexToNumber$1,
-	isBytes: isBytes$5,
-	numberToBytesBE: numberToBytesBE$1,
-	numberToBytesLE: numberToBytesLE$1,
-	numberToHexUnpadded: numberToHexUnpadded$1,
-	numberToVarBytesBE: numberToVarBytesBE$1,
-	utf8ToBytes: utf8ToBytes$4,
-	validateObject: validateObject$1
+	abytes: abytes$3,
+	bitGet: bitGet$2,
+	bitLen: bitLen$2,
+	bitMask: bitMask$2,
+	bitSet: bitSet$2,
+	bytesToHex: bytesToHex$2,
+	bytesToNumberBE: bytesToNumberBE$2,
+	bytesToNumberLE: bytesToNumberLE$2,
+	concatBytes: concatBytes$5,
+	createHmacDrbg: createHmacDrbg$2,
+	ensureBytes: ensureBytes$3,
+	equalBytes: equalBytes$2,
+	hexToBytes: hexToBytes$3,
+	hexToNumber: hexToNumber$2,
+	isBytes: isBytes$7,
+	numberToBytesBE: numberToBytesBE$2,
+	numberToBytesLE: numberToBytesLE$2,
+	numberToHexUnpadded: numberToHexUnpadded$2,
+	numberToVarBytesBE: numberToVarBytesBE$2,
+	utf8ToBytes: utf8ToBytes$6,
+	validateObject: validateObject$2
 });
 
-/**
- * Assertion helpers
- * @module
- */
-function anumber(n) {
+function number$1(n) {
     if (!Number.isSafeInteger(n) || n < 0)
-        throw new Error('positive integer expected, got ' + n);
+        throw new Error(`Wrong positive integer: ${n}`);
 }
 // copied from utils
-function isBytes$4(a) {
-    return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
+function isBytes$6(a) {
+    return (a instanceof Uint8Array ||
+        (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array'));
 }
-function abytes(b, ...lengths) {
-    if (!isBytes$4(b))
-        throw new Error('Uint8Array expected');
+function bytes$1(b, ...lengths) {
+    if (!isBytes$6(b))
+        throw new Error('Expected Uint8Array');
     if (lengths.length > 0 && !lengths.includes(b.length))
-        throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
+        throw new Error(`Expected Uint8Array of length ${lengths}, not of length=${b.length}`);
 }
-function aexists(instance, checkFinished = true) {
+function hash$1(hash) {
+    if (typeof hash !== 'function' || typeof hash.create !== 'function')
+        throw new Error('Hash should be wrapped by utils.wrapConstructor');
+    number$1(hash.outputLen);
+    number$1(hash.blockLen);
+}
+function exists$1(instance, checkFinished = true) {
     if (instance.destroyed)
         throw new Error('Hash instance has been destroyed');
     if (checkFinished && instance.finished)
         throw new Error('Hash#digest() has already been called');
 }
-function aoutput(out, instance) {
-    abytes(out);
+function output$1(out, instance) {
+    bytes$1(out);
     const min = instance.outputLen;
     if (out.length < min) {
-        throw new Error('digestInto() expects output buffer of length at least ' + min);
+        throw new Error(`digestInto() expects output buffer of length at least ${min}`);
     }
 }
 
 const U32_MASK64$1 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
 const _32n$1 = /* @__PURE__ */ BigInt(32);
-/**
- * BigUint64Array is too slow as per 2024, so we implement it using Uint32Array.
- * @todo re-check https://issues.chromium.org/issues/42212588
- * @module
- */
+// We are not using BigUint64Array, because they are extremely slow as per 2022
 function fromBig$1(n, le = false) {
     if (le)
         return { h: Number(n & U32_MASK64$1), l: Number((n >> _32n$1) & U32_MASK64$1) };
@@ -280771,11 +278458,9 @@ const rotlSL$1 = (h, l, s) => (l << s) | (h >>> (32 - s));
 const rotlBH$1 = (h, l, s) => (l << (s - 32)) | (h >>> (64 - s));
 const rotlBL$1 = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
 
+const crypto$2 = typeof globalThis === 'object' && 'crypto' in globalThis ? globalThis.crypto : undefined;
+
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-/**
- * Utilities for hex, bytes, CSPRNG.
- * @module
- */
 // We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
 // node.js versions earlier than v19 don't declare it in global scope.
 // For node.js, package.json#exports field mapping rewrites import
@@ -280783,26 +278468,27 @@ const rotlBL$1 = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
 // Makes the utils un-importable in browsers without a bundler.
 // Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
 const u32$1 = (arr) => new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
-/** Is current platform little-endian? Most are. Big-Endian platform: IBM */
-const isLE$1 = /* @__PURE__ */ (() => new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
-// The byte swap operation for uint32
-const byteSwap = (word) => ((word << 24) & 0xff000000) |
-    ((word << 8) & 0xff0000) |
-    ((word >>> 8) & 0xff00) |
-    ((word >>> 24) & 0xff);
-/** In place byte swap for Uint32Array */
-function byteSwap32(arr) {
-    for (let i = 0; i < arr.length; i++) {
-        arr[i] = byteSwap(arr[i]);
-    }
+function isBytes$5(a) {
+    return (a instanceof Uint8Array ||
+        (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array'));
 }
+// Cast array to view
+const createView$2 = (arr) => new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+// The rotate right (circular right shift) operation for uint32
+const rotr$2 = (word, shift) => (word << (32 - shift)) | (word >>> shift);
+// big-endian hardware is rare. Just in case someone still decides to run hashes:
+// early-throw an error because we don't support BE yet.
+// Other libraries would silently corrupt the data instead of throwing an error,
+// when they don't support it.
+const isLE$1 = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
+if (!isLE$1)
+    throw new Error('Non little-endian hardware is not supported');
 /**
- * Convert JS string to byte array.
  * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
  */
-function utf8ToBytes$3(str) {
+function utf8ToBytes$5(str) {
     if (typeof str !== 'string')
-        throw new Error('utf8ToBytes expected string, got ' + typeof str);
+        throw new Error(`utf8ToBytes expected string, got ${typeof str}`);
     return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
 }
 /**
@@ -280810,59 +278496,79 @@ function utf8ToBytes$3(str) {
  * Warning: when Uint8Array is passed, it would NOT get copied.
  * Keep in mind for future mutable operations.
  */
-function toBytes$2(data) {
+function toBytes$3(data) {
     if (typeof data === 'string')
-        data = utf8ToBytes$3(data);
-    abytes(data);
+        data = utf8ToBytes$5(data);
+    if (!isBytes$5(data))
+        throw new Error(`expected Uint8Array, got ${typeof data}`);
     return data;
 }
+/**
+ * Copies several Uint8Arrays into one.
+ */
+function concatBytes$4(...arrays) {
+    let sum = 0;
+    for (let i = 0; i < arrays.length; i++) {
+        const a = arrays[i];
+        if (!isBytes$5(a))
+            throw new Error('Uint8Array expected');
+        sum += a.length;
+    }
+    const res = new Uint8Array(sum);
+    for (let i = 0, pad = 0; i < arrays.length; i++) {
+        const a = arrays[i];
+        res.set(a, pad);
+        pad += a.length;
+    }
+    return res;
+}
 // For runtime check if class implements interface
-let Hash$2 = class Hash {
+let Hash$3 = class Hash {
     // Safe version that clones internal state
     clone() {
         return this._cloneInto();
     }
 };
 function wrapConstructor$2(hashCons) {
-    const hashC = (msg) => hashCons().update(toBytes$2(msg)).digest();
+    const hashC = (msg) => hashCons().update(toBytes$3(msg)).digest();
     const tmp = hashCons();
     hashC.outputLen = tmp.outputLen;
     hashC.blockLen = tmp.blockLen;
     hashC.create = () => hashCons();
     return hashC;
 }
-
 /**
- * SHA3 (keccak) hash function, based on a new "Sponge function" design.
- * Different from older hashes, the internal state is bigger than output size.
- *
- * Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
- * [Website](https://keccak.team/keccak.html),
- * [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub).
- * @module
+ * Secure PRNG. Uses `crypto.getRandomValues`, which defers to OS.
  */
+function randomBytes$2(bytesLength = 32) {
+    if (crypto$2 && typeof crypto$2.getRandomValues === 'function') {
+        return crypto$2.getRandomValues(new Uint8Array(bytesLength));
+    }
+    throw new Error('crypto.getRandomValues must be defined');
+}
+
+// SHA3 (keccak) is based on a new design: basically, the internal state is bigger than output size.
+// It's called a sponge function.
 // Various per round constants calculations
-const SHA3_PI$1 = [];
-const SHA3_ROTL$1 = [];
-const _SHA3_IOTA$1 = [];
-const _0n$8 = /* @__PURE__ */ BigInt(0);
-const _1n$9 = /* @__PURE__ */ BigInt(1);
-const _2n$6 = /* @__PURE__ */ BigInt(2);
+const [SHA3_PI$1, SHA3_ROTL$1, _SHA3_IOTA$1] = [[], [], []];
+const _0n$c = /* @__PURE__ */ BigInt(0);
+const _1n$d = /* @__PURE__ */ BigInt(1);
+const _2n$8 = /* @__PURE__ */ BigInt(2);
 const _7n$1 = /* @__PURE__ */ BigInt(7);
 const _256n$1 = /* @__PURE__ */ BigInt(256);
 const _0x71n$1 = /* @__PURE__ */ BigInt(0x71);
-for (let round = 0, R = _1n$9, x = 1, y = 0; round < 24; round++) {
+for (let round = 0, R = _1n$d, x = 1, y = 0; round < 24; round++) {
     // Pi
     [x, y] = [y, (2 * x + 3 * y) % 5];
     SHA3_PI$1.push(2 * (5 * y + x));
     // Rotational
     SHA3_ROTL$1.push((((round + 1) * (round + 2)) / 2) % 64);
     // Iota
-    let t = _0n$8;
+    let t = _0n$c;
     for (let j = 0; j < 7; j++) {
-        R = ((R << _1n$9) ^ ((R >> _7n$1) * _0x71n$1)) % _256n$1;
-        if (R & _2n$6)
-            t ^= _1n$9 << ((_1n$9 << /* @__PURE__ */ BigInt(j)) - _1n$9);
+        R = ((R << _1n$d) ^ ((R >> _7n$1) * _0x71n$1)) % _256n$1;
+        if (R & _2n$8)
+            t ^= _1n$d << ((_1n$d << /* @__PURE__ */ BigInt(j)) - _1n$d);
     }
     _SHA3_IOTA$1.push(t);
 }
@@ -280870,7 +278576,7 @@ const [SHA3_IOTA_H$1, SHA3_IOTA_L$1] = /* @__PURE__ */ split$1(_SHA3_IOTA$1, tru
 // Left rotation (without 0, 32, 64)
 const rotlH$1 = (h, l, s) => (s > 32 ? rotlBH$1(h, l, s) : rotlSH$1(h, l, s));
 const rotlL$1 = (h, l, s) => (s > 32 ? rotlBL$1(h, l, s) : rotlSL$1(h, l, s));
-/** `keccakf1600` internal function, additionally allows to adjust round count. */
+// Same as keccakf1600, but allows to skip some rounds
 function keccakP$1(s, rounds = 24) {
     const B = new Uint32Array(5 * 2);
     // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
@@ -280916,349 +278622,7 @@ function keccakP$1(s, rounds = 24) {
     }
     B.fill(0);
 }
-/** Keccak sponge function. */
-let Keccak$1 = class Keccak extends Hash$2 {
-    // NOTE: we accept arguments in bytes instead of bits here.
-    constructor(blockLen, suffix, outputLen, enableXOF = false, rounds = 24) {
-        super();
-        this.blockLen = blockLen;
-        this.suffix = suffix;
-        this.outputLen = outputLen;
-        this.enableXOF = enableXOF;
-        this.rounds = rounds;
-        this.pos = 0;
-        this.posOut = 0;
-        this.finished = false;
-        this.destroyed = false;
-        // Can be passed from user as dkLen
-        anumber(outputLen);
-        // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
-        // 0 < blockLen < 200
-        if (0 >= this.blockLen || this.blockLen >= 200)
-            throw new Error('Sha3 supports only keccak-f1600 function');
-        this.state = new Uint8Array(200);
-        this.state32 = u32$1(this.state);
-    }
-    keccak() {
-        if (!isLE$1)
-            byteSwap32(this.state32);
-        keccakP$1(this.state32, this.rounds);
-        if (!isLE$1)
-            byteSwap32(this.state32);
-        this.posOut = 0;
-        this.pos = 0;
-    }
-    update(data) {
-        aexists(this);
-        const { blockLen, state } = this;
-        data = toBytes$2(data);
-        const len = data.length;
-        for (let pos = 0; pos < len;) {
-            const take = Math.min(blockLen - this.pos, len - pos);
-            for (let i = 0; i < take; i++)
-                state[this.pos++] ^= data[pos++];
-            if (this.pos === blockLen)
-                this.keccak();
-        }
-        return this;
-    }
-    finish() {
-        if (this.finished)
-            return;
-        this.finished = true;
-        const { state, suffix, pos, blockLen } = this;
-        // Do the padding
-        state[pos] ^= suffix;
-        if ((suffix & 0x80) !== 0 && pos === blockLen - 1)
-            this.keccak();
-        state[blockLen - 1] ^= 0x80;
-        this.keccak();
-    }
-    writeInto(out) {
-        aexists(this, false);
-        abytes(out);
-        this.finish();
-        const bufferOut = this.state;
-        const { blockLen } = this;
-        for (let pos = 0, len = out.length; pos < len;) {
-            if (this.posOut >= blockLen)
-                this.keccak();
-            const take = Math.min(blockLen - this.posOut, len - pos);
-            out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);
-            this.posOut += take;
-            pos += take;
-        }
-        return out;
-    }
-    xofInto(out) {
-        // Sha3/Keccak usage with XOF is probably mistake, only SHAKE instances can do XOF
-        if (!this.enableXOF)
-            throw new Error('XOF is not possible for this instance');
-        return this.writeInto(out);
-    }
-    xof(bytes) {
-        anumber(bytes);
-        return this.xofInto(new Uint8Array(bytes));
-    }
-    digestInto(out) {
-        aoutput(out, this);
-        if (this.finished)
-            throw new Error('digest() was already called');
-        this.writeInto(out);
-        this.destroy();
-        return out;
-    }
-    digest() {
-        return this.digestInto(new Uint8Array(this.outputLen));
-    }
-    destroy() {
-        this.destroyed = true;
-        this.state.fill(0);
-    }
-    _cloneInto(to) {
-        const { blockLen, suffix, outputLen, rounds, enableXOF } = this;
-        to || (to = new Keccak(blockLen, suffix, outputLen, enableXOF, rounds));
-        to.state32.set(this.state32);
-        to.pos = this.pos;
-        to.posOut = this.posOut;
-        to.finished = this.finished;
-        to.rounds = rounds;
-        // Suffix can change in cSHAKE
-        to.suffix = suffix;
-        to.outputLen = outputLen;
-        to.enableXOF = enableXOF;
-        to.destroyed = this.destroyed;
-        return to;
-    }
-};
-const gen$1 = (suffix, blockLen, outputLen) => wrapConstructor$2(() => new Keccak$1(blockLen, suffix, outputLen));
-/** keccak-256 hash function. Different from SHA3-256. */
-const keccak_256$1 = /* @__PURE__ */ gen$1(0x01, 136, 256 / 8);
-
-function number$1(n) {
-    if (!Number.isSafeInteger(n) || n < 0)
-        throw new Error(`Wrong positive integer: ${n}`);
-}
-// copied from utils
-function isBytes$3(a) {
-    return (a instanceof Uint8Array ||
-        (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array'));
-}
-function bytes$1(b, ...lengths) {
-    if (!isBytes$3(b))
-        throw new Error('Expected Uint8Array');
-    if (lengths.length > 0 && !lengths.includes(b.length))
-        throw new Error(`Expected Uint8Array of length ${lengths}, not of length=${b.length}`);
-}
-function hash$1(hash) {
-    if (typeof hash !== 'function' || typeof hash.create !== 'function')
-        throw new Error('Hash should be wrapped by utils.wrapConstructor');
-    number$1(hash.outputLen);
-    number$1(hash.blockLen);
-}
-function exists$1(instance, checkFinished = true) {
-    if (instance.destroyed)
-        throw new Error('Hash instance has been destroyed');
-    if (checkFinished && instance.finished)
-        throw new Error('Hash#digest() has already been called');
-}
-function output$1(out, instance) {
-    bytes$1(out);
-    const min = instance.outputLen;
-    if (out.length < min) {
-        throw new Error(`digestInto() expects output buffer of length at least ${min}`);
-    }
-}
-
-const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
-const _32n = /* @__PURE__ */ BigInt(32);
-// We are not using BigUint64Array, because they are extremely slow as per 2022
-function fromBig(n, le = false) {
-    if (le)
-        return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
-    return { h: Number((n >> _32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };
-}
-function split(lst, le = false) {
-    let Ah = new Uint32Array(lst.length);
-    let Al = new Uint32Array(lst.length);
-    for (let i = 0; i < lst.length; i++) {
-        const { h, l } = fromBig(lst[i], le);
-        [Ah[i], Al[i]] = [h, l];
-    }
-    return [Ah, Al];
-}
-// Left rotate for Shift in [1, 32)
-const rotlSH = (h, l, s) => (h << s) | (l >>> (32 - s));
-const rotlSL = (h, l, s) => (l << s) | (h >>> (32 - s));
-// Left rotate for Shift in (32, 64), NOTE: 32 is special case.
-const rotlBH = (h, l, s) => (l << (s - 32)) | (h >>> (64 - s));
-const rotlBL = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
-
-const crypto$1 = typeof globalThis === 'object' && 'crypto' in globalThis ? globalThis.crypto : undefined;
-
-/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
-// node.js versions earlier than v19 don't declare it in global scope.
-// For node.js, package.json#exports field mapping rewrites import
-// from `crypto` to `cryptoNode`, which imports native module.
-// Makes the utils un-importable in browsers without a bundler.
-// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
-const u32 = (arr) => new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
-function isBytes$2(a) {
-    return (a instanceof Uint8Array ||
-        (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array'));
-}
-// Cast array to view
-const createView$1 = (arr) => new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
-// The rotate right (circular right shift) operation for uint32
-const rotr$1 = (word, shift) => (word << (32 - shift)) | (word >>> shift);
-// big-endian hardware is rare. Just in case someone still decides to run hashes:
-// early-throw an error because we don't support BE yet.
-// Other libraries would silently corrupt the data instead of throwing an error,
-// when they don't support it.
-const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
-if (!isLE)
-    throw new Error('Non little-endian hardware is not supported');
-/**
- * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
- */
-function utf8ToBytes$2(str) {
-    if (typeof str !== 'string')
-        throw new Error(`utf8ToBytes expected string, got ${typeof str}`);
-    return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
-}
-/**
- * Normalizes (non-hex) string or Uint8Array to Uint8Array.
- * Warning: when Uint8Array is passed, it would NOT get copied.
- * Keep in mind for future mutable operations.
- */
-function toBytes$1(data) {
-    if (typeof data === 'string')
-        data = utf8ToBytes$2(data);
-    if (!isBytes$2(data))
-        throw new Error(`expected Uint8Array, got ${typeof data}`);
-    return data;
-}
-/**
- * Copies several Uint8Arrays into one.
- */
-function concatBytes$2(...arrays) {
-    let sum = 0;
-    for (let i = 0; i < arrays.length; i++) {
-        const a = arrays[i];
-        if (!isBytes$2(a))
-            throw new Error('Uint8Array expected');
-        sum += a.length;
-    }
-    const res = new Uint8Array(sum);
-    for (let i = 0, pad = 0; i < arrays.length; i++) {
-        const a = arrays[i];
-        res.set(a, pad);
-        pad += a.length;
-    }
-    return res;
-}
-// For runtime check if class implements interface
-let Hash$1 = class Hash {
-    // Safe version that clones internal state
-    clone() {
-        return this._cloneInto();
-    }
-};
-function wrapConstructor$1(hashCons) {
-    const hashC = (msg) => hashCons().update(toBytes$1(msg)).digest();
-    const tmp = hashCons();
-    hashC.outputLen = tmp.outputLen;
-    hashC.blockLen = tmp.blockLen;
-    hashC.create = () => hashCons();
-    return hashC;
-}
-/**
- * Secure PRNG. Uses `crypto.getRandomValues`, which defers to OS.
- */
-function randomBytes$1(bytesLength = 32) {
-    if (crypto$1 && typeof crypto$1.getRandomValues === 'function') {
-        return crypto$1.getRandomValues(new Uint8Array(bytesLength));
-    }
-    throw new Error('crypto.getRandomValues must be defined');
-}
-
-// SHA3 (keccak) is based on a new design: basically, the internal state is bigger than output size.
-// It's called a sponge function.
-// Various per round constants calculations
-const [SHA3_PI, SHA3_ROTL, _SHA3_IOTA] = [[], [], []];
-const _0n$7 = /* @__PURE__ */ BigInt(0);
-const _1n$8 = /* @__PURE__ */ BigInt(1);
-const _2n$5 = /* @__PURE__ */ BigInt(2);
-const _7n = /* @__PURE__ */ BigInt(7);
-const _256n = /* @__PURE__ */ BigInt(256);
-const _0x71n = /* @__PURE__ */ BigInt(0x71);
-for (let round = 0, R = _1n$8, x = 1, y = 0; round < 24; round++) {
-    // Pi
-    [x, y] = [y, (2 * x + 3 * y) % 5];
-    SHA3_PI.push(2 * (5 * y + x));
-    // Rotational
-    SHA3_ROTL.push((((round + 1) * (round + 2)) / 2) % 64);
-    // Iota
-    let t = _0n$7;
-    for (let j = 0; j < 7; j++) {
-        R = ((R << _1n$8) ^ ((R >> _7n) * _0x71n)) % _256n;
-        if (R & _2n$5)
-            t ^= _1n$8 << ((_1n$8 << /* @__PURE__ */ BigInt(j)) - _1n$8);
-    }
-    _SHA3_IOTA.push(t);
-}
-const [SHA3_IOTA_H, SHA3_IOTA_L] = /* @__PURE__ */ split(_SHA3_IOTA, true);
-// Left rotation (without 0, 32, 64)
-const rotlH = (h, l, s) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
-const rotlL = (h, l, s) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
-// Same as keccakf1600, but allows to skip some rounds
-function keccakP(s, rounds = 24) {
-    const B = new Uint32Array(5 * 2);
-    // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
-    for (let round = 24 - rounds; round < 24; round++) {
-        // Theta θ
-        for (let x = 0; x < 10; x++)
-            B[x] = s[x] ^ s[x + 10] ^ s[x + 20] ^ s[x + 30] ^ s[x + 40];
-        for (let x = 0; x < 10; x += 2) {
-            const idx1 = (x + 8) % 10;
-            const idx0 = (x + 2) % 10;
-            const B0 = B[idx0];
-            const B1 = B[idx0 + 1];
-            const Th = rotlH(B0, B1, 1) ^ B[idx1];
-            const Tl = rotlL(B0, B1, 1) ^ B[idx1 + 1];
-            for (let y = 0; y < 50; y += 10) {
-                s[x + y] ^= Th;
-                s[x + y + 1] ^= Tl;
-            }
-        }
-        // Rho (ρ) and Pi (π)
-        let curH = s[2];
-        let curL = s[3];
-        for (let t = 0; t < 24; t++) {
-            const shift = SHA3_ROTL[t];
-            const Th = rotlH(curH, curL, shift);
-            const Tl = rotlL(curH, curL, shift);
-            const PI = SHA3_PI[t];
-            curH = s[PI];
-            curL = s[PI + 1];
-            s[PI] = Th;
-            s[PI + 1] = Tl;
-        }
-        // Chi (χ)
-        for (let y = 0; y < 50; y += 10) {
-            for (let x = 0; x < 10; x++)
-                B[x] = s[y + x];
-            for (let x = 0; x < 10; x++)
-                s[y + x] ^= ~B[(x + 2) % 10] & B[(x + 4) % 10];
-        }
-        // Iota (ι)
-        s[0] ^= SHA3_IOTA_H[round];
-        s[1] ^= SHA3_IOTA_L[round];
-    }
-    B.fill(0);
-}
-class Keccak extends Hash$1 {
+let Keccak$1 = class Keccak extends Hash$3 {
     // NOTE: we accept arguments in bytes instead of bits here.
     constructor(blockLen, suffix, outputLen, enableXOF = false, rounds = 24) {
         super();
@@ -281277,17 +278641,17 @@ class Keccak extends Hash$1 {
         if (0 >= this.blockLen || this.blockLen >= 200)
             throw new Error('Sha3 supports only keccak-f1600 function');
         this.state = new Uint8Array(200);
-        this.state32 = u32(this.state);
+        this.state32 = u32$1(this.state);
     }
     keccak() {
-        keccakP(this.state32, this.rounds);
+        keccakP$1(this.state32, this.rounds);
         this.posOut = 0;
         this.pos = 0;
     }
     update(data) {
         exists$1(this);
         const { blockLen, state } = this;
-        data = toBytes$1(data);
+        data = toBytes$3(data);
         const len = data.length;
         for (let pos = 0; pos < len;) {
             const take = Math.min(blockLen - this.pos, len - pos);
@@ -281366,16 +278730,16 @@ class Keccak extends Hash$1 {
         to.destroyed = this.destroyed;
         return to;
     }
-}
-const gen = (suffix, blockLen, outputLen) => wrapConstructor$1(() => new Keccak(blockLen, suffix, outputLen));
+};
+const gen$1 = (suffix, blockLen, outputLen) => wrapConstructor$2(() => new Keccak$1(blockLen, suffix, outputLen));
 /**
  * keccak-256 hash function. Different from SHA3-256.
  * @param message - that would be hashed
  */
-const keccak_256 = /* @__PURE__ */ gen(0x01, 136, 256 / 8);
+const keccak_256$1 = /* @__PURE__ */ gen$1(0x01, 136, 256 / 8);
 
 // Polyfill for Safari 14
-function setBigUint64$1(view, byteOffset, value, isLE) {
+function setBigUint64$2(view, byteOffset, value, isLE) {
     if (typeof view.setBigUint64 === 'function')
         return view.setBigUint64(byteOffset, value, isLE);
     const _32n = BigInt(32);
@@ -281388,7 +278752,7 @@ function setBigUint64$1(view, byteOffset, value, isLE) {
     view.setUint32(byteOffset + l, wl, isLE);
 }
 // Base SHA2 class (RFC 6234)
-class SHA2 extends Hash$1 {
+class SHA2 extends Hash$3 {
     constructor(blockLen, outputLen, padOffset, isLE) {
         super();
         this.blockLen = blockLen;
@@ -281400,18 +278764,18 @@ class SHA2 extends Hash$1 {
         this.pos = 0;
         this.destroyed = false;
         this.buffer = new Uint8Array(blockLen);
-        this.view = createView$1(this.buffer);
+        this.view = createView$2(this.buffer);
     }
     update(data) {
         exists$1(this);
         const { view, buffer, blockLen } = this;
-        data = toBytes$1(data);
+        data = toBytes$3(data);
         const len = data.length;
         for (let pos = 0; pos < len;) {
             const take = Math.min(blockLen - this.pos, len - pos);
             // Fast path: we have at least one block in input, cast it to view and process
             if (take === blockLen) {
-                const dataView = createView$1(data);
+                const dataView = createView$2(data);
                 for (; blockLen <= len - pos; pos += blockLen)
                     this.process(dataView, pos);
                 continue;
@@ -281451,9 +278815,9 @@ class SHA2 extends Hash$1 {
         // Note: sha512 requires length to be 128bit integer, but length in JS will overflow before that
         // You need to write around 2 exabytes (u64_max / 8 / (1024**6)) for this to happen.
         // So we just write lowest 64 bits of that value.
-        setBigUint64$1(view, blockLen - 8, BigInt(this.length * 8), isLE);
+        setBigUint64$2(view, blockLen - 8, BigInt(this.length * 8), isLE);
         this.process(view, 0);
-        const oview = createView$1(out);
+        const oview = createView$2(out);
         const len = this.outputLen;
         // NOTE: we do division by 4 later, which should be fused in single op with modulo by JIT
         if (len % 4)
@@ -281489,13 +278853,13 @@ class SHA2 extends Hash$1 {
 // SHA2-256 need to try 2^128 hashes to execute birthday attack.
 // BTC network is doing 2^67 hashes/sec as per early 2023.
 // Choice: a ? b : c
-const Chi$1 = (a, b, c) => (a & b) ^ (~a & c);
+const Chi$2 = (a, b, c) => (a & b) ^ (~a & c);
 // Majority function, true if any two inpust is true
-const Maj$1 = (a, b, c) => (a & b) ^ (a & c) ^ (b & c);
+const Maj$2 = (a, b, c) => (a & b) ^ (a & c) ^ (b & c);
 // Round constants:
 // first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
 // prettier-ignore
-const SHA256_K$1 = /* @__PURE__ */ new Uint32Array([
+const SHA256_K$2 = /* @__PURE__ */ new Uint32Array([
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
     0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -281512,8 +278876,8 @@ const IV = /* @__PURE__ */ new Uint32Array([
 ]);
 // Temporary buffer, not used to store anything between runs
 // Named this way because it matches specification.
-const SHA256_W$1 = /* @__PURE__ */ new Uint32Array(64);
-let SHA256$1 = class SHA256 extends SHA2 {
+const SHA256_W$2 = /* @__PURE__ */ new Uint32Array(64);
+let SHA256$2 = class SHA256 extends SHA2 {
     constructor() {
         super(64, 32, 8, false);
         // We cannot use array here since array allows indexing by variable
@@ -281545,21 +278909,21 @@ let SHA256$1 = class SHA256 extends SHA2 {
     process(view, offset) {
         // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
         for (let i = 0; i < 16; i++, offset += 4)
-            SHA256_W$1[i] = view.getUint32(offset, false);
+            SHA256_W$2[i] = view.getUint32(offset, false);
         for (let i = 16; i < 64; i++) {
-            const W15 = SHA256_W$1[i - 15];
-            const W2 = SHA256_W$1[i - 2];
-            const s0 = rotr$1(W15, 7) ^ rotr$1(W15, 18) ^ (W15 >>> 3);
-            const s1 = rotr$1(W2, 17) ^ rotr$1(W2, 19) ^ (W2 >>> 10);
-            SHA256_W$1[i] = (s1 + SHA256_W$1[i - 7] + s0 + SHA256_W$1[i - 16]) | 0;
+            const W15 = SHA256_W$2[i - 15];
+            const W2 = SHA256_W$2[i - 2];
+            const s0 = rotr$2(W15, 7) ^ rotr$2(W15, 18) ^ (W15 >>> 3);
+            const s1 = rotr$2(W2, 17) ^ rotr$2(W2, 19) ^ (W2 >>> 10);
+            SHA256_W$2[i] = (s1 + SHA256_W$2[i - 7] + s0 + SHA256_W$2[i - 16]) | 0;
         }
         // Compression function main loop, 64 rounds
         let { A, B, C, D, E, F, G, H } = this;
         for (let i = 0; i < 64; i++) {
-            const sigma1 = rotr$1(E, 6) ^ rotr$1(E, 11) ^ rotr$1(E, 25);
-            const T1 = (H + sigma1 + Chi$1(E, F, G) + SHA256_K$1[i] + SHA256_W$1[i]) | 0;
-            const sigma0 = rotr$1(A, 2) ^ rotr$1(A, 13) ^ rotr$1(A, 22);
-            const T2 = (sigma0 + Maj$1(A, B, C)) | 0;
+            const sigma1 = rotr$2(E, 6) ^ rotr$2(E, 11) ^ rotr$2(E, 25);
+            const T1 = (H + sigma1 + Chi$2(E, F, G) + SHA256_K$2[i] + SHA256_W$2[i]) | 0;
+            const sigma0 = rotr$2(A, 2) ^ rotr$2(A, 13) ^ rotr$2(A, 22);
+            const T2 = (sigma0 + Maj$2(A, B, C)) | 0;
             H = G;
             G = F;
             F = E;
@@ -281581,7 +278945,7 @@ let SHA256$1 = class SHA256 extends SHA2 {
         this.set(A, B, C, D, E, F, G, H);
     }
     roundClean() {
-        SHA256_W$1.fill(0);
+        SHA256_W$2.fill(0);
     }
     destroy() {
         this.set(0, 0, 0, 0, 0, 0, 0, 0);
@@ -281592,60 +278956,60 @@ let SHA256$1 = class SHA256 extends SHA2 {
  * SHA2-256 hash function
  * @param message - data that would be hashed
  */
-const sha256$1 = /* @__PURE__ */ wrapConstructor$1(() => new SHA256$1());
+const sha256$2 = /* @__PURE__ */ wrapConstructor$2(() => new SHA256$2());
 
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 // 100 lines of code in the file are duplicated from noble-hashes (utils).
 // This is OK: `abstract` directory does not use noble-hashes.
 // User may opt-in into using different hashing library. This way, noble-hashes
 // won't be included into their bundle.
-const _0n$6 = BigInt(0);
-const _1n$7 = BigInt(1);
-const _2n$4 = BigInt(2);
-function isBytes$1(a) {
+const _0n$b = BigInt(0);
+const _1n$c = BigInt(1);
+const _2n$7 = BigInt(2);
+function isBytes$4(a) {
     return (a instanceof Uint8Array ||
         (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array'));
 }
 // Array where index 0xf0 (240) is mapped to string 'f0'
-const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
+const hexes$1 = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
 /**
  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
  */
-function bytesToHex(bytes) {
-    if (!isBytes$1(bytes))
+function bytesToHex$1(bytes) {
+    if (!isBytes$4(bytes))
         throw new Error('Uint8Array expected');
     // pre-caching improves the speed 6x
     let hex = '';
     for (let i = 0; i < bytes.length; i++) {
-        hex += hexes[bytes[i]];
+        hex += hexes$1[bytes[i]];
     }
     return hex;
 }
-function numberToHexUnpadded(num) {
+function numberToHexUnpadded$1(num) {
     const hex = num.toString(16);
     return hex.length & 1 ? `0${hex}` : hex;
 }
-function hexToNumber(hex) {
+function hexToNumber$1(hex) {
     if (typeof hex !== 'string')
         throw new Error('hex string expected, got ' + typeof hex);
     // Big Endian
     return BigInt(hex === '' ? '0' : `0x${hex}`);
 }
 // We use optimized technique to convert hex string to byte array
-const asciis = { _0: 48, _9: 57, _A: 65, _F: 70, _a: 97, _f: 102 };
-function asciiToBase16(char) {
-    if (char >= asciis._0 && char <= asciis._9)
-        return char - asciis._0;
-    if (char >= asciis._A && char <= asciis._F)
-        return char - (asciis._A - 10);
-    if (char >= asciis._a && char <= asciis._f)
-        return char - (asciis._a - 10);
+const asciis$1 = { _0: 48, _9: 57, _A: 65, _F: 70, _a: 97, _f: 102 };
+function asciiToBase16$1(char) {
+    if (char >= asciis$1._0 && char <= asciis$1._9)
+        return char - asciis$1._0;
+    if (char >= asciis$1._A && char <= asciis$1._F)
+        return char - (asciis$1._A - 10);
+    if (char >= asciis$1._a && char <= asciis$1._f)
+        return char - (asciis$1._a - 10);
     return;
 }
 /**
  * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
  */
-function hexToBytes$1(hex) {
+function hexToBytes$2(hex) {
     if (typeof hex !== 'string')
         throw new Error('hex string expected, got ' + typeof hex);
     const hl = hex.length;
@@ -281654,8 +279018,8 @@ function hexToBytes$1(hex) {
         throw new Error('padded hex string expected, got unpadded hex of length ' + hl);
     const array = new Uint8Array(al);
     for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
-        const n1 = asciiToBase16(hex.charCodeAt(hi));
-        const n2 = asciiToBase16(hex.charCodeAt(hi + 1));
+        const n1 = asciiToBase16$1(hex.charCodeAt(hi));
+        const n2 = asciiToBase16$1(hex.charCodeAt(hi + 1));
         if (n1 === undefined || n2 === undefined) {
             const char = hex[hi] + hex[hi + 1];
             throw new Error('hex string expected, got non-hex character "' + char + '" at index ' + hi);
@@ -281665,23 +279029,23 @@ function hexToBytes$1(hex) {
     return array;
 }
 // BE: Big Endian, LE: Little Endian
-function bytesToNumberBE(bytes) {
-    return hexToNumber(bytesToHex(bytes));
+function bytesToNumberBE$1(bytes) {
+    return hexToNumber$1(bytesToHex$1(bytes));
 }
-function bytesToNumberLE(bytes) {
-    if (!isBytes$1(bytes))
+function bytesToNumberLE$1(bytes) {
+    if (!isBytes$4(bytes))
         throw new Error('Uint8Array expected');
-    return hexToNumber(bytesToHex(Uint8Array.from(bytes).reverse()));
+    return hexToNumber$1(bytesToHex$1(Uint8Array.from(bytes).reverse()));
 }
-function numberToBytesBE(n, len) {
-    return hexToBytes$1(n.toString(16).padStart(len * 2, '0'));
+function numberToBytesBE$1(n, len) {
+    return hexToBytes$2(n.toString(16).padStart(len * 2, '0'));
 }
-function numberToBytesLE(n, len) {
-    return numberToBytesBE(n, len).reverse();
+function numberToBytesLE$1(n, len) {
+    return numberToBytesBE$1(n, len).reverse();
 }
 // Unpadded, rarely used
-function numberToVarBytesBE(n) {
-    return hexToBytes$1(numberToHexUnpadded(n));
+function numberToVarBytesBE$1(n) {
+    return hexToBytes$2(numberToHexUnpadded$1(n));
 }
 /**
  * Takes hex string or Uint8Array, converts to Uint8Array.
@@ -281692,17 +279056,17 @@ function numberToVarBytesBE(n) {
  * @param expectedLength optional, will compare to result array's length
  * @returns
  */
-function ensureBytes$1(title, hex, expectedLength) {
+function ensureBytes$2(title, hex, expectedLength) {
     let res;
     if (typeof hex === 'string') {
         try {
-            res = hexToBytes$1(hex);
+            res = hexToBytes$2(hex);
         }
         catch (e) {
             throw new Error(`${title} must be valid hex string, got "${hex}". Cause: ${e}`);
         }
     }
-    else if (isBytes$1(hex)) {
+    else if (isBytes$4(hex)) {
         // Uint8Array.from() instead of hash.slice() because node.js Buffer
         // is instance of Uint8Array, and its slice() creates **mutable** copy
         res = Uint8Array.from(hex);
@@ -281718,11 +279082,11 @@ function ensureBytes$1(title, hex, expectedLength) {
 /**
  * Copies several Uint8Arrays into one.
  */
-function concatBytes$1(...arrays) {
+function concatBytes$3(...arrays) {
     let sum = 0;
     for (let i = 0; i < arrays.length; i++) {
         const a = arrays[i];
-        if (!isBytes$1(a))
+        if (!isBytes$4(a))
             throw new Error('Uint8Array expected');
         sum += a.length;
     }
@@ -281736,7 +279100,7 @@ function concatBytes$1(...arrays) {
     return res;
 }
 // Compares 2 u8a-s in kinda constant time
-function equalBytes(a, b) {
+function equalBytes$1(a, b) {
     if (a.length !== b.length)
         return false;
     let diff = 0;
@@ -281747,7 +279111,7 @@ function equalBytes(a, b) {
 /**
  * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
  */
-function utf8ToBytes$1(str) {
+function utf8ToBytes$4(str) {
     if (typeof str !== 'string')
         throw new Error(`utf8ToBytes expected string, got ${typeof str}`);
     return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
@@ -281757,9 +279121,9 @@ function utf8ToBytes$1(str) {
  * Calculates amount of bits in a bigint.
  * Same as `n.toString(2).length`
  */
-function bitLen(n) {
+function bitLen$1(n) {
     let len;
-    for (len = 0; n > _0n$6; n >>= _1n$7, len += 1)
+    for (len = 0; n > _0n$b; n >>= _1n$c, len += 1)
         ;
     return len;
 }
@@ -281768,23 +279132,23 @@ function bitLen(n) {
  * NOTE: first bit position is 0 (same as arrays)
  * Same as `!!+Array.from(n.toString(2)).reverse()[pos]`
  */
-function bitGet(n, pos) {
-    return (n >> BigInt(pos)) & _1n$7;
+function bitGet$1(n, pos) {
+    return (n >> BigInt(pos)) & _1n$c;
 }
 /**
  * Sets single bit at position.
  */
-const bitSet = (n, pos, value) => {
-    return n | ((value ? _1n$7 : _0n$6) << BigInt(pos));
+const bitSet$1 = (n, pos, value) => {
+    return n | ((value ? _1n$c : _0n$b) << BigInt(pos));
 };
 /**
  * Calculate mask for N bits. Not using ** operator with bigints because of old engines.
  * Same as BigInt(`0b${Array(i).fill('1').join('')}`)
  */
-const bitMask = (n) => (_2n$4 << BigInt(n - 1)) - _1n$7;
+const bitMask$1 = (n) => (_2n$7 << BigInt(n - 1)) - _1n$c;
 // DRBG
-const u8n = (data) => new Uint8Array(data); // creates Uint8Array
-const u8fr = (arr) => Uint8Array.from(arr); // another shortcut
+const u8n$1 = (data) => new Uint8Array(data); // creates Uint8Array
+const u8fr$1 = (arr) => Uint8Array.from(arr); // another shortcut
 /**
  * Minimal HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
  * @returns function that will call DRBG until 2nd arg returns something meaningful
@@ -281792,7 +279156,7 @@ const u8fr = (arr) => Uint8Array.from(arr); // another shortcut
  *   const drbg = createHmacDRBG<Key>(32, 32, hmac);
  *   drbg(seed, bytesToKey); // bytesToKey must return Key or undefined
  */
-function createHmacDrbg(hashLen, qByteLen, hmacFn) {
+function createHmacDrbg$1(hashLen, qByteLen, hmacFn) {
     if (typeof hashLen !== 'number' || hashLen < 2)
         throw new Error('hashLen must be a number');
     if (typeof qByteLen !== 'number' || qByteLen < 2)
@@ -281800,8 +279164,8 @@ function createHmacDrbg(hashLen, qByteLen, hmacFn) {
     if (typeof hmacFn !== 'function')
         throw new Error('hmacFn must be a function');
     // Step B, Step C: set hashLen to 8*ceil(hlen/8)
-    let v = u8n(hashLen); // Minimal non-full-spec HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
-    let k = u8n(hashLen); // Steps B and C of RFC6979 3.2: set hashLen, in our case always same
+    let v = u8n$1(hashLen); // Minimal non-full-spec HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
+    let k = u8n$1(hashLen); // Steps B and C of RFC6979 3.2: set hashLen, in our case always same
     let i = 0; // Iterations counter, will throw when over 1000
     const reset = () => {
         v.fill(1);
@@ -281809,13 +279173,13 @@ function createHmacDrbg(hashLen, qByteLen, hmacFn) {
         i = 0;
     };
     const h = (...b) => hmacFn(k, v, ...b); // hmac(k)(v, ...values)
-    const reseed = (seed = u8n()) => {
+    const reseed = (seed = u8n$1()) => {
         // HMAC-DRBG reseed() function. Steps D-G
-        k = h(u8fr([0x00]), seed); // k = hmac(k || v || 0x00 || seed)
+        k = h(u8fr$1([0x00]), seed); // k = hmac(k || v || 0x00 || seed)
         v = h(); // v = hmac(k || v)
         if (seed.length === 0)
             return;
-        k = h(u8fr([0x01]), seed); // k = hmac(k || v || 0x01 || seed)
+        k = h(u8fr$1([0x01]), seed); // k = hmac(k || v || 0x01 || seed)
         v = h(); // v = hmac(k || v)
     };
     const gen = () => {
@@ -281830,7 +279194,7 @@ function createHmacDrbg(hashLen, qByteLen, hmacFn) {
             out.push(sl);
             len += v.length;
         }
-        return concatBytes$1(...out);
+        return concatBytes$3(...out);
     };
     const genUntil = (seed, pred) => {
         reset();
@@ -281844,21 +279208,21 @@ function createHmacDrbg(hashLen, qByteLen, hmacFn) {
     return genUntil;
 }
 // Validating curves and fields
-const validatorFns = {
+const validatorFns$1 = {
     bigint: (val) => typeof val === 'bigint',
     function: (val) => typeof val === 'function',
     boolean: (val) => typeof val === 'boolean',
     string: (val) => typeof val === 'string',
-    stringOrUint8Array: (val) => typeof val === 'string' || isBytes$1(val),
+    stringOrUint8Array: (val) => typeof val === 'string' || isBytes$4(val),
     isSafeInteger: (val) => Number.isSafeInteger(val),
     array: (val) => Array.isArray(val),
     field: (val, object) => object.Fp.isValid(val),
     hash: (val) => typeof val === 'function' && Number.isSafeInteger(val.outputLen),
 };
 // type Record<K extends string | number | symbol, T> = { [P in K]: T; }
-function validateObject(object, validators, optValidators = {}) {
+function validateObject$1(object, validators, optValidators = {}) {
     const checkField = (fieldName, type, isOptional) => {
-        const checkVal = validatorFns[type];
+        const checkVal = validatorFns$1[type];
         if (typeof checkVal !== 'function')
             throw new Error(`Invalid validator "${type}", expected function`);
         const val = object[fieldName];
@@ -281883,42 +279247,42 @@ function validateObject(object, validators, optValidators = {}) {
 // const z3 = validateObject(o, { test: 'boolean', z: 'bug' });
 // const z4 = validateObject(o, { a: 'boolean', z: 'bug' });
 
-const ut = /*#__PURE__*/Object.freeze({
+const ut$1 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
-	bitGet: bitGet,
-	bitLen: bitLen,
-	bitMask: bitMask,
-	bitSet: bitSet,
-	bytesToHex: bytesToHex,
-	bytesToNumberBE: bytesToNumberBE,
-	bytesToNumberLE: bytesToNumberLE,
-	concatBytes: concatBytes$1,
-	createHmacDrbg: createHmacDrbg,
-	ensureBytes: ensureBytes$1,
-	equalBytes: equalBytes,
-	hexToBytes: hexToBytes$1,
-	hexToNumber: hexToNumber,
-	isBytes: isBytes$1,
-	numberToBytesBE: numberToBytesBE,
-	numberToBytesLE: numberToBytesLE,
-	numberToHexUnpadded: numberToHexUnpadded,
-	numberToVarBytesBE: numberToVarBytesBE,
-	utf8ToBytes: utf8ToBytes$1,
-	validateObject: validateObject
+	bitGet: bitGet$1,
+	bitLen: bitLen$1,
+	bitMask: bitMask$1,
+	bitSet: bitSet$1,
+	bytesToHex: bytesToHex$1,
+	bytesToNumberBE: bytesToNumberBE$1,
+	bytesToNumberLE: bytesToNumberLE$1,
+	concatBytes: concatBytes$3,
+	createHmacDrbg: createHmacDrbg$1,
+	ensureBytes: ensureBytes$2,
+	equalBytes: equalBytes$1,
+	hexToBytes: hexToBytes$2,
+	hexToNumber: hexToNumber$1,
+	isBytes: isBytes$4,
+	numberToBytesBE: numberToBytesBE$1,
+	numberToBytesLE: numberToBytesLE$1,
+	numberToHexUnpadded: numberToHexUnpadded$1,
+	numberToVarBytesBE: numberToVarBytesBE$1,
+	utf8ToBytes: utf8ToBytes$4,
+	validateObject: validateObject$1
 });
 
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 // Utilities for modular arithmetics and finite fields
 // prettier-ignore
-const _0n$5 = BigInt(0), _1n$6 = BigInt(1), _2n$3 = BigInt(2), _3n$3 = BigInt(3);
+const _0n$a = BigInt(0), _1n$b = BigInt(1), _2n$6 = BigInt(2), _3n$5 = BigInt(3);
 // prettier-ignore
-const _4n$2 = BigInt(4), _5n$1 = BigInt(5), _8n$1 = BigInt(8);
+const _4n$3 = BigInt(4), _5n$2 = BigInt(5), _8n$2 = BigInt(8);
 // prettier-ignore
 BigInt(9); BigInt(16);
 // Calculates a modulo b
-function mod$1(a, b) {
+function mod$2(a, b) {
     const result = a % b;
-    return result >= _0n$5 ? result : b + result;
+    return result >= _0n$a ? result : b + result;
 }
 /**
  * Efficiently raise num to power and do modular division.
@@ -281927,32 +279291,32 @@ function mod$1(a, b) {
  * pow(2n, 6n, 11n) // 64n % 11n == 9n
  */
 // TODO: use field version && remove
-function pow$1(num, power, modulo) {
-    if (modulo <= _0n$5 || power < _0n$5)
+function pow$2(num, power, modulo) {
+    if (modulo <= _0n$a || power < _0n$a)
         throw new Error('Expected power/modulo > 0');
-    if (modulo === _1n$6)
-        return _0n$5;
-    let res = _1n$6;
-    while (power > _0n$5) {
-        if (power & _1n$6)
+    if (modulo === _1n$b)
+        return _0n$a;
+    let res = _1n$b;
+    while (power > _0n$a) {
+        if (power & _1n$b)
             res = (res * num) % modulo;
         num = (num * num) % modulo;
-        power >>= _1n$6;
+        power >>= _1n$b;
     }
     return res;
 }
 // Inverses number over modulo
-function invert$1(number, modulo) {
-    if (number === _0n$5 || modulo <= _0n$5) {
+function invert$2(number, modulo) {
+    if (number === _0n$a || modulo <= _0n$a) {
         throw new Error(`invert: expected positive integers, got n=${number} mod=${modulo}`);
     }
     // Euclidean GCD https://brilliant.org/wiki/extended-euclidean-algorithm/
     // Fermat's little theorem "CT-like" version inv(n) = n^(m-2) mod m is 30x slower.
-    let a = mod$1(number, modulo);
+    let a = mod$2(number, modulo);
     let b = modulo;
     // prettier-ignore
-    let x = _0n$5, u = _1n$6;
-    while (a !== _0n$5) {
+    let x = _0n$a, u = _1n$b;
+    while (a !== _0n$a) {
         // JIT applies optimization if those two lines follow each other
         const q = b / a;
         const r = b % a;
@@ -281961,9 +279325,9 @@ function invert$1(number, modulo) {
         b = a, a = r, x = u, u = m;
     }
     const gcd = b;
-    if (gcd !== _1n$6)
+    if (gcd !== _1n$b)
         throw new Error('invert: does not exist');
-    return mod$1(x, modulo);
+    return mod$2(x, modulo);
 }
 /**
  * Tonelli-Shanks square root search algorithm.
@@ -281973,24 +279337,24 @@ function invert$1(number, modulo) {
  * @param P field order
  * @returns function that takes field Fp (created from P) and number n
  */
-function tonelliShanks$1(P) {
+function tonelliShanks$2(P) {
     // Legendre constant: used to calculate Legendre symbol (a | p),
     // which denotes the value of a^((p-1)/2) (mod p).
     // (a | p) ≡ 1    if a is a square (mod p)
     // (a | p) ≡ -1   if a is not a square (mod p)
     // (a | p) ≡ 0    if a ≡ 0 (mod p)
-    const legendreC = (P - _1n$6) / _2n$3;
+    const legendreC = (P - _1n$b) / _2n$6;
     let Q, S, Z;
     // Step 1: By factoring out powers of 2 from p - 1,
     // find q and s such that p - 1 = q*(2^s) with q odd
-    for (Q = P - _1n$6, S = 0; Q % _2n$3 === _0n$5; Q /= _2n$3, S++)
+    for (Q = P - _1n$b, S = 0; Q % _2n$6 === _0n$a; Q /= _2n$6, S++)
         ;
     // Step 2: Select a non-square z such that (z | p) ≡ -1 and set c ≡ zq
-    for (Z = _2n$3; Z < P && pow$1(Z, legendreC, P) !== P - _1n$6; Z++)
+    for (Z = _2n$6; Z < P && pow$2(Z, legendreC, P) !== P - _1n$b; Z++)
         ;
     // Fast-path
     if (S === 1) {
-        const p1div4 = (P + _1n$6) / _4n$2;
+        const p1div4 = (P + _1n$b) / _4n$3;
         return function tonelliFast(Fp, n) {
             const root = Fp.pow(n, p1div4);
             if (!Fp.eql(Fp.sqr(root), n))
@@ -281999,7 +279363,7 @@ function tonelliShanks$1(P) {
         };
     }
     // Slow-path
-    const Q1div2 = (Q + _1n$6) / _2n$3;
+    const Q1div2 = (Q + _1n$b) / _2n$6;
     return function tonelliSlow(Fp, n) {
         // Step 0: Check that n is indeed a square: (n | p) should not be ≡ -1
         if (Fp.pow(n, legendreC) === Fp.neg(Fp.ONE))
@@ -282020,7 +279384,7 @@ function tonelliShanks$1(P) {
                 t2 = Fp.sqr(t2); // t2 *= t2
             }
             // NOTE: r-m-1 can be bigger than 32, need to convert to bigint before shift, otherwise there will be overflow
-            const ge = Fp.pow(g, _1n$6 << BigInt(r - m - 1)); // ge = 2^(r-m-1)
+            const ge = Fp.pow(g, _1n$b << BigInt(r - m - 1)); // ge = 2^(r-m-1)
             g = Fp.sqr(ge); // g = ge * ge
             x = Fp.mul(x, ge); // x *= ge
             b = Fp.mul(b, g); // b *= g
@@ -282029,17 +279393,17 @@ function tonelliShanks$1(P) {
         return x;
     };
 }
-function FpSqrt$1(P) {
+function FpSqrt$2(P) {
     // NOTE: different algorithms can give different roots, it is up to user to decide which one they want.
     // For example there is FpSqrtOdd/FpSqrtEven to choice root based on oddness (used for hash-to-curve).
     // P ≡ 3 (mod 4)
     // √n = n^((P+1)/4)
-    if (P % _4n$2 === _3n$3) {
+    if (P % _4n$3 === _3n$5) {
         // Not all roots possible!
         // const ORDER =
         //   0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn;
         // const NUM = 72057594037927816n;
-        const p1div4 = (P + _1n$6) / _4n$2;
+        const p1div4 = (P + _1n$b) / _4n$3;
         return function sqrt3mod4(Fp, n) {
             const root = Fp.pow(n, p1div4);
             // Throw if root**2 != n
@@ -282049,13 +279413,13 @@ function FpSqrt$1(P) {
         };
     }
     // Atkin algorithm for q ≡ 5 (mod 8), https://eprint.iacr.org/2012/685.pdf (page 10)
-    if (P % _8n$1 === _5n$1) {
-        const c1 = (P - _5n$1) / _8n$1;
+    if (P % _8n$2 === _5n$2) {
+        const c1 = (P - _5n$2) / _8n$2;
         return function sqrt5mod8(Fp, n) {
-            const n2 = Fp.mul(n, _2n$3);
+            const n2 = Fp.mul(n, _2n$6);
             const v = Fp.pow(n2, c1);
             const nv = Fp.mul(n, v);
-            const i = Fp.mul(Fp.mul(nv, _2n$3), v);
+            const i = Fp.mul(Fp.mul(nv, _2n$6), v);
             const root = Fp.mul(nv, Fp.sub(i, Fp.ONE));
             if (!Fp.eql(Fp.sqr(root), n))
                 throw new Error('Cannot find square root');
@@ -282063,48 +279427,48 @@ function FpSqrt$1(P) {
         };
     }
     // Other cases: Tonelli-Shanks algorithm
-    return tonelliShanks$1(P);
+    return tonelliShanks$2(P);
 }
 // prettier-ignore
-const FIELD_FIELDS$1 = [
+const FIELD_FIELDS$2 = [
     'create', 'isValid', 'is0', 'neg', 'inv', 'sqrt', 'sqr',
     'eql', 'add', 'sub', 'mul', 'pow', 'div',
     'addN', 'subN', 'mulN', 'sqrN'
 ];
-function validateField$1(field) {
+function validateField$2(field) {
     const initial = {
         ORDER: 'bigint',
         MASK: 'bigint',
         BYTES: 'isSafeInteger',
         BITS: 'isSafeInteger',
     };
-    const opts = FIELD_FIELDS$1.reduce((map, val) => {
+    const opts = FIELD_FIELDS$2.reduce((map, val) => {
         map[val] = 'function';
         return map;
     }, initial);
-    return validateObject(field, opts);
+    return validateObject$1(field, opts);
 }
 // Generic field functions
 /**
  * Same as `pow` but for Fp: non-constant-time.
  * Unsafe in some contexts: uses ladder, so can expose bigint bits.
  */
-function FpPow$1(f, num, power) {
+function FpPow$2(f, num, power) {
     // Should have same speed as pow for bigints
     // TODO: benchmark!
-    if (power < _0n$5)
+    if (power < _0n$a)
         throw new Error('Expected power > 0');
-    if (power === _0n$5)
+    if (power === _0n$a)
         return f.ONE;
-    if (power === _1n$6)
+    if (power === _1n$b)
         return num;
     let p = f.ONE;
     let d = num;
-    while (power > _0n$5) {
-        if (power & _1n$6)
+    while (power > _0n$a) {
+        if (power & _1n$b)
             p = f.mul(p, d);
         d = f.sqr(d);
-        power >>= _1n$6;
+        power >>= _1n$b;
     }
     return p;
 }
@@ -282112,7 +279476,7 @@ function FpPow$1(f, num, power) {
  * Efficiently invert an array of Field elements.
  * `inv(0)` will return `undefined` here: make sure to throw an error.
  */
-function FpInvertBatch$1(f, nums) {
+function FpInvertBatch$2(f, nums) {
     const tmp = new Array(nums.length);
     // Walk from first to last, multiply them by each other MOD p
     const lastMultiplied = nums.reduce((acc, num, i) => {
@@ -282133,7 +279497,7 @@ function FpInvertBatch$1(f, nums) {
     return tmp;
 }
 // CURVE.n lengths
-function nLength$1(n, nBitLength) {
+function nLength$2(n, nBitLength) {
     // Bit size, byte size of CURVE.n
     const _nBitLength = nBitLength !== undefined ? nBitLength : n.toString(2).length;
     const nByteLength = Math.ceil(_nBitLength / 8);
@@ -282151,52 +279515,52 @@ function nLength$1(n, nBitLength) {
  * @param isLE (def: false) if encoding / decoding should be in little-endian
  * @param redef optional faster redefinitions of sqrt and other methods
  */
-function Field$1(ORDER, bitLen, isLE = false, redef = {}) {
-    if (ORDER <= _0n$5)
+function Field$2(ORDER, bitLen, isLE = false, redef = {}) {
+    if (ORDER <= _0n$a)
         throw new Error(`Expected Field ORDER > 0, got ${ORDER}`);
-    const { nBitLength: BITS, nByteLength: BYTES } = nLength$1(ORDER, bitLen);
+    const { nBitLength: BITS, nByteLength: BYTES } = nLength$2(ORDER, bitLen);
     if (BYTES > 2048)
         throw new Error('Field lengths over 2048 bytes are not supported');
-    const sqrtP = FpSqrt$1(ORDER);
+    const sqrtP = FpSqrt$2(ORDER);
     const f = Object.freeze({
         ORDER,
         BITS,
         BYTES,
-        MASK: bitMask(BITS),
-        ZERO: _0n$5,
-        ONE: _1n$6,
-        create: (num) => mod$1(num, ORDER),
+        MASK: bitMask$1(BITS),
+        ZERO: _0n$a,
+        ONE: _1n$b,
+        create: (num) => mod$2(num, ORDER),
         isValid: (num) => {
             if (typeof num !== 'bigint')
                 throw new Error(`Invalid field element: expected bigint, got ${typeof num}`);
-            return _0n$5 <= num && num < ORDER; // 0 is valid element, but it's not invertible
+            return _0n$a <= num && num < ORDER; // 0 is valid element, but it's not invertible
         },
-        is0: (num) => num === _0n$5,
-        isOdd: (num) => (num & _1n$6) === _1n$6,
-        neg: (num) => mod$1(-num, ORDER),
+        is0: (num) => num === _0n$a,
+        isOdd: (num) => (num & _1n$b) === _1n$b,
+        neg: (num) => mod$2(-num, ORDER),
         eql: (lhs, rhs) => lhs === rhs,
-        sqr: (num) => mod$1(num * num, ORDER),
-        add: (lhs, rhs) => mod$1(lhs + rhs, ORDER),
-        sub: (lhs, rhs) => mod$1(lhs - rhs, ORDER),
-        mul: (lhs, rhs) => mod$1(lhs * rhs, ORDER),
-        pow: (num, power) => FpPow$1(f, num, power),
-        div: (lhs, rhs) => mod$1(lhs * invert$1(rhs, ORDER), ORDER),
+        sqr: (num) => mod$2(num * num, ORDER),
+        add: (lhs, rhs) => mod$2(lhs + rhs, ORDER),
+        sub: (lhs, rhs) => mod$2(lhs - rhs, ORDER),
+        mul: (lhs, rhs) => mod$2(lhs * rhs, ORDER),
+        pow: (num, power) => FpPow$2(f, num, power),
+        div: (lhs, rhs) => mod$2(lhs * invert$2(rhs, ORDER), ORDER),
         // Same as above, but doesn't normalize
         sqrN: (num) => num * num,
         addN: (lhs, rhs) => lhs + rhs,
         subN: (lhs, rhs) => lhs - rhs,
         mulN: (lhs, rhs) => lhs * rhs,
-        inv: (num) => invert$1(num, ORDER),
+        inv: (num) => invert$2(num, ORDER),
         sqrt: redef.sqrt || ((n) => sqrtP(f, n)),
-        invertBatch: (lst) => FpInvertBatch$1(f, lst),
+        invertBatch: (lst) => FpInvertBatch$2(f, lst),
         // TODO: do we really need constant cmov?
         // We don't have const-time bigints anyway, so probably will be not very useful
         cmov: (a, b, c) => (c ? b : a),
-        toBytes: (num) => (isLE ? numberToBytesLE(num, BYTES) : numberToBytesBE(num, BYTES)),
+        toBytes: (num) => (isLE ? numberToBytesLE$1(num, BYTES) : numberToBytesBE$1(num, BYTES)),
         fromBytes: (bytes) => {
             if (bytes.length !== BYTES)
                 throw new Error(`Fp.fromBytes: expected ${BYTES}, got ${bytes.length}`);
-            return isLE ? bytesToNumberLE(bytes) : bytesToNumberBE(bytes);
+            return isLE ? bytesToNumberLE$1(bytes) : bytesToNumberBE$1(bytes);
         },
     });
     return Object.freeze(f);
@@ -282207,7 +279571,7 @@ function Field$1(ORDER, bitLen, isLE = false, redef = {}) {
  * @param fieldOrder number of field elements, usually CURVE.n
  * @returns byte length of field
  */
-function getFieldBytesLength$1(fieldOrder) {
+function getFieldBytesLength$2(fieldOrder) {
     if (typeof fieldOrder !== 'bigint')
         throw new Error('field order must be bigint');
     const bitLength = fieldOrder.toString(2).length;
@@ -282220,8 +279584,8 @@ function getFieldBytesLength$1(fieldOrder) {
  * @param fieldOrder number of field elements, usually CURVE.n
  * @returns byte length of target hash
  */
-function getMinHashLength$1(fieldOrder) {
-    const length = getFieldBytesLength$1(fieldOrder);
+function getMinHashLength$2(fieldOrder) {
+    const length = getFieldBytesLength$2(fieldOrder);
     return length + Math.ceil(length / 2);
 }
 /**
@@ -282237,25 +279601,25 @@ function getMinHashLength$1(fieldOrder) {
  * @param isLE interpret hash bytes as LE num
  * @returns valid private scalar
  */
-function mapHashToField$1(key, fieldOrder, isLE = false) {
+function mapHashToField$2(key, fieldOrder, isLE = false) {
     const len = key.length;
-    const fieldLen = getFieldBytesLength$1(fieldOrder);
-    const minLen = getMinHashLength$1(fieldOrder);
+    const fieldLen = getFieldBytesLength$2(fieldOrder);
+    const minLen = getMinHashLength$2(fieldOrder);
     // No small numbers: need to understand bias story. No huge numbers: easier to detect JS timings.
     if (len < 16 || len < minLen || len > 1024)
         throw new Error(`expected ${minLen}-1024 bytes of input, got ${len}`);
-    const num = isLE ? bytesToNumberBE(key) : bytesToNumberLE(key);
+    const num = isLE ? bytesToNumberBE$1(key) : bytesToNumberLE$1(key);
     // `mod(x, 11)` can sometimes produce 0. `mod(x, 10) + 1` is the same, but no 0
-    const reduced = mod$1(num, fieldOrder - _1n$6) + _1n$6;
-    return isLE ? numberToBytesLE(reduced, fieldLen) : numberToBytesBE(reduced, fieldLen);
+    const reduced = mod$2(num, fieldOrder - _1n$b) + _1n$b;
+    return isLE ? numberToBytesLE$1(reduced, fieldLen) : numberToBytesBE$1(reduced, fieldLen);
 }
 
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 // Poseidon Hash: https://eprint.iacr.org/2019/458.pdf, https://www.poseidon-hash.info
-function validateOpts$4(opts) {
+function validateOpts$5(opts) {
     const { Fp, mds, reversePartialPowIdx: rev, roundConstants: rc } = opts;
     const { roundsFull, roundsPartial, sboxPower, t } = opts;
-    validateField$1(Fp);
+    validateField$2(Fp);
     for (const i of ['t', 'roundsFull', 'roundsPartial']) {
         if (typeof opts[i] !== 'number' || !Number.isSafeInteger(opts[i]))
             throw new Error(`Poseidon: invalid param ${i}=${opts[i]} (${typeof opts[i]})`);
@@ -282291,7 +279655,7 @@ function validateOpts$4(opts) {
     if (!sboxPower || ![3, 5, 7].includes(sboxPower))
         throw new Error(`Poseidon wrong sboxPower=${sboxPower}`);
     const _sboxPower = BigInt(sboxPower);
-    let sboxFn = (n) => FpPow$1(Fp, n, _sboxPower);
+    let sboxFn = (n) => FpPow$2(Fp, n, _sboxPower);
     // Unwrapped sbox power for common cases (195->142μs)
     if (sboxPower === 3)
         sboxFn = (n) => Fp.mul(Fp.sqrN(n), n);
@@ -282300,7 +279664,7 @@ function validateOpts$4(opts) {
     return Object.freeze({ ...opts, rounds, sboxFn, roundConstants, mds: _mds });
 }
 function poseidon$3(opts) {
-    const _opts = validateOpts$4(opts);
+    const _opts = validateOpts$5(opts);
     const { Fp, mds, roundConstants, rounds, roundsPartial, sboxFn, t } = _opts;
     const halfRoundsFull = _opts.roundsFull / 2;
     const partialIdx = _opts.reversePartialPowIdx ? t - 1 : 0;
@@ -282343,8 +279707,8 @@ function poseidon$3(opts) {
 
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 // Abelian group utilities
-const _0n$4 = BigInt(0);
-const _1n$5 = BigInt(1);
+const _0n$9 = BigInt(0);
+const _1n$a = BigInt(1);
 // Elliptic curve multiplication of Point by scalar. Fragile.
 // Scalars should always be less than curve order: this should be checked inside of a curve itself.
 // Creates precomputation tables for fast multiplication:
@@ -282356,7 +279720,7 @@ const _1n$5 = BigInt(1);
 // - wNAF reduces table size: 2x less memory + 2x faster generation, but 10% slower multiplication
 // TODO: Research returning 2d JS array of windows, instead of a single window. This would allow
 // windows to be in different memory locations
-function wNAF$1(c, bits) {
+function wNAF$2(c, bits) {
     const constTimeNegate = (condition, item) => {
         const neg = item.negate();
         return condition ? neg : item;
@@ -282372,11 +279736,11 @@ function wNAF$1(c, bits) {
         unsafeLadder(elm, n) {
             let p = c.ZERO;
             let d = elm;
-            while (n > _0n$4) {
-                if (n & _1n$5)
+            while (n > _0n$9) {
+                if (n & _1n$a)
                     p = p.add(d);
                 d = d.double();
-                n >>= _1n$5;
+                n >>= _1n$a;
             }
             return p;
         },
@@ -282433,7 +279797,1937 @@ function wNAF$1(c, bits) {
                 // +224 => 256 - 32
                 if (wbits > windowSize) {
                     wbits -= maxNumber;
-                    n += _1n$5;
+                    n += _1n$a;
+                }
+                // This code was first written with assumption that 'f' and 'p' will never be infinity point:
+                // since each addition is multiplied by 2 ** W, it cannot cancel each other. However,
+                // there is negate now: it is possible that negated element from low value
+                // would be the same as high element, which will create carry into next window.
+                // It's not obvious how this can fail, but still worth investigating later.
+                // Check if we're onto Zero point.
+                // Add random point inside current window to f.
+                const offset1 = offset;
+                const offset2 = offset + Math.abs(wbits) - 1; // -1 because we skip zero
+                const cond1 = window % 2 !== 0;
+                const cond2 = wbits < 0;
+                if (wbits === 0) {
+                    // The most important part for const-time getPublicKey
+                    f = f.add(constTimeNegate(cond1, precomputes[offset1]));
+                }
+                else {
+                    p = p.add(constTimeNegate(cond2, precomputes[offset2]));
+                }
+            }
+            // JIT-compiler should not eliminate f here, since it will later be used in normalizeZ()
+            // Even if the variable is still unused, there are some checks which will
+            // throw an exception, so compiler needs to prove they won't happen, which is hard.
+            // At this point there is a way to F be infinity-point even if p is not,
+            // which makes it less const-time: around 1 bigint multiply.
+            return { p, f };
+        },
+        wNAFCached(P, precomputesMap, n, transform) {
+            // @ts-ignore
+            const W = P._WINDOW_SIZE || 1;
+            // Calculate precomputes on a first run, reuse them after
+            let comp = precomputesMap.get(P);
+            if (!comp) {
+                comp = this.precomputeWindow(P, W);
+                if (W !== 1) {
+                    precomputesMap.set(P, transform(comp));
+                }
+            }
+            return this.wNAF(W, comp, n);
+        },
+    };
+}
+function validateBasic$2(curve) {
+    validateField$2(curve.Fp);
+    validateObject$1(curve, {
+        n: 'bigint',
+        h: 'bigint',
+        Gx: 'field',
+        Gy: 'field',
+    }, {
+        nBitLength: 'isSafeInteger',
+        nByteLength: 'isSafeInteger',
+    });
+    // Set defaults
+    return Object.freeze({
+        ...nLength$2(curve.n, curve.nBitLength),
+        ...curve,
+        ...{ p: curve.Fp.ORDER },
+    });
+}
+
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// Short Weierstrass curve. The formula is: y² = x³ + ax + b
+function validatePointOpts$2(curve) {
+    const opts = validateBasic$2(curve);
+    validateObject$1(opts, {
+        a: 'field',
+        b: 'field',
+    }, {
+        allowedPrivateKeyLengths: 'array',
+        wrapPrivateKey: 'boolean',
+        isTorsionFree: 'function',
+        clearCofactor: 'function',
+        allowInfinityPoint: 'boolean',
+        fromBytes: 'function',
+        toBytes: 'function',
+    });
+    const { endo, Fp, a } = opts;
+    if (endo) {
+        if (!Fp.eql(a, Fp.ZERO)) {
+            throw new Error('Endomorphism can only be defined for Koblitz curves that have a=0');
+        }
+        if (typeof endo !== 'object' ||
+            typeof endo.beta !== 'bigint' ||
+            typeof endo.splitScalar !== 'function') {
+            throw new Error('Expected endomorphism with beta: bigint and splitScalar: function');
+        }
+    }
+    return Object.freeze({ ...opts });
+}
+// ASN.1 DER encoding utilities
+const { bytesToNumberBE: b2n$2, hexToBytes: h2b$2 } = ut$1;
+const DER$2 = {
+    // asn.1 DER encoding utils
+    Err: class DERErr extends Error {
+        constructor(m = '') {
+            super(m);
+        }
+    },
+    _parseInt(data) {
+        const { Err: E } = DER$2;
+        if (data.length < 2 || data[0] !== 0x02)
+            throw new E('Invalid signature integer tag');
+        const len = data[1];
+        const res = data.subarray(2, len + 2);
+        if (!len || res.length !== len)
+            throw new E('Invalid signature integer: wrong length');
+        // https://crypto.stackexchange.com/a/57734 Leftmost bit of first byte is 'negative' flag,
+        // since we always use positive integers here. It must always be empty:
+        // - add zero byte if exists
+        // - if next byte doesn't have a flag, leading zero is not allowed (minimal encoding)
+        if (res[0] & 0b10000000)
+            throw new E('Invalid signature integer: negative');
+        if (res[0] === 0x00 && !(res[1] & 0b10000000))
+            throw new E('Invalid signature integer: unnecessary leading zero');
+        return { d: b2n$2(res), l: data.subarray(len + 2) }; // d is data, l is left
+    },
+    toSig(hex) {
+        // parse DER signature
+        const { Err: E } = DER$2;
+        const data = typeof hex === 'string' ? h2b$2(hex) : hex;
+        if (!isBytes$4(data))
+            throw new Error('ui8a expected');
+        let l = data.length;
+        if (l < 2 || data[0] != 0x30)
+            throw new E('Invalid signature tag');
+        if (data[1] !== l - 2)
+            throw new E('Invalid signature: incorrect length');
+        const { d: r, l: sBytes } = DER$2._parseInt(data.subarray(2));
+        const { d: s, l: rBytesLeft } = DER$2._parseInt(sBytes);
+        if (rBytesLeft.length)
+            throw new E('Invalid signature: left bytes after parsing');
+        return { r, s };
+    },
+    hexFromSig(sig) {
+        // Add leading zero if first byte has negative bit enabled. More details in '_parseInt'
+        const slice = (s) => (Number.parseInt(s[0], 16) & 0b1000 ? '00' + s : s);
+        const h = (num) => {
+            const hex = num.toString(16);
+            return hex.length & 1 ? `0${hex}` : hex;
+        };
+        const s = slice(h(sig.s));
+        const r = slice(h(sig.r));
+        const shl = s.length / 2;
+        const rhl = r.length / 2;
+        const sl = h(shl);
+        const rl = h(rhl);
+        return `30${h(rhl + shl + 4)}02${rl}${r}02${sl}${s}`;
+    },
+};
+// Be friendly to bad ECMAScript parsers by not using bigint literals
+// prettier-ignore
+const _0n$8 = BigInt(0), _1n$9 = BigInt(1); BigInt(2); const _3n$4 = BigInt(3); BigInt(4);
+function weierstrassPoints$2(opts) {
+    const CURVE = validatePointOpts$2(opts);
+    const { Fp } = CURVE; // All curves has same field / group length as for now, but they can differ
+    const toBytes = CURVE.toBytes ||
+        ((_c, point, _isCompressed) => {
+            const a = point.toAffine();
+            return concatBytes$3(Uint8Array.from([0x04]), Fp.toBytes(a.x), Fp.toBytes(a.y));
+        });
+    const fromBytes = CURVE.fromBytes ||
+        ((bytes) => {
+            // const head = bytes[0];
+            const tail = bytes.subarray(1);
+            // if (head !== 0x04) throw new Error('Only non-compressed encoding is supported');
+            const x = Fp.fromBytes(tail.subarray(0, Fp.BYTES));
+            const y = Fp.fromBytes(tail.subarray(Fp.BYTES, 2 * Fp.BYTES));
+            return { x, y };
+        });
+    /**
+     * y² = x³ + ax + b: Short weierstrass curve formula
+     * @returns y²
+     */
+    function weierstrassEquation(x) {
+        const { a, b } = CURVE;
+        const x2 = Fp.sqr(x); // x * x
+        const x3 = Fp.mul(x2, x); // x2 * x
+        return Fp.add(Fp.add(x3, Fp.mul(x, a)), b); // x3 + a * x + b
+    }
+    // Validate whether the passed curve params are valid.
+    // We check if curve equation works for generator point.
+    // `assertValidity()` won't work: `isTorsionFree()` is not available at this point in bls12-381.
+    // ProjectivePoint class has not been initialized yet.
+    if (!Fp.eql(Fp.sqr(CURVE.Gy), weierstrassEquation(CURVE.Gx)))
+        throw new Error('bad generator point: equation left != right');
+    // Valid group elements reside in range 1..n-1
+    function isWithinCurveOrder(num) {
+        return typeof num === 'bigint' && _0n$8 < num && num < CURVE.n;
+    }
+    function assertGE(num) {
+        if (!isWithinCurveOrder(num))
+            throw new Error('Expected valid bigint: 0 < bigint < curve.n');
+    }
+    // Validates if priv key is valid and converts it to bigint.
+    // Supports options allowedPrivateKeyLengths and wrapPrivateKey.
+    function normPrivateKeyToScalar(key) {
+        const { allowedPrivateKeyLengths: lengths, nByteLength, wrapPrivateKey, n } = CURVE;
+        if (lengths && typeof key !== 'bigint') {
+            if (isBytes$4(key))
+                key = bytesToHex$1(key);
+            // Normalize to hex string, pad. E.g. P521 would norm 130-132 char hex to 132-char bytes
+            if (typeof key !== 'string' || !lengths.includes(key.length))
+                throw new Error('Invalid key');
+            key = key.padStart(nByteLength * 2, '0');
+        }
+        let num;
+        try {
+            num =
+                typeof key === 'bigint'
+                    ? key
+                    : bytesToNumberBE$1(ensureBytes$2('private key', key, nByteLength));
+        }
+        catch (error) {
+            throw new Error(`private key must be ${nByteLength} bytes, hex or bigint, not ${typeof key}`);
+        }
+        if (wrapPrivateKey)
+            num = mod$2(num, n); // disabled by default, enabled for BLS
+        assertGE(num); // num in range [1..N-1]
+        return num;
+    }
+    const pointPrecomputes = new Map();
+    function assertPrjPoint(other) {
+        if (!(other instanceof Point))
+            throw new Error('ProjectivePoint expected');
+    }
+    /**
+     * Projective Point works in 3d / projective (homogeneous) coordinates: (x, y, z) ∋ (x=x/z, y=y/z)
+     * Default Point works in 2d / affine coordinates: (x, y)
+     * We're doing calculations in projective, because its operations don't require costly inversion.
+     */
+    class Point {
+        constructor(px, py, pz) {
+            this.px = px;
+            this.py = py;
+            this.pz = pz;
+            if (px == null || !Fp.isValid(px))
+                throw new Error('x required');
+            if (py == null || !Fp.isValid(py))
+                throw new Error('y required');
+            if (pz == null || !Fp.isValid(pz))
+                throw new Error('z required');
+        }
+        // Does not validate if the point is on-curve.
+        // Use fromHex instead, or call assertValidity() later.
+        static fromAffine(p) {
+            const { x, y } = p || {};
+            if (!p || !Fp.isValid(x) || !Fp.isValid(y))
+                throw new Error('invalid affine point');
+            if (p instanceof Point)
+                throw new Error('projective point not allowed');
+            const is0 = (i) => Fp.eql(i, Fp.ZERO);
+            // fromAffine(x:0, y:0) would produce (x:0, y:0, z:1), but we need (x:0, y:1, z:0)
+            if (is0(x) && is0(y))
+                return Point.ZERO;
+            return new Point(x, y, Fp.ONE);
+        }
+        get x() {
+            return this.toAffine().x;
+        }
+        get y() {
+            return this.toAffine().y;
+        }
+        /**
+         * Takes a bunch of Projective Points but executes only one
+         * inversion on all of them. Inversion is very slow operation,
+         * so this improves performance massively.
+         * Optimization: converts a list of projective points to a list of identical points with Z=1.
+         */
+        static normalizeZ(points) {
+            const toInv = Fp.invertBatch(points.map((p) => p.pz));
+            return points.map((p, i) => p.toAffine(toInv[i])).map(Point.fromAffine);
+        }
+        /**
+         * Converts hash string or Uint8Array to Point.
+         * @param hex short/long ECDSA hex
+         */
+        static fromHex(hex) {
+            const P = Point.fromAffine(fromBytes(ensureBytes$2('pointHex', hex)));
+            P.assertValidity();
+            return P;
+        }
+        // Multiplies generator point by privateKey.
+        static fromPrivateKey(privateKey) {
+            return Point.BASE.multiply(normPrivateKeyToScalar(privateKey));
+        }
+        // "Private method", don't use it directly
+        _setWindowSize(windowSize) {
+            this._WINDOW_SIZE = windowSize;
+            pointPrecomputes.delete(this);
+        }
+        // A point on curve is valid if it conforms to equation.
+        assertValidity() {
+            if (this.is0()) {
+                // (0, 1, 0) aka ZERO is invalid in most contexts.
+                // In BLS, ZERO can be serialized, so we allow it.
+                // (0, 0, 0) is wrong representation of ZERO and is always invalid.
+                if (CURVE.allowInfinityPoint && !Fp.is0(this.py))
+                    return;
+                throw new Error('bad point: ZERO');
+            }
+            // Some 3rd-party test vectors require different wording between here & `fromCompressedHex`
+            const { x, y } = this.toAffine();
+            // Check if x, y are valid field elements
+            if (!Fp.isValid(x) || !Fp.isValid(y))
+                throw new Error('bad point: x or y not FE');
+            const left = Fp.sqr(y); // y²
+            const right = weierstrassEquation(x); // x³ + ax + b
+            if (!Fp.eql(left, right))
+                throw new Error('bad point: equation left != right');
+            if (!this.isTorsionFree())
+                throw new Error('bad point: not in prime-order subgroup');
+        }
+        hasEvenY() {
+            const { y } = this.toAffine();
+            if (Fp.isOdd)
+                return !Fp.isOdd(y);
+            throw new Error("Field doesn't support isOdd");
+        }
+        /**
+         * Compare one point to another.
+         */
+        equals(other) {
+            assertPrjPoint(other);
+            const { px: X1, py: Y1, pz: Z1 } = this;
+            const { px: X2, py: Y2, pz: Z2 } = other;
+            const U1 = Fp.eql(Fp.mul(X1, Z2), Fp.mul(X2, Z1));
+            const U2 = Fp.eql(Fp.mul(Y1, Z2), Fp.mul(Y2, Z1));
+            return U1 && U2;
+        }
+        /**
+         * Flips point to one corresponding to (x, -y) in Affine coordinates.
+         */
+        negate() {
+            return new Point(this.px, Fp.neg(this.py), this.pz);
+        }
+        // Renes-Costello-Batina exception-free doubling formula.
+        // There is 30% faster Jacobian formula, but it is not complete.
+        // https://eprint.iacr.org/2015/1060, algorithm 3
+        // Cost: 8M + 3S + 3*a + 2*b3 + 15add.
+        double() {
+            const { a, b } = CURVE;
+            const b3 = Fp.mul(b, _3n$4);
+            const { px: X1, py: Y1, pz: Z1 } = this;
+            let X3 = Fp.ZERO, Y3 = Fp.ZERO, Z3 = Fp.ZERO; // prettier-ignore
+            let t0 = Fp.mul(X1, X1); // step 1
+            let t1 = Fp.mul(Y1, Y1);
+            let t2 = Fp.mul(Z1, Z1);
+            let t3 = Fp.mul(X1, Y1);
+            t3 = Fp.add(t3, t3); // step 5
+            Z3 = Fp.mul(X1, Z1);
+            Z3 = Fp.add(Z3, Z3);
+            X3 = Fp.mul(a, Z3);
+            Y3 = Fp.mul(b3, t2);
+            Y3 = Fp.add(X3, Y3); // step 10
+            X3 = Fp.sub(t1, Y3);
+            Y3 = Fp.add(t1, Y3);
+            Y3 = Fp.mul(X3, Y3);
+            X3 = Fp.mul(t3, X3);
+            Z3 = Fp.mul(b3, Z3); // step 15
+            t2 = Fp.mul(a, t2);
+            t3 = Fp.sub(t0, t2);
+            t3 = Fp.mul(a, t3);
+            t3 = Fp.add(t3, Z3);
+            Z3 = Fp.add(t0, t0); // step 20
+            t0 = Fp.add(Z3, t0);
+            t0 = Fp.add(t0, t2);
+            t0 = Fp.mul(t0, t3);
+            Y3 = Fp.add(Y3, t0);
+            t2 = Fp.mul(Y1, Z1); // step 25
+            t2 = Fp.add(t2, t2);
+            t0 = Fp.mul(t2, t3);
+            X3 = Fp.sub(X3, t0);
+            Z3 = Fp.mul(t2, t1);
+            Z3 = Fp.add(Z3, Z3); // step 30
+            Z3 = Fp.add(Z3, Z3);
+            return new Point(X3, Y3, Z3);
+        }
+        // Renes-Costello-Batina exception-free addition formula.
+        // There is 30% faster Jacobian formula, but it is not complete.
+        // https://eprint.iacr.org/2015/1060, algorithm 1
+        // Cost: 12M + 0S + 3*a + 3*b3 + 23add.
+        add(other) {
+            assertPrjPoint(other);
+            const { px: X1, py: Y1, pz: Z1 } = this;
+            const { px: X2, py: Y2, pz: Z2 } = other;
+            let X3 = Fp.ZERO, Y3 = Fp.ZERO, Z3 = Fp.ZERO; // prettier-ignore
+            const a = CURVE.a;
+            const b3 = Fp.mul(CURVE.b, _3n$4);
+            let t0 = Fp.mul(X1, X2); // step 1
+            let t1 = Fp.mul(Y1, Y2);
+            let t2 = Fp.mul(Z1, Z2);
+            let t3 = Fp.add(X1, Y1);
+            let t4 = Fp.add(X2, Y2); // step 5
+            t3 = Fp.mul(t3, t4);
+            t4 = Fp.add(t0, t1);
+            t3 = Fp.sub(t3, t4);
+            t4 = Fp.add(X1, Z1);
+            let t5 = Fp.add(X2, Z2); // step 10
+            t4 = Fp.mul(t4, t5);
+            t5 = Fp.add(t0, t2);
+            t4 = Fp.sub(t4, t5);
+            t5 = Fp.add(Y1, Z1);
+            X3 = Fp.add(Y2, Z2); // step 15
+            t5 = Fp.mul(t5, X3);
+            X3 = Fp.add(t1, t2);
+            t5 = Fp.sub(t5, X3);
+            Z3 = Fp.mul(a, t4);
+            X3 = Fp.mul(b3, t2); // step 20
+            Z3 = Fp.add(X3, Z3);
+            X3 = Fp.sub(t1, Z3);
+            Z3 = Fp.add(t1, Z3);
+            Y3 = Fp.mul(X3, Z3);
+            t1 = Fp.add(t0, t0); // step 25
+            t1 = Fp.add(t1, t0);
+            t2 = Fp.mul(a, t2);
+            t4 = Fp.mul(b3, t4);
+            t1 = Fp.add(t1, t2);
+            t2 = Fp.sub(t0, t2); // step 30
+            t2 = Fp.mul(a, t2);
+            t4 = Fp.add(t4, t2);
+            t0 = Fp.mul(t1, t4);
+            Y3 = Fp.add(Y3, t0);
+            t0 = Fp.mul(t5, t4); // step 35
+            X3 = Fp.mul(t3, X3);
+            X3 = Fp.sub(X3, t0);
+            t0 = Fp.mul(t3, t1);
+            Z3 = Fp.mul(t5, Z3);
+            Z3 = Fp.add(Z3, t0); // step 40
+            return new Point(X3, Y3, Z3);
+        }
+        subtract(other) {
+            return this.add(other.negate());
+        }
+        is0() {
+            return this.equals(Point.ZERO);
+        }
+        wNAF(n) {
+            return wnaf.wNAFCached(this, pointPrecomputes, n, (comp) => {
+                const toInv = Fp.invertBatch(comp.map((p) => p.pz));
+                return comp.map((p, i) => p.toAffine(toInv[i])).map(Point.fromAffine);
+            });
+        }
+        /**
+         * Non-constant-time multiplication. Uses double-and-add algorithm.
+         * It's faster, but should only be used when you don't care about
+         * an exposed private key e.g. sig verification, which works over *public* keys.
+         */
+        multiplyUnsafe(n) {
+            const I = Point.ZERO;
+            if (n === _0n$8)
+                return I;
+            assertGE(n); // Will throw on 0
+            if (n === _1n$9)
+                return this;
+            const { endo } = CURVE;
+            if (!endo)
+                return wnaf.unsafeLadder(this, n);
+            // Apply endomorphism
+            let { k1neg, k1, k2neg, k2 } = endo.splitScalar(n);
+            let k1p = I;
+            let k2p = I;
+            let d = this;
+            while (k1 > _0n$8 || k2 > _0n$8) {
+                if (k1 & _1n$9)
+                    k1p = k1p.add(d);
+                if (k2 & _1n$9)
+                    k2p = k2p.add(d);
+                d = d.double();
+                k1 >>= _1n$9;
+                k2 >>= _1n$9;
+            }
+            if (k1neg)
+                k1p = k1p.negate();
+            if (k2neg)
+                k2p = k2p.negate();
+            k2p = new Point(Fp.mul(k2p.px, endo.beta), k2p.py, k2p.pz);
+            return k1p.add(k2p);
+        }
+        /**
+         * Constant time multiplication.
+         * Uses wNAF method. Windowed method may be 10% faster,
+         * but takes 2x longer to generate and consumes 2x memory.
+         * Uses precomputes when available.
+         * Uses endomorphism for Koblitz curves.
+         * @param scalar by which the point would be multiplied
+         * @returns New point
+         */
+        multiply(scalar) {
+            assertGE(scalar);
+            let n = scalar;
+            let point, fake; // Fake point is used to const-time mult
+            const { endo } = CURVE;
+            if (endo) {
+                const { k1neg, k1, k2neg, k2 } = endo.splitScalar(n);
+                let { p: k1p, f: f1p } = this.wNAF(k1);
+                let { p: k2p, f: f2p } = this.wNAF(k2);
+                k1p = wnaf.constTimeNegate(k1neg, k1p);
+                k2p = wnaf.constTimeNegate(k2neg, k2p);
+                k2p = new Point(Fp.mul(k2p.px, endo.beta), k2p.py, k2p.pz);
+                point = k1p.add(k2p);
+                fake = f1p.add(f2p);
+            }
+            else {
+                const { p, f } = this.wNAF(n);
+                point = p;
+                fake = f;
+            }
+            // Normalize `z` for both points, but return only real one
+            return Point.normalizeZ([point, fake])[0];
+        }
+        /**
+         * Efficiently calculate `aP + bQ`. Unsafe, can expose private key, if used incorrectly.
+         * Not using Strauss-Shamir trick: precomputation tables are faster.
+         * The trick could be useful if both P and Q are not G (not in our case).
+         * @returns non-zero affine point
+         */
+        multiplyAndAddUnsafe(Q, a, b) {
+            const G = Point.BASE; // No Strauss-Shamir trick: we have 10% faster G precomputes
+            const mul = (P, a // Select faster multiply() method
+            ) => (a === _0n$8 || a === _1n$9 || !P.equals(G) ? P.multiplyUnsafe(a) : P.multiply(a));
+            const sum = mul(this, a).add(mul(Q, b));
+            return sum.is0() ? undefined : sum;
+        }
+        // Converts Projective point to affine (x, y) coordinates.
+        // Can accept precomputed Z^-1 - for example, from invertBatch.
+        // (x, y, z) ∋ (x=x/z, y=y/z)
+        toAffine(iz) {
+            const { px: x, py: y, pz: z } = this;
+            const is0 = this.is0();
+            // If invZ was 0, we return zero point. However we still want to execute
+            // all operations, so we replace invZ with a random number, 1.
+            if (iz == null)
+                iz = is0 ? Fp.ONE : Fp.inv(z);
+            const ax = Fp.mul(x, iz);
+            const ay = Fp.mul(y, iz);
+            const zz = Fp.mul(z, iz);
+            if (is0)
+                return { x: Fp.ZERO, y: Fp.ZERO };
+            if (!Fp.eql(zz, Fp.ONE))
+                throw new Error('invZ was invalid');
+            return { x: ax, y: ay };
+        }
+        isTorsionFree() {
+            const { h: cofactor, isTorsionFree } = CURVE;
+            if (cofactor === _1n$9)
+                return true; // No subgroups, always torsion-free
+            if (isTorsionFree)
+                return isTorsionFree(Point, this);
+            throw new Error('isTorsionFree() has not been declared for the elliptic curve');
+        }
+        clearCofactor() {
+            const { h: cofactor, clearCofactor } = CURVE;
+            if (cofactor === _1n$9)
+                return this; // Fast-path
+            if (clearCofactor)
+                return clearCofactor(Point, this);
+            return this.multiplyUnsafe(CURVE.h);
+        }
+        toRawBytes(isCompressed = true) {
+            this.assertValidity();
+            return toBytes(Point, this, isCompressed);
+        }
+        toHex(isCompressed = true) {
+            return bytesToHex$1(this.toRawBytes(isCompressed));
+        }
+    }
+    Point.BASE = new Point(CURVE.Gx, CURVE.Gy, Fp.ONE);
+    Point.ZERO = new Point(Fp.ZERO, Fp.ONE, Fp.ZERO);
+    const _bits = CURVE.nBitLength;
+    const wnaf = wNAF$2(Point, CURVE.endo ? Math.ceil(_bits / 2) : _bits);
+    // Validate if generator point is on curve
+    return {
+        CURVE,
+        ProjectivePoint: Point,
+        normPrivateKeyToScalar,
+        weierstrassEquation,
+        isWithinCurveOrder,
+    };
+}
+function validateOpts$4(curve) {
+    const opts = validateBasic$2(curve);
+    validateObject$1(opts, {
+        hash: 'hash',
+        hmac: 'function',
+        randomBytes: 'function',
+    }, {
+        bits2int: 'function',
+        bits2int_modN: 'function',
+        lowS: 'boolean',
+    });
+    return Object.freeze({ lowS: true, ...opts });
+}
+function weierstrass$3(curveDef) {
+    const CURVE = validateOpts$4(curveDef);
+    const { Fp, n: CURVE_ORDER } = CURVE;
+    const compressedLen = Fp.BYTES + 1; // e.g. 33 for 32
+    const uncompressedLen = 2 * Fp.BYTES + 1; // e.g. 65 for 32
+    function isValidFieldElement(num) {
+        return _0n$8 < num && num < Fp.ORDER; // 0 is banned since it's not invertible FE
+    }
+    function modN(a) {
+        return mod$2(a, CURVE_ORDER);
+    }
+    function invN(a) {
+        return invert$2(a, CURVE_ORDER);
+    }
+    const { ProjectivePoint: Point, normPrivateKeyToScalar, weierstrassEquation, isWithinCurveOrder, } = weierstrassPoints$2({
+        ...CURVE,
+        toBytes(_c, point, isCompressed) {
+            const a = point.toAffine();
+            const x = Fp.toBytes(a.x);
+            const cat = concatBytes$3;
+            if (isCompressed) {
+                return cat(Uint8Array.from([point.hasEvenY() ? 0x02 : 0x03]), x);
+            }
+            else {
+                return cat(Uint8Array.from([0x04]), x, Fp.toBytes(a.y));
+            }
+        },
+        fromBytes(bytes) {
+            const len = bytes.length;
+            const head = bytes[0];
+            const tail = bytes.subarray(1);
+            // this.assertValidity() is done inside of fromHex
+            if (len === compressedLen && (head === 0x02 || head === 0x03)) {
+                const x = bytesToNumberBE$1(tail);
+                if (!isValidFieldElement(x))
+                    throw new Error('Point is not on curve');
+                const y2 = weierstrassEquation(x); // y² = x³ + ax + b
+                let y = Fp.sqrt(y2); // y = y² ^ (p+1)/4
+                const isYOdd = (y & _1n$9) === _1n$9;
+                // ECDSA
+                const isHeadOdd = (head & 1) === 1;
+                if (isHeadOdd !== isYOdd)
+                    y = Fp.neg(y);
+                return { x, y };
+            }
+            else if (len === uncompressedLen && head === 0x04) {
+                const x = Fp.fromBytes(tail.subarray(0, Fp.BYTES));
+                const y = Fp.fromBytes(tail.subarray(Fp.BYTES, 2 * Fp.BYTES));
+                return { x, y };
+            }
+            else {
+                throw new Error(`Point of length ${len} was invalid. Expected ${compressedLen} compressed bytes or ${uncompressedLen} uncompressed bytes`);
+            }
+        },
+    });
+    const numToNByteStr = (num) => bytesToHex$1(numberToBytesBE$1(num, CURVE.nByteLength));
+    function isBiggerThanHalfOrder(number) {
+        const HALF = CURVE_ORDER >> _1n$9;
+        return number > HALF;
+    }
+    function normalizeS(s) {
+        return isBiggerThanHalfOrder(s) ? modN(-s) : s;
+    }
+    // slice bytes num
+    const slcNum = (b, from, to) => bytesToNumberBE$1(b.slice(from, to));
+    /**
+     * ECDSA signature with its (r, s) properties. Supports DER & compact representations.
+     */
+    class Signature {
+        constructor(r, s, recovery) {
+            this.r = r;
+            this.s = s;
+            this.recovery = recovery;
+            this.assertValidity();
+        }
+        // pair (bytes of r, bytes of s)
+        static fromCompact(hex) {
+            const l = CURVE.nByteLength;
+            hex = ensureBytes$2('compactSignature', hex, l * 2);
+            return new Signature(slcNum(hex, 0, l), slcNum(hex, l, 2 * l));
+        }
+        // DER encoded ECDSA signature
+        // https://bitcoin.stackexchange.com/questions/57644/what-are-the-parts-of-a-bitcoin-transaction-input-script
+        static fromDER(hex) {
+            const { r, s } = DER$2.toSig(ensureBytes$2('DER', hex));
+            return new Signature(r, s);
+        }
+        assertValidity() {
+            // can use assertGE here
+            if (!isWithinCurveOrder(this.r))
+                throw new Error('r must be 0 < r < CURVE.n');
+            if (!isWithinCurveOrder(this.s))
+                throw new Error('s must be 0 < s < CURVE.n');
+        }
+        addRecoveryBit(recovery) {
+            return new Signature(this.r, this.s, recovery);
+        }
+        recoverPublicKey(msgHash) {
+            const { r, s, recovery: rec } = this;
+            const h = bits2int_modN(ensureBytes$2('msgHash', msgHash)); // Truncate hash
+            if (rec == null || ![0, 1, 2, 3].includes(rec))
+                throw new Error('recovery id invalid');
+            const radj = rec === 2 || rec === 3 ? r + CURVE.n : r;
+            if (radj >= Fp.ORDER)
+                throw new Error('recovery id 2 or 3 invalid');
+            const prefix = (rec & 1) === 0 ? '02' : '03';
+            const R = Point.fromHex(prefix + numToNByteStr(radj));
+            const ir = invN(radj); // r^-1
+            const u1 = modN(-h * ir); // -hr^-1
+            const u2 = modN(s * ir); // sr^-1
+            const Q = Point.BASE.multiplyAndAddUnsafe(R, u1, u2); // (sr^-1)R-(hr^-1)G = -(hr^-1)G + (sr^-1)
+            if (!Q)
+                throw new Error('point at infinify'); // unsafe is fine: no priv data leaked
+            Q.assertValidity();
+            return Q;
+        }
+        // Signatures should be low-s, to prevent malleability.
+        hasHighS() {
+            return isBiggerThanHalfOrder(this.s);
+        }
+        normalizeS() {
+            return this.hasHighS() ? new Signature(this.r, modN(-this.s), this.recovery) : this;
+        }
+        // DER-encoded
+        toDERRawBytes() {
+            return hexToBytes$2(this.toDERHex());
+        }
+        toDERHex() {
+            return DER$2.hexFromSig({ r: this.r, s: this.s });
+        }
+        // padded bytes of r, then padded bytes of s
+        toCompactRawBytes() {
+            return hexToBytes$2(this.toCompactHex());
+        }
+        toCompactHex() {
+            return numToNByteStr(this.r) + numToNByteStr(this.s);
+        }
+    }
+    const utils = {
+        isValidPrivateKey(privateKey) {
+            try {
+                normPrivateKeyToScalar(privateKey);
+                return true;
+            }
+            catch (error) {
+                return false;
+            }
+        },
+        normPrivateKeyToScalar: normPrivateKeyToScalar,
+        /**
+         * Produces cryptographically secure private key from random of size
+         * (groupLen + ceil(groupLen / 2)) with modulo bias being negligible.
+         */
+        randomPrivateKey: () => {
+            const length = getMinHashLength$2(CURVE.n);
+            return mapHashToField$2(CURVE.randomBytes(length), CURVE.n);
+        },
+        /**
+         * Creates precompute table for an arbitrary EC point. Makes point "cached".
+         * Allows to massively speed-up `point.multiply(scalar)`.
+         * @returns cached point
+         * @example
+         * const fast = utils.precompute(8, ProjectivePoint.fromHex(someonesPubKey));
+         * fast.multiply(privKey); // much faster ECDH now
+         */
+        precompute(windowSize = 8, point = Point.BASE) {
+            point._setWindowSize(windowSize);
+            point.multiply(BigInt(3)); // 3 is arbitrary, just need any number here
+            return point;
+        },
+    };
+    /**
+     * Computes public key for a private key. Checks for validity of the private key.
+     * @param privateKey private key
+     * @param isCompressed whether to return compact (default), or full key
+     * @returns Public key, full when isCompressed=false; short when isCompressed=true
+     */
+    function getPublicKey(privateKey, isCompressed = true) {
+        return Point.fromPrivateKey(privateKey).toRawBytes(isCompressed);
+    }
+    /**
+     * Quick and dirty check for item being public key. Does not validate hex, or being on-curve.
+     */
+    function isProbPub(item) {
+        const arr = isBytes$4(item);
+        const str = typeof item === 'string';
+        const len = (arr || str) && item.length;
+        if (arr)
+            return len === compressedLen || len === uncompressedLen;
+        if (str)
+            return len === 2 * compressedLen || len === 2 * uncompressedLen;
+        if (item instanceof Point)
+            return true;
+        return false;
+    }
+    /**
+     * ECDH (Elliptic Curve Diffie Hellman).
+     * Computes shared public key from private key and public key.
+     * Checks: 1) private key validity 2) shared key is on-curve.
+     * Does NOT hash the result.
+     * @param privateA private key
+     * @param publicB different public key
+     * @param isCompressed whether to return compact (default), or full key
+     * @returns shared public key
+     */
+    function getSharedSecret(privateA, publicB, isCompressed = true) {
+        if (isProbPub(privateA))
+            throw new Error('first arg must be private key');
+        if (!isProbPub(publicB))
+            throw new Error('second arg must be public key');
+        const b = Point.fromHex(publicB); // check for being on-curve
+        return b.multiply(normPrivateKeyToScalar(privateA)).toRawBytes(isCompressed);
+    }
+    // RFC6979: ensure ECDSA msg is X bytes and < N. RFC suggests optional truncating via bits2octets.
+    // FIPS 186-4 4.6 suggests the leftmost min(nBitLen, outLen) bits, which matches bits2int.
+    // bits2int can produce res>N, we can do mod(res, N) since the bitLen is the same.
+    // int2octets can't be used; pads small msgs with 0: unacceptatble for trunc as per RFC vectors
+    const bits2int = CURVE.bits2int ||
+        function (bytes) {
+            // For curves with nBitLength % 8 !== 0: bits2octets(bits2octets(m)) !== bits2octets(m)
+            // for some cases, since bytes.length * 8 is not actual bitLength.
+            const num = bytesToNumberBE$1(bytes); // check for == u8 done here
+            const delta = bytes.length * 8 - CURVE.nBitLength; // truncate to nBitLength leftmost bits
+            return delta > 0 ? num >> BigInt(delta) : num;
+        };
+    const bits2int_modN = CURVE.bits2int_modN ||
+        function (bytes) {
+            return modN(bits2int(bytes)); // can't use bytesToNumberBE here
+        };
+    // NOTE: pads output with zero as per spec
+    const ORDER_MASK = bitMask$1(CURVE.nBitLength);
+    /**
+     * Converts to bytes. Checks if num in `[0..ORDER_MASK-1]` e.g.: `[0..2^256-1]`.
+     */
+    function int2octets(num) {
+        if (typeof num !== 'bigint')
+            throw new Error('bigint expected');
+        if (!(_0n$8 <= num && num < ORDER_MASK))
+            throw new Error(`bigint expected < 2^${CURVE.nBitLength}`);
+        // works with order, can have different size than numToField!
+        return numberToBytesBE$1(num, CURVE.nByteLength);
+    }
+    // Steps A, D of RFC6979 3.2
+    // Creates RFC6979 seed; converts msg/privKey to numbers.
+    // Used only in sign, not in verify.
+    // NOTE: we cannot assume here that msgHash has same amount of bytes as curve order, this will be wrong at least for P521.
+    // Also it can be bigger for P224 + SHA256
+    function prepSig(msgHash, privateKey, opts = defaultSigOpts) {
+        if (['recovered', 'canonical'].some((k) => k in opts))
+            throw new Error('sign() legacy options not supported');
+        const { hash, randomBytes } = CURVE;
+        let { lowS, prehash, extraEntropy: ent } = opts; // generates low-s sigs by default
+        if (lowS == null)
+            lowS = true; // RFC6979 3.2: we skip step A, because we already provide hash
+        msgHash = ensureBytes$2('msgHash', msgHash);
+        if (prehash)
+            msgHash = ensureBytes$2('prehashed msgHash', hash(msgHash));
+        // We can't later call bits2octets, since nested bits2int is broken for curves
+        // with nBitLength % 8 !== 0. Because of that, we unwrap it here as int2octets call.
+        // const bits2octets = (bits) => int2octets(bits2int_modN(bits))
+        const h1int = bits2int_modN(msgHash);
+        const d = normPrivateKeyToScalar(privateKey); // validate private key, convert to bigint
+        const seedArgs = [int2octets(d), int2octets(h1int)];
+        // extraEntropy. RFC6979 3.6: additional k' (optional).
+        if (ent != null) {
+            // K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1) || k')
+            const e = ent === true ? randomBytes(Fp.BYTES) : ent; // generate random bytes OR pass as-is
+            seedArgs.push(ensureBytes$2('extraEntropy', e)); // check for being bytes
+        }
+        const seed = concatBytes$3(...seedArgs); // Step D of RFC6979 3.2
+        const m = h1int; // NOTE: no need to call bits2int second time here, it is inside truncateHash!
+        // Converts signature params into point w r/s, checks result for validity.
+        function k2sig(kBytes) {
+            // RFC 6979 Section 3.2, step 3: k = bits2int(T)
+            const k = bits2int(kBytes); // Cannot use fields methods, since it is group element
+            if (!isWithinCurveOrder(k))
+                return; // Important: all mod() calls here must be done over N
+            const ik = invN(k); // k^-1 mod n
+            const q = Point.BASE.multiply(k).toAffine(); // q = Gk
+            const r = modN(q.x); // r = q.x mod n
+            if (r === _0n$8)
+                return;
+            // Can use scalar blinding b^-1(bm + bdr) where b ∈ [1,q−1] according to
+            // https://tches.iacr.org/index.php/TCHES/article/view/7337/6509. We've decided against it:
+            // a) dependency on CSPRNG b) 15% slowdown c) doesn't really help since bigints are not CT
+            const s = modN(ik * modN(m + r * d)); // Not using blinding here
+            if (s === _0n$8)
+                return;
+            let recovery = (q.x === r ? 0 : 2) | Number(q.y & _1n$9); // recovery bit (2 or 3, when q.x > n)
+            let normS = s;
+            if (lowS && isBiggerThanHalfOrder(s)) {
+                normS = normalizeS(s); // if lowS was passed, ensure s is always
+                recovery ^= 1; // // in the bottom half of N
+            }
+            return new Signature(r, normS, recovery); // use normS, not s
+        }
+        return { seed, k2sig };
+    }
+    const defaultSigOpts = { lowS: CURVE.lowS, prehash: false };
+    const defaultVerOpts = { lowS: CURVE.lowS, prehash: false };
+    /**
+     * Signs message hash with a private key.
+     * ```
+     * sign(m, d, k) where
+     *   (x, y) = G × k
+     *   r = x mod n
+     *   s = (m + dr)/k mod n
+     * ```
+     * @param msgHash NOT message. msg needs to be hashed to `msgHash`, or use `prehash`.
+     * @param privKey private key
+     * @param opts lowS for non-malleable sigs. extraEntropy for mixing randomness into k. prehash will hash first arg.
+     * @returns signature with recovery param
+     */
+    function sign(msgHash, privKey, opts = defaultSigOpts) {
+        const { seed, k2sig } = prepSig(msgHash, privKey, opts); // Steps A, D of RFC6979 3.2.
+        const C = CURVE;
+        const drbg = createHmacDrbg$1(C.hash.outputLen, C.nByteLength, C.hmac);
+        return drbg(seed, k2sig); // Steps B, C, D, E, F, G
+    }
+    // Enable precomputes. Slows down first publicKey computation by 20ms.
+    Point.BASE._setWindowSize(8);
+    // utils.precompute(8, ProjectivePoint.BASE)
+    /**
+     * Verifies a signature against message hash and public key.
+     * Rejects lowS signatures by default: to override,
+     * specify option `{lowS: false}`. Implements section 4.1.4 from https://www.secg.org/sec1-v2.pdf:
+     *
+     * ```
+     * verify(r, s, h, P) where
+     *   U1 = hs^-1 mod n
+     *   U2 = rs^-1 mod n
+     *   R = U1⋅G - U2⋅P
+     *   mod(R.x, n) == r
+     * ```
+     */
+    function verify(signature, msgHash, publicKey, opts = defaultVerOpts) {
+        const sg = signature;
+        msgHash = ensureBytes$2('msgHash', msgHash);
+        publicKey = ensureBytes$2('publicKey', publicKey);
+        if ('strict' in opts)
+            throw new Error('options.strict was renamed to lowS');
+        const { lowS, prehash } = opts;
+        let _sig = undefined;
+        let P;
+        try {
+            if (typeof sg === 'string' || isBytes$4(sg)) {
+                // Signature can be represented in 2 ways: compact (2*nByteLength) & DER (variable-length).
+                // Since DER can also be 2*nByteLength bytes, we check for it first.
+                try {
+                    _sig = Signature.fromDER(sg);
+                }
+                catch (derError) {
+                    if (!(derError instanceof DER$2.Err))
+                        throw derError;
+                    _sig = Signature.fromCompact(sg);
+                }
+            }
+            else if (typeof sg === 'object' && typeof sg.r === 'bigint' && typeof sg.s === 'bigint') {
+                const { r, s } = sg;
+                _sig = new Signature(r, s);
+            }
+            else {
+                throw new Error('PARSE');
+            }
+            P = Point.fromHex(publicKey);
+        }
+        catch (error) {
+            if (error.message === 'PARSE')
+                throw new Error(`signature must be Signature instance, Uint8Array or hex string`);
+            return false;
+        }
+        if (lowS && _sig.hasHighS())
+            return false;
+        if (prehash)
+            msgHash = CURVE.hash(msgHash);
+        const { r, s } = _sig;
+        const h = bits2int_modN(msgHash); // Cannot use fields methods, since it is group element
+        const is = invN(s); // s^-1
+        const u1 = modN(h * is); // u1 = hs^-1 mod n
+        const u2 = modN(r * is); // u2 = rs^-1 mod n
+        const R = Point.BASE.multiplyAndAddUnsafe(P, u1, u2)?.toAffine(); // R = u1⋅G + u2⋅P
+        if (!R)
+            return false;
+        const v = modN(R.x);
+        return v === r;
+    }
+    return {
+        CURVE,
+        getPublicKey,
+        getSharedSecret,
+        sign,
+        verify,
+        ProjectivePoint: Point,
+        Signature,
+        utils,
+    };
+}
+
+// HMAC (RFC 2104)
+let HMAC$2 = class HMAC extends Hash$3 {
+    constructor(hash, _key) {
+        super();
+        this.finished = false;
+        this.destroyed = false;
+        hash$1(hash);
+        const key = toBytes$3(_key);
+        this.iHash = hash.create();
+        if (typeof this.iHash.update !== 'function')
+            throw new Error('Expected instance of class which extends utils.Hash');
+        this.blockLen = this.iHash.blockLen;
+        this.outputLen = this.iHash.outputLen;
+        const blockLen = this.blockLen;
+        const pad = new Uint8Array(blockLen);
+        // blockLen can be bigger than outputLen
+        pad.set(key.length > blockLen ? hash.create().update(key).digest() : key);
+        for (let i = 0; i < pad.length; i++)
+            pad[i] ^= 0x36;
+        this.iHash.update(pad);
+        // By doing update (processing of first block) of outer hash here we can re-use it between multiple calls via clone
+        this.oHash = hash.create();
+        // Undo internal XOR && apply outer XOR
+        for (let i = 0; i < pad.length; i++)
+            pad[i] ^= 0x36 ^ 0x5c;
+        this.oHash.update(pad);
+        pad.fill(0);
+    }
+    update(buf) {
+        exists$1(this);
+        this.iHash.update(buf);
+        return this;
+    }
+    digestInto(out) {
+        exists$1(this);
+        bytes$1(out, this.outputLen);
+        this.finished = true;
+        this.iHash.digestInto(out);
+        this.oHash.update(out);
+        this.oHash.digestInto(out);
+        this.destroy();
+    }
+    digest() {
+        const out = new Uint8Array(this.oHash.outputLen);
+        this.digestInto(out);
+        return out;
+    }
+    _cloneInto(to) {
+        // Create new instance without calling constructor since key already in state and we don't know it.
+        to || (to = Object.create(Object.getPrototypeOf(this), {}));
+        const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
+        to = to;
+        to.finished = finished;
+        to.destroyed = destroyed;
+        to.blockLen = blockLen;
+        to.outputLen = outputLen;
+        to.oHash = oHash._cloneInto(to.oHash);
+        to.iHash = iHash._cloneInto(to.iHash);
+        return to;
+    }
+    destroy() {
+        this.destroyed = true;
+        this.oHash.destroy();
+        this.iHash.destroy();
+    }
+};
+/**
+ * HMAC: RFC2104 message authentication code.
+ * @param hash - function that would be used e.g. sha256
+ * @param key - message key
+ * @param message - message data
+ */
+const hmac$2 = (hash, key, message) => new HMAC$2(hash, key).update(message).digest();
+hmac$2.create = (hash, key) => new HMAC$2(hash, key);
+
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// connects noble-curves to noble-hashes
+function getHash$2(hash) {
+    return {
+        hash,
+        hmac: (key, ...msgs) => hmac$2(hash, key, concatBytes$4(...msgs)),
+        randomBytes: randomBytes$2,
+    };
+}
+
+const CURVE_ORDER$1 = BigInt('3618502788666131213697322783095070105526743751716087489154079457884512865583');
+const MAX_VALUE = BigInt('0x800000000000000000000000000000000000000000000000000000000000000');
+const nBitLength$1 = 252;
+function bits2int$1(bytes) {
+    while (bytes[0] === 0)
+        bytes = bytes.subarray(1);
+    const delta = bytes.length * 8 - nBitLength$1;
+    const num = bytesToNumberBE$1(bytes);
+    return delta > 0 ? num >> BigInt(delta) : num;
+}
+function hex0xToBytes$1(hex) {
+    if (typeof hex === 'string') {
+        hex = strip0x$1(hex);
+        if (hex.length & 1)
+            hex = '0' + hex;
+    }
+    return hexToBytes$2(hex);
+}
+const curve$1 = weierstrass$3({
+    a: BigInt(1),
+    b: BigInt('3141592653589793238462643383279502884197169399375105820974944592307816406665'),
+    Fp: Field$2(BigInt('0x800000000000011000000000000000000000000000000000000000000000001')),
+    n: CURVE_ORDER$1,
+    nBitLength: nBitLength$1,
+    Gx: BigInt('874739451078007766457464989774322083649278607533249481151382481072868806602'),
+    Gy: BigInt('152666792071518830868575557812948353041420400780739481342941381225525861407'),
+    h: BigInt(1),
+    lowS: false,
+    ...getHash$2(sha256$2),
+    bits2int: bits2int$1,
+    bits2int_modN: (bytes) => {
+        const hex = bytesToNumberBE$1(bytes).toString(16);
+        if (hex.length === 63)
+            bytes = hex0xToBytes$1(hex + '0');
+        return mod$2(bits2int$1(bytes), CURVE_ORDER$1);
+    },
+});
+const _starkCurve = curve$1;
+function ensureBytes$1(hex) {
+    return ensureBytes$2('', typeof hex === 'string' ? hex0xToBytes$1(hex) : hex);
+}
+function normPrivKey(privKey) {
+    return bytesToHex$1(ensureBytes$1(privKey)).padStart(64, '0');
+}
+function getPublicKey(privKey, isCompressed = false) {
+    return curve$1.getPublicKey(normPrivKey(privKey), isCompressed);
+}
+function getSharedSecret(privKeyA, pubKeyB) {
+    return curve$1.getSharedSecret(normPrivKey(privKeyA), pubKeyB);
+}
+function checkSignature(signature) {
+    const { r, s } = signature;
+    if (r < 0n || r >= MAX_VALUE)
+        throw new Error(`Signature.r should be [1, ${MAX_VALUE})`);
+    const w = invert$2(s, CURVE_ORDER$1);
+    if (w < 0n || w >= MAX_VALUE)
+        throw new Error(`inv(Signature.s) should be [1, ${MAX_VALUE})`);
+}
+function checkMessage(msgHash) {
+    const bytes = ensureBytes$1(msgHash);
+    const num = bytesToNumberBE$1(bytes);
+    if (num >= MAX_VALUE)
+        throw new Error(`msgHash should be [0, ${MAX_VALUE})`);
+    return bytes;
+}
+function sign(msgHash, privKey, opts) {
+    const sig = curve$1.sign(checkMessage(msgHash), normPrivKey(privKey), opts);
+    checkSignature(sig);
+    return sig;
+}
+function verify(signature, msgHash, pubKey) {
+    if (!(signature instanceof Signature$1)) {
+        const bytes = ensureBytes$1(signature);
+        try {
+            signature = Signature$1.fromDER(bytes);
+        }
+        catch (derError) {
+            if (!(derError instanceof DER$2.Err))
+                throw derError;
+            signature = Signature$1.fromCompact(bytes);
+        }
+    }
+    checkSignature(signature);
+    return curve$1.verify(signature, checkMessage(msgHash), ensureBytes$1(pubKey));
+}
+const { CURVE: CURVE$1, ProjectivePoint: ProjectivePoint$1, Signature: Signature$1, utils: utils$5 } = curve$1;
+function extractX(bytes) {
+    const hex = bytesToHex$1(bytes.subarray(1));
+    const stripped = hex.replace(/^0+/gm, '');
+    return `0x${stripped}`;
+}
+function strip0x$1(hex) {
+    return hex.replace(/^0x/i, '');
+}
+function grindKey(seed) {
+    const _seed = ensureBytes$1(seed);
+    const sha256mask = 2n ** 256n;
+    const limit = sha256mask - mod$2(sha256mask, CURVE_ORDER$1);
+    for (let i = 0;; i++) {
+        const key = sha256Num(concatBytes$3(_seed, numberToVarBytesBE$1(BigInt(i))));
+        if (key < limit)
+            return mod$2(key, CURVE_ORDER$1).toString(16);
+        if (i === 100000)
+            throw new Error('grindKey is broken: tried 100k vals');
+    }
+}
+function getStarkKey(privateKey) {
+    return extractX(getPublicKey(privateKey, true));
+}
+function ethSigToPrivate(signature) {
+    signature = strip0x$1(signature);
+    if (signature.length !== 130)
+        throw new Error('Wrong ethereum signature');
+    return grindKey(signature.substring(0, 64));
+}
+const MASK_31 = 2n ** 31n - 1n;
+const int31 = (n) => Number(n & MASK_31);
+function getAccountPath(layer, application, ethereumAddress, index) {
+    const layerNum = int31(sha256Num(layer));
+    const applicationNum = int31(sha256Num(application));
+    const eth = hexToNumber$1(strip0x$1(ethereumAddress));
+    return `m/2645'/${layerNum}'/${applicationNum}'/${int31(eth)}'/${int31(eth >> 31n)}'/${index}`;
+}
+const PEDERSEN_POINTS$1 = [
+    new ProjectivePoint$1(2089986280348253421170679821480865132823066470938446095505822317253594081284n, 1713931329540660377023406109199410414810705867260802078187082345529207694986n, 1n),
+    new ProjectivePoint$1(996781205833008774514500082376783249102396023663454813447423147977397232763n, 1668503676786377725805489344771023921079126552019160156920634619255970485781n, 1n),
+    new ProjectivePoint$1(2251563274489750535117886426533222435294046428347329203627021249169616184184n, 1798716007562728905295480679789526322175868328062420237419143593021674992973n, 1n),
+    new ProjectivePoint$1(2138414695194151160943305727036575959195309218611738193261179310511854807447n, 113410276730064486255102093846540133784865286929052426931474106396135072156n, 1n),
+    new ProjectivePoint$1(2379962749567351885752724891227938183011949129833673362440656643086021394946n, 776496453633298175483985398648758586525933812536653089401905292063708816422n, 1n),
+];
+function pedersenPrecompute$1(p1, p2) {
+    const out = [];
+    let p = p1;
+    for (let i = 0; i < 248; i++) {
+        out.push(p);
+        p = p.double();
+    }
+    p = p2;
+    for (let i = 0; i < 4; i++) {
+        out.push(p);
+        p = p.double();
+    }
+    return out;
+}
+const PEDERSEN_POINTS1 = pedersenPrecompute$1(PEDERSEN_POINTS$1[1], PEDERSEN_POINTS$1[2]);
+const PEDERSEN_POINTS2 = pedersenPrecompute$1(PEDERSEN_POINTS$1[3], PEDERSEN_POINTS$1[4]);
+function pedersenArg(arg) {
+    let value;
+    if (typeof arg === 'bigint') {
+        value = arg;
+    }
+    else if (typeof arg === 'number') {
+        if (!Number.isSafeInteger(arg))
+            throw new Error(`Invalid pedersenArg: ${arg}`);
+        value = BigInt(arg);
+    }
+    else {
+        value = bytesToNumberBE$1(ensureBytes$1(arg));
+    }
+    if (!(0n <= value && value < curve$1.CURVE.Fp.ORDER))
+        throw new Error(`PedersenArg should be 0 <= value < CURVE.P: ${value}`);
+    return value;
+}
+function pedersenSingle(point, value, constants) {
+    let x = pedersenArg(value);
+    for (let j = 0; j < 252; j++) {
+        const pt = constants[j];
+        if (pt.equals(point))
+            throw new Error('Same point');
+        if ((x & 1n) !== 0n)
+            point = point.add(pt);
+        x >>= 1n;
+    }
+    return point;
+}
+function pedersen(x, y) {
+    let point = PEDERSEN_POINTS$1[0];
+    point = pedersenSingle(point, x, PEDERSEN_POINTS1);
+    point = pedersenSingle(point, y, PEDERSEN_POINTS2);
+    return extractX(point.toRawBytes(true));
+}
+const computeHashOnElements$1 = (data, fn = pedersen) => [0, ...data, data.length].reduce((x, y) => fn(x, y));
+const MASK_250$2 = bitMask$1(250);
+const keccak$1 = (data) => bytesToNumberBE$1(keccak_256$1(data)) & MASK_250$2;
+const sha256Num = (data) => bytesToNumberBE$1(sha256$2(data));
+const Fp251$1 = Field$2(BigInt('3618502788666131213697322783095070105623107215331596699973092056135872020481'));
+function poseidonRoundConstant$1(Fp, name, idx) {
+    const val = Fp.fromBytes(sha256$2(utf8ToBytes$5(`${name}${idx}`)));
+    return Fp.create(val);
+}
+function _poseidonMDS(Fp, name, m, attempt = 0) {
+    const x_values = [];
+    const y_values = [];
+    for (let i = 0; i < m; i++) {
+        x_values.push(poseidonRoundConstant$1(Fp, `${name}x`, attempt * m + i));
+        y_values.push(poseidonRoundConstant$1(Fp, `${name}y`, attempt * m + i));
+    }
+    if (new Set([...x_values, ...y_values]).size !== 2 * m)
+        throw new Error('X and Y values are not distinct');
+    return x_values.map((x) => y_values.map((y) => Fp.inv(Fp.sub(x, y))));
+}
+const MDS_SMALL$1 = [
+    [3, 1, 1],
+    [1, -1, 1],
+    [1, 1, -2],
+].map((i) => i.map(BigInt));
+function poseidonBasic$1(opts, mds) {
+    validateField$2(opts.Fp);
+    if (!Number.isSafeInteger(opts.rate) || !Number.isSafeInteger(opts.capacity))
+        throw new Error(`Wrong poseidon opts: ${opts}`);
+    const m = opts.rate + opts.capacity;
+    const rounds = opts.roundsFull + opts.roundsPartial;
+    const roundConstants = [];
+    for (let i = 0; i < rounds; i++) {
+        const row = [];
+        for (let j = 0; j < m; j++)
+            row.push(poseidonRoundConstant$1(opts.Fp, 'Hades', m * i + j));
+        roundConstants.push(row);
+    }
+    const res = poseidon$3({
+        ...opts,
+        t: m,
+        sboxPower: 3,
+        reversePartialPowIdx: true,
+        mds,
+        roundConstants,
+    });
+    res.m = m;
+    res.rate = opts.rate;
+    res.capacity = opts.capacity;
+    return res;
+}
+function poseidonCreate(opts, mdsAttempt = 0) {
+    const m = opts.rate + opts.capacity;
+    if (!Number.isSafeInteger(mdsAttempt))
+        throw new Error(`Wrong mdsAttempt=${mdsAttempt}`);
+    return poseidonBasic$1(opts, _poseidonMDS(opts.Fp, 'HadesMDS', m, mdsAttempt));
+}
+const poseidonSmall = poseidonBasic$1({ Fp: Fp251$1, rate: 2, capacity: 1, roundsFull: 8, roundsPartial: 83 }, MDS_SMALL$1);
+function poseidonHash(x, y, fn = poseidonSmall) {
+    return fn([x, y, 2n])[0];
+}
+function poseidonHashFunc(x, y, fn = poseidonSmall) {
+    return numberToVarBytesBE$1(poseidonHash(bytesToNumberBE$1(x), bytesToNumberBE$1(y), fn));
+}
+function poseidonHashSingle(x, fn = poseidonSmall) {
+    return fn([x, 0n, 1n])[0];
+}
+function poseidonHashMany(values, fn = poseidonSmall) {
+    const { m, rate } = fn;
+    if (!Array.isArray(values))
+        throw new Error('bigint array expected in values');
+    const padded = Array.from(values);
+    padded.push(1n);
+    while (padded.length % rate !== 0)
+        padded.push(0n);
+    let state = new Array(m).fill(0n);
+    for (let i = 0; i < padded.length; i += rate) {
+        for (let j = 0; j < rate; j++)
+            state[j] += padded[i + j];
+        state = fn(state);
+    }
+    return state[0];
+}
+
+const starkCurve = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	CURVE: CURVE$1,
+	Fp251: Fp251$1,
+	MAX_VALUE: MAX_VALUE,
+	ProjectivePoint: ProjectivePoint$1,
+	Signature: Signature$1,
+	_poseidonMDS: _poseidonMDS,
+	_starkCurve: _starkCurve,
+	computeHashOnElements: computeHashOnElements$1,
+	ethSigToPrivate: ethSigToPrivate,
+	getAccountPath: getAccountPath,
+	getPublicKey: getPublicKey,
+	getSharedSecret: getSharedSecret,
+	getStarkKey: getStarkKey,
+	grindKey: grindKey,
+	keccak: keccak$1,
+	pedersen: pedersen,
+	poseidonBasic: poseidonBasic$1,
+	poseidonCreate: poseidonCreate,
+	poseidonHash: poseidonHash,
+	poseidonHashFunc: poseidonHashFunc,
+	poseidonHashMany: poseidonHashMany,
+	poseidonHashSingle: poseidonHashSingle,
+	poseidonSmall: poseidonSmall,
+	sign: sign,
+	utils: utils$5,
+	verify: verify
+});
+
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// Utilities for modular arithmetics and finite fields
+// prettier-ignore
+const _0n$7 = BigInt(0), _1n$8 = BigInt(1), _2n$5 = BigInt(2), _3n$3 = BigInt(3);
+// prettier-ignore
+const _4n$2 = BigInt(4), _5n$1 = BigInt(5), _8n$1 = BigInt(8);
+// prettier-ignore
+BigInt(9); BigInt(16);
+// Calculates a modulo b
+function mod$1(a, b) {
+    const result = a % b;
+    return result >= _0n$7 ? result : b + result;
+}
+/**
+ * Efficiently raise num to power and do modular division.
+ * Unsafe in some contexts: uses ladder, so can expose bigint bits.
+ * @example
+ * pow(2n, 6n, 11n) // 64n % 11n == 9n
+ */
+// TODO: use field version && remove
+function pow$1(num, power, modulo) {
+    if (modulo <= _0n$7 || power < _0n$7)
+        throw new Error('Expected power/modulo > 0');
+    if (modulo === _1n$8)
+        return _0n$7;
+    let res = _1n$8;
+    while (power > _0n$7) {
+        if (power & _1n$8)
+            res = (res * num) % modulo;
+        num = (num * num) % modulo;
+        power >>= _1n$8;
+    }
+    return res;
+}
+// Does x ^ (2 ^ power) mod p. pow2(30, 4) == 30 ^ (2 ^ 4)
+function pow2(x, power, modulo) {
+    let res = x;
+    while (power-- > _0n$7) {
+        res *= res;
+        res %= modulo;
+    }
+    return res;
+}
+// Inverses number over modulo
+function invert$1(number, modulo) {
+    if (number === _0n$7 || modulo <= _0n$7) {
+        throw new Error(`invert: expected positive integers, got n=${number} mod=${modulo}`);
+    }
+    // Euclidean GCD https://brilliant.org/wiki/extended-euclidean-algorithm/
+    // Fermat's little theorem "CT-like" version inv(n) = n^(m-2) mod m is 30x slower.
+    let a = mod$1(number, modulo);
+    let b = modulo;
+    // prettier-ignore
+    let x = _0n$7, u = _1n$8;
+    while (a !== _0n$7) {
+        // JIT applies optimization if those two lines follow each other
+        const q = b / a;
+        const r = b % a;
+        const m = x - u * q;
+        // prettier-ignore
+        b = a, a = r, x = u, u = m;
+    }
+    const gcd = b;
+    if (gcd !== _1n$8)
+        throw new Error('invert: does not exist');
+    return mod$1(x, modulo);
+}
+/**
+ * Tonelli-Shanks square root search algorithm.
+ * 1. https://eprint.iacr.org/2012/685.pdf (page 12)
+ * 2. Square Roots from 1; 24, 51, 10 to Dan Shanks
+ * Will start an infinite loop if field order P is not prime.
+ * @param P field order
+ * @returns function that takes field Fp (created from P) and number n
+ */
+function tonelliShanks$1(P) {
+    // Legendre constant: used to calculate Legendre symbol (a | p),
+    // which denotes the value of a^((p-1)/2) (mod p).
+    // (a | p) ≡ 1    if a is a square (mod p)
+    // (a | p) ≡ -1   if a is not a square (mod p)
+    // (a | p) ≡ 0    if a ≡ 0 (mod p)
+    const legendreC = (P - _1n$8) / _2n$5;
+    let Q, S, Z;
+    // Step 1: By factoring out powers of 2 from p - 1,
+    // find q and s such that p - 1 = q*(2^s) with q odd
+    for (Q = P - _1n$8, S = 0; Q % _2n$5 === _0n$7; Q /= _2n$5, S++)
+        ;
+    // Step 2: Select a non-square z such that (z | p) ≡ -1 and set c ≡ zq
+    for (Z = _2n$5; Z < P && pow$1(Z, legendreC, P) !== P - _1n$8; Z++)
+        ;
+    // Fast-path
+    if (S === 1) {
+        const p1div4 = (P + _1n$8) / _4n$2;
+        return function tonelliFast(Fp, n) {
+            const root = Fp.pow(n, p1div4);
+            if (!Fp.eql(Fp.sqr(root), n))
+                throw new Error('Cannot find square root');
+            return root;
+        };
+    }
+    // Slow-path
+    const Q1div2 = (Q + _1n$8) / _2n$5;
+    return function tonelliSlow(Fp, n) {
+        // Step 0: Check that n is indeed a square: (n | p) should not be ≡ -1
+        if (Fp.pow(n, legendreC) === Fp.neg(Fp.ONE))
+            throw new Error('Cannot find square root');
+        let r = S;
+        // TODO: will fail at Fp2/etc
+        let g = Fp.pow(Fp.mul(Fp.ONE, Z), Q); // will update both x and b
+        let x = Fp.pow(n, Q1div2); // first guess at the square root
+        let b = Fp.pow(n, Q); // first guess at the fudge factor
+        while (!Fp.eql(b, Fp.ONE)) {
+            if (Fp.eql(b, Fp.ZERO))
+                return Fp.ZERO; // https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm (4. If t = 0, return r = 0)
+            // Find m such b^(2^m)==1
+            let m = 1;
+            for (let t2 = Fp.sqr(b); m < r; m++) {
+                if (Fp.eql(t2, Fp.ONE))
+                    break;
+                t2 = Fp.sqr(t2); // t2 *= t2
+            }
+            // NOTE: r-m-1 can be bigger than 32, need to convert to bigint before shift, otherwise there will be overflow
+            const ge = Fp.pow(g, _1n$8 << BigInt(r - m - 1)); // ge = 2^(r-m-1)
+            g = Fp.sqr(ge); // g = ge * ge
+            x = Fp.mul(x, ge); // x *= ge
+            b = Fp.mul(b, g); // b *= g
+            r = m;
+        }
+        return x;
+    };
+}
+function FpSqrt$1(P) {
+    // NOTE: different algorithms can give different roots, it is up to user to decide which one they want.
+    // For example there is FpSqrtOdd/FpSqrtEven to choice root based on oddness (used for hash-to-curve).
+    // P ≡ 3 (mod 4)
+    // √n = n^((P+1)/4)
+    if (P % _4n$2 === _3n$3) {
+        // Not all roots possible!
+        // const ORDER =
+        //   0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn;
+        // const NUM = 72057594037927816n;
+        const p1div4 = (P + _1n$8) / _4n$2;
+        return function sqrt3mod4(Fp, n) {
+            const root = Fp.pow(n, p1div4);
+            // Throw if root**2 != n
+            if (!Fp.eql(Fp.sqr(root), n))
+                throw new Error('Cannot find square root');
+            return root;
+        };
+    }
+    // Atkin algorithm for q ≡ 5 (mod 8), https://eprint.iacr.org/2012/685.pdf (page 10)
+    if (P % _8n$1 === _5n$1) {
+        const c1 = (P - _5n$1) / _8n$1;
+        return function sqrt5mod8(Fp, n) {
+            const n2 = Fp.mul(n, _2n$5);
+            const v = Fp.pow(n2, c1);
+            const nv = Fp.mul(n, v);
+            const i = Fp.mul(Fp.mul(nv, _2n$5), v);
+            const root = Fp.mul(nv, Fp.sub(i, Fp.ONE));
+            if (!Fp.eql(Fp.sqr(root), n))
+                throw new Error('Cannot find square root');
+            return root;
+        };
+    }
+    // Other cases: Tonelli-Shanks algorithm
+    return tonelliShanks$1(P);
+}
+// prettier-ignore
+const FIELD_FIELDS$1 = [
+    'create', 'isValid', 'is0', 'neg', 'inv', 'sqrt', 'sqr',
+    'eql', 'add', 'sub', 'mul', 'pow', 'div',
+    'addN', 'subN', 'mulN', 'sqrN'
+];
+function validateField$1(field) {
+    const initial = {
+        ORDER: 'bigint',
+        MASK: 'bigint',
+        BYTES: 'isSafeInteger',
+        BITS: 'isSafeInteger',
+    };
+    const opts = FIELD_FIELDS$1.reduce((map, val) => {
+        map[val] = 'function';
+        return map;
+    }, initial);
+    return validateObject$2(field, opts);
+}
+// Generic field functions
+/**
+ * Same as `pow` but for Fp: non-constant-time.
+ * Unsafe in some contexts: uses ladder, so can expose bigint bits.
+ */
+function FpPow$1(f, num, power) {
+    // Should have same speed as pow for bigints
+    // TODO: benchmark!
+    if (power < _0n$7)
+        throw new Error('Expected power > 0');
+    if (power === _0n$7)
+        return f.ONE;
+    if (power === _1n$8)
+        return num;
+    let p = f.ONE;
+    let d = num;
+    while (power > _0n$7) {
+        if (power & _1n$8)
+            p = f.mul(p, d);
+        d = f.sqr(d);
+        power >>= _1n$8;
+    }
+    return p;
+}
+/**
+ * Efficiently invert an array of Field elements.
+ * `inv(0)` will return `undefined` here: make sure to throw an error.
+ */
+function FpInvertBatch$1(f, nums) {
+    const tmp = new Array(nums.length);
+    // Walk from first to last, multiply them by each other MOD p
+    const lastMultiplied = nums.reduce((acc, num, i) => {
+        if (f.is0(num))
+            return acc;
+        tmp[i] = acc;
+        return f.mul(acc, num);
+    }, f.ONE);
+    // Invert last element
+    const inverted = f.inv(lastMultiplied);
+    // Walk from last to first, multiply them by inverted each other MOD p
+    nums.reduceRight((acc, num, i) => {
+        if (f.is0(num))
+            return acc;
+        tmp[i] = f.mul(acc, tmp[i]);
+        return f.mul(acc, num);
+    }, inverted);
+    return tmp;
+}
+// CURVE.n lengths
+function nLength$1(n, nBitLength) {
+    // Bit size, byte size of CURVE.n
+    const _nBitLength = nBitLength !== undefined ? nBitLength : n.toString(2).length;
+    const nByteLength = Math.ceil(_nBitLength / 8);
+    return { nBitLength: _nBitLength, nByteLength };
+}
+/**
+ * Initializes a finite field over prime. **Non-primes are not supported.**
+ * Do not init in loop: slow. Very fragile: always run a benchmark on a change.
+ * Major performance optimizations:
+ * * a) denormalized operations like mulN instead of mul
+ * * b) same object shape: never add or remove keys
+ * * c) Object.freeze
+ * @param ORDER prime positive bigint
+ * @param bitLen how many bits the field consumes
+ * @param isLE (def: false) if encoding / decoding should be in little-endian
+ * @param redef optional faster redefinitions of sqrt and other methods
+ */
+function Field$1(ORDER, bitLen, isLE = false, redef = {}) {
+    if (ORDER <= _0n$7)
+        throw new Error(`Expected Field ORDER > 0, got ${ORDER}`);
+    const { nBitLength: BITS, nByteLength: BYTES } = nLength$1(ORDER, bitLen);
+    if (BYTES > 2048)
+        throw new Error('Field lengths over 2048 bytes are not supported');
+    const sqrtP = FpSqrt$1(ORDER);
+    const f = Object.freeze({
+        ORDER,
+        BITS,
+        BYTES,
+        MASK: bitMask$2(BITS),
+        ZERO: _0n$7,
+        ONE: _1n$8,
+        create: (num) => mod$1(num, ORDER),
+        isValid: (num) => {
+            if (typeof num !== 'bigint')
+                throw new Error(`Invalid field element: expected bigint, got ${typeof num}`);
+            return _0n$7 <= num && num < ORDER; // 0 is valid element, but it's not invertible
+        },
+        is0: (num) => num === _0n$7,
+        isOdd: (num) => (num & _1n$8) === _1n$8,
+        neg: (num) => mod$1(-num, ORDER),
+        eql: (lhs, rhs) => lhs === rhs,
+        sqr: (num) => mod$1(num * num, ORDER),
+        add: (lhs, rhs) => mod$1(lhs + rhs, ORDER),
+        sub: (lhs, rhs) => mod$1(lhs - rhs, ORDER),
+        mul: (lhs, rhs) => mod$1(lhs * rhs, ORDER),
+        pow: (num, power) => FpPow$1(f, num, power),
+        div: (lhs, rhs) => mod$1(lhs * invert$1(rhs, ORDER), ORDER),
+        // Same as above, but doesn't normalize
+        sqrN: (num) => num * num,
+        addN: (lhs, rhs) => lhs + rhs,
+        subN: (lhs, rhs) => lhs - rhs,
+        mulN: (lhs, rhs) => lhs * rhs,
+        inv: (num) => invert$1(num, ORDER),
+        sqrt: redef.sqrt || ((n) => sqrtP(f, n)),
+        invertBatch: (lst) => FpInvertBatch$1(f, lst),
+        // TODO: do we really need constant cmov?
+        // We don't have const-time bigints anyway, so probably will be not very useful
+        cmov: (a, b, c) => (c ? b : a),
+        toBytes: (num) => (isLE ? numberToBytesLE$2(num, BYTES) : numberToBytesBE$2(num, BYTES)),
+        fromBytes: (bytes) => {
+            if (bytes.length !== BYTES)
+                throw new Error(`Fp.fromBytes: expected ${BYTES}, got ${bytes.length}`);
+            return isLE ? bytesToNumberLE$2(bytes) : bytesToNumberBE$2(bytes);
+        },
+    });
+    return Object.freeze(f);
+}
+/**
+ * Returns total number of bytes consumed by the field element.
+ * For example, 32 bytes for usual 256-bit weierstrass curve.
+ * @param fieldOrder number of field elements, usually CURVE.n
+ * @returns byte length of field
+ */
+function getFieldBytesLength$1(fieldOrder) {
+    if (typeof fieldOrder !== 'bigint')
+        throw new Error('field order must be bigint');
+    const bitLength = fieldOrder.toString(2).length;
+    return Math.ceil(bitLength / 8);
+}
+/**
+ * Returns minimal amount of bytes that can be safely reduced
+ * by field order.
+ * Should be 2^-128 for 128-bit curve such as P256.
+ * @param fieldOrder number of field elements, usually CURVE.n
+ * @returns byte length of target hash
+ */
+function getMinHashLength$1(fieldOrder) {
+    const length = getFieldBytesLength$1(fieldOrder);
+    return length + Math.ceil(length / 2);
+}
+/**
+ * "Constant-time" private key generation utility.
+ * Can take (n + n/2) or more bytes of uniform input e.g. from CSPRNG or KDF
+ * and convert them into private scalar, with the modulo bias being negligible.
+ * Needs at least 48 bytes of input for 32-byte private key.
+ * https://research.kudelskisecurity.com/2020/07/28/the-definitive-guide-to-modulo-bias-and-how-to-avoid-it/
+ * FIPS 186-5, A.2 https://csrc.nist.gov/publications/detail/fips/186/5/final
+ * RFC 9380, https://www.rfc-editor.org/rfc/rfc9380#section-5
+ * @param hash hash output from SHA3 or a similar function
+ * @param groupOrder size of subgroup - (e.g. secp256k1.CURVE.n)
+ * @param isLE interpret hash bytes as LE num
+ * @returns valid private scalar
+ */
+function mapHashToField$1(key, fieldOrder, isLE = false) {
+    const len = key.length;
+    const fieldLen = getFieldBytesLength$1(fieldOrder);
+    const minLen = getMinHashLength$1(fieldOrder);
+    // No small numbers: need to understand bias story. No huge numbers: easier to detect JS timings.
+    if (len < 16 || len < minLen || len > 1024)
+        throw new Error(`expected ${minLen}-1024 bytes of input, got ${len}`);
+    const num = isLE ? bytesToNumberBE$2(key) : bytesToNumberLE$2(key);
+    // `mod(x, 11)` can sometimes produce 0. `mod(x, 10) + 1` is the same, but no 0
+    const reduced = mod$1(num, fieldOrder - _1n$8) + _1n$8;
+    return isLE ? numberToBytesLE$2(reduced, fieldLen) : numberToBytesBE$2(reduced, fieldLen);
+}
+
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// Poseidon Hash: https://eprint.iacr.org/2019/458.pdf, https://www.poseidon-hash.info
+function validateOpts$3(opts) {
+    const { Fp, mds, reversePartialPowIdx: rev, roundConstants: rc } = opts;
+    const { roundsFull, roundsPartial, sboxPower, t } = opts;
+    validateField$1(Fp);
+    for (const i of ['t', 'roundsFull', 'roundsPartial']) {
+        if (typeof opts[i] !== 'number' || !Number.isSafeInteger(opts[i]))
+            throw new Error(`Poseidon: invalid param ${i}=${opts[i]} (${typeof opts[i]})`);
+    }
+    // MDS is TxT matrix
+    if (!Array.isArray(mds) || mds.length !== t)
+        throw new Error('Poseidon: wrong MDS matrix');
+    const _mds = mds.map((mdsRow) => {
+        if (!Array.isArray(mdsRow) || mdsRow.length !== t)
+            throw new Error(`Poseidon MDS matrix row: ${mdsRow}`);
+        return mdsRow.map((i) => {
+            if (typeof i !== 'bigint')
+                throw new Error(`Poseidon MDS matrix value=${i}`);
+            return Fp.create(i);
+        });
+    });
+    if (rev !== undefined && typeof rev !== 'boolean')
+        throw new Error(`Poseidon: invalid param reversePartialPowIdx=${rev}`);
+    if (roundsFull % 2 !== 0)
+        throw new Error(`Poseidon roundsFull is not even: ${roundsFull}`);
+    const rounds = roundsFull + roundsPartial;
+    if (!Array.isArray(rc) || rc.length !== rounds)
+        throw new Error('Poseidon: wrong round constants');
+    const roundConstants = rc.map((rc) => {
+        if (!Array.isArray(rc) || rc.length !== t)
+            throw new Error(`Poseidon wrong round constants: ${rc}`);
+        return rc.map((i) => {
+            if (typeof i !== 'bigint' || !Fp.isValid(i))
+                throw new Error(`Poseidon wrong round constant=${i}`);
+            return Fp.create(i);
+        });
+    });
+    if (!sboxPower || ![3, 5, 7].includes(sboxPower))
+        throw new Error(`Poseidon wrong sboxPower=${sboxPower}`);
+    const _sboxPower = BigInt(sboxPower);
+    let sboxFn = (n) => FpPow$1(Fp, n, _sboxPower);
+    // Unwrapped sbox power for common cases (195->142μs)
+    if (sboxPower === 3)
+        sboxFn = (n) => Fp.mul(Fp.sqrN(n), n);
+    else if (sboxPower === 5)
+        sboxFn = (n) => Fp.mul(Fp.sqrN(Fp.sqrN(n)), n);
+    return Object.freeze({ ...opts, rounds, sboxFn, roundConstants, mds: _mds });
+}
+function splitConstants(rc, t) {
+    if (typeof t !== 'number')
+        throw new Error('poseidonSplitConstants: wrong t');
+    if (!Array.isArray(rc) || rc.length % t)
+        throw new Error('poseidonSplitConstants: wrong rc');
+    const res = [];
+    let tmp = [];
+    for (let i = 0; i < rc.length; i++) {
+        tmp.push(rc[i]);
+        if (tmp.length === t) {
+            res.push(tmp);
+            tmp = [];
+        }
+    }
+    return res;
+}
+function poseidon$1(opts) {
+    const _opts = validateOpts$3(opts);
+    const { Fp, mds, roundConstants, rounds, roundsPartial, sboxFn, t } = _opts;
+    const halfRoundsFull = _opts.roundsFull / 2;
+    const partialIdx = _opts.reversePartialPowIdx ? t - 1 : 0;
+    const poseidonRound = (values, isFull, idx) => {
+        values = values.map((i, j) => Fp.add(i, roundConstants[idx][j]));
+        if (isFull)
+            values = values.map((i) => sboxFn(i));
+        else
+            values[partialIdx] = sboxFn(values[partialIdx]);
+        // Matrix multiplication
+        values = mds.map((i) => i.reduce((acc, i, j) => Fp.add(acc, Fp.mulN(i, values[j])), Fp.ZERO));
+        return values;
+    };
+    const poseidonHash = function poseidonHash(values) {
+        if (!Array.isArray(values) || values.length !== t)
+            throw new Error(`Poseidon: wrong values (expected array of bigints with length ${t})`);
+        values = values.map((i) => {
+            if (typeof i !== 'bigint')
+                throw new Error(`Poseidon: wrong value=${i} (${typeof i})`);
+            return Fp.create(i);
+        });
+        let round = 0;
+        // Apply r_f/2 full rounds.
+        for (let i = 0; i < halfRoundsFull; i++)
+            values = poseidonRound(values, true, round++);
+        // Apply r_p partial rounds.
+        for (let i = 0; i < roundsPartial; i++)
+            values = poseidonRound(values, false, round++);
+        // Apply r_f/2 full rounds.
+        for (let i = 0; i < halfRoundsFull; i++)
+            values = poseidonRound(values, true, round++);
+        if (round !== rounds)
+            throw new Error(`Poseidon: wrong number of rounds: last round=${round}, total=${rounds}`);
+        return values;
+    };
+    // For verification in tests
+    poseidonHash.roundConstants = roundConstants;
+    return poseidonHash;
+}
+
+const poseidon$2 = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	poseidon: poseidon$1,
+	splitConstants: splitConstants,
+	validateOpts: validateOpts$3
+});
+
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// Abelian group utilities
+const _0n$6 = BigInt(0);
+const _1n$7 = BigInt(1);
+// Elliptic curve multiplication of Point by scalar. Fragile.
+// Scalars should always be less than curve order: this should be checked inside of a curve itself.
+// Creates precomputation tables for fast multiplication:
+// - private scalar is split by fixed size windows of W bits
+// - every window point is collected from window's table & added to accumulator
+// - since windows are different, same point inside tables won't be accessed more than once per calc
+// - each multiplication is 'Math.ceil(CURVE_ORDER / 𝑊) + 1' point additions (fixed for any scalar)
+// - +1 window is neccessary for wNAF
+// - wNAF reduces table size: 2x less memory + 2x faster generation, but 10% slower multiplication
+// TODO: Research returning 2d JS array of windows, instead of a single window. This would allow
+// windows to be in different memory locations
+function wNAF$1(c, bits) {
+    const constTimeNegate = (condition, item) => {
+        const neg = item.negate();
+        return condition ? neg : item;
+    };
+    const opts = (W) => {
+        const windows = Math.ceil(bits / W) + 1; // +1, because
+        const windowSize = 2 ** (W - 1); // -1 because we skip zero
+        return { windows, windowSize };
+    };
+    return {
+        constTimeNegate,
+        // non-const time multiplication ladder
+        unsafeLadder(elm, n) {
+            let p = c.ZERO;
+            let d = elm;
+            while (n > _0n$6) {
+                if (n & _1n$7)
+                    p = p.add(d);
+                d = d.double();
+                n >>= _1n$7;
+            }
+            return p;
+        },
+        /**
+         * Creates a wNAF precomputation window. Used for caching.
+         * Default window size is set by `utils.precompute()` and is equal to 8.
+         * Number of precomputed points depends on the curve size:
+         * 2^(𝑊−1) * (Math.ceil(𝑛 / 𝑊) + 1), where:
+         * - 𝑊 is the window size
+         * - 𝑛 is the bitlength of the curve order.
+         * For a 256-bit curve and window size 8, the number of precomputed points is 128 * 33 = 4224.
+         * @returns precomputed point tables flattened to a single array
+         */
+        precomputeWindow(elm, W) {
+            const { windows, windowSize } = opts(W);
+            const points = [];
+            let p = elm;
+            let base = p;
+            for (let window = 0; window < windows; window++) {
+                base = p;
+                points.push(base);
+                // =1, because we skip zero
+                for (let i = 1; i < windowSize; i++) {
+                    base = base.add(p);
+                    points.push(base);
+                }
+                p = base.double();
+            }
+            return points;
+        },
+        /**
+         * Implements ec multiplication using precomputed tables and w-ary non-adjacent form.
+         * @param W window size
+         * @param precomputes precomputed tables
+         * @param n scalar (we don't check here, but should be less than curve order)
+         * @returns real and fake (for const-time) points
+         */
+        wNAF(W, precomputes, n) {
+            // TODO: maybe check that scalar is less than group order? wNAF behavious is undefined otherwise
+            // But need to carefully remove other checks before wNAF. ORDER == bits here
+            const { windows, windowSize } = opts(W);
+            let p = c.ZERO;
+            let f = c.BASE;
+            const mask = BigInt(2 ** W - 1); // Create mask with W ones: 0b1111 for W=4 etc.
+            const maxNumber = 2 ** W;
+            const shiftBy = BigInt(W);
+            for (let window = 0; window < windows; window++) {
+                const offset = window * windowSize;
+                // Extract W bits.
+                let wbits = Number(n & mask);
+                // Shift number by W bits.
+                n >>= shiftBy;
+                // If the bits are bigger than max size, we'll split those.
+                // +224 => 256 - 32
+                if (wbits > windowSize) {
+                    wbits -= maxNumber;
+                    n += _1n$7;
                 }
                 // This code was first written with assumption that 'f' and 'p' will never be infinity point:
                 // since each addition is multiplied by 2 ** W, it cannot cancel each other. However,
@@ -282478,7 +281772,7 @@ function wNAF$1(c, bits) {
 }
 function validateBasic$1(curve) {
     validateField$1(curve.Fp);
-    validateObject(curve, {
+    validateObject$2(curve, {
         n: 'bigint',
         h: 'bigint',
         Gx: 'field',
@@ -282499,7 +281793,7 @@ function validateBasic$1(curve) {
 // Short Weierstrass curve. The formula is: y² = x³ + ax + b
 function validatePointOpts$1(curve) {
     const opts = validateBasic$1(curve);
-    validateObject(opts, {
+    validateObject$2(opts, {
         a: 'field',
         b: 'field',
     }, {
@@ -282525,7 +281819,7 @@ function validatePointOpts$1(curve) {
     return Object.freeze({ ...opts });
 }
 // ASN.1 DER encoding utilities
-const { bytesToNumberBE: b2n$1, hexToBytes: h2b$1 } = ut;
+const { bytesToNumberBE: b2n$1, hexToBytes: h2b$1 } = ut$2;
 const DER$1 = {
     // asn.1 DER encoding utils
     Err: class DERErr extends Error {
@@ -282555,8 +281849,7 @@ const DER$1 = {
         // parse DER signature
         const { Err: E } = DER$1;
         const data = typeof hex === 'string' ? h2b$1(hex) : hex;
-        if (!isBytes$1(data))
-            throw new Error('ui8a expected');
+        abytes$3(data);
         let l = data.length;
         if (l < 2 || data[0] != 0x30)
             throw new E('Invalid signature tag');
@@ -282586,14 +281879,14 @@ const DER$1 = {
 };
 // Be friendly to bad ECMAScript parsers by not using bigint literals
 // prettier-ignore
-const _0n$3 = BigInt(0), _1n$4 = BigInt(1); BigInt(2); const _3n$2 = BigInt(3); BigInt(4);
+const _0n$5 = BigInt(0), _1n$6 = BigInt(1), _2n$4 = BigInt(2), _3n$2 = BigInt(3), _4n$1 = BigInt(4);
 function weierstrassPoints$1(opts) {
     const CURVE = validatePointOpts$1(opts);
     const { Fp } = CURVE; // All curves has same field / group length as for now, but they can differ
     const toBytes = CURVE.toBytes ||
         ((_c, point, _isCompressed) => {
             const a = point.toAffine();
-            return concatBytes$1(Uint8Array.from([0x04]), Fp.toBytes(a.x), Fp.toBytes(a.y));
+            return concatBytes$5(Uint8Array.from([0x04]), Fp.toBytes(a.x), Fp.toBytes(a.y));
         });
     const fromBytes = CURVE.fromBytes ||
         ((bytes) => {
@@ -282622,7 +281915,7 @@ function weierstrassPoints$1(opts) {
         throw new Error('bad generator point: equation left != right');
     // Valid group elements reside in range 1..n-1
     function isWithinCurveOrder(num) {
-        return typeof num === 'bigint' && _0n$3 < num && num < CURVE.n;
+        return typeof num === 'bigint' && _0n$5 < num && num < CURVE.n;
     }
     function assertGE(num) {
         if (!isWithinCurveOrder(num))
@@ -282633,8 +281926,8 @@ function weierstrassPoints$1(opts) {
     function normPrivateKeyToScalar(key) {
         const { allowedPrivateKeyLengths: lengths, nByteLength, wrapPrivateKey, n } = CURVE;
         if (lengths && typeof key !== 'bigint') {
-            if (isBytes$1(key))
-                key = bytesToHex(key);
+            if (isBytes$7(key))
+                key = bytesToHex$2(key);
             // Normalize to hex string, pad. E.g. P521 would norm 130-132 char hex to 132-char bytes
             if (typeof key !== 'string' || !lengths.includes(key.length))
                 throw new Error('Invalid key');
@@ -282645,7 +281938,7 @@ function weierstrassPoints$1(opts) {
             num =
                 typeof key === 'bigint'
                     ? key
-                    : bytesToNumberBE(ensureBytes$1('private key', key, nByteLength));
+                    : bytesToNumberBE$2(ensureBytes$3('private key', key, nByteLength));
         }
         catch (error) {
             throw new Error(`private key must be ${nByteLength} bytes, hex or bigint, not ${typeof key}`);
@@ -282712,7 +282005,7 @@ function weierstrassPoints$1(opts) {
          * @param hex short/long ECDSA hex
          */
         static fromHex(hex) {
-            const P = Point.fromAffine(fromBytes(ensureBytes$1('pointHex', hex)));
+            const P = Point.fromAffine(fromBytes(ensureBytes$3('pointHex', hex)));
             P.assertValidity();
             return P;
         }
@@ -282884,10 +282177,10 @@ function weierstrassPoints$1(opts) {
          */
         multiplyUnsafe(n) {
             const I = Point.ZERO;
-            if (n === _0n$3)
+            if (n === _0n$5)
                 return I;
             assertGE(n); // Will throw on 0
-            if (n === _1n$4)
+            if (n === _1n$6)
                 return this;
             const { endo } = CURVE;
             if (!endo)
@@ -282897,14 +282190,14 @@ function weierstrassPoints$1(opts) {
             let k1p = I;
             let k2p = I;
             let d = this;
-            while (k1 > _0n$3 || k2 > _0n$3) {
-                if (k1 & _1n$4)
+            while (k1 > _0n$5 || k2 > _0n$5) {
+                if (k1 & _1n$6)
                     k1p = k1p.add(d);
-                if (k2 & _1n$4)
+                if (k2 & _1n$6)
                     k2p = k2p.add(d);
                 d = d.double();
-                k1 >>= _1n$4;
-                k2 >>= _1n$4;
+                k1 >>= _1n$6;
+                k2 >>= _1n$6;
             }
             if (k1neg)
                 k1p = k1p.negate();
@@ -282954,7 +282247,7 @@ function weierstrassPoints$1(opts) {
         multiplyAndAddUnsafe(Q, a, b) {
             const G = Point.BASE; // No Strauss-Shamir trick: we have 10% faster G precomputes
             const mul = (P, a // Select faster multiply() method
-            ) => (a === _0n$3 || a === _1n$4 || !P.equals(G) ? P.multiplyUnsafe(a) : P.multiply(a));
+            ) => (a === _0n$5 || a === _1n$6 || !P.equals(G) ? P.multiplyUnsafe(a) : P.multiply(a));
             const sum = mul(this, a).add(mul(Q, b));
             return sum.is0() ? undefined : sum;
         }
@@ -282979,7 +282272,7 @@ function weierstrassPoints$1(opts) {
         }
         isTorsionFree() {
             const { h: cofactor, isTorsionFree } = CURVE;
-            if (cofactor === _1n$4)
+            if (cofactor === _1n$6)
                 return true; // No subgroups, always torsion-free
             if (isTorsionFree)
                 return isTorsionFree(Point, this);
@@ -282987,7 +282280,7 @@ function weierstrassPoints$1(opts) {
         }
         clearCofactor() {
             const { h: cofactor, clearCofactor } = CURVE;
-            if (cofactor === _1n$4)
+            if (cofactor === _1n$6)
                 return this; // Fast-path
             if (clearCofactor)
                 return clearCofactor(Point, this);
@@ -282998,7 +282291,7 @@ function weierstrassPoints$1(opts) {
             return toBytes(Point, this, isCompressed);
         }
         toHex(isCompressed = true) {
-            return bytesToHex(this.toRawBytes(isCompressed));
+            return bytesToHex$2(this.toRawBytes(isCompressed));
         }
     }
     Point.BASE = new Point(CURVE.Gx, CURVE.Gy, Fp.ONE);
@@ -283014,9 +282307,9 @@ function weierstrassPoints$1(opts) {
         isWithinCurveOrder,
     };
 }
-function validateOpts$3(curve) {
+function validateOpts$2(curve) {
     const opts = validateBasic$1(curve);
-    validateObject(opts, {
+    validateObject$2(opts, {
         hash: 'hash',
         hmac: 'function',
         randomBytes: 'function',
@@ -283027,13 +282320,13 @@ function validateOpts$3(curve) {
     });
     return Object.freeze({ lowS: true, ...opts });
 }
-function weierstrass$2(curveDef) {
-    const CURVE = validateOpts$3(curveDef);
+function weierstrass$1(curveDef) {
+    const CURVE = validateOpts$2(curveDef);
     const { Fp, n: CURVE_ORDER } = CURVE;
     const compressedLen = Fp.BYTES + 1; // e.g. 33 for 32
     const uncompressedLen = 2 * Fp.BYTES + 1; // e.g. 65 for 32
     function isValidFieldElement(num) {
-        return _0n$3 < num && num < Fp.ORDER; // 0 is banned since it's not invertible FE
+        return _0n$5 < num && num < Fp.ORDER; // 0 is banned since it's not invertible FE
     }
     function modN(a) {
         return mod$1(a, CURVE_ORDER);
@@ -283046,7 +282339,7 @@ function weierstrass$2(curveDef) {
         toBytes(_c, point, isCompressed) {
             const a = point.toAffine();
             const x = Fp.toBytes(a.x);
-            const cat = concatBytes$1;
+            const cat = concatBytes$5;
             if (isCompressed) {
                 return cat(Uint8Array.from([point.hasEvenY() ? 0x02 : 0x03]), x);
             }
@@ -283060,12 +282353,19 @@ function weierstrass$2(curveDef) {
             const tail = bytes.subarray(1);
             // this.assertValidity() is done inside of fromHex
             if (len === compressedLen && (head === 0x02 || head === 0x03)) {
-                const x = bytesToNumberBE(tail);
+                const x = bytesToNumberBE$2(tail);
                 if (!isValidFieldElement(x))
                     throw new Error('Point is not on curve');
                 const y2 = weierstrassEquation(x); // y² = x³ + ax + b
-                let y = Fp.sqrt(y2); // y = y² ^ (p+1)/4
-                const isYOdd = (y & _1n$4) === _1n$4;
+                let y;
+                try {
+                    y = Fp.sqrt(y2); // y = y² ^ (p+1)/4
+                }
+                catch (sqrtError) {
+                    const suffix = sqrtError instanceof Error ? ': ' + sqrtError.message : '';
+                    throw new Error('Point is not on curve' + suffix);
+                }
+                const isYOdd = (y & _1n$6) === _1n$6;
                 // ECDSA
                 const isHeadOdd = (head & 1) === 1;
                 if (isHeadOdd !== isYOdd)
@@ -283082,16 +282382,16 @@ function weierstrass$2(curveDef) {
             }
         },
     });
-    const numToNByteStr = (num) => bytesToHex(numberToBytesBE(num, CURVE.nByteLength));
+    const numToNByteStr = (num) => bytesToHex$2(numberToBytesBE$2(num, CURVE.nByteLength));
     function isBiggerThanHalfOrder(number) {
-        const HALF = CURVE_ORDER >> _1n$4;
+        const HALF = CURVE_ORDER >> _1n$6;
         return number > HALF;
     }
     function normalizeS(s) {
         return isBiggerThanHalfOrder(s) ? modN(-s) : s;
     }
     // slice bytes num
-    const slcNum = (b, from, to) => bytesToNumberBE(b.slice(from, to));
+    const slcNum = (b, from, to) => bytesToNumberBE$2(b.slice(from, to));
     /**
      * ECDSA signature with its (r, s) properties. Supports DER & compact representations.
      */
@@ -283105,13 +282405,13 @@ function weierstrass$2(curveDef) {
         // pair (bytes of r, bytes of s)
         static fromCompact(hex) {
             const l = CURVE.nByteLength;
-            hex = ensureBytes$1('compactSignature', hex, l * 2);
+            hex = ensureBytes$3('compactSignature', hex, l * 2);
             return new Signature(slcNum(hex, 0, l), slcNum(hex, l, 2 * l));
         }
         // DER encoded ECDSA signature
         // https://bitcoin.stackexchange.com/questions/57644/what-are-the-parts-of-a-bitcoin-transaction-input-script
         static fromDER(hex) {
-            const { r, s } = DER$1.toSig(ensureBytes$1('DER', hex));
+            const { r, s } = DER$1.toSig(ensureBytes$3('DER', hex));
             return new Signature(r, s);
         }
         assertValidity() {
@@ -283126,7 +282426,7 @@ function weierstrass$2(curveDef) {
         }
         recoverPublicKey(msgHash) {
             const { r, s, recovery: rec } = this;
-            const h = bits2int_modN(ensureBytes$1('msgHash', msgHash)); // Truncate hash
+            const h = bits2int_modN(ensureBytes$3('msgHash', msgHash)); // Truncate hash
             if (rec == null || ![0, 1, 2, 3].includes(rec))
                 throw new Error('recovery id invalid');
             const radj = rec === 2 || rec === 3 ? r + CURVE.n : r;
@@ -283152,14 +282452,14 @@ function weierstrass$2(curveDef) {
         }
         // DER-encoded
         toDERRawBytes() {
-            return hexToBytes$1(this.toDERHex());
+            return hexToBytes$3(this.toDERHex());
         }
         toDERHex() {
             return DER$1.hexFromSig({ r: this.r, s: this.s });
         }
         // padded bytes of r, then padded bytes of s
         toCompactRawBytes() {
-            return hexToBytes$1(this.toCompactHex());
+            return hexToBytes$3(this.toCompactHex());
         }
         toCompactHex() {
             return numToNByteStr(this.r) + numToNByteStr(this.s);
@@ -283211,7 +282511,7 @@ function weierstrass$2(curveDef) {
      * Quick and dirty check for item being public key. Does not validate hex, or being on-curve.
      */
     function isProbPub(item) {
-        const arr = isBytes$1(item);
+        const arr = isBytes$7(item);
         const str = typeof item === 'string';
         const len = (arr || str) && item.length;
         if (arr)
@@ -283248,7 +282548,7 @@ function weierstrass$2(curveDef) {
         function (bytes) {
             // For curves with nBitLength % 8 !== 0: bits2octets(bits2octets(m)) !== bits2octets(m)
             // for some cases, since bytes.length * 8 is not actual bitLength.
-            const num = bytesToNumberBE(bytes); // check for == u8 done here
+            const num = bytesToNumberBE$2(bytes); // check for == u8 done here
             const delta = bytes.length * 8 - CURVE.nBitLength; // truncate to nBitLength leftmost bits
             return delta > 0 ? num >> BigInt(delta) : num;
         };
@@ -283257,17 +282557,17 @@ function weierstrass$2(curveDef) {
             return modN(bits2int(bytes)); // can't use bytesToNumberBE here
         };
     // NOTE: pads output with zero as per spec
-    const ORDER_MASK = bitMask(CURVE.nBitLength);
+    const ORDER_MASK = bitMask$2(CURVE.nBitLength);
     /**
      * Converts to bytes. Checks if num in `[0..ORDER_MASK-1]` e.g.: `[0..2^256-1]`.
      */
     function int2octets(num) {
         if (typeof num !== 'bigint')
             throw new Error('bigint expected');
-        if (!(_0n$3 <= num && num < ORDER_MASK))
+        if (!(_0n$5 <= num && num < ORDER_MASK))
             throw new Error(`bigint expected < 2^${CURVE.nBitLength}`);
         // works with order, can have different size than numToField!
-        return numberToBytesBE(num, CURVE.nByteLength);
+        return numberToBytesBE$2(num, CURVE.nByteLength);
     }
     // Steps A, D of RFC6979 3.2
     // Creates RFC6979 seed; converts msg/privKey to numbers.
@@ -283281,1945 +282581,9 @@ function weierstrass$2(curveDef) {
         let { lowS, prehash, extraEntropy: ent } = opts; // generates low-s sigs by default
         if (lowS == null)
             lowS = true; // RFC6979 3.2: we skip step A, because we already provide hash
-        msgHash = ensureBytes$1('msgHash', msgHash);
+        msgHash = ensureBytes$3('msgHash', msgHash);
         if (prehash)
-            msgHash = ensureBytes$1('prehashed msgHash', hash(msgHash));
-        // We can't later call bits2octets, since nested bits2int is broken for curves
-        // with nBitLength % 8 !== 0. Because of that, we unwrap it here as int2octets call.
-        // const bits2octets = (bits) => int2octets(bits2int_modN(bits))
-        const h1int = bits2int_modN(msgHash);
-        const d = normPrivateKeyToScalar(privateKey); // validate private key, convert to bigint
-        const seedArgs = [int2octets(d), int2octets(h1int)];
-        // extraEntropy. RFC6979 3.6: additional k' (optional).
-        if (ent != null) {
-            // K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1) || k')
-            const e = ent === true ? randomBytes(Fp.BYTES) : ent; // generate random bytes OR pass as-is
-            seedArgs.push(ensureBytes$1('extraEntropy', e)); // check for being bytes
-        }
-        const seed = concatBytes$1(...seedArgs); // Step D of RFC6979 3.2
-        const m = h1int; // NOTE: no need to call bits2int second time here, it is inside truncateHash!
-        // Converts signature params into point w r/s, checks result for validity.
-        function k2sig(kBytes) {
-            // RFC 6979 Section 3.2, step 3: k = bits2int(T)
-            const k = bits2int(kBytes); // Cannot use fields methods, since it is group element
-            if (!isWithinCurveOrder(k))
-                return; // Important: all mod() calls here must be done over N
-            const ik = invN(k); // k^-1 mod n
-            const q = Point.BASE.multiply(k).toAffine(); // q = Gk
-            const r = modN(q.x); // r = q.x mod n
-            if (r === _0n$3)
-                return;
-            // Can use scalar blinding b^-1(bm + bdr) where b ∈ [1,q−1] according to
-            // https://tches.iacr.org/index.php/TCHES/article/view/7337/6509. We've decided against it:
-            // a) dependency on CSPRNG b) 15% slowdown c) doesn't really help since bigints are not CT
-            const s = modN(ik * modN(m + r * d)); // Not using blinding here
-            if (s === _0n$3)
-                return;
-            let recovery = (q.x === r ? 0 : 2) | Number(q.y & _1n$4); // recovery bit (2 or 3, when q.x > n)
-            let normS = s;
-            if (lowS && isBiggerThanHalfOrder(s)) {
-                normS = normalizeS(s); // if lowS was passed, ensure s is always
-                recovery ^= 1; // // in the bottom half of N
-            }
-            return new Signature(r, normS, recovery); // use normS, not s
-        }
-        return { seed, k2sig };
-    }
-    const defaultSigOpts = { lowS: CURVE.lowS, prehash: false };
-    const defaultVerOpts = { lowS: CURVE.lowS, prehash: false };
-    /**
-     * Signs message hash with a private key.
-     * ```
-     * sign(m, d, k) where
-     *   (x, y) = G × k
-     *   r = x mod n
-     *   s = (m + dr)/k mod n
-     * ```
-     * @param msgHash NOT message. msg needs to be hashed to `msgHash`, or use `prehash`.
-     * @param privKey private key
-     * @param opts lowS for non-malleable sigs. extraEntropy for mixing randomness into k. prehash will hash first arg.
-     * @returns signature with recovery param
-     */
-    function sign(msgHash, privKey, opts = defaultSigOpts) {
-        const { seed, k2sig } = prepSig(msgHash, privKey, opts); // Steps A, D of RFC6979 3.2.
-        const C = CURVE;
-        const drbg = createHmacDrbg(C.hash.outputLen, C.nByteLength, C.hmac);
-        return drbg(seed, k2sig); // Steps B, C, D, E, F, G
-    }
-    // Enable precomputes. Slows down first publicKey computation by 20ms.
-    Point.BASE._setWindowSize(8);
-    // utils.precompute(8, ProjectivePoint.BASE)
-    /**
-     * Verifies a signature against message hash and public key.
-     * Rejects lowS signatures by default: to override,
-     * specify option `{lowS: false}`. Implements section 4.1.4 from https://www.secg.org/sec1-v2.pdf:
-     *
-     * ```
-     * verify(r, s, h, P) where
-     *   U1 = hs^-1 mod n
-     *   U2 = rs^-1 mod n
-     *   R = U1⋅G - U2⋅P
-     *   mod(R.x, n) == r
-     * ```
-     */
-    function verify(signature, msgHash, publicKey, opts = defaultVerOpts) {
-        const sg = signature;
-        msgHash = ensureBytes$1('msgHash', msgHash);
-        publicKey = ensureBytes$1('publicKey', publicKey);
-        if ('strict' in opts)
-            throw new Error('options.strict was renamed to lowS');
-        const { lowS, prehash } = opts;
-        let _sig = undefined;
-        let P;
-        try {
-            if (typeof sg === 'string' || isBytes$1(sg)) {
-                // Signature can be represented in 2 ways: compact (2*nByteLength) & DER (variable-length).
-                // Since DER can also be 2*nByteLength bytes, we check for it first.
-                try {
-                    _sig = Signature.fromDER(sg);
-                }
-                catch (derError) {
-                    if (!(derError instanceof DER$1.Err))
-                        throw derError;
-                    _sig = Signature.fromCompact(sg);
-                }
-            }
-            else if (typeof sg === 'object' && typeof sg.r === 'bigint' && typeof sg.s === 'bigint') {
-                const { r, s } = sg;
-                _sig = new Signature(r, s);
-            }
-            else {
-                throw new Error('PARSE');
-            }
-            P = Point.fromHex(publicKey);
-        }
-        catch (error) {
-            if (error.message === 'PARSE')
-                throw new Error(`signature must be Signature instance, Uint8Array or hex string`);
-            return false;
-        }
-        if (lowS && _sig.hasHighS())
-            return false;
-        if (prehash)
-            msgHash = CURVE.hash(msgHash);
-        const { r, s } = _sig;
-        const h = bits2int_modN(msgHash); // Cannot use fields methods, since it is group element
-        const is = invN(s); // s^-1
-        const u1 = modN(h * is); // u1 = hs^-1 mod n
-        const u2 = modN(r * is); // u2 = rs^-1 mod n
-        const R = Point.BASE.multiplyAndAddUnsafe(P, u1, u2)?.toAffine(); // R = u1⋅G + u2⋅P
-        if (!R)
-            return false;
-        const v = modN(R.x);
-        return v === r;
-    }
-    return {
-        CURVE,
-        getPublicKey,
-        getSharedSecret,
-        sign,
-        verify,
-        ProjectivePoint: Point,
-        Signature,
-        utils,
-    };
-}
-
-// HMAC (RFC 2104)
-let HMAC$1 = class HMAC extends Hash$1 {
-    constructor(hash, _key) {
-        super();
-        this.finished = false;
-        this.destroyed = false;
-        hash$1(hash);
-        const key = toBytes$1(_key);
-        this.iHash = hash.create();
-        if (typeof this.iHash.update !== 'function')
-            throw new Error('Expected instance of class which extends utils.Hash');
-        this.blockLen = this.iHash.blockLen;
-        this.outputLen = this.iHash.outputLen;
-        const blockLen = this.blockLen;
-        const pad = new Uint8Array(blockLen);
-        // blockLen can be bigger than outputLen
-        pad.set(key.length > blockLen ? hash.create().update(key).digest() : key);
-        for (let i = 0; i < pad.length; i++)
-            pad[i] ^= 0x36;
-        this.iHash.update(pad);
-        // By doing update (processing of first block) of outer hash here we can re-use it between multiple calls via clone
-        this.oHash = hash.create();
-        // Undo internal XOR && apply outer XOR
-        for (let i = 0; i < pad.length; i++)
-            pad[i] ^= 0x36 ^ 0x5c;
-        this.oHash.update(pad);
-        pad.fill(0);
-    }
-    update(buf) {
-        exists$1(this);
-        this.iHash.update(buf);
-        return this;
-    }
-    digestInto(out) {
-        exists$1(this);
-        bytes$1(out, this.outputLen);
-        this.finished = true;
-        this.iHash.digestInto(out);
-        this.oHash.update(out);
-        this.oHash.digestInto(out);
-        this.destroy();
-    }
-    digest() {
-        const out = new Uint8Array(this.oHash.outputLen);
-        this.digestInto(out);
-        return out;
-    }
-    _cloneInto(to) {
-        // Create new instance without calling constructor since key already in state and we don't know it.
-        to || (to = Object.create(Object.getPrototypeOf(this), {}));
-        const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
-        to = to;
-        to.finished = finished;
-        to.destroyed = destroyed;
-        to.blockLen = blockLen;
-        to.outputLen = outputLen;
-        to.oHash = oHash._cloneInto(to.oHash);
-        to.iHash = iHash._cloneInto(to.iHash);
-        return to;
-    }
-    destroy() {
-        this.destroyed = true;
-        this.oHash.destroy();
-        this.iHash.destroy();
-    }
-};
-/**
- * HMAC: RFC2104 message authentication code.
- * @param hash - function that would be used e.g. sha256
- * @param key - message key
- * @param message - message data
- */
-const hmac$1 = (hash, key, message) => new HMAC$1(hash, key).update(message).digest();
-hmac$1.create = (hash, key) => new HMAC$1(hash, key);
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// connects noble-curves to noble-hashes
-function getHash$1(hash) {
-    return {
-        hash,
-        hmac: (key, ...msgs) => hmac$1(hash, key, concatBytes$2(...msgs)),
-        randomBytes: randomBytes$1,
-    };
-}
-
-const CURVE_ORDER$1 = BigInt('3618502788666131213697322783095070105526743751716087489154079457884512865583');
-const MAX_VALUE = BigInt('0x800000000000000000000000000000000000000000000000000000000000000');
-const nBitLength$1 = 252;
-function bits2int$1(bytes) {
-    while (bytes[0] === 0)
-        bytes = bytes.subarray(1);
-    const delta = bytes.length * 8 - nBitLength$1;
-    const num = bytesToNumberBE(bytes);
-    return delta > 0 ? num >> BigInt(delta) : num;
-}
-function hex0xToBytes$1(hex) {
-    if (typeof hex === 'string') {
-        hex = strip0x$1(hex);
-        if (hex.length & 1)
-            hex = '0' + hex;
-    }
-    return hexToBytes$1(hex);
-}
-const curve$1 = weierstrass$2({
-    a: BigInt(1),
-    b: BigInt('3141592653589793238462643383279502884197169399375105820974944592307816406665'),
-    Fp: Field$1(BigInt('0x800000000000011000000000000000000000000000000000000000000000001')),
-    n: CURVE_ORDER$1,
-    nBitLength: nBitLength$1,
-    Gx: BigInt('874739451078007766457464989774322083649278607533249481151382481072868806602'),
-    Gy: BigInt('152666792071518830868575557812948353041420400780739481342941381225525861407'),
-    h: BigInt(1),
-    lowS: false,
-    ...getHash$1(sha256$1),
-    bits2int: bits2int$1,
-    bits2int_modN: (bytes) => {
-        const hex = bytesToNumberBE(bytes).toString(16);
-        if (hex.length === 63)
-            bytes = hex0xToBytes$1(hex + '0');
-        return mod$1(bits2int$1(bytes), CURVE_ORDER$1);
-    },
-});
-const _starkCurve = curve$1;
-function ensureBytes(hex) {
-    return ensureBytes$1('', typeof hex === 'string' ? hex0xToBytes$1(hex) : hex);
-}
-function normPrivKey(privKey) {
-    return bytesToHex(ensureBytes(privKey)).padStart(64, '0');
-}
-function getPublicKey(privKey, isCompressed = false) {
-    return curve$1.getPublicKey(normPrivKey(privKey), isCompressed);
-}
-function getSharedSecret(privKeyA, pubKeyB) {
-    return curve$1.getSharedSecret(normPrivKey(privKeyA), pubKeyB);
-}
-function checkSignature(signature) {
-    const { r, s } = signature;
-    if (r < 0n || r >= MAX_VALUE)
-        throw new Error(`Signature.r should be [1, ${MAX_VALUE})`);
-    const w = invert$1(s, CURVE_ORDER$1);
-    if (w < 0n || w >= MAX_VALUE)
-        throw new Error(`inv(Signature.s) should be [1, ${MAX_VALUE})`);
-}
-function checkMessage(msgHash) {
-    const bytes = ensureBytes(msgHash);
-    const num = bytesToNumberBE(bytes);
-    if (num >= MAX_VALUE)
-        throw new Error(`msgHash should be [0, ${MAX_VALUE})`);
-    return bytes;
-}
-function sign(msgHash, privKey, opts) {
-    const sig = curve$1.sign(checkMessage(msgHash), normPrivKey(privKey), opts);
-    checkSignature(sig);
-    return sig;
-}
-function verify(signature, msgHash, pubKey) {
-    if (!(signature instanceof Signature$1)) {
-        const bytes = ensureBytes(signature);
-        try {
-            signature = Signature$1.fromDER(bytes);
-        }
-        catch (derError) {
-            if (!(derError instanceof DER$1.Err))
-                throw derError;
-            signature = Signature$1.fromCompact(bytes);
-        }
-    }
-    checkSignature(signature);
-    return curve$1.verify(signature, checkMessage(msgHash), ensureBytes(pubKey));
-}
-const { CURVE: CURVE$1, ProjectivePoint: ProjectivePoint$1, Signature: Signature$1, utils: utils$5 } = curve$1;
-function extractX(bytes) {
-    const hex = bytesToHex(bytes.subarray(1));
-    const stripped = hex.replace(/^0+/gm, '');
-    return `0x${stripped}`;
-}
-function strip0x$1(hex) {
-    return hex.replace(/^0x/i, '');
-}
-function grindKey(seed) {
-    const _seed = ensureBytes(seed);
-    const sha256mask = 2n ** 256n;
-    const limit = sha256mask - mod$1(sha256mask, CURVE_ORDER$1);
-    for (let i = 0;; i++) {
-        const key = sha256Num(concatBytes$1(_seed, numberToVarBytesBE(BigInt(i))));
-        if (key < limit)
-            return mod$1(key, CURVE_ORDER$1).toString(16);
-        if (i === 100000)
-            throw new Error('grindKey is broken: tried 100k vals');
-    }
-}
-function getStarkKey(privateKey) {
-    return extractX(getPublicKey(privateKey, true));
-}
-function ethSigToPrivate(signature) {
-    signature = strip0x$1(signature);
-    if (signature.length !== 130)
-        throw new Error('Wrong ethereum signature');
-    return grindKey(signature.substring(0, 64));
-}
-const MASK_31 = 2n ** 31n - 1n;
-const int31 = (n) => Number(n & MASK_31);
-function getAccountPath(layer, application, ethereumAddress, index) {
-    const layerNum = int31(sha256Num(layer));
-    const applicationNum = int31(sha256Num(application));
-    const eth = hexToNumber(strip0x$1(ethereumAddress));
-    return `m/2645'/${layerNum}'/${applicationNum}'/${int31(eth)}'/${int31(eth >> 31n)}'/${index}`;
-}
-const PEDERSEN_POINTS$1 = [
-    new ProjectivePoint$1(2089986280348253421170679821480865132823066470938446095505822317253594081284n, 1713931329540660377023406109199410414810705867260802078187082345529207694986n, 1n),
-    new ProjectivePoint$1(996781205833008774514500082376783249102396023663454813447423147977397232763n, 1668503676786377725805489344771023921079126552019160156920634619255970485781n, 1n),
-    new ProjectivePoint$1(2251563274489750535117886426533222435294046428347329203627021249169616184184n, 1798716007562728905295480679789526322175868328062420237419143593021674992973n, 1n),
-    new ProjectivePoint$1(2138414695194151160943305727036575959195309218611738193261179310511854807447n, 113410276730064486255102093846540133784865286929052426931474106396135072156n, 1n),
-    new ProjectivePoint$1(2379962749567351885752724891227938183011949129833673362440656643086021394946n, 776496453633298175483985398648758586525933812536653089401905292063708816422n, 1n),
-];
-function pedersenPrecompute$1(p1, p2) {
-    const out = [];
-    let p = p1;
-    for (let i = 0; i < 248; i++) {
-        out.push(p);
-        p = p.double();
-    }
-    p = p2;
-    for (let i = 0; i < 4; i++) {
-        out.push(p);
-        p = p.double();
-    }
-    return out;
-}
-const PEDERSEN_POINTS1 = pedersenPrecompute$1(PEDERSEN_POINTS$1[1], PEDERSEN_POINTS$1[2]);
-const PEDERSEN_POINTS2 = pedersenPrecompute$1(PEDERSEN_POINTS$1[3], PEDERSEN_POINTS$1[4]);
-function pedersenArg(arg) {
-    let value;
-    if (typeof arg === 'bigint') {
-        value = arg;
-    }
-    else if (typeof arg === 'number') {
-        if (!Number.isSafeInteger(arg))
-            throw new Error(`Invalid pedersenArg: ${arg}`);
-        value = BigInt(arg);
-    }
-    else {
-        value = bytesToNumberBE(ensureBytes(arg));
-    }
-    if (!(0n <= value && value < curve$1.CURVE.Fp.ORDER))
-        throw new Error(`PedersenArg should be 0 <= value < CURVE.P: ${value}`);
-    return value;
-}
-function pedersenSingle(point, value, constants) {
-    let x = pedersenArg(value);
-    for (let j = 0; j < 252; j++) {
-        const pt = constants[j];
-        if (pt.equals(point))
-            throw new Error('Same point');
-        if ((x & 1n) !== 0n)
-            point = point.add(pt);
-        x >>= 1n;
-    }
-    return point;
-}
-function pedersen(x, y) {
-    let point = PEDERSEN_POINTS$1[0];
-    point = pedersenSingle(point, x, PEDERSEN_POINTS1);
-    point = pedersenSingle(point, y, PEDERSEN_POINTS2);
-    return extractX(point.toRawBytes(true));
-}
-const computeHashOnElements$1 = (data, fn = pedersen) => [0, ...data, data.length].reduce((x, y) => fn(x, y));
-const MASK_250$2 = bitMask(250);
-const keccak$1 = (data) => bytesToNumberBE(keccak_256(data)) & MASK_250$2;
-const sha256Num = (data) => bytesToNumberBE(sha256$1(data));
-const Fp251$1 = Field$1(BigInt('3618502788666131213697322783095070105623107215331596699973092056135872020481'));
-function poseidonRoundConstant$1(Fp, name, idx) {
-    const val = Fp.fromBytes(sha256$1(utf8ToBytes$2(`${name}${idx}`)));
-    return Fp.create(val);
-}
-function _poseidonMDS(Fp, name, m, attempt = 0) {
-    const x_values = [];
-    const y_values = [];
-    for (let i = 0; i < m; i++) {
-        x_values.push(poseidonRoundConstant$1(Fp, `${name}x`, attempt * m + i));
-        y_values.push(poseidonRoundConstant$1(Fp, `${name}y`, attempt * m + i));
-    }
-    if (new Set([...x_values, ...y_values]).size !== 2 * m)
-        throw new Error('X and Y values are not distinct');
-    return x_values.map((x) => y_values.map((y) => Fp.inv(Fp.sub(x, y))));
-}
-const MDS_SMALL$1 = [
-    [3, 1, 1],
-    [1, -1, 1],
-    [1, 1, -2],
-].map((i) => i.map(BigInt));
-function poseidonBasic$1(opts, mds) {
-    validateField$1(opts.Fp);
-    if (!Number.isSafeInteger(opts.rate) || !Number.isSafeInteger(opts.capacity))
-        throw new Error(`Wrong poseidon opts: ${opts}`);
-    const m = opts.rate + opts.capacity;
-    const rounds = opts.roundsFull + opts.roundsPartial;
-    const roundConstants = [];
-    for (let i = 0; i < rounds; i++) {
-        const row = [];
-        for (let j = 0; j < m; j++)
-            row.push(poseidonRoundConstant$1(opts.Fp, 'Hades', m * i + j));
-        roundConstants.push(row);
-    }
-    const res = poseidon$3({
-        ...opts,
-        t: m,
-        sboxPower: 3,
-        reversePartialPowIdx: true,
-        mds,
-        roundConstants,
-    });
-    res.m = m;
-    res.rate = opts.rate;
-    res.capacity = opts.capacity;
-    return res;
-}
-function poseidonCreate(opts, mdsAttempt = 0) {
-    const m = opts.rate + opts.capacity;
-    if (!Number.isSafeInteger(mdsAttempt))
-        throw new Error(`Wrong mdsAttempt=${mdsAttempt}`);
-    return poseidonBasic$1(opts, _poseidonMDS(opts.Fp, 'HadesMDS', m, mdsAttempt));
-}
-const poseidonSmall = poseidonBasic$1({ Fp: Fp251$1, rate: 2, capacity: 1, roundsFull: 8, roundsPartial: 83 }, MDS_SMALL$1);
-function poseidonHash(x, y, fn = poseidonSmall) {
-    return fn([x, y, 2n])[0];
-}
-function poseidonHashFunc(x, y, fn = poseidonSmall) {
-    return numberToVarBytesBE(poseidonHash(bytesToNumberBE(x), bytesToNumberBE(y), fn));
-}
-function poseidonHashSingle(x, fn = poseidonSmall) {
-    return fn([x, 0n, 1n])[0];
-}
-function poseidonHashMany(values, fn = poseidonSmall) {
-    const { m, rate } = fn;
-    if (!Array.isArray(values))
-        throw new Error('bigint array expected in values');
-    const padded = Array.from(values);
-    padded.push(1n);
-    while (padded.length % rate !== 0)
-        padded.push(0n);
-    let state = new Array(m).fill(0n);
-    for (let i = 0; i < padded.length; i += rate) {
-        for (let j = 0; j < rate; j++)
-            state[j] += padded[i + j];
-        state = fn(state);
-    }
-    return state[0];
-}
-
-const starkCurve = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	CURVE: CURVE$1,
-	Fp251: Fp251$1,
-	MAX_VALUE: MAX_VALUE,
-	ProjectivePoint: ProjectivePoint$1,
-	Signature: Signature$1,
-	_poseidonMDS: _poseidonMDS,
-	_starkCurve: _starkCurve,
-	computeHashOnElements: computeHashOnElements$1,
-	ethSigToPrivate: ethSigToPrivate,
-	getAccountPath: getAccountPath,
-	getPublicKey: getPublicKey,
-	getSharedSecret: getSharedSecret,
-	getStarkKey: getStarkKey,
-	grindKey: grindKey,
-	keccak: keccak$1,
-	pedersen: pedersen,
-	poseidonBasic: poseidonBasic$1,
-	poseidonCreate: poseidonCreate,
-	poseidonHash: poseidonHash,
-	poseidonHashFunc: poseidonHashFunc,
-	poseidonHashMany: poseidonHashMany,
-	poseidonHashSingle: poseidonHashSingle,
-	poseidonSmall: poseidonSmall,
-	sign: sign,
-	utils: utils$5,
-	verify: verify
-});
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// Utilities for modular arithmetics and finite fields
-// prettier-ignore
-const _0n$2 = BigInt(0), _1n$3 = BigInt(1), _2n$2 = BigInt(2), _3n$1 = BigInt(3);
-// prettier-ignore
-const _4n$1 = BigInt(4), _5n = BigInt(5), _8n = BigInt(8);
-// prettier-ignore
-BigInt(9); BigInt(16);
-// Calculates a modulo b
-function mod(a, b) {
-    const result = a % b;
-    return result >= _0n$2 ? result : b + result;
-}
-/**
- * Efficiently raise num to power and do modular division.
- * Unsafe in some contexts: uses ladder, so can expose bigint bits.
- * @example
- * pow(2n, 6n, 11n) // 64n % 11n == 9n
- */
-// TODO: use field version && remove
-function pow(num, power, modulo) {
-    if (modulo <= _0n$2 || power < _0n$2)
-        throw new Error('Expected power/modulo > 0');
-    if (modulo === _1n$3)
-        return _0n$2;
-    let res = _1n$3;
-    while (power > _0n$2) {
-        if (power & _1n$3)
-            res = (res * num) % modulo;
-        num = (num * num) % modulo;
-        power >>= _1n$3;
-    }
-    return res;
-}
-// Does x ^ (2 ^ power) mod p. pow2(30, 4) == 30 ^ (2 ^ 4)
-function pow2(x, power, modulo) {
-    let res = x;
-    while (power-- > _0n$2) {
-        res *= res;
-        res %= modulo;
-    }
-    return res;
-}
-// Inverses number over modulo
-function invert(number, modulo) {
-    if (number === _0n$2 || modulo <= _0n$2) {
-        throw new Error(`invert: expected positive integers, got n=${number} mod=${modulo}`);
-    }
-    // Euclidean GCD https://brilliant.org/wiki/extended-euclidean-algorithm/
-    // Fermat's little theorem "CT-like" version inv(n) = n^(m-2) mod m is 30x slower.
-    let a = mod(number, modulo);
-    let b = modulo;
-    // prettier-ignore
-    let x = _0n$2, u = _1n$3;
-    while (a !== _0n$2) {
-        // JIT applies optimization if those two lines follow each other
-        const q = b / a;
-        const r = b % a;
-        const m = x - u * q;
-        // prettier-ignore
-        b = a, a = r, x = u, u = m;
-    }
-    const gcd = b;
-    if (gcd !== _1n$3)
-        throw new Error('invert: does not exist');
-    return mod(x, modulo);
-}
-/**
- * Tonelli-Shanks square root search algorithm.
- * 1. https://eprint.iacr.org/2012/685.pdf (page 12)
- * 2. Square Roots from 1; 24, 51, 10 to Dan Shanks
- * Will start an infinite loop if field order P is not prime.
- * @param P field order
- * @returns function that takes field Fp (created from P) and number n
- */
-function tonelliShanks(P) {
-    // Legendre constant: used to calculate Legendre symbol (a | p),
-    // which denotes the value of a^((p-1)/2) (mod p).
-    // (a | p) ≡ 1    if a is a square (mod p)
-    // (a | p) ≡ -1   if a is not a square (mod p)
-    // (a | p) ≡ 0    if a ≡ 0 (mod p)
-    const legendreC = (P - _1n$3) / _2n$2;
-    let Q, S, Z;
-    // Step 1: By factoring out powers of 2 from p - 1,
-    // find q and s such that p - 1 = q*(2^s) with q odd
-    for (Q = P - _1n$3, S = 0; Q % _2n$2 === _0n$2; Q /= _2n$2, S++)
-        ;
-    // Step 2: Select a non-square z such that (z | p) ≡ -1 and set c ≡ zq
-    for (Z = _2n$2; Z < P && pow(Z, legendreC, P) !== P - _1n$3; Z++)
-        ;
-    // Fast-path
-    if (S === 1) {
-        const p1div4 = (P + _1n$3) / _4n$1;
-        return function tonelliFast(Fp, n) {
-            const root = Fp.pow(n, p1div4);
-            if (!Fp.eql(Fp.sqr(root), n))
-                throw new Error('Cannot find square root');
-            return root;
-        };
-    }
-    // Slow-path
-    const Q1div2 = (Q + _1n$3) / _2n$2;
-    return function tonelliSlow(Fp, n) {
-        // Step 0: Check that n is indeed a square: (n | p) should not be ≡ -1
-        if (Fp.pow(n, legendreC) === Fp.neg(Fp.ONE))
-            throw new Error('Cannot find square root');
-        let r = S;
-        // TODO: will fail at Fp2/etc
-        let g = Fp.pow(Fp.mul(Fp.ONE, Z), Q); // will update both x and b
-        let x = Fp.pow(n, Q1div2); // first guess at the square root
-        let b = Fp.pow(n, Q); // first guess at the fudge factor
-        while (!Fp.eql(b, Fp.ONE)) {
-            if (Fp.eql(b, Fp.ZERO))
-                return Fp.ZERO; // https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm (4. If t = 0, return r = 0)
-            // Find m such b^(2^m)==1
-            let m = 1;
-            for (let t2 = Fp.sqr(b); m < r; m++) {
-                if (Fp.eql(t2, Fp.ONE))
-                    break;
-                t2 = Fp.sqr(t2); // t2 *= t2
-            }
-            // NOTE: r-m-1 can be bigger than 32, need to convert to bigint before shift, otherwise there will be overflow
-            const ge = Fp.pow(g, _1n$3 << BigInt(r - m - 1)); // ge = 2^(r-m-1)
-            g = Fp.sqr(ge); // g = ge * ge
-            x = Fp.mul(x, ge); // x *= ge
-            b = Fp.mul(b, g); // b *= g
-            r = m;
-        }
-        return x;
-    };
-}
-function FpSqrt(P) {
-    // NOTE: different algorithms can give different roots, it is up to user to decide which one they want.
-    // For example there is FpSqrtOdd/FpSqrtEven to choice root based on oddness (used for hash-to-curve).
-    // P ≡ 3 (mod 4)
-    // √n = n^((P+1)/4)
-    if (P % _4n$1 === _3n$1) {
-        // Not all roots possible!
-        // const ORDER =
-        //   0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn;
-        // const NUM = 72057594037927816n;
-        const p1div4 = (P + _1n$3) / _4n$1;
-        return function sqrt3mod4(Fp, n) {
-            const root = Fp.pow(n, p1div4);
-            // Throw if root**2 != n
-            if (!Fp.eql(Fp.sqr(root), n))
-                throw new Error('Cannot find square root');
-            return root;
-        };
-    }
-    // Atkin algorithm for q ≡ 5 (mod 8), https://eprint.iacr.org/2012/685.pdf (page 10)
-    if (P % _8n === _5n) {
-        const c1 = (P - _5n) / _8n;
-        return function sqrt5mod8(Fp, n) {
-            const n2 = Fp.mul(n, _2n$2);
-            const v = Fp.pow(n2, c1);
-            const nv = Fp.mul(n, v);
-            const i = Fp.mul(Fp.mul(nv, _2n$2), v);
-            const root = Fp.mul(nv, Fp.sub(i, Fp.ONE));
-            if (!Fp.eql(Fp.sqr(root), n))
-                throw new Error('Cannot find square root');
-            return root;
-        };
-    }
-    // Other cases: Tonelli-Shanks algorithm
-    return tonelliShanks(P);
-}
-// prettier-ignore
-const FIELD_FIELDS = [
-    'create', 'isValid', 'is0', 'neg', 'inv', 'sqrt', 'sqr',
-    'eql', 'add', 'sub', 'mul', 'pow', 'div',
-    'addN', 'subN', 'mulN', 'sqrN'
-];
-function validateField(field) {
-    const initial = {
-        ORDER: 'bigint',
-        MASK: 'bigint',
-        BYTES: 'isSafeInteger',
-        BITS: 'isSafeInteger',
-    };
-    const opts = FIELD_FIELDS.reduce((map, val) => {
-        map[val] = 'function';
-        return map;
-    }, initial);
-    return validateObject$1(field, opts);
-}
-// Generic field functions
-/**
- * Same as `pow` but for Fp: non-constant-time.
- * Unsafe in some contexts: uses ladder, so can expose bigint bits.
- */
-function FpPow(f, num, power) {
-    // Should have same speed as pow for bigints
-    // TODO: benchmark!
-    if (power < _0n$2)
-        throw new Error('Expected power > 0');
-    if (power === _0n$2)
-        return f.ONE;
-    if (power === _1n$3)
-        return num;
-    let p = f.ONE;
-    let d = num;
-    while (power > _0n$2) {
-        if (power & _1n$3)
-            p = f.mul(p, d);
-        d = f.sqr(d);
-        power >>= _1n$3;
-    }
-    return p;
-}
-/**
- * Efficiently invert an array of Field elements.
- * `inv(0)` will return `undefined` here: make sure to throw an error.
- */
-function FpInvertBatch(f, nums) {
-    const tmp = new Array(nums.length);
-    // Walk from first to last, multiply them by each other MOD p
-    const lastMultiplied = nums.reduce((acc, num, i) => {
-        if (f.is0(num))
-            return acc;
-        tmp[i] = acc;
-        return f.mul(acc, num);
-    }, f.ONE);
-    // Invert last element
-    const inverted = f.inv(lastMultiplied);
-    // Walk from last to first, multiply them by inverted each other MOD p
-    nums.reduceRight((acc, num, i) => {
-        if (f.is0(num))
-            return acc;
-        tmp[i] = f.mul(acc, tmp[i]);
-        return f.mul(acc, num);
-    }, inverted);
-    return tmp;
-}
-// CURVE.n lengths
-function nLength(n, nBitLength) {
-    // Bit size, byte size of CURVE.n
-    const _nBitLength = nBitLength !== undefined ? nBitLength : n.toString(2).length;
-    const nByteLength = Math.ceil(_nBitLength / 8);
-    return { nBitLength: _nBitLength, nByteLength };
-}
-/**
- * Initializes a finite field over prime. **Non-primes are not supported.**
- * Do not init in loop: slow. Very fragile: always run a benchmark on a change.
- * Major performance optimizations:
- * * a) denormalized operations like mulN instead of mul
- * * b) same object shape: never add or remove keys
- * * c) Object.freeze
- * @param ORDER prime positive bigint
- * @param bitLen how many bits the field consumes
- * @param isLE (def: false) if encoding / decoding should be in little-endian
- * @param redef optional faster redefinitions of sqrt and other methods
- */
-function Field(ORDER, bitLen, isLE = false, redef = {}) {
-    if (ORDER <= _0n$2)
-        throw new Error(`Expected Field ORDER > 0, got ${ORDER}`);
-    const { nBitLength: BITS, nByteLength: BYTES } = nLength(ORDER, bitLen);
-    if (BYTES > 2048)
-        throw new Error('Field lengths over 2048 bytes are not supported');
-    const sqrtP = FpSqrt(ORDER);
-    const f = Object.freeze({
-        ORDER,
-        BITS,
-        BYTES,
-        MASK: bitMask$1(BITS),
-        ZERO: _0n$2,
-        ONE: _1n$3,
-        create: (num) => mod(num, ORDER),
-        isValid: (num) => {
-            if (typeof num !== 'bigint')
-                throw new Error(`Invalid field element: expected bigint, got ${typeof num}`);
-            return _0n$2 <= num && num < ORDER; // 0 is valid element, but it's not invertible
-        },
-        is0: (num) => num === _0n$2,
-        isOdd: (num) => (num & _1n$3) === _1n$3,
-        neg: (num) => mod(-num, ORDER),
-        eql: (lhs, rhs) => lhs === rhs,
-        sqr: (num) => mod(num * num, ORDER),
-        add: (lhs, rhs) => mod(lhs + rhs, ORDER),
-        sub: (lhs, rhs) => mod(lhs - rhs, ORDER),
-        mul: (lhs, rhs) => mod(lhs * rhs, ORDER),
-        pow: (num, power) => FpPow(f, num, power),
-        div: (lhs, rhs) => mod(lhs * invert(rhs, ORDER), ORDER),
-        // Same as above, but doesn't normalize
-        sqrN: (num) => num * num,
-        addN: (lhs, rhs) => lhs + rhs,
-        subN: (lhs, rhs) => lhs - rhs,
-        mulN: (lhs, rhs) => lhs * rhs,
-        inv: (num) => invert(num, ORDER),
-        sqrt: redef.sqrt || ((n) => sqrtP(f, n)),
-        invertBatch: (lst) => FpInvertBatch(f, lst),
-        // TODO: do we really need constant cmov?
-        // We don't have const-time bigints anyway, so probably will be not very useful
-        cmov: (a, b, c) => (c ? b : a),
-        toBytes: (num) => (isLE ? numberToBytesLE$1(num, BYTES) : numberToBytesBE$1(num, BYTES)),
-        fromBytes: (bytes) => {
-            if (bytes.length !== BYTES)
-                throw new Error(`Fp.fromBytes: expected ${BYTES}, got ${bytes.length}`);
-            return isLE ? bytesToNumberLE$1(bytes) : bytesToNumberBE$1(bytes);
-        },
-    });
-    return Object.freeze(f);
-}
-/**
- * Returns total number of bytes consumed by the field element.
- * For example, 32 bytes for usual 256-bit weierstrass curve.
- * @param fieldOrder number of field elements, usually CURVE.n
- * @returns byte length of field
- */
-function getFieldBytesLength(fieldOrder) {
-    if (typeof fieldOrder !== 'bigint')
-        throw new Error('field order must be bigint');
-    const bitLength = fieldOrder.toString(2).length;
-    return Math.ceil(bitLength / 8);
-}
-/**
- * Returns minimal amount of bytes that can be safely reduced
- * by field order.
- * Should be 2^-128 for 128-bit curve such as P256.
- * @param fieldOrder number of field elements, usually CURVE.n
- * @returns byte length of target hash
- */
-function getMinHashLength(fieldOrder) {
-    const length = getFieldBytesLength(fieldOrder);
-    return length + Math.ceil(length / 2);
-}
-/**
- * "Constant-time" private key generation utility.
- * Can take (n + n/2) or more bytes of uniform input e.g. from CSPRNG or KDF
- * and convert them into private scalar, with the modulo bias being negligible.
- * Needs at least 48 bytes of input for 32-byte private key.
- * https://research.kudelskisecurity.com/2020/07/28/the-definitive-guide-to-modulo-bias-and-how-to-avoid-it/
- * FIPS 186-5, A.2 https://csrc.nist.gov/publications/detail/fips/186/5/final
- * RFC 9380, https://www.rfc-editor.org/rfc/rfc9380#section-5
- * @param hash hash output from SHA3 or a similar function
- * @param groupOrder size of subgroup - (e.g. secp256k1.CURVE.n)
- * @param isLE interpret hash bytes as LE num
- * @returns valid private scalar
- */
-function mapHashToField(key, fieldOrder, isLE = false) {
-    const len = key.length;
-    const fieldLen = getFieldBytesLength(fieldOrder);
-    const minLen = getMinHashLength(fieldOrder);
-    // No small numbers: need to understand bias story. No huge numbers: easier to detect JS timings.
-    if (len < 16 || len < minLen || len > 1024)
-        throw new Error(`expected ${minLen}-1024 bytes of input, got ${len}`);
-    const num = isLE ? bytesToNumberBE$1(key) : bytesToNumberLE$1(key);
-    // `mod(x, 11)` can sometimes produce 0. `mod(x, 10) + 1` is the same, but no 0
-    const reduced = mod(num, fieldOrder - _1n$3) + _1n$3;
-    return isLE ? numberToBytesLE$1(reduced, fieldLen) : numberToBytesBE$1(reduced, fieldLen);
-}
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// Poseidon Hash: https://eprint.iacr.org/2019/458.pdf, https://www.poseidon-hash.info
-function validateOpts$2(opts) {
-    const { Fp, mds, reversePartialPowIdx: rev, roundConstants: rc } = opts;
-    const { roundsFull, roundsPartial, sboxPower, t } = opts;
-    validateField(Fp);
-    for (const i of ['t', 'roundsFull', 'roundsPartial']) {
-        if (typeof opts[i] !== 'number' || !Number.isSafeInteger(opts[i]))
-            throw new Error(`Poseidon: invalid param ${i}=${opts[i]} (${typeof opts[i]})`);
-    }
-    // MDS is TxT matrix
-    if (!Array.isArray(mds) || mds.length !== t)
-        throw new Error('Poseidon: wrong MDS matrix');
-    const _mds = mds.map((mdsRow) => {
-        if (!Array.isArray(mdsRow) || mdsRow.length !== t)
-            throw new Error(`Poseidon MDS matrix row: ${mdsRow}`);
-        return mdsRow.map((i) => {
-            if (typeof i !== 'bigint')
-                throw new Error(`Poseidon MDS matrix value=${i}`);
-            return Fp.create(i);
-        });
-    });
-    if (rev !== undefined && typeof rev !== 'boolean')
-        throw new Error(`Poseidon: invalid param reversePartialPowIdx=${rev}`);
-    if (roundsFull % 2 !== 0)
-        throw new Error(`Poseidon roundsFull is not even: ${roundsFull}`);
-    const rounds = roundsFull + roundsPartial;
-    if (!Array.isArray(rc) || rc.length !== rounds)
-        throw new Error('Poseidon: wrong round constants');
-    const roundConstants = rc.map((rc) => {
-        if (!Array.isArray(rc) || rc.length !== t)
-            throw new Error(`Poseidon wrong round constants: ${rc}`);
-        return rc.map((i) => {
-            if (typeof i !== 'bigint' || !Fp.isValid(i))
-                throw new Error(`Poseidon wrong round constant=${i}`);
-            return Fp.create(i);
-        });
-    });
-    if (!sboxPower || ![3, 5, 7].includes(sboxPower))
-        throw new Error(`Poseidon wrong sboxPower=${sboxPower}`);
-    const _sboxPower = BigInt(sboxPower);
-    let sboxFn = (n) => FpPow(Fp, n, _sboxPower);
-    // Unwrapped sbox power for common cases (195->142μs)
-    if (sboxPower === 3)
-        sboxFn = (n) => Fp.mul(Fp.sqrN(n), n);
-    else if (sboxPower === 5)
-        sboxFn = (n) => Fp.mul(Fp.sqrN(Fp.sqrN(n)), n);
-    return Object.freeze({ ...opts, rounds, sboxFn, roundConstants, mds: _mds });
-}
-function splitConstants(rc, t) {
-    if (typeof t !== 'number')
-        throw new Error('poseidonSplitConstants: wrong t');
-    if (!Array.isArray(rc) || rc.length % t)
-        throw new Error('poseidonSplitConstants: wrong rc');
-    const res = [];
-    let tmp = [];
-    for (let i = 0; i < rc.length; i++) {
-        tmp.push(rc[i]);
-        if (tmp.length === t) {
-            res.push(tmp);
-            tmp = [];
-        }
-    }
-    return res;
-}
-function poseidon$1(opts) {
-    const _opts = validateOpts$2(opts);
-    const { Fp, mds, roundConstants, rounds, roundsPartial, sboxFn, t } = _opts;
-    const halfRoundsFull = _opts.roundsFull / 2;
-    const partialIdx = _opts.reversePartialPowIdx ? t - 1 : 0;
-    const poseidonRound = (values, isFull, idx) => {
-        values = values.map((i, j) => Fp.add(i, roundConstants[idx][j]));
-        if (isFull)
-            values = values.map((i) => sboxFn(i));
-        else
-            values[partialIdx] = sboxFn(values[partialIdx]);
-        // Matrix multiplication
-        values = mds.map((i) => i.reduce((acc, i, j) => Fp.add(acc, Fp.mulN(i, values[j])), Fp.ZERO));
-        return values;
-    };
-    const poseidonHash = function poseidonHash(values) {
-        if (!Array.isArray(values) || values.length !== t)
-            throw new Error(`Poseidon: wrong values (expected array of bigints with length ${t})`);
-        values = values.map((i) => {
-            if (typeof i !== 'bigint')
-                throw new Error(`Poseidon: wrong value=${i} (${typeof i})`);
-            return Fp.create(i);
-        });
-        let round = 0;
-        // Apply r_f/2 full rounds.
-        for (let i = 0; i < halfRoundsFull; i++)
-            values = poseidonRound(values, true, round++);
-        // Apply r_p partial rounds.
-        for (let i = 0; i < roundsPartial; i++)
-            values = poseidonRound(values, false, round++);
-        // Apply r_f/2 full rounds.
-        for (let i = 0; i < halfRoundsFull; i++)
-            values = poseidonRound(values, true, round++);
-        if (round !== rounds)
-            throw new Error(`Poseidon: wrong number of rounds: last round=${round}, total=${rounds}`);
-        return values;
-    };
-    // For verification in tests
-    poseidonHash.roundConstants = roundConstants;
-    return poseidonHash;
-}
-
-const poseidon$2 = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	poseidon: poseidon$1,
-	splitConstants: splitConstants,
-	validateOpts: validateOpts$2
-});
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// Abelian group utilities
-const _0n$1 = BigInt(0);
-const _1n$2 = BigInt(1);
-// Elliptic curve multiplication of Point by scalar. Fragile.
-// Scalars should always be less than curve order: this should be checked inside of a curve itself.
-// Creates precomputation tables for fast multiplication:
-// - private scalar is split by fixed size windows of W bits
-// - every window point is collected from window's table & added to accumulator
-// - since windows are different, same point inside tables won't be accessed more than once per calc
-// - each multiplication is 'Math.ceil(CURVE_ORDER / 𝑊) + 1' point additions (fixed for any scalar)
-// - +1 window is neccessary for wNAF
-// - wNAF reduces table size: 2x less memory + 2x faster generation, but 10% slower multiplication
-// TODO: Research returning 2d JS array of windows, instead of a single window. This would allow
-// windows to be in different memory locations
-function wNAF(c, bits) {
-    const constTimeNegate = (condition, item) => {
-        const neg = item.negate();
-        return condition ? neg : item;
-    };
-    const opts = (W) => {
-        const windows = Math.ceil(bits / W) + 1; // +1, because
-        const windowSize = 2 ** (W - 1); // -1 because we skip zero
-        return { windows, windowSize };
-    };
-    return {
-        constTimeNegate,
-        // non-const time multiplication ladder
-        unsafeLadder(elm, n) {
-            let p = c.ZERO;
-            let d = elm;
-            while (n > _0n$1) {
-                if (n & _1n$2)
-                    p = p.add(d);
-                d = d.double();
-                n >>= _1n$2;
-            }
-            return p;
-        },
-        /**
-         * Creates a wNAF precomputation window. Used for caching.
-         * Default window size is set by `utils.precompute()` and is equal to 8.
-         * Number of precomputed points depends on the curve size:
-         * 2^(𝑊−1) * (Math.ceil(𝑛 / 𝑊) + 1), where:
-         * - 𝑊 is the window size
-         * - 𝑛 is the bitlength of the curve order.
-         * For a 256-bit curve and window size 8, the number of precomputed points is 128 * 33 = 4224.
-         * @returns precomputed point tables flattened to a single array
-         */
-        precomputeWindow(elm, W) {
-            const { windows, windowSize } = opts(W);
-            const points = [];
-            let p = elm;
-            let base = p;
-            for (let window = 0; window < windows; window++) {
-                base = p;
-                points.push(base);
-                // =1, because we skip zero
-                for (let i = 1; i < windowSize; i++) {
-                    base = base.add(p);
-                    points.push(base);
-                }
-                p = base.double();
-            }
-            return points;
-        },
-        /**
-         * Implements ec multiplication using precomputed tables and w-ary non-adjacent form.
-         * @param W window size
-         * @param precomputes precomputed tables
-         * @param n scalar (we don't check here, but should be less than curve order)
-         * @returns real and fake (for const-time) points
-         */
-        wNAF(W, precomputes, n) {
-            // TODO: maybe check that scalar is less than group order? wNAF behavious is undefined otherwise
-            // But need to carefully remove other checks before wNAF. ORDER == bits here
-            const { windows, windowSize } = opts(W);
-            let p = c.ZERO;
-            let f = c.BASE;
-            const mask = BigInt(2 ** W - 1); // Create mask with W ones: 0b1111 for W=4 etc.
-            const maxNumber = 2 ** W;
-            const shiftBy = BigInt(W);
-            for (let window = 0; window < windows; window++) {
-                const offset = window * windowSize;
-                // Extract W bits.
-                let wbits = Number(n & mask);
-                // Shift number by W bits.
-                n >>= shiftBy;
-                // If the bits are bigger than max size, we'll split those.
-                // +224 => 256 - 32
-                if (wbits > windowSize) {
-                    wbits -= maxNumber;
-                    n += _1n$2;
-                }
-                // This code was first written with assumption that 'f' and 'p' will never be infinity point:
-                // since each addition is multiplied by 2 ** W, it cannot cancel each other. However,
-                // there is negate now: it is possible that negated element from low value
-                // would be the same as high element, which will create carry into next window.
-                // It's not obvious how this can fail, but still worth investigating later.
-                // Check if we're onto Zero point.
-                // Add random point inside current window to f.
-                const offset1 = offset;
-                const offset2 = offset + Math.abs(wbits) - 1; // -1 because we skip zero
-                const cond1 = window % 2 !== 0;
-                const cond2 = wbits < 0;
-                if (wbits === 0) {
-                    // The most important part for const-time getPublicKey
-                    f = f.add(constTimeNegate(cond1, precomputes[offset1]));
-                }
-                else {
-                    p = p.add(constTimeNegate(cond2, precomputes[offset2]));
-                }
-            }
-            // JIT-compiler should not eliminate f here, since it will later be used in normalizeZ()
-            // Even if the variable is still unused, there are some checks which will
-            // throw an exception, so compiler needs to prove they won't happen, which is hard.
-            // At this point there is a way to F be infinity-point even if p is not,
-            // which makes it less const-time: around 1 bigint multiply.
-            return { p, f };
-        },
-        wNAFCached(P, precomputesMap, n, transform) {
-            // @ts-ignore
-            const W = P._WINDOW_SIZE || 1;
-            // Calculate precomputes on a first run, reuse them after
-            let comp = precomputesMap.get(P);
-            if (!comp) {
-                comp = this.precomputeWindow(P, W);
-                if (W !== 1) {
-                    precomputesMap.set(P, transform(comp));
-                }
-            }
-            return this.wNAF(W, comp, n);
-        },
-    };
-}
-function validateBasic(curve) {
-    validateField(curve.Fp);
-    validateObject$1(curve, {
-        n: 'bigint',
-        h: 'bigint',
-        Gx: 'field',
-        Gy: 'field',
-    }, {
-        nBitLength: 'isSafeInteger',
-        nByteLength: 'isSafeInteger',
-    });
-    // Set defaults
-    return Object.freeze({
-        ...nLength(curve.n, curve.nBitLength),
-        ...curve,
-        ...{ p: curve.Fp.ORDER },
-    });
-}
-
-/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// Short Weierstrass curve. The formula is: y² = x³ + ax + b
-function validatePointOpts(curve) {
-    const opts = validateBasic(curve);
-    validateObject$1(opts, {
-        a: 'field',
-        b: 'field',
-    }, {
-        allowedPrivateKeyLengths: 'array',
-        wrapPrivateKey: 'boolean',
-        isTorsionFree: 'function',
-        clearCofactor: 'function',
-        allowInfinityPoint: 'boolean',
-        fromBytes: 'function',
-        toBytes: 'function',
-    });
-    const { endo, Fp, a } = opts;
-    if (endo) {
-        if (!Fp.eql(a, Fp.ZERO)) {
-            throw new Error('Endomorphism can only be defined for Koblitz curves that have a=0');
-        }
-        if (typeof endo !== 'object' ||
-            typeof endo.beta !== 'bigint' ||
-            typeof endo.splitScalar !== 'function') {
-            throw new Error('Expected endomorphism with beta: bigint and splitScalar: function');
-        }
-    }
-    return Object.freeze({ ...opts });
-}
-// ASN.1 DER encoding utilities
-const { bytesToNumberBE: b2n, hexToBytes: h2b } = ut$1;
-const DER = {
-    // asn.1 DER encoding utils
-    Err: class DERErr extends Error {
-        constructor(m = '') {
-            super(m);
-        }
-    },
-    _parseInt(data) {
-        const { Err: E } = DER;
-        if (data.length < 2 || data[0] !== 0x02)
-            throw new E('Invalid signature integer tag');
-        const len = data[1];
-        const res = data.subarray(2, len + 2);
-        if (!len || res.length !== len)
-            throw new E('Invalid signature integer: wrong length');
-        // https://crypto.stackexchange.com/a/57734 Leftmost bit of first byte is 'negative' flag,
-        // since we always use positive integers here. It must always be empty:
-        // - add zero byte if exists
-        // - if next byte doesn't have a flag, leading zero is not allowed (minimal encoding)
-        if (res[0] & 0b10000000)
-            throw new E('Invalid signature integer: negative');
-        if (res[0] === 0x00 && !(res[1] & 0b10000000))
-            throw new E('Invalid signature integer: unnecessary leading zero');
-        return { d: b2n(res), l: data.subarray(len + 2) }; // d is data, l is left
-    },
-    toSig(hex) {
-        // parse DER signature
-        const { Err: E } = DER;
-        const data = typeof hex === 'string' ? h2b(hex) : hex;
-        abytes$1(data);
-        let l = data.length;
-        if (l < 2 || data[0] != 0x30)
-            throw new E('Invalid signature tag');
-        if (data[1] !== l - 2)
-            throw new E('Invalid signature: incorrect length');
-        const { d: r, l: sBytes } = DER._parseInt(data.subarray(2));
-        const { d: s, l: rBytesLeft } = DER._parseInt(sBytes);
-        if (rBytesLeft.length)
-            throw new E('Invalid signature: left bytes after parsing');
-        return { r, s };
-    },
-    hexFromSig(sig) {
-        // Add leading zero if first byte has negative bit enabled. More details in '_parseInt'
-        const slice = (s) => (Number.parseInt(s[0], 16) & 0b1000 ? '00' + s : s);
-        const h = (num) => {
-            const hex = num.toString(16);
-            return hex.length & 1 ? `0${hex}` : hex;
-        };
-        const s = slice(h(sig.s));
-        const r = slice(h(sig.r));
-        const shl = s.length / 2;
-        const rhl = r.length / 2;
-        const sl = h(shl);
-        const rl = h(rhl);
-        return `30${h(rhl + shl + 4)}02${rl}${r}02${sl}${s}`;
-    },
-};
-// Be friendly to bad ECMAScript parsers by not using bigint literals
-// prettier-ignore
-const _0n = BigInt(0), _1n$1 = BigInt(1), _2n$1 = BigInt(2), _3n = BigInt(3), _4n = BigInt(4);
-function weierstrassPoints(opts) {
-    const CURVE = validatePointOpts(opts);
-    const { Fp } = CURVE; // All curves has same field / group length as for now, but they can differ
-    const toBytes = CURVE.toBytes ||
-        ((_c, point, _isCompressed) => {
-            const a = point.toAffine();
-            return concatBytes$3(Uint8Array.from([0x04]), Fp.toBytes(a.x), Fp.toBytes(a.y));
-        });
-    const fromBytes = CURVE.fromBytes ||
-        ((bytes) => {
-            // const head = bytes[0];
-            const tail = bytes.subarray(1);
-            // if (head !== 0x04) throw new Error('Only non-compressed encoding is supported');
-            const x = Fp.fromBytes(tail.subarray(0, Fp.BYTES));
-            const y = Fp.fromBytes(tail.subarray(Fp.BYTES, 2 * Fp.BYTES));
-            return { x, y };
-        });
-    /**
-     * y² = x³ + ax + b: Short weierstrass curve formula
-     * @returns y²
-     */
-    function weierstrassEquation(x) {
-        const { a, b } = CURVE;
-        const x2 = Fp.sqr(x); // x * x
-        const x3 = Fp.mul(x2, x); // x2 * x
-        return Fp.add(Fp.add(x3, Fp.mul(x, a)), b); // x3 + a * x + b
-    }
-    // Validate whether the passed curve params are valid.
-    // We check if curve equation works for generator point.
-    // `assertValidity()` won't work: `isTorsionFree()` is not available at this point in bls12-381.
-    // ProjectivePoint class has not been initialized yet.
-    if (!Fp.eql(Fp.sqr(CURVE.Gy), weierstrassEquation(CURVE.Gx)))
-        throw new Error('bad generator point: equation left != right');
-    // Valid group elements reside in range 1..n-1
-    function isWithinCurveOrder(num) {
-        return typeof num === 'bigint' && _0n < num && num < CURVE.n;
-    }
-    function assertGE(num) {
-        if (!isWithinCurveOrder(num))
-            throw new Error('Expected valid bigint: 0 < bigint < curve.n');
-    }
-    // Validates if priv key is valid and converts it to bigint.
-    // Supports options allowedPrivateKeyLengths and wrapPrivateKey.
-    function normPrivateKeyToScalar(key) {
-        const { allowedPrivateKeyLengths: lengths, nByteLength, wrapPrivateKey, n } = CURVE;
-        if (lengths && typeof key !== 'bigint') {
-            if (isBytes$5(key))
-                key = bytesToHex$1(key);
-            // Normalize to hex string, pad. E.g. P521 would norm 130-132 char hex to 132-char bytes
-            if (typeof key !== 'string' || !lengths.includes(key.length))
-                throw new Error('Invalid key');
-            key = key.padStart(nByteLength * 2, '0');
-        }
-        let num;
-        try {
-            num =
-                typeof key === 'bigint'
-                    ? key
-                    : bytesToNumberBE$1(ensureBytes$2('private key', key, nByteLength));
-        }
-        catch (error) {
-            throw new Error(`private key must be ${nByteLength} bytes, hex or bigint, not ${typeof key}`);
-        }
-        if (wrapPrivateKey)
-            num = mod(num, n); // disabled by default, enabled for BLS
-        assertGE(num); // num in range [1..N-1]
-        return num;
-    }
-    const pointPrecomputes = new Map();
-    function assertPrjPoint(other) {
-        if (!(other instanceof Point))
-            throw new Error('ProjectivePoint expected');
-    }
-    /**
-     * Projective Point works in 3d / projective (homogeneous) coordinates: (x, y, z) ∋ (x=x/z, y=y/z)
-     * Default Point works in 2d / affine coordinates: (x, y)
-     * We're doing calculations in projective, because its operations don't require costly inversion.
-     */
-    class Point {
-        constructor(px, py, pz) {
-            this.px = px;
-            this.py = py;
-            this.pz = pz;
-            if (px == null || !Fp.isValid(px))
-                throw new Error('x required');
-            if (py == null || !Fp.isValid(py))
-                throw new Error('y required');
-            if (pz == null || !Fp.isValid(pz))
-                throw new Error('z required');
-        }
-        // Does not validate if the point is on-curve.
-        // Use fromHex instead, or call assertValidity() later.
-        static fromAffine(p) {
-            const { x, y } = p || {};
-            if (!p || !Fp.isValid(x) || !Fp.isValid(y))
-                throw new Error('invalid affine point');
-            if (p instanceof Point)
-                throw new Error('projective point not allowed');
-            const is0 = (i) => Fp.eql(i, Fp.ZERO);
-            // fromAffine(x:0, y:0) would produce (x:0, y:0, z:1), but we need (x:0, y:1, z:0)
-            if (is0(x) && is0(y))
-                return Point.ZERO;
-            return new Point(x, y, Fp.ONE);
-        }
-        get x() {
-            return this.toAffine().x;
-        }
-        get y() {
-            return this.toAffine().y;
-        }
-        /**
-         * Takes a bunch of Projective Points but executes only one
-         * inversion on all of them. Inversion is very slow operation,
-         * so this improves performance massively.
-         * Optimization: converts a list of projective points to a list of identical points with Z=1.
-         */
-        static normalizeZ(points) {
-            const toInv = Fp.invertBatch(points.map((p) => p.pz));
-            return points.map((p, i) => p.toAffine(toInv[i])).map(Point.fromAffine);
-        }
-        /**
-         * Converts hash string or Uint8Array to Point.
-         * @param hex short/long ECDSA hex
-         */
-        static fromHex(hex) {
-            const P = Point.fromAffine(fromBytes(ensureBytes$2('pointHex', hex)));
-            P.assertValidity();
-            return P;
-        }
-        // Multiplies generator point by privateKey.
-        static fromPrivateKey(privateKey) {
-            return Point.BASE.multiply(normPrivateKeyToScalar(privateKey));
-        }
-        // "Private method", don't use it directly
-        _setWindowSize(windowSize) {
-            this._WINDOW_SIZE = windowSize;
-            pointPrecomputes.delete(this);
-        }
-        // A point on curve is valid if it conforms to equation.
-        assertValidity() {
-            if (this.is0()) {
-                // (0, 1, 0) aka ZERO is invalid in most contexts.
-                // In BLS, ZERO can be serialized, so we allow it.
-                // (0, 0, 0) is wrong representation of ZERO and is always invalid.
-                if (CURVE.allowInfinityPoint && !Fp.is0(this.py))
-                    return;
-                throw new Error('bad point: ZERO');
-            }
-            // Some 3rd-party test vectors require different wording between here & `fromCompressedHex`
-            const { x, y } = this.toAffine();
-            // Check if x, y are valid field elements
-            if (!Fp.isValid(x) || !Fp.isValid(y))
-                throw new Error('bad point: x or y not FE');
-            const left = Fp.sqr(y); // y²
-            const right = weierstrassEquation(x); // x³ + ax + b
-            if (!Fp.eql(left, right))
-                throw new Error('bad point: equation left != right');
-            if (!this.isTorsionFree())
-                throw new Error('bad point: not in prime-order subgroup');
-        }
-        hasEvenY() {
-            const { y } = this.toAffine();
-            if (Fp.isOdd)
-                return !Fp.isOdd(y);
-            throw new Error("Field doesn't support isOdd");
-        }
-        /**
-         * Compare one point to another.
-         */
-        equals(other) {
-            assertPrjPoint(other);
-            const { px: X1, py: Y1, pz: Z1 } = this;
-            const { px: X2, py: Y2, pz: Z2 } = other;
-            const U1 = Fp.eql(Fp.mul(X1, Z2), Fp.mul(X2, Z1));
-            const U2 = Fp.eql(Fp.mul(Y1, Z2), Fp.mul(Y2, Z1));
-            return U1 && U2;
-        }
-        /**
-         * Flips point to one corresponding to (x, -y) in Affine coordinates.
-         */
-        negate() {
-            return new Point(this.px, Fp.neg(this.py), this.pz);
-        }
-        // Renes-Costello-Batina exception-free doubling formula.
-        // There is 30% faster Jacobian formula, but it is not complete.
-        // https://eprint.iacr.org/2015/1060, algorithm 3
-        // Cost: 8M + 3S + 3*a + 2*b3 + 15add.
-        double() {
-            const { a, b } = CURVE;
-            const b3 = Fp.mul(b, _3n);
-            const { px: X1, py: Y1, pz: Z1 } = this;
-            let X3 = Fp.ZERO, Y3 = Fp.ZERO, Z3 = Fp.ZERO; // prettier-ignore
-            let t0 = Fp.mul(X1, X1); // step 1
-            let t1 = Fp.mul(Y1, Y1);
-            let t2 = Fp.mul(Z1, Z1);
-            let t3 = Fp.mul(X1, Y1);
-            t3 = Fp.add(t3, t3); // step 5
-            Z3 = Fp.mul(X1, Z1);
-            Z3 = Fp.add(Z3, Z3);
-            X3 = Fp.mul(a, Z3);
-            Y3 = Fp.mul(b3, t2);
-            Y3 = Fp.add(X3, Y3); // step 10
-            X3 = Fp.sub(t1, Y3);
-            Y3 = Fp.add(t1, Y3);
-            Y3 = Fp.mul(X3, Y3);
-            X3 = Fp.mul(t3, X3);
-            Z3 = Fp.mul(b3, Z3); // step 15
-            t2 = Fp.mul(a, t2);
-            t3 = Fp.sub(t0, t2);
-            t3 = Fp.mul(a, t3);
-            t3 = Fp.add(t3, Z3);
-            Z3 = Fp.add(t0, t0); // step 20
-            t0 = Fp.add(Z3, t0);
-            t0 = Fp.add(t0, t2);
-            t0 = Fp.mul(t0, t3);
-            Y3 = Fp.add(Y3, t0);
-            t2 = Fp.mul(Y1, Z1); // step 25
-            t2 = Fp.add(t2, t2);
-            t0 = Fp.mul(t2, t3);
-            X3 = Fp.sub(X3, t0);
-            Z3 = Fp.mul(t2, t1);
-            Z3 = Fp.add(Z3, Z3); // step 30
-            Z3 = Fp.add(Z3, Z3);
-            return new Point(X3, Y3, Z3);
-        }
-        // Renes-Costello-Batina exception-free addition formula.
-        // There is 30% faster Jacobian formula, but it is not complete.
-        // https://eprint.iacr.org/2015/1060, algorithm 1
-        // Cost: 12M + 0S + 3*a + 3*b3 + 23add.
-        add(other) {
-            assertPrjPoint(other);
-            const { px: X1, py: Y1, pz: Z1 } = this;
-            const { px: X2, py: Y2, pz: Z2 } = other;
-            let X3 = Fp.ZERO, Y3 = Fp.ZERO, Z3 = Fp.ZERO; // prettier-ignore
-            const a = CURVE.a;
-            const b3 = Fp.mul(CURVE.b, _3n);
-            let t0 = Fp.mul(X1, X2); // step 1
-            let t1 = Fp.mul(Y1, Y2);
-            let t2 = Fp.mul(Z1, Z2);
-            let t3 = Fp.add(X1, Y1);
-            let t4 = Fp.add(X2, Y2); // step 5
-            t3 = Fp.mul(t3, t4);
-            t4 = Fp.add(t0, t1);
-            t3 = Fp.sub(t3, t4);
-            t4 = Fp.add(X1, Z1);
-            let t5 = Fp.add(X2, Z2); // step 10
-            t4 = Fp.mul(t4, t5);
-            t5 = Fp.add(t0, t2);
-            t4 = Fp.sub(t4, t5);
-            t5 = Fp.add(Y1, Z1);
-            X3 = Fp.add(Y2, Z2); // step 15
-            t5 = Fp.mul(t5, X3);
-            X3 = Fp.add(t1, t2);
-            t5 = Fp.sub(t5, X3);
-            Z3 = Fp.mul(a, t4);
-            X3 = Fp.mul(b3, t2); // step 20
-            Z3 = Fp.add(X3, Z3);
-            X3 = Fp.sub(t1, Z3);
-            Z3 = Fp.add(t1, Z3);
-            Y3 = Fp.mul(X3, Z3);
-            t1 = Fp.add(t0, t0); // step 25
-            t1 = Fp.add(t1, t0);
-            t2 = Fp.mul(a, t2);
-            t4 = Fp.mul(b3, t4);
-            t1 = Fp.add(t1, t2);
-            t2 = Fp.sub(t0, t2); // step 30
-            t2 = Fp.mul(a, t2);
-            t4 = Fp.add(t4, t2);
-            t0 = Fp.mul(t1, t4);
-            Y3 = Fp.add(Y3, t0);
-            t0 = Fp.mul(t5, t4); // step 35
-            X3 = Fp.mul(t3, X3);
-            X3 = Fp.sub(X3, t0);
-            t0 = Fp.mul(t3, t1);
-            Z3 = Fp.mul(t5, Z3);
-            Z3 = Fp.add(Z3, t0); // step 40
-            return new Point(X3, Y3, Z3);
-        }
-        subtract(other) {
-            return this.add(other.negate());
-        }
-        is0() {
-            return this.equals(Point.ZERO);
-        }
-        wNAF(n) {
-            return wnaf.wNAFCached(this, pointPrecomputes, n, (comp) => {
-                const toInv = Fp.invertBatch(comp.map((p) => p.pz));
-                return comp.map((p, i) => p.toAffine(toInv[i])).map(Point.fromAffine);
-            });
-        }
-        /**
-         * Non-constant-time multiplication. Uses double-and-add algorithm.
-         * It's faster, but should only be used when you don't care about
-         * an exposed private key e.g. sig verification, which works over *public* keys.
-         */
-        multiplyUnsafe(n) {
-            const I = Point.ZERO;
-            if (n === _0n)
-                return I;
-            assertGE(n); // Will throw on 0
-            if (n === _1n$1)
-                return this;
-            const { endo } = CURVE;
-            if (!endo)
-                return wnaf.unsafeLadder(this, n);
-            // Apply endomorphism
-            let { k1neg, k1, k2neg, k2 } = endo.splitScalar(n);
-            let k1p = I;
-            let k2p = I;
-            let d = this;
-            while (k1 > _0n || k2 > _0n) {
-                if (k1 & _1n$1)
-                    k1p = k1p.add(d);
-                if (k2 & _1n$1)
-                    k2p = k2p.add(d);
-                d = d.double();
-                k1 >>= _1n$1;
-                k2 >>= _1n$1;
-            }
-            if (k1neg)
-                k1p = k1p.negate();
-            if (k2neg)
-                k2p = k2p.negate();
-            k2p = new Point(Fp.mul(k2p.px, endo.beta), k2p.py, k2p.pz);
-            return k1p.add(k2p);
-        }
-        /**
-         * Constant time multiplication.
-         * Uses wNAF method. Windowed method may be 10% faster,
-         * but takes 2x longer to generate and consumes 2x memory.
-         * Uses precomputes when available.
-         * Uses endomorphism for Koblitz curves.
-         * @param scalar by which the point would be multiplied
-         * @returns New point
-         */
-        multiply(scalar) {
-            assertGE(scalar);
-            let n = scalar;
-            let point, fake; // Fake point is used to const-time mult
-            const { endo } = CURVE;
-            if (endo) {
-                const { k1neg, k1, k2neg, k2 } = endo.splitScalar(n);
-                let { p: k1p, f: f1p } = this.wNAF(k1);
-                let { p: k2p, f: f2p } = this.wNAF(k2);
-                k1p = wnaf.constTimeNegate(k1neg, k1p);
-                k2p = wnaf.constTimeNegate(k2neg, k2p);
-                k2p = new Point(Fp.mul(k2p.px, endo.beta), k2p.py, k2p.pz);
-                point = k1p.add(k2p);
-                fake = f1p.add(f2p);
-            }
-            else {
-                const { p, f } = this.wNAF(n);
-                point = p;
-                fake = f;
-            }
-            // Normalize `z` for both points, but return only real one
-            return Point.normalizeZ([point, fake])[0];
-        }
-        /**
-         * Efficiently calculate `aP + bQ`. Unsafe, can expose private key, if used incorrectly.
-         * Not using Strauss-Shamir trick: precomputation tables are faster.
-         * The trick could be useful if both P and Q are not G (not in our case).
-         * @returns non-zero affine point
-         */
-        multiplyAndAddUnsafe(Q, a, b) {
-            const G = Point.BASE; // No Strauss-Shamir trick: we have 10% faster G precomputes
-            const mul = (P, a // Select faster multiply() method
-            ) => (a === _0n || a === _1n$1 || !P.equals(G) ? P.multiplyUnsafe(a) : P.multiply(a));
-            const sum = mul(this, a).add(mul(Q, b));
-            return sum.is0() ? undefined : sum;
-        }
-        // Converts Projective point to affine (x, y) coordinates.
-        // Can accept precomputed Z^-1 - for example, from invertBatch.
-        // (x, y, z) ∋ (x=x/z, y=y/z)
-        toAffine(iz) {
-            const { px: x, py: y, pz: z } = this;
-            const is0 = this.is0();
-            // If invZ was 0, we return zero point. However we still want to execute
-            // all operations, so we replace invZ with a random number, 1.
-            if (iz == null)
-                iz = is0 ? Fp.ONE : Fp.inv(z);
-            const ax = Fp.mul(x, iz);
-            const ay = Fp.mul(y, iz);
-            const zz = Fp.mul(z, iz);
-            if (is0)
-                return { x: Fp.ZERO, y: Fp.ZERO };
-            if (!Fp.eql(zz, Fp.ONE))
-                throw new Error('invZ was invalid');
-            return { x: ax, y: ay };
-        }
-        isTorsionFree() {
-            const { h: cofactor, isTorsionFree } = CURVE;
-            if (cofactor === _1n$1)
-                return true; // No subgroups, always torsion-free
-            if (isTorsionFree)
-                return isTorsionFree(Point, this);
-            throw new Error('isTorsionFree() has not been declared for the elliptic curve');
-        }
-        clearCofactor() {
-            const { h: cofactor, clearCofactor } = CURVE;
-            if (cofactor === _1n$1)
-                return this; // Fast-path
-            if (clearCofactor)
-                return clearCofactor(Point, this);
-            return this.multiplyUnsafe(CURVE.h);
-        }
-        toRawBytes(isCompressed = true) {
-            this.assertValidity();
-            return toBytes(Point, this, isCompressed);
-        }
-        toHex(isCompressed = true) {
-            return bytesToHex$1(this.toRawBytes(isCompressed));
-        }
-    }
-    Point.BASE = new Point(CURVE.Gx, CURVE.Gy, Fp.ONE);
-    Point.ZERO = new Point(Fp.ZERO, Fp.ONE, Fp.ZERO);
-    const _bits = CURVE.nBitLength;
-    const wnaf = wNAF(Point, CURVE.endo ? Math.ceil(_bits / 2) : _bits);
-    // Validate if generator point is on curve
-    return {
-        CURVE,
-        ProjectivePoint: Point,
-        normPrivateKeyToScalar,
-        weierstrassEquation,
-        isWithinCurveOrder,
-    };
-}
-function validateOpts$1(curve) {
-    const opts = validateBasic(curve);
-    validateObject$1(opts, {
-        hash: 'hash',
-        hmac: 'function',
-        randomBytes: 'function',
-    }, {
-        bits2int: 'function',
-        bits2int_modN: 'function',
-        lowS: 'boolean',
-    });
-    return Object.freeze({ lowS: true, ...opts });
-}
-function weierstrass(curveDef) {
-    const CURVE = validateOpts$1(curveDef);
-    const { Fp, n: CURVE_ORDER } = CURVE;
-    const compressedLen = Fp.BYTES + 1; // e.g. 33 for 32
-    const uncompressedLen = 2 * Fp.BYTES + 1; // e.g. 65 for 32
-    function isValidFieldElement(num) {
-        return _0n < num && num < Fp.ORDER; // 0 is banned since it's not invertible FE
-    }
-    function modN(a) {
-        return mod(a, CURVE_ORDER);
-    }
-    function invN(a) {
-        return invert(a, CURVE_ORDER);
-    }
-    const { ProjectivePoint: Point, normPrivateKeyToScalar, weierstrassEquation, isWithinCurveOrder, } = weierstrassPoints({
-        ...CURVE,
-        toBytes(_c, point, isCompressed) {
-            const a = point.toAffine();
-            const x = Fp.toBytes(a.x);
-            const cat = concatBytes$3;
-            if (isCompressed) {
-                return cat(Uint8Array.from([point.hasEvenY() ? 0x02 : 0x03]), x);
-            }
-            else {
-                return cat(Uint8Array.from([0x04]), x, Fp.toBytes(a.y));
-            }
-        },
-        fromBytes(bytes) {
-            const len = bytes.length;
-            const head = bytes[0];
-            const tail = bytes.subarray(1);
-            // this.assertValidity() is done inside of fromHex
-            if (len === compressedLen && (head === 0x02 || head === 0x03)) {
-                const x = bytesToNumberBE$1(tail);
-                if (!isValidFieldElement(x))
-                    throw new Error('Point is not on curve');
-                const y2 = weierstrassEquation(x); // y² = x³ + ax + b
-                let y;
-                try {
-                    y = Fp.sqrt(y2); // y = y² ^ (p+1)/4
-                }
-                catch (sqrtError) {
-                    const suffix = sqrtError instanceof Error ? ': ' + sqrtError.message : '';
-                    throw new Error('Point is not on curve' + suffix);
-                }
-                const isYOdd = (y & _1n$1) === _1n$1;
-                // ECDSA
-                const isHeadOdd = (head & 1) === 1;
-                if (isHeadOdd !== isYOdd)
-                    y = Fp.neg(y);
-                return { x, y };
-            }
-            else if (len === uncompressedLen && head === 0x04) {
-                const x = Fp.fromBytes(tail.subarray(0, Fp.BYTES));
-                const y = Fp.fromBytes(tail.subarray(Fp.BYTES, 2 * Fp.BYTES));
-                return { x, y };
-            }
-            else {
-                throw new Error(`Point of length ${len} was invalid. Expected ${compressedLen} compressed bytes or ${uncompressedLen} uncompressed bytes`);
-            }
-        },
-    });
-    const numToNByteStr = (num) => bytesToHex$1(numberToBytesBE$1(num, CURVE.nByteLength));
-    function isBiggerThanHalfOrder(number) {
-        const HALF = CURVE_ORDER >> _1n$1;
-        return number > HALF;
-    }
-    function normalizeS(s) {
-        return isBiggerThanHalfOrder(s) ? modN(-s) : s;
-    }
-    // slice bytes num
-    const slcNum = (b, from, to) => bytesToNumberBE$1(b.slice(from, to));
-    /**
-     * ECDSA signature with its (r, s) properties. Supports DER & compact representations.
-     */
-    class Signature {
-        constructor(r, s, recovery) {
-            this.r = r;
-            this.s = s;
-            this.recovery = recovery;
-            this.assertValidity();
-        }
-        // pair (bytes of r, bytes of s)
-        static fromCompact(hex) {
-            const l = CURVE.nByteLength;
-            hex = ensureBytes$2('compactSignature', hex, l * 2);
-            return new Signature(slcNum(hex, 0, l), slcNum(hex, l, 2 * l));
-        }
-        // DER encoded ECDSA signature
-        // https://bitcoin.stackexchange.com/questions/57644/what-are-the-parts-of-a-bitcoin-transaction-input-script
-        static fromDER(hex) {
-            const { r, s } = DER.toSig(ensureBytes$2('DER', hex));
-            return new Signature(r, s);
-        }
-        assertValidity() {
-            // can use assertGE here
-            if (!isWithinCurveOrder(this.r))
-                throw new Error('r must be 0 < r < CURVE.n');
-            if (!isWithinCurveOrder(this.s))
-                throw new Error('s must be 0 < s < CURVE.n');
-        }
-        addRecoveryBit(recovery) {
-            return new Signature(this.r, this.s, recovery);
-        }
-        recoverPublicKey(msgHash) {
-            const { r, s, recovery: rec } = this;
-            const h = bits2int_modN(ensureBytes$2('msgHash', msgHash)); // Truncate hash
-            if (rec == null || ![0, 1, 2, 3].includes(rec))
-                throw new Error('recovery id invalid');
-            const radj = rec === 2 || rec === 3 ? r + CURVE.n : r;
-            if (radj >= Fp.ORDER)
-                throw new Error('recovery id 2 or 3 invalid');
-            const prefix = (rec & 1) === 0 ? '02' : '03';
-            const R = Point.fromHex(prefix + numToNByteStr(radj));
-            const ir = invN(radj); // r^-1
-            const u1 = modN(-h * ir); // -hr^-1
-            const u2 = modN(s * ir); // sr^-1
-            const Q = Point.BASE.multiplyAndAddUnsafe(R, u1, u2); // (sr^-1)R-(hr^-1)G = -(hr^-1)G + (sr^-1)
-            if (!Q)
-                throw new Error('point at infinify'); // unsafe is fine: no priv data leaked
-            Q.assertValidity();
-            return Q;
-        }
-        // Signatures should be low-s, to prevent malleability.
-        hasHighS() {
-            return isBiggerThanHalfOrder(this.s);
-        }
-        normalizeS() {
-            return this.hasHighS() ? new Signature(this.r, modN(-this.s), this.recovery) : this;
-        }
-        // DER-encoded
-        toDERRawBytes() {
-            return hexToBytes$2(this.toDERHex());
-        }
-        toDERHex() {
-            return DER.hexFromSig({ r: this.r, s: this.s });
-        }
-        // padded bytes of r, then padded bytes of s
-        toCompactRawBytes() {
-            return hexToBytes$2(this.toCompactHex());
-        }
-        toCompactHex() {
-            return numToNByteStr(this.r) + numToNByteStr(this.s);
-        }
-    }
-    const utils = {
-        isValidPrivateKey(privateKey) {
-            try {
-                normPrivateKeyToScalar(privateKey);
-                return true;
-            }
-            catch (error) {
-                return false;
-            }
-        },
-        normPrivateKeyToScalar: normPrivateKeyToScalar,
-        /**
-         * Produces cryptographically secure private key from random of size
-         * (groupLen + ceil(groupLen / 2)) with modulo bias being negligible.
-         */
-        randomPrivateKey: () => {
-            const length = getMinHashLength(CURVE.n);
-            return mapHashToField(CURVE.randomBytes(length), CURVE.n);
-        },
-        /**
-         * Creates precompute table for an arbitrary EC point. Makes point "cached".
-         * Allows to massively speed-up `point.multiply(scalar)`.
-         * @returns cached point
-         * @example
-         * const fast = utils.precompute(8, ProjectivePoint.fromHex(someonesPubKey));
-         * fast.multiply(privKey); // much faster ECDH now
-         */
-        precompute(windowSize = 8, point = Point.BASE) {
-            point._setWindowSize(windowSize);
-            point.multiply(BigInt(3)); // 3 is arbitrary, just need any number here
-            return point;
-        },
-    };
-    /**
-     * Computes public key for a private key. Checks for validity of the private key.
-     * @param privateKey private key
-     * @param isCompressed whether to return compact (default), or full key
-     * @returns Public key, full when isCompressed=false; short when isCompressed=true
-     */
-    function getPublicKey(privateKey, isCompressed = true) {
-        return Point.fromPrivateKey(privateKey).toRawBytes(isCompressed);
-    }
-    /**
-     * Quick and dirty check for item being public key. Does not validate hex, or being on-curve.
-     */
-    function isProbPub(item) {
-        const arr = isBytes$5(item);
-        const str = typeof item === 'string';
-        const len = (arr || str) && item.length;
-        if (arr)
-            return len === compressedLen || len === uncompressedLen;
-        if (str)
-            return len === 2 * compressedLen || len === 2 * uncompressedLen;
-        if (item instanceof Point)
-            return true;
-        return false;
-    }
-    /**
-     * ECDH (Elliptic Curve Diffie Hellman).
-     * Computes shared public key from private key and public key.
-     * Checks: 1) private key validity 2) shared key is on-curve.
-     * Does NOT hash the result.
-     * @param privateA private key
-     * @param publicB different public key
-     * @param isCompressed whether to return compact (default), or full key
-     * @returns shared public key
-     */
-    function getSharedSecret(privateA, publicB, isCompressed = true) {
-        if (isProbPub(privateA))
-            throw new Error('first arg must be private key');
-        if (!isProbPub(publicB))
-            throw new Error('second arg must be public key');
-        const b = Point.fromHex(publicB); // check for being on-curve
-        return b.multiply(normPrivateKeyToScalar(privateA)).toRawBytes(isCompressed);
-    }
-    // RFC6979: ensure ECDSA msg is X bytes and < N. RFC suggests optional truncating via bits2octets.
-    // FIPS 186-4 4.6 suggests the leftmost min(nBitLen, outLen) bits, which matches bits2int.
-    // bits2int can produce res>N, we can do mod(res, N) since the bitLen is the same.
-    // int2octets can't be used; pads small msgs with 0: unacceptatble for trunc as per RFC vectors
-    const bits2int = CURVE.bits2int ||
-        function (bytes) {
-            // For curves with nBitLength % 8 !== 0: bits2octets(bits2octets(m)) !== bits2octets(m)
-            // for some cases, since bytes.length * 8 is not actual bitLength.
-            const num = bytesToNumberBE$1(bytes); // check for == u8 done here
-            const delta = bytes.length * 8 - CURVE.nBitLength; // truncate to nBitLength leftmost bits
-            return delta > 0 ? num >> BigInt(delta) : num;
-        };
-    const bits2int_modN = CURVE.bits2int_modN ||
-        function (bytes) {
-            return modN(bits2int(bytes)); // can't use bytesToNumberBE here
-        };
-    // NOTE: pads output with zero as per spec
-    const ORDER_MASK = bitMask$1(CURVE.nBitLength);
-    /**
-     * Converts to bytes. Checks if num in `[0..ORDER_MASK-1]` e.g.: `[0..2^256-1]`.
-     */
-    function int2octets(num) {
-        if (typeof num !== 'bigint')
-            throw new Error('bigint expected');
-        if (!(_0n <= num && num < ORDER_MASK))
-            throw new Error(`bigint expected < 2^${CURVE.nBitLength}`);
-        // works with order, can have different size than numToField!
-        return numberToBytesBE$1(num, CURVE.nByteLength);
-    }
-    // Steps A, D of RFC6979 3.2
-    // Creates RFC6979 seed; converts msg/privKey to numbers.
-    // Used only in sign, not in verify.
-    // NOTE: we cannot assume here that msgHash has same amount of bytes as curve order, this will be wrong at least for P521.
-    // Also it can be bigger for P224 + SHA256
-    function prepSig(msgHash, privateKey, opts = defaultSigOpts) {
-        if (['recovered', 'canonical'].some((k) => k in opts))
-            throw new Error('sign() legacy options not supported');
-        const { hash, randomBytes } = CURVE;
-        let { lowS, prehash, extraEntropy: ent } = opts; // generates low-s sigs by default
-        if (lowS == null)
-            lowS = true; // RFC6979 3.2: we skip step A, because we already provide hash
-        msgHash = ensureBytes$2('msgHash', msgHash);
-        if (prehash)
-            msgHash = ensureBytes$2('prehashed msgHash', hash(msgHash));
+            msgHash = ensureBytes$3('prehashed msgHash', hash(msgHash));
         // We can't later call bits2octets, since nested bits2int is broken for curves
         // with nBitLength % 8 !== 0. Because of that, we unwrap it here as int2octets call.
         // const bits2octets = (bits) => int2octets(bits2int_modN(bits))
@@ -285230,9 +282594,9 @@ function weierstrass(curveDef) {
         if (ent != null && ent !== false) {
             // K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1) || k')
             const e = ent === true ? randomBytes(Fp.BYTES) : ent; // generate random bytes OR pass as-is
-            seedArgs.push(ensureBytes$2('extraEntropy', e)); // check for being bytes
+            seedArgs.push(ensureBytes$3('extraEntropy', e)); // check for being bytes
         }
-        const seed = concatBytes$3(...seedArgs); // Step D of RFC6979 3.2
+        const seed = concatBytes$5(...seedArgs); // Step D of RFC6979 3.2
         const m = h1int; // NOTE: no need to call bits2int second time here, it is inside truncateHash!
         // Converts signature params into point w r/s, checks result for validity.
         function k2sig(kBytes) {
@@ -285243,15 +282607,15 @@ function weierstrass(curveDef) {
             const ik = invN(k); // k^-1 mod n
             const q = Point.BASE.multiply(k).toAffine(); // q = Gk
             const r = modN(q.x); // r = q.x mod n
-            if (r === _0n)
+            if (r === _0n$5)
                 return;
             // Can use scalar blinding b^-1(bm + bdr) where b ∈ [1,q−1] according to
             // https://tches.iacr.org/index.php/TCHES/article/view/7337/6509. We've decided against it:
             // a) dependency on CSPRNG b) 15% slowdown c) doesn't really help since bigints are not CT
             const s = modN(ik * modN(m + r * d)); // Not using blinding here
-            if (s === _0n)
+            if (s === _0n$5)
                 return;
-            let recovery = (q.x === r ? 0 : 2) | Number(q.y & _1n$1); // recovery bit (2 or 3, when q.x > n)
+            let recovery = (q.x === r ? 0 : 2) | Number(q.y & _1n$6); // recovery bit (2 or 3, when q.x > n)
             let normS = s;
             if (lowS && isBiggerThanHalfOrder(s)) {
                 normS = normalizeS(s); // if lowS was passed, ensure s is always
@@ -285279,7 +282643,7 @@ function weierstrass(curveDef) {
     function sign(msgHash, privKey, opts = defaultSigOpts) {
         const { seed, k2sig } = prepSig(msgHash, privKey, opts); // Steps A, D of RFC6979 3.2.
         const C = CURVE;
-        const drbg = createHmacDrbg$1(C.hash.outputLen, C.nByteLength, C.hmac);
+        const drbg = createHmacDrbg$2(C.hash.outputLen, C.nByteLength, C.hmac);
         return drbg(seed, k2sig); // Steps B, C, D, E, F, G
     }
     // Enable precomputes. Slows down first publicKey computation by 20ms.
@@ -285300,22 +282664,22 @@ function weierstrass(curveDef) {
      */
     function verify(signature, msgHash, publicKey, opts = defaultVerOpts) {
         const sg = signature;
-        msgHash = ensureBytes$2('msgHash', msgHash);
-        publicKey = ensureBytes$2('publicKey', publicKey);
+        msgHash = ensureBytes$3('msgHash', msgHash);
+        publicKey = ensureBytes$3('publicKey', publicKey);
         if ('strict' in opts)
             throw new Error('options.strict was renamed to lowS');
         const { lowS, prehash } = opts;
         let _sig = undefined;
         let P;
         try {
-            if (typeof sg === 'string' || isBytes$5(sg)) {
+            if (typeof sg === 'string' || isBytes$7(sg)) {
                 // Signature can be represented in 2 ways: compact (2*nByteLength) & DER (variable-length).
                 // Since DER can also be 2*nByteLength bytes, we check for it first.
                 try {
                     _sig = Signature.fromDER(sg);
                 }
                 catch (derError) {
-                    if (!(derError instanceof DER.Err))
+                    if (!(derError instanceof DER$1.Err))
                         throw derError;
                     _sig = Signature.fromCompact(sg);
                 }
@@ -285372,20 +282736,20 @@ function weierstrass(curveDef) {
 function SWUFpSqrtRatio(Fp, Z) {
     // Generic implementation
     const q = Fp.ORDER;
-    let l = _0n;
-    for (let o = q - _1n$1; o % _2n$1 === _0n; o /= _2n$1)
-        l += _1n$1;
+    let l = _0n$5;
+    for (let o = q - _1n$6; o % _2n$4 === _0n$5; o /= _2n$4)
+        l += _1n$6;
     const c1 = l; // 1. c1, the largest integer such that 2^c1 divides q - 1.
     // We need 2n ** c1 and 2n ** (c1-1). We can't use **; but we can use <<.
     // 2n ** c1 == 2n << (c1-1)
-    const _2n_pow_c1_1 = _2n$1 << (c1 - _1n$1 - _1n$1);
-    const _2n_pow_c1 = _2n_pow_c1_1 * _2n$1;
-    const c2 = (q - _1n$1) / _2n_pow_c1; // 2. c2 = (q - 1) / (2^c1)  # Integer arithmetic
-    const c3 = (c2 - _1n$1) / _2n$1; // 3. c3 = (c2 - 1) / 2            # Integer arithmetic
-    const c4 = _2n_pow_c1 - _1n$1; // 4. c4 = 2^c1 - 1                # Integer arithmetic
+    const _2n_pow_c1_1 = _2n$4 << (c1 - _1n$6 - _1n$6);
+    const _2n_pow_c1 = _2n_pow_c1_1 * _2n$4;
+    const c2 = (q - _1n$6) / _2n_pow_c1; // 2. c2 = (q - 1) / (2^c1)  # Integer arithmetic
+    const c3 = (c2 - _1n$6) / _2n$4; // 3. c3 = (c2 - 1) / 2            # Integer arithmetic
+    const c4 = _2n_pow_c1 - _1n$6; // 4. c4 = 2^c1 - 1                # Integer arithmetic
     const c5 = _2n_pow_c1_1; // 5. c5 = 2^(c1 - 1)                  # Integer arithmetic
     const c6 = Fp.pow(Z, c2); // 6. c6 = Z^c2
-    const c7 = Fp.pow(Z, (c2 + _1n$1) / _2n$1); // 7. c7 = Z^((c2 + 1) / 2)
+    const c7 = Fp.pow(Z, (c2 + _1n$6) / _2n$4); // 7. c7 = Z^((c2 + 1) / 2)
     let sqrtRatio = (u, v) => {
         let tv1 = c6; // 1. tv1 = c6
         let tv2 = Fp.pow(v, c4); // 2. tv2 = v^c4
@@ -285404,9 +282768,9 @@ function SWUFpSqrtRatio(Fp, Z) {
         tv3 = Fp.cmov(tv2, tv3, isQR); // 15. tv3 = CMOV(tv2, tv3, isQR)
         tv4 = Fp.cmov(tv5, tv4, isQR); // 16. tv4 = CMOV(tv5, tv4, isQR)
         // 17. for i in (c1, c1 - 1, ..., 2):
-        for (let i = c1; i > _1n$1; i--) {
-            let tv5 = i - _2n$1; // 18.    tv5 = i - 2
-            tv5 = _2n$1 << (tv5 - _1n$1); // 19.    tv5 = 2^tv5
+        for (let i = c1; i > _1n$6; i--) {
+            let tv5 = i - _2n$4; // 18.    tv5 = i - 2
+            tv5 = _2n$4 << (tv5 - _1n$6); // 19.    tv5 = 2^tv5
             let tvv5 = Fp.pow(tv4, tv5); // 20.    tv5 = tv4^tv5
             const e1 = Fp.eql(tvv5, Fp.ONE); // 21.    e1 = tv5 == 1
             tv2 = Fp.mul(tv3, tv1); // 22.    tv2 = tv3 * tv1
@@ -285417,9 +282781,9 @@ function SWUFpSqrtRatio(Fp, Z) {
         }
         return { isValid: isQR, value: tv3 };
     };
-    if (Fp.ORDER % _4n === _3n) {
+    if (Fp.ORDER % _4n$1 === _3n$2) {
         // sqrt_ratio_3mod4(u, v)
-        const c1 = (Fp.ORDER - _3n) / _4n; // 1. c1 = (q - 3) / 4     # Integer arithmetic
+        const c1 = (Fp.ORDER - _3n$2) / _4n$1; // 1. c1 = (q - 3) / 4     # Integer arithmetic
         const c2 = Fp.sqrt(Fp.neg(Z)); // 2. c2 = sqrt(-Z)
         sqrtRatio = (u, v) => {
             let tv1 = Fp.sqr(v); // 1. tv1 = v^2
@@ -285443,7 +282807,7 @@ function SWUFpSqrtRatio(Fp, Z) {
  * https://www.rfc-editor.org/rfc/rfc9380#section-6.6.2
  */
 function mapToCurveSimpleSWU(Fp, opts) {
-    validateField(Fp);
+    validateField$1(Fp);
     if (!Fp.isValid(opts.A) || !Fp.isValid(opts.B) || !Fp.isValid(opts.Z))
         throw new Error('mapToCurveSimpleSWU: invalid opts');
     const sqrtRatio = SWUFpSqrtRatio(Fp, opts.Z);
@@ -285483,13 +282847,13 @@ function mapToCurveSimpleSWU(Fp, opts) {
     };
 }
 
-const weierstrass$1 = /*#__PURE__*/Object.freeze({
+const weierstrass$2 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
-	DER: DER,
+	DER: DER$1,
 	SWUFpSqrtRatio: SWUFpSqrtRatio,
 	mapToCurveSimpleSWU: mapToCurveSimpleSWU,
-	weierstrass: weierstrass,
-	weierstrassPoints: weierstrassPoints
+	weierstrass: weierstrass$1,
+	weierstrassPoints: weierstrassPoints$1
 });
 
 /**
@@ -293059,12 +290423,12 @@ function number(n) {
         throw new Error(`positive integer expected, not ${n}`);
 }
 // copied from utils
-function isBytes(a) {
+function isBytes$3(a) {
     return (a instanceof Uint8Array ||
         (a != null && typeof a === 'object' && a.constructor.name === 'Uint8Array'));
 }
 function bytes(b, ...lengths) {
-    if (!isBytes(b))
+    if (!isBytes$3(b))
         throw new Error('Uint8Array expected');
     if (lengths.length > 0 && !lengths.includes(b.length))
         throw new Error(`Uint8Array expected of length ${lengths}, not of length=${b.length}`);
@@ -293089,7 +290453,7 @@ function output(out, instance) {
     }
 }
 
-const crypto = typeof globalThis === 'object' && 'crypto' in globalThis ? globalThis.crypto : undefined;
+const crypto$1 = typeof globalThis === 'object' && 'crypto' in globalThis ? globalThis.crypto : undefined;
 
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 // We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
@@ -293099,14 +290463,14 @@ const crypto = typeof globalThis === 'object' && 'crypto' in globalThis ? global
 // Makes the utils un-importable in browsers without a bundler.
 // Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
 // Cast array to view
-const createView = (arr) => new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+const createView$1 = (arr) => new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
 // The rotate right (circular right shift) operation for uint32
-const rotr = (word, shift) => (word << (32 - shift)) | (word >>> shift);
+const rotr$1 = (word, shift) => (word << (32 - shift)) | (word >>> shift);
 new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
 /**
  * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
  */
-function utf8ToBytes(str) {
+function utf8ToBytes$3(str) {
     if (typeof str !== 'string')
         throw new Error(`utf8ToBytes expected string, got ${typeof str}`);
     return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
@@ -293116,16 +290480,16 @@ function utf8ToBytes(str) {
  * Warning: when Uint8Array is passed, it would NOT get copied.
  * Keep in mind for future mutable operations.
  */
-function toBytes(data) {
+function toBytes$2(data) {
     if (typeof data === 'string')
-        data = utf8ToBytes(data);
+        data = utf8ToBytes$3(data);
     bytes(data);
     return data;
 }
 /**
  * Copies several Uint8Arrays into one.
  */
-function concatBytes(...arrays) {
+function concatBytes$2(...arrays) {
     let sum = 0;
     for (let i = 0; i < arrays.length; i++) {
         const a = arrays[i];
@@ -293141,14 +290505,14 @@ function concatBytes(...arrays) {
     return res;
 }
 // For runtime check if class implements interface
-class Hash {
+let Hash$2 = class Hash {
     // Safe version that clones internal state
     clone() {
         return this._cloneInto();
     }
-}
-function wrapConstructor(hashCons) {
-    const hashC = (msg) => hashCons().update(toBytes(msg)).digest();
+};
+function wrapConstructor$1(hashCons) {
+    const hashC = (msg) => hashCons().update(toBytes$2(msg)).digest();
     const tmp = hashCons();
     hashC.outputLen = tmp.outputLen;
     hashC.blockLen = tmp.blockLen;
@@ -293158,15 +290522,15 @@ function wrapConstructor(hashCons) {
 /**
  * Secure PRNG. Uses `crypto.getRandomValues`, which defers to OS.
  */
-function randomBytes(bytesLength = 32) {
-    if (crypto && typeof crypto.getRandomValues === 'function') {
-        return crypto.getRandomValues(new Uint8Array(bytesLength));
+function randomBytes$1(bytesLength = 32) {
+    if (crypto$1 && typeof crypto$1.getRandomValues === 'function') {
+        return crypto$1.getRandomValues(new Uint8Array(bytesLength));
     }
     throw new Error('crypto.getRandomValues must be defined');
 }
 
 // Polyfill for Safari 14
-function setBigUint64(view, byteOffset, value, isLE) {
+function setBigUint64$1(view, byteOffset, value, isLE) {
     if (typeof view.setBigUint64 === 'function')
         return view.setBigUint64(byteOffset, value, isLE);
     const _32n = BigInt(32);
@@ -293179,14 +290543,14 @@ function setBigUint64(view, byteOffset, value, isLE) {
     view.setUint32(byteOffset + l, wl, isLE);
 }
 // Choice: a ? b : c
-const Chi = (a, b, c) => (a & b) ^ (~a & c);
+const Chi$1 = (a, b, c) => (a & b) ^ (~a & c);
 // Majority function, true if any two inpust is true
-const Maj = (a, b, c) => (a & b) ^ (a & c) ^ (b & c);
+const Maj$1 = (a, b, c) => (a & b) ^ (a & c) ^ (b & c);
 /**
  * Merkle-Damgard hash construction base class.
  * Could be used to create MD5, RIPEMD, SHA1, SHA2.
  */
-class HashMD extends Hash {
+let HashMD$1 = class HashMD extends Hash$2 {
     constructor(blockLen, outputLen, padOffset, isLE) {
         super();
         this.blockLen = blockLen;
@@ -293198,18 +290562,18 @@ class HashMD extends Hash {
         this.pos = 0;
         this.destroyed = false;
         this.buffer = new Uint8Array(blockLen);
-        this.view = createView(this.buffer);
+        this.view = createView$1(this.buffer);
     }
     update(data) {
         exists(this);
         const { view, buffer, blockLen } = this;
-        data = toBytes(data);
+        data = toBytes$2(data);
         const len = data.length;
         for (let pos = 0; pos < len;) {
             const take = Math.min(blockLen - this.pos, len - pos);
             // Fast path: we have at least one block in input, cast it to view and process
             if (take === blockLen) {
-                const dataView = createView(data);
+                const dataView = createView$1(data);
                 for (; blockLen <= len - pos; pos += blockLen)
                     this.process(dataView, pos);
                 continue;
@@ -293250,9 +290614,9 @@ class HashMD extends Hash {
         // Note: sha512 requires length to be 128bit integer, but length in JS will overflow before that
         // You need to write around 2 exabytes (u64_max / 8 / (1024**6)) for this to happen.
         // So we just write lowest 64 bits of that value.
-        setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
+        setBigUint64$1(view, blockLen - 8, BigInt(this.length * 8), isLE);
         this.process(view, 0);
-        const oview = createView(out);
+        const oview = createView$1(out);
         const len = this.outputLen;
         // NOTE: we do division by 4 later, which should be fused in single op with modulo by JIT
         if (len % 4)
@@ -293283,14 +290647,14 @@ class HashMD extends Hash {
             to.buffer.set(buffer);
         return to;
     }
-}
+};
 
 // SHA2-256 need to try 2^128 hashes to execute birthday attack.
 // BTC network is doing 2^67 hashes/sec as per early 2023.
 // Round constants:
 // first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
 // prettier-ignore
-const SHA256_K = /* @__PURE__ */ new Uint32Array([
+const SHA256_K$1 = /* @__PURE__ */ new Uint32Array([
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
     0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -293303,25 +290667,25 @@ const SHA256_K = /* @__PURE__ */ new Uint32Array([
 // Initial state:
 // first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
 // prettier-ignore
-const SHA256_IV = /* @__PURE__ */ new Uint32Array([
+const SHA256_IV$1 = /* @__PURE__ */ new Uint32Array([
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
 ]);
 // Temporary buffer, not used to store anything between runs
 // Named this way because it matches specification.
-const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
-class SHA256 extends HashMD {
+const SHA256_W$1 = /* @__PURE__ */ new Uint32Array(64);
+let SHA256$1 = class SHA256 extends HashMD$1 {
     constructor() {
         super(64, 32, 8, false);
         // We cannot use array here since array allows indexing by variable
         // which means optimizer/compiler cannot use registers.
-        this.A = SHA256_IV[0] | 0;
-        this.B = SHA256_IV[1] | 0;
-        this.C = SHA256_IV[2] | 0;
-        this.D = SHA256_IV[3] | 0;
-        this.E = SHA256_IV[4] | 0;
-        this.F = SHA256_IV[5] | 0;
-        this.G = SHA256_IV[6] | 0;
-        this.H = SHA256_IV[7] | 0;
+        this.A = SHA256_IV$1[0] | 0;
+        this.B = SHA256_IV$1[1] | 0;
+        this.C = SHA256_IV$1[2] | 0;
+        this.D = SHA256_IV$1[3] | 0;
+        this.E = SHA256_IV$1[4] | 0;
+        this.F = SHA256_IV$1[5] | 0;
+        this.G = SHA256_IV$1[6] | 0;
+        this.H = SHA256_IV$1[7] | 0;
     }
     get() {
         const { A, B, C, D, E, F, G, H } = this;
@@ -293341,21 +290705,21 @@ class SHA256 extends HashMD {
     process(view, offset) {
         // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
         for (let i = 0; i < 16; i++, offset += 4)
-            SHA256_W[i] = view.getUint32(offset, false);
+            SHA256_W$1[i] = view.getUint32(offset, false);
         for (let i = 16; i < 64; i++) {
-            const W15 = SHA256_W[i - 15];
-            const W2 = SHA256_W[i - 2];
-            const s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ (W15 >>> 3);
-            const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ (W2 >>> 10);
-            SHA256_W[i] = (s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16]) | 0;
+            const W15 = SHA256_W$1[i - 15];
+            const W2 = SHA256_W$1[i - 2];
+            const s0 = rotr$1(W15, 7) ^ rotr$1(W15, 18) ^ (W15 >>> 3);
+            const s1 = rotr$1(W2, 17) ^ rotr$1(W2, 19) ^ (W2 >>> 10);
+            SHA256_W$1[i] = (s1 + SHA256_W$1[i - 7] + s0 + SHA256_W$1[i - 16]) | 0;
         }
         // Compression function main loop, 64 rounds
         let { A, B, C, D, E, F, G, H } = this;
         for (let i = 0; i < 64; i++) {
-            const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
-            const T1 = (H + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i]) | 0;
-            const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
-            const T2 = (sigma0 + Maj(A, B, C)) | 0;
+            const sigma1 = rotr$1(E, 6) ^ rotr$1(E, 11) ^ rotr$1(E, 25);
+            const T1 = (H + sigma1 + Chi$1(E, F, G) + SHA256_K$1[i] + SHA256_W$1[i]) | 0;
+            const sigma0 = rotr$1(A, 2) ^ rotr$1(A, 13) ^ rotr$1(A, 22);
+            const T2 = (sigma0 + Maj$1(A, B, C)) | 0;
             H = G;
             G = F;
             F = E;
@@ -293377,27 +290741,27 @@ class SHA256 extends HashMD {
         this.set(A, B, C, D, E, F, G, H);
     }
     roundClean() {
-        SHA256_W.fill(0);
+        SHA256_W$1.fill(0);
     }
     destroy() {
         this.set(0, 0, 0, 0, 0, 0, 0, 0);
         this.buffer.fill(0);
     }
-}
+};
 /**
  * SHA2-256 hash function
  * @param message - data that would be hashed
  */
-const sha256 = /* @__PURE__ */ wrapConstructor(() => new SHA256());
+const sha256$1 = /* @__PURE__ */ wrapConstructor$1(() => new SHA256$1());
 
 // HMAC (RFC 2104)
-class HMAC extends Hash {
+let HMAC$1 = class HMAC extends Hash$2 {
     constructor(hash$1, _key) {
         super();
         this.finished = false;
         this.destroyed = false;
         hash(hash$1);
-        const key = toBytes(_key);
+        const key = toBytes$2(_key);
         this.iHash = hash$1.create();
         if (typeof this.iHash.update !== 'function')
             throw new Error('Expected instance of class which extends utils.Hash');
@@ -293455,36 +290819,36 @@ class HMAC extends Hash {
         this.oHash.destroy();
         this.iHash.destroy();
     }
-}
+};
 /**
  * HMAC: RFC2104 message authentication code.
  * @param hash - function that would be used e.g. sha256
  * @param key - message key
  * @param message - message data
  */
-const hmac = (hash, key, message) => new HMAC(hash, key).update(message).digest();
-hmac.create = (hash, key) => new HMAC(hash, key);
+const hmac$1 = (hash, key, message) => new HMAC$1(hash, key).update(message).digest();
+hmac$1.create = (hash, key) => new HMAC$1(hash, key);
 
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 // connects noble-curves to noble-hashes
-function getHash(hash) {
+function getHash$1(hash) {
     return {
         hash,
-        hmac: (key, ...msgs) => hmac(hash, key, concatBytes(...msgs)),
-        randomBytes,
+        hmac: (key, ...msgs) => hmac$1(hash, key, concatBytes$2(...msgs)),
+        randomBytes: randomBytes$1,
     };
 }
 function createCurve(curveDef, defHash) {
-    const create = (hash) => weierstrass({ ...curveDef, ...getHash(hash) });
+    const create = (hash) => weierstrass$1({ ...curveDef, ...getHash$1(hash) });
     return Object.freeze({ ...create(defHash), create });
 }
 
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 const secp256k1P = BigInt('0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f');
 const secp256k1N = BigInt('0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141');
-const _1n = BigInt(1);
-const _2n = BigInt(2);
-const divNearest = (a, b) => (a + b / _2n) / b;
+const _1n$5 = BigInt(1);
+const _2n$3 = BigInt(2);
+const divNearest = (a, b) => (a + b / _2n$3) / b;
 /**
  * √n = n^((p+1)/4) for fields p = 3 mod 4. We unwrap the loop and multiply bit-by-bit.
  * (P+1n/4n).toString(2) would produce bits [223x 1, 0, 22x 1, 4x 0, 11, 00]
@@ -293499,7 +290863,7 @@ function sqrtMod(y) {
     const b3 = (b2 * b2 * y) % P; // x^7
     const b6 = (pow2(b3, _3n, P) * b3) % P;
     const b9 = (pow2(b6, _3n, P) * b3) % P;
-    const b11 = (pow2(b9, _2n, P) * b2) % P;
+    const b11 = (pow2(b9, _2n$3, P) * b2) % P;
     const b22 = (pow2(b11, _11n, P) * b11) % P;
     const b44 = (pow2(b22, _22n, P) * b22) % P;
     const b88 = (pow2(b44, _44n, P) * b44) % P;
@@ -293508,12 +290872,12 @@ function sqrtMod(y) {
     const b223 = (pow2(b220, _3n, P) * b3) % P;
     const t1 = (pow2(b223, _23n, P) * b22) % P;
     const t2 = (pow2(t1, _6n, P) * b2) % P;
-    const root = pow2(t2, _2n, P);
+    const root = pow2(t2, _2n$3, P);
     if (!Fp.eql(Fp.sqr(root), y))
         throw new Error('Cannot find square root');
     return root;
 }
-const Fp = Field(secp256k1P, undefined, undefined, { sqrt: sqrtMod });
+const Fp = Field$1(secp256k1P, undefined, undefined, { sqrt: sqrtMod });
 const secp256k1 = createCurve({
     a: BigInt(0), // equation params: a, b
     b: BigInt(7), // Seem to be rigid: bitcointalk.org/index.php?topic=289795.msg3183975#msg3183975
@@ -293535,14 +290899,14 @@ const secp256k1 = createCurve({
         splitScalar: (k) => {
             const n = secp256k1N;
             const a1 = BigInt('0x3086d221a7d46bcde86c90e49284eb15');
-            const b1 = -_1n * BigInt('0xe4437ed6010e88286f547fa90abfe4c3');
+            const b1 = -_1n$5 * BigInt('0xe4437ed6010e88286f547fa90abfe4c3');
             const a2 = BigInt('0x114ca50f7a8e2f3f657c1108d9d44cfd8');
             const b2 = a1;
             const POW_2_128 = BigInt('0x100000000000000000000000000000000'); // (2n**128n).toString(16)
             const c1 = divNearest(b2 * k, n);
             const c2 = divNearest(-b1 * k, n);
-            let k1 = mod(k - c1 * a1 - c2 * a2, n);
-            let k2 = mod(-c1 * b1 - c2 * b2, n);
+            let k1 = mod$1(k - c1 * a1 - c2 * a2, n);
+            let k2 = mod$1(-c1 * b1 - c2 * b2, n);
             const k1neg = k1 > POW_2_128;
             const k2neg = k2 > POW_2_128;
             if (k1neg)
@@ -293555,7 +290919,7 @@ const secp256k1 = createCurve({
             return { k1neg, k1, k2neg, k2 };
         },
     },
-}, sha256);
+}, sha256$1);
 // Schnorr signatures are superior to ECDSA from above. Below is Schnorr-specific BIP0340 code.
 // https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki
 BigInt(0);
@@ -294180,13 +291544,13 @@ function requireCjs$1 () {
 	}
 
 	const exceptions = (function () {
-	    const _0 = [1, {}], _1 = [0, { "city": _0 }];
-	    const exceptions = [0, { "ck": [0, { "www": _0 }], "jp": [0, { "kawasaki": _1, "kitakyushu": _1, "kobe": _1, "nagoya": _1, "sapporo": _1, "sendai": _1, "yokohama": _1 }] }];
+	    const _0 = [1, {}], _1 = [2, {}], _2 = [0, { "city": _0 }];
+	    const exceptions = [0, { "ck": [0, { "www": _0 }], "jp": [0, { "kawasaki": _2, "kitakyushu": _2, "kobe": _2, "nagoya": _2, "sapporo": _2, "sendai": _2, "yokohama": _2 }], "dev": [0, { "hrsn": [0, { "psl": [0, { "wc": [0, { "ignored": _1, "sub": [0, { "ignored": _1 }] }] }] }] }] }];
 	    return exceptions;
 	})();
 	const rules = (function () {
-	    const _2 = [1, {}], _3 = [2, {}], _4 = [1, { "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2 }], _5 = [1, { "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2 }], _6 = [0, { "*": _3 }], _7 = [0, { "relay": _3 }], _8 = [2, { "id": _3 }], _9 = [1, { "gov": _2 }], _10 = [0, { "notebook": _3, "studio": _3 }], _11 = [0, { "labeling": _3, "notebook": _3, "studio": _3 }], _12 = [0, { "notebook": _3 }], _13 = [0, { "labeling": _3, "notebook": _3, "notebook-fips": _3, "studio": _3 }], _14 = [0, { "notebook": _3, "notebook-fips": _3, "studio": _3, "studio-fips": _3 }], _15 = [0, { "*": _2 }], _16 = [1, { "co": _3 }], _17 = [0, { "objects": _3 }], _18 = [2, { "nodes": _3 }], _19 = [0, { "my": _6 }], _20 = [0, { "s3": _3, "s3-accesspoint": _3, "s3-website": _3 }], _21 = [0, { "s3": _3, "s3-accesspoint": _3 }], _22 = [0, { "direct": _3 }], _23 = [0, { "webview-assets": _3 }], _24 = [0, { "vfs": _3, "webview-assets": _3 }], _25 = [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _20, "s3": _3, "s3-accesspoint": _3, "s3-object-lambda": _3, "s3-website": _3, "aws-cloud9": _23, "cloud9": _24 }], _26 = [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _21, "s3": _3, "s3-accesspoint": _3, "s3-object-lambda": _3, "s3-website": _3, "aws-cloud9": _23, "cloud9": _24 }], _27 = [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _20, "s3": _3, "s3-accesspoint": _3, "s3-object-lambda": _3, "s3-website": _3, "analytics-gateway": _3, "aws-cloud9": _23, "cloud9": _24 }], _28 = [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _20, "s3": _3, "s3-accesspoint": _3, "s3-object-lambda": _3, "s3-website": _3 }], _29 = [0, { "s3": _3, "s3-accesspoint": _3, "s3-accesspoint-fips": _3, "s3-fips": _3, "s3-website": _3 }], _30 = [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _29, "s3": _3, "s3-accesspoint": _3, "s3-accesspoint-fips": _3, "s3-fips": _3, "s3-object-lambda": _3, "s3-website": _3, "aws-cloud9": _23, "cloud9": _24 }], _31 = [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _29, "s3": _3, "s3-accesspoint": _3, "s3-accesspoint-fips": _3, "s3-deprecated": _3, "s3-fips": _3, "s3-object-lambda": _3, "s3-website": _3, "analytics-gateway": _3, "aws-cloud9": _23, "cloud9": _24 }], _32 = [0, { "s3": _3, "s3-accesspoint": _3, "s3-accesspoint-fips": _3, "s3-fips": _3 }], _33 = [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _32, "s3": _3, "s3-accesspoint": _3, "s3-accesspoint-fips": _3, "s3-fips": _3, "s3-object-lambda": _3, "s3-website": _3 }], _34 = [0, { "auth": _3 }], _35 = [0, { "auth": _3, "auth-fips": _3 }], _36 = [0, { "apps": _3 }], _37 = [0, { "paas": _3 }], _38 = [2, { "eu": _3 }], _39 = [0, { "app": _3 }], _40 = [0, { "site": _3 }], _41 = [1, { "com": _2, "edu": _2, "net": _2, "org": _2 }], _42 = [0, { "j": _3 }], _43 = [0, { "dyn": _3 }], _44 = [1, { "co": _2, "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2 }], _45 = [0, { "p": _3 }], _46 = [0, { "user": _3 }], _47 = [0, { "shop": _3 }], _48 = [0, { "cust": _3, "reservd": _3 }], _49 = [0, { "cust": _3 }], _50 = [0, { "s3": _3 }], _51 = [1, { "biz": _2, "com": _2, "edu": _2, "gov": _2, "info": _2, "net": _2, "org": _2 }], _52 = [1, { "framer": _3 }], _53 = [0, { "forgot": _3 }], _54 = [0, { "cdn": _3 }], _55 = [1, { "gs": _2 }], _56 = [0, { "nes": _2 }], _57 = [1, { "k12": _2, "cc": _2, "lib": _2 }], _58 = [1, { "cc": _2, "lib": _2 }];
-	    const rules = [0, { "ac": [1, { "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "drr": _3, "feedback": _3, "forms": _3 }], "ad": _2, "ae": [1, { "ac": _2, "co": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "sch": _2 }], "aero": [1, { "airline": _2, "airport": _2, "accident-investigation": _2, "accident-prevention": _2, "aerobatic": _2, "aeroclub": _2, "aerodrome": _2, "agents": _2, "air-surveillance": _2, "air-traffic-control": _2, "aircraft": _2, "airtraffic": _2, "ambulance": _2, "association": _2, "author": _2, "ballooning": _2, "broker": _2, "caa": _2, "cargo": _2, "catering": _2, "certification": _2, "championship": _2, "charter": _2, "civilaviation": _2, "club": _2, "conference": _2, "consultant": _2, "consulting": _2, "control": _2, "council": _2, "crew": _2, "design": _2, "dgca": _2, "educator": _2, "emergency": _2, "engine": _2, "engineer": _2, "entertainment": _2, "equipment": _2, "exchange": _2, "express": _2, "federation": _2, "flight": _2, "freight": _2, "fuel": _2, "gliding": _2, "government": _2, "groundhandling": _2, "group": _2, "hanggliding": _2, "homebuilt": _2, "insurance": _2, "journal": _2, "journalist": _2, "leasing": _2, "logistics": _2, "magazine": _2, "maintenance": _2, "marketplace": _2, "media": _2, "microlight": _2, "modelling": _2, "navigation": _2, "parachuting": _2, "paragliding": _2, "passenger-association": _2, "pilot": _2, "press": _2, "production": _2, "recreation": _2, "repbody": _2, "res": _2, "research": _2, "rotorcraft": _2, "safety": _2, "scientist": _2, "services": _2, "show": _2, "skydiving": _2, "software": _2, "student": _2, "taxi": _2, "trader": _2, "trading": _2, "trainer": _2, "union": _2, "workinggroup": _2, "works": _2 }], "af": _4, "ag": [1, { "co": _2, "com": _2, "net": _2, "nom": _2, "org": _2 }], "ai": [1, { "com": _2, "net": _2, "off": _2, "org": _2, "uwu": _3, "framer": _3 }], "al": _5, "am": [1, { "co": _2, "com": _2, "commune": _2, "net": _2, "org": _2, "radio": _3 }], "ao": [1, { "co": _2, "ed": _2, "edu": _2, "gov": _2, "gv": _2, "it": _2, "og": _2, "org": _2, "pb": _2 }], "aq": _2, "ar": [1, { "bet": _2, "com": _2, "coop": _2, "edu": _2, "gob": _2, "gov": _2, "int": _2, "mil": _2, "musica": _2, "mutual": _2, "net": _2, "org": _2, "senasa": _2, "tur": _2 }], "arpa": [1, { "e164": _2, "home": _2, "in-addr": _2, "ip6": _2, "iris": _2, "uri": _2, "urn": _2 }], "as": _9, "asia": [1, { "cloudns": _3, "daemon": _3, "dix": _3 }], "at": [1, { "ac": [1, { "sth": _2 }], "co": _2, "gv": _2, "or": _2, "funkfeuer": [0, { "wien": _3 }], "futurecms": [0, { "*": _3, "ex": _6, "in": _6 }], "futurehosting": _3, "futuremailing": _3, "ortsinfo": [0, { "ex": _6, "kunden": _6 }], "biz": _3, "info": _3, "123webseite": _3, "priv": _3, "myspreadshop": _3, "12hp": _3, "2ix": _3, "4lima": _3, "lima-city": _3 }], "au": [1, { "asn": _2, "com": [1, { "cloudlets": [0, { "mel": _3 }], "myspreadshop": _3 }], "edu": [1, { "act": _2, "catholic": _2, "nsw": [1, { "schools": _2 }], "nt": _2, "qld": _2, "sa": _2, "tas": _2, "vic": _2, "wa": _2 }], "gov": [1, { "qld": _2, "sa": _2, "tas": _2, "vic": _2, "wa": _2 }], "id": _2, "net": _2, "org": _2, "conf": _2, "oz": _2, "act": _2, "nsw": _2, "nt": _2, "qld": _2, "sa": _2, "tas": _2, "vic": _2, "wa": _2 }], "aw": [1, { "com": _2 }], "ax": _2, "az": [1, { "biz": _2, "co": _2, "com": _2, "edu": _2, "gov": _2, "info": _2, "int": _2, "mil": _2, "name": _2, "net": _2, "org": _2, "pp": _2, "pro": _2 }], "ba": [1, { "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "rs": _3 }], "bb": [1, { "biz": _2, "co": _2, "com": _2, "edu": _2, "gov": _2, "info": _2, "net": _2, "org": _2, "store": _2, "tv": _2 }], "bd": _15, "be": [1, { "ac": _2, "cloudns": _3, "webhosting": _3, "interhostsolutions": [0, { "cloud": _3 }], "kuleuven": [0, { "ezproxy": _3 }], "123website": _3, "myspreadshop": _3, "transurl": _6 }], "bf": _9, "bg": [1, { "0": _2, "1": _2, "2": _2, "3": _2, "4": _2, "5": _2, "6": _2, "7": _2, "8": _2, "9": _2, "a": _2, "b": _2, "c": _2, "d": _2, "e": _2, "f": _2, "g": _2, "h": _2, "i": _2, "j": _2, "k": _2, "l": _2, "m": _2, "n": _2, "o": _2, "p": _2, "q": _2, "r": _2, "s": _2, "t": _2, "u": _2, "v": _2, "w": _2, "x": _2, "y": _2, "z": _2, "barsy": _3 }], "bh": _4, "bi": [1, { "co": _2, "com": _2, "edu": _2, "or": _2, "org": _2 }], "biz": [1, { "activetrail": _3, "cloud-ip": _3, "cloudns": _3, "jozi": _3, "dyndns": _3, "for-better": _3, "for-more": _3, "for-some": _3, "for-the": _3, "selfip": _3, "webhop": _3, "orx": _3, "mmafan": _3, "myftp": _3, "no-ip": _3, "dscloud": _3 }], "bj": [1, { "africa": _2, "agro": _2, "architectes": _2, "assur": _2, "avocats": _2, "co": _2, "com": _2, "eco": _2, "econo": _2, "edu": _2, "info": _2, "loisirs": _2, "money": _2, "net": _2, "org": _2, "ote": _2, "restaurant": _2, "resto": _2, "tourism": _2, "univ": _2 }], "bm": _4, "bn": [1, { "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "co": _3 }], "bo": [1, { "com": _2, "edu": _2, "gob": _2, "int": _2, "mil": _2, "net": _2, "org": _2, "tv": _2, "web": _2, "academia": _2, "agro": _2, "arte": _2, "blog": _2, "bolivia": _2, "ciencia": _2, "cooperativa": _2, "democracia": _2, "deporte": _2, "ecologia": _2, "economia": _2, "empresa": _2, "indigena": _2, "industria": _2, "info": _2, "medicina": _2, "movimiento": _2, "musica": _2, "natural": _2, "nombre": _2, "noticias": _2, "patria": _2, "plurinacional": _2, "politica": _2, "profesional": _2, "pueblo": _2, "revista": _2, "salud": _2, "tecnologia": _2, "tksat": _2, "transporte": _2, "wiki": _2 }], "br": [1, { "9guacu": _2, "abc": _2, "adm": _2, "adv": _2, "agr": _2, "aju": _2, "am": _2, "anani": _2, "aparecida": _2, "app": _2, "arq": _2, "art": _2, "ato": _2, "b": _2, "barueri": _2, "belem": _2, "bet": _2, "bhz": _2, "bib": _2, "bio": _2, "blog": _2, "bmd": _2, "boavista": _2, "bsb": _2, "campinagrande": _2, "campinas": _2, "caxias": _2, "cim": _2, "cng": _2, "cnt": _2, "com": [1, { "simplesite": _3 }], "contagem": _2, "coop": _2, "coz": _2, "cri": _2, "cuiaba": _2, "curitiba": _2, "def": _2, "des": _2, "det": _2, "dev": _2, "ecn": _2, "eco": _2, "edu": _2, "emp": _2, "enf": _2, "eng": _2, "esp": _2, "etc": _2, "eti": _2, "far": _2, "feira": _2, "flog": _2, "floripa": _2, "fm": _2, "fnd": _2, "fortal": _2, "fot": _2, "foz": _2, "fst": _2, "g12": _2, "geo": _2, "ggf": _2, "goiania": _2, "gov": [1, { "ac": _2, "al": _2, "am": _2, "ap": _2, "ba": _2, "ce": _2, "df": _2, "es": _2, "go": _2, "ma": _2, "mg": _2, "ms": _2, "mt": _2, "pa": _2, "pb": _2, "pe": _2, "pi": _2, "pr": _2, "rj": _2, "rn": _2, "ro": _2, "rr": _2, "rs": _2, "sc": _2, "se": _2, "sp": _2, "to": _2 }], "gru": _2, "imb": _2, "ind": _2, "inf": _2, "jab": _2, "jampa": _2, "jdf": _2, "joinville": _2, "jor": _2, "jus": _2, "leg": [1, { "ac": _3, "al": _3, "am": _3, "ap": _3, "ba": _3, "ce": _3, "df": _3, "es": _3, "go": _3, "ma": _3, "mg": _3, "ms": _3, "mt": _3, "pa": _3, "pb": _3, "pe": _3, "pi": _3, "pr": _3, "rj": _3, "rn": _3, "ro": _3, "rr": _3, "rs": _3, "sc": _3, "se": _3, "sp": _3, "to": _3 }], "leilao": _2, "lel": _2, "log": _2, "londrina": _2, "macapa": _2, "maceio": _2, "manaus": _2, "maringa": _2, "mat": _2, "med": _2, "mil": _2, "morena": _2, "mp": _2, "mus": _2, "natal": _2, "net": _2, "niteroi": _2, "nom": _15, "not": _2, "ntr": _2, "odo": _2, "ong": _2, "org": _2, "osasco": _2, "palmas": _2, "poa": _2, "ppg": _2, "pro": _2, "psc": _2, "psi": _2, "pvh": _2, "qsl": _2, "radio": _2, "rec": _2, "recife": _2, "rep": _2, "ribeirao": _2, "rio": _2, "riobranco": _2, "riopreto": _2, "salvador": _2, "sampa": _2, "santamaria": _2, "santoandre": _2, "saobernardo": _2, "saogonca": _2, "seg": _2, "sjc": _2, "slg": _2, "slz": _2, "sorocaba": _2, "srv": _2, "taxi": _2, "tc": _2, "tec": _2, "teo": _2, "the": _2, "tmp": _2, "trd": _2, "tur": _2, "tv": _2, "udi": _2, "vet": _2, "vix": _2, "vlog": _2, "wiki": _2, "zlg": _2 }], "bs": [1, { "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "we": _3 }], "bt": _4, "bv": _2, "bw": [1, { "ac": _2, "co": _2, "gov": _2, "net": _2, "org": _2 }], "by": [1, { "gov": _2, "mil": _2, "com": _2, "of": _2, "mediatech": _3 }], "bz": [1, { "co": _2, "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "za": _3, "mydns": _3, "gsj": _3 }], "ca": [1, { "ab": _2, "bc": _2, "mb": _2, "nb": _2, "nf": _2, "nl": _2, "ns": _2, "nt": _2, "nu": _2, "on": _2, "pe": _2, "qc": _2, "sk": _2, "yk": _2, "gc": _2, "barsy": _3, "awdev": _6, "co": _3, "no-ip": _3, "myspreadshop": _3, "box": _3 }], "cat": _2, "cc": [1, { "cleverapps": _3, "cloudns": _3, "ftpaccess": _3, "game-server": _3, "myphotos": _3, "scrapping": _3, "twmail": _3, "csx": _3, "fantasyleague": _3, "spawn": [0, { "instances": _3 }] }], "cd": _9, "cf": _2, "cg": _2, "ch": [1, { "square7": _3, "cloudns": _3, "cloudscale": [0, { "cust": _3, "lpg": _17, "rma": _17 }], "flow": [0, { "ae": [0, { "alp1": _3 }], "appengine": _3 }], "linkyard-cloud": _3, "gotdns": _3, "dnsking": _3, "123website": _3, "myspreadshop": _3, "firenet": [0, { "*": _3, "svc": _6 }], "12hp": _3, "2ix": _3, "4lima": _3, "lima-city": _3 }], "ci": [1, { "ac": _2, "xn--aroport-bya": _2, "aéroport": _2, "asso": _2, "co": _2, "com": _2, "ed": _2, "edu": _2, "go": _2, "gouv": _2, "int": _2, "net": _2, "or": _2, "org": _2 }], "ck": _15, "cl": [1, { "co": _2, "gob": _2, "gov": _2, "mil": _2, "cloudns": _3 }], "cm": [1, { "co": _2, "com": _2, "gov": _2, "net": _2 }], "cn": [1, { "ac": _2, "com": [1, { "amazonaws": [0, { "cn-north-1": [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _20, "s3": _3, "s3-accesspoint": _3, "s3-deprecated": _3, "s3-object-lambda": _3, "s3-website": _3 }], "cn-northwest-1": [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _21, "s3": _3, "s3-accesspoint": _3, "s3-object-lambda": _3, "s3-website": _3 }], "compute": _6, "airflow": [0, { "cn-north-1": _6, "cn-northwest-1": _6 }], "eb": [0, { "cn-north-1": _3, "cn-northwest-1": _3 }], "elb": _6 }], "sagemaker": [0, { "cn-north-1": _10, "cn-northwest-1": _10 }] }], "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "xn--55qx5d": _2, "公司": _2, "xn--od0alg": _2, "網絡": _2, "xn--io0a7i": _2, "网络": _2, "ah": _2, "bj": _2, "cq": _2, "fj": _2, "gd": _2, "gs": _2, "gx": _2, "gz": _2, "ha": _2, "hb": _2, "he": _2, "hi": _2, "hk": _2, "hl": _2, "hn": _2, "jl": _2, "js": _2, "jx": _2, "ln": _2, "mo": _2, "nm": _2, "nx": _2, "qh": _2, "sc": _2, "sd": _2, "sh": [1, { "as": _3 }], "sn": _2, "sx": _2, "tj": _2, "tw": _2, "xj": _2, "xz": _2, "yn": _2, "zj": _2, "canva-apps": _3, "canvasite": _19, "myqnapcloud": _3, "quickconnect": _22 }], "co": [1, { "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "nom": _2, "org": _2, "carrd": _3, "crd": _3, "otap": _6, "leadpages": _3, "lpages": _3, "mypi": _3, "xmit": _6, "firewalledreplit": _8, "repl": _8, "supabase": _3 }], "com": [1, { "a2hosted": _3, "cpserver": _3, "adobeaemcloud": [2, { "dev": _6 }], "africa": _3, "airkitapps": _3, "airkitapps-au": _3, "aivencloud": _3, "kasserver": _3, "amazonaws": [0, { "af-south-1": _25, "ap-east-1": _26, "ap-northeast-1": _27, "ap-northeast-2": _27, "ap-northeast-3": _25, "ap-south-1": _27, "ap-south-2": _28, "ap-southeast-1": _27, "ap-southeast-2": _27, "ap-southeast-3": _28, "ap-southeast-4": _28, "ap-southeast-5": [0, { "execute-api": _3, "dualstack": _20, "s3": _3, "s3-accesspoint": _3, "s3-deprecated": _3, "s3-object-lambda": _3, "s3-website": _3 }], "ca-central-1": _30, "ca-west-1": [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _29, "s3": _3, "s3-accesspoint": _3, "s3-accesspoint-fips": _3, "s3-fips": _3, "s3-object-lambda": _3, "s3-website": _3 }], "eu-central-1": _27, "eu-central-2": _28, "eu-north-1": _26, "eu-south-1": _25, "eu-south-2": _28, "eu-west-1": [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _20, "s3": _3, "s3-accesspoint": _3, "s3-deprecated": _3, "s3-object-lambda": _3, "s3-website": _3, "analytics-gateway": _3, "aws-cloud9": _23, "cloud9": _24 }], "eu-west-2": _26, "eu-west-3": _25, "il-central-1": [0, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _20, "s3": _3, "s3-accesspoint": _3, "s3-object-lambda": _3, "s3-website": _3, "aws-cloud9": _23, "cloud9": [0, { "vfs": _3 }] }], "me-central-1": _28, "me-south-1": _26, "sa-east-1": _25, "us-east-1": [2, { "execute-api": _3, "emrappui-prod": _3, "emrnotebooks-prod": _3, "emrstudio-prod": _3, "dualstack": _29, "s3": _3, "s3-accesspoint": _3, "s3-accesspoint-fips": _3, "s3-deprecated": _3, "s3-fips": _3, "s3-object-lambda": _3, "s3-website": _3, "analytics-gateway": _3, "aws-cloud9": _23, "cloud9": _24 }], "us-east-2": _31, "us-gov-east-1": _33, "us-gov-west-1": _33, "us-west-1": _30, "us-west-2": _31, "compute": _6, "compute-1": _6, "airflow": [0, { "af-south-1": _6, "ap-east-1": _6, "ap-northeast-1": _6, "ap-northeast-2": _6, "ap-northeast-3": _6, "ap-south-1": _6, "ap-south-2": _6, "ap-southeast-1": _6, "ap-southeast-2": _6, "ap-southeast-3": _6, "ap-southeast-4": _6, "ca-central-1": _6, "ca-west-1": _6, "eu-central-1": _6, "eu-central-2": _6, "eu-north-1": _6, "eu-south-1": _6, "eu-south-2": _6, "eu-west-1": _6, "eu-west-2": _6, "eu-west-3": _6, "il-central-1": _6, "me-central-1": _6, "me-south-1": _6, "sa-east-1": _6, "us-east-1": _6, "us-east-2": _6, "us-west-1": _6, "us-west-2": _6 }], "s3": _3, "s3-1": _3, "s3-ap-east-1": _3, "s3-ap-northeast-1": _3, "s3-ap-northeast-2": _3, "s3-ap-northeast-3": _3, "s3-ap-south-1": _3, "s3-ap-southeast-1": _3, "s3-ap-southeast-2": _3, "s3-ca-central-1": _3, "s3-eu-central-1": _3, "s3-eu-north-1": _3, "s3-eu-west-1": _3, "s3-eu-west-2": _3, "s3-eu-west-3": _3, "s3-external-1": _3, "s3-fips-us-gov-east-1": _3, "s3-fips-us-gov-west-1": _3, "s3-global": [0, { "accesspoint": [0, { "mrap": _3 }] }], "s3-me-south-1": _3, "s3-sa-east-1": _3, "s3-us-east-2": _3, "s3-us-gov-east-1": _3, "s3-us-gov-west-1": _3, "s3-us-west-1": _3, "s3-us-west-2": _3, "s3-website-ap-northeast-1": _3, "s3-website-ap-southeast-1": _3, "s3-website-ap-southeast-2": _3, "s3-website-eu-west-1": _3, "s3-website-sa-east-1": _3, "s3-website-us-east-1": _3, "s3-website-us-gov-west-1": _3, "s3-website-us-west-1": _3, "s3-website-us-west-2": _3, "elb": _6 }], "amazoncognito": [0, { "af-south-1": _34, "ap-east-1": _34, "ap-northeast-1": _34, "ap-northeast-2": _34, "ap-northeast-3": _34, "ap-south-1": _34, "ap-south-2": _34, "ap-southeast-1": _34, "ap-southeast-2": _34, "ap-southeast-3": _34, "ap-southeast-4": _34, "ca-central-1": _34, "ca-west-1": _34, "eu-central-1": _34, "eu-central-2": _34, "eu-north-1": _34, "eu-south-1": _34, "eu-south-2": _34, "eu-west-1": _34, "eu-west-2": _34, "eu-west-3": _34, "il-central-1": _34, "me-central-1": _34, "me-south-1": _34, "sa-east-1": _34, "us-east-1": _35, "us-east-2": _35, "us-gov-west-1": [0, { "auth-fips": _3 }], "us-west-1": _35, "us-west-2": _35 }], "amplifyapp": _3, "awsapprunner": _6, "awsapps": _3, "elasticbeanstalk": [2, { "af-south-1": _3, "ap-east-1": _3, "ap-northeast-1": _3, "ap-northeast-2": _3, "ap-northeast-3": _3, "ap-south-1": _3, "ap-southeast-1": _3, "ap-southeast-2": _3, "ap-southeast-3": _3, "ca-central-1": _3, "eu-central-1": _3, "eu-north-1": _3, "eu-south-1": _3, "eu-west-1": _3, "eu-west-2": _3, "eu-west-3": _3, "il-central-1": _3, "me-south-1": _3, "sa-east-1": _3, "us-east-1": _3, "us-east-2": _3, "us-gov-east-1": _3, "us-gov-west-1": _3, "us-west-1": _3, "us-west-2": _3 }], "awsglobalaccelerator": _3, "siiites": _3, "appspacehosted": _3, "appspaceusercontent": _3, "on-aptible": _3, "myasustor": _3, "balena-devices": _3, "boutir": _3, "bplaced": _3, "cafjs": _3, "canva-apps": _3, "cdn77-storage": _3, "br": _3, "cn": _3, "de": _3, "eu": _3, "jpn": _3, "mex": _3, "ru": _3, "sa": _3, "uk": _3, "us": _3, "za": _3, "clever-cloud": [0, { "services": _6 }], "dnsabr": _3, "ip-ddns": _3, "jdevcloud": _3, "wpdevcloud": _3, "cf-ipfs": _3, "cloudflare-ipfs": _3, "trycloudflare": _3, "co": _3, "builtwithdark": _3, "datadetect": [0, { "demo": _3, "instance": _3 }], "dattolocal": _3, "dattorelay": _3, "dattoweb": _3, "mydatto": _3, "digitaloceanspaces": _6, "discordsays": _3, "discordsez": _3, "drayddns": _3, "dreamhosters": _3, "durumis": _3, "mydrobo": _3, "blogdns": _3, "cechire": _3, "dnsalias": _3, "dnsdojo": _3, "doesntexist": _3, "dontexist": _3, "doomdns": _3, "dyn-o-saur": _3, "dynalias": _3, "dyndns-at-home": _3, "dyndns-at-work": _3, "dyndns-blog": _3, "dyndns-free": _3, "dyndns-home": _3, "dyndns-ip": _3, "dyndns-mail": _3, "dyndns-office": _3, "dyndns-pics": _3, "dyndns-remote": _3, "dyndns-server": _3, "dyndns-web": _3, "dyndns-wiki": _3, "dyndns-work": _3, "est-a-la-maison": _3, "est-a-la-masion": _3, "est-le-patron": _3, "est-mon-blogueur": _3, "from-ak": _3, "from-al": _3, "from-ar": _3, "from-ca": _3, "from-ct": _3, "from-dc": _3, "from-de": _3, "from-fl": _3, "from-ga": _3, "from-hi": _3, "from-ia": _3, "from-id": _3, "from-il": _3, "from-in": _3, "from-ks": _3, "from-ky": _3, "from-ma": _3, "from-md": _3, "from-mi": _3, "from-mn": _3, "from-mo": _3, "from-ms": _3, "from-mt": _3, "from-nc": _3, "from-nd": _3, "from-ne": _3, "from-nh": _3, "from-nj": _3, "from-nm": _3, "from-nv": _3, "from-oh": _3, "from-ok": _3, "from-or": _3, "from-pa": _3, "from-pr": _3, "from-ri": _3, "from-sc": _3, "from-sd": _3, "from-tn": _3, "from-tx": _3, "from-ut": _3, "from-va": _3, "from-vt": _3, "from-wa": _3, "from-wi": _3, "from-wv": _3, "from-wy": _3, "getmyip": _3, "gotdns": _3, "hobby-site": _3, "homelinux": _3, "homeunix": _3, "iamallama": _3, "is-a-anarchist": _3, "is-a-blogger": _3, "is-a-bookkeeper": _3, "is-a-bulls-fan": _3, "is-a-caterer": _3, "is-a-chef": _3, "is-a-conservative": _3, "is-a-cpa": _3, "is-a-cubicle-slave": _3, "is-a-democrat": _3, "is-a-designer": _3, "is-a-doctor": _3, "is-a-financialadvisor": _3, "is-a-geek": _3, "is-a-green": _3, "is-a-guru": _3, "is-a-hard-worker": _3, "is-a-hunter": _3, "is-a-landscaper": _3, "is-a-lawyer": _3, "is-a-liberal": _3, "is-a-libertarian": _3, "is-a-llama": _3, "is-a-musician": _3, "is-a-nascarfan": _3, "is-a-nurse": _3, "is-a-painter": _3, "is-a-personaltrainer": _3, "is-a-photographer": _3, "is-a-player": _3, "is-a-republican": _3, "is-a-rockstar": _3, "is-a-socialist": _3, "is-a-student": _3, "is-a-teacher": _3, "is-a-techie": _3, "is-a-therapist": _3, "is-an-accountant": _3, "is-an-actor": _3, "is-an-actress": _3, "is-an-anarchist": _3, "is-an-artist": _3, "is-an-engineer": _3, "is-an-entertainer": _3, "is-certified": _3, "is-gone": _3, "is-into-anime": _3, "is-into-cars": _3, "is-into-cartoons": _3, "is-into-games": _3, "is-leet": _3, "is-not-certified": _3, "is-slick": _3, "is-uberleet": _3, "is-with-theband": _3, "isa-geek": _3, "isa-hockeynut": _3, "issmarterthanyou": _3, "likes-pie": _3, "likescandy": _3, "neat-url": _3, "saves-the-whales": _3, "selfip": _3, "sells-for-less": _3, "sells-for-u": _3, "servebbs": _3, "simple-url": _3, "space-to-rent": _3, "teaches-yoga": _3, "writesthisblog": _3, "ddnsfree": _3, "ddnsgeek": _3, "giize": _3, "gleeze": _3, "kozow": _3, "loseyourip": _3, "ooguy": _3, "theworkpc": _3, "mytuleap": _3, "tuleap-partners": _3, "encoreapi": _3, "evennode": [0, { "eu-1": _3, "eu-2": _3, "eu-3": _3, "eu-4": _3, "us-1": _3, "us-2": _3, "us-3": _3, "us-4": _3 }], "onfabrica": _3, "fastly-edge": _3, "fastly-terrarium": _3, "fastvps-server": _3, "mydobiss": _3, "firebaseapp": _3, "fldrv": _3, "forgeblocks": _3, "framercanvas": _3, "freebox-os": _3, "freeboxos": _3, "freemyip": _3, "aliases121": _3, "gentapps": _3, "gentlentapis": _3, "githubusercontent": _3, "0emm": _6, "appspot": [2, { "r": _6 }], "blogspot": _3, "codespot": _3, "googleapis": _3, "googlecode": _3, "pagespeedmobilizer": _3, "withgoogle": _3, "withyoutube": _3, "grayjayleagues": _3, "hatenablog": _3, "hatenadiary": _3, "herokuapp": _3, "gr": _3, "smushcdn": _3, "wphostedmail": _3, "wpmucdn": _3, "pixolino": _3, "apps-1and1": _3, "live-website": _3, "dopaas": _3, "hosted-by-previder": _37, "hosteur": [0, { "rag-cloud": _3, "rag-cloud-ch": _3 }], "ik-server": [0, { "jcloud": _3, "jcloud-ver-jpc": _3 }], "jelastic": [0, { "demo": _3 }], "massivegrid": _37, "wafaicloud": [0, { "jed": _3, "ryd": _3 }], "webadorsite": _3, "joyent": [0, { "cns": _6 }], "lpusercontent": _3, "linode": [0, { "members": _3, "nodebalancer": _6 }], "linodeobjects": _6, "linodeusercontent": [0, { "ip": _3 }], "barsycenter": _3, "barsyonline": _3, "modelscape": _3, "mwcloudnonprod": _3, "polyspace": _3, "mazeplay": _3, "miniserver": _3, "atmeta": _3, "fbsbx": _36, "meteorapp": _38, "routingthecloud": _3, "mydbserver": _3, "hostedpi": _3, "mythic-beasts": [0, { "caracal": _3, "customer": _3, "fentiger": _3, "lynx": _3, "ocelot": _3, "oncilla": _3, "onza": _3, "sphinx": _3, "vs": _3, "x": _3, "yali": _3 }], "nospamproxy": [0, { "cloud": [2, { "o365": _3 }] }], "4u": _3, "nfshost": _3, "3utilities": _3, "blogsyte": _3, "ciscofreak": _3, "damnserver": _3, "ddnsking": _3, "ditchyourip": _3, "dnsiskinky": _3, "dynns": _3, "geekgalaxy": _3, "health-carereform": _3, "homesecuritymac": _3, "homesecuritypc": _3, "myactivedirectory": _3, "mysecuritycamera": _3, "myvnc": _3, "net-freaks": _3, "onthewifi": _3, "point2this": _3, "quicksytes": _3, "securitytactics": _3, "servebeer": _3, "servecounterstrike": _3, "serveexchange": _3, "serveftp": _3, "servegame": _3, "servehalflife": _3, "servehttp": _3, "servehumour": _3, "serveirc": _3, "servemp3": _3, "servep2p": _3, "servepics": _3, "servequake": _3, "servesarcasm": _3, "stufftoread": _3, "unusualperson": _3, "workisboring": _3, "myiphost": _3, "observableusercontent": [0, { "static": _3 }], "simplesite": _3, "orsites": _3, "operaunite": _3, "customer-oci": [0, { "*": _3, "oci": _6, "ocp": _6, "ocs": _6 }], "oraclecloudapps": _6, "oraclegovcloudapps": _6, "authgear-staging": _3, "authgearapps": _3, "skygearapp": _3, "outsystemscloud": _3, "ownprovider": _3, "pgfog": _3, "pagexl": _3, "gotpantheon": _3, "paywhirl": _6, "upsunapp": _3, "postman-echo": _3, "prgmr": [0, { "xen": _3 }], "pythonanywhere": _38, "qa2": _3, "alpha-myqnapcloud": _3, "dev-myqnapcloud": _3, "mycloudnas": _3, "mynascloud": _3, "myqnapcloud": _3, "qualifioapp": _3, "ladesk": _3, "qbuser": _3, "quipelements": _6, "rackmaze": _3, "readthedocs-hosted": _3, "rhcloud": _3, "onrender": _3, "render": _39, "180r": _3, "dojin": _3, "sakuratan": _3, "sakuraweb": _3, "x0": _3, "code": [0, { "builder": _6, "dev-builder": _6, "stg-builder": _6 }], "salesforce": [0, { "platform": [0, { "code-builder-stg": [0, { "test": [0, { "001": _6 }] }] }] }], "logoip": _3, "scrysec": _3, "firewall-gateway": _3, "myshopblocks": _3, "myshopify": _3, "shopitsite": _3, "1kapp": _3, "appchizi": _3, "applinzi": _3, "sinaapp": _3, "vipsinaapp": _3, "streamlitapp": _3, "try-snowplow": _3, "playstation-cloud": _3, "myspreadshop": _3, "w-corp-staticblitz": _3, "w-credentialless-staticblitz": _3, "w-staticblitz": _3, "stackhero-network": _3, "stdlib": [0, { "api": _3 }], "strapiapp": [2, { "media": _3 }], "streak-link": _3, "streaklinks": _3, "streakusercontent": _3, "temp-dns": _3, "dsmynas": _3, "familyds": _3, "mytabit": _3, "taveusercontent": _3, "tb-hosting": _40, "reservd": _3, "thingdustdata": _3, "townnews-staging": _3, "typeform": [0, { "pro": _3 }], "hk": _3, "it": _3, "vultrobjects": _6, "wafflecell": _3, "hotelwithflight": _3, "reserve-online": _3, "cprapid": _3, "pleskns": _3, "remotewd": _3, "wiardweb": [0, { "pages": _3 }], "wixsite": _3, "wixstudio": _3, "messwithdns": _3, "woltlab-demo": _3, "wpenginepowered": [2, { "js": _3 }], "xnbay": [2, { "u2": _3, "u2-local": _3 }], "yolasite": _3 }], "coop": _2, "cr": [1, { "ac": _2, "co": _2, "ed": _2, "fi": _2, "go": _2, "or": _2, "sa": _2 }], "cu": [1, { "com": _2, "edu": _2, "gob": _2, "inf": _2, "nat": _2, "net": _2, "org": _2 }], "cv": [1, { "com": _2, "edu": _2, "id": _2, "int": _2, "net": _2, "nome": _2, "org": _2, "publ": _2 }], "cw": _41, "cx": [1, { "gov": _2, "cloudns": _3, "ath": _3, "info": _3, "assessments": _3, "calculators": _3, "funnels": _3, "paynow": _3, "quizzes": _3, "researched": _3, "tests": _3 }], "cy": [1, { "ac": _2, "biz": _2, "com": [1, { "scaleforce": _42 }], "ekloges": _2, "gov": _2, "ltd": _2, "mil": _2, "net": _2, "org": _2, "press": _2, "pro": _2, "tm": _2 }], "cz": [1, { "contentproxy9": [0, { "rsc": _3 }], "realm": _3, "e4": _3, "co": _3, "metacentrum": [0, { "cloud": _6, "custom": _3 }], "muni": [0, { "cloud": [0, { "flt": _3, "usr": _3 }] }] }], "de": [1, { "bplaced": _3, "square7": _3, "com": _3, "cosidns": _43, "dnsupdater": _3, "dynamisches-dns": _3, "internet-dns": _3, "l-o-g-i-n": _3, "ddnss": [2, { "dyn": _3, "dyndns": _3 }], "dyn-ip24": _3, "dyndns1": _3, "home-webserver": [2, { "dyn": _3 }], "myhome-server": _3, "dnshome": _3, "fuettertdasnetz": _3, "isteingeek": _3, "istmein": _3, "lebtimnetz": _3, "leitungsen": _3, "traeumtgerade": _3, "frusky": _6, "goip": _3, "xn--gnstigbestellen-zvb": _3, "günstigbestellen": _3, "xn--gnstigliefern-wob": _3, "günstigliefern": _3, "hs-heilbronn": [0, { "it": [0, { "pages": _3, "pages-research": _3 }] }], "dyn-berlin": _3, "in-berlin": _3, "in-brb": _3, "in-butter": _3, "in-dsl": _3, "in-vpn": _3, "iservschule": _3, "mein-iserv": _3, "schulplattform": _3, "schulserver": _3, "test-iserv": _3, "keymachine": _3, "git-repos": _3, "lcube-server": _3, "svn-repos": _3, "barsy": _3, "webspaceconfig": _3, "123webseite": _3, "rub": _3, "ruhr-uni-bochum": [2, { "noc": [0, { "io": _3 }] }], "logoip": _3, "firewall-gateway": _3, "my-gateway": _3, "my-router": _3, "spdns": _3, "speedpartner": [0, { "customer": _3 }], "myspreadshop": _3, "taifun-dns": _3, "12hp": _3, "2ix": _3, "4lima": _3, "lima-city": _3, "dd-dns": _3, "dray-dns": _3, "draydns": _3, "dyn-vpn": _3, "dynvpn": _3, "mein-vigor": _3, "my-vigor": _3, "my-wan": _3, "syno-ds": _3, "synology-diskstation": _3, "synology-ds": _3, "uberspace": _6, "virtual-user": _3, "virtualuser": _3, "community-pro": _3, "diskussionsbereich": _3 }], "dj": _2, "dk": [1, { "biz": _3, "co": _3, "firm": _3, "reg": _3, "store": _3, "123hjemmeside": _3, "myspreadshop": _3 }], "dm": _44, "do": [1, { "art": _2, "com": _2, "edu": _2, "gob": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "sld": _2, "web": _2 }], "dz": [1, { "art": _2, "asso": _2, "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "pol": _2, "soc": _2, "tm": _2 }], "ec": [1, { "com": _2, "edu": _2, "fin": _2, "gob": _2, "gov": _2, "info": _2, "k12": _2, "med": _2, "mil": _2, "net": _2, "org": _2, "pro": _2, "base": _3, "official": _3 }], "edu": [1, { "rit": [0, { "git-pages": _3 }] }], "ee": [1, { "aip": _2, "com": _2, "edu": _2, "fie": _2, "gov": _2, "lib": _2, "med": _2, "org": _2, "pri": _2, "riik": _2 }], "eg": [1, { "ac": _2, "com": _2, "edu": _2, "eun": _2, "gov": _2, "info": _2, "me": _2, "mil": _2, "name": _2, "net": _2, "org": _2, "sci": _2, "sport": _2, "tv": _2 }], "er": _15, "es": [1, { "com": _2, "edu": _2, "gob": _2, "nom": _2, "org": _2, "123miweb": _3, "myspreadshop": _3 }], "et": [1, { "biz": _2, "com": _2, "edu": _2, "gov": _2, "info": _2, "name": _2, "net": _2, "org": _2 }], "eu": [1, { "airkitapps": _3, "cloudns": _3, "dogado": [0, { "jelastic": _3 }], "barsy": _3, "spdns": _3, "transurl": _6, "diskstation": _3 }], "fi": [1, { "aland": _2, "dy": _3, "xn--hkkinen-5wa": _3, "häkkinen": _3, "iki": _3, "cloudplatform": [0, { "fi": _3 }], "datacenter": [0, { "demo": _3, "paas": _3 }], "kapsi": _3, "123kotisivu": _3, "myspreadshop": _3 }], "fj": [1, { "ac": _2, "biz": _2, "com": _2, "gov": _2, "info": _2, "mil": _2, "name": _2, "net": _2, "org": _2, "pro": _2 }], "fk": _15, "fm": [1, { "com": _2, "edu": _2, "net": _2, "org": _2, "radio": _3, "user": _6 }], "fo": _2, "fr": [1, { "asso": _2, "com": _2, "gouv": _2, "nom": _2, "prd": _2, "tm": _2, "avoues": _2, "cci": _2, "greta": _2, "huissier-justice": _2, "en-root": _3, "fbx-os": _3, "fbxos": _3, "freebox-os": _3, "freeboxos": _3, "goupile": _3, "123siteweb": _3, "on-web": _3, "chirurgiens-dentistes-en-france": _3, "dedibox": _3, "aeroport": _3, "avocat": _3, "chambagri": _3, "chirurgiens-dentistes": _3, "experts-comptables": _3, "medecin": _3, "notaires": _3, "pharmacien": _3, "port": _3, "veterinaire": _3, "myspreadshop": _3, "ynh": _3 }], "ga": _2, "gb": _2, "gd": [1, { "edu": _2, "gov": _2 }], "ge": [1, { "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "pvt": _2, "school": _2 }], "gf": _2, "gg": [1, { "co": _2, "net": _2, "org": _2, "botdash": _3, "kaas": _3, "stackit": _3, "panel": [2, { "daemon": _3 }] }], "gh": [1, { "com": _2, "edu": _2, "gov": _2, "mil": _2, "org": _2 }], "gi": [1, { "com": _2, "edu": _2, "gov": _2, "ltd": _2, "mod": _2, "org": _2 }], "gl": [1, { "co": _2, "com": _2, "edu": _2, "net": _2, "org": _2, "biz": _3 }], "gm": _2, "gn": [1, { "ac": _2, "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2 }], "gov": _2, "gp": [1, { "asso": _2, "com": _2, "edu": _2, "mobi": _2, "net": _2, "org": _2 }], "gq": _2, "gr": [1, { "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "barsy": _3, "simplesite": _3 }], "gs": _2, "gt": [1, { "com": _2, "edu": _2, "gob": _2, "ind": _2, "mil": _2, "net": _2, "org": _2 }], "gu": [1, { "com": _2, "edu": _2, "gov": _2, "guam": _2, "info": _2, "net": _2, "org": _2, "web": _2 }], "gw": _2, "gy": _44, "hk": [1, { "com": _2, "edu": _2, "gov": _2, "idv": _2, "net": _2, "org": _2, "xn--ciqpn": _2, "个人": _2, "xn--gmqw5a": _2, "個人": _2, "xn--55qx5d": _2, "公司": _2, "xn--mxtq1m": _2, "政府": _2, "xn--lcvr32d": _2, "敎育": _2, "xn--wcvs22d": _2, "教育": _2, "xn--gmq050i": _2, "箇人": _2, "xn--uc0atv": _2, "組織": _2, "xn--uc0ay4a": _2, "組织": _2, "xn--od0alg": _2, "網絡": _2, "xn--zf0avx": _2, "網络": _2, "xn--mk0axi": _2, "组織": _2, "xn--tn0ag": _2, "组织": _2, "xn--od0aq3b": _2, "网絡": _2, "xn--io0a7i": _2, "网络": _2, "inc": _3, "ltd": _3 }], "hm": _2, "hn": [1, { "com": _2, "edu": _2, "gob": _2, "mil": _2, "net": _2, "org": _2 }], "hr": [1, { "com": _2, "from": _2, "iz": _2, "name": _2, "brendly": _47 }], "ht": [1, { "adult": _2, "art": _2, "asso": _2, "com": _2, "coop": _2, "edu": _2, "firm": _2, "gouv": _2, "info": _2, "med": _2, "net": _2, "org": _2, "perso": _2, "pol": _2, "pro": _2, "rel": _2, "shop": _2, "rt": _3 }], "hu": [1, { "2000": _2, "agrar": _2, "bolt": _2, "casino": _2, "city": _2, "co": _2, "erotica": _2, "erotika": _2, "film": _2, "forum": _2, "games": _2, "hotel": _2, "info": _2, "ingatlan": _2, "jogasz": _2, "konyvelo": _2, "lakas": _2, "media": _2, "news": _2, "org": _2, "priv": _2, "reklam": _2, "sex": _2, "shop": _2, "sport": _2, "suli": _2, "szex": _2, "tm": _2, "tozsde": _2, "utazas": _2, "video": _2 }], "id": [1, { "ac": _2, "biz": _2, "co": _2, "desa": _2, "go": _2, "mil": _2, "my": _2, "net": _2, "or": _2, "ponpes": _2, "sch": _2, "web": _2 }], "ie": [1, { "gov": _2, "myspreadshop": _3 }], "il": [1, { "ac": _2, "co": [1, { "ravpage": _3, "mytabit": _3, "tabitorder": _3 }], "gov": _2, "idf": _2, "k12": _2, "muni": _2, "net": _2, "org": _2 }], "xn--4dbrk0ce": [1, { "xn--4dbgdty6c": _2, "xn--5dbhl8d": _2, "xn--8dbq2a": _2, "xn--hebda8b": _2 }], "ישראל": [1, { "אקדמיה": _2, "ישוב": _2, "צהל": _2, "ממשל": _2 }], "im": [1, { "ac": _2, "co": [1, { "ltd": _2, "plc": _2 }], "com": _2, "net": _2, "org": _2, "tt": _2, "tv": _2 }], "in": [1, { "5g": _2, "6g": _2, "ac": _2, "ai": _2, "am": _2, "bihar": _2, "biz": _2, "business": _2, "ca": _2, "cn": _2, "co": _2, "com": _2, "coop": _2, "cs": _2, "delhi": _2, "dr": _2, "edu": _2, "er": _2, "firm": _2, "gen": _2, "gov": _2, "gujarat": _2, "ind": _2, "info": _2, "int": _2, "internet": _2, "io": _2, "me": _2, "mil": _2, "net": _2, "nic": _2, "org": _2, "pg": _2, "post": _2, "pro": _2, "res": _2, "travel": _2, "tv": _2, "uk": _2, "up": _2, "us": _2, "cloudns": _3, "barsy": _3, "web": _3, "supabase": _3 }], "info": [1, { "cloudns": _3, "dynamic-dns": _3, "barrel-of-knowledge": _3, "barrell-of-knowledge": _3, "dyndns": _3, "for-our": _3, "groks-the": _3, "groks-this": _3, "here-for-more": _3, "knowsitall": _3, "selfip": _3, "webhop": _3, "barsy": _3, "mayfirst": _3, "mittwald": _3, "mittwaldserver": _3, "typo3server": _3, "dvrcam": _3, "ilovecollege": _3, "no-ip": _3, "forumz": _3, "nsupdate": _3, "dnsupdate": _3, "v-info": _3 }], "int": [1, { "eu": _2 }], "io": [1, { "2038": _3, "co": _2, "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "nom": _2, "org": _2, "on-acorn": _6, "myaddr": _3, "apigee": _3, "b-data": _3, "beagleboard": _3, "bitbucket": _3, "bluebite": _3, "boxfuse": _3, "brave": [0, { "s": _6 }], "browsersafetymark": _3, "bigv": [0, { "uk0": _3 }], "cleverapps": _3, "dappnode": [0, { "dyndns": _3 }], "darklang": _3, "definima": _3, "dedyn": _3, "fh-muenster": _3, "shw": _3, "forgerock": [0, { "id": _3 }], "github": _3, "gitlab": _3, "lolipop": _3, "hasura-app": _3, "hostyhosting": _3, "hypernode": _3, "moonscale": _6, "beebyte": _37, "beebyteapp": [0, { "sekd1": _3 }], "jele": _3, "webthings": _3, "loginline": _3, "barsy": _3, "azurecontainer": _6, "ngrok": [2, { "ap": _3, "au": _3, "eu": _3, "in": _3, "jp": _3, "sa": _3, "us": _3 }], "nodeart": [0, { "stage": _3 }], "pantheonsite": _3, "pstmn": [2, { "mock": _3 }], "protonet": _3, "qcx": [2, { "sys": _6 }], "qoto": _3, "vaporcloud": _3, "myrdbx": _3, "rb-hosting": _40, "on-k3s": _6, "on-rio": _6, "readthedocs": _3, "resindevice": _3, "resinstaging": [0, { "devices": _3 }], "hzc": _3, "sandcats": _3, "scrypted": [0, { "client": _3 }], "mo-siemens": _3, "lair": _36, "stolos": _6, "musician": _3, "utwente": _3, "edugit": _3, "telebit": _3, "thingdust": [0, { "dev": _48, "disrec": _48, "prod": _49, "testing": _48 }], "tickets": _3, "webflow": _3, "webflowtest": _3, "editorx": _3, "wixstudio": _3, "basicserver": _3, "virtualserver": _3 }], "iq": _5, "ir": [1, { "ac": _2, "co": _2, "gov": _2, "id": _2, "net": _2, "org": _2, "sch": _2, "xn--mgba3a4f16a": _2, "ایران": _2, "xn--mgba3a4fra": _2, "ايران": _2, "arvanedge": _3 }], "is": _2, "it": [1, { "edu": _2, "gov": _2, "abr": _2, "abruzzo": _2, "aosta-valley": _2, "aostavalley": _2, "bas": _2, "basilicata": _2, "cal": _2, "calabria": _2, "cam": _2, "campania": _2, "emilia-romagna": _2, "emiliaromagna": _2, "emr": _2, "friuli-v-giulia": _2, "friuli-ve-giulia": _2, "friuli-vegiulia": _2, "friuli-venezia-giulia": _2, "friuli-veneziagiulia": _2, "friuli-vgiulia": _2, "friuliv-giulia": _2, "friulive-giulia": _2, "friulivegiulia": _2, "friulivenezia-giulia": _2, "friuliveneziagiulia": _2, "friulivgiulia": _2, "fvg": _2, "laz": _2, "lazio": _2, "lig": _2, "liguria": _2, "lom": _2, "lombardia": _2, "lombardy": _2, "lucania": _2, "mar": _2, "marche": _2, "mol": _2, "molise": _2, "piedmont": _2, "piemonte": _2, "pmn": _2, "pug": _2, "puglia": _2, "sar": _2, "sardegna": _2, "sardinia": _2, "sic": _2, "sicilia": _2, "sicily": _2, "taa": _2, "tos": _2, "toscana": _2, "trentin-sud-tirol": _2, "xn--trentin-sd-tirol-rzb": _2, "trentin-süd-tirol": _2, "trentin-sudtirol": _2, "xn--trentin-sdtirol-7vb": _2, "trentin-südtirol": _2, "trentin-sued-tirol": _2, "trentin-suedtirol": _2, "trentino": _2, "trentino-a-adige": _2, "trentino-aadige": _2, "trentino-alto-adige": _2, "trentino-altoadige": _2, "trentino-s-tirol": _2, "trentino-stirol": _2, "trentino-sud-tirol": _2, "xn--trentino-sd-tirol-c3b": _2, "trentino-süd-tirol": _2, "trentino-sudtirol": _2, "xn--trentino-sdtirol-szb": _2, "trentino-südtirol": _2, "trentino-sued-tirol": _2, "trentino-suedtirol": _2, "trentinoa-adige": _2, "trentinoaadige": _2, "trentinoalto-adige": _2, "trentinoaltoadige": _2, "trentinos-tirol": _2, "trentinostirol": _2, "trentinosud-tirol": _2, "xn--trentinosd-tirol-rzb": _2, "trentinosüd-tirol": _2, "trentinosudtirol": _2, "xn--trentinosdtirol-7vb": _2, "trentinosüdtirol": _2, "trentinosued-tirol": _2, "trentinosuedtirol": _2, "trentinsud-tirol": _2, "xn--trentinsd-tirol-6vb": _2, "trentinsüd-tirol": _2, "trentinsudtirol": _2, "xn--trentinsdtirol-nsb": _2, "trentinsüdtirol": _2, "trentinsued-tirol": _2, "trentinsuedtirol": _2, "tuscany": _2, "umb": _2, "umbria": _2, "val-d-aosta": _2, "val-daosta": _2, "vald-aosta": _2, "valdaosta": _2, "valle-aosta": _2, "valle-d-aosta": _2, "valle-daosta": _2, "valleaosta": _2, "valled-aosta": _2, "valledaosta": _2, "vallee-aoste": _2, "xn--valle-aoste-ebb": _2, "vallée-aoste": _2, "vallee-d-aoste": _2, "xn--valle-d-aoste-ehb": _2, "vallée-d-aoste": _2, "valleeaoste": _2, "xn--valleaoste-e7a": _2, "valléeaoste": _2, "valleedaoste": _2, "xn--valledaoste-ebb": _2, "valléedaoste": _2, "vao": _2, "vda": _2, "ven": _2, "veneto": _2, "ag": _2, "agrigento": _2, "al": _2, "alessandria": _2, "alto-adige": _2, "altoadige": _2, "an": _2, "ancona": _2, "andria-barletta-trani": _2, "andria-trani-barletta": _2, "andriabarlettatrani": _2, "andriatranibarletta": _2, "ao": _2, "aosta": _2, "aoste": _2, "ap": _2, "aq": _2, "aquila": _2, "ar": _2, "arezzo": _2, "ascoli-piceno": _2, "ascolipiceno": _2, "asti": _2, "at": _2, "av": _2, "avellino": _2, "ba": _2, "balsan": _2, "balsan-sudtirol": _2, "xn--balsan-sdtirol-nsb": _2, "balsan-südtirol": _2, "balsan-suedtirol": _2, "bari": _2, "barletta-trani-andria": _2, "barlettatraniandria": _2, "belluno": _2, "benevento": _2, "bergamo": _2, "bg": _2, "bi": _2, "biella": _2, "bl": _2, "bn": _2, "bo": _2, "bologna": _2, "bolzano": _2, "bolzano-altoadige": _2, "bozen": _2, "bozen-sudtirol": _2, "xn--bozen-sdtirol-2ob": _2, "bozen-südtirol": _2, "bozen-suedtirol": _2, "br": _2, "brescia": _2, "brindisi": _2, "bs": _2, "bt": _2, "bulsan": _2, "bulsan-sudtirol": _2, "xn--bulsan-sdtirol-nsb": _2, "bulsan-südtirol": _2, "bulsan-suedtirol": _2, "bz": _2, "ca": _2, "cagliari": _2, "caltanissetta": _2, "campidano-medio": _2, "campidanomedio": _2, "campobasso": _2, "carbonia-iglesias": _2, "carboniaiglesias": _2, "carrara-massa": _2, "carraramassa": _2, "caserta": _2, "catania": _2, "catanzaro": _2, "cb": _2, "ce": _2, "cesena-forli": _2, "xn--cesena-forl-mcb": _2, "cesena-forlì": _2, "cesenaforli": _2, "xn--cesenaforl-i8a": _2, "cesenaforlì": _2, "ch": _2, "chieti": _2, "ci": _2, "cl": _2, "cn": _2, "co": _2, "como": _2, "cosenza": _2, "cr": _2, "cremona": _2, "crotone": _2, "cs": _2, "ct": _2, "cuneo": _2, "cz": _2, "dell-ogliastra": _2, "dellogliastra": _2, "en": _2, "enna": _2, "fc": _2, "fe": _2, "fermo": _2, "ferrara": _2, "fg": _2, "fi": _2, "firenze": _2, "florence": _2, "fm": _2, "foggia": _2, "forli-cesena": _2, "xn--forl-cesena-fcb": _2, "forlì-cesena": _2, "forlicesena": _2, "xn--forlcesena-c8a": _2, "forlìcesena": _2, "fr": _2, "frosinone": _2, "ge": _2, "genoa": _2, "genova": _2, "go": _2, "gorizia": _2, "gr": _2, "grosseto": _2, "iglesias-carbonia": _2, "iglesiascarbonia": _2, "im": _2, "imperia": _2, "is": _2, "isernia": _2, "kr": _2, "la-spezia": _2, "laquila": _2, "laspezia": _2, "latina": _2, "lc": _2, "le": _2, "lecce": _2, "lecco": _2, "li": _2, "livorno": _2, "lo": _2, "lodi": _2, "lt": _2, "lu": _2, "lucca": _2, "macerata": _2, "mantova": _2, "massa-carrara": _2, "massacarrara": _2, "matera": _2, "mb": _2, "mc": _2, "me": _2, "medio-campidano": _2, "mediocampidano": _2, "messina": _2, "mi": _2, "milan": _2, "milano": _2, "mn": _2, "mo": _2, "modena": _2, "monza": _2, "monza-brianza": _2, "monza-e-della-brianza": _2, "monzabrianza": _2, "monzaebrianza": _2, "monzaedellabrianza": _2, "ms": _2, "mt": _2, "na": _2, "naples": _2, "napoli": _2, "no": _2, "novara": _2, "nu": _2, "nuoro": _2, "og": _2, "ogliastra": _2, "olbia-tempio": _2, "olbiatempio": _2, "or": _2, "oristano": _2, "ot": _2, "pa": _2, "padova": _2, "padua": _2, "palermo": _2, "parma": _2, "pavia": _2, "pc": _2, "pd": _2, "pe": _2, "perugia": _2, "pesaro-urbino": _2, "pesarourbino": _2, "pescara": _2, "pg": _2, "pi": _2, "piacenza": _2, "pisa": _2, "pistoia": _2, "pn": _2, "po": _2, "pordenone": _2, "potenza": _2, "pr": _2, "prato": _2, "pt": _2, "pu": _2, "pv": _2, "pz": _2, "ra": _2, "ragusa": _2, "ravenna": _2, "rc": _2, "re": _2, "reggio-calabria": _2, "reggio-emilia": _2, "reggiocalabria": _2, "reggioemilia": _2, "rg": _2, "ri": _2, "rieti": _2, "rimini": _2, "rm": _2, "rn": _2, "ro": _2, "roma": _2, "rome": _2, "rovigo": _2, "sa": _2, "salerno": _2, "sassari": _2, "savona": _2, "si": _2, "siena": _2, "siracusa": _2, "so": _2, "sondrio": _2, "sp": _2, "sr": _2, "ss": _2, "xn--sdtirol-n2a": _2, "südtirol": _2, "suedtirol": _2, "sv": _2, "ta": _2, "taranto": _2, "te": _2, "tempio-olbia": _2, "tempioolbia": _2, "teramo": _2, "terni": _2, "tn": _2, "to": _2, "torino": _2, "tp": _2, "tr": _2, "trani-andria-barletta": _2, "trani-barletta-andria": _2, "traniandriabarletta": _2, "tranibarlettaandria": _2, "trapani": _2, "trento": _2, "treviso": _2, "trieste": _2, "ts": _2, "turin": _2, "tv": _2, "ud": _2, "udine": _2, "urbino-pesaro": _2, "urbinopesaro": _2, "va": _2, "varese": _2, "vb": _2, "vc": _2, "ve": _2, "venezia": _2, "venice": _2, "verbania": _2, "vercelli": _2, "verona": _2, "vi": _2, "vibo-valentia": _2, "vibovalentia": _2, "vicenza": _2, "viterbo": _2, "vr": _2, "vs": _2, "vt": _2, "vv": _2, "12chars": _3, "ibxos": _3, "iliadboxos": _3, "neen": [0, { "jc": _3 }], "123homepage": _3, "16-b": _3, "32-b": _3, "64-b": _3, "myspreadshop": _3, "syncloud": _3 }], "je": [1, { "co": _2, "net": _2, "org": _2, "of": _3 }], "jm": _15, "jo": [1, { "agri": _2, "ai": _2, "com": _2, "edu": _2, "eng": _2, "fm": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "per": _2, "phd": _2, "sch": _2, "tv": _2 }], "jobs": _2, "jp": [1, { "ac": _2, "ad": _2, "co": _2, "ed": _2, "go": _2, "gr": _2, "lg": _2, "ne": [1, { "aseinet": _46, "gehirn": _3, "ivory": _3, "mail-box": _3, "mints": _3, "mokuren": _3, "opal": _3, "sakura": _3, "sumomo": _3, "topaz": _3 }], "or": _2, "aichi": [1, { "aisai": _2, "ama": _2, "anjo": _2, "asuke": _2, "chiryu": _2, "chita": _2, "fuso": _2, "gamagori": _2, "handa": _2, "hazu": _2, "hekinan": _2, "higashiura": _2, "ichinomiya": _2, "inazawa": _2, "inuyama": _2, "isshiki": _2, "iwakura": _2, "kanie": _2, "kariya": _2, "kasugai": _2, "kira": _2, "kiyosu": _2, "komaki": _2, "konan": _2, "kota": _2, "mihama": _2, "miyoshi": _2, "nishio": _2, "nisshin": _2, "obu": _2, "oguchi": _2, "oharu": _2, "okazaki": _2, "owariasahi": _2, "seto": _2, "shikatsu": _2, "shinshiro": _2, "shitara": _2, "tahara": _2, "takahama": _2, "tobishima": _2, "toei": _2, "togo": _2, "tokai": _2, "tokoname": _2, "toyoake": _2, "toyohashi": _2, "toyokawa": _2, "toyone": _2, "toyota": _2, "tsushima": _2, "yatomi": _2 }], "akita": [1, { "akita": _2, "daisen": _2, "fujisato": _2, "gojome": _2, "hachirogata": _2, "happou": _2, "higashinaruse": _2, "honjo": _2, "honjyo": _2, "ikawa": _2, "kamikoani": _2, "kamioka": _2, "katagami": _2, "kazuno": _2, "kitaakita": _2, "kosaka": _2, "kyowa": _2, "misato": _2, "mitane": _2, "moriyoshi": _2, "nikaho": _2, "noshiro": _2, "odate": _2, "oga": _2, "ogata": _2, "semboku": _2, "yokote": _2, "yurihonjo": _2 }], "aomori": [1, { "aomori": _2, "gonohe": _2, "hachinohe": _2, "hashikami": _2, "hiranai": _2, "hirosaki": _2, "itayanagi": _2, "kuroishi": _2, "misawa": _2, "mutsu": _2, "nakadomari": _2, "noheji": _2, "oirase": _2, "owani": _2, "rokunohe": _2, "sannohe": _2, "shichinohe": _2, "shingo": _2, "takko": _2, "towada": _2, "tsugaru": _2, "tsuruta": _2 }], "chiba": [1, { "abiko": _2, "asahi": _2, "chonan": _2, "chosei": _2, "choshi": _2, "chuo": _2, "funabashi": _2, "futtsu": _2, "hanamigawa": _2, "ichihara": _2, "ichikawa": _2, "ichinomiya": _2, "inzai": _2, "isumi": _2, "kamagaya": _2, "kamogawa": _2, "kashiwa": _2, "katori": _2, "katsuura": _2, "kimitsu": _2, "kisarazu": _2, "kozaki": _2, "kujukuri": _2, "kyonan": _2, "matsudo": _2, "midori": _2, "mihama": _2, "minamiboso": _2, "mobara": _2, "mutsuzawa": _2, "nagara": _2, "nagareyama": _2, "narashino": _2, "narita": _2, "noda": _2, "oamishirasato": _2, "omigawa": _2, "onjuku": _2, "otaki": _2, "sakae": _2, "sakura": _2, "shimofusa": _2, "shirako": _2, "shiroi": _2, "shisui": _2, "sodegaura": _2, "sosa": _2, "tako": _2, "tateyama": _2, "togane": _2, "tohnosho": _2, "tomisato": _2, "urayasu": _2, "yachimata": _2, "yachiyo": _2, "yokaichiba": _2, "yokoshibahikari": _2, "yotsukaido": _2 }], "ehime": [1, { "ainan": _2, "honai": _2, "ikata": _2, "imabari": _2, "iyo": _2, "kamijima": _2, "kihoku": _2, "kumakogen": _2, "masaki": _2, "matsuno": _2, "matsuyama": _2, "namikata": _2, "niihama": _2, "ozu": _2, "saijo": _2, "seiyo": _2, "shikokuchuo": _2, "tobe": _2, "toon": _2, "uchiko": _2, "uwajima": _2, "yawatahama": _2 }], "fukui": [1, { "echizen": _2, "eiheiji": _2, "fukui": _2, "ikeda": _2, "katsuyama": _2, "mihama": _2, "minamiechizen": _2, "obama": _2, "ohi": _2, "ono": _2, "sabae": _2, "sakai": _2, "takahama": _2, "tsuruga": _2, "wakasa": _2 }], "fukuoka": [1, { "ashiya": _2, "buzen": _2, "chikugo": _2, "chikuho": _2, "chikujo": _2, "chikushino": _2, "chikuzen": _2, "chuo": _2, "dazaifu": _2, "fukuchi": _2, "hakata": _2, "higashi": _2, "hirokawa": _2, "hisayama": _2, "iizuka": _2, "inatsuki": _2, "kaho": _2, "kasuga": _2, "kasuya": _2, "kawara": _2, "keisen": _2, "koga": _2, "kurate": _2, "kurogi": _2, "kurume": _2, "minami": _2, "miyako": _2, "miyama": _2, "miyawaka": _2, "mizumaki": _2, "munakata": _2, "nakagawa": _2, "nakama": _2, "nishi": _2, "nogata": _2, "ogori": _2, "okagaki": _2, "okawa": _2, "oki": _2, "omuta": _2, "onga": _2, "onojo": _2, "oto": _2, "saigawa": _2, "sasaguri": _2, "shingu": _2, "shinyoshitomi": _2, "shonai": _2, "soeda": _2, "sue": _2, "tachiarai": _2, "tagawa": _2, "takata": _2, "toho": _2, "toyotsu": _2, "tsuiki": _2, "ukiha": _2, "umi": _2, "usui": _2, "yamada": _2, "yame": _2, "yanagawa": _2, "yukuhashi": _2 }], "fukushima": [1, { "aizubange": _2, "aizumisato": _2, "aizuwakamatsu": _2, "asakawa": _2, "bandai": _2, "date": _2, "fukushima": _2, "furudono": _2, "futaba": _2, "hanawa": _2, "higashi": _2, "hirata": _2, "hirono": _2, "iitate": _2, "inawashiro": _2, "ishikawa": _2, "iwaki": _2, "izumizaki": _2, "kagamiishi": _2, "kaneyama": _2, "kawamata": _2, "kitakata": _2, "kitashiobara": _2, "koori": _2, "koriyama": _2, "kunimi": _2, "miharu": _2, "mishima": _2, "namie": _2, "nango": _2, "nishiaizu": _2, "nishigo": _2, "okuma": _2, "omotego": _2, "ono": _2, "otama": _2, "samegawa": _2, "shimogo": _2, "shirakawa": _2, "showa": _2, "soma": _2, "sukagawa": _2, "taishin": _2, "tamakawa": _2, "tanagura": _2, "tenei": _2, "yabuki": _2, "yamato": _2, "yamatsuri": _2, "yanaizu": _2, "yugawa": _2 }], "gifu": [1, { "anpachi": _2, "ena": _2, "gifu": _2, "ginan": _2, "godo": _2, "gujo": _2, "hashima": _2, "hichiso": _2, "hida": _2, "higashishirakawa": _2, "ibigawa": _2, "ikeda": _2, "kakamigahara": _2, "kani": _2, "kasahara": _2, "kasamatsu": _2, "kawaue": _2, "kitagata": _2, "mino": _2, "minokamo": _2, "mitake": _2, "mizunami": _2, "motosu": _2, "nakatsugawa": _2, "ogaki": _2, "sakahogi": _2, "seki": _2, "sekigahara": _2, "shirakawa": _2, "tajimi": _2, "takayama": _2, "tarui": _2, "toki": _2, "tomika": _2, "wanouchi": _2, "yamagata": _2, "yaotsu": _2, "yoro": _2 }], "gunma": [1, { "annaka": _2, "chiyoda": _2, "fujioka": _2, "higashiagatsuma": _2, "isesaki": _2, "itakura": _2, "kanna": _2, "kanra": _2, "katashina": _2, "kawaba": _2, "kiryu": _2, "kusatsu": _2, "maebashi": _2, "meiwa": _2, "midori": _2, "minakami": _2, "naganohara": _2, "nakanojo": _2, "nanmoku": _2, "numata": _2, "oizumi": _2, "ora": _2, "ota": _2, "shibukawa": _2, "shimonita": _2, "shinto": _2, "showa": _2, "takasaki": _2, "takayama": _2, "tamamura": _2, "tatebayashi": _2, "tomioka": _2, "tsukiyono": _2, "tsumagoi": _2, "ueno": _2, "yoshioka": _2 }], "hiroshima": [1, { "asaminami": _2, "daiwa": _2, "etajima": _2, "fuchu": _2, "fukuyama": _2, "hatsukaichi": _2, "higashihiroshima": _2, "hongo": _2, "jinsekikogen": _2, "kaita": _2, "kui": _2, "kumano": _2, "kure": _2, "mihara": _2, "miyoshi": _2, "naka": _2, "onomichi": _2, "osakikamijima": _2, "otake": _2, "saka": _2, "sera": _2, "seranishi": _2, "shinichi": _2, "shobara": _2, "takehara": _2 }], "hokkaido": [1, { "abashiri": _2, "abira": _2, "aibetsu": _2, "akabira": _2, "akkeshi": _2, "asahikawa": _2, "ashibetsu": _2, "ashoro": _2, "assabu": _2, "atsuma": _2, "bibai": _2, "biei": _2, "bifuka": _2, "bihoro": _2, "biratori": _2, "chippubetsu": _2, "chitose": _2, "date": _2, "ebetsu": _2, "embetsu": _2, "eniwa": _2, "erimo": _2, "esan": _2, "esashi": _2, "fukagawa": _2, "fukushima": _2, "furano": _2, "furubira": _2, "haboro": _2, "hakodate": _2, "hamatonbetsu": _2, "hidaka": _2, "higashikagura": _2, "higashikawa": _2, "hiroo": _2, "hokuryu": _2, "hokuto": _2, "honbetsu": _2, "horokanai": _2, "horonobe": _2, "ikeda": _2, "imakane": _2, "ishikari": _2, "iwamizawa": _2, "iwanai": _2, "kamifurano": _2, "kamikawa": _2, "kamishihoro": _2, "kamisunagawa": _2, "kamoenai": _2, "kayabe": _2, "kembuchi": _2, "kikonai": _2, "kimobetsu": _2, "kitahiroshima": _2, "kitami": _2, "kiyosato": _2, "koshimizu": _2, "kunneppu": _2, "kuriyama": _2, "kuromatsunai": _2, "kushiro": _2, "kutchan": _2, "kyowa": _2, "mashike": _2, "matsumae": _2, "mikasa": _2, "minamifurano": _2, "mombetsu": _2, "moseushi": _2, "mukawa": _2, "muroran": _2, "naie": _2, "nakagawa": _2, "nakasatsunai": _2, "nakatombetsu": _2, "nanae": _2, "nanporo": _2, "nayoro": _2, "nemuro": _2, "niikappu": _2, "niki": _2, "nishiokoppe": _2, "noboribetsu": _2, "numata": _2, "obihiro": _2, "obira": _2, "oketo": _2, "okoppe": _2, "otaru": _2, "otobe": _2, "otofuke": _2, "otoineppu": _2, "oumu": _2, "ozora": _2, "pippu": _2, "rankoshi": _2, "rebun": _2, "rikubetsu": _2, "rishiri": _2, "rishirifuji": _2, "saroma": _2, "sarufutsu": _2, "shakotan": _2, "shari": _2, "shibecha": _2, "shibetsu": _2, "shikabe": _2, "shikaoi": _2, "shimamaki": _2, "shimizu": _2, "shimokawa": _2, "shinshinotsu": _2, "shintoku": _2, "shiranuka": _2, "shiraoi": _2, "shiriuchi": _2, "sobetsu": _2, "sunagawa": _2, "taiki": _2, "takasu": _2, "takikawa": _2, "takinoue": _2, "teshikaga": _2, "tobetsu": _2, "tohma": _2, "tomakomai": _2, "tomari": _2, "toya": _2, "toyako": _2, "toyotomi": _2, "toyoura": _2, "tsubetsu": _2, "tsukigata": _2, "urakawa": _2, "urausu": _2, "uryu": _2, "utashinai": _2, "wakkanai": _2, "wassamu": _2, "yakumo": _2, "yoichi": _2 }], "hyogo": [1, { "aioi": _2, "akashi": _2, "ako": _2, "amagasaki": _2, "aogaki": _2, "asago": _2, "ashiya": _2, "awaji": _2, "fukusaki": _2, "goshiki": _2, "harima": _2, "himeji": _2, "ichikawa": _2, "inagawa": _2, "itami": _2, "kakogawa": _2, "kamigori": _2, "kamikawa": _2, "kasai": _2, "kasuga": _2, "kawanishi": _2, "miki": _2, "minamiawaji": _2, "nishinomiya": _2, "nishiwaki": _2, "ono": _2, "sanda": _2, "sannan": _2, "sasayama": _2, "sayo": _2, "shingu": _2, "shinonsen": _2, "shiso": _2, "sumoto": _2, "taishi": _2, "taka": _2, "takarazuka": _2, "takasago": _2, "takino": _2, "tamba": _2, "tatsuno": _2, "toyooka": _2, "yabu": _2, "yashiro": _2, "yoka": _2, "yokawa": _2 }], "ibaraki": [1, { "ami": _2, "asahi": _2, "bando": _2, "chikusei": _2, "daigo": _2, "fujishiro": _2, "hitachi": _2, "hitachinaka": _2, "hitachiomiya": _2, "hitachiota": _2, "ibaraki": _2, "ina": _2, "inashiki": _2, "itako": _2, "iwama": _2, "joso": _2, "kamisu": _2, "kasama": _2, "kashima": _2, "kasumigaura": _2, "koga": _2, "miho": _2, "mito": _2, "moriya": _2, "naka": _2, "namegata": _2, "oarai": _2, "ogawa": _2, "omitama": _2, "ryugasaki": _2, "sakai": _2, "sakuragawa": _2, "shimodate": _2, "shimotsuma": _2, "shirosato": _2, "sowa": _2, "suifu": _2, "takahagi": _2, "tamatsukuri": _2, "tokai": _2, "tomobe": _2, "tone": _2, "toride": _2, "tsuchiura": _2, "tsukuba": _2, "uchihara": _2, "ushiku": _2, "yachiyo": _2, "yamagata": _2, "yawara": _2, "yuki": _2 }], "ishikawa": [1, { "anamizu": _2, "hakui": _2, "hakusan": _2, "kaga": _2, "kahoku": _2, "kanazawa": _2, "kawakita": _2, "komatsu": _2, "nakanoto": _2, "nanao": _2, "nomi": _2, "nonoichi": _2, "noto": _2, "shika": _2, "suzu": _2, "tsubata": _2, "tsurugi": _2, "uchinada": _2, "wajima": _2 }], "iwate": [1, { "fudai": _2, "fujisawa": _2, "hanamaki": _2, "hiraizumi": _2, "hirono": _2, "ichinohe": _2, "ichinoseki": _2, "iwaizumi": _2, "iwate": _2, "joboji": _2, "kamaishi": _2, "kanegasaki": _2, "karumai": _2, "kawai": _2, "kitakami": _2, "kuji": _2, "kunohe": _2, "kuzumaki": _2, "miyako": _2, "mizusawa": _2, "morioka": _2, "ninohe": _2, "noda": _2, "ofunato": _2, "oshu": _2, "otsuchi": _2, "rikuzentakata": _2, "shiwa": _2, "shizukuishi": _2, "sumita": _2, "tanohata": _2, "tono": _2, "yahaba": _2, "yamada": _2 }], "kagawa": [1, { "ayagawa": _2, "higashikagawa": _2, "kanonji": _2, "kotohira": _2, "manno": _2, "marugame": _2, "mitoyo": _2, "naoshima": _2, "sanuki": _2, "tadotsu": _2, "takamatsu": _2, "tonosho": _2, "uchinomi": _2, "utazu": _2, "zentsuji": _2 }], "kagoshima": [1, { "akune": _2, "amami": _2, "hioki": _2, "isa": _2, "isen": _2, "izumi": _2, "kagoshima": _2, "kanoya": _2, "kawanabe": _2, "kinko": _2, "kouyama": _2, "makurazaki": _2, "matsumoto": _2, "minamitane": _2, "nakatane": _2, "nishinoomote": _2, "satsumasendai": _2, "soo": _2, "tarumizu": _2, "yusui": _2 }], "kanagawa": [1, { "aikawa": _2, "atsugi": _2, "ayase": _2, "chigasaki": _2, "ebina": _2, "fujisawa": _2, "hadano": _2, "hakone": _2, "hiratsuka": _2, "isehara": _2, "kaisei": _2, "kamakura": _2, "kiyokawa": _2, "matsuda": _2, "minamiashigara": _2, "miura": _2, "nakai": _2, "ninomiya": _2, "odawara": _2, "oi": _2, "oiso": _2, "sagamihara": _2, "samukawa": _2, "tsukui": _2, "yamakita": _2, "yamato": _2, "yokosuka": _2, "yugawara": _2, "zama": _2, "zushi": _2 }], "kochi": [1, { "aki": _2, "geisei": _2, "hidaka": _2, "higashitsuno": _2, "ino": _2, "kagami": _2, "kami": _2, "kitagawa": _2, "kochi": _2, "mihara": _2, "motoyama": _2, "muroto": _2, "nahari": _2, "nakamura": _2, "nankoku": _2, "nishitosa": _2, "niyodogawa": _2, "ochi": _2, "okawa": _2, "otoyo": _2, "otsuki": _2, "sakawa": _2, "sukumo": _2, "susaki": _2, "tosa": _2, "tosashimizu": _2, "toyo": _2, "tsuno": _2, "umaji": _2, "yasuda": _2, "yusuhara": _2 }], "kumamoto": [1, { "amakusa": _2, "arao": _2, "aso": _2, "choyo": _2, "gyokuto": _2, "kamiamakusa": _2, "kikuchi": _2, "kumamoto": _2, "mashiki": _2, "mifune": _2, "minamata": _2, "minamioguni": _2, "nagasu": _2, "nishihara": _2, "oguni": _2, "ozu": _2, "sumoto": _2, "takamori": _2, "uki": _2, "uto": _2, "yamaga": _2, "yamato": _2, "yatsushiro": _2 }], "kyoto": [1, { "ayabe": _2, "fukuchiyama": _2, "higashiyama": _2, "ide": _2, "ine": _2, "joyo": _2, "kameoka": _2, "kamo": _2, "kita": _2, "kizu": _2, "kumiyama": _2, "kyotamba": _2, "kyotanabe": _2, "kyotango": _2, "maizuru": _2, "minami": _2, "minamiyamashiro": _2, "miyazu": _2, "muko": _2, "nagaokakyo": _2, "nakagyo": _2, "nantan": _2, "oyamazaki": _2, "sakyo": _2, "seika": _2, "tanabe": _2, "uji": _2, "ujitawara": _2, "wazuka": _2, "yamashina": _2, "yawata": _2 }], "mie": [1, { "asahi": _2, "inabe": _2, "ise": _2, "kameyama": _2, "kawagoe": _2, "kiho": _2, "kisosaki": _2, "kiwa": _2, "komono": _2, "kumano": _2, "kuwana": _2, "matsusaka": _2, "meiwa": _2, "mihama": _2, "minamiise": _2, "misugi": _2, "miyama": _2, "nabari": _2, "shima": _2, "suzuka": _2, "tado": _2, "taiki": _2, "taki": _2, "tamaki": _2, "toba": _2, "tsu": _2, "udono": _2, "ureshino": _2, "watarai": _2, "yokkaichi": _2 }], "miyagi": [1, { "furukawa": _2, "higashimatsushima": _2, "ishinomaki": _2, "iwanuma": _2, "kakuda": _2, "kami": _2, "kawasaki": _2, "marumori": _2, "matsushima": _2, "minamisanriku": _2, "misato": _2, "murata": _2, "natori": _2, "ogawara": _2, "ohira": _2, "onagawa": _2, "osaki": _2, "rifu": _2, "semine": _2, "shibata": _2, "shichikashuku": _2, "shikama": _2, "shiogama": _2, "shiroishi": _2, "tagajo": _2, "taiwa": _2, "tome": _2, "tomiya": _2, "wakuya": _2, "watari": _2, "yamamoto": _2, "zao": _2 }], "miyazaki": [1, { "aya": _2, "ebino": _2, "gokase": _2, "hyuga": _2, "kadogawa": _2, "kawaminami": _2, "kijo": _2, "kitagawa": _2, "kitakata": _2, "kitaura": _2, "kobayashi": _2, "kunitomi": _2, "kushima": _2, "mimata": _2, "miyakonojo": _2, "miyazaki": _2, "morotsuka": _2, "nichinan": _2, "nishimera": _2, "nobeoka": _2, "saito": _2, "shiiba": _2, "shintomi": _2, "takaharu": _2, "takanabe": _2, "takazaki": _2, "tsuno": _2 }], "nagano": [1, { "achi": _2, "agematsu": _2, "anan": _2, "aoki": _2, "asahi": _2, "azumino": _2, "chikuhoku": _2, "chikuma": _2, "chino": _2, "fujimi": _2, "hakuba": _2, "hara": _2, "hiraya": _2, "iida": _2, "iijima": _2, "iiyama": _2, "iizuna": _2, "ikeda": _2, "ikusaka": _2, "ina": _2, "karuizawa": _2, "kawakami": _2, "kiso": _2, "kisofukushima": _2, "kitaaiki": _2, "komagane": _2, "komoro": _2, "matsukawa": _2, "matsumoto": _2, "miasa": _2, "minamiaiki": _2, "minamimaki": _2, "minamiminowa": _2, "minowa": _2, "miyada": _2, "miyota": _2, "mochizuki": _2, "nagano": _2, "nagawa": _2, "nagiso": _2, "nakagawa": _2, "nakano": _2, "nozawaonsen": _2, "obuse": _2, "ogawa": _2, "okaya": _2, "omachi": _2, "omi": _2, "ookuwa": _2, "ooshika": _2, "otaki": _2, "otari": _2, "sakae": _2, "sakaki": _2, "saku": _2, "sakuho": _2, "shimosuwa": _2, "shinanomachi": _2, "shiojiri": _2, "suwa": _2, "suzaka": _2, "takagi": _2, "takamori": _2, "takayama": _2, "tateshina": _2, "tatsuno": _2, "togakushi": _2, "togura": _2, "tomi": _2, "ueda": _2, "wada": _2, "yamagata": _2, "yamanouchi": _2, "yasaka": _2, "yasuoka": _2 }], "nagasaki": [1, { "chijiwa": _2, "futsu": _2, "goto": _2, "hasami": _2, "hirado": _2, "iki": _2, "isahaya": _2, "kawatana": _2, "kuchinotsu": _2, "matsuura": _2, "nagasaki": _2, "obama": _2, "omura": _2, "oseto": _2, "saikai": _2, "sasebo": _2, "seihi": _2, "shimabara": _2, "shinkamigoto": _2, "togitsu": _2, "tsushima": _2, "unzen": _2 }], "nara": [1, { "ando": _2, "gose": _2, "heguri": _2, "higashiyoshino": _2, "ikaruga": _2, "ikoma": _2, "kamikitayama": _2, "kanmaki": _2, "kashiba": _2, "kashihara": _2, "katsuragi": _2, "kawai": _2, "kawakami": _2, "kawanishi": _2, "koryo": _2, "kurotaki": _2, "mitsue": _2, "miyake": _2, "nara": _2, "nosegawa": _2, "oji": _2, "ouda": _2, "oyodo": _2, "sakurai": _2, "sango": _2, "shimoichi": _2, "shimokitayama": _2, "shinjo": _2, "soni": _2, "takatori": _2, "tawaramoto": _2, "tenkawa": _2, "tenri": _2, "uda": _2, "yamatokoriyama": _2, "yamatotakada": _2, "yamazoe": _2, "yoshino": _2 }], "niigata": [1, { "aga": _2, "agano": _2, "gosen": _2, "itoigawa": _2, "izumozaki": _2, "joetsu": _2, "kamo": _2, "kariwa": _2, "kashiwazaki": _2, "minamiuonuma": _2, "mitsuke": _2, "muika": _2, "murakami": _2, "myoko": _2, "nagaoka": _2, "niigata": _2, "ojiya": _2, "omi": _2, "sado": _2, "sanjo": _2, "seiro": _2, "seirou": _2, "sekikawa": _2, "shibata": _2, "tagami": _2, "tainai": _2, "tochio": _2, "tokamachi": _2, "tsubame": _2, "tsunan": _2, "uonuma": _2, "yahiko": _2, "yoita": _2, "yuzawa": _2 }], "oita": [1, { "beppu": _2, "bungoono": _2, "bungotakada": _2, "hasama": _2, "hiji": _2, "himeshima": _2, "hita": _2, "kamitsue": _2, "kokonoe": _2, "kuju": _2, "kunisaki": _2, "kusu": _2, "oita": _2, "saiki": _2, "taketa": _2, "tsukumi": _2, "usa": _2, "usuki": _2, "yufu": _2 }], "okayama": [1, { "akaiwa": _2, "asakuchi": _2, "bizen": _2, "hayashima": _2, "ibara": _2, "kagamino": _2, "kasaoka": _2, "kibichuo": _2, "kumenan": _2, "kurashiki": _2, "maniwa": _2, "misaki": _2, "nagi": _2, "niimi": _2, "nishiawakura": _2, "okayama": _2, "satosho": _2, "setouchi": _2, "shinjo": _2, "shoo": _2, "soja": _2, "takahashi": _2, "tamano": _2, "tsuyama": _2, "wake": _2, "yakage": _2 }], "okinawa": [1, { "aguni": _2, "ginowan": _2, "ginoza": _2, "gushikami": _2, "haebaru": _2, "higashi": _2, "hirara": _2, "iheya": _2, "ishigaki": _2, "ishikawa": _2, "itoman": _2, "izena": _2, "kadena": _2, "kin": _2, "kitadaito": _2, "kitanakagusuku": _2, "kumejima": _2, "kunigami": _2, "minamidaito": _2, "motobu": _2, "nago": _2, "naha": _2, "nakagusuku": _2, "nakijin": _2, "nanjo": _2, "nishihara": _2, "ogimi": _2, "okinawa": _2, "onna": _2, "shimoji": _2, "taketomi": _2, "tarama": _2, "tokashiki": _2, "tomigusuku": _2, "tonaki": _2, "urasoe": _2, "uruma": _2, "yaese": _2, "yomitan": _2, "yonabaru": _2, "yonaguni": _2, "zamami": _2 }], "osaka": [1, { "abeno": _2, "chihayaakasaka": _2, "chuo": _2, "daito": _2, "fujiidera": _2, "habikino": _2, "hannan": _2, "higashiosaka": _2, "higashisumiyoshi": _2, "higashiyodogawa": _2, "hirakata": _2, "ibaraki": _2, "ikeda": _2, "izumi": _2, "izumiotsu": _2, "izumisano": _2, "kadoma": _2, "kaizuka": _2, "kanan": _2, "kashiwara": _2, "katano": _2, "kawachinagano": _2, "kishiwada": _2, "kita": _2, "kumatori": _2, "matsubara": _2, "minato": _2, "minoh": _2, "misaki": _2, "moriguchi": _2, "neyagawa": _2, "nishi": _2, "nose": _2, "osakasayama": _2, "sakai": _2, "sayama": _2, "sennan": _2, "settsu": _2, "shijonawate": _2, "shimamoto": _2, "suita": _2, "tadaoka": _2, "taishi": _2, "tajiri": _2, "takaishi": _2, "takatsuki": _2, "tondabayashi": _2, "toyonaka": _2, "toyono": _2, "yao": _2 }], "saga": [1, { "ariake": _2, "arita": _2, "fukudomi": _2, "genkai": _2, "hamatama": _2, "hizen": _2, "imari": _2, "kamimine": _2, "kanzaki": _2, "karatsu": _2, "kashima": _2, "kitagata": _2, "kitahata": _2, "kiyama": _2, "kouhoku": _2, "kyuragi": _2, "nishiarita": _2, "ogi": _2, "omachi": _2, "ouchi": _2, "saga": _2, "shiroishi": _2, "taku": _2, "tara": _2, "tosu": _2, "yoshinogari": _2 }], "saitama": [1, { "arakawa": _2, "asaka": _2, "chichibu": _2, "fujimi": _2, "fujimino": _2, "fukaya": _2, "hanno": _2, "hanyu": _2, "hasuda": _2, "hatogaya": _2, "hatoyama": _2, "hidaka": _2, "higashichichibu": _2, "higashimatsuyama": _2, "honjo": _2, "ina": _2, "iruma": _2, "iwatsuki": _2, "kamiizumi": _2, "kamikawa": _2, "kamisato": _2, "kasukabe": _2, "kawagoe": _2, "kawaguchi": _2, "kawajima": _2, "kazo": _2, "kitamoto": _2, "koshigaya": _2, "kounosu": _2, "kuki": _2, "kumagaya": _2, "matsubushi": _2, "minano": _2, "misato": _2, "miyashiro": _2, "miyoshi": _2, "moroyama": _2, "nagatoro": _2, "namegawa": _2, "niiza": _2, "ogano": _2, "ogawa": _2, "ogose": _2, "okegawa": _2, "omiya": _2, "otaki": _2, "ranzan": _2, "ryokami": _2, "saitama": _2, "sakado": _2, "satte": _2, "sayama": _2, "shiki": _2, "shiraoka": _2, "soka": _2, "sugito": _2, "toda": _2, "tokigawa": _2, "tokorozawa": _2, "tsurugashima": _2, "urawa": _2, "warabi": _2, "yashio": _2, "yokoze": _2, "yono": _2, "yorii": _2, "yoshida": _2, "yoshikawa": _2, "yoshimi": _2 }], "shiga": [1, { "aisho": _2, "gamo": _2, "higashiomi": _2, "hikone": _2, "koka": _2, "konan": _2, "kosei": _2, "koto": _2, "kusatsu": _2, "maibara": _2, "moriyama": _2, "nagahama": _2, "nishiazai": _2, "notogawa": _2, "omihachiman": _2, "otsu": _2, "ritto": _2, "ryuoh": _2, "takashima": _2, "takatsuki": _2, "torahime": _2, "toyosato": _2, "yasu": _2 }], "shimane": [1, { "akagi": _2, "ama": _2, "gotsu": _2, "hamada": _2, "higashiizumo": _2, "hikawa": _2, "hikimi": _2, "izumo": _2, "kakinoki": _2, "masuda": _2, "matsue": _2, "misato": _2, "nishinoshima": _2, "ohda": _2, "okinoshima": _2, "okuizumo": _2, "shimane": _2, "tamayu": _2, "tsuwano": _2, "unnan": _2, "yakumo": _2, "yasugi": _2, "yatsuka": _2 }], "shizuoka": [1, { "arai": _2, "atami": _2, "fuji": _2, "fujieda": _2, "fujikawa": _2, "fujinomiya": _2, "fukuroi": _2, "gotemba": _2, "haibara": _2, "hamamatsu": _2, "higashiizu": _2, "ito": _2, "iwata": _2, "izu": _2, "izunokuni": _2, "kakegawa": _2, "kannami": _2, "kawanehon": _2, "kawazu": _2, "kikugawa": _2, "kosai": _2, "makinohara": _2, "matsuzaki": _2, "minamiizu": _2, "mishima": _2, "morimachi": _2, "nishiizu": _2, "numazu": _2, "omaezaki": _2, "shimada": _2, "shimizu": _2, "shimoda": _2, "shizuoka": _2, "susono": _2, "yaizu": _2, "yoshida": _2 }], "tochigi": [1, { "ashikaga": _2, "bato": _2, "haga": _2, "ichikai": _2, "iwafune": _2, "kaminokawa": _2, "kanuma": _2, "karasuyama": _2, "kuroiso": _2, "mashiko": _2, "mibu": _2, "moka": _2, "motegi": _2, "nasu": _2, "nasushiobara": _2, "nikko": _2, "nishikata": _2, "nogi": _2, "ohira": _2, "ohtawara": _2, "oyama": _2, "sakura": _2, "sano": _2, "shimotsuke": _2, "shioya": _2, "takanezawa": _2, "tochigi": _2, "tsuga": _2, "ujiie": _2, "utsunomiya": _2, "yaita": _2 }], "tokushima": [1, { "aizumi": _2, "anan": _2, "ichiba": _2, "itano": _2, "kainan": _2, "komatsushima": _2, "matsushige": _2, "mima": _2, "minami": _2, "miyoshi": _2, "mugi": _2, "nakagawa": _2, "naruto": _2, "sanagochi": _2, "shishikui": _2, "tokushima": _2, "wajiki": _2 }], "tokyo": [1, { "adachi": _2, "akiruno": _2, "akishima": _2, "aogashima": _2, "arakawa": _2, "bunkyo": _2, "chiyoda": _2, "chofu": _2, "chuo": _2, "edogawa": _2, "fuchu": _2, "fussa": _2, "hachijo": _2, "hachioji": _2, "hamura": _2, "higashikurume": _2, "higashimurayama": _2, "higashiyamato": _2, "hino": _2, "hinode": _2, "hinohara": _2, "inagi": _2, "itabashi": _2, "katsushika": _2, "kita": _2, "kiyose": _2, "kodaira": _2, "koganei": _2, "kokubunji": _2, "komae": _2, "koto": _2, "kouzushima": _2, "kunitachi": _2, "machida": _2, "meguro": _2, "minato": _2, "mitaka": _2, "mizuho": _2, "musashimurayama": _2, "musashino": _2, "nakano": _2, "nerima": _2, "ogasawara": _2, "okutama": _2, "ome": _2, "oshima": _2, "ota": _2, "setagaya": _2, "shibuya": _2, "shinagawa": _2, "shinjuku": _2, "suginami": _2, "sumida": _2, "tachikawa": _2, "taito": _2, "tama": _2, "toshima": _2 }], "tottori": [1, { "chizu": _2, "hino": _2, "kawahara": _2, "koge": _2, "kotoura": _2, "misasa": _2, "nanbu": _2, "nichinan": _2, "sakaiminato": _2, "tottori": _2, "wakasa": _2, "yazu": _2, "yonago": _2 }], "toyama": [1, { "asahi": _2, "fuchu": _2, "fukumitsu": _2, "funahashi": _2, "himi": _2, "imizu": _2, "inami": _2, "johana": _2, "kamiichi": _2, "kurobe": _2, "nakaniikawa": _2, "namerikawa": _2, "nanto": _2, "nyuzen": _2, "oyabe": _2, "taira": _2, "takaoka": _2, "tateyama": _2, "toga": _2, "tonami": _2, "toyama": _2, "unazuki": _2, "uozu": _2, "yamada": _2 }], "wakayama": [1, { "arida": _2, "aridagawa": _2, "gobo": _2, "hashimoto": _2, "hidaka": _2, "hirogawa": _2, "inami": _2, "iwade": _2, "kainan": _2, "kamitonda": _2, "katsuragi": _2, "kimino": _2, "kinokawa": _2, "kitayama": _2, "koya": _2, "koza": _2, "kozagawa": _2, "kudoyama": _2, "kushimoto": _2, "mihama": _2, "misato": _2, "nachikatsuura": _2, "shingu": _2, "shirahama": _2, "taiji": _2, "tanabe": _2, "wakayama": _2, "yuasa": _2, "yura": _2 }], "yamagata": [1, { "asahi": _2, "funagata": _2, "higashine": _2, "iide": _2, "kahoku": _2, "kaminoyama": _2, "kaneyama": _2, "kawanishi": _2, "mamurogawa": _2, "mikawa": _2, "murayama": _2, "nagai": _2, "nakayama": _2, "nanyo": _2, "nishikawa": _2, "obanazawa": _2, "oe": _2, "oguni": _2, "ohkura": _2, "oishida": _2, "sagae": _2, "sakata": _2, "sakegawa": _2, "shinjo": _2, "shirataka": _2, "shonai": _2, "takahata": _2, "tendo": _2, "tozawa": _2, "tsuruoka": _2, "yamagata": _2, "yamanobe": _2, "yonezawa": _2, "yuza": _2 }], "yamaguchi": [1, { "abu": _2, "hagi": _2, "hikari": _2, "hofu": _2, "iwakuni": _2, "kudamatsu": _2, "mitou": _2, "nagato": _2, "oshima": _2, "shimonoseki": _2, "shunan": _2, "tabuse": _2, "tokuyama": _2, "toyota": _2, "ube": _2, "yuu": _2 }], "yamanashi": [1, { "chuo": _2, "doshi": _2, "fuefuki": _2, "fujikawa": _2, "fujikawaguchiko": _2, "fujiyoshida": _2, "hayakawa": _2, "hokuto": _2, "ichikawamisato": _2, "kai": _2, "kofu": _2, "koshu": _2, "kosuge": _2, "minami-alps": _2, "minobu": _2, "nakamichi": _2, "nanbu": _2, "narusawa": _2, "nirasaki": _2, "nishikatsura": _2, "oshino": _2, "otsuki": _2, "showa": _2, "tabayama": _2, "tsuru": _2, "uenohara": _2, "yamanakako": _2, "yamanashi": _2 }], "xn--ehqz56n": _2, "三重": _2, "xn--1lqs03n": _2, "京都": _2, "xn--qqqt11m": _2, "佐賀": _2, "xn--f6qx53a": _2, "兵庫": _2, "xn--djrs72d6uy": _2, "北海道": _2, "xn--mkru45i": _2, "千葉": _2, "xn--0trq7p7nn": _2, "和歌山": _2, "xn--5js045d": _2, "埼玉": _2, "xn--kbrq7o": _2, "大分": _2, "xn--pssu33l": _2, "大阪": _2, "xn--ntsq17g": _2, "奈良": _2, "xn--uisz3g": _2, "宮城": _2, "xn--6btw5a": _2, "宮崎": _2, "xn--1ctwo": _2, "富山": _2, "xn--6orx2r": _2, "山口": _2, "xn--rht61e": _2, "山形": _2, "xn--rht27z": _2, "山梨": _2, "xn--nit225k": _2, "岐阜": _2, "xn--rht3d": _2, "岡山": _2, "xn--djty4k": _2, "岩手": _2, "xn--klty5x": _2, "島根": _2, "xn--kltx9a": _2, "広島": _2, "xn--kltp7d": _2, "徳島": _2, "xn--c3s14m": _2, "愛媛": _2, "xn--vgu402c": _2, "愛知": _2, "xn--efvn9s": _2, "新潟": _2, "xn--1lqs71d": _2, "東京": _2, "xn--4pvxs": _2, "栃木": _2, "xn--uuwu58a": _2, "沖縄": _2, "xn--zbx025d": _2, "滋賀": _2, "xn--8pvr4u": _2, "熊本": _2, "xn--5rtp49c": _2, "石川": _2, "xn--ntso0iqx3a": _2, "神奈川": _2, "xn--elqq16h": _2, "福井": _2, "xn--4it168d": _2, "福岡": _2, "xn--klt787d": _2, "福島": _2, "xn--rny31h": _2, "秋田": _2, "xn--7t0a264c": _2, "群馬": _2, "xn--uist22h": _2, "茨城": _2, "xn--8ltr62k": _2, "長崎": _2, "xn--2m4a15e": _2, "長野": _2, "xn--32vp30h": _2, "青森": _2, "xn--4it797k": _2, "静岡": _2, "xn--5rtq34k": _2, "香川": _2, "xn--k7yn95e": _2, "高知": _2, "xn--tor131o": _2, "鳥取": _2, "xn--d5qv7z876c": _2, "鹿児島": _2, "kawasaki": _15, "kitakyushu": _15, "kobe": _15, "nagoya": _15, "sapporo": _15, "sendai": _15, "yokohama": _15, "buyshop": _3, "fashionstore": _3, "handcrafted": _3, "kawaiishop": _3, "supersale": _3, "theshop": _3, "0am": _3, "0g0": _3, "0j0": _3, "0t0": _3, "mydns": _3, "pgw": _3, "wjg": _3, "usercontent": _3, "angry": _3, "babyblue": _3, "babymilk": _3, "backdrop": _3, "bambina": _3, "bitter": _3, "blush": _3, "boo": _3, "boy": _3, "boyfriend": _3, "but": _3, "candypop": _3, "capoo": _3, "catfood": _3, "cheap": _3, "chicappa": _3, "chillout": _3, "chips": _3, "chowder": _3, "chu": _3, "ciao": _3, "cocotte": _3, "coolblog": _3, "cranky": _3, "cutegirl": _3, "daa": _3, "deca": _3, "deci": _3, "digick": _3, "egoism": _3, "fakefur": _3, "fem": _3, "flier": _3, "floppy": _3, "fool": _3, "frenchkiss": _3, "girlfriend": _3, "girly": _3, "gloomy": _3, "gonna": _3, "greater": _3, "hacca": _3, "heavy": _3, "her": _3, "hiho": _3, "hippy": _3, "holy": _3, "hungry": _3, "icurus": _3, "itigo": _3, "jellybean": _3, "kikirara": _3, "kill": _3, "kilo": _3, "kuron": _3, "littlestar": _3, "lolipopmc": _3, "lolitapunk": _3, "lomo": _3, "lovepop": _3, "lovesick": _3, "main": _3, "mods": _3, "mond": _3, "mongolian": _3, "moo": _3, "namaste": _3, "nikita": _3, "nobushi": _3, "noor": _3, "oops": _3, "parallel": _3, "parasite": _3, "pecori": _3, "peewee": _3, "penne": _3, "pepper": _3, "perma": _3, "pigboat": _3, "pinoko": _3, "punyu": _3, "pupu": _3, "pussycat": _3, "pya": _3, "raindrop": _3, "readymade": _3, "sadist": _3, "schoolbus": _3, "secret": _3, "staba": _3, "stripper": _3, "sub": _3, "sunnyday": _3, "thick": _3, "tonkotsu": _3, "under": _3, "upper": _3, "velvet": _3, "verse": _3, "versus": _3, "vivian": _3, "watson": _3, "weblike": _3, "whitesnow": _3, "zombie": _3, "hateblo": _3, "hatenablog": _3, "hatenadiary": _3, "2-d": _3, "bona": _3, "crap": _3, "daynight": _3, "eek": _3, "flop": _3, "halfmoon": _3, "jeez": _3, "matrix": _3, "mimoza": _3, "netgamers": _3, "nyanta": _3, "o0o0": _3, "rdy": _3, "rgr": _3, "rulez": _3, "sakurastorage": [0, { "isk01": _50, "isk02": _50 }], "saloon": _3, "sblo": _3, "skr": _3, "tank": _3, "uh-oh": _3, "undo": _3, "webaccel": [0, { "rs": _3, "user": _3 }], "websozai": _3, "xii": _3 }], "ke": [1, { "ac": _2, "co": _2, "go": _2, "info": _2, "me": _2, "mobi": _2, "ne": _2, "or": _2, "sc": _2 }], "kg": [1, { "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "us": _3 }], "kh": _15, "ki": _51, "km": [1, { "ass": _2, "com": _2, "edu": _2, "gov": _2, "mil": _2, "nom": _2, "org": _2, "prd": _2, "tm": _2, "asso": _2, "coop": _2, "gouv": _2, "medecin": _2, "notaires": _2, "pharmaciens": _2, "presse": _2, "veterinaire": _2 }], "kn": [1, { "edu": _2, "gov": _2, "net": _2, "org": _2 }], "kp": [1, { "com": _2, "edu": _2, "gov": _2, "org": _2, "rep": _2, "tra": _2 }], "kr": [1, { "ac": _2, "co": _2, "es": _2, "go": _2, "hs": _2, "kg": _2, "mil": _2, "ms": _2, "ne": _2, "or": _2, "pe": _2, "re": _2, "sc": _2, "busan": _2, "chungbuk": _2, "chungnam": _2, "daegu": _2, "daejeon": _2, "gangwon": _2, "gwangju": _2, "gyeongbuk": _2, "gyeonggi": _2, "gyeongnam": _2, "incheon": _2, "jeju": _2, "jeonbuk": _2, "jeonnam": _2, "seoul": _2, "ulsan": _2 }], "kw": [1, { "com": _2, "edu": _2, "emb": _2, "gov": _2, "ind": _2, "net": _2, "org": _2 }], "ky": _41, "kz": [1, { "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "jcloud": _3 }], "la": [1, { "com": _2, "edu": _2, "gov": _2, "info": _2, "int": _2, "net": _2, "org": _2, "per": _2, "bnr": _3 }], "lb": _4, "lc": [1, { "co": _2, "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "oy": _3 }], "li": _2, "lk": [1, { "ac": _2, "assn": _2, "com": _2, "edu": _2, "gov": _2, "grp": _2, "hotel": _2, "int": _2, "ltd": _2, "net": _2, "ngo": _2, "org": _2, "sch": _2, "soc": _2, "web": _2 }], "lr": _4, "ls": [1, { "ac": _2, "biz": _2, "co": _2, "edu": _2, "gov": _2, "info": _2, "net": _2, "org": _2, "sc": _2 }], "lt": _9, "lu": [1, { "123website": _3 }], "lv": [1, { "asn": _2, "com": _2, "conf": _2, "edu": _2, "gov": _2, "id": _2, "mil": _2, "net": _2, "org": _2 }], "ly": [1, { "com": _2, "edu": _2, "gov": _2, "id": _2, "med": _2, "net": _2, "org": _2, "plc": _2, "sch": _2 }], "ma": [1, { "ac": _2, "co": _2, "gov": _2, "net": _2, "org": _2, "press": _2 }], "mc": [1, { "asso": _2, "tm": _2 }], "md": [1, { "ir": _3 }], "me": [1, { "ac": _2, "co": _2, "edu": _2, "gov": _2, "its": _2, "net": _2, "org": _2, "priv": _2, "c66": _3, "craft": _3, "edgestack": _3, "filegear": _3, "glitch": _3, "filegear-sg": _3, "lohmus": _3, "barsy": _3, "mcdir": _3, "brasilia": _3, "ddns": _3, "dnsfor": _3, "hopto": _3, "loginto": _3, "noip": _3, "webhop": _3, "soundcast": _3, "tcp4": _3, "vp4": _3, "diskstation": _3, "dscloud": _3, "i234": _3, "myds": _3, "synology": _3, "transip": _40, "nohost": _3 }], "mg": [1, { "co": _2, "com": _2, "edu": _2, "gov": _2, "mil": _2, "nom": _2, "org": _2, "prd": _2 }], "mh": _2, "mil": _2, "mk": [1, { "com": _2, "edu": _2, "gov": _2, "inf": _2, "name": _2, "net": _2, "org": _2 }], "ml": [1, { "com": _2, "edu": _2, "gouv": _2, "gov": _2, "net": _2, "org": _2, "presse": _2 }], "mm": _15, "mn": [1, { "edu": _2, "gov": _2, "org": _2, "nyc": _3 }], "mo": _4, "mobi": [1, { "barsy": _3, "dscloud": _3 }], "mp": [1, { "ju": _3 }], "mq": _2, "mr": _9, "ms": [1, { "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "minisite": _3 }], "mt": _41, "mu": [1, { "ac": _2, "co": _2, "com": _2, "gov": _2, "net": _2, "or": _2, "org": _2 }], "museum": _2, "mv": [1, { "aero": _2, "biz": _2, "com": _2, "coop": _2, "edu": _2, "gov": _2, "info": _2, "int": _2, "mil": _2, "museum": _2, "name": _2, "net": _2, "org": _2, "pro": _2 }], "mw": [1, { "ac": _2, "biz": _2, "co": _2, "com": _2, "coop": _2, "edu": _2, "gov": _2, "int": _2, "net": _2, "org": _2 }], "mx": [1, { "com": _2, "edu": _2, "gob": _2, "net": _2, "org": _2 }], "my": [1, { "biz": _2, "com": _2, "edu": _2, "gov": _2, "mil": _2, "name": _2, "net": _2, "org": _2 }], "mz": [1, { "ac": _2, "adv": _2, "co": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2 }], "na": [1, { "alt": _2, "co": _2, "com": _2, "gov": _2, "net": _2, "org": _2 }], "name": [1, { "her": _53, "his": _53 }], "nc": [1, { "asso": _2, "nom": _2 }], "ne": _2, "net": [1, { "adobeaemcloud": _3, "adobeio-static": _3, "adobeioruntime": _3, "akadns": _3, "akamai": _3, "akamai-staging": _3, "akamaiedge": _3, "akamaiedge-staging": _3, "akamaihd": _3, "akamaihd-staging": _3, "akamaiorigin": _3, "akamaiorigin-staging": _3, "akamaized": _3, "akamaized-staging": _3, "edgekey": _3, "edgekey-staging": _3, "edgesuite": _3, "edgesuite-staging": _3, "alwaysdata": _3, "myamaze": _3, "cloudfront": _3, "appudo": _3, "atlassian-dev": [0, { "prod": _54 }], "myfritz": _3, "onavstack": _3, "shopselect": _3, "blackbaudcdn": _3, "boomla": _3, "bplaced": _3, "square7": _3, "cdn77": [0, { "r": _3 }], "cdn77-ssl": _3, "gb": _3, "hu": _3, "jp": _3, "se": _3, "uk": _3, "clickrising": _3, "ddns-ip": _3, "dns-cloud": _3, "dns-dynamic": _3, "cloudaccess": _3, "cloudflare": [2, { "cdn": _3 }], "cloudflareanycast": _54, "cloudflarecn": _54, "cloudflareglobal": _54, "ctfcloud": _3, "feste-ip": _3, "knx-server": _3, "static-access": _3, "cryptonomic": _6, "dattolocal": _3, "mydatto": _3, "debian": _3, "definima": _3, "at-band-camp": _3, "blogdns": _3, "broke-it": _3, "buyshouses": _3, "dnsalias": _3, "dnsdojo": _3, "does-it": _3, "dontexist": _3, "dynalias": _3, "dynathome": _3, "endofinternet": _3, "from-az": _3, "from-co": _3, "from-la": _3, "from-ny": _3, "gets-it": _3, "ham-radio-op": _3, "homeftp": _3, "homeip": _3, "homelinux": _3, "homeunix": _3, "in-the-band": _3, "is-a-chef": _3, "is-a-geek": _3, "isa-geek": _3, "kicks-ass": _3, "office-on-the": _3, "podzone": _3, "scrapper-site": _3, "selfip": _3, "sells-it": _3, "servebbs": _3, "serveftp": _3, "thruhere": _3, "webhop": _3, "casacam": _3, "dynu": _3, "dynv6": _3, "twmail": _3, "ru": _3, "channelsdvr": [2, { "u": _3 }], "fastly": [0, { "freetls": _3, "map": _3, "prod": [0, { "a": _3, "global": _3 }], "ssl": [0, { "a": _3, "b": _3, "global": _3 }] }], "fastlylb": [2, { "map": _3 }], "edgeapp": _3, "keyword-on": _3, "live-on": _3, "server-on": _3, "cdn-edges": _3, "heteml": _3, "cloudfunctions": _3, "grafana-dev": _3, "iobb": _3, "moonscale": _3, "in-dsl": _3, "in-vpn": _3, "botdash": _3, "apps-1and1": _3, "ipifony": _3, "cloudjiffy": [2, { "fra1-de": _3, "west1-us": _3 }], "elastx": [0, { "jls-sto1": _3, "jls-sto2": _3, "jls-sto3": _3 }], "massivegrid": [0, { "paas": [0, { "fr-1": _3, "lon-1": _3, "lon-2": _3, "ny-1": _3, "ny-2": _3, "sg-1": _3 }] }], "saveincloud": [0, { "jelastic": _3, "nordeste-idc": _3 }], "scaleforce": _42, "kinghost": _3, "uni5": _3, "krellian": _3, "ggff": _3, "localcert": _3, "localhostcert": _3, "barsy": _3, "memset": _3, "azure-api": _3, "azure-mobile": _3, "azureedge": _3, "azurefd": _3, "azurestaticapps": [2, { "1": _3, "2": _3, "3": _3, "4": _3, "5": _3, "6": _3, "7": _3, "centralus": _3, "eastasia": _3, "eastus2": _3, "westeurope": _3, "westus2": _3 }], "azurewebsites": _3, "cloudapp": _3, "trafficmanager": _3, "windows": [0, { "core": [0, { "blob": _3 }], "servicebus": _3 }], "mynetname": [0, { "sn": _3 }], "routingthecloud": _3, "bounceme": _3, "ddns": _3, "eating-organic": _3, "mydissent": _3, "myeffect": _3, "mymediapc": _3, "mypsx": _3, "mysecuritycamera": _3, "nhlfan": _3, "no-ip": _3, "pgafan": _3, "privatizehealthinsurance": _3, "redirectme": _3, "serveblog": _3, "serveminecraft": _3, "sytes": _3, "dnsup": _3, "hicam": _3, "now-dns": _3, "ownip": _3, "vpndns": _3, "cloudycluster": _3, "ovh": [0, { "hosting": _6, "webpaas": _6 }], "rackmaze": _3, "myradweb": _3, "in": _3, "squares": _3, "schokokeks": _3, "firewall-gateway": _3, "seidat": _3, "senseering": _3, "siteleaf": _3, "mafelo": _3, "myspreadshop": _3, "vps-host": [2, { "jelastic": [0, { "atl": _3, "njs": _3, "ric": _3 }] }], "srcf": [0, { "soc": _3, "user": _3 }], "supabase": _3, "dsmynas": _3, "familyds": _3, "ts": [2, { "c": _6 }], "torproject": [2, { "pages": _3 }], "vusercontent": _3, "reserve-online": _3, "community-pro": _3, "meinforum": _3, "yandexcloud": [2, { "storage": _3, "website": _3 }], "za": _3 }], "nf": [1, { "arts": _2, "com": _2, "firm": _2, "info": _2, "net": _2, "other": _2, "per": _2, "rec": _2, "store": _2, "web": _2 }], "ng": [1, { "com": _2, "edu": _2, "gov": _2, "i": _2, "mil": _2, "mobi": _2, "name": _2, "net": _2, "org": _2, "sch": _2, "biz": [2, { "co": _3, "dl": _3, "go": _3, "lg": _3, "on": _3 }], "col": _3, "firm": _3, "gen": _3, "ltd": _3, "ngo": _3, "plc": _3 }], "ni": [1, { "ac": _2, "biz": _2, "co": _2, "com": _2, "edu": _2, "gob": _2, "in": _2, "info": _2, "int": _2, "mil": _2, "net": _2, "nom": _2, "org": _2, "web": _2 }], "nl": [1, { "co": _3, "hosting-cluster": _3, "gov": _3, "khplay": _3, "123website": _3, "myspreadshop": _3, "transurl": _6, "cistron": _3, "demon": _3 }], "no": [1, { "fhs": _2, "folkebibl": _2, "fylkesbibl": _2, "idrett": _2, "museum": _2, "priv": _2, "vgs": _2, "dep": _2, "herad": _2, "kommune": _2, "mil": _2, "stat": _2, "aa": _55, "ah": _55, "bu": _55, "fm": _55, "hl": _55, "hm": _55, "jan-mayen": _55, "mr": _55, "nl": _55, "nt": _55, "of": _55, "ol": _55, "oslo": _55, "rl": _55, "sf": _55, "st": _55, "svalbard": _55, "tm": _55, "tr": _55, "va": _55, "vf": _55, "akrehamn": _2, "xn--krehamn-dxa": _2, "åkrehamn": _2, "algard": _2, "xn--lgrd-poac": _2, "ålgård": _2, "arna": _2, "bronnoysund": _2, "xn--brnnysund-m8ac": _2, "brønnøysund": _2, "brumunddal": _2, "bryne": _2, "drobak": _2, "xn--drbak-wua": _2, "drøbak": _2, "egersund": _2, "fetsund": _2, "floro": _2, "xn--flor-jra": _2, "florø": _2, "fredrikstad": _2, "hokksund": _2, "honefoss": _2, "xn--hnefoss-q1a": _2, "hønefoss": _2, "jessheim": _2, "jorpeland": _2, "xn--jrpeland-54a": _2, "jørpeland": _2, "kirkenes": _2, "kopervik": _2, "krokstadelva": _2, "langevag": _2, "xn--langevg-jxa": _2, "langevåg": _2, "leirvik": _2, "mjondalen": _2, "xn--mjndalen-64a": _2, "mjøndalen": _2, "mo-i-rana": _2, "mosjoen": _2, "xn--mosjen-eya": _2, "mosjøen": _2, "nesoddtangen": _2, "orkanger": _2, "osoyro": _2, "xn--osyro-wua": _2, "osøyro": _2, "raholt": _2, "xn--rholt-mra": _2, "råholt": _2, "sandnessjoen": _2, "xn--sandnessjen-ogb": _2, "sandnessjøen": _2, "skedsmokorset": _2, "slattum": _2, "spjelkavik": _2, "stathelle": _2, "stavern": _2, "stjordalshalsen": _2, "xn--stjrdalshalsen-sqb": _2, "stjørdalshalsen": _2, "tananger": _2, "tranby": _2, "vossevangen": _2, "aarborte": _2, "aejrie": _2, "afjord": _2, "xn--fjord-lra": _2, "åfjord": _2, "agdenes": _2, "akershus": _56, "aknoluokta": _2, "xn--koluokta-7ya57h": _2, "ákŋoluokta": _2, "al": _2, "xn--l-1fa": _2, "ål": _2, "alaheadju": _2, "xn--laheadju-7ya": _2, "álaheadju": _2, "alesund": _2, "xn--lesund-hua": _2, "ålesund": _2, "alstahaug": _2, "alta": _2, "xn--lt-liac": _2, "áltá": _2, "alvdal": _2, "amli": _2, "xn--mli-tla": _2, "åmli": _2, "amot": _2, "xn--mot-tla": _2, "åmot": _2, "andasuolo": _2, "andebu": _2, "andoy": _2, "xn--andy-ira": _2, "andøy": _2, "ardal": _2, "xn--rdal-poa": _2, "årdal": _2, "aremark": _2, "arendal": _2, "xn--s-1fa": _2, "ås": _2, "aseral": _2, "xn--seral-lra": _2, "åseral": _2, "asker": _2, "askim": _2, "askoy": _2, "xn--asky-ira": _2, "askøy": _2, "askvoll": _2, "asnes": _2, "xn--snes-poa": _2, "åsnes": _2, "audnedaln": _2, "aukra": _2, "aure": _2, "aurland": _2, "aurskog-holand": _2, "xn--aurskog-hland-jnb": _2, "aurskog-høland": _2, "austevoll": _2, "austrheim": _2, "averoy": _2, "xn--avery-yua": _2, "averøy": _2, "badaddja": _2, "xn--bdddj-mrabd": _2, "bådåddjå": _2, "xn--brum-voa": _2, "bærum": _2, "bahcavuotna": _2, "xn--bhcavuotna-s4a": _2, "báhcavuotna": _2, "bahccavuotna": _2, "xn--bhccavuotna-k7a": _2, "báhccavuotna": _2, "baidar": _2, "xn--bidr-5nac": _2, "báidár": _2, "bajddar": _2, "xn--bjddar-pta": _2, "bájddar": _2, "balat": _2, "xn--blt-elab": _2, "bálát": _2, "balestrand": _2, "ballangen": _2, "balsfjord": _2, "bamble": _2, "bardu": _2, "barum": _2, "batsfjord": _2, "xn--btsfjord-9za": _2, "båtsfjord": _2, "bearalvahki": _2, "xn--bearalvhki-y4a": _2, "bearalváhki": _2, "beardu": _2, "beiarn": _2, "berg": _2, "bergen": _2, "berlevag": _2, "xn--berlevg-jxa": _2, "berlevåg": _2, "bievat": _2, "xn--bievt-0qa": _2, "bievát": _2, "bindal": _2, "birkenes": _2, "bjarkoy": _2, "xn--bjarky-fya": _2, "bjarkøy": _2, "bjerkreim": _2, "bjugn": _2, "bodo": _2, "xn--bod-2na": _2, "bodø": _2, "bokn": _2, "bomlo": _2, "xn--bmlo-gra": _2, "bømlo": _2, "bremanger": _2, "bronnoy": _2, "xn--brnny-wuac": _2, "brønnøy": _2, "budejju": _2, "buskerud": _56, "bygland": _2, "bykle": _2, "cahcesuolo": _2, "xn--hcesuolo-7ya35b": _2, "čáhcesuolo": _2, "davvenjarga": _2, "xn--davvenjrga-y4a": _2, "davvenjárga": _2, "davvesiida": _2, "deatnu": _2, "dielddanuorri": _2, "divtasvuodna": _2, "divttasvuotna": _2, "donna": _2, "xn--dnna-gra": _2, "dønna": _2, "dovre": _2, "drammen": _2, "drangedal": _2, "dyroy": _2, "xn--dyry-ira": _2, "dyrøy": _2, "eid": _2, "eidfjord": _2, "eidsberg": _2, "eidskog": _2, "eidsvoll": _2, "eigersund": _2, "elverum": _2, "enebakk": _2, "engerdal": _2, "etne": _2, "etnedal": _2, "evenassi": _2, "xn--eveni-0qa01ga": _2, "evenášši": _2, "evenes": _2, "evje-og-hornnes": _2, "farsund": _2, "fauske": _2, "fedje": _2, "fet": _2, "finnoy": _2, "xn--finny-yua": _2, "finnøy": _2, "fitjar": _2, "fjaler": _2, "fjell": _2, "fla": _2, "xn--fl-zia": _2, "flå": _2, "flakstad": _2, "flatanger": _2, "flekkefjord": _2, "flesberg": _2, "flora": _2, "folldal": _2, "forde": _2, "xn--frde-gra": _2, "førde": _2, "forsand": _2, "fosnes": _2, "xn--frna-woa": _2, "fræna": _2, "frana": _2, "frei": _2, "frogn": _2, "froland": _2, "frosta": _2, "froya": _2, "xn--frya-hra": _2, "frøya": _2, "fuoisku": _2, "fuossko": _2, "fusa": _2, "fyresdal": _2, "gaivuotna": _2, "xn--givuotna-8ya": _2, "gáivuotna": _2, "galsa": _2, "xn--gls-elac": _2, "gálsá": _2, "gamvik": _2, "gangaviika": _2, "xn--ggaviika-8ya47h": _2, "gáŋgaviika": _2, "gaular": _2, "gausdal": _2, "giehtavuoatna": _2, "gildeskal": _2, "xn--gildeskl-g0a": _2, "gildeskål": _2, "giske": _2, "gjemnes": _2, "gjerdrum": _2, "gjerstad": _2, "gjesdal": _2, "gjovik": _2, "xn--gjvik-wua": _2, "gjøvik": _2, "gloppen": _2, "gol": _2, "gran": _2, "grane": _2, "granvin": _2, "gratangen": _2, "grimstad": _2, "grong": _2, "grue": _2, "gulen": _2, "guovdageaidnu": _2, "ha": _2, "xn--h-2fa": _2, "hå": _2, "habmer": _2, "xn--hbmer-xqa": _2, "hábmer": _2, "hadsel": _2, "xn--hgebostad-g3a": _2, "hægebostad": _2, "hagebostad": _2, "halden": _2, "halsa": _2, "hamar": _2, "hamaroy": _2, "hammarfeasta": _2, "xn--hmmrfeasta-s4ac": _2, "hámmárfeasta": _2, "hammerfest": _2, "hapmir": _2, "xn--hpmir-xqa": _2, "hápmir": _2, "haram": _2, "hareid": _2, "harstad": _2, "hasvik": _2, "hattfjelldal": _2, "haugesund": _2, "hedmark": [0, { "os": _2, "valer": _2, "xn--vler-qoa": _2, "våler": _2 }], "hemne": _2, "hemnes": _2, "hemsedal": _2, "hitra": _2, "hjartdal": _2, "hjelmeland": _2, "hobol": _2, "xn--hobl-ira": _2, "hobøl": _2, "hof": _2, "hol": _2, "hole": _2, "holmestrand": _2, "holtalen": _2, "xn--holtlen-hxa": _2, "holtålen": _2, "hordaland": [0, { "os": _2 }], "hornindal": _2, "horten": _2, "hoyanger": _2, "xn--hyanger-q1a": _2, "høyanger": _2, "hoylandet": _2, "xn--hylandet-54a": _2, "høylandet": _2, "hurdal": _2, "hurum": _2, "hvaler": _2, "hyllestad": _2, "ibestad": _2, "inderoy": _2, "xn--indery-fya": _2, "inderøy": _2, "iveland": _2, "ivgu": _2, "jevnaker": _2, "jolster": _2, "xn--jlster-bya": _2, "jølster": _2, "jondal": _2, "kafjord": _2, "xn--kfjord-iua": _2, "kåfjord": _2, "karasjohka": _2, "xn--krjohka-hwab49j": _2, "kárášjohka": _2, "karasjok": _2, "karlsoy": _2, "karmoy": _2, "xn--karmy-yua": _2, "karmøy": _2, "kautokeino": _2, "klabu": _2, "xn--klbu-woa": _2, "klæbu": _2, "klepp": _2, "kongsberg": _2, "kongsvinger": _2, "kraanghke": _2, "xn--kranghke-b0a": _2, "kråanghke": _2, "kragero": _2, "xn--krager-gya": _2, "kragerø": _2, "kristiansand": _2, "kristiansund": _2, "krodsherad": _2, "xn--krdsherad-m8a": _2, "krødsherad": _2, "xn--kvfjord-nxa": _2, "kvæfjord": _2, "xn--kvnangen-k0a": _2, "kvænangen": _2, "kvafjord": _2, "kvalsund": _2, "kvam": _2, "kvanangen": _2, "kvinesdal": _2, "kvinnherad": _2, "kviteseid": _2, "kvitsoy": _2, "xn--kvitsy-fya": _2, "kvitsøy": _2, "laakesvuemie": _2, "xn--lrdal-sra": _2, "lærdal": _2, "lahppi": _2, "xn--lhppi-xqa": _2, "láhppi": _2, "lardal": _2, "larvik": _2, "lavagis": _2, "lavangen": _2, "leangaviika": _2, "xn--leagaviika-52b": _2, "leaŋgaviika": _2, "lebesby": _2, "leikanger": _2, "leirfjord": _2, "leka": _2, "leksvik": _2, "lenvik": _2, "lerdal": _2, "lesja": _2, "levanger": _2, "lier": _2, "lierne": _2, "lillehammer": _2, "lillesand": _2, "lindas": _2, "xn--linds-pra": _2, "lindås": _2, "lindesnes": _2, "loabat": _2, "xn--loabt-0qa": _2, "loabát": _2, "lodingen": _2, "xn--ldingen-q1a": _2, "lødingen": _2, "lom": _2, "loppa": _2, "lorenskog": _2, "xn--lrenskog-54a": _2, "lørenskog": _2, "loten": _2, "xn--lten-gra": _2, "løten": _2, "lund": _2, "lunner": _2, "luroy": _2, "xn--lury-ira": _2, "lurøy": _2, "luster": _2, "lyngdal": _2, "lyngen": _2, "malatvuopmi": _2, "xn--mlatvuopmi-s4a": _2, "málatvuopmi": _2, "malselv": _2, "xn--mlselv-iua": _2, "målselv": _2, "malvik": _2, "mandal": _2, "marker": _2, "marnardal": _2, "masfjorden": _2, "masoy": _2, "xn--msy-ula0h": _2, "måsøy": _2, "matta-varjjat": _2, "xn--mtta-vrjjat-k7af": _2, "mátta-várjjat": _2, "meland": _2, "meldal": _2, "melhus": _2, "meloy": _2, "xn--mely-ira": _2, "meløy": _2, "meraker": _2, "xn--merker-kua": _2, "meråker": _2, "midsund": _2, "midtre-gauldal": _2, "moareke": _2, "xn--moreke-jua": _2, "moåreke": _2, "modalen": _2, "modum": _2, "molde": _2, "more-og-romsdal": [0, { "heroy": _2, "sande": _2 }], "xn--mre-og-romsdal-qqb": [0, { "xn--hery-ira": _2, "sande": _2 }], "møre-og-romsdal": [0, { "herøy": _2, "sande": _2 }], "moskenes": _2, "moss": _2, "mosvik": _2, "muosat": _2, "xn--muost-0qa": _2, "muosát": _2, "naamesjevuemie": _2, "xn--nmesjevuemie-tcba": _2, "nååmesjevuemie": _2, "xn--nry-yla5g": _2, "nærøy": _2, "namdalseid": _2, "namsos": _2, "namsskogan": _2, "nannestad": _2, "naroy": _2, "narviika": _2, "narvik": _2, "naustdal": _2, "navuotna": _2, "xn--nvuotna-hwa": _2, "návuotna": _2, "nedre-eiker": _2, "nesna": _2, "nesodden": _2, "nesseby": _2, "nesset": _2, "nissedal": _2, "nittedal": _2, "nord-aurdal": _2, "nord-fron": _2, "nord-odal": _2, "norddal": _2, "nordkapp": _2, "nordland": [0, { "bo": _2, "xn--b-5ga": _2, "bø": _2, "heroy": _2, "xn--hery-ira": _2, "herøy": _2 }], "nordre-land": _2, "nordreisa": _2, "nore-og-uvdal": _2, "notodden": _2, "notteroy": _2, "xn--nttery-byae": _2, "nøtterøy": _2, "odda": _2, "oksnes": _2, "xn--ksnes-uua": _2, "øksnes": _2, "omasvuotna": _2, "oppdal": _2, "oppegard": _2, "xn--oppegrd-ixa": _2, "oppegård": _2, "orkdal": _2, "orland": _2, "xn--rland-uua": _2, "ørland": _2, "orskog": _2, "xn--rskog-uua": _2, "ørskog": _2, "orsta": _2, "xn--rsta-fra": _2, "ørsta": _2, "osen": _2, "osteroy": _2, "xn--ostery-fya": _2, "osterøy": _2, "ostfold": [0, { "valer": _2 }], "xn--stfold-9xa": [0, { "xn--vler-qoa": _2 }], "østfold": [0, { "våler": _2 }], "ostre-toten": _2, "xn--stre-toten-zcb": _2, "østre-toten": _2, "overhalla": _2, "ovre-eiker": _2, "xn--vre-eiker-k8a": _2, "øvre-eiker": _2, "oyer": _2, "xn--yer-zna": _2, "øyer": _2, "oygarden": _2, "xn--ygarden-p1a": _2, "øygarden": _2, "oystre-slidre": _2, "xn--ystre-slidre-ujb": _2, "øystre-slidre": _2, "porsanger": _2, "porsangu": _2, "xn--porsgu-sta26f": _2, "porsáŋgu": _2, "porsgrunn": _2, "rade": _2, "xn--rde-ula": _2, "råde": _2, "radoy": _2, "xn--rady-ira": _2, "radøy": _2, "xn--rlingen-mxa": _2, "rælingen": _2, "rahkkeravju": _2, "xn--rhkkervju-01af": _2, "ráhkkerávju": _2, "raisa": _2, "xn--risa-5na": _2, "ráisa": _2, "rakkestad": _2, "ralingen": _2, "rana": _2, "randaberg": _2, "rauma": _2, "rendalen": _2, "rennebu": _2, "rennesoy": _2, "xn--rennesy-v1a": _2, "rennesøy": _2, "rindal": _2, "ringebu": _2, "ringerike": _2, "ringsaker": _2, "risor": _2, "xn--risr-ira": _2, "risør": _2, "rissa": _2, "roan": _2, "rodoy": _2, "xn--rdy-0nab": _2, "rødøy": _2, "rollag": _2, "romsa": _2, "romskog": _2, "xn--rmskog-bya": _2, "rømskog": _2, "roros": _2, "xn--rros-gra": _2, "røros": _2, "rost": _2, "xn--rst-0na": _2, "røst": _2, "royken": _2, "xn--ryken-vua": _2, "røyken": _2, "royrvik": _2, "xn--ryrvik-bya": _2, "røyrvik": _2, "ruovat": _2, "rygge": _2, "salangen": _2, "salat": _2, "xn--slat-5na": _2, "sálat": _2, "xn--slt-elab": _2, "sálát": _2, "saltdal": _2, "samnanger": _2, "sandefjord": _2, "sandnes": _2, "sandoy": _2, "xn--sandy-yua": _2, "sandøy": _2, "sarpsborg": _2, "sauda": _2, "sauherad": _2, "sel": _2, "selbu": _2, "selje": _2, "seljord": _2, "siellak": _2, "sigdal": _2, "siljan": _2, "sirdal": _2, "skanit": _2, "xn--sknit-yqa": _2, "skánit": _2, "skanland": _2, "xn--sknland-fxa": _2, "skånland": _2, "skaun": _2, "skedsmo": _2, "ski": _2, "skien": _2, "skierva": _2, "xn--skierv-uta": _2, "skiervá": _2, "skiptvet": _2, "skjak": _2, "xn--skjk-soa": _2, "skjåk": _2, "skjervoy": _2, "xn--skjervy-v1a": _2, "skjervøy": _2, "skodje": _2, "smola": _2, "xn--smla-hra": _2, "smøla": _2, "snaase": _2, "xn--snase-nra": _2, "snåase": _2, "snasa": _2, "xn--snsa-roa": _2, "snåsa": _2, "snillfjord": _2, "snoasa": _2, "sogndal": _2, "sogne": _2, "xn--sgne-gra": _2, "søgne": _2, "sokndal": _2, "sola": _2, "solund": _2, "somna": _2, "xn--smna-gra": _2, "sømna": _2, "sondre-land": _2, "xn--sndre-land-0cb": _2, "søndre-land": _2, "songdalen": _2, "sor-aurdal": _2, "xn--sr-aurdal-l8a": _2, "sør-aurdal": _2, "sor-fron": _2, "xn--sr-fron-q1a": _2, "sør-fron": _2, "sor-odal": _2, "xn--sr-odal-q1a": _2, "sør-odal": _2, "sor-varanger": _2, "xn--sr-varanger-ggb": _2, "sør-varanger": _2, "sorfold": _2, "xn--srfold-bya": _2, "sørfold": _2, "sorreisa": _2, "xn--srreisa-q1a": _2, "sørreisa": _2, "sortland": _2, "sorum": _2, "xn--srum-gra": _2, "sørum": _2, "spydeberg": _2, "stange": _2, "stavanger": _2, "steigen": _2, "steinkjer": _2, "stjordal": _2, "xn--stjrdal-s1a": _2, "stjørdal": _2, "stokke": _2, "stor-elvdal": _2, "stord": _2, "stordal": _2, "storfjord": _2, "strand": _2, "stranda": _2, "stryn": _2, "sula": _2, "suldal": _2, "sund": _2, "sunndal": _2, "surnadal": _2, "sveio": _2, "svelvik": _2, "sykkylven": _2, "tana": _2, "telemark": [0, { "bo": _2, "xn--b-5ga": _2, "bø": _2 }], "time": _2, "tingvoll": _2, "tinn": _2, "tjeldsund": _2, "tjome": _2, "xn--tjme-hra": _2, "tjøme": _2, "tokke": _2, "tolga": _2, "tonsberg": _2, "xn--tnsberg-q1a": _2, "tønsberg": _2, "torsken": _2, "xn--trna-woa": _2, "træna": _2, "trana": _2, "tranoy": _2, "xn--trany-yua": _2, "tranøy": _2, "troandin": _2, "trogstad": _2, "xn--trgstad-r1a": _2, "trøgstad": _2, "tromsa": _2, "tromso": _2, "xn--troms-zua": _2, "tromsø": _2, "trondheim": _2, "trysil": _2, "tvedestrand": _2, "tydal": _2, "tynset": _2, "tysfjord": _2, "tysnes": _2, "xn--tysvr-vra": _2, "tysvær": _2, "tysvar": _2, "ullensaker": _2, "ullensvang": _2, "ulvik": _2, "unjarga": _2, "xn--unjrga-rta": _2, "unjárga": _2, "utsira": _2, "vaapste": _2, "vadso": _2, "xn--vads-jra": _2, "vadsø": _2, "xn--vry-yla5g": _2, "værøy": _2, "vaga": _2, "xn--vg-yiab": _2, "vågå": _2, "vagan": _2, "xn--vgan-qoa": _2, "vågan": _2, "vagsoy": _2, "xn--vgsy-qoa0j": _2, "vågsøy": _2, "vaksdal": _2, "valle": _2, "vang": _2, "vanylven": _2, "vardo": _2, "xn--vard-jra": _2, "vardø": _2, "varggat": _2, "xn--vrggt-xqad": _2, "várggát": _2, "varoy": _2, "vefsn": _2, "vega": _2, "vegarshei": _2, "xn--vegrshei-c0a": _2, "vegårshei": _2, "vennesla": _2, "verdal": _2, "verran": _2, "vestby": _2, "vestfold": [0, { "sande": _2 }], "vestnes": _2, "vestre-slidre": _2, "vestre-toten": _2, "vestvagoy": _2, "xn--vestvgy-ixa6o": _2, "vestvågøy": _2, "vevelstad": _2, "vik": _2, "vikna": _2, "vindafjord": _2, "voagat": _2, "volda": _2, "voss": _2, "co": _3, "123hjemmeside": _3, "myspreadshop": _3 }], "np": _15, "nr": _51, "nu": [1, { "merseine": _3, "mine": _3, "shacknet": _3, "enterprisecloud": _3 }], "nz": [1, { "ac": _2, "co": _2, "cri": _2, "geek": _2, "gen": _2, "govt": _2, "health": _2, "iwi": _2, "kiwi": _2, "maori": _2, "xn--mori-qsa": _2, "māori": _2, "mil": _2, "net": _2, "org": _2, "parliament": _2, "school": _2, "cloudns": _3 }], "om": [1, { "co": _2, "com": _2, "edu": _2, "gov": _2, "med": _2, "museum": _2, "net": _2, "org": _2, "pro": _2 }], "onion": _2, "org": [1, { "altervista": _3, "pimienta": _3, "poivron": _3, "potager": _3, "sweetpepper": _3, "cdn77": [0, { "c": _3, "rsc": _3 }], "cdn77-secure": [0, { "origin": [0, { "ssl": _3 }] }], "ae": _3, "cloudns": _3, "ip-dynamic": _3, "ddnss": _3, "duckdns": _3, "tunk": _3, "blogdns": _3, "blogsite": _3, "boldlygoingnowhere": _3, "dnsalias": _3, "dnsdojo": _3, "doesntexist": _3, "dontexist": _3, "doomdns": _3, "dvrdns": _3, "dynalias": _3, "dyndns": [2, { "go": _3, "home": _3 }], "endofinternet": _3, "endoftheinternet": _3, "from-me": _3, "game-host": _3, "gotdns": _3, "hobby-site": _3, "homedns": _3, "homeftp": _3, "homelinux": _3, "homeunix": _3, "is-a-bruinsfan": _3, "is-a-candidate": _3, "is-a-celticsfan": _3, "is-a-chef": _3, "is-a-geek": _3, "is-a-knight": _3, "is-a-linux-user": _3, "is-a-patsfan": _3, "is-a-soxfan": _3, "is-found": _3, "is-lost": _3, "is-saved": _3, "is-very-bad": _3, "is-very-evil": _3, "is-very-good": _3, "is-very-nice": _3, "is-very-sweet": _3, "isa-geek": _3, "kicks-ass": _3, "misconfused": _3, "podzone": _3, "readmyblog": _3, "selfip": _3, "sellsyourhome": _3, "servebbs": _3, "serveftp": _3, "servegame": _3, "stuff-4-sale": _3, "webhop": _3, "accesscam": _3, "camdvr": _3, "freeddns": _3, "mywire": _3, "webredirect": _3, "twmail": _3, "eu": [2, { "al": _3, "asso": _3, "at": _3, "au": _3, "be": _3, "bg": _3, "ca": _3, "cd": _3, "ch": _3, "cn": _3, "cy": _3, "cz": _3, "de": _3, "dk": _3, "edu": _3, "ee": _3, "es": _3, "fi": _3, "fr": _3, "gr": _3, "hr": _3, "hu": _3, "ie": _3, "il": _3, "in": _3, "int": _3, "is": _3, "it": _3, "jp": _3, "kr": _3, "lt": _3, "lu": _3, "lv": _3, "me": _3, "mk": _3, "mt": _3, "my": _3, "net": _3, "ng": _3, "nl": _3, "no": _3, "nz": _3, "pl": _3, "pt": _3, "ro": _3, "ru": _3, "se": _3, "si": _3, "sk": _3, "tr": _3, "uk": _3, "us": _3 }], "fedorainfracloud": _3, "fedorapeople": _3, "fedoraproject": [0, { "cloud": _3, "os": _39, "stg": [0, { "os": _39 }] }], "freedesktop": _3, "hatenadiary": _3, "hepforge": _3, "in-dsl": _3, "in-vpn": _3, "js": _3, "barsy": _3, "mayfirst": _3, "routingthecloud": _3, "bmoattachments": _3, "cable-modem": _3, "collegefan": _3, "couchpotatofries": _3, "hopto": _3, "mlbfan": _3, "myftp": _3, "mysecuritycamera": _3, "nflfan": _3, "no-ip": _3, "read-books": _3, "ufcfan": _3, "zapto": _3, "dynserv": _3, "now-dns": _3, "is-local": _3, "httpbin": _3, "pubtls": _3, "jpn": _3, "my-firewall": _3, "myfirewall": _3, "spdns": _3, "small-web": _3, "dsmynas": _3, "familyds": _3, "teckids": _50, "tuxfamily": _3, "diskstation": _3, "hk": _3, "us": _3, "toolforge": _3, "wmcloud": _3, "wmflabs": _3, "za": _3 }], "pa": [1, { "abo": _2, "ac": _2, "com": _2, "edu": _2, "gob": _2, "ing": _2, "med": _2, "net": _2, "nom": _2, "org": _2, "sld": _2 }], "pe": [1, { "com": _2, "edu": _2, "gob": _2, "mil": _2, "net": _2, "nom": _2, "org": _2 }], "pf": [1, { "com": _2, "edu": _2, "org": _2 }], "pg": _15, "ph": [1, { "com": _2, "edu": _2, "gov": _2, "i": _2, "mil": _2, "net": _2, "ngo": _2, "org": _2, "cloudns": _3 }], "pk": [1, { "ac": _2, "biz": _2, "com": _2, "edu": _2, "fam": _2, "gkp": _2, "gob": _2, "gog": _2, "gok": _2, "gop": _2, "gos": _2, "gov": _2, "net": _2, "org": _2, "web": _2 }], "pl": [1, { "com": _2, "net": _2, "org": _2, "agro": _2, "aid": _2, "atm": _2, "auto": _2, "biz": _2, "edu": _2, "gmina": _2, "gsm": _2, "info": _2, "mail": _2, "media": _2, "miasta": _2, "mil": _2, "nieruchomosci": _2, "nom": _2, "pc": _2, "powiat": _2, "priv": _2, "realestate": _2, "rel": _2, "sex": _2, "shop": _2, "sklep": _2, "sos": _2, "szkola": _2, "targi": _2, "tm": _2, "tourism": _2, "travel": _2, "turystyka": _2, "gov": [1, { "ap": _2, "griw": _2, "ic": _2, "is": _2, "kmpsp": _2, "konsulat": _2, "kppsp": _2, "kwp": _2, "kwpsp": _2, "mup": _2, "mw": _2, "oia": _2, "oirm": _2, "oke": _2, "oow": _2, "oschr": _2, "oum": _2, "pa": _2, "pinb": _2, "piw": _2, "po": _2, "pr": _2, "psp": _2, "psse": _2, "pup": _2, "rzgw": _2, "sa": _2, "sdn": _2, "sko": _2, "so": _2, "sr": _2, "starostwo": _2, "ug": _2, "ugim": _2, "um": _2, "umig": _2, "upow": _2, "uppo": _2, "us": _2, "uw": _2, "uzs": _2, "wif": _2, "wiih": _2, "winb": _2, "wios": _2, "witd": _2, "wiw": _2, "wkz": _2, "wsa": _2, "wskr": _2, "wsse": _2, "wuoz": _2, "wzmiuw": _2, "zp": _2, "zpisdn": _2 }], "augustow": _2, "babia-gora": _2, "bedzin": _2, "beskidy": _2, "bialowieza": _2, "bialystok": _2, "bielawa": _2, "bieszczady": _2, "boleslawiec": _2, "bydgoszcz": _2, "bytom": _2, "cieszyn": _2, "czeladz": _2, "czest": _2, "dlugoleka": _2, "elblag": _2, "elk": _2, "glogow": _2, "gniezno": _2, "gorlice": _2, "grajewo": _2, "ilawa": _2, "jaworzno": _2, "jelenia-gora": _2, "jgora": _2, "kalisz": _2, "karpacz": _2, "kartuzy": _2, "kaszuby": _2, "katowice": _2, "kazimierz-dolny": _2, "kepno": _2, "ketrzyn": _2, "klodzko": _2, "kobierzyce": _2, "kolobrzeg": _2, "konin": _2, "konskowola": _2, "kutno": _2, "lapy": _2, "lebork": _2, "legnica": _2, "lezajsk": _2, "limanowa": _2, "lomza": _2, "lowicz": _2, "lubin": _2, "lukow": _2, "malbork": _2, "malopolska": _2, "mazowsze": _2, "mazury": _2, "mielec": _2, "mielno": _2, "mragowo": _2, "naklo": _2, "nowaruda": _2, "nysa": _2, "olawa": _2, "olecko": _2, "olkusz": _2, "olsztyn": _2, "opoczno": _2, "opole": _2, "ostroda": _2, "ostroleka": _2, "ostrowiec": _2, "ostrowwlkp": _2, "pila": _2, "pisz": _2, "podhale": _2, "podlasie": _2, "polkowice": _2, "pomorskie": _2, "pomorze": _2, "prochowice": _2, "pruszkow": _2, "przeworsk": _2, "pulawy": _2, "radom": _2, "rawa-maz": _2, "rybnik": _2, "rzeszow": _2, "sanok": _2, "sejny": _2, "skoczow": _2, "slask": _2, "slupsk": _2, "sosnowiec": _2, "stalowa-wola": _2, "starachowice": _2, "stargard": _2, "suwalki": _2, "swidnica": _2, "swiebodzin": _2, "swinoujscie": _2, "szczecin": _2, "szczytno": _2, "tarnobrzeg": _2, "tgory": _2, "turek": _2, "tychy": _2, "ustka": _2, "walbrzych": _2, "warmia": _2, "warszawa": _2, "waw": _2, "wegrow": _2, "wielun": _2, "wlocl": _2, "wloclawek": _2, "wodzislaw": _2, "wolomin": _2, "wroclaw": _2, "zachpomor": _2, "zagan": _2, "zarow": _2, "zgora": _2, "zgorzelec": _2, "art": _3, "gliwice": _3, "krakow": _3, "poznan": _3, "wroc": _3, "zakopane": _3, "beep": _3, "ecommerce-shop": _3, "cfolks": _3, "dfirma": _3, "dkonto": _3, "you2": _3, "shoparena": _3, "homesklep": _3, "sdscloud": _3, "unicloud": _3, "lodz": _3, "pabianice": _3, "plock": _3, "sieradz": _3, "skierniewice": _3, "zgierz": _3, "krasnik": _3, "leczna": _3, "lubartow": _3, "lublin": _3, "poniatowa": _3, "swidnik": _3, "co": _3, "torun": _3, "simplesite": _3, "myspreadshop": _3, "gda": _3, "gdansk": _3, "gdynia": _3, "med": _3, "sopot": _3, "bielsko": _3 }], "pm": [1, { "own": _3, "name": _3 }], "pn": [1, { "co": _2, "edu": _2, "gov": _2, "net": _2, "org": _2 }], "post": _2, "pr": [1, { "biz": _2, "com": _2, "edu": _2, "gov": _2, "info": _2, "isla": _2, "name": _2, "net": _2, "org": _2, "pro": _2, "ac": _2, "est": _2, "prof": _2 }], "pro": [1, { "aaa": _2, "aca": _2, "acct": _2, "avocat": _2, "bar": _2, "cpa": _2, "eng": _2, "jur": _2, "law": _2, "med": _2, "recht": _2, "12chars": _3, "cloudns": _3, "barsy": _3, "ngrok": _3 }], "ps": [1, { "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "plo": _2, "sec": _2 }], "pt": [1, { "com": _2, "edu": _2, "gov": _2, "int": _2, "net": _2, "nome": _2, "org": _2, "publ": _2, "123paginaweb": _3 }], "pw": [1, { "gov": _2, "cloudns": _3, "x443": _3 }], "py": [1, { "com": _2, "coop": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2 }], "qa": [1, { "com": _2, "edu": _2, "gov": _2, "mil": _2, "name": _2, "net": _2, "org": _2, "sch": _2 }], "re": [1, { "asso": _2, "com": _2, "netlib": _3, "can": _3 }], "ro": [1, { "arts": _2, "com": _2, "firm": _2, "info": _2, "nom": _2, "nt": _2, "org": _2, "rec": _2, "store": _2, "tm": _2, "www": _2, "co": _3, "shop": _3, "barsy": _3 }], "rs": [1, { "ac": _2, "co": _2, "edu": _2, "gov": _2, "in": _2, "org": _2, "brendly": _47, "barsy": _3, "ox": _3 }], "ru": [1, { "ac": _3, "edu": _3, "gov": _3, "int": _3, "mil": _3, "eurodir": _3, "adygeya": _3, "bashkiria": _3, "bir": _3, "cbg": _3, "com": _3, "dagestan": _3, "grozny": _3, "kalmykia": _3, "kustanai": _3, "marine": _3, "mordovia": _3, "msk": _3, "mytis": _3, "nalchik": _3, "nov": _3, "pyatigorsk": _3, "spb": _3, "vladikavkaz": _3, "vladimir": _3, "na4u": _3, "mircloud": _3, "myjino": [2, { "hosting": _6, "landing": _6, "spectrum": _6, "vps": _6 }], "cldmail": [0, { "hb": _3 }], "mcdir": [2, { "vps": _3 }], "mcpre": _3, "net": _3, "org": _3, "pp": _3, "lk3": _3, "ras": _3 }], "rw": [1, { "ac": _2, "co": _2, "coop": _2, "gov": _2, "mil": _2, "net": _2, "org": _2 }], "sa": [1, { "com": _2, "edu": _2, "gov": _2, "med": _2, "net": _2, "org": _2, "pub": _2, "sch": _2 }], "sb": _4, "sc": _4, "sd": [1, { "com": _2, "edu": _2, "gov": _2, "info": _2, "med": _2, "net": _2, "org": _2, "tv": _2 }], "se": [1, { "a": _2, "ac": _2, "b": _2, "bd": _2, "brand": _2, "c": _2, "d": _2, "e": _2, "f": _2, "fh": _2, "fhsk": _2, "fhv": _2, "g": _2, "h": _2, "i": _2, "k": _2, "komforb": _2, "kommunalforbund": _2, "komvux": _2, "l": _2, "lanbib": _2, "m": _2, "n": _2, "naturbruksgymn": _2, "o": _2, "org": _2, "p": _2, "parti": _2, "pp": _2, "press": _2, "r": _2, "s": _2, "t": _2, "tm": _2, "u": _2, "w": _2, "x": _2, "y": _2, "z": _2, "com": _3, "iopsys": _3, "123minsida": _3, "itcouldbewor": _3, "myspreadshop": _3 }], "sg": [1, { "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "enscaled": _3 }], "sh": [1, { "com": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "hashbang": _3, "botda": _3, "platform": [0, { "ent": _3, "eu": _3, "us": _3 }], "now": _3 }], "si": [1, { "f5": _3, "gitapp": _3, "gitpage": _3 }], "sj": _2, "sk": _2, "sl": _4, "sm": _2, "sn": [1, { "art": _2, "com": _2, "edu": _2, "gouv": _2, "org": _2, "perso": _2, "univ": _2 }], "so": [1, { "com": _2, "edu": _2, "gov": _2, "me": _2, "net": _2, "org": _2, "surveys": _3 }], "sr": _2, "ss": [1, { "biz": _2, "co": _2, "com": _2, "edu": _2, "gov": _2, "me": _2, "net": _2, "org": _2, "sch": _2 }], "st": [1, { "co": _2, "com": _2, "consulado": _2, "edu": _2, "embaixada": _2, "mil": _2, "net": _2, "org": _2, "principe": _2, "saotome": _2, "store": _2, "helioho": _3, "kirara": _3, "noho": _3 }], "su": [1, { "abkhazia": _3, "adygeya": _3, "aktyubinsk": _3, "arkhangelsk": _3, "armenia": _3, "ashgabad": _3, "azerbaijan": _3, "balashov": _3, "bashkiria": _3, "bryansk": _3, "bukhara": _3, "chimkent": _3, "dagestan": _3, "east-kazakhstan": _3, "exnet": _3, "georgia": _3, "grozny": _3, "ivanovo": _3, "jambyl": _3, "kalmykia": _3, "kaluga": _3, "karacol": _3, "karaganda": _3, "karelia": _3, "khakassia": _3, "krasnodar": _3, "kurgan": _3, "kustanai": _3, "lenug": _3, "mangyshlak": _3, "mordovia": _3, "msk": _3, "murmansk": _3, "nalchik": _3, "navoi": _3, "north-kazakhstan": _3, "nov": _3, "obninsk": _3, "penza": _3, "pokrovsk": _3, "sochi": _3, "spb": _3, "tashkent": _3, "termez": _3, "togliatti": _3, "troitsk": _3, "tselinograd": _3, "tula": _3, "tuva": _3, "vladikavkaz": _3, "vladimir": _3, "vologda": _3 }], "sv": [1, { "com": _2, "edu": _2, "gob": _2, "org": _2, "red": _2 }], "sx": _9, "sy": _5, "sz": [1, { "ac": _2, "co": _2, "org": _2 }], "tc": _2, "td": _2, "tel": _2, "tf": [1, { "sch": _3 }], "tg": _2, "th": [1, { "ac": _2, "co": _2, "go": _2, "in": _2, "mi": _2, "net": _2, "or": _2, "online": _3, "shop": _3 }], "tj": [1, { "ac": _2, "biz": _2, "co": _2, "com": _2, "edu": _2, "go": _2, "gov": _2, "int": _2, "mil": _2, "name": _2, "net": _2, "nic": _2, "org": _2, "test": _2, "web": _2 }], "tk": _2, "tl": _9, "tm": [1, { "co": _2, "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "nom": _2, "org": _2 }], "tn": [1, { "com": _2, "ens": _2, "fin": _2, "gov": _2, "ind": _2, "info": _2, "intl": _2, "mincom": _2, "nat": _2, "net": _2, "org": _2, "perso": _2, "tourism": _2, "orangecloud": _3 }], "to": [1, { "611": _3, "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "oya": _3, "x0": _3, "quickconnect": _22, "vpnplus": _3 }], "tr": [1, { "av": _2, "bbs": _2, "bel": _2, "biz": _2, "com": _2, "dr": _2, "edu": _2, "gen": _2, "gov": _2, "info": _2, "k12": _2, "kep": _2, "mil": _2, "name": _2, "net": _2, "org": _2, "pol": _2, "tel": _2, "tsk": _2, "tv": _2, "web": _2, "nc": _9 }], "tt": [1, { "biz": _2, "co": _2, "com": _2, "edu": _2, "gov": _2, "info": _2, "mil": _2, "name": _2, "net": _2, "org": _2, "pro": _2 }], "tv": [1, { "better-than": _3, "dyndns": _3, "on-the-web": _3, "worse-than": _3, "from": _3, "sakura": _3 }], "tw": [1, { "club": _2, "com": [1, { "mymailer": _3 }], "ebiz": _2, "edu": _2, "game": _2, "gov": _2, "idv": _2, "mil": _2, "net": _2, "org": _2, "url": _3, "mydns": _3 }], "tz": [1, { "ac": _2, "co": _2, "go": _2, "hotel": _2, "info": _2, "me": _2, "mil": _2, "mobi": _2, "ne": _2, "or": _2, "sc": _2, "tv": _2 }], "ua": [1, { "com": _2, "edu": _2, "gov": _2, "in": _2, "net": _2, "org": _2, "cherkassy": _2, "cherkasy": _2, "chernigov": _2, "chernihiv": _2, "chernivtsi": _2, "chernovtsy": _2, "ck": _2, "cn": _2, "cr": _2, "crimea": _2, "cv": _2, "dn": _2, "dnepropetrovsk": _2, "dnipropetrovsk": _2, "donetsk": _2, "dp": _2, "if": _2, "ivano-frankivsk": _2, "kh": _2, "kharkiv": _2, "kharkov": _2, "kherson": _2, "khmelnitskiy": _2, "khmelnytskyi": _2, "kiev": _2, "kirovograd": _2, "km": _2, "kr": _2, "kropyvnytskyi": _2, "krym": _2, "ks": _2, "kv": _2, "kyiv": _2, "lg": _2, "lt": _2, "lugansk": _2, "luhansk": _2, "lutsk": _2, "lv": _2, "lviv": _2, "mk": _2, "mykolaiv": _2, "nikolaev": _2, "od": _2, "odesa": _2, "odessa": _2, "pl": _2, "poltava": _2, "rivne": _2, "rovno": _2, "rv": _2, "sb": _2, "sebastopol": _2, "sevastopol": _2, "sm": _2, "sumy": _2, "te": _2, "ternopil": _2, "uz": _2, "uzhgorod": _2, "uzhhorod": _2, "vinnica": _2, "vinnytsia": _2, "vn": _2, "volyn": _2, "yalta": _2, "zakarpattia": _2, "zaporizhzhe": _2, "zaporizhzhia": _2, "zhitomir": _2, "zhytomyr": _2, "zp": _2, "zt": _2, "cc": _3, "inf": _3, "ltd": _3, "cx": _3, "ie": _3, "biz": _3, "co": _3, "pp": _3, "v": _3 }], "ug": [1, { "ac": _2, "co": _2, "com": _2, "go": _2, "ne": _2, "or": _2, "org": _2, "sc": _2 }], "uk": [1, { "ac": _2, "co": [1, { "bytemark": [0, { "dh": _3, "vm": _3 }], "layershift": _42, "barsy": _3, "barsyonline": _3, "retrosnub": _49, "nh-serv": _3, "no-ip": _3, "adimo": _3, "myspreadshop": _3 }], "gov": [1, { "api": _3, "campaign": _3, "service": _3 }], "ltd": _2, "me": _2, "net": _2, "nhs": _2, "org": [1, { "glug": _3, "lug": _3, "lugs": _3, "affinitylottery": _3, "raffleentry": _3, "weeklylottery": _3 }], "plc": _2, "police": _2, "sch": _15, "conn": _3, "copro": _3, "hosp": _3, "independent-commission": _3, "independent-inquest": _3, "independent-inquiry": _3, "independent-panel": _3, "independent-review": _3, "public-inquiry": _3, "royal-commission": _3, "pymnt": _3, "barsy": _3, "nimsite": _3, "oraclegovcloudapps": _6 }], "us": [1, { "dni": _2, "isa": _2, "nsn": _2, "ak": _57, "al": _57, "ar": _57, "as": _57, "az": _57, "ca": _57, "co": _57, "ct": _57, "dc": _57, "de": [1, { "cc": _2, "lib": _3 }], "fl": _57, "ga": _57, "gu": _57, "hi": _58, "ia": _57, "id": _57, "il": _57, "in": _57, "ks": _57, "ky": _57, "la": _57, "ma": [1, { "k12": [1, { "chtr": _2, "paroch": _2, "pvt": _2 }], "cc": _2, "lib": _2 }], "md": _57, "me": _57, "mi": [1, { "k12": _2, "cc": _2, "lib": _2, "ann-arbor": _2, "cog": _2, "dst": _2, "eaton": _2, "gen": _2, "mus": _2, "tec": _2, "washtenaw": _2 }], "mn": _57, "mo": _57, "ms": _57, "mt": _57, "nc": _57, "nd": _58, "ne": _57, "nh": _57, "nj": _57, "nm": _57, "nv": _57, "ny": _57, "oh": _57, "ok": _57, "or": _57, "pa": _57, "pr": _57, "ri": _58, "sc": _57, "sd": _58, "tn": _57, "tx": _57, "ut": _57, "va": _57, "vi": _57, "vt": _57, "wa": _57, "wi": _57, "wv": [1, { "cc": _2 }], "wy": _57, "cloudns": _3, "is-by": _3, "land-4-sale": _3, "stuff-4-sale": _3, "heliohost": _3, "enscaled": [0, { "phx": _3 }], "mircloud": _3, "ngo": _3, "golffan": _3, "noip": _3, "pointto": _3, "freeddns": _3, "srv": [2, { "gh": _3, "gl": _3 }], "platterp": _3, "servername": _3 }], "uy": [1, { "com": _2, "edu": _2, "gub": _2, "mil": _2, "net": _2, "org": _2 }], "uz": [1, { "co": _2, "com": _2, "net": _2, "org": _2 }], "va": _2, "vc": [1, { "com": _2, "edu": _2, "gov": _2, "mil": _2, "net": _2, "org": _2, "gv": [2, { "d": _3 }], "0e": _6, "mydns": _3 }], "ve": [1, { "arts": _2, "bib": _2, "co": _2, "com": _2, "e12": _2, "edu": _2, "firm": _2, "gob": _2, "gov": _2, "info": _2, "int": _2, "mil": _2, "net": _2, "nom": _2, "org": _2, "rar": _2, "rec": _2, "store": _2, "tec": _2, "web": _2 }], "vg": _2, "vi": [1, { "co": _2, "com": _2, "k12": _2, "net": _2, "org": _2 }], "vn": [1, { "ac": _2, "ai": _2, "biz": _2, "com": _2, "edu": _2, "gov": _2, "health": _2, "id": _2, "info": _2, "int": _2, "io": _2, "name": _2, "net": _2, "org": _2, "pro": _2, "angiang": _2, "bacgiang": _2, "backan": _2, "baclieu": _2, "bacninh": _2, "baria-vungtau": _2, "bentre": _2, "binhdinh": _2, "binhduong": _2, "binhphuoc": _2, "binhthuan": _2, "camau": _2, "cantho": _2, "caobang": _2, "daklak": _2, "daknong": _2, "danang": _2, "dienbien": _2, "dongnai": _2, "dongthap": _2, "gialai": _2, "hagiang": _2, "haiduong": _2, "haiphong": _2, "hanam": _2, "hanoi": _2, "hatinh": _2, "haugiang": _2, "hoabinh": _2, "hungyen": _2, "khanhhoa": _2, "kiengiang": _2, "kontum": _2, "laichau": _2, "lamdong": _2, "langson": _2, "laocai": _2, "longan": _2, "namdinh": _2, "nghean": _2, "ninhbinh": _2, "ninhthuan": _2, "phutho": _2, "phuyen": _2, "quangbinh": _2, "quangnam": _2, "quangngai": _2, "quangninh": _2, "quangtri": _2, "soctrang": _2, "sonla": _2, "tayninh": _2, "thaibinh": _2, "thainguyen": _2, "thanhhoa": _2, "thanhphohochiminh": _2, "thuathienhue": _2, "tiengiang": _2, "travinh": _2, "tuyenquang": _2, "vinhlong": _2, "vinhphuc": _2, "yenbai": _2 }], "vu": _41, "wf": [1, { "biz": _3, "sch": _3 }], "ws": [1, { "com": _2, "edu": _2, "gov": _2, "net": _2, "org": _2, "advisor": _6, "cloud66": _3, "dyndns": _3, "mypets": _3 }], "yt": [1, { "org": _3 }], "xn--mgbaam7a8h": _2, "امارات": _2, "xn--y9a3aq": _2, "հայ": _2, "xn--54b7fta0cc": _2, "বাংলা": _2, "xn--90ae": _2, "бг": _2, "xn--mgbcpq6gpa1a": _2, "البحرين": _2, "xn--90ais": _2, "бел": _2, "xn--fiqs8s": _2, "中国": _2, "xn--fiqz9s": _2, "中國": _2, "xn--lgbbat1ad8j": _2, "الجزائر": _2, "xn--wgbh1c": _2, "مصر": _2, "xn--e1a4c": _2, "ею": _2, "xn--qxa6a": _2, "ευ": _2, "xn--mgbah1a3hjkrd": _2, "موريتانيا": _2, "xn--node": _2, "გე": _2, "xn--qxam": _2, "ελ": _2, "xn--j6w193g": [1, { "xn--gmqw5a": _2, "xn--55qx5d": _2, "xn--mxtq1m": _2, "xn--wcvs22d": _2, "xn--uc0atv": _2, "xn--od0alg": _2 }], "香港": [1, { "個人": _2, "公司": _2, "政府": _2, "教育": _2, "組織": _2, "網絡": _2 }], "xn--2scrj9c": _2, "ಭಾರತ": _2, "xn--3hcrj9c": _2, "ଭାରତ": _2, "xn--45br5cyl": _2, "ভাৰত": _2, "xn--h2breg3eve": _2, "भारतम्": _2, "xn--h2brj9c8c": _2, "भारोत": _2, "xn--mgbgu82a": _2, "ڀارت": _2, "xn--rvc1e0am3e": _2, "ഭാരതം": _2, "xn--h2brj9c": _2, "भारत": _2, "xn--mgbbh1a": _2, "بارت": _2, "xn--mgbbh1a71e": _2, "بھارت": _2, "xn--fpcrj9c3d": _2, "భారత్": _2, "xn--gecrj9c": _2, "ભારત": _2, "xn--s9brj9c": _2, "ਭਾਰਤ": _2, "xn--45brj9c": _2, "ভারত": _2, "xn--xkc2dl3a5ee0h": _2, "இந்தியா": _2, "xn--mgba3a4f16a": _2, "ایران": _2, "xn--mgba3a4fra": _2, "ايران": _2, "xn--mgbtx2b": _2, "عراق": _2, "xn--mgbayh7gpa": _2, "الاردن": _2, "xn--3e0b707e": _2, "한국": _2, "xn--80ao21a": _2, "қаз": _2, "xn--q7ce6a": _2, "ລາວ": _2, "xn--fzc2c9e2c": _2, "ලංකා": _2, "xn--xkc2al3hye2a": _2, "இலங்கை": _2, "xn--mgbc0a9azcg": _2, "المغرب": _2, "xn--d1alf": _2, "мкд": _2, "xn--l1acc": _2, "мон": _2, "xn--mix891f": _2, "澳門": _2, "xn--mix082f": _2, "澳门": _2, "xn--mgbx4cd0ab": _2, "مليسيا": _2, "xn--mgb9awbf": _2, "عمان": _2, "xn--mgbai9azgqp6j": _2, "پاکستان": _2, "xn--mgbai9a5eva00b": _2, "پاكستان": _2, "xn--ygbi2ammx": _2, "فلسطين": _2, "xn--90a3ac": [1, { "xn--80au": _2, "xn--90azh": _2, "xn--d1at": _2, "xn--c1avg": _2, "xn--o1ac": _2, "xn--o1ach": _2 }], "срб": [1, { "ак": _2, "обр": _2, "од": _2, "орг": _2, "пр": _2, "упр": _2 }], "xn--p1ai": _2, "рф": _2, "xn--wgbl6a": _2, "قطر": _2, "xn--mgberp4a5d4ar": _2, "السعودية": _2, "xn--mgberp4a5d4a87g": _2, "السعودیة": _2, "xn--mgbqly7c0a67fbc": _2, "السعودیۃ": _2, "xn--mgbqly7cvafr": _2, "السعوديه": _2, "xn--mgbpl2fh": _2, "سودان": _2, "xn--yfro4i67o": _2, "新加坡": _2, "xn--clchc0ea0b2g2a9gcd": _2, "சிங்கப்பூர்": _2, "xn--ogbpf8fl": _2, "سورية": _2, "xn--mgbtf8fl": _2, "سوريا": _2, "xn--o3cw4h": [1, { "xn--o3cyx2a": _2, "xn--12co0c3b4eva": _2, "xn--m3ch0j3a": _2, "xn--h3cuzk1di": _2, "xn--12c1fe0br": _2, "xn--12cfi8ixb8l": _2 }], "ไทย": [1, { "ทหาร": _2, "ธุรกิจ": _2, "เน็ต": _2, "รัฐบาล": _2, "ศึกษา": _2, "องค์กร": _2 }], "xn--pgbs0dh": _2, "تونس": _2, "xn--kpry57d": _2, "台灣": _2, "xn--kprw13d": _2, "台湾": _2, "xn--nnx388a": _2, "臺灣": _2, "xn--j1amh": _2, "укр": _2, "xn--mgb2ddes": _2, "اليمن": _2, "xxx": _2, "ye": _5, "za": [0, { "ac": _2, "agric": _2, "alt": _2, "co": _2, "edu": _2, "gov": _2, "grondar": _2, "law": _2, "mil": _2, "net": _2, "ngo": _2, "nic": _2, "nis": _2, "nom": _2, "org": _2, "school": _2, "tm": _2, "web": _2 }], "zm": [1, { "ac": _2, "biz": _2, "co": _2, "com": _2, "edu": _2, "gov": _2, "info": _2, "mil": _2, "net": _2, "org": _2, "sch": _2 }], "zw": [1, { "ac": _2, "co": _2, "gov": _2, "mil": _2, "org": _2 }], "aaa": _2, "aarp": _2, "abb": _2, "abbott": _2, "abbvie": _2, "abc": _2, "able": _2, "abogado": _2, "abudhabi": _2, "academy": [1, { "official": _3 }], "accenture": _2, "accountant": _2, "accountants": _2, "aco": _2, "actor": _2, "ads": _2, "adult": _2, "aeg": _2, "aetna": _2, "afl": _2, "africa": _2, "agakhan": _2, "agency": _2, "aig": _2, "airbus": _2, "airforce": _2, "airtel": _2, "akdn": _2, "alibaba": _2, "alipay": _2, "allfinanz": _2, "allstate": _2, "ally": _2, "alsace": _2, "alstom": _2, "amazon": _2, "americanexpress": _2, "americanfamily": _2, "amex": _2, "amfam": _2, "amica": _2, "amsterdam": _2, "analytics": _2, "android": _2, "anquan": _2, "anz": _2, "aol": _2, "apartments": _2, "app": [1, { "adaptable": _3, "aiven": _3, "beget": _6, "clerk": _3, "clerkstage": _3, "wnext": _3, "csb": [2, { "preview": _3 }], "deta": _3, "ondigitalocean": _3, "easypanel": _3, "encr": _3, "evervault": _7, "expo": [2, { "staging": _3 }], "edgecompute": _3, "on-fleek": _3, "flutterflow": _3, "framer": _3, "hosted": _6, "run": _6, "web": _3, "hasura": _3, "botdash": _3, "loginline": _3, "medusajs": _3, "messerli": _3, "netfy": _3, "netlify": _3, "ngrok": _3, "ngrok-free": _3, "developer": _6, "noop": _3, "northflank": _6, "upsun": _6, "replit": _8, "nyat": _3, "snowflake": [0, { "*": _3, "privatelink": _6 }], "streamlit": _3, "storipress": _3, "telebit": _3, "typedream": _3, "vercel": _3, "bookonline": _3, "wdh": _3, "zeabur": _3 }], "apple": _2, "aquarelle": _2, "arab": _2, "aramco": _2, "archi": _2, "army": _2, "art": _2, "arte": _2, "asda": _2, "associates": _2, "athleta": _2, "attorney": _2, "auction": _2, "audi": _2, "audible": _2, "audio": _2, "auspost": _2, "author": _2, "auto": _2, "autos": _2, "aws": [1, { "sagemaker": [0, { "ap-northeast-1": _11, "ap-northeast-2": _11, "ap-south-1": _11, "ap-southeast-1": _11, "ap-southeast-2": _11, "ca-central-1": _13, "eu-central-1": _11, "eu-west-1": _11, "eu-west-2": _11, "us-east-1": _13, "us-east-2": _13, "us-west-2": _13, "af-south-1": _10, "ap-east-1": _10, "ap-northeast-3": _10, "ap-south-2": _12, "ap-southeast-3": _10, "ap-southeast-4": _12, "ca-west-1": [0, { "notebook": _3, "notebook-fips": _3 }], "eu-central-2": _12, "eu-north-1": _10, "eu-south-1": _10, "eu-south-2": _10, "eu-west-3": _10, "il-central-1": _10, "me-central-1": _10, "me-south-1": _10, "sa-east-1": _10, "us-gov-east-1": _14, "us-gov-west-1": _14, "us-west-1": [0, { "notebook": _3, "notebook-fips": _3, "studio": _3 }], "experiments": _6 }], "repost": [0, { "private": _6 }] }], "axa": _2, "azure": _2, "baby": _2, "baidu": _2, "banamex": _2, "band": _2, "bank": _2, "bar": _2, "barcelona": _2, "barclaycard": _2, "barclays": _2, "barefoot": _2, "bargains": _2, "baseball": _2, "basketball": [1, { "aus": _3, "nz": _3 }], "bauhaus": _2, "bayern": _2, "bbc": _2, "bbt": _2, "bbva": _2, "bcg": _2, "bcn": _2, "beats": _2, "beauty": _2, "beer": _2, "bentley": _2, "berlin": _2, "best": _2, "bestbuy": _2, "bet": _2, "bharti": _2, "bible": _2, "bid": _2, "bike": _2, "bing": _2, "bingo": _2, "bio": _2, "black": _2, "blackfriday": _2, "blockbuster": _2, "blog": _2, "bloomberg": _2, "blue": _2, "bms": _2, "bmw": _2, "bnpparibas": _2, "boats": _2, "boehringer": _2, "bofa": _2, "bom": _2, "bond": _2, "boo": _2, "book": _2, "booking": _2, "bosch": _2, "bostik": _2, "boston": _2, "bot": _2, "boutique": _2, "box": _2, "bradesco": _2, "bridgestone": _2, "broadway": _2, "broker": _2, "brother": _2, "brussels": _2, "build": [1, { "v0": _3 }], "builders": [1, { "cloudsite": _3 }], "business": _16, "buy": _2, "buzz": _2, "bzh": _2, "cab": _2, "cafe": _2, "cal": _2, "call": _2, "calvinklein": _2, "cam": _2, "camera": _2, "camp": [1, { "emf": [0, { "at": _3 }] }], "canon": _2, "capetown": _2, "capital": _2, "capitalone": _2, "car": _2, "caravan": _2, "cards": _2, "care": _2, "career": _2, "careers": _2, "cars": _2, "casa": [1, { "nabu": [0, { "ui": _3 }] }], "case": _2, "cash": _2, "casino": _2, "catering": _2, "catholic": _2, "cba": _2, "cbn": _2, "cbre": _2, "center": _2, "ceo": _2, "cern": _2, "cfa": _2, "cfd": _2, "chanel": _2, "channel": _2, "charity": _2, "chase": _2, "chat": _2, "cheap": _2, "chintai": _2, "christmas": _2, "chrome": _2, "church": _2, "cipriani": _2, "circle": _2, "cisco": _2, "citadel": _2, "citi": _2, "citic": _2, "city": _2, "claims": _2, "cleaning": _2, "click": _2, "clinic": _2, "clinique": _2, "clothing": _2, "cloud": [1, { "elementor": _3, "encoway": [0, { "eu": _3 }], "statics": _6, "ravendb": _3, "axarnet": [0, { "es-1": _3 }], "diadem": _3, "jelastic": [0, { "vip": _3 }], "jele": _3, "jenv-aruba": [0, { "aruba": [0, { "eur": [0, { "it1": _3 }] }], "it1": _3 }], "keliweb": [2, { "cs": _3 }], "oxa": [2, { "tn": _3, "uk": _3 }], "primetel": [2, { "uk": _3 }], "reclaim": [0, { "ca": _3, "uk": _3, "us": _3 }], "trendhosting": [0, { "ch": _3, "de": _3 }], "jotelulu": _3, "kuleuven": _3, "linkyard": _3, "magentosite": _6, "matlab": _3, "observablehq": _3, "perspecta": _3, "vapor": _3, "on-rancher": _6, "scw": [0, { "baremetal": [0, { "fr-par-1": _3, "fr-par-2": _3, "nl-ams-1": _3 }], "fr-par": [0, { "cockpit": _3, "fnc": [2, { "functions": _3 }], "k8s": _18, "s3": _3, "s3-website": _3, "whm": _3 }], "instances": [0, { "priv": _3, "pub": _3 }], "k8s": _3, "nl-ams": [0, { "cockpit": _3, "k8s": _18, "s3": _3, "s3-website": _3, "whm": _3 }], "pl-waw": [0, { "cockpit": _3, "k8s": _18, "s3": _3, "s3-website": _3 }], "scalebook": _3, "smartlabeling": _3 }], "servebolt": _3, "onstackit": [0, { "runs": _3 }], "trafficplex": _3, "unison-services": _3, "urown": _3, "voorloper": _3, "zap": _3 }], "club": [1, { "cloudns": _3, "jele": _3, "barsy": _3 }], "clubmed": _2, "coach": _2, "codes": [1, { "owo": _6 }], "coffee": _2, "college": _2, "cologne": _2, "commbank": _2, "community": [1, { "nog": _3, "ravendb": _3, "myforum": _3 }], "company": _2, "compare": _2, "computer": _2, "comsec": _2, "condos": _2, "construction": _2, "consulting": _2, "contact": _2, "contractors": _2, "cooking": _2, "cool": [1, { "elementor": _3, "de": _3 }], "corsica": _2, "country": _2, "coupon": _2, "coupons": _2, "courses": _2, "cpa": _2, "credit": _2, "creditcard": _2, "creditunion": _2, "cricket": _2, "crown": _2, "crs": _2, "cruise": _2, "cruises": _2, "cuisinella": _2, "cymru": _2, "cyou": _2, "dad": _2, "dance": _2, "data": _2, "date": _2, "dating": _2, "datsun": _2, "day": _2, "dclk": _2, "dds": _2, "deal": _2, "dealer": _2, "deals": _2, "degree": _2, "delivery": _2, "dell": _2, "deloitte": _2, "delta": _2, "democrat": _2, "dental": _2, "dentist": _2, "desi": _2, "design": [1, { "graphic": _3, "bss": _3 }], "dev": [1, { "12chars": _3, "myaddr": _3, "panel": _3, "lcl": _6, "lclstage": _6, "stg": _6, "stgstage": _6, "pages": _3, "r2": _3, "workers": _3, "deno": _3, "deno-staging": _3, "deta": _3, "evervault": _7, "fly": _3, "githubpreview": _3, "gateway": _6, "hrsn": _3, "botdash": _3, "is-a-good": _3, "is-a": _3, "iserv": _3, "runcontainers": _3, "localcert": [0, { "user": _6 }], "loginline": _3, "barsy": _3, "mediatech": _3, "modx": _3, "ngrok": _3, "ngrok-free": _3, "is-a-fullstack": _3, "is-cool": _3, "is-not-a": _3, "localplayer": _3, "xmit": _3, "platter-app": _3, "replit": [2, { "archer": _3, "bones": _3, "canary": _3, "global": _3, "hacker": _3, "id": _3, "janeway": _3, "kim": _3, "kira": _3, "kirk": _3, "odo": _3, "paris": _3, "picard": _3, "pike": _3, "prerelease": _3, "reed": _3, "riker": _3, "sisko": _3, "spock": _3, "staging": _3, "sulu": _3, "tarpit": _3, "teams": _3, "tucker": _3, "wesley": _3, "worf": _3 }], "crm": [0, { "d": _6, "w": _6, "wa": _6, "wb": _6, "wc": _6, "wd": _6, "we": _6, "wf": _6 }], "vercel": _3, "webhare": _6 }], "dhl": _2, "diamonds": _2, "diet": _2, "digital": [1, { "cloudapps": [2, { "london": _3 }] }], "direct": [1, { "libp2p": _3 }], "directory": _2, "discount": _2, "discover": _2, "dish": _2, "diy": _2, "dnp": _2, "docs": _2, "doctor": _2, "dog": _2, "domains": _2, "dot": _2, "download": _2, "drive": _2, "dtv": _2, "dubai": _2, "dunlop": _2, "dupont": _2, "durban": _2, "dvag": _2, "dvr": _2, "earth": _2, "eat": _2, "eco": _2, "edeka": _2, "education": _16, "email": [1, { "crisp": [0, { "on": _3 }], "tawk": _45, "tawkto": _45 }], "emerck": _2, "energy": _2, "engineer": _2, "engineering": _2, "enterprises": _2, "epson": _2, "equipment": _2, "ericsson": _2, "erni": _2, "esq": _2, "estate": [1, { "compute": _6 }], "eurovision": _2, "eus": [1, { "party": _46 }], "events": [1, { "koobin": _3, "co": _3 }], "exchange": _2, "expert": _2, "exposed": _2, "express": _2, "extraspace": _2, "fage": _2, "fail": _2, "fairwinds": _2, "faith": _2, "family": _2, "fan": _2, "fans": _2, "farm": [1, { "storj": _3 }], "farmers": _2, "fashion": _2, "fast": _2, "fedex": _2, "feedback": _2, "ferrari": _2, "ferrero": _2, "fidelity": _2, "fido": _2, "film": _2, "final": _2, "finance": _2, "financial": _16, "fire": _2, "firestone": _2, "firmdale": _2, "fish": _2, "fishing": _2, "fit": _2, "fitness": _2, "flickr": _2, "flights": _2, "flir": _2, "florist": _2, "flowers": _2, "fly": _2, "foo": _2, "food": _2, "football": _2, "ford": _2, "forex": _2, "forsale": _2, "forum": _2, "foundation": _2, "fox": _2, "free": _2, "fresenius": _2, "frl": _2, "frogans": _2, "frontier": _2, "ftr": _2, "fujitsu": _2, "fun": _2, "fund": _2, "furniture": _2, "futbol": _2, "fyi": _2, "gal": _2, "gallery": _2, "gallo": _2, "gallup": _2, "game": _2, "games": [1, { "pley": _3, "sheezy": _3 }], "gap": _2, "garden": _2, "gay": [1, { "pages": _3 }], "gbiz": _2, "gdn": [1, { "cnpy": _3 }], "gea": _2, "gent": _2, "genting": _2, "george": _2, "ggee": _2, "gift": _2, "gifts": _2, "gives": _2, "giving": _2, "glass": _2, "gle": _2, "global": _2, "globo": _2, "gmail": _2, "gmbh": _2, "gmo": _2, "gmx": _2, "godaddy": _2, "gold": _2, "goldpoint": _2, "golf": _2, "goo": _2, "goodyear": _2, "goog": [1, { "cloud": _3, "translate": _3, "usercontent": _6 }], "google": _2, "gop": _2, "got": _2, "grainger": _2, "graphics": _2, "gratis": _2, "green": _2, "gripe": _2, "grocery": _2, "group": [1, { "discourse": _3 }], "gucci": _2, "guge": _2, "guide": _2, "guitars": _2, "guru": _2, "hair": _2, "hamburg": _2, "hangout": _2, "haus": _2, "hbo": _2, "hdfc": _2, "hdfcbank": _2, "health": [1, { "hra": _3 }], "healthcare": _2, "help": _2, "helsinki": _2, "here": _2, "hermes": _2, "hiphop": _2, "hisamitsu": _2, "hitachi": _2, "hiv": _2, "hkt": _2, "hockey": _2, "holdings": _2, "holiday": _2, "homedepot": _2, "homegoods": _2, "homes": _2, "homesense": _2, "honda": _2, "horse": _2, "hospital": _2, "host": [1, { "cloudaccess": _3, "freesite": _3, "easypanel": _3, "fastvps": _3, "myfast": _3, "tempurl": _3, "wpmudev": _3, "jele": _3, "mircloud": _3, "wp2": _3, "half": _3 }], "hosting": [1, { "opencraft": _3 }], "hot": _2, "hotels": _2, "hotmail": _2, "house": _2, "how": _2, "hsbc": _2, "hughes": _2, "hyatt": _2, "hyundai": _2, "ibm": _2, "icbc": _2, "ice": _2, "icu": _2, "ieee": _2, "ifm": _2, "ikano": _2, "imamat": _2, "imdb": _2, "immo": _2, "immobilien": _2, "inc": _2, "industries": _2, "infiniti": _2, "ing": _2, "ink": _2, "institute": _2, "insurance": _2, "insure": _2, "international": _2, "intuit": _2, "investments": _2, "ipiranga": _2, "irish": _2, "ismaili": _2, "ist": _2, "istanbul": _2, "itau": _2, "itv": _2, "jaguar": _2, "java": _2, "jcb": _2, "jeep": _2, "jetzt": _2, "jewelry": _2, "jio": _2, "jll": _2, "jmp": _2, "jnj": _2, "joburg": _2, "jot": _2, "joy": _2, "jpmorgan": _2, "jprs": _2, "juegos": _2, "juniper": _2, "kaufen": _2, "kddi": _2, "kerryhotels": _2, "kerrylogistics": _2, "kerryproperties": _2, "kfh": _2, "kia": _2, "kids": _2, "kim": _2, "kindle": _2, "kitchen": _2, "kiwi": _2, "koeln": _2, "komatsu": _2, "kosher": _2, "kpmg": _2, "kpn": _2, "krd": [1, { "co": _3, "edu": _3 }], "kred": _2, "kuokgroup": _2, "kyoto": _2, "lacaixa": _2, "lamborghini": _2, "lamer": _2, "lancaster": _2, "land": _2, "landrover": _2, "lanxess": _2, "lasalle": _2, "lat": _2, "latino": _2, "latrobe": _2, "law": _2, "lawyer": _2, "lds": _2, "lease": _2, "leclerc": _2, "lefrak": _2, "legal": _2, "lego": _2, "lexus": _2, "lgbt": _2, "lidl": _2, "life": _2, "lifeinsurance": _2, "lifestyle": _2, "lighting": _2, "like": _2, "lilly": _2, "limited": _2, "limo": _2, "lincoln": _2, "link": [1, { "myfritz": _3, "cyon": _3, "dweb": _6, "nftstorage": [0, { "ipfs": _3 }], "mypep": _3 }], "lipsy": _2, "live": [1, { "aem": _3, "hlx": _3, "ewp": _6 }], "living": _2, "llc": _2, "llp": _2, "loan": _2, "loans": _2, "locker": _2, "locus": _2, "lol": [1, { "omg": _3 }], "london": _2, "lotte": _2, "lotto": _2, "love": _2, "lpl": _2, "lplfinancial": _2, "ltd": _2, "ltda": _2, "lundbeck": _2, "luxe": _2, "luxury": _2, "madrid": _2, "maif": _2, "maison": _2, "makeup": _2, "man": _2, "management": [1, { "router": _3 }], "mango": _2, "map": _2, "market": _2, "marketing": _2, "markets": _2, "marriott": _2, "marshalls": _2, "mattel": _2, "mba": _2, "mckinsey": _2, "med": _2, "media": _52, "meet": _2, "melbourne": _2, "meme": _2, "memorial": _2, "men": _2, "menu": [1, { "barsy": _3, "barsyonline": _3 }], "merck": _2, "merckmsd": _2, "miami": _2, "microsoft": _2, "mini": _2, "mint": _2, "mit": _2, "mitsubishi": _2, "mlb": _2, "mls": _2, "mma": _2, "mobile": _2, "moda": _2, "moe": _2, "moi": _2, "mom": [1, { "ind": _3 }], "monash": _2, "money": _2, "monster": _2, "mormon": _2, "mortgage": _2, "moscow": _2, "moto": _2, "motorcycles": _2, "mov": _2, "movie": _2, "msd": _2, "mtn": _2, "mtr": _2, "music": _2, "nab": _2, "nagoya": _2, "navy": _2, "nba": _2, "nec": _2, "netbank": _2, "netflix": _2, "network": [1, { "alces": _6, "co": _3, "arvo": _3, "azimuth": _3, "tlon": _3 }], "neustar": _2, "new": _2, "news": [1, { "noticeable": _3 }], "next": _2, "nextdirect": _2, "nexus": _2, "nfl": _2, "ngo": _2, "nhk": _2, "nico": _2, "nike": _2, "nikon": _2, "ninja": _2, "nissan": _2, "nissay": _2, "nokia": _2, "norton": _2, "now": _2, "nowruz": _2, "nowtv": _2, "nra": _2, "nrw": _2, "ntt": _2, "nyc": _2, "obi": _2, "observer": _2, "office": _2, "okinawa": _2, "olayan": _2, "olayangroup": _2, "ollo": _2, "omega": _2, "one": [1, { "kin": _6, "service": _3 }], "ong": [1, { "obl": _3 }], "onl": _2, "online": [1, { "eero": _3, "eero-stage": _3, "websitebuilder": _3, "barsy": _3 }], "ooo": _2, "open": _2, "oracle": _2, "orange": [1, { "tech": _3 }], "organic": _2, "origins": _2, "osaka": _2, "otsuka": _2, "ott": _2, "ovh": [1, { "nerdpol": _3 }], "page": [1, { "aem": _3, "hlx": _3, "hlx3": _3, "translated": _3, "codeberg": _3, "heyflow": _3, "prvcy": _3, "rocky": _3, "pdns": _3, "plesk": _3 }], "panasonic": _2, "paris": _2, "pars": _2, "partners": _2, "parts": _2, "party": _2, "pay": _2, "pccw": _2, "pet": _2, "pfizer": _2, "pharmacy": _2, "phd": _2, "philips": _2, "phone": _2, "photo": _2, "photography": _2, "photos": _52, "physio": _2, "pics": _2, "pictet": _2, "pictures": [1, { "1337": _3 }], "pid": _2, "pin": _2, "ping": _2, "pink": _2, "pioneer": _2, "pizza": [1, { "ngrok": _3 }], "place": _16, "play": _2, "playstation": _2, "plumbing": _2, "plus": _2, "pnc": _2, "pohl": _2, "poker": _2, "politie": _2, "porn": _2, "pramerica": _2, "praxi": _2, "press": _2, "prime": _2, "prod": _2, "productions": _2, "prof": _2, "progressive": _2, "promo": _2, "properties": _2, "property": _2, "protection": _2, "pru": _2, "prudential": _2, "pub": [1, { "id": _6, "kin": _6, "barsy": _3 }], "pwc": _2, "qpon": _2, "quebec": _2, "quest": _2, "racing": _2, "radio": _2, "read": _2, "realestate": _2, "realtor": _2, "realty": _2, "recipes": _2, "red": _2, "redstone": _2, "redumbrella": _2, "rehab": _2, "reise": _2, "reisen": _2, "reit": _2, "reliance": _2, "ren": _2, "rent": _2, "rentals": _2, "repair": _2, "report": _2, "republican": _2, "rest": _2, "restaurant": _2, "review": _2, "reviews": _2, "rexroth": _2, "rich": _2, "richardli": _2, "ricoh": _2, "ril": _2, "rio": _2, "rip": [1, { "clan": _3 }], "rocks": [1, { "myddns": _3, "stackit": _3, "lima-city": _3, "webspace": _3 }], "rodeo": _2, "rogers": _2, "room": _2, "rsvp": _2, "rugby": _2, "ruhr": _2, "run": [1, { "development": _3, "ravendb": _3, "servers": _3, "build": _6, "code": _6, "database": _6, "migration": _6, "onporter": _3, "repl": _3, "stackit": _3, "val": [0, { "express": _3, "web": _3 }], "wix": _3 }], "rwe": _2, "ryukyu": _2, "saarland": _2, "safe": _2, "safety": _2, "sakura": _2, "sale": _2, "salon": _2, "samsclub": _2, "samsung": _2, "sandvik": _2, "sandvikcoromant": _2, "sanofi": _2, "sap": _2, "sarl": _2, "sas": _2, "save": _2, "saxo": _2, "sbi": _2, "sbs": _2, "scb": _2, "schaeffler": _2, "schmidt": _2, "scholarships": _2, "school": _2, "schule": _2, "schwarz": _2, "science": _2, "scot": [1, { "gov": [2, { "service": _3 }] }], "search": _2, "seat": _2, "secure": _2, "security": _2, "seek": _2, "select": _2, "sener": _2, "services": [1, { "loginline": _3 }], "seven": _2, "sew": _2, "sex": _2, "sexy": _2, "sfr": _2, "shangrila": _2, "sharp": _2, "shell": _2, "shia": _2, "shiksha": _2, "shoes": _2, "shop": [1, { "base": _3, "hoplix": _3, "barsy": _3, "barsyonline": _3, "shopware": _3 }], "shopping": _2, "shouji": _2, "show": _2, "silk": _2, "sina": _2, "singles": _2, "site": [1, { "canva": _19, "cloudera": _6, "convex": _3, "cyon": _3, "fastvps": _3, "heyflow": _3, "jele": _3, "jouwweb": _3, "loginline": _3, "barsy": _3, "notion": _3, "omniwe": _3, "opensocial": _3, "madethis": _3, "platformsh": _6, "tst": _6, "byen": _3, "srht": _3, "novecore": _3, "wpsquared": _3 }], "ski": _2, "skin": _2, "sky": _2, "skype": _2, "sling": _2, "smart": _2, "smile": _2, "sncf": _2, "soccer": _2, "social": _2, "softbank": _2, "software": _2, "sohu": _2, "solar": _2, "solutions": _2, "song": _2, "sony": _2, "soy": _2, "spa": _2, "space": [1, { "myfast": _3, "heiyu": _3, "hf": [2, { "static": _3 }], "app-ionos": _3, "project": _3, "uber": _3, "xs4all": _3 }], "sport": _2, "spot": _2, "srl": _2, "stada": _2, "staples": _2, "star": _2, "statebank": _2, "statefarm": _2, "stc": _2, "stcgroup": _2, "stockholm": _2, "storage": _2, "store": [1, { "barsy": _3, "sellfy": _3, "shopware": _3, "storebase": _3 }], "stream": _2, "studio": _2, "study": _2, "style": _2, "sucks": _2, "supplies": _2, "supply": _2, "support": [1, { "barsy": _3 }], "surf": _2, "surgery": _2, "suzuki": _2, "swatch": _2, "swiss": _2, "sydney": _2, "systems": [1, { "knightpoint": _3 }], "tab": _2, "taipei": _2, "talk": _2, "taobao": _2, "target": _2, "tatamotors": _2, "tatar": _2, "tattoo": _2, "tax": _2, "taxi": _2, "tci": _2, "tdk": _2, "team": [1, { "discourse": _3, "jelastic": _3 }], "tech": [1, { "cleverapps": _3 }], "technology": _16, "temasek": _2, "tennis": _2, "teva": _2, "thd": _2, "theater": _2, "theatre": _2, "tiaa": _2, "tickets": _2, "tienda": _2, "tips": _2, "tires": _2, "tirol": _2, "tjmaxx": _2, "tjx": _2, "tkmaxx": _2, "tmall": _2, "today": [1, { "prequalifyme": _3 }], "tokyo": _2, "tools": [1, { "addr": _43, "myaddr": _3 }], "top": [1, { "ntdll": _3, "wadl": _6 }], "toray": _2, "toshiba": _2, "total": _2, "tours": _2, "town": _2, "toyota": _2, "toys": _2, "trade": _2, "trading": _2, "training": _2, "travel": _2, "travelers": _2, "travelersinsurance": _2, "trust": _2, "trv": _2, "tube": _2, "tui": _2, "tunes": _2, "tushu": _2, "tvs": _2, "ubank": _2, "ubs": _2, "unicom": _2, "university": _2, "uno": _2, "uol": _2, "ups": _2, "vacations": _2, "vana": _2, "vanguard": _2, "vegas": _2, "ventures": _2, "verisign": _2, "versicherung": _2, "vet": _2, "viajes": _2, "video": _2, "vig": _2, "viking": _2, "villas": _2, "vin": _2, "vip": _2, "virgin": _2, "visa": _2, "vision": _2, "viva": _2, "vivo": _2, "vlaanderen": _2, "vodka": _2, "volvo": _2, "vote": _2, "voting": _2, "voto": _2, "voyage": _2, "wales": _2, "walmart": _2, "walter": _2, "wang": _2, "wanggou": _2, "watch": _2, "watches": _2, "weather": _2, "weatherchannel": _2, "webcam": _2, "weber": _2, "website": _52, "wed": _2, "wedding": _2, "weibo": _2, "weir": _2, "whoswho": _2, "wien": _2, "wiki": _52, "williamhill": _2, "win": _2, "windows": _2, "wine": _2, "winners": _2, "wme": _2, "wolterskluwer": _2, "woodside": _2, "work": _2, "works": _2, "world": _2, "wow": _2, "wtc": _2, "wtf": _2, "xbox": _2, "xerox": _2, "xihuan": _2, "xin": _2, "xn--11b4c3d": _2, "कॉम": _2, "xn--1ck2e1b": _2, "セール": _2, "xn--1qqw23a": _2, "佛山": _2, "xn--30rr7y": _2, "慈善": _2, "xn--3bst00m": _2, "集团": _2, "xn--3ds443g": _2, "在线": _2, "xn--3pxu8k": _2, "点看": _2, "xn--42c2d9a": _2, "คอม": _2, "xn--45q11c": _2, "八卦": _2, "xn--4gbrim": _2, "موقع": _2, "xn--55qw42g": _2, "公益": _2, "xn--55qx5d": _2, "公司": _2, "xn--5su34j936bgsg": _2, "香格里拉": _2, "xn--5tzm5g": _2, "网站": _2, "xn--6frz82g": _2, "移动": _2, "xn--6qq986b3xl": _2, "我爱你": _2, "xn--80adxhks": _2, "москва": _2, "xn--80aqecdr1a": _2, "католик": _2, "xn--80asehdb": _2, "онлайн": _2, "xn--80aswg": _2, "сайт": _2, "xn--8y0a063a": _2, "联通": _2, "xn--9dbq2a": _2, "קום": _2, "xn--9et52u": _2, "时尚": _2, "xn--9krt00a": _2, "微博": _2, "xn--b4w605ferd": _2, "淡马锡": _2, "xn--bck1b9a5dre4c": _2, "ファッション": _2, "xn--c1avg": _2, "орг": _2, "xn--c2br7g": _2, "नेट": _2, "xn--cck2b3b": _2, "ストア": _2, "xn--cckwcxetd": _2, "アマゾン": _2, "xn--cg4bki": _2, "삼성": _2, "xn--czr694b": _2, "商标": _2, "xn--czrs0t": _2, "商店": _2, "xn--czru2d": _2, "商城": _2, "xn--d1acj3b": _2, "дети": _2, "xn--eckvdtc9d": _2, "ポイント": _2, "xn--efvy88h": _2, "新闻": _2, "xn--fct429k": _2, "家電": _2, "xn--fhbei": _2, "كوم": _2, "xn--fiq228c5hs": _2, "中文网": _2, "xn--fiq64b": _2, "中信": _2, "xn--fjq720a": _2, "娱乐": _2, "xn--flw351e": _2, "谷歌": _2, "xn--fzys8d69uvgm": _2, "電訊盈科": _2, "xn--g2xx48c": _2, "购物": _2, "xn--gckr3f0f": _2, "クラウド": _2, "xn--gk3at1e": _2, "通販": _2, "xn--hxt814e": _2, "网店": _2, "xn--i1b6b1a6a2e": _2, "संगठन": _2, "xn--imr513n": _2, "餐厅": _2, "xn--io0a7i": _2, "网络": _2, "xn--j1aef": _2, "ком": _2, "xn--jlq480n2rg": _2, "亚马逊": _2, "xn--jvr189m": _2, "食品": _2, "xn--kcrx77d1x4a": _2, "飞利浦": _2, "xn--kput3i": _2, "手机": _2, "xn--mgba3a3ejt": _2, "ارامكو": _2, "xn--mgba7c0bbn0a": _2, "العليان": _2, "xn--mgbab2bd": _2, "بازار": _2, "xn--mgbca7dzdo": _2, "ابوظبي": _2, "xn--mgbi4ecexp": _2, "كاثوليك": _2, "xn--mgbt3dhd": _2, "همراه": _2, "xn--mk1bu44c": _2, "닷컴": _2, "xn--mxtq1m": _2, "政府": _2, "xn--ngbc5azd": _2, "شبكة": _2, "xn--ngbe9e0a": _2, "بيتك": _2, "xn--ngbrx": _2, "عرب": _2, "xn--nqv7f": _2, "机构": _2, "xn--nqv7fs00ema": _2, "组织机构": _2, "xn--nyqy26a": _2, "健康": _2, "xn--otu796d": _2, "招聘": _2, "xn--p1acf": [1, { "xn--90amc": _3, "xn--j1aef": _3, "xn--j1ael8b": _3, "xn--h1ahn": _3, "xn--j1adp": _3, "xn--c1avg": _3, "xn--80aaa0cvac": _3, "xn--h1aliz": _3, "xn--90a1af": _3, "xn--41a": _3 }], "рус": [1, { "биз": _3, "ком": _3, "крым": _3, "мир": _3, "мск": _3, "орг": _3, "самара": _3, "сочи": _3, "спб": _3, "я": _3 }], "xn--pssy2u": _2, "大拿": _2, "xn--q9jyb4c": _2, "みんな": _2, "xn--qcka1pmc": _2, "グーグル": _2, "xn--rhqv96g": _2, "世界": _2, "xn--rovu88b": _2, "書籍": _2, "xn--ses554g": _2, "网址": _2, "xn--t60b56a": _2, "닷넷": _2, "xn--tckwe": _2, "コム": _2, "xn--tiq49xqyj": _2, "天主教": _2, "xn--unup4y": _2, "游戏": _2, "xn--vermgensberater-ctb": _2, "vermögensberater": _2, "xn--vermgensberatung-pwb": _2, "vermögensberatung": _2, "xn--vhquv": _2, "企业": _2, "xn--vuq861b": _2, "信息": _2, "xn--w4r85el8fhu5dnra": _2, "嘉里大酒店": _2, "xn--w4rs40l": _2, "嘉里": _2, "xn--xhq521b": _2, "广东": _2, "xn--zfr164b": _2, "政务": _2, "xyz": [1, { "botdash": _3, "telebit": _6 }], "yachts": _2, "yahoo": _2, "yamaxun": _2, "yandex": _2, "yodobashi": _2, "yoga": _2, "yokohama": _2, "you": _2, "youtube": _2, "yun": _2, "zappos": _2, "zara": _2, "zero": _2, "zip": _2, "zone": [1, { "cloud66": _3, "triton": _6, "stackit": _3, "lima": _3 }], "zuerich": _2 }];
+	    const _3 = [1, {}], _4 = [2, {}], _5 = [1, { "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3 }], _6 = [1, { "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3 }], _7 = [0, { "*": _4 }], _8 = [0, { "relay": _4 }], _9 = [2, { "id": _4 }], _10 = [1, { "gov": _3 }], _11 = [0, { "transfer-webapp": _4 }], _12 = [0, { "notebook": _4, "studio": _4 }], _13 = [0, { "labeling": _4, "notebook": _4, "studio": _4 }], _14 = [0, { "notebook": _4 }], _15 = [0, { "labeling": _4, "notebook": _4, "notebook-fips": _4, "studio": _4 }], _16 = [0, { "notebook": _4, "notebook-fips": _4, "studio": _4, "studio-fips": _4 }], _17 = [0, { "*": _3 }], _18 = [1, { "co": _4 }], _19 = [0, { "objects": _4 }], _20 = [2, { "nodes": _4 }], _21 = [0, { "my": _7 }], _22 = [0, { "s3": _4, "s3-accesspoint": _4, "s3-website": _4 }], _23 = [0, { "s3": _4, "s3-accesspoint": _4 }], _24 = [0, { "direct": _4 }], _25 = [0, { "webview-assets": _4 }], _26 = [0, { "vfs": _4, "webview-assets": _4 }], _27 = [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _22, "s3": _4, "s3-accesspoint": _4, "s3-object-lambda": _4, "s3-website": _4, "aws-cloud9": _25, "cloud9": _26 }], _28 = [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _23, "s3": _4, "s3-accesspoint": _4, "s3-object-lambda": _4, "s3-website": _4, "aws-cloud9": _25, "cloud9": _26 }], _29 = [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _22, "s3": _4, "s3-accesspoint": _4, "s3-object-lambda": _4, "s3-website": _4, "analytics-gateway": _4, "aws-cloud9": _25, "cloud9": _26 }], _30 = [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _22, "s3": _4, "s3-accesspoint": _4, "s3-object-lambda": _4, "s3-website": _4 }], _31 = [0, { "s3": _4, "s3-accesspoint": _4, "s3-accesspoint-fips": _4, "s3-fips": _4, "s3-website": _4 }], _32 = [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _31, "s3": _4, "s3-accesspoint": _4, "s3-accesspoint-fips": _4, "s3-fips": _4, "s3-object-lambda": _4, "s3-website": _4, "aws-cloud9": _25, "cloud9": _26 }], _33 = [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _31, "s3": _4, "s3-accesspoint": _4, "s3-accesspoint-fips": _4, "s3-deprecated": _4, "s3-fips": _4, "s3-object-lambda": _4, "s3-website": _4, "analytics-gateway": _4, "aws-cloud9": _25, "cloud9": _26 }], _34 = [0, { "s3": _4, "s3-accesspoint": _4, "s3-accesspoint-fips": _4, "s3-fips": _4 }], _35 = [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _34, "s3": _4, "s3-accesspoint": _4, "s3-accesspoint-fips": _4, "s3-fips": _4, "s3-object-lambda": _4, "s3-website": _4 }], _36 = [0, { "auth": _4 }], _37 = [0, { "auth": _4, "auth-fips": _4 }], _38 = [0, { "apps": _4 }], _39 = [0, { "paas": _4 }], _40 = [2, { "eu": _4 }], _41 = [0, { "app": _4 }], _42 = [0, { "site": _4 }], _43 = [1, { "com": _3, "edu": _3, "net": _3, "org": _3 }], _44 = [0, { "j": _4 }], _45 = [0, { "dyn": _4 }], _46 = [1, { "co": _3, "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3 }], _47 = [0, { "p": _4 }], _48 = [0, { "user": _4 }], _49 = [0, { "shop": _4 }], _50 = [0, { "cust": _4, "reservd": _4 }], _51 = [0, { "cust": _4 }], _52 = [0, { "s3": _4 }], _53 = [1, { "biz": _3, "com": _3, "edu": _3, "gov": _3, "info": _3, "net": _3, "org": _3 }], _54 = [1, { "framer": _4 }], _55 = [0, { "forgot": _4 }], _56 = [0, { "cdn": _4 }], _57 = [1, { "gs": _3 }], _58 = [0, { "nes": _3 }], _59 = [1, { "k12": _3, "cc": _3, "lib": _3 }], _60 = [1, { "cc": _3, "lib": _3 }];
+	    const rules = [0, { "ac": [1, { "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "drr": _4, "feedback": _4, "forms": _4 }], "ad": _3, "ae": [1, { "ac": _3, "co": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "sch": _3 }], "aero": [1, { "airline": _3, "airport": _3, "accident-investigation": _3, "accident-prevention": _3, "aerobatic": _3, "aeroclub": _3, "aerodrome": _3, "agents": _3, "air-surveillance": _3, "air-traffic-control": _3, "aircraft": _3, "airtraffic": _3, "ambulance": _3, "association": _3, "author": _3, "ballooning": _3, "broker": _3, "caa": _3, "cargo": _3, "catering": _3, "certification": _3, "championship": _3, "charter": _3, "civilaviation": _3, "club": _3, "conference": _3, "consultant": _3, "consulting": _3, "control": _3, "council": _3, "crew": _3, "design": _3, "dgca": _3, "educator": _3, "emergency": _3, "engine": _3, "engineer": _3, "entertainment": _3, "equipment": _3, "exchange": _3, "express": _3, "federation": _3, "flight": _3, "freight": _3, "fuel": _3, "gliding": _3, "government": _3, "groundhandling": _3, "group": _3, "hanggliding": _3, "homebuilt": _3, "insurance": _3, "journal": _3, "journalist": _3, "leasing": _3, "logistics": _3, "magazine": _3, "maintenance": _3, "marketplace": _3, "media": _3, "microlight": _3, "modelling": _3, "navigation": _3, "parachuting": _3, "paragliding": _3, "passenger-association": _3, "pilot": _3, "press": _3, "production": _3, "recreation": _3, "repbody": _3, "res": _3, "research": _3, "rotorcraft": _3, "safety": _3, "scientist": _3, "services": _3, "show": _3, "skydiving": _3, "software": _3, "student": _3, "taxi": _3, "trader": _3, "trading": _3, "trainer": _3, "union": _3, "workinggroup": _3, "works": _3 }], "af": _5, "ag": [1, { "co": _3, "com": _3, "net": _3, "nom": _3, "org": _3 }], "ai": [1, { "com": _3, "net": _3, "off": _3, "org": _3, "uwu": _4, "framer": _4 }], "al": _6, "am": [1, { "co": _3, "com": _3, "commune": _3, "net": _3, "org": _3, "radio": _4 }], "ao": [1, { "co": _3, "ed": _3, "edu": _3, "gov": _3, "gv": _3, "it": _3, "og": _3, "org": _3, "pb": _3 }], "aq": _3, "ar": [1, { "bet": _3, "com": _3, "coop": _3, "edu": _3, "gob": _3, "gov": _3, "int": _3, "mil": _3, "musica": _3, "mutual": _3, "net": _3, "org": _3, "senasa": _3, "tur": _3 }], "arpa": [1, { "e164": _3, "home": _3, "in-addr": _3, "ip6": _3, "iris": _3, "uri": _3, "urn": _3 }], "as": _10, "asia": [1, { "cloudns": _4, "daemon": _4, "dix": _4 }], "at": [1, { "ac": [1, { "sth": _3 }], "co": _3, "gv": _3, "or": _3, "funkfeuer": [0, { "wien": _4 }], "futurecms": [0, { "*": _4, "ex": _7, "in": _7 }], "futurehosting": _4, "futuremailing": _4, "ortsinfo": [0, { "ex": _7, "kunden": _7 }], "biz": _4, "info": _4, "123webseite": _4, "priv": _4, "myspreadshop": _4, "12hp": _4, "2ix": _4, "4lima": _4, "lima-city": _4 }], "au": [1, { "asn": _3, "com": [1, { "cloudlets": [0, { "mel": _4 }], "myspreadshop": _4 }], "edu": [1, { "act": _3, "catholic": _3, "nsw": [1, { "schools": _3 }], "nt": _3, "qld": _3, "sa": _3, "tas": _3, "vic": _3, "wa": _3 }], "gov": [1, { "qld": _3, "sa": _3, "tas": _3, "vic": _3, "wa": _3 }], "id": _3, "net": _3, "org": _3, "conf": _3, "oz": _3, "act": _3, "nsw": _3, "nt": _3, "qld": _3, "sa": _3, "tas": _3, "vic": _3, "wa": _3 }], "aw": [1, { "com": _3 }], "ax": _3, "az": [1, { "biz": _3, "co": _3, "com": _3, "edu": _3, "gov": _3, "info": _3, "int": _3, "mil": _3, "name": _3, "net": _3, "org": _3, "pp": _3, "pro": _3 }], "ba": [1, { "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "rs": _4 }], "bb": [1, { "biz": _3, "co": _3, "com": _3, "edu": _3, "gov": _3, "info": _3, "net": _3, "org": _3, "store": _3, "tv": _3 }], "bd": _17, "be": [1, { "ac": _3, "cloudns": _4, "webhosting": _4, "interhostsolutions": [0, { "cloud": _4 }], "kuleuven": [0, { "ezproxy": _4 }], "123website": _4, "myspreadshop": _4, "transurl": _7 }], "bf": _10, "bg": [1, { "0": _3, "1": _3, "2": _3, "3": _3, "4": _3, "5": _3, "6": _3, "7": _3, "8": _3, "9": _3, "a": _3, "b": _3, "c": _3, "d": _3, "e": _3, "f": _3, "g": _3, "h": _3, "i": _3, "j": _3, "k": _3, "l": _3, "m": _3, "n": _3, "o": _3, "p": _3, "q": _3, "r": _3, "s": _3, "t": _3, "u": _3, "v": _3, "w": _3, "x": _3, "y": _3, "z": _3, "barsy": _4 }], "bh": _5, "bi": [1, { "co": _3, "com": _3, "edu": _3, "or": _3, "org": _3 }], "biz": [1, { "activetrail": _4, "cloud-ip": _4, "cloudns": _4, "jozi": _4, "dyndns": _4, "for-better": _4, "for-more": _4, "for-some": _4, "for-the": _4, "selfip": _4, "webhop": _4, "orx": _4, "mmafan": _4, "myftp": _4, "no-ip": _4, "dscloud": _4 }], "bj": [1, { "africa": _3, "agro": _3, "architectes": _3, "assur": _3, "avocats": _3, "co": _3, "com": _3, "eco": _3, "econo": _3, "edu": _3, "info": _3, "loisirs": _3, "money": _3, "net": _3, "org": _3, "ote": _3, "restaurant": _3, "resto": _3, "tourism": _3, "univ": _3 }], "bm": _5, "bn": [1, { "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "co": _4 }], "bo": [1, { "com": _3, "edu": _3, "gob": _3, "int": _3, "mil": _3, "net": _3, "org": _3, "tv": _3, "web": _3, "academia": _3, "agro": _3, "arte": _3, "blog": _3, "bolivia": _3, "ciencia": _3, "cooperativa": _3, "democracia": _3, "deporte": _3, "ecologia": _3, "economia": _3, "empresa": _3, "indigena": _3, "industria": _3, "info": _3, "medicina": _3, "movimiento": _3, "musica": _3, "natural": _3, "nombre": _3, "noticias": _3, "patria": _3, "plurinacional": _3, "politica": _3, "profesional": _3, "pueblo": _3, "revista": _3, "salud": _3, "tecnologia": _3, "tksat": _3, "transporte": _3, "wiki": _3 }], "br": [1, { "9guacu": _3, "abc": _3, "adm": _3, "adv": _3, "agr": _3, "aju": _3, "am": _3, "anani": _3, "aparecida": _3, "app": _3, "arq": _3, "art": _3, "ato": _3, "b": _3, "barueri": _3, "belem": _3, "bet": _3, "bhz": _3, "bib": _3, "bio": _3, "blog": _3, "bmd": _3, "boavista": _3, "bsb": _3, "campinagrande": _3, "campinas": _3, "caxias": _3, "cim": _3, "cng": _3, "cnt": _3, "com": [1, { "simplesite": _4 }], "contagem": _3, "coop": _3, "coz": _3, "cri": _3, "cuiaba": _3, "curitiba": _3, "def": _3, "des": _3, "det": _3, "dev": _3, "ecn": _3, "eco": _3, "edu": _3, "emp": _3, "enf": _3, "eng": _3, "esp": _3, "etc": _3, "eti": _3, "far": _3, "feira": _3, "flog": _3, "floripa": _3, "fm": _3, "fnd": _3, "fortal": _3, "fot": _3, "foz": _3, "fst": _3, "g12": _3, "geo": _3, "ggf": _3, "goiania": _3, "gov": [1, { "ac": _3, "al": _3, "am": _3, "ap": _3, "ba": _3, "ce": _3, "df": _3, "es": _3, "go": _3, "ma": _3, "mg": _3, "ms": _3, "mt": _3, "pa": _3, "pb": _3, "pe": _3, "pi": _3, "pr": _3, "rj": _3, "rn": _3, "ro": _3, "rr": _3, "rs": _3, "sc": _3, "se": _3, "sp": _3, "to": _3 }], "gru": _3, "imb": _3, "ind": _3, "inf": _3, "jab": _3, "jampa": _3, "jdf": _3, "joinville": _3, "jor": _3, "jus": _3, "leg": [1, { "ac": _4, "al": _4, "am": _4, "ap": _4, "ba": _4, "ce": _4, "df": _4, "es": _4, "go": _4, "ma": _4, "mg": _4, "ms": _4, "mt": _4, "pa": _4, "pb": _4, "pe": _4, "pi": _4, "pr": _4, "rj": _4, "rn": _4, "ro": _4, "rr": _4, "rs": _4, "sc": _4, "se": _4, "sp": _4, "to": _4 }], "leilao": _3, "lel": _3, "log": _3, "londrina": _3, "macapa": _3, "maceio": _3, "manaus": _3, "maringa": _3, "mat": _3, "med": _3, "mil": _3, "morena": _3, "mp": _3, "mus": _3, "natal": _3, "net": _3, "niteroi": _3, "nom": _17, "not": _3, "ntr": _3, "odo": _3, "ong": _3, "org": _3, "osasco": _3, "palmas": _3, "poa": _3, "ppg": _3, "pro": _3, "psc": _3, "psi": _3, "pvh": _3, "qsl": _3, "radio": _3, "rec": _3, "recife": _3, "rep": _3, "ribeirao": _3, "rio": _3, "riobranco": _3, "riopreto": _3, "salvador": _3, "sampa": _3, "santamaria": _3, "santoandre": _3, "saobernardo": _3, "saogonca": _3, "seg": _3, "sjc": _3, "slg": _3, "slz": _3, "sorocaba": _3, "srv": _3, "taxi": _3, "tc": _3, "tec": _3, "teo": _3, "the": _3, "tmp": _3, "trd": _3, "tur": _3, "tv": _3, "udi": _3, "vet": _3, "vix": _3, "vlog": _3, "wiki": _3, "zlg": _3 }], "bs": [1, { "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "we": _4 }], "bt": _5, "bv": _3, "bw": [1, { "ac": _3, "co": _3, "gov": _3, "net": _3, "org": _3 }], "by": [1, { "gov": _3, "mil": _3, "com": _3, "of": _3, "mediatech": _4 }], "bz": [1, { "co": _3, "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "za": _4, "mydns": _4, "gsj": _4 }], "ca": [1, { "ab": _3, "bc": _3, "mb": _3, "nb": _3, "nf": _3, "nl": _3, "ns": _3, "nt": _3, "nu": _3, "on": _3, "pe": _3, "qc": _3, "sk": _3, "yk": _3, "gc": _3, "barsy": _4, "awdev": _7, "co": _4, "no-ip": _4, "myspreadshop": _4, "box": _4 }], "cat": _3, "cc": [1, { "cleverapps": _4, "cloudns": _4, "ftpaccess": _4, "game-server": _4, "myphotos": _4, "scrapping": _4, "twmail": _4, "csx": _4, "fantasyleague": _4, "spawn": [0, { "instances": _4 }] }], "cd": _10, "cf": _3, "cg": _3, "ch": [1, { "square7": _4, "cloudns": _4, "cloudscale": [0, { "cust": _4, "lpg": _19, "rma": _19 }], "flow": [0, { "ae": [0, { "alp1": _4 }], "appengine": _4 }], "linkyard-cloud": _4, "gotdns": _4, "dnsking": _4, "123website": _4, "myspreadshop": _4, "firenet": [0, { "*": _4, "svc": _7 }], "12hp": _4, "2ix": _4, "4lima": _4, "lima-city": _4 }], "ci": [1, { "ac": _3, "xn--aroport-bya": _3, "aéroport": _3, "asso": _3, "co": _3, "com": _3, "ed": _3, "edu": _3, "go": _3, "gouv": _3, "int": _3, "net": _3, "or": _3, "org": _3 }], "ck": _17, "cl": [1, { "co": _3, "gob": _3, "gov": _3, "mil": _3, "cloudns": _4 }], "cm": [1, { "co": _3, "com": _3, "gov": _3, "net": _3 }], "cn": [1, { "ac": _3, "com": [1, { "amazonaws": [0, { "cn-north-1": [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _22, "s3": _4, "s3-accesspoint": _4, "s3-deprecated": _4, "s3-object-lambda": _4, "s3-website": _4 }], "cn-northwest-1": [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _23, "s3": _4, "s3-accesspoint": _4, "s3-object-lambda": _4, "s3-website": _4 }], "compute": _7, "airflow": [0, { "cn-north-1": _7, "cn-northwest-1": _7 }], "eb": [0, { "cn-north-1": _4, "cn-northwest-1": _4 }], "elb": _7 }], "sagemaker": [0, { "cn-north-1": _12, "cn-northwest-1": _12 }] }], "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "xn--55qx5d": _3, "公司": _3, "xn--od0alg": _3, "網絡": _3, "xn--io0a7i": _3, "网络": _3, "ah": _3, "bj": _3, "cq": _3, "fj": _3, "gd": _3, "gs": _3, "gx": _3, "gz": _3, "ha": _3, "hb": _3, "he": _3, "hi": _3, "hk": _3, "hl": _3, "hn": _3, "jl": _3, "js": _3, "jx": _3, "ln": _3, "mo": _3, "nm": _3, "nx": _3, "qh": _3, "sc": _3, "sd": _3, "sh": [1, { "as": _4 }], "sn": _3, "sx": _3, "tj": _3, "tw": _3, "xj": _3, "xz": _3, "yn": _3, "zj": _3, "canva-apps": _4, "canvasite": _21, "myqnapcloud": _4, "quickconnect": _24 }], "co": [1, { "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "nom": _3, "org": _3, "carrd": _4, "crd": _4, "otap": _7, "leadpages": _4, "lpages": _4, "mypi": _4, "xmit": _7, "firewalledreplit": _9, "repl": _9, "supabase": _4 }], "com": [1, { "a2hosted": _4, "cpserver": _4, "adobeaemcloud": [2, { "dev": _7 }], "africa": _4, "airkitapps": _4, "airkitapps-au": _4, "aivencloud": _4, "kasserver": _4, "amazonaws": [0, { "af-south-1": _27, "ap-east-1": _28, "ap-northeast-1": _29, "ap-northeast-2": _29, "ap-northeast-3": _27, "ap-south-1": _29, "ap-south-2": _30, "ap-southeast-1": _29, "ap-southeast-2": _29, "ap-southeast-3": _30, "ap-southeast-4": _30, "ap-southeast-5": [0, { "execute-api": _4, "dualstack": _22, "s3": _4, "s3-accesspoint": _4, "s3-deprecated": _4, "s3-object-lambda": _4, "s3-website": _4 }], "ca-central-1": _32, "ca-west-1": [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _31, "s3": _4, "s3-accesspoint": _4, "s3-accesspoint-fips": _4, "s3-fips": _4, "s3-object-lambda": _4, "s3-website": _4 }], "eu-central-1": _29, "eu-central-2": _30, "eu-north-1": _28, "eu-south-1": _27, "eu-south-2": _30, "eu-west-1": [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _22, "s3": _4, "s3-accesspoint": _4, "s3-deprecated": _4, "s3-object-lambda": _4, "s3-website": _4, "analytics-gateway": _4, "aws-cloud9": _25, "cloud9": _26 }], "eu-west-2": _28, "eu-west-3": _27, "il-central-1": [0, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _22, "s3": _4, "s3-accesspoint": _4, "s3-object-lambda": _4, "s3-website": _4, "aws-cloud9": _25, "cloud9": [0, { "vfs": _4 }] }], "me-central-1": _30, "me-south-1": _28, "sa-east-1": _27, "us-east-1": [2, { "execute-api": _4, "emrappui-prod": _4, "emrnotebooks-prod": _4, "emrstudio-prod": _4, "dualstack": _31, "s3": _4, "s3-accesspoint": _4, "s3-accesspoint-fips": _4, "s3-deprecated": _4, "s3-fips": _4, "s3-object-lambda": _4, "s3-website": _4, "analytics-gateway": _4, "aws-cloud9": _25, "cloud9": _26 }], "us-east-2": _33, "us-gov-east-1": _35, "us-gov-west-1": _35, "us-west-1": _32, "us-west-2": _33, "compute": _7, "compute-1": _7, "airflow": [0, { "af-south-1": _7, "ap-east-1": _7, "ap-northeast-1": _7, "ap-northeast-2": _7, "ap-northeast-3": _7, "ap-south-1": _7, "ap-south-2": _7, "ap-southeast-1": _7, "ap-southeast-2": _7, "ap-southeast-3": _7, "ap-southeast-4": _7, "ca-central-1": _7, "ca-west-1": _7, "eu-central-1": _7, "eu-central-2": _7, "eu-north-1": _7, "eu-south-1": _7, "eu-south-2": _7, "eu-west-1": _7, "eu-west-2": _7, "eu-west-3": _7, "il-central-1": _7, "me-central-1": _7, "me-south-1": _7, "sa-east-1": _7, "us-east-1": _7, "us-east-2": _7, "us-west-1": _7, "us-west-2": _7 }], "s3": _4, "s3-1": _4, "s3-ap-east-1": _4, "s3-ap-northeast-1": _4, "s3-ap-northeast-2": _4, "s3-ap-northeast-3": _4, "s3-ap-south-1": _4, "s3-ap-southeast-1": _4, "s3-ap-southeast-2": _4, "s3-ca-central-1": _4, "s3-eu-central-1": _4, "s3-eu-north-1": _4, "s3-eu-west-1": _4, "s3-eu-west-2": _4, "s3-eu-west-3": _4, "s3-external-1": _4, "s3-fips-us-gov-east-1": _4, "s3-fips-us-gov-west-1": _4, "s3-global": [0, { "accesspoint": [0, { "mrap": _4 }] }], "s3-me-south-1": _4, "s3-sa-east-1": _4, "s3-us-east-2": _4, "s3-us-gov-east-1": _4, "s3-us-gov-west-1": _4, "s3-us-west-1": _4, "s3-us-west-2": _4, "s3-website-ap-northeast-1": _4, "s3-website-ap-southeast-1": _4, "s3-website-ap-southeast-2": _4, "s3-website-eu-west-1": _4, "s3-website-sa-east-1": _4, "s3-website-us-east-1": _4, "s3-website-us-gov-west-1": _4, "s3-website-us-west-1": _4, "s3-website-us-west-2": _4, "elb": _7 }], "amazoncognito": [0, { "af-south-1": _36, "ap-east-1": _36, "ap-northeast-1": _36, "ap-northeast-2": _36, "ap-northeast-3": _36, "ap-south-1": _36, "ap-south-2": _36, "ap-southeast-1": _36, "ap-southeast-2": _36, "ap-southeast-3": _36, "ap-southeast-4": _36, "ca-central-1": _36, "ca-west-1": _36, "eu-central-1": _36, "eu-central-2": _36, "eu-north-1": _36, "eu-south-1": _36, "eu-south-2": _36, "eu-west-1": _36, "eu-west-2": _36, "eu-west-3": _36, "il-central-1": _36, "me-central-1": _36, "me-south-1": _36, "sa-east-1": _36, "us-east-1": _37, "us-east-2": _37, "us-gov-west-1": [0, { "auth-fips": _4 }], "us-west-1": _37, "us-west-2": _37 }], "amplifyapp": _4, "awsapprunner": _7, "awsapps": _4, "elasticbeanstalk": [2, { "af-south-1": _4, "ap-east-1": _4, "ap-northeast-1": _4, "ap-northeast-2": _4, "ap-northeast-3": _4, "ap-south-1": _4, "ap-southeast-1": _4, "ap-southeast-2": _4, "ap-southeast-3": _4, "ca-central-1": _4, "eu-central-1": _4, "eu-north-1": _4, "eu-south-1": _4, "eu-west-1": _4, "eu-west-2": _4, "eu-west-3": _4, "il-central-1": _4, "me-south-1": _4, "sa-east-1": _4, "us-east-1": _4, "us-east-2": _4, "us-gov-east-1": _4, "us-gov-west-1": _4, "us-west-1": _4, "us-west-2": _4 }], "awsglobalaccelerator": _4, "siiites": _4, "appspacehosted": _4, "appspaceusercontent": _4, "on-aptible": _4, "myasustor": _4, "balena-devices": _4, "boutir": _4, "bplaced": _4, "cafjs": _4, "canva-apps": _4, "cdn77-storage": _4, "br": _4, "cn": _4, "de": _4, "eu": _4, "jpn": _4, "mex": _4, "ru": _4, "sa": _4, "uk": _4, "us": _4, "za": _4, "clever-cloud": [0, { "services": _7 }], "dnsabr": _4, "ip-ddns": _4, "jdevcloud": _4, "wpdevcloud": _4, "cf-ipfs": _4, "cloudflare-ipfs": _4, "trycloudflare": _4, "co": _4, "builtwithdark": _4, "datadetect": [0, { "demo": _4, "instance": _4 }], "dattolocal": _4, "dattorelay": _4, "dattoweb": _4, "mydatto": _4, "digitaloceanspaces": _7, "discordsays": _4, "discordsez": _4, "drayddns": _4, "dreamhosters": _4, "durumis": _4, "mydrobo": _4, "blogdns": _4, "cechire": _4, "dnsalias": _4, "dnsdojo": _4, "doesntexist": _4, "dontexist": _4, "doomdns": _4, "dyn-o-saur": _4, "dynalias": _4, "dyndns-at-home": _4, "dyndns-at-work": _4, "dyndns-blog": _4, "dyndns-free": _4, "dyndns-home": _4, "dyndns-ip": _4, "dyndns-mail": _4, "dyndns-office": _4, "dyndns-pics": _4, "dyndns-remote": _4, "dyndns-server": _4, "dyndns-web": _4, "dyndns-wiki": _4, "dyndns-work": _4, "est-a-la-maison": _4, "est-a-la-masion": _4, "est-le-patron": _4, "est-mon-blogueur": _4, "from-ak": _4, "from-al": _4, "from-ar": _4, "from-ca": _4, "from-ct": _4, "from-dc": _4, "from-de": _4, "from-fl": _4, "from-ga": _4, "from-hi": _4, "from-ia": _4, "from-id": _4, "from-il": _4, "from-in": _4, "from-ks": _4, "from-ky": _4, "from-ma": _4, "from-md": _4, "from-mi": _4, "from-mn": _4, "from-mo": _4, "from-ms": _4, "from-mt": _4, "from-nc": _4, "from-nd": _4, "from-ne": _4, "from-nh": _4, "from-nj": _4, "from-nm": _4, "from-nv": _4, "from-oh": _4, "from-ok": _4, "from-or": _4, "from-pa": _4, "from-pr": _4, "from-ri": _4, "from-sc": _4, "from-sd": _4, "from-tn": _4, "from-tx": _4, "from-ut": _4, "from-va": _4, "from-vt": _4, "from-wa": _4, "from-wi": _4, "from-wv": _4, "from-wy": _4, "getmyip": _4, "gotdns": _4, "hobby-site": _4, "homelinux": _4, "homeunix": _4, "iamallama": _4, "is-a-anarchist": _4, "is-a-blogger": _4, "is-a-bookkeeper": _4, "is-a-bulls-fan": _4, "is-a-caterer": _4, "is-a-chef": _4, "is-a-conservative": _4, "is-a-cpa": _4, "is-a-cubicle-slave": _4, "is-a-democrat": _4, "is-a-designer": _4, "is-a-doctor": _4, "is-a-financialadvisor": _4, "is-a-geek": _4, "is-a-green": _4, "is-a-guru": _4, "is-a-hard-worker": _4, "is-a-hunter": _4, "is-a-landscaper": _4, "is-a-lawyer": _4, "is-a-liberal": _4, "is-a-libertarian": _4, "is-a-llama": _4, "is-a-musician": _4, "is-a-nascarfan": _4, "is-a-nurse": _4, "is-a-painter": _4, "is-a-personaltrainer": _4, "is-a-photographer": _4, "is-a-player": _4, "is-a-republican": _4, "is-a-rockstar": _4, "is-a-socialist": _4, "is-a-student": _4, "is-a-teacher": _4, "is-a-techie": _4, "is-a-therapist": _4, "is-an-accountant": _4, "is-an-actor": _4, "is-an-actress": _4, "is-an-anarchist": _4, "is-an-artist": _4, "is-an-engineer": _4, "is-an-entertainer": _4, "is-certified": _4, "is-gone": _4, "is-into-anime": _4, "is-into-cars": _4, "is-into-cartoons": _4, "is-into-games": _4, "is-leet": _4, "is-not-certified": _4, "is-slick": _4, "is-uberleet": _4, "is-with-theband": _4, "isa-geek": _4, "isa-hockeynut": _4, "issmarterthanyou": _4, "likes-pie": _4, "likescandy": _4, "neat-url": _4, "saves-the-whales": _4, "selfip": _4, "sells-for-less": _4, "sells-for-u": _4, "servebbs": _4, "simple-url": _4, "space-to-rent": _4, "teaches-yoga": _4, "writesthisblog": _4, "ddnsfree": _4, "ddnsgeek": _4, "giize": _4, "gleeze": _4, "kozow": _4, "loseyourip": _4, "ooguy": _4, "theworkpc": _4, "mytuleap": _4, "tuleap-partners": _4, "encoreapi": _4, "evennode": [0, { "eu-1": _4, "eu-2": _4, "eu-3": _4, "eu-4": _4, "us-1": _4, "us-2": _4, "us-3": _4, "us-4": _4 }], "onfabrica": _4, "fastly-edge": _4, "fastly-terrarium": _4, "fastvps-server": _4, "mydobiss": _4, "firebaseapp": _4, "fldrv": _4, "forgeblocks": _4, "framercanvas": _4, "freebox-os": _4, "freeboxos": _4, "freemyip": _4, "aliases121": _4, "gentapps": _4, "gentlentapis": _4, "githubusercontent": _4, "0emm": _7, "appspot": [2, { "r": _7 }], "blogspot": _4, "codespot": _4, "googleapis": _4, "googlecode": _4, "pagespeedmobilizer": _4, "withgoogle": _4, "withyoutube": _4, "grayjayleagues": _4, "hatenablog": _4, "hatenadiary": _4, "herokuapp": _4, "gr": _4, "smushcdn": _4, "wphostedmail": _4, "wpmucdn": _4, "pixolino": _4, "apps-1and1": _4, "live-website": _4, "dopaas": _4, "hosted-by-previder": _39, "hosteur": [0, { "rag-cloud": _4, "rag-cloud-ch": _4 }], "ik-server": [0, { "jcloud": _4, "jcloud-ver-jpc": _4 }], "jelastic": [0, { "demo": _4 }], "massivegrid": _39, "wafaicloud": [0, { "jed": _4, "ryd": _4 }], "webadorsite": _4, "joyent": [0, { "cns": _7 }], "lpusercontent": _4, "linode": [0, { "members": _4, "nodebalancer": _7 }], "linodeobjects": _7, "linodeusercontent": [0, { "ip": _4 }], "barsycenter": _4, "barsyonline": _4, "modelscape": _4, "mwcloudnonprod": _4, "polyspace": _4, "mazeplay": _4, "miniserver": _4, "atmeta": _4, "fbsbx": _38, "meteorapp": _40, "routingthecloud": _4, "mydbserver": _4, "hostedpi": _4, "mythic-beasts": [0, { "caracal": _4, "customer": _4, "fentiger": _4, "lynx": _4, "ocelot": _4, "oncilla": _4, "onza": _4, "sphinx": _4, "vs": _4, "x": _4, "yali": _4 }], "nospamproxy": [0, { "cloud": [2, { "o365": _4 }] }], "4u": _4, "nfshost": _4, "3utilities": _4, "blogsyte": _4, "ciscofreak": _4, "damnserver": _4, "ddnsking": _4, "ditchyourip": _4, "dnsiskinky": _4, "dynns": _4, "geekgalaxy": _4, "health-carereform": _4, "homesecuritymac": _4, "homesecuritypc": _4, "myactivedirectory": _4, "mysecuritycamera": _4, "myvnc": _4, "net-freaks": _4, "onthewifi": _4, "point2this": _4, "quicksytes": _4, "securitytactics": _4, "servebeer": _4, "servecounterstrike": _4, "serveexchange": _4, "serveftp": _4, "servegame": _4, "servehalflife": _4, "servehttp": _4, "servehumour": _4, "serveirc": _4, "servemp3": _4, "servep2p": _4, "servepics": _4, "servequake": _4, "servesarcasm": _4, "stufftoread": _4, "unusualperson": _4, "workisboring": _4, "myiphost": _4, "observableusercontent": [0, { "static": _4 }], "simplesite": _4, "orsites": _4, "operaunite": _4, "customer-oci": [0, { "*": _4, "oci": _7, "ocp": _7, "ocs": _7 }], "oraclecloudapps": _7, "oraclegovcloudapps": _7, "authgear-staging": _4, "authgearapps": _4, "skygearapp": _4, "outsystemscloud": _4, "ownprovider": _4, "pgfog": _4, "pagexl": _4, "gotpantheon": _4, "paywhirl": _7, "upsunapp": _4, "postman-echo": _4, "prgmr": [0, { "xen": _4 }], "pythonanywhere": _40, "qa2": _4, "alpha-myqnapcloud": _4, "dev-myqnapcloud": _4, "mycloudnas": _4, "mynascloud": _4, "myqnapcloud": _4, "qualifioapp": _4, "ladesk": _4, "qbuser": _4, "quipelements": _7, "rackmaze": _4, "readthedocs-hosted": _4, "rhcloud": _4, "onrender": _4, "render": _41, "subsc-pay": _4, "180r": _4, "dojin": _4, "sakuratan": _4, "sakuraweb": _4, "x0": _4, "code": [0, { "builder": _7, "dev-builder": _7, "stg-builder": _7 }], "salesforce": [0, { "platform": [0, { "code-builder-stg": [0, { "test": [0, { "001": _7 }] }] }] }], "logoip": _4, "scrysec": _4, "firewall-gateway": _4, "myshopblocks": _4, "myshopify": _4, "shopitsite": _4, "1kapp": _4, "appchizi": _4, "applinzi": _4, "sinaapp": _4, "vipsinaapp": _4, "streamlitapp": _4, "try-snowplow": _4, "playstation-cloud": _4, "myspreadshop": _4, "w-corp-staticblitz": _4, "w-credentialless-staticblitz": _4, "w-staticblitz": _4, "stackhero-network": _4, "stdlib": [0, { "api": _4 }], "strapiapp": [2, { "media": _4 }], "streak-link": _4, "streaklinks": _4, "streakusercontent": _4, "temp-dns": _4, "dsmynas": _4, "familyds": _4, "mytabit": _4, "taveusercontent": _4, "tb-hosting": _42, "reservd": _4, "thingdustdata": _4, "townnews-staging": _4, "typeform": [0, { "pro": _4 }], "hk": _4, "it": _4, "vultrobjects": _7, "wafflecell": _4, "hotelwithflight": _4, "reserve-online": _4, "cprapid": _4, "pleskns": _4, "remotewd": _4, "wiardweb": [0, { "pages": _4 }], "wixsite": _4, "wixstudio": _4, "messwithdns": _4, "woltlab-demo": _4, "wpenginepowered": [2, { "js": _4 }], "xnbay": [2, { "u2": _4, "u2-local": _4 }], "yolasite": _4 }], "coop": _3, "cr": [1, { "ac": _3, "co": _3, "ed": _3, "fi": _3, "go": _3, "or": _3, "sa": _3 }], "cu": [1, { "com": _3, "edu": _3, "gob": _3, "inf": _3, "nat": _3, "net": _3, "org": _3 }], "cv": [1, { "com": _3, "edu": _3, "id": _3, "int": _3, "net": _3, "nome": _3, "org": _3, "publ": _3 }], "cw": _43, "cx": [1, { "gov": _3, "cloudns": _4, "ath": _4, "info": _4, "assessments": _4, "calculators": _4, "funnels": _4, "paynow": _4, "quizzes": _4, "researched": _4, "tests": _4 }], "cy": [1, { "ac": _3, "biz": _3, "com": [1, { "scaleforce": _44 }], "ekloges": _3, "gov": _3, "ltd": _3, "mil": _3, "net": _3, "org": _3, "press": _3, "pro": _3, "tm": _3 }], "cz": [1, { "contentproxy9": [0, { "rsc": _4 }], "realm": _4, "e4": _4, "co": _4, "metacentrum": [0, { "cloud": _7, "custom": _4 }], "muni": [0, { "cloud": [0, { "flt": _4, "usr": _4 }] }] }], "de": [1, { "bplaced": _4, "square7": _4, "com": _4, "cosidns": _45, "dnsupdater": _4, "dynamisches-dns": _4, "internet-dns": _4, "l-o-g-i-n": _4, "ddnss": [2, { "dyn": _4, "dyndns": _4 }], "dyn-ip24": _4, "dyndns1": _4, "home-webserver": [2, { "dyn": _4 }], "myhome-server": _4, "dnshome": _4, "fuettertdasnetz": _4, "isteingeek": _4, "istmein": _4, "lebtimnetz": _4, "leitungsen": _4, "traeumtgerade": _4, "frusky": _7, "goip": _4, "xn--gnstigbestellen-zvb": _4, "günstigbestellen": _4, "xn--gnstigliefern-wob": _4, "günstigliefern": _4, "hs-heilbronn": [0, { "it": [0, { "pages": _4, "pages-research": _4 }] }], "dyn-berlin": _4, "in-berlin": _4, "in-brb": _4, "in-butter": _4, "in-dsl": _4, "in-vpn": _4, "iservschule": _4, "mein-iserv": _4, "schulplattform": _4, "schulserver": _4, "test-iserv": _4, "keymachine": _4, "git-repos": _4, "lcube-server": _4, "svn-repos": _4, "barsy": _4, "webspaceconfig": _4, "123webseite": _4, "rub": _4, "ruhr-uni-bochum": [2, { "noc": [0, { "io": _4 }] }], "logoip": _4, "firewall-gateway": _4, "my-gateway": _4, "my-router": _4, "spdns": _4, "speedpartner": [0, { "customer": _4 }], "myspreadshop": _4, "taifun-dns": _4, "12hp": _4, "2ix": _4, "4lima": _4, "lima-city": _4, "dd-dns": _4, "dray-dns": _4, "draydns": _4, "dyn-vpn": _4, "dynvpn": _4, "mein-vigor": _4, "my-vigor": _4, "my-wan": _4, "syno-ds": _4, "synology-diskstation": _4, "synology-ds": _4, "uberspace": _7, "virtual-user": _4, "virtualuser": _4, "community-pro": _4, "diskussionsbereich": _4 }], "dj": _3, "dk": [1, { "biz": _4, "co": _4, "firm": _4, "reg": _4, "store": _4, "123hjemmeside": _4, "myspreadshop": _4 }], "dm": _46, "do": [1, { "art": _3, "com": _3, "edu": _3, "gob": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "sld": _3, "web": _3 }], "dz": [1, { "art": _3, "asso": _3, "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "pol": _3, "soc": _3, "tm": _3 }], "ec": [1, { "com": _3, "edu": _3, "fin": _3, "gob": _3, "gov": _3, "info": _3, "k12": _3, "med": _3, "mil": _3, "net": _3, "org": _3, "pro": _3, "base": _4, "official": _4 }], "edu": [1, { "rit": [0, { "git-pages": _4 }] }], "ee": [1, { "aip": _3, "com": _3, "edu": _3, "fie": _3, "gov": _3, "lib": _3, "med": _3, "org": _3, "pri": _3, "riik": _3 }], "eg": [1, { "ac": _3, "com": _3, "edu": _3, "eun": _3, "gov": _3, "info": _3, "me": _3, "mil": _3, "name": _3, "net": _3, "org": _3, "sci": _3, "sport": _3, "tv": _3 }], "er": _17, "es": [1, { "com": _3, "edu": _3, "gob": _3, "nom": _3, "org": _3, "123miweb": _4, "myspreadshop": _4 }], "et": [1, { "biz": _3, "com": _3, "edu": _3, "gov": _3, "info": _3, "name": _3, "net": _3, "org": _3 }], "eu": [1, { "airkitapps": _4, "cloudns": _4, "dogado": [0, { "jelastic": _4 }], "barsy": _4, "spdns": _4, "transurl": _7, "diskstation": _4 }], "fi": [1, { "aland": _3, "dy": _4, "xn--hkkinen-5wa": _4, "häkkinen": _4, "iki": _4, "cloudplatform": [0, { "fi": _4 }], "datacenter": [0, { "demo": _4, "paas": _4 }], "kapsi": _4, "123kotisivu": _4, "myspreadshop": _4 }], "fj": [1, { "ac": _3, "biz": _3, "com": _3, "gov": _3, "info": _3, "mil": _3, "name": _3, "net": _3, "org": _3, "pro": _3 }], "fk": _17, "fm": [1, { "com": _3, "edu": _3, "net": _3, "org": _3, "radio": _4, "user": _7 }], "fo": _3, "fr": [1, { "asso": _3, "com": _3, "gouv": _3, "nom": _3, "prd": _3, "tm": _3, "avoues": _3, "cci": _3, "greta": _3, "huissier-justice": _3, "en-root": _4, "fbx-os": _4, "fbxos": _4, "freebox-os": _4, "freeboxos": _4, "goupile": _4, "123siteweb": _4, "on-web": _4, "chirurgiens-dentistes-en-france": _4, "dedibox": _4, "aeroport": _4, "avocat": _4, "chambagri": _4, "chirurgiens-dentistes": _4, "experts-comptables": _4, "medecin": _4, "notaires": _4, "pharmacien": _4, "port": _4, "veterinaire": _4, "myspreadshop": _4, "ynh": _4 }], "ga": _3, "gb": _3, "gd": [1, { "edu": _3, "gov": _3 }], "ge": [1, { "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "pvt": _3, "school": _3 }], "gf": _3, "gg": [1, { "co": _3, "net": _3, "org": _3, "botdash": _4, "kaas": _4, "stackit": _4, "panel": [2, { "daemon": _4 }] }], "gh": [1, { "com": _3, "edu": _3, "gov": _3, "mil": _3, "org": _3 }], "gi": [1, { "com": _3, "edu": _3, "gov": _3, "ltd": _3, "mod": _3, "org": _3 }], "gl": [1, { "co": _3, "com": _3, "edu": _3, "net": _3, "org": _3, "biz": _4 }], "gm": _3, "gn": [1, { "ac": _3, "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3 }], "gov": _3, "gp": [1, { "asso": _3, "com": _3, "edu": _3, "mobi": _3, "net": _3, "org": _3 }], "gq": _3, "gr": [1, { "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "barsy": _4, "simplesite": _4 }], "gs": _3, "gt": [1, { "com": _3, "edu": _3, "gob": _3, "ind": _3, "mil": _3, "net": _3, "org": _3 }], "gu": [1, { "com": _3, "edu": _3, "gov": _3, "guam": _3, "info": _3, "net": _3, "org": _3, "web": _3 }], "gw": _3, "gy": _46, "hk": [1, { "com": _3, "edu": _3, "gov": _3, "idv": _3, "net": _3, "org": _3, "xn--ciqpn": _3, "个人": _3, "xn--gmqw5a": _3, "個人": _3, "xn--55qx5d": _3, "公司": _3, "xn--mxtq1m": _3, "政府": _3, "xn--lcvr32d": _3, "敎育": _3, "xn--wcvs22d": _3, "教育": _3, "xn--gmq050i": _3, "箇人": _3, "xn--uc0atv": _3, "組織": _3, "xn--uc0ay4a": _3, "組织": _3, "xn--od0alg": _3, "網絡": _3, "xn--zf0avx": _3, "網络": _3, "xn--mk0axi": _3, "组織": _3, "xn--tn0ag": _3, "组织": _3, "xn--od0aq3b": _3, "网絡": _3, "xn--io0a7i": _3, "网络": _3, "inc": _4, "ltd": _4 }], "hm": _3, "hn": [1, { "com": _3, "edu": _3, "gob": _3, "mil": _3, "net": _3, "org": _3 }], "hr": [1, { "com": _3, "from": _3, "iz": _3, "name": _3, "brendly": _49 }], "ht": [1, { "adult": _3, "art": _3, "asso": _3, "com": _3, "coop": _3, "edu": _3, "firm": _3, "gouv": _3, "info": _3, "med": _3, "net": _3, "org": _3, "perso": _3, "pol": _3, "pro": _3, "rel": _3, "shop": _3, "rt": _4 }], "hu": [1, { "2000": _3, "agrar": _3, "bolt": _3, "casino": _3, "city": _3, "co": _3, "erotica": _3, "erotika": _3, "film": _3, "forum": _3, "games": _3, "hotel": _3, "info": _3, "ingatlan": _3, "jogasz": _3, "konyvelo": _3, "lakas": _3, "media": _3, "news": _3, "org": _3, "priv": _3, "reklam": _3, "sex": _3, "shop": _3, "sport": _3, "suli": _3, "szex": _3, "tm": _3, "tozsde": _3, "utazas": _3, "video": _3 }], "id": [1, { "ac": _3, "biz": _3, "co": _3, "desa": _3, "go": _3, "mil": _3, "my": _3, "net": _3, "or": _3, "ponpes": _3, "sch": _3, "web": _3 }], "ie": [1, { "gov": _3, "myspreadshop": _4 }], "il": [1, { "ac": _3, "co": [1, { "ravpage": _4, "mytabit": _4, "tabitorder": _4 }], "gov": _3, "idf": _3, "k12": _3, "muni": _3, "net": _3, "org": _3 }], "xn--4dbrk0ce": [1, { "xn--4dbgdty6c": _3, "xn--5dbhl8d": _3, "xn--8dbq2a": _3, "xn--hebda8b": _3 }], "ישראל": [1, { "אקדמיה": _3, "ישוב": _3, "צהל": _3, "ממשל": _3 }], "im": [1, { "ac": _3, "co": [1, { "ltd": _3, "plc": _3 }], "com": _3, "net": _3, "org": _3, "tt": _3, "tv": _3 }], "in": [1, { "5g": _3, "6g": _3, "ac": _3, "ai": _3, "am": _3, "bihar": _3, "biz": _3, "business": _3, "ca": _3, "cn": _3, "co": _3, "com": _3, "coop": _3, "cs": _3, "delhi": _3, "dr": _3, "edu": _3, "er": _3, "firm": _3, "gen": _3, "gov": _3, "gujarat": _3, "ind": _3, "info": _3, "int": _3, "internet": _3, "io": _3, "me": _3, "mil": _3, "net": _3, "nic": _3, "org": _3, "pg": _3, "post": _3, "pro": _3, "res": _3, "travel": _3, "tv": _3, "uk": _3, "up": _3, "us": _3, "cloudns": _4, "barsy": _4, "web": _4, "supabase": _4 }], "info": [1, { "cloudns": _4, "dynamic-dns": _4, "barrel-of-knowledge": _4, "barrell-of-knowledge": _4, "dyndns": _4, "for-our": _4, "groks-the": _4, "groks-this": _4, "here-for-more": _4, "knowsitall": _4, "selfip": _4, "webhop": _4, "barsy": _4, "mayfirst": _4, "mittwald": _4, "mittwaldserver": _4, "typo3server": _4, "dvrcam": _4, "ilovecollege": _4, "no-ip": _4, "forumz": _4, "nsupdate": _4, "dnsupdate": _4, "v-info": _4 }], "int": [1, { "eu": _3 }], "io": [1, { "2038": _4, "co": _3, "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "nom": _3, "org": _3, "on-acorn": _7, "myaddr": _4, "apigee": _4, "b-data": _4, "beagleboard": _4, "bitbucket": _4, "bluebite": _4, "boxfuse": _4, "brave": [0, { "s": _7 }], "browsersafetymark": _4, "bigv": [0, { "uk0": _4 }], "cleverapps": _4, "cloudbeesusercontent": _4, "dappnode": [0, { "dyndns": _4 }], "darklang": _4, "definima": _4, "dedyn": _4, "fh-muenster": _4, "shw": _4, "forgerock": [0, { "id": _4 }], "github": _4, "gitlab": _4, "lolipop": _4, "hasura-app": _4, "hostyhosting": _4, "hypernode": _4, "moonscale": _7, "beebyte": _39, "beebyteapp": [0, { "sekd1": _4 }], "jele": _4, "webthings": _4, "loginline": _4, "barsy": _4, "azurecontainer": _7, "ngrok": [2, { "ap": _4, "au": _4, "eu": _4, "in": _4, "jp": _4, "sa": _4, "us": _4 }], "nodeart": [0, { "stage": _4 }], "pantheonsite": _4, "pstmn": [2, { "mock": _4 }], "protonet": _4, "qcx": [2, { "sys": _7 }], "qoto": _4, "vaporcloud": _4, "myrdbx": _4, "rb-hosting": _42, "on-k3s": _7, "on-rio": _7, "readthedocs": _4, "resindevice": _4, "resinstaging": [0, { "devices": _4 }], "hzc": _4, "sandcats": _4, "scrypted": [0, { "client": _4 }], "mo-siemens": _4, "lair": _38, "stolos": _7, "musician": _4, "utwente": _4, "edugit": _4, "telebit": _4, "thingdust": [0, { "dev": _50, "disrec": _50, "prod": _51, "testing": _50 }], "tickets": _4, "webflow": _4, "webflowtest": _4, "editorx": _4, "wixstudio": _4, "basicserver": _4, "virtualserver": _4 }], "iq": _6, "ir": [1, { "ac": _3, "co": _3, "gov": _3, "id": _3, "net": _3, "org": _3, "sch": _3, "xn--mgba3a4f16a": _3, "ایران": _3, "xn--mgba3a4fra": _3, "ايران": _3, "arvanedge": _4 }], "is": _3, "it": [1, { "edu": _3, "gov": _3, "abr": _3, "abruzzo": _3, "aosta-valley": _3, "aostavalley": _3, "bas": _3, "basilicata": _3, "cal": _3, "calabria": _3, "cam": _3, "campania": _3, "emilia-romagna": _3, "emiliaromagna": _3, "emr": _3, "friuli-v-giulia": _3, "friuli-ve-giulia": _3, "friuli-vegiulia": _3, "friuli-venezia-giulia": _3, "friuli-veneziagiulia": _3, "friuli-vgiulia": _3, "friuliv-giulia": _3, "friulive-giulia": _3, "friulivegiulia": _3, "friulivenezia-giulia": _3, "friuliveneziagiulia": _3, "friulivgiulia": _3, "fvg": _3, "laz": _3, "lazio": _3, "lig": _3, "liguria": _3, "lom": _3, "lombardia": _3, "lombardy": _3, "lucania": _3, "mar": _3, "marche": _3, "mol": _3, "molise": _3, "piedmont": _3, "piemonte": _3, "pmn": _3, "pug": _3, "puglia": _3, "sar": _3, "sardegna": _3, "sardinia": _3, "sic": _3, "sicilia": _3, "sicily": _3, "taa": _3, "tos": _3, "toscana": _3, "trentin-sud-tirol": _3, "xn--trentin-sd-tirol-rzb": _3, "trentin-süd-tirol": _3, "trentin-sudtirol": _3, "xn--trentin-sdtirol-7vb": _3, "trentin-südtirol": _3, "trentin-sued-tirol": _3, "trentin-suedtirol": _3, "trentino": _3, "trentino-a-adige": _3, "trentino-aadige": _3, "trentino-alto-adige": _3, "trentino-altoadige": _3, "trentino-s-tirol": _3, "trentino-stirol": _3, "trentino-sud-tirol": _3, "xn--trentino-sd-tirol-c3b": _3, "trentino-süd-tirol": _3, "trentino-sudtirol": _3, "xn--trentino-sdtirol-szb": _3, "trentino-südtirol": _3, "trentino-sued-tirol": _3, "trentino-suedtirol": _3, "trentinoa-adige": _3, "trentinoaadige": _3, "trentinoalto-adige": _3, "trentinoaltoadige": _3, "trentinos-tirol": _3, "trentinostirol": _3, "trentinosud-tirol": _3, "xn--trentinosd-tirol-rzb": _3, "trentinosüd-tirol": _3, "trentinosudtirol": _3, "xn--trentinosdtirol-7vb": _3, "trentinosüdtirol": _3, "trentinosued-tirol": _3, "trentinosuedtirol": _3, "trentinsud-tirol": _3, "xn--trentinsd-tirol-6vb": _3, "trentinsüd-tirol": _3, "trentinsudtirol": _3, "xn--trentinsdtirol-nsb": _3, "trentinsüdtirol": _3, "trentinsued-tirol": _3, "trentinsuedtirol": _3, "tuscany": _3, "umb": _3, "umbria": _3, "val-d-aosta": _3, "val-daosta": _3, "vald-aosta": _3, "valdaosta": _3, "valle-aosta": _3, "valle-d-aosta": _3, "valle-daosta": _3, "valleaosta": _3, "valled-aosta": _3, "valledaosta": _3, "vallee-aoste": _3, "xn--valle-aoste-ebb": _3, "vallée-aoste": _3, "vallee-d-aoste": _3, "xn--valle-d-aoste-ehb": _3, "vallée-d-aoste": _3, "valleeaoste": _3, "xn--valleaoste-e7a": _3, "valléeaoste": _3, "valleedaoste": _3, "xn--valledaoste-ebb": _3, "valléedaoste": _3, "vao": _3, "vda": _3, "ven": _3, "veneto": _3, "ag": _3, "agrigento": _3, "al": _3, "alessandria": _3, "alto-adige": _3, "altoadige": _3, "an": _3, "ancona": _3, "andria-barletta-trani": _3, "andria-trani-barletta": _3, "andriabarlettatrani": _3, "andriatranibarletta": _3, "ao": _3, "aosta": _3, "aoste": _3, "ap": _3, "aq": _3, "aquila": _3, "ar": _3, "arezzo": _3, "ascoli-piceno": _3, "ascolipiceno": _3, "asti": _3, "at": _3, "av": _3, "avellino": _3, "ba": _3, "balsan": _3, "balsan-sudtirol": _3, "xn--balsan-sdtirol-nsb": _3, "balsan-südtirol": _3, "balsan-suedtirol": _3, "bari": _3, "barletta-trani-andria": _3, "barlettatraniandria": _3, "belluno": _3, "benevento": _3, "bergamo": _3, "bg": _3, "bi": _3, "biella": _3, "bl": _3, "bn": _3, "bo": _3, "bologna": _3, "bolzano": _3, "bolzano-altoadige": _3, "bozen": _3, "bozen-sudtirol": _3, "xn--bozen-sdtirol-2ob": _3, "bozen-südtirol": _3, "bozen-suedtirol": _3, "br": _3, "brescia": _3, "brindisi": _3, "bs": _3, "bt": _3, "bulsan": _3, "bulsan-sudtirol": _3, "xn--bulsan-sdtirol-nsb": _3, "bulsan-südtirol": _3, "bulsan-suedtirol": _3, "bz": _3, "ca": _3, "cagliari": _3, "caltanissetta": _3, "campidano-medio": _3, "campidanomedio": _3, "campobasso": _3, "carbonia-iglesias": _3, "carboniaiglesias": _3, "carrara-massa": _3, "carraramassa": _3, "caserta": _3, "catania": _3, "catanzaro": _3, "cb": _3, "ce": _3, "cesena-forli": _3, "xn--cesena-forl-mcb": _3, "cesena-forlì": _3, "cesenaforli": _3, "xn--cesenaforl-i8a": _3, "cesenaforlì": _3, "ch": _3, "chieti": _3, "ci": _3, "cl": _3, "cn": _3, "co": _3, "como": _3, "cosenza": _3, "cr": _3, "cremona": _3, "crotone": _3, "cs": _3, "ct": _3, "cuneo": _3, "cz": _3, "dell-ogliastra": _3, "dellogliastra": _3, "en": _3, "enna": _3, "fc": _3, "fe": _3, "fermo": _3, "ferrara": _3, "fg": _3, "fi": _3, "firenze": _3, "florence": _3, "fm": _3, "foggia": _3, "forli-cesena": _3, "xn--forl-cesena-fcb": _3, "forlì-cesena": _3, "forlicesena": _3, "xn--forlcesena-c8a": _3, "forlìcesena": _3, "fr": _3, "frosinone": _3, "ge": _3, "genoa": _3, "genova": _3, "go": _3, "gorizia": _3, "gr": _3, "grosseto": _3, "iglesias-carbonia": _3, "iglesiascarbonia": _3, "im": _3, "imperia": _3, "is": _3, "isernia": _3, "kr": _3, "la-spezia": _3, "laquila": _3, "laspezia": _3, "latina": _3, "lc": _3, "le": _3, "lecce": _3, "lecco": _3, "li": _3, "livorno": _3, "lo": _3, "lodi": _3, "lt": _3, "lu": _3, "lucca": _3, "macerata": _3, "mantova": _3, "massa-carrara": _3, "massacarrara": _3, "matera": _3, "mb": _3, "mc": _3, "me": _3, "medio-campidano": _3, "mediocampidano": _3, "messina": _3, "mi": _3, "milan": _3, "milano": _3, "mn": _3, "mo": _3, "modena": _3, "monza": _3, "monza-brianza": _3, "monza-e-della-brianza": _3, "monzabrianza": _3, "monzaebrianza": _3, "monzaedellabrianza": _3, "ms": _3, "mt": _3, "na": _3, "naples": _3, "napoli": _3, "no": _3, "novara": _3, "nu": _3, "nuoro": _3, "og": _3, "ogliastra": _3, "olbia-tempio": _3, "olbiatempio": _3, "or": _3, "oristano": _3, "ot": _3, "pa": _3, "padova": _3, "padua": _3, "palermo": _3, "parma": _3, "pavia": _3, "pc": _3, "pd": _3, "pe": _3, "perugia": _3, "pesaro-urbino": _3, "pesarourbino": _3, "pescara": _3, "pg": _3, "pi": _3, "piacenza": _3, "pisa": _3, "pistoia": _3, "pn": _3, "po": _3, "pordenone": _3, "potenza": _3, "pr": _3, "prato": _3, "pt": _3, "pu": _3, "pv": _3, "pz": _3, "ra": _3, "ragusa": _3, "ravenna": _3, "rc": _3, "re": _3, "reggio-calabria": _3, "reggio-emilia": _3, "reggiocalabria": _3, "reggioemilia": _3, "rg": _3, "ri": _3, "rieti": _3, "rimini": _3, "rm": _3, "rn": _3, "ro": _3, "roma": _3, "rome": _3, "rovigo": _3, "sa": _3, "salerno": _3, "sassari": _3, "savona": _3, "si": _3, "siena": _3, "siracusa": _3, "so": _3, "sondrio": _3, "sp": _3, "sr": _3, "ss": _3, "xn--sdtirol-n2a": _3, "südtirol": _3, "suedtirol": _3, "sv": _3, "ta": _3, "taranto": _3, "te": _3, "tempio-olbia": _3, "tempioolbia": _3, "teramo": _3, "terni": _3, "tn": _3, "to": _3, "torino": _3, "tp": _3, "tr": _3, "trani-andria-barletta": _3, "trani-barletta-andria": _3, "traniandriabarletta": _3, "tranibarlettaandria": _3, "trapani": _3, "trento": _3, "treviso": _3, "trieste": _3, "ts": _3, "turin": _3, "tv": _3, "ud": _3, "udine": _3, "urbino-pesaro": _3, "urbinopesaro": _3, "va": _3, "varese": _3, "vb": _3, "vc": _3, "ve": _3, "venezia": _3, "venice": _3, "verbania": _3, "vercelli": _3, "verona": _3, "vi": _3, "vibo-valentia": _3, "vibovalentia": _3, "vicenza": _3, "viterbo": _3, "vr": _3, "vs": _3, "vt": _3, "vv": _3, "12chars": _4, "ibxos": _4, "iliadboxos": _4, "neen": [0, { "jc": _4 }], "123homepage": _4, "16-b": _4, "32-b": _4, "64-b": _4, "myspreadshop": _4, "syncloud": _4 }], "je": [1, { "co": _3, "net": _3, "org": _3, "of": _4 }], "jm": _17, "jo": [1, { "agri": _3, "ai": _3, "com": _3, "edu": _3, "eng": _3, "fm": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "per": _3, "phd": _3, "sch": _3, "tv": _3 }], "jobs": _3, "jp": [1, { "ac": _3, "ad": _3, "co": _3, "ed": _3, "go": _3, "gr": _3, "lg": _3, "ne": [1, { "aseinet": _48, "gehirn": _4, "ivory": _4, "mail-box": _4, "mints": _4, "mokuren": _4, "opal": _4, "sakura": _4, "sumomo": _4, "topaz": _4 }], "or": _3, "aichi": [1, { "aisai": _3, "ama": _3, "anjo": _3, "asuke": _3, "chiryu": _3, "chita": _3, "fuso": _3, "gamagori": _3, "handa": _3, "hazu": _3, "hekinan": _3, "higashiura": _3, "ichinomiya": _3, "inazawa": _3, "inuyama": _3, "isshiki": _3, "iwakura": _3, "kanie": _3, "kariya": _3, "kasugai": _3, "kira": _3, "kiyosu": _3, "komaki": _3, "konan": _3, "kota": _3, "mihama": _3, "miyoshi": _3, "nishio": _3, "nisshin": _3, "obu": _3, "oguchi": _3, "oharu": _3, "okazaki": _3, "owariasahi": _3, "seto": _3, "shikatsu": _3, "shinshiro": _3, "shitara": _3, "tahara": _3, "takahama": _3, "tobishima": _3, "toei": _3, "togo": _3, "tokai": _3, "tokoname": _3, "toyoake": _3, "toyohashi": _3, "toyokawa": _3, "toyone": _3, "toyota": _3, "tsushima": _3, "yatomi": _3 }], "akita": [1, { "akita": _3, "daisen": _3, "fujisato": _3, "gojome": _3, "hachirogata": _3, "happou": _3, "higashinaruse": _3, "honjo": _3, "honjyo": _3, "ikawa": _3, "kamikoani": _3, "kamioka": _3, "katagami": _3, "kazuno": _3, "kitaakita": _3, "kosaka": _3, "kyowa": _3, "misato": _3, "mitane": _3, "moriyoshi": _3, "nikaho": _3, "noshiro": _3, "odate": _3, "oga": _3, "ogata": _3, "semboku": _3, "yokote": _3, "yurihonjo": _3 }], "aomori": [1, { "aomori": _3, "gonohe": _3, "hachinohe": _3, "hashikami": _3, "hiranai": _3, "hirosaki": _3, "itayanagi": _3, "kuroishi": _3, "misawa": _3, "mutsu": _3, "nakadomari": _3, "noheji": _3, "oirase": _3, "owani": _3, "rokunohe": _3, "sannohe": _3, "shichinohe": _3, "shingo": _3, "takko": _3, "towada": _3, "tsugaru": _3, "tsuruta": _3 }], "chiba": [1, { "abiko": _3, "asahi": _3, "chonan": _3, "chosei": _3, "choshi": _3, "chuo": _3, "funabashi": _3, "futtsu": _3, "hanamigawa": _3, "ichihara": _3, "ichikawa": _3, "ichinomiya": _3, "inzai": _3, "isumi": _3, "kamagaya": _3, "kamogawa": _3, "kashiwa": _3, "katori": _3, "katsuura": _3, "kimitsu": _3, "kisarazu": _3, "kozaki": _3, "kujukuri": _3, "kyonan": _3, "matsudo": _3, "midori": _3, "mihama": _3, "minamiboso": _3, "mobara": _3, "mutsuzawa": _3, "nagara": _3, "nagareyama": _3, "narashino": _3, "narita": _3, "noda": _3, "oamishirasato": _3, "omigawa": _3, "onjuku": _3, "otaki": _3, "sakae": _3, "sakura": _3, "shimofusa": _3, "shirako": _3, "shiroi": _3, "shisui": _3, "sodegaura": _3, "sosa": _3, "tako": _3, "tateyama": _3, "togane": _3, "tohnosho": _3, "tomisato": _3, "urayasu": _3, "yachimata": _3, "yachiyo": _3, "yokaichiba": _3, "yokoshibahikari": _3, "yotsukaido": _3 }], "ehime": [1, { "ainan": _3, "honai": _3, "ikata": _3, "imabari": _3, "iyo": _3, "kamijima": _3, "kihoku": _3, "kumakogen": _3, "masaki": _3, "matsuno": _3, "matsuyama": _3, "namikata": _3, "niihama": _3, "ozu": _3, "saijo": _3, "seiyo": _3, "shikokuchuo": _3, "tobe": _3, "toon": _3, "uchiko": _3, "uwajima": _3, "yawatahama": _3 }], "fukui": [1, { "echizen": _3, "eiheiji": _3, "fukui": _3, "ikeda": _3, "katsuyama": _3, "mihama": _3, "minamiechizen": _3, "obama": _3, "ohi": _3, "ono": _3, "sabae": _3, "sakai": _3, "takahama": _3, "tsuruga": _3, "wakasa": _3 }], "fukuoka": [1, { "ashiya": _3, "buzen": _3, "chikugo": _3, "chikuho": _3, "chikujo": _3, "chikushino": _3, "chikuzen": _3, "chuo": _3, "dazaifu": _3, "fukuchi": _3, "hakata": _3, "higashi": _3, "hirokawa": _3, "hisayama": _3, "iizuka": _3, "inatsuki": _3, "kaho": _3, "kasuga": _3, "kasuya": _3, "kawara": _3, "keisen": _3, "koga": _3, "kurate": _3, "kurogi": _3, "kurume": _3, "minami": _3, "miyako": _3, "miyama": _3, "miyawaka": _3, "mizumaki": _3, "munakata": _3, "nakagawa": _3, "nakama": _3, "nishi": _3, "nogata": _3, "ogori": _3, "okagaki": _3, "okawa": _3, "oki": _3, "omuta": _3, "onga": _3, "onojo": _3, "oto": _3, "saigawa": _3, "sasaguri": _3, "shingu": _3, "shinyoshitomi": _3, "shonai": _3, "soeda": _3, "sue": _3, "tachiarai": _3, "tagawa": _3, "takata": _3, "toho": _3, "toyotsu": _3, "tsuiki": _3, "ukiha": _3, "umi": _3, "usui": _3, "yamada": _3, "yame": _3, "yanagawa": _3, "yukuhashi": _3 }], "fukushima": [1, { "aizubange": _3, "aizumisato": _3, "aizuwakamatsu": _3, "asakawa": _3, "bandai": _3, "date": _3, "fukushima": _3, "furudono": _3, "futaba": _3, "hanawa": _3, "higashi": _3, "hirata": _3, "hirono": _3, "iitate": _3, "inawashiro": _3, "ishikawa": _3, "iwaki": _3, "izumizaki": _3, "kagamiishi": _3, "kaneyama": _3, "kawamata": _3, "kitakata": _3, "kitashiobara": _3, "koori": _3, "koriyama": _3, "kunimi": _3, "miharu": _3, "mishima": _3, "namie": _3, "nango": _3, "nishiaizu": _3, "nishigo": _3, "okuma": _3, "omotego": _3, "ono": _3, "otama": _3, "samegawa": _3, "shimogo": _3, "shirakawa": _3, "showa": _3, "soma": _3, "sukagawa": _3, "taishin": _3, "tamakawa": _3, "tanagura": _3, "tenei": _3, "yabuki": _3, "yamato": _3, "yamatsuri": _3, "yanaizu": _3, "yugawa": _3 }], "gifu": [1, { "anpachi": _3, "ena": _3, "gifu": _3, "ginan": _3, "godo": _3, "gujo": _3, "hashima": _3, "hichiso": _3, "hida": _3, "higashishirakawa": _3, "ibigawa": _3, "ikeda": _3, "kakamigahara": _3, "kani": _3, "kasahara": _3, "kasamatsu": _3, "kawaue": _3, "kitagata": _3, "mino": _3, "minokamo": _3, "mitake": _3, "mizunami": _3, "motosu": _3, "nakatsugawa": _3, "ogaki": _3, "sakahogi": _3, "seki": _3, "sekigahara": _3, "shirakawa": _3, "tajimi": _3, "takayama": _3, "tarui": _3, "toki": _3, "tomika": _3, "wanouchi": _3, "yamagata": _3, "yaotsu": _3, "yoro": _3 }], "gunma": [1, { "annaka": _3, "chiyoda": _3, "fujioka": _3, "higashiagatsuma": _3, "isesaki": _3, "itakura": _3, "kanna": _3, "kanra": _3, "katashina": _3, "kawaba": _3, "kiryu": _3, "kusatsu": _3, "maebashi": _3, "meiwa": _3, "midori": _3, "minakami": _3, "naganohara": _3, "nakanojo": _3, "nanmoku": _3, "numata": _3, "oizumi": _3, "ora": _3, "ota": _3, "shibukawa": _3, "shimonita": _3, "shinto": _3, "showa": _3, "takasaki": _3, "takayama": _3, "tamamura": _3, "tatebayashi": _3, "tomioka": _3, "tsukiyono": _3, "tsumagoi": _3, "ueno": _3, "yoshioka": _3 }], "hiroshima": [1, { "asaminami": _3, "daiwa": _3, "etajima": _3, "fuchu": _3, "fukuyama": _3, "hatsukaichi": _3, "higashihiroshima": _3, "hongo": _3, "jinsekikogen": _3, "kaita": _3, "kui": _3, "kumano": _3, "kure": _3, "mihara": _3, "miyoshi": _3, "naka": _3, "onomichi": _3, "osakikamijima": _3, "otake": _3, "saka": _3, "sera": _3, "seranishi": _3, "shinichi": _3, "shobara": _3, "takehara": _3 }], "hokkaido": [1, { "abashiri": _3, "abira": _3, "aibetsu": _3, "akabira": _3, "akkeshi": _3, "asahikawa": _3, "ashibetsu": _3, "ashoro": _3, "assabu": _3, "atsuma": _3, "bibai": _3, "biei": _3, "bifuka": _3, "bihoro": _3, "biratori": _3, "chippubetsu": _3, "chitose": _3, "date": _3, "ebetsu": _3, "embetsu": _3, "eniwa": _3, "erimo": _3, "esan": _3, "esashi": _3, "fukagawa": _3, "fukushima": _3, "furano": _3, "furubira": _3, "haboro": _3, "hakodate": _3, "hamatonbetsu": _3, "hidaka": _3, "higashikagura": _3, "higashikawa": _3, "hiroo": _3, "hokuryu": _3, "hokuto": _3, "honbetsu": _3, "horokanai": _3, "horonobe": _3, "ikeda": _3, "imakane": _3, "ishikari": _3, "iwamizawa": _3, "iwanai": _3, "kamifurano": _3, "kamikawa": _3, "kamishihoro": _3, "kamisunagawa": _3, "kamoenai": _3, "kayabe": _3, "kembuchi": _3, "kikonai": _3, "kimobetsu": _3, "kitahiroshima": _3, "kitami": _3, "kiyosato": _3, "koshimizu": _3, "kunneppu": _3, "kuriyama": _3, "kuromatsunai": _3, "kushiro": _3, "kutchan": _3, "kyowa": _3, "mashike": _3, "matsumae": _3, "mikasa": _3, "minamifurano": _3, "mombetsu": _3, "moseushi": _3, "mukawa": _3, "muroran": _3, "naie": _3, "nakagawa": _3, "nakasatsunai": _3, "nakatombetsu": _3, "nanae": _3, "nanporo": _3, "nayoro": _3, "nemuro": _3, "niikappu": _3, "niki": _3, "nishiokoppe": _3, "noboribetsu": _3, "numata": _3, "obihiro": _3, "obira": _3, "oketo": _3, "okoppe": _3, "otaru": _3, "otobe": _3, "otofuke": _3, "otoineppu": _3, "oumu": _3, "ozora": _3, "pippu": _3, "rankoshi": _3, "rebun": _3, "rikubetsu": _3, "rishiri": _3, "rishirifuji": _3, "saroma": _3, "sarufutsu": _3, "shakotan": _3, "shari": _3, "shibecha": _3, "shibetsu": _3, "shikabe": _3, "shikaoi": _3, "shimamaki": _3, "shimizu": _3, "shimokawa": _3, "shinshinotsu": _3, "shintoku": _3, "shiranuka": _3, "shiraoi": _3, "shiriuchi": _3, "sobetsu": _3, "sunagawa": _3, "taiki": _3, "takasu": _3, "takikawa": _3, "takinoue": _3, "teshikaga": _3, "tobetsu": _3, "tohma": _3, "tomakomai": _3, "tomari": _3, "toya": _3, "toyako": _3, "toyotomi": _3, "toyoura": _3, "tsubetsu": _3, "tsukigata": _3, "urakawa": _3, "urausu": _3, "uryu": _3, "utashinai": _3, "wakkanai": _3, "wassamu": _3, "yakumo": _3, "yoichi": _3 }], "hyogo": [1, { "aioi": _3, "akashi": _3, "ako": _3, "amagasaki": _3, "aogaki": _3, "asago": _3, "ashiya": _3, "awaji": _3, "fukusaki": _3, "goshiki": _3, "harima": _3, "himeji": _3, "ichikawa": _3, "inagawa": _3, "itami": _3, "kakogawa": _3, "kamigori": _3, "kamikawa": _3, "kasai": _3, "kasuga": _3, "kawanishi": _3, "miki": _3, "minamiawaji": _3, "nishinomiya": _3, "nishiwaki": _3, "ono": _3, "sanda": _3, "sannan": _3, "sasayama": _3, "sayo": _3, "shingu": _3, "shinonsen": _3, "shiso": _3, "sumoto": _3, "taishi": _3, "taka": _3, "takarazuka": _3, "takasago": _3, "takino": _3, "tamba": _3, "tatsuno": _3, "toyooka": _3, "yabu": _3, "yashiro": _3, "yoka": _3, "yokawa": _3 }], "ibaraki": [1, { "ami": _3, "asahi": _3, "bando": _3, "chikusei": _3, "daigo": _3, "fujishiro": _3, "hitachi": _3, "hitachinaka": _3, "hitachiomiya": _3, "hitachiota": _3, "ibaraki": _3, "ina": _3, "inashiki": _3, "itako": _3, "iwama": _3, "joso": _3, "kamisu": _3, "kasama": _3, "kashima": _3, "kasumigaura": _3, "koga": _3, "miho": _3, "mito": _3, "moriya": _3, "naka": _3, "namegata": _3, "oarai": _3, "ogawa": _3, "omitama": _3, "ryugasaki": _3, "sakai": _3, "sakuragawa": _3, "shimodate": _3, "shimotsuma": _3, "shirosato": _3, "sowa": _3, "suifu": _3, "takahagi": _3, "tamatsukuri": _3, "tokai": _3, "tomobe": _3, "tone": _3, "toride": _3, "tsuchiura": _3, "tsukuba": _3, "uchihara": _3, "ushiku": _3, "yachiyo": _3, "yamagata": _3, "yawara": _3, "yuki": _3 }], "ishikawa": [1, { "anamizu": _3, "hakui": _3, "hakusan": _3, "kaga": _3, "kahoku": _3, "kanazawa": _3, "kawakita": _3, "komatsu": _3, "nakanoto": _3, "nanao": _3, "nomi": _3, "nonoichi": _3, "noto": _3, "shika": _3, "suzu": _3, "tsubata": _3, "tsurugi": _3, "uchinada": _3, "wajima": _3 }], "iwate": [1, { "fudai": _3, "fujisawa": _3, "hanamaki": _3, "hiraizumi": _3, "hirono": _3, "ichinohe": _3, "ichinoseki": _3, "iwaizumi": _3, "iwate": _3, "joboji": _3, "kamaishi": _3, "kanegasaki": _3, "karumai": _3, "kawai": _3, "kitakami": _3, "kuji": _3, "kunohe": _3, "kuzumaki": _3, "miyako": _3, "mizusawa": _3, "morioka": _3, "ninohe": _3, "noda": _3, "ofunato": _3, "oshu": _3, "otsuchi": _3, "rikuzentakata": _3, "shiwa": _3, "shizukuishi": _3, "sumita": _3, "tanohata": _3, "tono": _3, "yahaba": _3, "yamada": _3 }], "kagawa": [1, { "ayagawa": _3, "higashikagawa": _3, "kanonji": _3, "kotohira": _3, "manno": _3, "marugame": _3, "mitoyo": _3, "naoshima": _3, "sanuki": _3, "tadotsu": _3, "takamatsu": _3, "tonosho": _3, "uchinomi": _3, "utazu": _3, "zentsuji": _3 }], "kagoshima": [1, { "akune": _3, "amami": _3, "hioki": _3, "isa": _3, "isen": _3, "izumi": _3, "kagoshima": _3, "kanoya": _3, "kawanabe": _3, "kinko": _3, "kouyama": _3, "makurazaki": _3, "matsumoto": _3, "minamitane": _3, "nakatane": _3, "nishinoomote": _3, "satsumasendai": _3, "soo": _3, "tarumizu": _3, "yusui": _3 }], "kanagawa": [1, { "aikawa": _3, "atsugi": _3, "ayase": _3, "chigasaki": _3, "ebina": _3, "fujisawa": _3, "hadano": _3, "hakone": _3, "hiratsuka": _3, "isehara": _3, "kaisei": _3, "kamakura": _3, "kiyokawa": _3, "matsuda": _3, "minamiashigara": _3, "miura": _3, "nakai": _3, "ninomiya": _3, "odawara": _3, "oi": _3, "oiso": _3, "sagamihara": _3, "samukawa": _3, "tsukui": _3, "yamakita": _3, "yamato": _3, "yokosuka": _3, "yugawara": _3, "zama": _3, "zushi": _3 }], "kochi": [1, { "aki": _3, "geisei": _3, "hidaka": _3, "higashitsuno": _3, "ino": _3, "kagami": _3, "kami": _3, "kitagawa": _3, "kochi": _3, "mihara": _3, "motoyama": _3, "muroto": _3, "nahari": _3, "nakamura": _3, "nankoku": _3, "nishitosa": _3, "niyodogawa": _3, "ochi": _3, "okawa": _3, "otoyo": _3, "otsuki": _3, "sakawa": _3, "sukumo": _3, "susaki": _3, "tosa": _3, "tosashimizu": _3, "toyo": _3, "tsuno": _3, "umaji": _3, "yasuda": _3, "yusuhara": _3 }], "kumamoto": [1, { "amakusa": _3, "arao": _3, "aso": _3, "choyo": _3, "gyokuto": _3, "kamiamakusa": _3, "kikuchi": _3, "kumamoto": _3, "mashiki": _3, "mifune": _3, "minamata": _3, "minamioguni": _3, "nagasu": _3, "nishihara": _3, "oguni": _3, "ozu": _3, "sumoto": _3, "takamori": _3, "uki": _3, "uto": _3, "yamaga": _3, "yamato": _3, "yatsushiro": _3 }], "kyoto": [1, { "ayabe": _3, "fukuchiyama": _3, "higashiyama": _3, "ide": _3, "ine": _3, "joyo": _3, "kameoka": _3, "kamo": _3, "kita": _3, "kizu": _3, "kumiyama": _3, "kyotamba": _3, "kyotanabe": _3, "kyotango": _3, "maizuru": _3, "minami": _3, "minamiyamashiro": _3, "miyazu": _3, "muko": _3, "nagaokakyo": _3, "nakagyo": _3, "nantan": _3, "oyamazaki": _3, "sakyo": _3, "seika": _3, "tanabe": _3, "uji": _3, "ujitawara": _3, "wazuka": _3, "yamashina": _3, "yawata": _3 }], "mie": [1, { "asahi": _3, "inabe": _3, "ise": _3, "kameyama": _3, "kawagoe": _3, "kiho": _3, "kisosaki": _3, "kiwa": _3, "komono": _3, "kumano": _3, "kuwana": _3, "matsusaka": _3, "meiwa": _3, "mihama": _3, "minamiise": _3, "misugi": _3, "miyama": _3, "nabari": _3, "shima": _3, "suzuka": _3, "tado": _3, "taiki": _3, "taki": _3, "tamaki": _3, "toba": _3, "tsu": _3, "udono": _3, "ureshino": _3, "watarai": _3, "yokkaichi": _3 }], "miyagi": [1, { "furukawa": _3, "higashimatsushima": _3, "ishinomaki": _3, "iwanuma": _3, "kakuda": _3, "kami": _3, "kawasaki": _3, "marumori": _3, "matsushima": _3, "minamisanriku": _3, "misato": _3, "murata": _3, "natori": _3, "ogawara": _3, "ohira": _3, "onagawa": _3, "osaki": _3, "rifu": _3, "semine": _3, "shibata": _3, "shichikashuku": _3, "shikama": _3, "shiogama": _3, "shiroishi": _3, "tagajo": _3, "taiwa": _3, "tome": _3, "tomiya": _3, "wakuya": _3, "watari": _3, "yamamoto": _3, "zao": _3 }], "miyazaki": [1, { "aya": _3, "ebino": _3, "gokase": _3, "hyuga": _3, "kadogawa": _3, "kawaminami": _3, "kijo": _3, "kitagawa": _3, "kitakata": _3, "kitaura": _3, "kobayashi": _3, "kunitomi": _3, "kushima": _3, "mimata": _3, "miyakonojo": _3, "miyazaki": _3, "morotsuka": _3, "nichinan": _3, "nishimera": _3, "nobeoka": _3, "saito": _3, "shiiba": _3, "shintomi": _3, "takaharu": _3, "takanabe": _3, "takazaki": _3, "tsuno": _3 }], "nagano": [1, { "achi": _3, "agematsu": _3, "anan": _3, "aoki": _3, "asahi": _3, "azumino": _3, "chikuhoku": _3, "chikuma": _3, "chino": _3, "fujimi": _3, "hakuba": _3, "hara": _3, "hiraya": _3, "iida": _3, "iijima": _3, "iiyama": _3, "iizuna": _3, "ikeda": _3, "ikusaka": _3, "ina": _3, "karuizawa": _3, "kawakami": _3, "kiso": _3, "kisofukushima": _3, "kitaaiki": _3, "komagane": _3, "komoro": _3, "matsukawa": _3, "matsumoto": _3, "miasa": _3, "minamiaiki": _3, "minamimaki": _3, "minamiminowa": _3, "minowa": _3, "miyada": _3, "miyota": _3, "mochizuki": _3, "nagano": _3, "nagawa": _3, "nagiso": _3, "nakagawa": _3, "nakano": _3, "nozawaonsen": _3, "obuse": _3, "ogawa": _3, "okaya": _3, "omachi": _3, "omi": _3, "ookuwa": _3, "ooshika": _3, "otaki": _3, "otari": _3, "sakae": _3, "sakaki": _3, "saku": _3, "sakuho": _3, "shimosuwa": _3, "shinanomachi": _3, "shiojiri": _3, "suwa": _3, "suzaka": _3, "takagi": _3, "takamori": _3, "takayama": _3, "tateshina": _3, "tatsuno": _3, "togakushi": _3, "togura": _3, "tomi": _3, "ueda": _3, "wada": _3, "yamagata": _3, "yamanouchi": _3, "yasaka": _3, "yasuoka": _3 }], "nagasaki": [1, { "chijiwa": _3, "futsu": _3, "goto": _3, "hasami": _3, "hirado": _3, "iki": _3, "isahaya": _3, "kawatana": _3, "kuchinotsu": _3, "matsuura": _3, "nagasaki": _3, "obama": _3, "omura": _3, "oseto": _3, "saikai": _3, "sasebo": _3, "seihi": _3, "shimabara": _3, "shinkamigoto": _3, "togitsu": _3, "tsushima": _3, "unzen": _3 }], "nara": [1, { "ando": _3, "gose": _3, "heguri": _3, "higashiyoshino": _3, "ikaruga": _3, "ikoma": _3, "kamikitayama": _3, "kanmaki": _3, "kashiba": _3, "kashihara": _3, "katsuragi": _3, "kawai": _3, "kawakami": _3, "kawanishi": _3, "koryo": _3, "kurotaki": _3, "mitsue": _3, "miyake": _3, "nara": _3, "nosegawa": _3, "oji": _3, "ouda": _3, "oyodo": _3, "sakurai": _3, "sango": _3, "shimoichi": _3, "shimokitayama": _3, "shinjo": _3, "soni": _3, "takatori": _3, "tawaramoto": _3, "tenkawa": _3, "tenri": _3, "uda": _3, "yamatokoriyama": _3, "yamatotakada": _3, "yamazoe": _3, "yoshino": _3 }], "niigata": [1, { "aga": _3, "agano": _3, "gosen": _3, "itoigawa": _3, "izumozaki": _3, "joetsu": _3, "kamo": _3, "kariwa": _3, "kashiwazaki": _3, "minamiuonuma": _3, "mitsuke": _3, "muika": _3, "murakami": _3, "myoko": _3, "nagaoka": _3, "niigata": _3, "ojiya": _3, "omi": _3, "sado": _3, "sanjo": _3, "seiro": _3, "seirou": _3, "sekikawa": _3, "shibata": _3, "tagami": _3, "tainai": _3, "tochio": _3, "tokamachi": _3, "tsubame": _3, "tsunan": _3, "uonuma": _3, "yahiko": _3, "yoita": _3, "yuzawa": _3 }], "oita": [1, { "beppu": _3, "bungoono": _3, "bungotakada": _3, "hasama": _3, "hiji": _3, "himeshima": _3, "hita": _3, "kamitsue": _3, "kokonoe": _3, "kuju": _3, "kunisaki": _3, "kusu": _3, "oita": _3, "saiki": _3, "taketa": _3, "tsukumi": _3, "usa": _3, "usuki": _3, "yufu": _3 }], "okayama": [1, { "akaiwa": _3, "asakuchi": _3, "bizen": _3, "hayashima": _3, "ibara": _3, "kagamino": _3, "kasaoka": _3, "kibichuo": _3, "kumenan": _3, "kurashiki": _3, "maniwa": _3, "misaki": _3, "nagi": _3, "niimi": _3, "nishiawakura": _3, "okayama": _3, "satosho": _3, "setouchi": _3, "shinjo": _3, "shoo": _3, "soja": _3, "takahashi": _3, "tamano": _3, "tsuyama": _3, "wake": _3, "yakage": _3 }], "okinawa": [1, { "aguni": _3, "ginowan": _3, "ginoza": _3, "gushikami": _3, "haebaru": _3, "higashi": _3, "hirara": _3, "iheya": _3, "ishigaki": _3, "ishikawa": _3, "itoman": _3, "izena": _3, "kadena": _3, "kin": _3, "kitadaito": _3, "kitanakagusuku": _3, "kumejima": _3, "kunigami": _3, "minamidaito": _3, "motobu": _3, "nago": _3, "naha": _3, "nakagusuku": _3, "nakijin": _3, "nanjo": _3, "nishihara": _3, "ogimi": _3, "okinawa": _3, "onna": _3, "shimoji": _3, "taketomi": _3, "tarama": _3, "tokashiki": _3, "tomigusuku": _3, "tonaki": _3, "urasoe": _3, "uruma": _3, "yaese": _3, "yomitan": _3, "yonabaru": _3, "yonaguni": _3, "zamami": _3 }], "osaka": [1, { "abeno": _3, "chihayaakasaka": _3, "chuo": _3, "daito": _3, "fujiidera": _3, "habikino": _3, "hannan": _3, "higashiosaka": _3, "higashisumiyoshi": _3, "higashiyodogawa": _3, "hirakata": _3, "ibaraki": _3, "ikeda": _3, "izumi": _3, "izumiotsu": _3, "izumisano": _3, "kadoma": _3, "kaizuka": _3, "kanan": _3, "kashiwara": _3, "katano": _3, "kawachinagano": _3, "kishiwada": _3, "kita": _3, "kumatori": _3, "matsubara": _3, "minato": _3, "minoh": _3, "misaki": _3, "moriguchi": _3, "neyagawa": _3, "nishi": _3, "nose": _3, "osakasayama": _3, "sakai": _3, "sayama": _3, "sennan": _3, "settsu": _3, "shijonawate": _3, "shimamoto": _3, "suita": _3, "tadaoka": _3, "taishi": _3, "tajiri": _3, "takaishi": _3, "takatsuki": _3, "tondabayashi": _3, "toyonaka": _3, "toyono": _3, "yao": _3 }], "saga": [1, { "ariake": _3, "arita": _3, "fukudomi": _3, "genkai": _3, "hamatama": _3, "hizen": _3, "imari": _3, "kamimine": _3, "kanzaki": _3, "karatsu": _3, "kashima": _3, "kitagata": _3, "kitahata": _3, "kiyama": _3, "kouhoku": _3, "kyuragi": _3, "nishiarita": _3, "ogi": _3, "omachi": _3, "ouchi": _3, "saga": _3, "shiroishi": _3, "taku": _3, "tara": _3, "tosu": _3, "yoshinogari": _3 }], "saitama": [1, { "arakawa": _3, "asaka": _3, "chichibu": _3, "fujimi": _3, "fujimino": _3, "fukaya": _3, "hanno": _3, "hanyu": _3, "hasuda": _3, "hatogaya": _3, "hatoyama": _3, "hidaka": _3, "higashichichibu": _3, "higashimatsuyama": _3, "honjo": _3, "ina": _3, "iruma": _3, "iwatsuki": _3, "kamiizumi": _3, "kamikawa": _3, "kamisato": _3, "kasukabe": _3, "kawagoe": _3, "kawaguchi": _3, "kawajima": _3, "kazo": _3, "kitamoto": _3, "koshigaya": _3, "kounosu": _3, "kuki": _3, "kumagaya": _3, "matsubushi": _3, "minano": _3, "misato": _3, "miyashiro": _3, "miyoshi": _3, "moroyama": _3, "nagatoro": _3, "namegawa": _3, "niiza": _3, "ogano": _3, "ogawa": _3, "ogose": _3, "okegawa": _3, "omiya": _3, "otaki": _3, "ranzan": _3, "ryokami": _3, "saitama": _3, "sakado": _3, "satte": _3, "sayama": _3, "shiki": _3, "shiraoka": _3, "soka": _3, "sugito": _3, "toda": _3, "tokigawa": _3, "tokorozawa": _3, "tsurugashima": _3, "urawa": _3, "warabi": _3, "yashio": _3, "yokoze": _3, "yono": _3, "yorii": _3, "yoshida": _3, "yoshikawa": _3, "yoshimi": _3 }], "shiga": [1, { "aisho": _3, "gamo": _3, "higashiomi": _3, "hikone": _3, "koka": _3, "konan": _3, "kosei": _3, "koto": _3, "kusatsu": _3, "maibara": _3, "moriyama": _3, "nagahama": _3, "nishiazai": _3, "notogawa": _3, "omihachiman": _3, "otsu": _3, "ritto": _3, "ryuoh": _3, "takashima": _3, "takatsuki": _3, "torahime": _3, "toyosato": _3, "yasu": _3 }], "shimane": [1, { "akagi": _3, "ama": _3, "gotsu": _3, "hamada": _3, "higashiizumo": _3, "hikawa": _3, "hikimi": _3, "izumo": _3, "kakinoki": _3, "masuda": _3, "matsue": _3, "misato": _3, "nishinoshima": _3, "ohda": _3, "okinoshima": _3, "okuizumo": _3, "shimane": _3, "tamayu": _3, "tsuwano": _3, "unnan": _3, "yakumo": _3, "yasugi": _3, "yatsuka": _3 }], "shizuoka": [1, { "arai": _3, "atami": _3, "fuji": _3, "fujieda": _3, "fujikawa": _3, "fujinomiya": _3, "fukuroi": _3, "gotemba": _3, "haibara": _3, "hamamatsu": _3, "higashiizu": _3, "ito": _3, "iwata": _3, "izu": _3, "izunokuni": _3, "kakegawa": _3, "kannami": _3, "kawanehon": _3, "kawazu": _3, "kikugawa": _3, "kosai": _3, "makinohara": _3, "matsuzaki": _3, "minamiizu": _3, "mishima": _3, "morimachi": _3, "nishiizu": _3, "numazu": _3, "omaezaki": _3, "shimada": _3, "shimizu": _3, "shimoda": _3, "shizuoka": _3, "susono": _3, "yaizu": _3, "yoshida": _3 }], "tochigi": [1, { "ashikaga": _3, "bato": _3, "haga": _3, "ichikai": _3, "iwafune": _3, "kaminokawa": _3, "kanuma": _3, "karasuyama": _3, "kuroiso": _3, "mashiko": _3, "mibu": _3, "moka": _3, "motegi": _3, "nasu": _3, "nasushiobara": _3, "nikko": _3, "nishikata": _3, "nogi": _3, "ohira": _3, "ohtawara": _3, "oyama": _3, "sakura": _3, "sano": _3, "shimotsuke": _3, "shioya": _3, "takanezawa": _3, "tochigi": _3, "tsuga": _3, "ujiie": _3, "utsunomiya": _3, "yaita": _3 }], "tokushima": [1, { "aizumi": _3, "anan": _3, "ichiba": _3, "itano": _3, "kainan": _3, "komatsushima": _3, "matsushige": _3, "mima": _3, "minami": _3, "miyoshi": _3, "mugi": _3, "nakagawa": _3, "naruto": _3, "sanagochi": _3, "shishikui": _3, "tokushima": _3, "wajiki": _3 }], "tokyo": [1, { "adachi": _3, "akiruno": _3, "akishima": _3, "aogashima": _3, "arakawa": _3, "bunkyo": _3, "chiyoda": _3, "chofu": _3, "chuo": _3, "edogawa": _3, "fuchu": _3, "fussa": _3, "hachijo": _3, "hachioji": _3, "hamura": _3, "higashikurume": _3, "higashimurayama": _3, "higashiyamato": _3, "hino": _3, "hinode": _3, "hinohara": _3, "inagi": _3, "itabashi": _3, "katsushika": _3, "kita": _3, "kiyose": _3, "kodaira": _3, "koganei": _3, "kokubunji": _3, "komae": _3, "koto": _3, "kouzushima": _3, "kunitachi": _3, "machida": _3, "meguro": _3, "minato": _3, "mitaka": _3, "mizuho": _3, "musashimurayama": _3, "musashino": _3, "nakano": _3, "nerima": _3, "ogasawara": _3, "okutama": _3, "ome": _3, "oshima": _3, "ota": _3, "setagaya": _3, "shibuya": _3, "shinagawa": _3, "shinjuku": _3, "suginami": _3, "sumida": _3, "tachikawa": _3, "taito": _3, "tama": _3, "toshima": _3 }], "tottori": [1, { "chizu": _3, "hino": _3, "kawahara": _3, "koge": _3, "kotoura": _3, "misasa": _3, "nanbu": _3, "nichinan": _3, "sakaiminato": _3, "tottori": _3, "wakasa": _3, "yazu": _3, "yonago": _3 }], "toyama": [1, { "asahi": _3, "fuchu": _3, "fukumitsu": _3, "funahashi": _3, "himi": _3, "imizu": _3, "inami": _3, "johana": _3, "kamiichi": _3, "kurobe": _3, "nakaniikawa": _3, "namerikawa": _3, "nanto": _3, "nyuzen": _3, "oyabe": _3, "taira": _3, "takaoka": _3, "tateyama": _3, "toga": _3, "tonami": _3, "toyama": _3, "unazuki": _3, "uozu": _3, "yamada": _3 }], "wakayama": [1, { "arida": _3, "aridagawa": _3, "gobo": _3, "hashimoto": _3, "hidaka": _3, "hirogawa": _3, "inami": _3, "iwade": _3, "kainan": _3, "kamitonda": _3, "katsuragi": _3, "kimino": _3, "kinokawa": _3, "kitayama": _3, "koya": _3, "koza": _3, "kozagawa": _3, "kudoyama": _3, "kushimoto": _3, "mihama": _3, "misato": _3, "nachikatsuura": _3, "shingu": _3, "shirahama": _3, "taiji": _3, "tanabe": _3, "wakayama": _3, "yuasa": _3, "yura": _3 }], "yamagata": [1, { "asahi": _3, "funagata": _3, "higashine": _3, "iide": _3, "kahoku": _3, "kaminoyama": _3, "kaneyama": _3, "kawanishi": _3, "mamurogawa": _3, "mikawa": _3, "murayama": _3, "nagai": _3, "nakayama": _3, "nanyo": _3, "nishikawa": _3, "obanazawa": _3, "oe": _3, "oguni": _3, "ohkura": _3, "oishida": _3, "sagae": _3, "sakata": _3, "sakegawa": _3, "shinjo": _3, "shirataka": _3, "shonai": _3, "takahata": _3, "tendo": _3, "tozawa": _3, "tsuruoka": _3, "yamagata": _3, "yamanobe": _3, "yonezawa": _3, "yuza": _3 }], "yamaguchi": [1, { "abu": _3, "hagi": _3, "hikari": _3, "hofu": _3, "iwakuni": _3, "kudamatsu": _3, "mitou": _3, "nagato": _3, "oshima": _3, "shimonoseki": _3, "shunan": _3, "tabuse": _3, "tokuyama": _3, "toyota": _3, "ube": _3, "yuu": _3 }], "yamanashi": [1, { "chuo": _3, "doshi": _3, "fuefuki": _3, "fujikawa": _3, "fujikawaguchiko": _3, "fujiyoshida": _3, "hayakawa": _3, "hokuto": _3, "ichikawamisato": _3, "kai": _3, "kofu": _3, "koshu": _3, "kosuge": _3, "minami-alps": _3, "minobu": _3, "nakamichi": _3, "nanbu": _3, "narusawa": _3, "nirasaki": _3, "nishikatsura": _3, "oshino": _3, "otsuki": _3, "showa": _3, "tabayama": _3, "tsuru": _3, "uenohara": _3, "yamanakako": _3, "yamanashi": _3 }], "xn--ehqz56n": _3, "三重": _3, "xn--1lqs03n": _3, "京都": _3, "xn--qqqt11m": _3, "佐賀": _3, "xn--f6qx53a": _3, "兵庫": _3, "xn--djrs72d6uy": _3, "北海道": _3, "xn--mkru45i": _3, "千葉": _3, "xn--0trq7p7nn": _3, "和歌山": _3, "xn--5js045d": _3, "埼玉": _3, "xn--kbrq7o": _3, "大分": _3, "xn--pssu33l": _3, "大阪": _3, "xn--ntsq17g": _3, "奈良": _3, "xn--uisz3g": _3, "宮城": _3, "xn--6btw5a": _3, "宮崎": _3, "xn--1ctwo": _3, "富山": _3, "xn--6orx2r": _3, "山口": _3, "xn--rht61e": _3, "山形": _3, "xn--rht27z": _3, "山梨": _3, "xn--nit225k": _3, "岐阜": _3, "xn--rht3d": _3, "岡山": _3, "xn--djty4k": _3, "岩手": _3, "xn--klty5x": _3, "島根": _3, "xn--kltx9a": _3, "広島": _3, "xn--kltp7d": _3, "徳島": _3, "xn--c3s14m": _3, "愛媛": _3, "xn--vgu402c": _3, "愛知": _3, "xn--efvn9s": _3, "新潟": _3, "xn--1lqs71d": _3, "東京": _3, "xn--4pvxs": _3, "栃木": _3, "xn--uuwu58a": _3, "沖縄": _3, "xn--zbx025d": _3, "滋賀": _3, "xn--8pvr4u": _3, "熊本": _3, "xn--5rtp49c": _3, "石川": _3, "xn--ntso0iqx3a": _3, "神奈川": _3, "xn--elqq16h": _3, "福井": _3, "xn--4it168d": _3, "福岡": _3, "xn--klt787d": _3, "福島": _3, "xn--rny31h": _3, "秋田": _3, "xn--7t0a264c": _3, "群馬": _3, "xn--uist22h": _3, "茨城": _3, "xn--8ltr62k": _3, "長崎": _3, "xn--2m4a15e": _3, "長野": _3, "xn--32vp30h": _3, "青森": _3, "xn--4it797k": _3, "静岡": _3, "xn--5rtq34k": _3, "香川": _3, "xn--k7yn95e": _3, "高知": _3, "xn--tor131o": _3, "鳥取": _3, "xn--d5qv7z876c": _3, "鹿児島": _3, "kawasaki": _17, "kitakyushu": _17, "kobe": _17, "nagoya": _17, "sapporo": _17, "sendai": _17, "yokohama": _17, "buyshop": _4, "fashionstore": _4, "handcrafted": _4, "kawaiishop": _4, "supersale": _4, "theshop": _4, "0am": _4, "0g0": _4, "0j0": _4, "0t0": _4, "mydns": _4, "pgw": _4, "wjg": _4, "usercontent": _4, "angry": _4, "babyblue": _4, "babymilk": _4, "backdrop": _4, "bambina": _4, "bitter": _4, "blush": _4, "boo": _4, "boy": _4, "boyfriend": _4, "but": _4, "candypop": _4, "capoo": _4, "catfood": _4, "cheap": _4, "chicappa": _4, "chillout": _4, "chips": _4, "chowder": _4, "chu": _4, "ciao": _4, "cocotte": _4, "coolblog": _4, "cranky": _4, "cutegirl": _4, "daa": _4, "deca": _4, "deci": _4, "digick": _4, "egoism": _4, "fakefur": _4, "fem": _4, "flier": _4, "floppy": _4, "fool": _4, "frenchkiss": _4, "girlfriend": _4, "girly": _4, "gloomy": _4, "gonna": _4, "greater": _4, "hacca": _4, "heavy": _4, "her": _4, "hiho": _4, "hippy": _4, "holy": _4, "hungry": _4, "icurus": _4, "itigo": _4, "jellybean": _4, "kikirara": _4, "kill": _4, "kilo": _4, "kuron": _4, "littlestar": _4, "lolipopmc": _4, "lolitapunk": _4, "lomo": _4, "lovepop": _4, "lovesick": _4, "main": _4, "mods": _4, "mond": _4, "mongolian": _4, "moo": _4, "namaste": _4, "nikita": _4, "nobushi": _4, "noor": _4, "oops": _4, "parallel": _4, "parasite": _4, "pecori": _4, "peewee": _4, "penne": _4, "pepper": _4, "perma": _4, "pigboat": _4, "pinoko": _4, "punyu": _4, "pupu": _4, "pussycat": _4, "pya": _4, "raindrop": _4, "readymade": _4, "sadist": _4, "schoolbus": _4, "secret": _4, "staba": _4, "stripper": _4, "sub": _4, "sunnyday": _4, "thick": _4, "tonkotsu": _4, "under": _4, "upper": _4, "velvet": _4, "verse": _4, "versus": _4, "vivian": _4, "watson": _4, "weblike": _4, "whitesnow": _4, "zombie": _4, "hateblo": _4, "hatenablog": _4, "hatenadiary": _4, "2-d": _4, "bona": _4, "crap": _4, "daynight": _4, "eek": _4, "flop": _4, "halfmoon": _4, "jeez": _4, "matrix": _4, "mimoza": _4, "netgamers": _4, "nyanta": _4, "o0o0": _4, "rdy": _4, "rgr": _4, "rulez": _4, "sakurastorage": [0, { "isk01": _52, "isk02": _52 }], "saloon": _4, "sblo": _4, "skr": _4, "tank": _4, "uh-oh": _4, "undo": _4, "webaccel": [0, { "rs": _4, "user": _4 }], "websozai": _4, "xii": _4 }], "ke": [1, { "ac": _3, "co": _3, "go": _3, "info": _3, "me": _3, "mobi": _3, "ne": _3, "or": _3, "sc": _3 }], "kg": [1, { "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "us": _4 }], "kh": _17, "ki": _53, "km": [1, { "ass": _3, "com": _3, "edu": _3, "gov": _3, "mil": _3, "nom": _3, "org": _3, "prd": _3, "tm": _3, "asso": _3, "coop": _3, "gouv": _3, "medecin": _3, "notaires": _3, "pharmaciens": _3, "presse": _3, "veterinaire": _3 }], "kn": [1, { "edu": _3, "gov": _3, "net": _3, "org": _3 }], "kp": [1, { "com": _3, "edu": _3, "gov": _3, "org": _3, "rep": _3, "tra": _3 }], "kr": [1, { "ac": _3, "co": _3, "es": _3, "go": _3, "hs": _3, "kg": _3, "mil": _3, "ms": _3, "ne": _3, "or": _3, "pe": _3, "re": _3, "sc": _3, "busan": _3, "chungbuk": _3, "chungnam": _3, "daegu": _3, "daejeon": _3, "gangwon": _3, "gwangju": _3, "gyeongbuk": _3, "gyeonggi": _3, "gyeongnam": _3, "incheon": _3, "jeju": _3, "jeonbuk": _3, "jeonnam": _3, "seoul": _3, "ulsan": _3 }], "kw": [1, { "com": _3, "edu": _3, "emb": _3, "gov": _3, "ind": _3, "net": _3, "org": _3 }], "ky": _43, "kz": [1, { "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "jcloud": _4 }], "la": [1, { "com": _3, "edu": _3, "gov": _3, "info": _3, "int": _3, "net": _3, "org": _3, "per": _3, "bnr": _4 }], "lb": _5, "lc": [1, { "co": _3, "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "oy": _4 }], "li": _3, "lk": [1, { "ac": _3, "assn": _3, "com": _3, "edu": _3, "gov": _3, "grp": _3, "hotel": _3, "int": _3, "ltd": _3, "net": _3, "ngo": _3, "org": _3, "sch": _3, "soc": _3, "web": _3 }], "lr": _5, "ls": [1, { "ac": _3, "biz": _3, "co": _3, "edu": _3, "gov": _3, "info": _3, "net": _3, "org": _3, "sc": _3 }], "lt": _10, "lu": [1, { "123website": _4 }], "lv": [1, { "asn": _3, "com": _3, "conf": _3, "edu": _3, "gov": _3, "id": _3, "mil": _3, "net": _3, "org": _3 }], "ly": [1, { "com": _3, "edu": _3, "gov": _3, "id": _3, "med": _3, "net": _3, "org": _3, "plc": _3, "sch": _3 }], "ma": [1, { "ac": _3, "co": _3, "gov": _3, "net": _3, "org": _3, "press": _3 }], "mc": [1, { "asso": _3, "tm": _3 }], "md": [1, { "ir": _4 }], "me": [1, { "ac": _3, "co": _3, "edu": _3, "gov": _3, "its": _3, "net": _3, "org": _3, "priv": _3, "c66": _4, "craft": _4, "edgestack": _4, "filegear": _4, "glitch": _4, "filegear-sg": _4, "lohmus": _4, "barsy": _4, "mcdir": _4, "brasilia": _4, "ddns": _4, "dnsfor": _4, "hopto": _4, "loginto": _4, "noip": _4, "webhop": _4, "soundcast": _4, "tcp4": _4, "vp4": _4, "diskstation": _4, "dscloud": _4, "i234": _4, "myds": _4, "synology": _4, "transip": _42, "nohost": _4 }], "mg": [1, { "co": _3, "com": _3, "edu": _3, "gov": _3, "mil": _3, "nom": _3, "org": _3, "prd": _3 }], "mh": _3, "mil": _3, "mk": [1, { "com": _3, "edu": _3, "gov": _3, "inf": _3, "name": _3, "net": _3, "org": _3 }], "ml": [1, { "ac": _3, "art": _3, "asso": _3, "com": _3, "edu": _3, "gouv": _3, "gov": _3, "info": _3, "inst": _3, "net": _3, "org": _3, "pr": _3, "presse": _3 }], "mm": _17, "mn": [1, { "edu": _3, "gov": _3, "org": _3, "nyc": _4 }], "mo": _5, "mobi": [1, { "barsy": _4, "dscloud": _4 }], "mp": [1, { "ju": _4 }], "mq": _3, "mr": _10, "ms": [1, { "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "minisite": _4 }], "mt": _43, "mu": [1, { "ac": _3, "co": _3, "com": _3, "gov": _3, "net": _3, "or": _3, "org": _3 }], "museum": _3, "mv": [1, { "aero": _3, "biz": _3, "com": _3, "coop": _3, "edu": _3, "gov": _3, "info": _3, "int": _3, "mil": _3, "museum": _3, "name": _3, "net": _3, "org": _3, "pro": _3 }], "mw": [1, { "ac": _3, "biz": _3, "co": _3, "com": _3, "coop": _3, "edu": _3, "gov": _3, "int": _3, "net": _3, "org": _3 }], "mx": [1, { "com": _3, "edu": _3, "gob": _3, "net": _3, "org": _3 }], "my": [1, { "biz": _3, "com": _3, "edu": _3, "gov": _3, "mil": _3, "name": _3, "net": _3, "org": _3 }], "mz": [1, { "ac": _3, "adv": _3, "co": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3 }], "na": [1, { "alt": _3, "co": _3, "com": _3, "gov": _3, "net": _3, "org": _3 }], "name": [1, { "her": _55, "his": _55 }], "nc": [1, { "asso": _3, "nom": _3 }], "ne": _3, "net": [1, { "adobeaemcloud": _4, "adobeio-static": _4, "adobeioruntime": _4, "akadns": _4, "akamai": _4, "akamai-staging": _4, "akamaiedge": _4, "akamaiedge-staging": _4, "akamaihd": _4, "akamaihd-staging": _4, "akamaiorigin": _4, "akamaiorigin-staging": _4, "akamaized": _4, "akamaized-staging": _4, "edgekey": _4, "edgekey-staging": _4, "edgesuite": _4, "edgesuite-staging": _4, "alwaysdata": _4, "myamaze": _4, "cloudfront": _4, "appudo": _4, "atlassian-dev": [0, { "prod": _56 }], "myfritz": _4, "onavstack": _4, "shopselect": _4, "blackbaudcdn": _4, "boomla": _4, "bplaced": _4, "square7": _4, "cdn77": [0, { "r": _4 }], "cdn77-ssl": _4, "gb": _4, "hu": _4, "jp": _4, "se": _4, "uk": _4, "clickrising": _4, "ddns-ip": _4, "dns-cloud": _4, "dns-dynamic": _4, "cloudaccess": _4, "cloudflare": [2, { "cdn": _4 }], "cloudflareanycast": _56, "cloudflarecn": _56, "cloudflareglobal": _56, "ctfcloud": _4, "feste-ip": _4, "knx-server": _4, "static-access": _4, "cryptonomic": _7, "dattolocal": _4, "mydatto": _4, "debian": _4, "definima": _4, "at-band-camp": _4, "blogdns": _4, "broke-it": _4, "buyshouses": _4, "dnsalias": _4, "dnsdojo": _4, "does-it": _4, "dontexist": _4, "dynalias": _4, "dynathome": _4, "endofinternet": _4, "from-az": _4, "from-co": _4, "from-la": _4, "from-ny": _4, "gets-it": _4, "ham-radio-op": _4, "homeftp": _4, "homeip": _4, "homelinux": _4, "homeunix": _4, "in-the-band": _4, "is-a-chef": _4, "is-a-geek": _4, "isa-geek": _4, "kicks-ass": _4, "office-on-the": _4, "podzone": _4, "scrapper-site": _4, "selfip": _4, "sells-it": _4, "servebbs": _4, "serveftp": _4, "thruhere": _4, "webhop": _4, "casacam": _4, "dynu": _4, "dynv6": _4, "twmail": _4, "ru": _4, "channelsdvr": [2, { "u": _4 }], "fastly": [0, { "freetls": _4, "map": _4, "prod": [0, { "a": _4, "global": _4 }], "ssl": [0, { "a": _4, "b": _4, "global": _4 }] }], "fastlylb": [2, { "map": _4 }], "edgeapp": _4, "keyword-on": _4, "live-on": _4, "server-on": _4, "cdn-edges": _4, "heteml": _4, "cloudfunctions": _4, "grafana-dev": _4, "iobb": _4, "moonscale": _4, "in-dsl": _4, "in-vpn": _4, "botdash": _4, "apps-1and1": _4, "ipifony": _4, "cloudjiffy": [2, { "fra1-de": _4, "west1-us": _4 }], "elastx": [0, { "jls-sto1": _4, "jls-sto2": _4, "jls-sto3": _4 }], "massivegrid": [0, { "paas": [0, { "fr-1": _4, "lon-1": _4, "lon-2": _4, "ny-1": _4, "ny-2": _4, "sg-1": _4 }] }], "saveincloud": [0, { "jelastic": _4, "nordeste-idc": _4 }], "scaleforce": _44, "kinghost": _4, "uni5": _4, "krellian": _4, "ggff": _4, "localcert": _4, "localhostcert": _4, "barsy": _4, "memset": _4, "azure-api": _4, "azure-mobile": _4, "azureedge": _4, "azurefd": _4, "azurestaticapps": [2, { "1": _4, "2": _4, "3": _4, "4": _4, "5": _4, "6": _4, "7": _4, "centralus": _4, "eastasia": _4, "eastus2": _4, "westeurope": _4, "westus2": _4 }], "azurewebsites": _4, "cloudapp": _4, "trafficmanager": _4, "windows": [0, { "core": [0, { "blob": _4 }], "servicebus": _4 }], "mynetname": [0, { "sn": _4 }], "routingthecloud": _4, "bounceme": _4, "ddns": _4, "eating-organic": _4, "mydissent": _4, "myeffect": _4, "mymediapc": _4, "mypsx": _4, "mysecuritycamera": _4, "nhlfan": _4, "no-ip": _4, "pgafan": _4, "privatizehealthinsurance": _4, "redirectme": _4, "serveblog": _4, "serveminecraft": _4, "sytes": _4, "dnsup": _4, "hicam": _4, "now-dns": _4, "ownip": _4, "vpndns": _4, "cloudycluster": _4, "ovh": [0, { "hosting": _7, "webpaas": _7 }], "rackmaze": _4, "myradweb": _4, "in": _4, "subsc-pay": _4, "squares": _4, "schokokeks": _4, "firewall-gateway": _4, "seidat": _4, "senseering": _4, "siteleaf": _4, "mafelo": _4, "myspreadshop": _4, "vps-host": [2, { "jelastic": [0, { "atl": _4, "njs": _4, "ric": _4 }] }], "srcf": [0, { "soc": _4, "user": _4 }], "supabase": _4, "dsmynas": _4, "familyds": _4, "ts": [2, { "c": _7 }], "torproject": [2, { "pages": _4 }], "vusercontent": _4, "reserve-online": _4, "community-pro": _4, "meinforum": _4, "yandexcloud": [2, { "storage": _4, "website": _4 }], "za": _4 }], "nf": [1, { "arts": _3, "com": _3, "firm": _3, "info": _3, "net": _3, "other": _3, "per": _3, "rec": _3, "store": _3, "web": _3 }], "ng": [1, { "com": _3, "edu": _3, "gov": _3, "i": _3, "mil": _3, "mobi": _3, "name": _3, "net": _3, "org": _3, "sch": _3, "biz": [2, { "co": _4, "dl": _4, "go": _4, "lg": _4, "on": _4 }], "col": _4, "firm": _4, "gen": _4, "ltd": _4, "ngo": _4, "plc": _4 }], "ni": [1, { "ac": _3, "biz": _3, "co": _3, "com": _3, "edu": _3, "gob": _3, "in": _3, "info": _3, "int": _3, "mil": _3, "net": _3, "nom": _3, "org": _3, "web": _3 }], "nl": [1, { "co": _4, "hosting-cluster": _4, "gov": _4, "khplay": _4, "123website": _4, "myspreadshop": _4, "transurl": _7, "cistron": _4, "demon": _4 }], "no": [1, { "fhs": _3, "folkebibl": _3, "fylkesbibl": _3, "idrett": _3, "museum": _3, "priv": _3, "vgs": _3, "dep": _3, "herad": _3, "kommune": _3, "mil": _3, "stat": _3, "aa": _57, "ah": _57, "bu": _57, "fm": _57, "hl": _57, "hm": _57, "jan-mayen": _57, "mr": _57, "nl": _57, "nt": _57, "of": _57, "ol": _57, "oslo": _57, "rl": _57, "sf": _57, "st": _57, "svalbard": _57, "tm": _57, "tr": _57, "va": _57, "vf": _57, "akrehamn": _3, "xn--krehamn-dxa": _3, "åkrehamn": _3, "algard": _3, "xn--lgrd-poac": _3, "ålgård": _3, "arna": _3, "bronnoysund": _3, "xn--brnnysund-m8ac": _3, "brønnøysund": _3, "brumunddal": _3, "bryne": _3, "drobak": _3, "xn--drbak-wua": _3, "drøbak": _3, "egersund": _3, "fetsund": _3, "floro": _3, "xn--flor-jra": _3, "florø": _3, "fredrikstad": _3, "hokksund": _3, "honefoss": _3, "xn--hnefoss-q1a": _3, "hønefoss": _3, "jessheim": _3, "jorpeland": _3, "xn--jrpeland-54a": _3, "jørpeland": _3, "kirkenes": _3, "kopervik": _3, "krokstadelva": _3, "langevag": _3, "xn--langevg-jxa": _3, "langevåg": _3, "leirvik": _3, "mjondalen": _3, "xn--mjndalen-64a": _3, "mjøndalen": _3, "mo-i-rana": _3, "mosjoen": _3, "xn--mosjen-eya": _3, "mosjøen": _3, "nesoddtangen": _3, "orkanger": _3, "osoyro": _3, "xn--osyro-wua": _3, "osøyro": _3, "raholt": _3, "xn--rholt-mra": _3, "råholt": _3, "sandnessjoen": _3, "xn--sandnessjen-ogb": _3, "sandnessjøen": _3, "skedsmokorset": _3, "slattum": _3, "spjelkavik": _3, "stathelle": _3, "stavern": _3, "stjordalshalsen": _3, "xn--stjrdalshalsen-sqb": _3, "stjørdalshalsen": _3, "tananger": _3, "tranby": _3, "vossevangen": _3, "aarborte": _3, "aejrie": _3, "afjord": _3, "xn--fjord-lra": _3, "åfjord": _3, "agdenes": _3, "akershus": _58, "aknoluokta": _3, "xn--koluokta-7ya57h": _3, "ákŋoluokta": _3, "al": _3, "xn--l-1fa": _3, "ål": _3, "alaheadju": _3, "xn--laheadju-7ya": _3, "álaheadju": _3, "alesund": _3, "xn--lesund-hua": _3, "ålesund": _3, "alstahaug": _3, "alta": _3, "xn--lt-liac": _3, "áltá": _3, "alvdal": _3, "amli": _3, "xn--mli-tla": _3, "åmli": _3, "amot": _3, "xn--mot-tla": _3, "åmot": _3, "andasuolo": _3, "andebu": _3, "andoy": _3, "xn--andy-ira": _3, "andøy": _3, "ardal": _3, "xn--rdal-poa": _3, "årdal": _3, "aremark": _3, "arendal": _3, "xn--s-1fa": _3, "ås": _3, "aseral": _3, "xn--seral-lra": _3, "åseral": _3, "asker": _3, "askim": _3, "askoy": _3, "xn--asky-ira": _3, "askøy": _3, "askvoll": _3, "asnes": _3, "xn--snes-poa": _3, "åsnes": _3, "audnedaln": _3, "aukra": _3, "aure": _3, "aurland": _3, "aurskog-holand": _3, "xn--aurskog-hland-jnb": _3, "aurskog-høland": _3, "austevoll": _3, "austrheim": _3, "averoy": _3, "xn--avery-yua": _3, "averøy": _3, "badaddja": _3, "xn--bdddj-mrabd": _3, "bådåddjå": _3, "xn--brum-voa": _3, "bærum": _3, "bahcavuotna": _3, "xn--bhcavuotna-s4a": _3, "báhcavuotna": _3, "bahccavuotna": _3, "xn--bhccavuotna-k7a": _3, "báhccavuotna": _3, "baidar": _3, "xn--bidr-5nac": _3, "báidár": _3, "bajddar": _3, "xn--bjddar-pta": _3, "bájddar": _3, "balat": _3, "xn--blt-elab": _3, "bálát": _3, "balestrand": _3, "ballangen": _3, "balsfjord": _3, "bamble": _3, "bardu": _3, "barum": _3, "batsfjord": _3, "xn--btsfjord-9za": _3, "båtsfjord": _3, "bearalvahki": _3, "xn--bearalvhki-y4a": _3, "bearalváhki": _3, "beardu": _3, "beiarn": _3, "berg": _3, "bergen": _3, "berlevag": _3, "xn--berlevg-jxa": _3, "berlevåg": _3, "bievat": _3, "xn--bievt-0qa": _3, "bievát": _3, "bindal": _3, "birkenes": _3, "bjarkoy": _3, "xn--bjarky-fya": _3, "bjarkøy": _3, "bjerkreim": _3, "bjugn": _3, "bodo": _3, "xn--bod-2na": _3, "bodø": _3, "bokn": _3, "bomlo": _3, "xn--bmlo-gra": _3, "bømlo": _3, "bremanger": _3, "bronnoy": _3, "xn--brnny-wuac": _3, "brønnøy": _3, "budejju": _3, "buskerud": _58, "bygland": _3, "bykle": _3, "cahcesuolo": _3, "xn--hcesuolo-7ya35b": _3, "čáhcesuolo": _3, "davvenjarga": _3, "xn--davvenjrga-y4a": _3, "davvenjárga": _3, "davvesiida": _3, "deatnu": _3, "dielddanuorri": _3, "divtasvuodna": _3, "divttasvuotna": _3, "donna": _3, "xn--dnna-gra": _3, "dønna": _3, "dovre": _3, "drammen": _3, "drangedal": _3, "dyroy": _3, "xn--dyry-ira": _3, "dyrøy": _3, "eid": _3, "eidfjord": _3, "eidsberg": _3, "eidskog": _3, "eidsvoll": _3, "eigersund": _3, "elverum": _3, "enebakk": _3, "engerdal": _3, "etne": _3, "etnedal": _3, "evenassi": _3, "xn--eveni-0qa01ga": _3, "evenášši": _3, "evenes": _3, "evje-og-hornnes": _3, "farsund": _3, "fauske": _3, "fedje": _3, "fet": _3, "finnoy": _3, "xn--finny-yua": _3, "finnøy": _3, "fitjar": _3, "fjaler": _3, "fjell": _3, "fla": _3, "xn--fl-zia": _3, "flå": _3, "flakstad": _3, "flatanger": _3, "flekkefjord": _3, "flesberg": _3, "flora": _3, "folldal": _3, "forde": _3, "xn--frde-gra": _3, "førde": _3, "forsand": _3, "fosnes": _3, "xn--frna-woa": _3, "fræna": _3, "frana": _3, "frei": _3, "frogn": _3, "froland": _3, "frosta": _3, "froya": _3, "xn--frya-hra": _3, "frøya": _3, "fuoisku": _3, "fuossko": _3, "fusa": _3, "fyresdal": _3, "gaivuotna": _3, "xn--givuotna-8ya": _3, "gáivuotna": _3, "galsa": _3, "xn--gls-elac": _3, "gálsá": _3, "gamvik": _3, "gangaviika": _3, "xn--ggaviika-8ya47h": _3, "gáŋgaviika": _3, "gaular": _3, "gausdal": _3, "giehtavuoatna": _3, "gildeskal": _3, "xn--gildeskl-g0a": _3, "gildeskål": _3, "giske": _3, "gjemnes": _3, "gjerdrum": _3, "gjerstad": _3, "gjesdal": _3, "gjovik": _3, "xn--gjvik-wua": _3, "gjøvik": _3, "gloppen": _3, "gol": _3, "gran": _3, "grane": _3, "granvin": _3, "gratangen": _3, "grimstad": _3, "grong": _3, "grue": _3, "gulen": _3, "guovdageaidnu": _3, "ha": _3, "xn--h-2fa": _3, "hå": _3, "habmer": _3, "xn--hbmer-xqa": _3, "hábmer": _3, "hadsel": _3, "xn--hgebostad-g3a": _3, "hægebostad": _3, "hagebostad": _3, "halden": _3, "halsa": _3, "hamar": _3, "hamaroy": _3, "hammarfeasta": _3, "xn--hmmrfeasta-s4ac": _3, "hámmárfeasta": _3, "hammerfest": _3, "hapmir": _3, "xn--hpmir-xqa": _3, "hápmir": _3, "haram": _3, "hareid": _3, "harstad": _3, "hasvik": _3, "hattfjelldal": _3, "haugesund": _3, "hedmark": [0, { "os": _3, "valer": _3, "xn--vler-qoa": _3, "våler": _3 }], "hemne": _3, "hemnes": _3, "hemsedal": _3, "hitra": _3, "hjartdal": _3, "hjelmeland": _3, "hobol": _3, "xn--hobl-ira": _3, "hobøl": _3, "hof": _3, "hol": _3, "hole": _3, "holmestrand": _3, "holtalen": _3, "xn--holtlen-hxa": _3, "holtålen": _3, "hordaland": [0, { "os": _3 }], "hornindal": _3, "horten": _3, "hoyanger": _3, "xn--hyanger-q1a": _3, "høyanger": _3, "hoylandet": _3, "xn--hylandet-54a": _3, "høylandet": _3, "hurdal": _3, "hurum": _3, "hvaler": _3, "hyllestad": _3, "ibestad": _3, "inderoy": _3, "xn--indery-fya": _3, "inderøy": _3, "iveland": _3, "ivgu": _3, "jevnaker": _3, "jolster": _3, "xn--jlster-bya": _3, "jølster": _3, "jondal": _3, "kafjord": _3, "xn--kfjord-iua": _3, "kåfjord": _3, "karasjohka": _3, "xn--krjohka-hwab49j": _3, "kárášjohka": _3, "karasjok": _3, "karlsoy": _3, "karmoy": _3, "xn--karmy-yua": _3, "karmøy": _3, "kautokeino": _3, "klabu": _3, "xn--klbu-woa": _3, "klæbu": _3, "klepp": _3, "kongsberg": _3, "kongsvinger": _3, "kraanghke": _3, "xn--kranghke-b0a": _3, "kråanghke": _3, "kragero": _3, "xn--krager-gya": _3, "kragerø": _3, "kristiansand": _3, "kristiansund": _3, "krodsherad": _3, "xn--krdsherad-m8a": _3, "krødsherad": _3, "xn--kvfjord-nxa": _3, "kvæfjord": _3, "xn--kvnangen-k0a": _3, "kvænangen": _3, "kvafjord": _3, "kvalsund": _3, "kvam": _3, "kvanangen": _3, "kvinesdal": _3, "kvinnherad": _3, "kviteseid": _3, "kvitsoy": _3, "xn--kvitsy-fya": _3, "kvitsøy": _3, "laakesvuemie": _3, "xn--lrdal-sra": _3, "lærdal": _3, "lahppi": _3, "xn--lhppi-xqa": _3, "láhppi": _3, "lardal": _3, "larvik": _3, "lavagis": _3, "lavangen": _3, "leangaviika": _3, "xn--leagaviika-52b": _3, "leaŋgaviika": _3, "lebesby": _3, "leikanger": _3, "leirfjord": _3, "leka": _3, "leksvik": _3, "lenvik": _3, "lerdal": _3, "lesja": _3, "levanger": _3, "lier": _3, "lierne": _3, "lillehammer": _3, "lillesand": _3, "lindas": _3, "xn--linds-pra": _3, "lindås": _3, "lindesnes": _3, "loabat": _3, "xn--loabt-0qa": _3, "loabát": _3, "lodingen": _3, "xn--ldingen-q1a": _3, "lødingen": _3, "lom": _3, "loppa": _3, "lorenskog": _3, "xn--lrenskog-54a": _3, "lørenskog": _3, "loten": _3, "xn--lten-gra": _3, "løten": _3, "lund": _3, "lunner": _3, "luroy": _3, "xn--lury-ira": _3, "lurøy": _3, "luster": _3, "lyngdal": _3, "lyngen": _3, "malatvuopmi": _3, "xn--mlatvuopmi-s4a": _3, "málatvuopmi": _3, "malselv": _3, "xn--mlselv-iua": _3, "målselv": _3, "malvik": _3, "mandal": _3, "marker": _3, "marnardal": _3, "masfjorden": _3, "masoy": _3, "xn--msy-ula0h": _3, "måsøy": _3, "matta-varjjat": _3, "xn--mtta-vrjjat-k7af": _3, "mátta-várjjat": _3, "meland": _3, "meldal": _3, "melhus": _3, "meloy": _3, "xn--mely-ira": _3, "meløy": _3, "meraker": _3, "xn--merker-kua": _3, "meråker": _3, "midsund": _3, "midtre-gauldal": _3, "moareke": _3, "xn--moreke-jua": _3, "moåreke": _3, "modalen": _3, "modum": _3, "molde": _3, "more-og-romsdal": [0, { "heroy": _3, "sande": _3 }], "xn--mre-og-romsdal-qqb": [0, { "xn--hery-ira": _3, "sande": _3 }], "møre-og-romsdal": [0, { "herøy": _3, "sande": _3 }], "moskenes": _3, "moss": _3, "mosvik": _3, "muosat": _3, "xn--muost-0qa": _3, "muosát": _3, "naamesjevuemie": _3, "xn--nmesjevuemie-tcba": _3, "nååmesjevuemie": _3, "xn--nry-yla5g": _3, "nærøy": _3, "namdalseid": _3, "namsos": _3, "namsskogan": _3, "nannestad": _3, "naroy": _3, "narviika": _3, "narvik": _3, "naustdal": _3, "navuotna": _3, "xn--nvuotna-hwa": _3, "návuotna": _3, "nedre-eiker": _3, "nesna": _3, "nesodden": _3, "nesseby": _3, "nesset": _3, "nissedal": _3, "nittedal": _3, "nord-aurdal": _3, "nord-fron": _3, "nord-odal": _3, "norddal": _3, "nordkapp": _3, "nordland": [0, { "bo": _3, "xn--b-5ga": _3, "bø": _3, "heroy": _3, "xn--hery-ira": _3, "herøy": _3 }], "nordre-land": _3, "nordreisa": _3, "nore-og-uvdal": _3, "notodden": _3, "notteroy": _3, "xn--nttery-byae": _3, "nøtterøy": _3, "odda": _3, "oksnes": _3, "xn--ksnes-uua": _3, "øksnes": _3, "omasvuotna": _3, "oppdal": _3, "oppegard": _3, "xn--oppegrd-ixa": _3, "oppegård": _3, "orkdal": _3, "orland": _3, "xn--rland-uua": _3, "ørland": _3, "orskog": _3, "xn--rskog-uua": _3, "ørskog": _3, "orsta": _3, "xn--rsta-fra": _3, "ørsta": _3, "osen": _3, "osteroy": _3, "xn--ostery-fya": _3, "osterøy": _3, "ostfold": [0, { "valer": _3 }], "xn--stfold-9xa": [0, { "xn--vler-qoa": _3 }], "østfold": [0, { "våler": _3 }], "ostre-toten": _3, "xn--stre-toten-zcb": _3, "østre-toten": _3, "overhalla": _3, "ovre-eiker": _3, "xn--vre-eiker-k8a": _3, "øvre-eiker": _3, "oyer": _3, "xn--yer-zna": _3, "øyer": _3, "oygarden": _3, "xn--ygarden-p1a": _3, "øygarden": _3, "oystre-slidre": _3, "xn--ystre-slidre-ujb": _3, "øystre-slidre": _3, "porsanger": _3, "porsangu": _3, "xn--porsgu-sta26f": _3, "porsáŋgu": _3, "porsgrunn": _3, "rade": _3, "xn--rde-ula": _3, "råde": _3, "radoy": _3, "xn--rady-ira": _3, "radøy": _3, "xn--rlingen-mxa": _3, "rælingen": _3, "rahkkeravju": _3, "xn--rhkkervju-01af": _3, "ráhkkerávju": _3, "raisa": _3, "xn--risa-5na": _3, "ráisa": _3, "rakkestad": _3, "ralingen": _3, "rana": _3, "randaberg": _3, "rauma": _3, "rendalen": _3, "rennebu": _3, "rennesoy": _3, "xn--rennesy-v1a": _3, "rennesøy": _3, "rindal": _3, "ringebu": _3, "ringerike": _3, "ringsaker": _3, "risor": _3, "xn--risr-ira": _3, "risør": _3, "rissa": _3, "roan": _3, "rodoy": _3, "xn--rdy-0nab": _3, "rødøy": _3, "rollag": _3, "romsa": _3, "romskog": _3, "xn--rmskog-bya": _3, "rømskog": _3, "roros": _3, "xn--rros-gra": _3, "røros": _3, "rost": _3, "xn--rst-0na": _3, "røst": _3, "royken": _3, "xn--ryken-vua": _3, "røyken": _3, "royrvik": _3, "xn--ryrvik-bya": _3, "røyrvik": _3, "ruovat": _3, "rygge": _3, "salangen": _3, "salat": _3, "xn--slat-5na": _3, "sálat": _3, "xn--slt-elab": _3, "sálát": _3, "saltdal": _3, "samnanger": _3, "sandefjord": _3, "sandnes": _3, "sandoy": _3, "xn--sandy-yua": _3, "sandøy": _3, "sarpsborg": _3, "sauda": _3, "sauherad": _3, "sel": _3, "selbu": _3, "selje": _3, "seljord": _3, "siellak": _3, "sigdal": _3, "siljan": _3, "sirdal": _3, "skanit": _3, "xn--sknit-yqa": _3, "skánit": _3, "skanland": _3, "xn--sknland-fxa": _3, "skånland": _3, "skaun": _3, "skedsmo": _3, "ski": _3, "skien": _3, "skierva": _3, "xn--skierv-uta": _3, "skiervá": _3, "skiptvet": _3, "skjak": _3, "xn--skjk-soa": _3, "skjåk": _3, "skjervoy": _3, "xn--skjervy-v1a": _3, "skjervøy": _3, "skodje": _3, "smola": _3, "xn--smla-hra": _3, "smøla": _3, "snaase": _3, "xn--snase-nra": _3, "snåase": _3, "snasa": _3, "xn--snsa-roa": _3, "snåsa": _3, "snillfjord": _3, "snoasa": _3, "sogndal": _3, "sogne": _3, "xn--sgne-gra": _3, "søgne": _3, "sokndal": _3, "sola": _3, "solund": _3, "somna": _3, "xn--smna-gra": _3, "sømna": _3, "sondre-land": _3, "xn--sndre-land-0cb": _3, "søndre-land": _3, "songdalen": _3, "sor-aurdal": _3, "xn--sr-aurdal-l8a": _3, "sør-aurdal": _3, "sor-fron": _3, "xn--sr-fron-q1a": _3, "sør-fron": _3, "sor-odal": _3, "xn--sr-odal-q1a": _3, "sør-odal": _3, "sor-varanger": _3, "xn--sr-varanger-ggb": _3, "sør-varanger": _3, "sorfold": _3, "xn--srfold-bya": _3, "sørfold": _3, "sorreisa": _3, "xn--srreisa-q1a": _3, "sørreisa": _3, "sortland": _3, "sorum": _3, "xn--srum-gra": _3, "sørum": _3, "spydeberg": _3, "stange": _3, "stavanger": _3, "steigen": _3, "steinkjer": _3, "stjordal": _3, "xn--stjrdal-s1a": _3, "stjørdal": _3, "stokke": _3, "stor-elvdal": _3, "stord": _3, "stordal": _3, "storfjord": _3, "strand": _3, "stranda": _3, "stryn": _3, "sula": _3, "suldal": _3, "sund": _3, "sunndal": _3, "surnadal": _3, "sveio": _3, "svelvik": _3, "sykkylven": _3, "tana": _3, "telemark": [0, { "bo": _3, "xn--b-5ga": _3, "bø": _3 }], "time": _3, "tingvoll": _3, "tinn": _3, "tjeldsund": _3, "tjome": _3, "xn--tjme-hra": _3, "tjøme": _3, "tokke": _3, "tolga": _3, "tonsberg": _3, "xn--tnsberg-q1a": _3, "tønsberg": _3, "torsken": _3, "xn--trna-woa": _3, "træna": _3, "trana": _3, "tranoy": _3, "xn--trany-yua": _3, "tranøy": _3, "troandin": _3, "trogstad": _3, "xn--trgstad-r1a": _3, "trøgstad": _3, "tromsa": _3, "tromso": _3, "xn--troms-zua": _3, "tromsø": _3, "trondheim": _3, "trysil": _3, "tvedestrand": _3, "tydal": _3, "tynset": _3, "tysfjord": _3, "tysnes": _3, "xn--tysvr-vra": _3, "tysvær": _3, "tysvar": _3, "ullensaker": _3, "ullensvang": _3, "ulvik": _3, "unjarga": _3, "xn--unjrga-rta": _3, "unjárga": _3, "utsira": _3, "vaapste": _3, "vadso": _3, "xn--vads-jra": _3, "vadsø": _3, "xn--vry-yla5g": _3, "værøy": _3, "vaga": _3, "xn--vg-yiab": _3, "vågå": _3, "vagan": _3, "xn--vgan-qoa": _3, "vågan": _3, "vagsoy": _3, "xn--vgsy-qoa0j": _3, "vågsøy": _3, "vaksdal": _3, "valle": _3, "vang": _3, "vanylven": _3, "vardo": _3, "xn--vard-jra": _3, "vardø": _3, "varggat": _3, "xn--vrggt-xqad": _3, "várggát": _3, "varoy": _3, "vefsn": _3, "vega": _3, "vegarshei": _3, "xn--vegrshei-c0a": _3, "vegårshei": _3, "vennesla": _3, "verdal": _3, "verran": _3, "vestby": _3, "vestfold": [0, { "sande": _3 }], "vestnes": _3, "vestre-slidre": _3, "vestre-toten": _3, "vestvagoy": _3, "xn--vestvgy-ixa6o": _3, "vestvågøy": _3, "vevelstad": _3, "vik": _3, "vikna": _3, "vindafjord": _3, "voagat": _3, "volda": _3, "voss": _3, "co": _4, "123hjemmeside": _4, "myspreadshop": _4 }], "np": _17, "nr": _53, "nu": [1, { "merseine": _4, "mine": _4, "shacknet": _4, "enterprisecloud": _4 }], "nz": [1, { "ac": _3, "co": _3, "cri": _3, "geek": _3, "gen": _3, "govt": _3, "health": _3, "iwi": _3, "kiwi": _3, "maori": _3, "xn--mori-qsa": _3, "māori": _3, "mil": _3, "net": _3, "org": _3, "parliament": _3, "school": _3, "cloudns": _4 }], "om": [1, { "co": _3, "com": _3, "edu": _3, "gov": _3, "med": _3, "museum": _3, "net": _3, "org": _3, "pro": _3 }], "onion": _3, "org": [1, { "altervista": _4, "pimienta": _4, "poivron": _4, "potager": _4, "sweetpepper": _4, "cdn77": [0, { "c": _4, "rsc": _4 }], "cdn77-secure": [0, { "origin": [0, { "ssl": _4 }] }], "ae": _4, "cloudns": _4, "ip-dynamic": _4, "ddnss": _4, "duckdns": _4, "tunk": _4, "blogdns": _4, "blogsite": _4, "boldlygoingnowhere": _4, "dnsalias": _4, "dnsdojo": _4, "doesntexist": _4, "dontexist": _4, "doomdns": _4, "dvrdns": _4, "dynalias": _4, "dyndns": [2, { "go": _4, "home": _4 }], "endofinternet": _4, "endoftheinternet": _4, "from-me": _4, "game-host": _4, "gotdns": _4, "hobby-site": _4, "homedns": _4, "homeftp": _4, "homelinux": _4, "homeunix": _4, "is-a-bruinsfan": _4, "is-a-candidate": _4, "is-a-celticsfan": _4, "is-a-chef": _4, "is-a-geek": _4, "is-a-knight": _4, "is-a-linux-user": _4, "is-a-patsfan": _4, "is-a-soxfan": _4, "is-found": _4, "is-lost": _4, "is-saved": _4, "is-very-bad": _4, "is-very-evil": _4, "is-very-good": _4, "is-very-nice": _4, "is-very-sweet": _4, "isa-geek": _4, "kicks-ass": _4, "misconfused": _4, "podzone": _4, "readmyblog": _4, "selfip": _4, "sellsyourhome": _4, "servebbs": _4, "serveftp": _4, "servegame": _4, "stuff-4-sale": _4, "webhop": _4, "accesscam": _4, "camdvr": _4, "freeddns": _4, "mywire": _4, "webredirect": _4, "twmail": _4, "eu": [2, { "al": _4, "asso": _4, "at": _4, "au": _4, "be": _4, "bg": _4, "ca": _4, "cd": _4, "ch": _4, "cn": _4, "cy": _4, "cz": _4, "de": _4, "dk": _4, "edu": _4, "ee": _4, "es": _4, "fi": _4, "fr": _4, "gr": _4, "hr": _4, "hu": _4, "ie": _4, "il": _4, "in": _4, "int": _4, "is": _4, "it": _4, "jp": _4, "kr": _4, "lt": _4, "lu": _4, "lv": _4, "me": _4, "mk": _4, "mt": _4, "my": _4, "net": _4, "ng": _4, "nl": _4, "no": _4, "nz": _4, "pl": _4, "pt": _4, "ro": _4, "ru": _4, "se": _4, "si": _4, "sk": _4, "tr": _4, "uk": _4, "us": _4 }], "fedorainfracloud": _4, "fedorapeople": _4, "fedoraproject": [0, { "cloud": _4, "os": _41, "stg": [0, { "os": _41 }] }], "freedesktop": _4, "hatenadiary": _4, "hepforge": _4, "in-dsl": _4, "in-vpn": _4, "js": _4, "barsy": _4, "mayfirst": _4, "routingthecloud": _4, "bmoattachments": _4, "cable-modem": _4, "collegefan": _4, "couchpotatofries": _4, "hopto": _4, "mlbfan": _4, "myftp": _4, "mysecuritycamera": _4, "nflfan": _4, "no-ip": _4, "read-books": _4, "ufcfan": _4, "zapto": _4, "dynserv": _4, "now-dns": _4, "is-local": _4, "httpbin": _4, "pubtls": _4, "jpn": _4, "my-firewall": _4, "myfirewall": _4, "spdns": _4, "small-web": _4, "dsmynas": _4, "familyds": _4, "teckids": _52, "tuxfamily": _4, "diskstation": _4, "hk": _4, "us": _4, "toolforge": _4, "wmcloud": _4, "wmflabs": _4, "za": _4 }], "pa": [1, { "abo": _3, "ac": _3, "com": _3, "edu": _3, "gob": _3, "ing": _3, "med": _3, "net": _3, "nom": _3, "org": _3, "sld": _3 }], "pe": [1, { "com": _3, "edu": _3, "gob": _3, "mil": _3, "net": _3, "nom": _3, "org": _3 }], "pf": [1, { "com": _3, "edu": _3, "org": _3 }], "pg": _17, "ph": [1, { "com": _3, "edu": _3, "gov": _3, "i": _3, "mil": _3, "net": _3, "ngo": _3, "org": _3, "cloudns": _4 }], "pk": [1, { "ac": _3, "biz": _3, "com": _3, "edu": _3, "fam": _3, "gkp": _3, "gob": _3, "gog": _3, "gok": _3, "gop": _3, "gos": _3, "gov": _3, "net": _3, "org": _3, "web": _3 }], "pl": [1, { "com": _3, "net": _3, "org": _3, "agro": _3, "aid": _3, "atm": _3, "auto": _3, "biz": _3, "edu": _3, "gmina": _3, "gsm": _3, "info": _3, "mail": _3, "media": _3, "miasta": _3, "mil": _3, "nieruchomosci": _3, "nom": _3, "pc": _3, "powiat": _3, "priv": _3, "realestate": _3, "rel": _3, "sex": _3, "shop": _3, "sklep": _3, "sos": _3, "szkola": _3, "targi": _3, "tm": _3, "tourism": _3, "travel": _3, "turystyka": _3, "gov": [1, { "ap": _3, "griw": _3, "ic": _3, "is": _3, "kmpsp": _3, "konsulat": _3, "kppsp": _3, "kwp": _3, "kwpsp": _3, "mup": _3, "mw": _3, "oia": _3, "oirm": _3, "oke": _3, "oow": _3, "oschr": _3, "oum": _3, "pa": _3, "pinb": _3, "piw": _3, "po": _3, "pr": _3, "psp": _3, "psse": _3, "pup": _3, "rzgw": _3, "sa": _3, "sdn": _3, "sko": _3, "so": _3, "sr": _3, "starostwo": _3, "ug": _3, "ugim": _3, "um": _3, "umig": _3, "upow": _3, "uppo": _3, "us": _3, "uw": _3, "uzs": _3, "wif": _3, "wiih": _3, "winb": _3, "wios": _3, "witd": _3, "wiw": _3, "wkz": _3, "wsa": _3, "wskr": _3, "wsse": _3, "wuoz": _3, "wzmiuw": _3, "zp": _3, "zpisdn": _3 }], "augustow": _3, "babia-gora": _3, "bedzin": _3, "beskidy": _3, "bialowieza": _3, "bialystok": _3, "bielawa": _3, "bieszczady": _3, "boleslawiec": _3, "bydgoszcz": _3, "bytom": _3, "cieszyn": _3, "czeladz": _3, "czest": _3, "dlugoleka": _3, "elblag": _3, "elk": _3, "glogow": _3, "gniezno": _3, "gorlice": _3, "grajewo": _3, "ilawa": _3, "jaworzno": _3, "jelenia-gora": _3, "jgora": _3, "kalisz": _3, "karpacz": _3, "kartuzy": _3, "kaszuby": _3, "katowice": _3, "kazimierz-dolny": _3, "kepno": _3, "ketrzyn": _3, "klodzko": _3, "kobierzyce": _3, "kolobrzeg": _3, "konin": _3, "konskowola": _3, "kutno": _3, "lapy": _3, "lebork": _3, "legnica": _3, "lezajsk": _3, "limanowa": _3, "lomza": _3, "lowicz": _3, "lubin": _3, "lukow": _3, "malbork": _3, "malopolska": _3, "mazowsze": _3, "mazury": _3, "mielec": _3, "mielno": _3, "mragowo": _3, "naklo": _3, "nowaruda": _3, "nysa": _3, "olawa": _3, "olecko": _3, "olkusz": _3, "olsztyn": _3, "opoczno": _3, "opole": _3, "ostroda": _3, "ostroleka": _3, "ostrowiec": _3, "ostrowwlkp": _3, "pila": _3, "pisz": _3, "podhale": _3, "podlasie": _3, "polkowice": _3, "pomorskie": _3, "pomorze": _3, "prochowice": _3, "pruszkow": _3, "przeworsk": _3, "pulawy": _3, "radom": _3, "rawa-maz": _3, "rybnik": _3, "rzeszow": _3, "sanok": _3, "sejny": _3, "skoczow": _3, "slask": _3, "slupsk": _3, "sosnowiec": _3, "stalowa-wola": _3, "starachowice": _3, "stargard": _3, "suwalki": _3, "swidnica": _3, "swiebodzin": _3, "swinoujscie": _3, "szczecin": _3, "szczytno": _3, "tarnobrzeg": _3, "tgory": _3, "turek": _3, "tychy": _3, "ustka": _3, "walbrzych": _3, "warmia": _3, "warszawa": _3, "waw": _3, "wegrow": _3, "wielun": _3, "wlocl": _3, "wloclawek": _3, "wodzislaw": _3, "wolomin": _3, "wroclaw": _3, "zachpomor": _3, "zagan": _3, "zarow": _3, "zgora": _3, "zgorzelec": _3, "art": _4, "gliwice": _4, "krakow": _4, "poznan": _4, "wroc": _4, "zakopane": _4, "beep": _4, "ecommerce-shop": _4, "cfolks": _4, "dfirma": _4, "dkonto": _4, "you2": _4, "shoparena": _4, "homesklep": _4, "sdscloud": _4, "unicloud": _4, "lodz": _4, "pabianice": _4, "plock": _4, "sieradz": _4, "skierniewice": _4, "zgierz": _4, "krasnik": _4, "leczna": _4, "lubartow": _4, "lublin": _4, "poniatowa": _4, "swidnik": _4, "co": _4, "torun": _4, "simplesite": _4, "myspreadshop": _4, "gda": _4, "gdansk": _4, "gdynia": _4, "med": _4, "sopot": _4, "bielsko": _4 }], "pm": [1, { "own": _4, "name": _4 }], "pn": [1, { "co": _3, "edu": _3, "gov": _3, "net": _3, "org": _3 }], "post": _3, "pr": [1, { "biz": _3, "com": _3, "edu": _3, "gov": _3, "info": _3, "isla": _3, "name": _3, "net": _3, "org": _3, "pro": _3, "ac": _3, "est": _3, "prof": _3 }], "pro": [1, { "aaa": _3, "aca": _3, "acct": _3, "avocat": _3, "bar": _3, "cpa": _3, "eng": _3, "jur": _3, "law": _3, "med": _3, "recht": _3, "12chars": _4, "cloudns": _4, "barsy": _4, "ngrok": _4 }], "ps": [1, { "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "plo": _3, "sec": _3 }], "pt": [1, { "com": _3, "edu": _3, "gov": _3, "int": _3, "net": _3, "nome": _3, "org": _3, "publ": _3, "123paginaweb": _4 }], "pw": [1, { "gov": _3, "cloudns": _4, "x443": _4 }], "py": [1, { "com": _3, "coop": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3 }], "qa": [1, { "com": _3, "edu": _3, "gov": _3, "mil": _3, "name": _3, "net": _3, "org": _3, "sch": _3 }], "re": [1, { "asso": _3, "com": _3, "netlib": _4, "can": _4 }], "ro": [1, { "arts": _3, "com": _3, "firm": _3, "info": _3, "nom": _3, "nt": _3, "org": _3, "rec": _3, "store": _3, "tm": _3, "www": _3, "co": _4, "shop": _4, "barsy": _4 }], "rs": [1, { "ac": _3, "co": _3, "edu": _3, "gov": _3, "in": _3, "org": _3, "brendly": _49, "barsy": _4, "ox": _4 }], "ru": [1, { "ac": _4, "edu": _4, "gov": _4, "int": _4, "mil": _4, "eurodir": _4, "adygeya": _4, "bashkiria": _4, "bir": _4, "cbg": _4, "com": _4, "dagestan": _4, "grozny": _4, "kalmykia": _4, "kustanai": _4, "marine": _4, "mordovia": _4, "msk": _4, "mytis": _4, "nalchik": _4, "nov": _4, "pyatigorsk": _4, "spb": _4, "vladikavkaz": _4, "vladimir": _4, "na4u": _4, "mircloud": _4, "myjino": [2, { "hosting": _7, "landing": _7, "spectrum": _7, "vps": _7 }], "cldmail": [0, { "hb": _4 }], "mcdir": [2, { "vps": _4 }], "mcpre": _4, "net": _4, "org": _4, "pp": _4, "lk3": _4, "ras": _4 }], "rw": [1, { "ac": _3, "co": _3, "coop": _3, "gov": _3, "mil": _3, "net": _3, "org": _3 }], "sa": [1, { "com": _3, "edu": _3, "gov": _3, "med": _3, "net": _3, "org": _3, "pub": _3, "sch": _3 }], "sb": _5, "sc": _5, "sd": [1, { "com": _3, "edu": _3, "gov": _3, "info": _3, "med": _3, "net": _3, "org": _3, "tv": _3 }], "se": [1, { "a": _3, "ac": _3, "b": _3, "bd": _3, "brand": _3, "c": _3, "d": _3, "e": _3, "f": _3, "fh": _3, "fhsk": _3, "fhv": _3, "g": _3, "h": _3, "i": _3, "k": _3, "komforb": _3, "kommunalforbund": _3, "komvux": _3, "l": _3, "lanbib": _3, "m": _3, "n": _3, "naturbruksgymn": _3, "o": _3, "org": _3, "p": _3, "parti": _3, "pp": _3, "press": _3, "r": _3, "s": _3, "t": _3, "tm": _3, "u": _3, "w": _3, "x": _3, "y": _3, "z": _3, "com": _4, "iopsys": _4, "123minsida": _4, "itcouldbewor": _4, "myspreadshop": _4 }], "sg": [1, { "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "enscaled": _4 }], "sh": [1, { "com": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "hashbang": _4, "botda": _4, "platform": [0, { "ent": _4, "eu": _4, "us": _4 }], "now": _4 }], "si": [1, { "f5": _4, "gitapp": _4, "gitpage": _4 }], "sj": _3, "sk": _3, "sl": _5, "sm": _3, "sn": [1, { "art": _3, "com": _3, "edu": _3, "gouv": _3, "org": _3, "perso": _3, "univ": _3 }], "so": [1, { "com": _3, "edu": _3, "gov": _3, "me": _3, "net": _3, "org": _3, "surveys": _4 }], "sr": _3, "ss": [1, { "biz": _3, "co": _3, "com": _3, "edu": _3, "gov": _3, "me": _3, "net": _3, "org": _3, "sch": _3 }], "st": [1, { "co": _3, "com": _3, "consulado": _3, "edu": _3, "embaixada": _3, "mil": _3, "net": _3, "org": _3, "principe": _3, "saotome": _3, "store": _3, "helioho": _4, "kirara": _4, "noho": _4 }], "su": [1, { "abkhazia": _4, "adygeya": _4, "aktyubinsk": _4, "arkhangelsk": _4, "armenia": _4, "ashgabad": _4, "azerbaijan": _4, "balashov": _4, "bashkiria": _4, "bryansk": _4, "bukhara": _4, "chimkent": _4, "dagestan": _4, "east-kazakhstan": _4, "exnet": _4, "georgia": _4, "grozny": _4, "ivanovo": _4, "jambyl": _4, "kalmykia": _4, "kaluga": _4, "karacol": _4, "karaganda": _4, "karelia": _4, "khakassia": _4, "krasnodar": _4, "kurgan": _4, "kustanai": _4, "lenug": _4, "mangyshlak": _4, "mordovia": _4, "msk": _4, "murmansk": _4, "nalchik": _4, "navoi": _4, "north-kazakhstan": _4, "nov": _4, "obninsk": _4, "penza": _4, "pokrovsk": _4, "sochi": _4, "spb": _4, "tashkent": _4, "termez": _4, "togliatti": _4, "troitsk": _4, "tselinograd": _4, "tula": _4, "tuva": _4, "vladikavkaz": _4, "vladimir": _4, "vologda": _4 }], "sv": [1, { "com": _3, "edu": _3, "gob": _3, "org": _3, "red": _3 }], "sx": _10, "sy": _6, "sz": [1, { "ac": _3, "co": _3, "org": _3 }], "tc": _3, "td": _3, "tel": _3, "tf": [1, { "sch": _4 }], "tg": _3, "th": [1, { "ac": _3, "co": _3, "go": _3, "in": _3, "mi": _3, "net": _3, "or": _3, "online": _4, "shop": _4 }], "tj": [1, { "ac": _3, "biz": _3, "co": _3, "com": _3, "edu": _3, "go": _3, "gov": _3, "int": _3, "mil": _3, "name": _3, "net": _3, "nic": _3, "org": _3, "test": _3, "web": _3 }], "tk": _3, "tl": _10, "tm": [1, { "co": _3, "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "nom": _3, "org": _3 }], "tn": [1, { "com": _3, "ens": _3, "fin": _3, "gov": _3, "ind": _3, "info": _3, "intl": _3, "mincom": _3, "nat": _3, "net": _3, "org": _3, "perso": _3, "tourism": _3, "orangecloud": _4 }], "to": [1, { "611": _4, "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "oya": _4, "x0": _4, "quickconnect": _24, "vpnplus": _4 }], "tr": [1, { "av": _3, "bbs": _3, "bel": _3, "biz": _3, "com": _3, "dr": _3, "edu": _3, "gen": _3, "gov": _3, "info": _3, "k12": _3, "kep": _3, "mil": _3, "name": _3, "net": _3, "org": _3, "pol": _3, "tel": _3, "tsk": _3, "tv": _3, "web": _3, "nc": _10 }], "tt": [1, { "biz": _3, "co": _3, "com": _3, "edu": _3, "gov": _3, "info": _3, "mil": _3, "name": _3, "net": _3, "org": _3, "pro": _3 }], "tv": [1, { "better-than": _4, "dyndns": _4, "on-the-web": _4, "worse-than": _4, "from": _4, "sakura": _4 }], "tw": [1, { "club": _3, "com": [1, { "mymailer": _4 }], "ebiz": _3, "edu": _3, "game": _3, "gov": _3, "idv": _3, "mil": _3, "net": _3, "org": _3, "url": _4, "mydns": _4 }], "tz": [1, { "ac": _3, "co": _3, "go": _3, "hotel": _3, "info": _3, "me": _3, "mil": _3, "mobi": _3, "ne": _3, "or": _3, "sc": _3, "tv": _3 }], "ua": [1, { "com": _3, "edu": _3, "gov": _3, "in": _3, "net": _3, "org": _3, "cherkassy": _3, "cherkasy": _3, "chernigov": _3, "chernihiv": _3, "chernivtsi": _3, "chernovtsy": _3, "ck": _3, "cn": _3, "cr": _3, "crimea": _3, "cv": _3, "dn": _3, "dnepropetrovsk": _3, "dnipropetrovsk": _3, "donetsk": _3, "dp": _3, "if": _3, "ivano-frankivsk": _3, "kh": _3, "kharkiv": _3, "kharkov": _3, "kherson": _3, "khmelnitskiy": _3, "khmelnytskyi": _3, "kiev": _3, "kirovograd": _3, "km": _3, "kr": _3, "kropyvnytskyi": _3, "krym": _3, "ks": _3, "kv": _3, "kyiv": _3, "lg": _3, "lt": _3, "lugansk": _3, "luhansk": _3, "lutsk": _3, "lv": _3, "lviv": _3, "mk": _3, "mykolaiv": _3, "nikolaev": _3, "od": _3, "odesa": _3, "odessa": _3, "pl": _3, "poltava": _3, "rivne": _3, "rovno": _3, "rv": _3, "sb": _3, "sebastopol": _3, "sevastopol": _3, "sm": _3, "sumy": _3, "te": _3, "ternopil": _3, "uz": _3, "uzhgorod": _3, "uzhhorod": _3, "vinnica": _3, "vinnytsia": _3, "vn": _3, "volyn": _3, "yalta": _3, "zakarpattia": _3, "zaporizhzhe": _3, "zaporizhzhia": _3, "zhitomir": _3, "zhytomyr": _3, "zp": _3, "zt": _3, "cc": _4, "inf": _4, "ltd": _4, "cx": _4, "ie": _4, "biz": _4, "co": _4, "pp": _4, "v": _4 }], "ug": [1, { "ac": _3, "co": _3, "com": _3, "edu": _3, "go": _3, "gov": _3, "mil": _3, "ne": _3, "or": _3, "org": _3, "sc": _3, "us": _3 }], "uk": [1, { "ac": _3, "co": [1, { "bytemark": [0, { "dh": _4, "vm": _4 }], "layershift": _44, "barsy": _4, "barsyonline": _4, "retrosnub": _51, "nh-serv": _4, "no-ip": _4, "adimo": _4, "myspreadshop": _4 }], "gov": [1, { "api": _4, "campaign": _4, "service": _4 }], "ltd": _3, "me": _3, "net": _3, "nhs": _3, "org": [1, { "glug": _4, "lug": _4, "lugs": _4, "affinitylottery": _4, "raffleentry": _4, "weeklylottery": _4 }], "plc": _3, "police": _3, "sch": _17, "conn": _4, "copro": _4, "hosp": _4, "independent-commission": _4, "independent-inquest": _4, "independent-inquiry": _4, "independent-panel": _4, "independent-review": _4, "public-inquiry": _4, "royal-commission": _4, "pymnt": _4, "barsy": _4, "nimsite": _4, "oraclegovcloudapps": _7 }], "us": [1, { "dni": _3, "isa": _3, "nsn": _3, "ak": _59, "al": _59, "ar": _59, "as": _59, "az": _59, "ca": _59, "co": _59, "ct": _59, "dc": _59, "de": [1, { "cc": _3, "lib": _4 }], "fl": _59, "ga": _59, "gu": _59, "hi": _60, "ia": _59, "id": _59, "il": _59, "in": _59, "ks": _59, "ky": _59, "la": _59, "ma": [1, { "k12": [1, { "chtr": _3, "paroch": _3, "pvt": _3 }], "cc": _3, "lib": _3 }], "md": _59, "me": _59, "mi": [1, { "k12": _3, "cc": _3, "lib": _3, "ann-arbor": _3, "cog": _3, "dst": _3, "eaton": _3, "gen": _3, "mus": _3, "tec": _3, "washtenaw": _3 }], "mn": _59, "mo": _59, "ms": _59, "mt": _59, "nc": _59, "nd": _60, "ne": _59, "nh": _59, "nj": _59, "nm": _59, "nv": _59, "ny": _59, "oh": _59, "ok": _59, "or": _59, "pa": _59, "pr": _59, "ri": _60, "sc": _59, "sd": _60, "tn": _59, "tx": _59, "ut": _59, "va": _59, "vi": _59, "vt": _59, "wa": _59, "wi": _59, "wv": [1, { "cc": _3 }], "wy": _59, "cloudns": _4, "is-by": _4, "land-4-sale": _4, "stuff-4-sale": _4, "heliohost": _4, "enscaled": [0, { "phx": _4 }], "mircloud": _4, "ngo": _4, "golffan": _4, "noip": _4, "pointto": _4, "freeddns": _4, "srv": [2, { "gh": _4, "gl": _4 }], "platterp": _4, "servername": _4 }], "uy": [1, { "com": _3, "edu": _3, "gub": _3, "mil": _3, "net": _3, "org": _3 }], "uz": [1, { "co": _3, "com": _3, "net": _3, "org": _3 }], "va": _3, "vc": [1, { "com": _3, "edu": _3, "gov": _3, "mil": _3, "net": _3, "org": _3, "gv": [2, { "d": _4 }], "0e": _7, "mydns": _4 }], "ve": [1, { "arts": _3, "bib": _3, "co": _3, "com": _3, "e12": _3, "edu": _3, "firm": _3, "gob": _3, "gov": _3, "info": _3, "int": _3, "mil": _3, "net": _3, "nom": _3, "org": _3, "rar": _3, "rec": _3, "store": _3, "tec": _3, "web": _3 }], "vg": [1, { "edu": _3 }], "vi": [1, { "co": _3, "com": _3, "k12": _3, "net": _3, "org": _3 }], "vn": [1, { "ac": _3, "ai": _3, "biz": _3, "com": _3, "edu": _3, "gov": _3, "health": _3, "id": _3, "info": _3, "int": _3, "io": _3, "name": _3, "net": _3, "org": _3, "pro": _3, "angiang": _3, "bacgiang": _3, "backan": _3, "baclieu": _3, "bacninh": _3, "baria-vungtau": _3, "bentre": _3, "binhdinh": _3, "binhduong": _3, "binhphuoc": _3, "binhthuan": _3, "camau": _3, "cantho": _3, "caobang": _3, "daklak": _3, "daknong": _3, "danang": _3, "dienbien": _3, "dongnai": _3, "dongthap": _3, "gialai": _3, "hagiang": _3, "haiduong": _3, "haiphong": _3, "hanam": _3, "hanoi": _3, "hatinh": _3, "haugiang": _3, "hoabinh": _3, "hungyen": _3, "khanhhoa": _3, "kiengiang": _3, "kontum": _3, "laichau": _3, "lamdong": _3, "langson": _3, "laocai": _3, "longan": _3, "namdinh": _3, "nghean": _3, "ninhbinh": _3, "ninhthuan": _3, "phutho": _3, "phuyen": _3, "quangbinh": _3, "quangnam": _3, "quangngai": _3, "quangninh": _3, "quangtri": _3, "soctrang": _3, "sonla": _3, "tayninh": _3, "thaibinh": _3, "thainguyen": _3, "thanhhoa": _3, "thanhphohochiminh": _3, "thuathienhue": _3, "tiengiang": _3, "travinh": _3, "tuyenquang": _3, "vinhlong": _3, "vinhphuc": _3, "yenbai": _3 }], "vu": _43, "wf": [1, { "biz": _4, "sch": _4 }], "ws": [1, { "com": _3, "edu": _3, "gov": _3, "net": _3, "org": _3, "advisor": _7, "cloud66": _4, "dyndns": _4, "mypets": _4 }], "yt": [1, { "org": _4 }], "xn--mgbaam7a8h": _3, "امارات": _3, "xn--y9a3aq": _3, "հայ": _3, "xn--54b7fta0cc": _3, "বাংলা": _3, "xn--90ae": _3, "бг": _3, "xn--mgbcpq6gpa1a": _3, "البحرين": _3, "xn--90ais": _3, "бел": _3, "xn--fiqs8s": _3, "中国": _3, "xn--fiqz9s": _3, "中國": _3, "xn--lgbbat1ad8j": _3, "الجزائر": _3, "xn--wgbh1c": _3, "مصر": _3, "xn--e1a4c": _3, "ею": _3, "xn--qxa6a": _3, "ευ": _3, "xn--mgbah1a3hjkrd": _3, "موريتانيا": _3, "xn--node": _3, "გე": _3, "xn--qxam": _3, "ελ": _3, "xn--j6w193g": [1, { "xn--gmqw5a": _3, "xn--55qx5d": _3, "xn--mxtq1m": _3, "xn--wcvs22d": _3, "xn--uc0atv": _3, "xn--od0alg": _3 }], "香港": [1, { "個人": _3, "公司": _3, "政府": _3, "教育": _3, "組織": _3, "網絡": _3 }], "xn--2scrj9c": _3, "ಭಾರತ": _3, "xn--3hcrj9c": _3, "ଭାରତ": _3, "xn--45br5cyl": _3, "ভাৰত": _3, "xn--h2breg3eve": _3, "भारतम्": _3, "xn--h2brj9c8c": _3, "भारोत": _3, "xn--mgbgu82a": _3, "ڀارت": _3, "xn--rvc1e0am3e": _3, "ഭാരതം": _3, "xn--h2brj9c": _3, "भारत": _3, "xn--mgbbh1a": _3, "بارت": _3, "xn--mgbbh1a71e": _3, "بھارت": _3, "xn--fpcrj9c3d": _3, "భారత్": _3, "xn--gecrj9c": _3, "ભારત": _3, "xn--s9brj9c": _3, "ਭਾਰਤ": _3, "xn--45brj9c": _3, "ভারত": _3, "xn--xkc2dl3a5ee0h": _3, "இந்தியா": _3, "xn--mgba3a4f16a": _3, "ایران": _3, "xn--mgba3a4fra": _3, "ايران": _3, "xn--mgbtx2b": _3, "عراق": _3, "xn--mgbayh7gpa": _3, "الاردن": _3, "xn--3e0b707e": _3, "한국": _3, "xn--80ao21a": _3, "қаз": _3, "xn--q7ce6a": _3, "ລາວ": _3, "xn--fzc2c9e2c": _3, "ලංකා": _3, "xn--xkc2al3hye2a": _3, "இலங்கை": _3, "xn--mgbc0a9azcg": _3, "المغرب": _3, "xn--d1alf": _3, "мкд": _3, "xn--l1acc": _3, "мон": _3, "xn--mix891f": _3, "澳門": _3, "xn--mix082f": _3, "澳门": _3, "xn--mgbx4cd0ab": _3, "مليسيا": _3, "xn--mgb9awbf": _3, "عمان": _3, "xn--mgbai9azgqp6j": _3, "پاکستان": _3, "xn--mgbai9a5eva00b": _3, "پاكستان": _3, "xn--ygbi2ammx": _3, "فلسطين": _3, "xn--90a3ac": [1, { "xn--80au": _3, "xn--90azh": _3, "xn--d1at": _3, "xn--c1avg": _3, "xn--o1ac": _3, "xn--o1ach": _3 }], "срб": [1, { "ак": _3, "обр": _3, "од": _3, "орг": _3, "пр": _3, "упр": _3 }], "xn--p1ai": _3, "рф": _3, "xn--wgbl6a": _3, "قطر": _3, "xn--mgberp4a5d4ar": _3, "السعودية": _3, "xn--mgberp4a5d4a87g": _3, "السعودیة": _3, "xn--mgbqly7c0a67fbc": _3, "السعودیۃ": _3, "xn--mgbqly7cvafr": _3, "السعوديه": _3, "xn--mgbpl2fh": _3, "سودان": _3, "xn--yfro4i67o": _3, "新加坡": _3, "xn--clchc0ea0b2g2a9gcd": _3, "சிங்கப்பூர்": _3, "xn--ogbpf8fl": _3, "سورية": _3, "xn--mgbtf8fl": _3, "سوريا": _3, "xn--o3cw4h": [1, { "xn--o3cyx2a": _3, "xn--12co0c3b4eva": _3, "xn--m3ch0j3a": _3, "xn--h3cuzk1di": _3, "xn--12c1fe0br": _3, "xn--12cfi8ixb8l": _3 }], "ไทย": [1, { "ทหาร": _3, "ธุรกิจ": _3, "เน็ต": _3, "รัฐบาล": _3, "ศึกษา": _3, "องค์กร": _3 }], "xn--pgbs0dh": _3, "تونس": _3, "xn--kpry57d": _3, "台灣": _3, "xn--kprw13d": _3, "台湾": _3, "xn--nnx388a": _3, "臺灣": _3, "xn--j1amh": _3, "укр": _3, "xn--mgb2ddes": _3, "اليمن": _3, "xxx": _3, "ye": _6, "za": [0, { "ac": _3, "agric": _3, "alt": _3, "co": _3, "edu": _3, "gov": _3, "grondar": _3, "law": _3, "mil": _3, "net": _3, "ngo": _3, "nic": _3, "nis": _3, "nom": _3, "org": _3, "school": _3, "tm": _3, "web": _3 }], "zm": [1, { "ac": _3, "biz": _3, "co": _3, "com": _3, "edu": _3, "gov": _3, "info": _3, "mil": _3, "net": _3, "org": _3, "sch": _3 }], "zw": [1, { "ac": _3, "co": _3, "gov": _3, "mil": _3, "org": _3 }], "aaa": _3, "aarp": _3, "abb": _3, "abbott": _3, "abbvie": _3, "abc": _3, "able": _3, "abogado": _3, "abudhabi": _3, "academy": [1, { "official": _4 }], "accenture": _3, "accountant": _3, "accountants": _3, "aco": _3, "actor": _3, "ads": _3, "adult": _3, "aeg": _3, "aetna": _3, "afl": _3, "africa": _3, "agakhan": _3, "agency": _3, "aig": _3, "airbus": _3, "airforce": _3, "airtel": _3, "akdn": _3, "alibaba": _3, "alipay": _3, "allfinanz": _3, "allstate": _3, "ally": _3, "alsace": _3, "alstom": _3, "amazon": _3, "americanexpress": _3, "americanfamily": _3, "amex": _3, "amfam": _3, "amica": _3, "amsterdam": _3, "analytics": _3, "android": _3, "anquan": _3, "anz": _3, "aol": _3, "apartments": _3, "app": [1, { "adaptable": _4, "aiven": _4, "beget": _7, "clerk": _4, "clerkstage": _4, "wnext": _4, "csb": [2, { "preview": _4 }], "deta": _4, "ondigitalocean": _4, "easypanel": _4, "encr": _4, "evervault": _8, "expo": [2, { "staging": _4 }], "edgecompute": _4, "on-fleek": _4, "flutterflow": _4, "framer": _4, "hosted": _7, "run": _7, "web": _4, "hasura": _4, "botdash": _4, "loginline": _4, "medusajs": _4, "messerli": _4, "netfy": _4, "netlify": _4, "ngrok": _4, "ngrok-free": _4, "developer": _7, "noop": _4, "northflank": _7, "upsun": _7, "replit": _9, "nyat": _4, "snowflake": [0, { "*": _4, "privatelink": _7 }], "streamlit": _4, "storipress": _4, "telebit": _4, "typedream": _4, "vercel": _4, "bookonline": _4, "wdh": _4, "zeabur": _4 }], "apple": _3, "aquarelle": _3, "arab": _3, "aramco": _3, "archi": _3, "army": _3, "art": _3, "arte": _3, "asda": _3, "associates": _3, "athleta": _3, "attorney": _3, "auction": _3, "audi": _3, "audible": _3, "audio": _3, "auspost": _3, "author": _3, "auto": _3, "autos": _3, "aws": [1, { "sagemaker": [0, { "ap-northeast-1": _13, "ap-northeast-2": _13, "ap-south-1": _13, "ap-southeast-1": _13, "ap-southeast-2": _13, "ca-central-1": _15, "eu-central-1": _13, "eu-west-1": _13, "eu-west-2": _13, "us-east-1": _15, "us-east-2": _15, "us-west-2": _15, "af-south-1": _12, "ap-east-1": _12, "ap-northeast-3": _12, "ap-south-2": _14, "ap-southeast-3": _12, "ap-southeast-4": _14, "ca-west-1": [0, { "notebook": _4, "notebook-fips": _4 }], "eu-central-2": _12, "eu-north-1": _12, "eu-south-1": _12, "eu-south-2": _12, "eu-west-3": _12, "il-central-1": _12, "me-central-1": _12, "me-south-1": _12, "sa-east-1": _12, "us-gov-east-1": _16, "us-gov-west-1": _16, "us-west-1": [0, { "notebook": _4, "notebook-fips": _4, "studio": _4 }], "experiments": _7 }], "repost": [0, { "private": _7 }], "on": [0, { "ap-northeast-1": _11, "ap-southeast-1": _11, "ap-southeast-2": _11, "eu-central-1": _11, "eu-north-1": _11, "eu-west-1": _11, "us-east-1": _11, "us-east-2": _11, "us-west-2": _11 }] }], "axa": _3, "azure": _3, "baby": _3, "baidu": _3, "banamex": _3, "band": _3, "bank": _3, "bar": _3, "barcelona": _3, "barclaycard": _3, "barclays": _3, "barefoot": _3, "bargains": _3, "baseball": _3, "basketball": [1, { "aus": _4, "nz": _4 }], "bauhaus": _3, "bayern": _3, "bbc": _3, "bbt": _3, "bbva": _3, "bcg": _3, "bcn": _3, "beats": _3, "beauty": _3, "beer": _3, "bentley": _3, "berlin": _3, "best": _3, "bestbuy": _3, "bet": _3, "bharti": _3, "bible": _3, "bid": _3, "bike": _3, "bing": _3, "bingo": _3, "bio": _3, "black": _3, "blackfriday": _3, "blockbuster": _3, "blog": _3, "bloomberg": _3, "blue": _3, "bms": _3, "bmw": _3, "bnpparibas": _3, "boats": _3, "boehringer": _3, "bofa": _3, "bom": _3, "bond": _3, "boo": _3, "book": _3, "booking": _3, "bosch": _3, "bostik": _3, "boston": _3, "bot": _3, "boutique": _3, "box": _3, "bradesco": _3, "bridgestone": _3, "broadway": _3, "broker": _3, "brother": _3, "brussels": _3, "build": [1, { "v0": _4 }], "builders": [1, { "cloudsite": _4 }], "business": _18, "buy": _3, "buzz": _3, "bzh": _3, "cab": _3, "cafe": _3, "cal": _3, "call": _3, "calvinklein": _3, "cam": _3, "camera": _3, "camp": [1, { "emf": [0, { "at": _4 }] }], "canon": _3, "capetown": _3, "capital": _3, "capitalone": _3, "car": _3, "caravan": _3, "cards": _3, "care": _3, "career": _3, "careers": _3, "cars": _3, "casa": [1, { "nabu": [0, { "ui": _4 }] }], "case": _3, "cash": _3, "casino": _3, "catering": _3, "catholic": _3, "cba": _3, "cbn": _3, "cbre": _3, "center": _3, "ceo": _3, "cern": _3, "cfa": _3, "cfd": _3, "chanel": _3, "channel": _3, "charity": _3, "chase": _3, "chat": _3, "cheap": _3, "chintai": _3, "christmas": _3, "chrome": _3, "church": _3, "cipriani": _3, "circle": _3, "cisco": _3, "citadel": _3, "citi": _3, "citic": _3, "city": _3, "claims": _3, "cleaning": _3, "click": _3, "clinic": _3, "clinique": _3, "clothing": _3, "cloud": [1, { "elementor": _4, "encoway": [0, { "eu": _4 }], "statics": _7, "ravendb": _4, "axarnet": [0, { "es-1": _4 }], "diadem": _4, "jelastic": [0, { "vip": _4 }], "jele": _4, "jenv-aruba": [0, { "aruba": [0, { "eur": [0, { "it1": _4 }] }], "it1": _4 }], "keliweb": [2, { "cs": _4 }], "oxa": [2, { "tn": _4, "uk": _4 }], "primetel": [2, { "uk": _4 }], "reclaim": [0, { "ca": _4, "uk": _4, "us": _4 }], "trendhosting": [0, { "ch": _4, "de": _4 }], "jotelulu": _4, "kuleuven": _4, "linkyard": _4, "magentosite": _7, "matlab": _4, "observablehq": _4, "perspecta": _4, "vapor": _4, "on-rancher": _7, "scw": [0, { "baremetal": [0, { "fr-par-1": _4, "fr-par-2": _4, "nl-ams-1": _4 }], "fr-par": [0, { "cockpit": _4, "fnc": [2, { "functions": _4 }], "k8s": _20, "s3": _4, "s3-website": _4, "whm": _4 }], "instances": [0, { "priv": _4, "pub": _4 }], "k8s": _4, "nl-ams": [0, { "cockpit": _4, "k8s": _20, "s3": _4, "s3-website": _4, "whm": _4 }], "pl-waw": [0, { "cockpit": _4, "k8s": _20, "s3": _4, "s3-website": _4 }], "scalebook": _4, "smartlabeling": _4 }], "servebolt": _4, "onstackit": [0, { "runs": _4 }], "trafficplex": _4, "unison-services": _4, "urown": _4, "voorloper": _4, "zap": _4 }], "club": [1, { "cloudns": _4, "jele": _4, "barsy": _4 }], "clubmed": _3, "coach": _3, "codes": [1, { "owo": _7 }], "coffee": _3, "college": _3, "cologne": _3, "commbank": _3, "community": [1, { "nog": _4, "ravendb": _4, "myforum": _4 }], "company": _3, "compare": _3, "computer": _3, "comsec": _3, "condos": _3, "construction": _3, "consulting": _3, "contact": _3, "contractors": _3, "cooking": _3, "cool": [1, { "elementor": _4, "de": _4 }], "corsica": _3, "country": _3, "coupon": _3, "coupons": _3, "courses": _3, "cpa": _3, "credit": _3, "creditcard": _3, "creditunion": _3, "cricket": _3, "crown": _3, "crs": _3, "cruise": _3, "cruises": _3, "cuisinella": _3, "cymru": _3, "cyou": _3, "dad": _3, "dance": _3, "data": _3, "date": _3, "dating": _3, "datsun": _3, "day": _3, "dclk": _3, "dds": _3, "deal": _3, "dealer": _3, "deals": _3, "degree": _3, "delivery": _3, "dell": _3, "deloitte": _3, "delta": _3, "democrat": _3, "dental": _3, "dentist": _3, "desi": _3, "design": [1, { "graphic": _4, "bss": _4 }], "dev": [1, { "12chars": _4, "myaddr": _4, "panel": _4, "lcl": _7, "lclstage": _7, "stg": _7, "stgstage": _7, "pages": _4, "r2": _4, "workers": _4, "deno": _4, "deno-staging": _4, "deta": _4, "evervault": _8, "fly": _4, "githubpreview": _4, "gateway": _7, "hrsn": [2, { "psl": [0, { "sub": _4, "wc": [0, { "*": _4, "sub": _7 }] }] }], "botdash": _4, "is-a-good": _4, "is-a": _4, "iserv": _4, "runcontainers": _4, "localcert": [0, { "user": _7 }], "loginline": _4, "barsy": _4, "mediatech": _4, "modx": _4, "ngrok": _4, "ngrok-free": _4, "is-a-fullstack": _4, "is-cool": _4, "is-not-a": _4, "localplayer": _4, "xmit": _4, "platter-app": _4, "replit": [2, { "archer": _4, "bones": _4, "canary": _4, "global": _4, "hacker": _4, "id": _4, "janeway": _4, "kim": _4, "kira": _4, "kirk": _4, "odo": _4, "paris": _4, "picard": _4, "pike": _4, "prerelease": _4, "reed": _4, "riker": _4, "sisko": _4, "spock": _4, "staging": _4, "sulu": _4, "tarpit": _4, "teams": _4, "tucker": _4, "wesley": _4, "worf": _4 }], "crm": [0, { "d": _7, "w": _7, "wa": _7, "wb": _7, "wc": _7, "wd": _7, "we": _7, "wf": _7 }], "vercel": _4, "webhare": _7 }], "dhl": _3, "diamonds": _3, "diet": _3, "digital": [1, { "cloudapps": [2, { "london": _4 }] }], "direct": [1, { "libp2p": _4 }], "directory": _3, "discount": _3, "discover": _3, "dish": _3, "diy": _3, "dnp": _3, "docs": _3, "doctor": _3, "dog": _3, "domains": _3, "dot": _3, "download": _3, "drive": _3, "dtv": _3, "dubai": _3, "dunlop": _3, "dupont": _3, "durban": _3, "dvag": _3, "dvr": _3, "earth": _3, "eat": _3, "eco": _3, "edeka": _3, "education": _18, "email": [1, { "crisp": [0, { "on": _4 }], "tawk": _47, "tawkto": _47 }], "emerck": _3, "energy": _3, "engineer": _3, "engineering": _3, "enterprises": _3, "epson": _3, "equipment": _3, "ericsson": _3, "erni": _3, "esq": _3, "estate": [1, { "compute": _7 }], "eurovision": _3, "eus": [1, { "party": _48 }], "events": [1, { "koobin": _4, "co": _4 }], "exchange": _3, "expert": _3, "exposed": _3, "express": _3, "extraspace": _3, "fage": _3, "fail": _3, "fairwinds": _3, "faith": _3, "family": _3, "fan": _3, "fans": _3, "farm": [1, { "storj": _4 }], "farmers": _3, "fashion": _3, "fast": _3, "fedex": _3, "feedback": _3, "ferrari": _3, "ferrero": _3, "fidelity": _3, "fido": _3, "film": _3, "final": _3, "finance": _3, "financial": _18, "fire": _3, "firestone": _3, "firmdale": _3, "fish": _3, "fishing": _3, "fit": _3, "fitness": _3, "flickr": _3, "flights": _3, "flir": _3, "florist": _3, "flowers": _3, "fly": _3, "foo": _3, "food": _3, "football": _3, "ford": _3, "forex": _3, "forsale": _3, "forum": _3, "foundation": _3, "fox": _3, "free": _3, "fresenius": _3, "frl": _3, "frogans": _3, "frontier": _3, "ftr": _3, "fujitsu": _3, "fun": _3, "fund": _3, "furniture": _3, "futbol": _3, "fyi": _3, "gal": _3, "gallery": _3, "gallo": _3, "gallup": _3, "game": _3, "games": [1, { "pley": _4, "sheezy": _4 }], "gap": _3, "garden": _3, "gay": [1, { "pages": _4 }], "gbiz": _3, "gdn": [1, { "cnpy": _4 }], "gea": _3, "gent": _3, "genting": _3, "george": _3, "ggee": _3, "gift": _3, "gifts": _3, "gives": _3, "giving": _3, "glass": _3, "gle": _3, "global": _3, "globo": _3, "gmail": _3, "gmbh": _3, "gmo": _3, "gmx": _3, "godaddy": _3, "gold": _3, "goldpoint": _3, "golf": _3, "goo": _3, "goodyear": _3, "goog": [1, { "cloud": _4, "translate": _4, "usercontent": _7 }], "google": _3, "gop": _3, "got": _3, "grainger": _3, "graphics": _3, "gratis": _3, "green": _3, "gripe": _3, "grocery": _3, "group": [1, { "discourse": _4 }], "gucci": _3, "guge": _3, "guide": _3, "guitars": _3, "guru": _3, "hair": _3, "hamburg": _3, "hangout": _3, "haus": _3, "hbo": _3, "hdfc": _3, "hdfcbank": _3, "health": [1, { "hra": _4 }], "healthcare": _3, "help": _3, "helsinki": _3, "here": _3, "hermes": _3, "hiphop": _3, "hisamitsu": _3, "hitachi": _3, "hiv": _3, "hkt": _3, "hockey": _3, "holdings": _3, "holiday": _3, "homedepot": _3, "homegoods": _3, "homes": _3, "homesense": _3, "honda": _3, "horse": _3, "hospital": _3, "host": [1, { "cloudaccess": _4, "freesite": _4, "easypanel": _4, "fastvps": _4, "myfast": _4, "tempurl": _4, "wpmudev": _4, "jele": _4, "mircloud": _4, "wp2": _4, "half": _4 }], "hosting": [1, { "opencraft": _4 }], "hot": _3, "hotels": _3, "hotmail": _3, "house": _3, "how": _3, "hsbc": _3, "hughes": _3, "hyatt": _3, "hyundai": _3, "ibm": _3, "icbc": _3, "ice": _3, "icu": _3, "ieee": _3, "ifm": _3, "ikano": _3, "imamat": _3, "imdb": _3, "immo": _3, "immobilien": _3, "inc": _3, "industries": _3, "infiniti": _3, "ing": _3, "ink": _3, "institute": _3, "insurance": _3, "insure": _3, "international": _3, "intuit": _3, "investments": _3, "ipiranga": _3, "irish": _3, "ismaili": _3, "ist": _3, "istanbul": _3, "itau": _3, "itv": _3, "jaguar": _3, "java": _3, "jcb": _3, "jeep": _3, "jetzt": _3, "jewelry": _3, "jio": _3, "jll": _3, "jmp": _3, "jnj": _3, "joburg": _3, "jot": _3, "joy": _3, "jpmorgan": _3, "jprs": _3, "juegos": _3, "juniper": _3, "kaufen": _3, "kddi": _3, "kerryhotels": _3, "kerrylogistics": _3, "kerryproperties": _3, "kfh": _3, "kia": _3, "kids": _3, "kim": _3, "kindle": _3, "kitchen": _3, "kiwi": _3, "koeln": _3, "komatsu": _3, "kosher": _3, "kpmg": _3, "kpn": _3, "krd": [1, { "co": _4, "edu": _4 }], "kred": _3, "kuokgroup": _3, "kyoto": _3, "lacaixa": _3, "lamborghini": _3, "lamer": _3, "lancaster": _3, "land": _3, "landrover": _3, "lanxess": _3, "lasalle": _3, "lat": _3, "latino": _3, "latrobe": _3, "law": _3, "lawyer": _3, "lds": _3, "lease": _3, "leclerc": _3, "lefrak": _3, "legal": _3, "lego": _3, "lexus": _3, "lgbt": _3, "lidl": _3, "life": _3, "lifeinsurance": _3, "lifestyle": _3, "lighting": _3, "like": _3, "lilly": _3, "limited": _3, "limo": _3, "lincoln": _3, "link": [1, { "myfritz": _4, "cyon": _4, "dweb": _7, "nftstorage": [0, { "ipfs": _4 }], "mypep": _4 }], "lipsy": _3, "live": [1, { "aem": _4, "hlx": _4, "ewp": _7 }], "living": _3, "llc": _3, "llp": _3, "loan": _3, "loans": _3, "locker": _3, "locus": _3, "lol": [1, { "omg": _4 }], "london": _3, "lotte": _3, "lotto": _3, "love": _3, "lpl": _3, "lplfinancial": _3, "ltd": _3, "ltda": _3, "lundbeck": _3, "luxe": _3, "luxury": _3, "madrid": _3, "maif": _3, "maison": _3, "makeup": _3, "man": _3, "management": [1, { "router": _4 }], "mango": _3, "map": _3, "market": _3, "marketing": _3, "markets": _3, "marriott": _3, "marshalls": _3, "mattel": _3, "mba": _3, "mckinsey": _3, "med": _3, "media": _54, "meet": _3, "melbourne": _3, "meme": _3, "memorial": _3, "men": _3, "menu": [1, { "barsy": _4, "barsyonline": _4 }], "merck": _3, "merckmsd": _3, "miami": _3, "microsoft": _3, "mini": _3, "mint": _3, "mit": _3, "mitsubishi": _3, "mlb": _3, "mls": _3, "mma": _3, "mobile": _3, "moda": _3, "moe": _3, "moi": _3, "mom": [1, { "ind": _4 }], "monash": _3, "money": _3, "monster": _3, "mormon": _3, "mortgage": _3, "moscow": _3, "moto": _3, "motorcycles": _3, "mov": _3, "movie": _3, "msd": _3, "mtn": _3, "mtr": _3, "music": _3, "nab": _3, "nagoya": _3, "navy": _3, "nba": _3, "nec": _3, "netbank": _3, "netflix": _3, "network": [1, { "alces": _7, "co": _4, "arvo": _4, "azimuth": _4, "tlon": _4 }], "neustar": _3, "new": _3, "news": [1, { "noticeable": _4 }], "next": _3, "nextdirect": _3, "nexus": _3, "nfl": _3, "ngo": _3, "nhk": _3, "nico": _3, "nike": _3, "nikon": _3, "ninja": _3, "nissan": _3, "nissay": _3, "nokia": _3, "norton": _3, "now": _3, "nowruz": _3, "nowtv": _3, "nra": _3, "nrw": _3, "ntt": _3, "nyc": _3, "obi": _3, "observer": _3, "office": _3, "okinawa": _3, "olayan": _3, "olayangroup": _3, "ollo": _3, "omega": _3, "one": [1, { "kin": _7, "service": _4 }], "ong": [1, { "obl": _4 }], "onl": _3, "online": [1, { "eero": _4, "eero-stage": _4, "websitebuilder": _4, "barsy": _4 }], "ooo": _3, "open": _3, "oracle": _3, "orange": [1, { "tech": _4 }], "organic": _3, "origins": _3, "osaka": _3, "otsuka": _3, "ott": _3, "ovh": [1, { "nerdpol": _4 }], "page": [1, { "aem": _4, "hlx": _4, "hlx3": _4, "translated": _4, "codeberg": _4, "heyflow": _4, "prvcy": _4, "rocky": _4, "pdns": _4, "plesk": _4 }], "panasonic": _3, "paris": _3, "pars": _3, "partners": _3, "parts": _3, "party": _3, "pay": _3, "pccw": _3, "pet": _3, "pfizer": _3, "pharmacy": _3, "phd": _3, "philips": _3, "phone": _3, "photo": _3, "photography": _3, "photos": _54, "physio": _3, "pics": _3, "pictet": _3, "pictures": [1, { "1337": _4 }], "pid": _3, "pin": _3, "ping": _3, "pink": _3, "pioneer": _3, "pizza": [1, { "ngrok": _4 }], "place": _18, "play": _3, "playstation": _3, "plumbing": _3, "plus": _3, "pnc": _3, "pohl": _3, "poker": _3, "politie": _3, "porn": _3, "pramerica": _3, "praxi": _3, "press": _3, "prime": _3, "prod": _3, "productions": _3, "prof": _3, "progressive": _3, "promo": _3, "properties": _3, "property": _3, "protection": _3, "pru": _3, "prudential": _3, "pub": [1, { "id": _7, "kin": _7, "barsy": _4 }], "pwc": _3, "qpon": _3, "quebec": _3, "quest": _3, "racing": _3, "radio": _3, "read": _3, "realestate": _3, "realtor": _3, "realty": _3, "recipes": _3, "red": _3, "redstone": _3, "redumbrella": _3, "rehab": _3, "reise": _3, "reisen": _3, "reit": _3, "reliance": _3, "ren": _3, "rent": _3, "rentals": _3, "repair": _3, "report": _3, "republican": _3, "rest": _3, "restaurant": _3, "review": _3, "reviews": _3, "rexroth": _3, "rich": _3, "richardli": _3, "ricoh": _3, "ril": _3, "rio": _3, "rip": [1, { "clan": _4 }], "rocks": [1, { "myddns": _4, "stackit": _4, "lima-city": _4, "webspace": _4 }], "rodeo": _3, "rogers": _3, "room": _3, "rsvp": _3, "rugby": _3, "ruhr": _3, "run": [1, { "development": _4, "ravendb": _4, "liara": [2, { "iran": _4 }], "servers": _4, "build": _7, "code": _7, "database": _7, "migration": _7, "onporter": _4, "repl": _4, "stackit": _4, "val": [0, { "express": _4, "web": _4 }], "wix": _4 }], "rwe": _3, "ryukyu": _3, "saarland": _3, "safe": _3, "safety": _3, "sakura": _3, "sale": _3, "salon": _3, "samsclub": _3, "samsung": _3, "sandvik": _3, "sandvikcoromant": _3, "sanofi": _3, "sap": _3, "sarl": _3, "sas": _3, "save": _3, "saxo": _3, "sbi": _3, "sbs": _3, "scb": _3, "schaeffler": _3, "schmidt": _3, "scholarships": _3, "school": _3, "schule": _3, "schwarz": _3, "science": _3, "scot": [1, { "gov": [2, { "service": _4 }] }], "search": _3, "seat": _3, "secure": _3, "security": _3, "seek": _3, "select": _3, "sener": _3, "services": [1, { "loginline": _4 }], "seven": _3, "sew": _3, "sex": _3, "sexy": _3, "sfr": _3, "shangrila": _3, "sharp": _3, "shell": _3, "shia": _3, "shiksha": _3, "shoes": _3, "shop": [1, { "base": _4, "hoplix": _4, "barsy": _4, "barsyonline": _4, "shopware": _4 }], "shopping": _3, "shouji": _3, "show": _3, "silk": _3, "sina": _3, "singles": _3, "site": [1, { "canva": _21, "cloudera": _7, "convex": _4, "cyon": _4, "fastvps": _4, "heyflow": _4, "jele": _4, "jouwweb": _4, "loginline": _4, "barsy": _4, "notion": _4, "omniwe": _4, "opensocial": _4, "madethis": _4, "platformsh": _7, "tst": _7, "byen": _4, "srht": _4, "novecore": _4, "wpsquared": _4 }], "ski": _3, "skin": _3, "sky": _3, "skype": _3, "sling": _3, "smart": _3, "smile": _3, "sncf": _3, "soccer": _3, "social": _3, "softbank": _3, "software": _3, "sohu": _3, "solar": _3, "solutions": _3, "song": _3, "sony": _3, "soy": _3, "spa": _3, "space": [1, { "myfast": _4, "heiyu": _4, "hf": [2, { "static": _4 }], "app-ionos": _4, "project": _4, "uber": _4, "xs4all": _4 }], "sport": _3, "spot": _3, "srl": _3, "stada": _3, "staples": _3, "star": _3, "statebank": _3, "statefarm": _3, "stc": _3, "stcgroup": _3, "stockholm": _3, "storage": _3, "store": [1, { "barsy": _4, "sellfy": _4, "shopware": _4, "storebase": _4 }], "stream": _3, "studio": _3, "study": _3, "style": _3, "sucks": _3, "supplies": _3, "supply": _3, "support": [1, { "barsy": _4 }], "surf": _3, "surgery": _3, "suzuki": _3, "swatch": _3, "swiss": _3, "sydney": _3, "systems": [1, { "knightpoint": _4 }], "tab": _3, "taipei": _3, "talk": _3, "taobao": _3, "target": _3, "tatamotors": _3, "tatar": _3, "tattoo": _3, "tax": _3, "taxi": _3, "tci": _3, "tdk": _3, "team": [1, { "discourse": _4, "jelastic": _4 }], "tech": [1, { "cleverapps": _4 }], "technology": _18, "temasek": _3, "tennis": _3, "teva": _3, "thd": _3, "theater": _3, "theatre": _3, "tiaa": _3, "tickets": _3, "tienda": _3, "tips": _3, "tires": _3, "tirol": _3, "tjmaxx": _3, "tjx": _3, "tkmaxx": _3, "tmall": _3, "today": [1, { "prequalifyme": _4 }], "tokyo": _3, "tools": [1, { "addr": _45, "myaddr": _4 }], "top": [1, { "ntdll": _4, "wadl": _7 }], "toray": _3, "toshiba": _3, "total": _3, "tours": _3, "town": _3, "toyota": _3, "toys": _3, "trade": _3, "trading": _3, "training": _3, "travel": _3, "travelers": _3, "travelersinsurance": _3, "trust": _3, "trv": _3, "tube": _3, "tui": _3, "tunes": _3, "tushu": _3, "tvs": _3, "ubank": _3, "ubs": _3, "unicom": _3, "university": _3, "uno": _3, "uol": _3, "ups": _3, "vacations": _3, "vana": _3, "vanguard": _3, "vegas": _3, "ventures": _3, "verisign": _3, "versicherung": _3, "vet": _3, "viajes": _3, "video": _3, "vig": _3, "viking": _3, "villas": _3, "vin": _3, "vip": _3, "virgin": _3, "visa": _3, "vision": _3, "viva": _3, "vivo": _3, "vlaanderen": _3, "vodka": _3, "volvo": _3, "vote": _3, "voting": _3, "voto": _3, "voyage": _3, "wales": _3, "walmart": _3, "walter": _3, "wang": _3, "wanggou": _3, "watch": _3, "watches": _3, "weather": _3, "weatherchannel": _3, "webcam": _3, "weber": _3, "website": _54, "wed": _3, "wedding": _3, "weibo": _3, "weir": _3, "whoswho": _3, "wien": _3, "wiki": _54, "williamhill": _3, "win": _3, "windows": _3, "wine": _3, "winners": _3, "wme": _3, "wolterskluwer": _3, "woodside": _3, "work": _3, "works": _3, "world": _3, "wow": _3, "wtc": _3, "wtf": _3, "xbox": _3, "xerox": _3, "xihuan": _3, "xin": _3, "xn--11b4c3d": _3, "कॉम": _3, "xn--1ck2e1b": _3, "セール": _3, "xn--1qqw23a": _3, "佛山": _3, "xn--30rr7y": _3, "慈善": _3, "xn--3bst00m": _3, "集团": _3, "xn--3ds443g": _3, "在线": _3, "xn--3pxu8k": _3, "点看": _3, "xn--42c2d9a": _3, "คอม": _3, "xn--45q11c": _3, "八卦": _3, "xn--4gbrim": _3, "موقع": _3, "xn--55qw42g": _3, "公益": _3, "xn--55qx5d": _3, "公司": _3, "xn--5su34j936bgsg": _3, "香格里拉": _3, "xn--5tzm5g": _3, "网站": _3, "xn--6frz82g": _3, "移动": _3, "xn--6qq986b3xl": _3, "我爱你": _3, "xn--80adxhks": _3, "москва": _3, "xn--80aqecdr1a": _3, "католик": _3, "xn--80asehdb": _3, "онлайн": _3, "xn--80aswg": _3, "сайт": _3, "xn--8y0a063a": _3, "联通": _3, "xn--9dbq2a": _3, "קום": _3, "xn--9et52u": _3, "时尚": _3, "xn--9krt00a": _3, "微博": _3, "xn--b4w605ferd": _3, "淡马锡": _3, "xn--bck1b9a5dre4c": _3, "ファッション": _3, "xn--c1avg": _3, "орг": _3, "xn--c2br7g": _3, "नेट": _3, "xn--cck2b3b": _3, "ストア": _3, "xn--cckwcxetd": _3, "アマゾン": _3, "xn--cg4bki": _3, "삼성": _3, "xn--czr694b": _3, "商标": _3, "xn--czrs0t": _3, "商店": _3, "xn--czru2d": _3, "商城": _3, "xn--d1acj3b": _3, "дети": _3, "xn--eckvdtc9d": _3, "ポイント": _3, "xn--efvy88h": _3, "新闻": _3, "xn--fct429k": _3, "家電": _3, "xn--fhbei": _3, "كوم": _3, "xn--fiq228c5hs": _3, "中文网": _3, "xn--fiq64b": _3, "中信": _3, "xn--fjq720a": _3, "娱乐": _3, "xn--flw351e": _3, "谷歌": _3, "xn--fzys8d69uvgm": _3, "電訊盈科": _3, "xn--g2xx48c": _3, "购物": _3, "xn--gckr3f0f": _3, "クラウド": _3, "xn--gk3at1e": _3, "通販": _3, "xn--hxt814e": _3, "网店": _3, "xn--i1b6b1a6a2e": _3, "संगठन": _3, "xn--imr513n": _3, "餐厅": _3, "xn--io0a7i": _3, "网络": _3, "xn--j1aef": _3, "ком": _3, "xn--jlq480n2rg": _3, "亚马逊": _3, "xn--jvr189m": _3, "食品": _3, "xn--kcrx77d1x4a": _3, "飞利浦": _3, "xn--kput3i": _3, "手机": _3, "xn--mgba3a3ejt": _3, "ارامكو": _3, "xn--mgba7c0bbn0a": _3, "العليان": _3, "xn--mgbab2bd": _3, "بازار": _3, "xn--mgbca7dzdo": _3, "ابوظبي": _3, "xn--mgbi4ecexp": _3, "كاثوليك": _3, "xn--mgbt3dhd": _3, "همراه": _3, "xn--mk1bu44c": _3, "닷컴": _3, "xn--mxtq1m": _3, "政府": _3, "xn--ngbc5azd": _3, "شبكة": _3, "xn--ngbe9e0a": _3, "بيتك": _3, "xn--ngbrx": _3, "عرب": _3, "xn--nqv7f": _3, "机构": _3, "xn--nqv7fs00ema": _3, "组织机构": _3, "xn--nyqy26a": _3, "健康": _3, "xn--otu796d": _3, "招聘": _3, "xn--p1acf": [1, { "xn--90amc": _4, "xn--j1aef": _4, "xn--j1ael8b": _4, "xn--h1ahn": _4, "xn--j1adp": _4, "xn--c1avg": _4, "xn--80aaa0cvac": _4, "xn--h1aliz": _4, "xn--90a1af": _4, "xn--41a": _4 }], "рус": [1, { "биз": _4, "ком": _4, "крым": _4, "мир": _4, "мск": _4, "орг": _4, "самара": _4, "сочи": _4, "спб": _4, "я": _4 }], "xn--pssy2u": _3, "大拿": _3, "xn--q9jyb4c": _3, "みんな": _3, "xn--qcka1pmc": _3, "グーグル": _3, "xn--rhqv96g": _3, "世界": _3, "xn--rovu88b": _3, "書籍": _3, "xn--ses554g": _3, "网址": _3, "xn--t60b56a": _3, "닷넷": _3, "xn--tckwe": _3, "コム": _3, "xn--tiq49xqyj": _3, "天主教": _3, "xn--unup4y": _3, "游戏": _3, "xn--vermgensberater-ctb": _3, "vermögensberater": _3, "xn--vermgensberatung-pwb": _3, "vermögensberatung": _3, "xn--vhquv": _3, "企业": _3, "xn--vuq861b": _3, "信息": _3, "xn--w4r85el8fhu5dnra": _3, "嘉里大酒店": _3, "xn--w4rs40l": _3, "嘉里": _3, "xn--xhq521b": _3, "广东": _3, "xn--zfr164b": _3, "政务": _3, "xyz": [1, { "botdash": _4, "telebit": _7 }], "yachts": _3, "yahoo": _3, "yamaxun": _3, "yandex": _3, "yodobashi": _3, "yoga": _3, "yokohama": _3, "you": _3, "youtube": _3, "yun": _3, "zappos": _3, "zara": _3, "zero": _3, "zip": _3, "zone": [1, { "cloud66": _4, "triton": _7, "stackit": _4, "lima": _4 }], "zuerich": _3 }];
 	    return rules;
 	})();
 
@@ -380697,7 +378061,7 @@ __export(num_exports, {
   getDecimalString: () => getDecimalString,
   getHexString: () => getHexString,
   getHexStringArray: () => getHexStringArray,
-  hexToBytes: () => hexToBytes,
+  hexToBytes: () => hexToBytes$1,
   hexToDecimalString: () => hexToDecimalString,
   isBigInt: () => isBigInt,
   isBoolean: () => isBoolean,
@@ -380775,14 +378139,14 @@ function getHexStringArray(array) {
 function toCairoBool(value) {
   return (+value).toString();
 }
-function hexToBytes(str) {
+function hexToBytes$1(str) {
   if (!isHex(str))
     throw new Error(`${str} needs to be a hex-string`);
   let adaptedValue = removeHexPrefix(str);
   if (adaptedValue.length % 2 !== 0) {
     adaptedValue = `0${adaptedValue}`;
   }
-  return hexToBytes$2(adaptedValue);
+  return hexToBytes$3(adaptedValue);
 }
 function addPercent(number2, percent) {
   const bigIntNum = BigInt(number2);
@@ -380806,7 +378170,7 @@ __export(selector_exports, {
 function keccakBn(value) {
   const hexWithoutPrefix = removeHexPrefix(toHex(BigInt(value)));
   const evenHex = hexWithoutPrefix.length % 2 === 0 ? hexWithoutPrefix : `0${hexWithoutPrefix}`;
-  return addHexPrefix(keccak$1(hexToBytes(addHexPrefix(evenHex))).toString(16));
+  return addHexPrefix(keccak$1(hexToBytes$1(addHexPrefix(evenHex))).toString(16));
 }
 function keccakHex(str) {
   return addHexPrefix(keccak$1(utf8ToArray(str)).toString(16));
@@ -382797,7 +380161,7 @@ __export(v2_exports, {
 var ec_exports = {};
 __export(ec_exports, {
   starkCurve: () => starkCurve,
-  weierstrass: () => weierstrass$1
+  weierstrass: () => weierstrass$2
 });
 
 // src/utils/hash/transactionHash/v2.ts
@@ -384940,7 +382304,7 @@ var RpcProvider = class {
         ""
       )
     );
-    return addHexPrefix(bytesToHex$1(keccak_256$1(hexToBytes(myEncode))));
+    return addHexPrefix(bytesToHex$2(keccak_256$2(hexToBytes$1(myEncode))));
   }
   async getBlockWithReceipts(blockIdentifier) {
     if (this.channel instanceof rpc_0_6_exports.RpcChannel)
@@ -392296,56 +389660,6 @@ function drizzle(...params) {
   drizzle2.mock = mock;
 })(drizzle);
 
-const bridgeEventTypeEnum$1 = pgEnum("BridgeEventType", [
-  "deposit_initiated_l1",
-  "deposit_initiated_l2",
-  "withdraw_available_l1",
-  "withdraw_completed_l1",
-  "withdraw_completed_l2"
-]);
-const starknetUsdcTransfers = pgTable("starknet_usdc_transfers", {
-  _id: uuid("_id").primaryKey().defaultRandom(),
-  number: bigint("number", { mode: "number" }),
-  hash: text("hash")
-});
-const ethereumUsdcTransfers = pgTable("ethereum_usdc_transfers", {
-  _id: uuid("_id").primaryKey().defaultRandom(),
-  number: bigint("number", { mode: "number" }),
-  hash: text("hash")
-});
-const realmsBridgeEvents$1 = pgTable("realms_bridge_events", {
-  payload: jsonb("payload"),
-  hash: text("hash"),
-  type: bridgeEventTypeEnum$1().notNull()
-});
-const realmsBridgeRequests$1 = pgTable("realms_bridge_requests", {
-  from_chain: text("from_chain").notNull(),
-  token_ids: integer("token_ids").array().notNull(),
-  from_address: text("from_address").notNull(),
-  to_address: text("to_address").notNull(),
-  timestamp: timestamp("timestamp").notNull(),
-  hash: text("hash").notNull()
-});
-const realmsBridgeRequestsRelations = relations(realmsBridgeEvents$1, ({ many }) => ({
-  realmsBridgeEvents: many(realmsBridgeEvents$1)
-}));
-
-const schema = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	bridgeEventTypeEnum: bridgeEventTypeEnum$1,
-	ethereumUsdcTransfers: ethereumUsdcTransfers,
-	realmsBridgeEvents: realmsBridgeEvents$1,
-	realmsBridgeRequests: realmsBridgeRequests$1,
-	realmsBridgeRequestsRelations: realmsBridgeRequestsRelations,
-	starknetUsdcTransfers: starknetUsdcTransfers
-});
-
-const connectionString = "postgresql://RedBeardEth:Vrgeq6jXUW2I@ep-frosty-sea-90384545-pooler.us-east-2.aws.neon.tech/sepolia?sslmode=require";
-const pool = new pg.Pool({
-  connectionString
-});
-const db = drizzle(pool, { schema });
-
 const bridgeEventTypeEnum = pgEnum("BridgeEventType", [
   "deposit_initiated_l1",
   "deposit_initiated_l2",
@@ -392362,16 +389676,32 @@ const realmsBridgeRequests = pgTable("realms_bridge_requests", {
   timestamp: timestamp("timestamp").notNull(),
   hash: text("hash").notNull()
 });
+const realmsBridgeRequestsRelations = relations(
+  realmsBridgeRequests,
+  ({ many }) => ({
+    events: many(realmsBridgeEvents)
+  })
+);
 const realmsBridgeEvents = pgTable(
   "realms_bridge_events",
   {
     id: text("id").notNull(),
     hash: text("hash"),
-    type: bridgeEventTypeEnum().notNull()
+    type: bridgeEventTypeEnum().notNull(),
+    timestamp: timestamp("timestamp").notNull()
   },
   (t) => [primaryKey({ columns: [t.id, t.type] })]
 );
-pgTable(
+const realmsBridgeEventsRelations = relations(
+  realmsBridgeEvents,
+  ({ one }) => ({
+    request: one(realmsBridgeRequests, {
+      fields: [realmsBridgeEvents.id],
+      references: [realmsBridgeRequests.id]
+    })
+  })
+);
+const velords_burns = pgTable(
   "dune_velords_burns",
   {
     source: text("source").notNull(),
@@ -392387,7 +389717,7 @@ pgTable(
   },
   (t) => [primaryKey({ columns: [t.amount, t.transaction_hash] })]
 );
-pgTable("dune_velords_supply", {
+const velords_supply = pgTable("dune_velords_supply", {
   old_supply: text("old_supply").notNull(),
   new_supply: numeric("new_supply").notNull(),
   transaction_hash: text("transaction_hash").notNull().primaryKey(),
@@ -392396,14 +389726,14 @@ pgTable("dune_velords_supply", {
     precision: 3
   }).notNull()
 });
-pgTable("lords_rewards", {
+const lordsRewards = pgTable("lords_rewards", {
   cursor: bigint("_cursor", { mode: "number" }),
   hash: text().primaryKey().notNull(),
   amount: numeric({ precision: 78, scale: 8 }).notNull(),
   recipient: text().notNull(),
   timestamp: timestamp({ mode: "string" }).notNull()
 });
-pgTable(
+const governances = pgTable(
   "governances",
   {
     uid: uuid("uid").defaultRandom().primaryKey().notNull(),
@@ -392443,7 +389773,7 @@ pgTable(
     };
   }
 );
-pgTable(
+const delegates = pgTable(
   "delegates",
   {
     uid: uuid("uid").defaultRandom().primaryKey().notNull(),
@@ -392487,7 +389817,7 @@ pgTable(
     };
   }
 );
-pgTable(
+const delegateProfiles = pgTable(
   "delegate_profiles",
   {
     id: varchar("id", { length: 256 }).default(sql`gen_random_uuid()`).primaryKey(),
@@ -392510,6 +389840,27 @@ pgTable(
     };
   }
 );
+
+const schema = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	bridgeEventTypeEnum: bridgeEventTypeEnum,
+	delegateProfiles: delegateProfiles,
+	delegates: delegates,
+	governances: governances,
+	lordsRewards: lordsRewards,
+	realmsBridgeEvents: realmsBridgeEvents,
+	realmsBridgeEventsRelations: realmsBridgeEventsRelations,
+	realmsBridgeRequests: realmsBridgeRequests,
+	realmsBridgeRequestsRelations: realmsBridgeRequestsRelations,
+	velords_burns: velords_burns,
+	velords_supply: velords_supply
+});
+
+const connectionString = "postgresql://RedBeardEth:Vrgeq6jXUW2I@ep-frosty-sea-90384545-pooler.us-east-2.aws.neon.tech/sepolia?sslmode=require";
+const pool = new pg.Pool({
+  connectionString
+});
+const db = drizzle(pool, { schema });
 
 var util;
 (function (util) {
@@ -396953,9 +394304,9 @@ function createIndexer$2({ database }) {
   console.log("from ", REALMS_BRIDGE_ADDRESS[chainId$1]);
   console.log("to " + BigInt(REALMS_BRIDGE_ADDRESS[l2ChainId]));
   return defineIndexer(EvmStream)({
-    streamUrl: "https://ethereum.preview.apibara.org",
+    streamUrl: env.VITE_PUBLIC_CHAIN === "sepolia" ? "https://ethereum-sepolia.preview.apibara.org" : "https://ethereum.preview.apibara.org",
     finality: "accepted",
-    startingBlock: 20638058n,
+    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6180467n : 20638058n,
     filter: {
       logs: [
         {
@@ -397043,18 +394394,18 @@ function createIndexer$2({ database }) {
           const fromChain = decoded.eventName === "LogMessageToL1" || decoded.eventName === "ConsumedMessageToL1" ? l2ChainId : chainId$1;
           await db2.insert(realmsBridgeRequests).values({
             from_chain: fromChain,
-            from_address: log.topics[0],
-            to_address: log.topics[1],
+            from_address: numberToHex(decoded.args.payload[2]),
+            to_address: numberToHex(decoded.args.payload[3]),
             token_ids: tokenIds,
             timestamp: header?.timestamp,
             hash: log.transactionHash,
             id: decoded.args.payload
           }).onConflictDoNothing();
           const eventTypeMap = {
-            "LogMessageToL2": "deposit_initiated_l1",
-            "ConsumedMessageToL2": "withdraw_completed_l2",
-            "LogMessageToL1": "withdraw_available_l1",
-            "ConsumedMessageToL1": "withdraw_completed_l1"
+            LogMessageToL2: "deposit_initiated_l1",
+            ConsumedMessageToL2: "withdraw_completed_l2",
+            LogMessageToL1: "withdraw_available_l1",
+            ConsumedMessageToL1: "withdraw_completed_l1"
           };
           const eventType = eventTypeMap[decoded.eventName];
           if (eventType) {
@@ -397071,12 +394422,1268 @@ function createIndexer$2({ database }) {
   });
 }
 
+function anumber$1(n) {
+    if (!Number.isSafeInteger(n) || n < 0)
+        throw new Error('positive integer expected, got ' + n);
+}
+// copied from utils
+function isBytes$2(a) {
+    return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
+}
+function abytes$2(b, ...lengths) {
+    if (!isBytes$2(b))
+        throw new Error('Uint8Array expected');
+    if (lengths.length > 0 && !lengths.includes(b.length))
+        throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
+}
+function aexists$1(instance, checkFinished = true) {
+    if (instance.destroyed)
+        throw new Error('Hash instance has been destroyed');
+    if (checkFinished && instance.finished)
+        throw new Error('Hash#digest() has already been called');
+}
+function aoutput(out, instance) {
+    abytes$2(out);
+    const min = instance.outputLen;
+    if (out.length < min) {
+        throw new Error('digestInto() expects output buffer of length at least ' + min);
+    }
+}
+
+const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
+const _32n = /* @__PURE__ */ BigInt(32);
+// BigUint64Array is too slow as per 2024, so we implement it using Uint32Array.
+// TODO: re-check https://issues.chromium.org/issues/42212588
+function fromBig(n, le = false) {
+    if (le)
+        return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
+    return { h: Number((n >> _32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };
+}
+function split(lst, le = false) {
+    let Ah = new Uint32Array(lst.length);
+    let Al = new Uint32Array(lst.length);
+    for (let i = 0; i < lst.length; i++) {
+        const { h, l } = fromBig(lst[i], le);
+        [Ah[i], Al[i]] = [h, l];
+    }
+    return [Ah, Al];
+}
+// Left rotate for Shift in [1, 32)
+const rotlSH = (h, l, s) => (h << s) | (l >>> (32 - s));
+const rotlSL = (h, l, s) => (l << s) | (h >>> (32 - s));
+// Left rotate for Shift in (32, 64), NOTE: 32 is special case.
+const rotlBH = (h, l, s) => (l << (s - 32)) | (h >>> (64 - s));
+const rotlBL = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
+
+/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
+// node.js versions earlier than v19 don't declare it in global scope.
+// For node.js, package.json#exports field mapping rewrites import
+// from `crypto` to `cryptoNode`, which imports native module.
+// Makes the utils un-importable in browsers without a bundler.
+// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
+const u32 = (arr) => new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
+// Cast array to view
+const createView = (arr) => new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+// The rotate right (circular right shift) operation for uint32
+const rotr = (word, shift) => (word << (32 - shift)) | (word >>> shift);
+const isLE = /* @__PURE__ */ (() => new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
+// The byte swap operation for uint32
+const byteSwap = (word) => ((word << 24) & 0xff000000) |
+    ((word << 8) & 0xff0000) |
+    ((word >>> 8) & 0xff00) |
+    ((word >>> 24) & 0xff);
+// In place byte swap for Uint32Array
+function byteSwap32(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        arr[i] = byteSwap(arr[i]);
+    }
+}
+/**
+ * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
+ */
+function utf8ToBytes$2(str) {
+    if (typeof str !== 'string')
+        throw new Error('utf8ToBytes expected string, got ' + typeof str);
+    return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
+}
+/**
+ * Normalizes (non-hex) string or Uint8Array to Uint8Array.
+ * Warning: when Uint8Array is passed, it would NOT get copied.
+ * Keep in mind for future mutable operations.
+ */
+function toBytes$1(data) {
+    if (typeof data === 'string')
+        data = utf8ToBytes$2(data);
+    abytes$2(data);
+    return data;
+}
+// For runtime check if class implements interface
+let Hash$1 = class Hash {
+    // Safe version that clones internal state
+    clone() {
+        return this._cloneInto();
+    }
+};
+function wrapConstructor(hashCons) {
+    const hashC = (msg) => hashCons().update(toBytes$1(msg)).digest();
+    const tmp = hashCons();
+    hashC.outputLen = tmp.outputLen;
+    hashC.blockLen = tmp.blockLen;
+    hashC.create = () => hashCons();
+    return hashC;
+}
+
+// SHA3 (keccak) is based on a new design: basically, the internal state is bigger than output size.
+// It's called a sponge function.
+// Various per round constants calculations
+const SHA3_PI = [];
+const SHA3_ROTL = [];
+const _SHA3_IOTA = [];
+const _0n$4 = /* @__PURE__ */ BigInt(0);
+const _1n$4 = /* @__PURE__ */ BigInt(1);
+const _2n$2 = /* @__PURE__ */ BigInt(2);
+const _7n = /* @__PURE__ */ BigInt(7);
+const _256n = /* @__PURE__ */ BigInt(256);
+const _0x71n = /* @__PURE__ */ BigInt(0x71);
+for (let round = 0, R = _1n$4, x = 1, y = 0; round < 24; round++) {
+    // Pi
+    [x, y] = [y, (2 * x + 3 * y) % 5];
+    SHA3_PI.push(2 * (5 * y + x));
+    // Rotational
+    SHA3_ROTL.push((((round + 1) * (round + 2)) / 2) % 64);
+    // Iota
+    let t = _0n$4;
+    for (let j = 0; j < 7; j++) {
+        R = ((R << _1n$4) ^ ((R >> _7n) * _0x71n)) % _256n;
+        if (R & _2n$2)
+            t ^= _1n$4 << ((_1n$4 << /* @__PURE__ */ BigInt(j)) - _1n$4);
+    }
+    _SHA3_IOTA.push(t);
+}
+const [SHA3_IOTA_H, SHA3_IOTA_L] = /* @__PURE__ */ split(_SHA3_IOTA, true);
+// Left rotation (without 0, 32, 64)
+const rotlH = (h, l, s) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
+const rotlL = (h, l, s) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
+// Same as keccakf1600, but allows to skip some rounds
+function keccakP(s, rounds = 24) {
+    const B = new Uint32Array(5 * 2);
+    // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
+    for (let round = 24 - rounds; round < 24; round++) {
+        // Theta θ
+        for (let x = 0; x < 10; x++)
+            B[x] = s[x] ^ s[x + 10] ^ s[x + 20] ^ s[x + 30] ^ s[x + 40];
+        for (let x = 0; x < 10; x += 2) {
+            const idx1 = (x + 8) % 10;
+            const idx0 = (x + 2) % 10;
+            const B0 = B[idx0];
+            const B1 = B[idx0 + 1];
+            const Th = rotlH(B0, B1, 1) ^ B[idx1];
+            const Tl = rotlL(B0, B1, 1) ^ B[idx1 + 1];
+            for (let y = 0; y < 50; y += 10) {
+                s[x + y] ^= Th;
+                s[x + y + 1] ^= Tl;
+            }
+        }
+        // Rho (ρ) and Pi (π)
+        let curH = s[2];
+        let curL = s[3];
+        for (let t = 0; t < 24; t++) {
+            const shift = SHA3_ROTL[t];
+            const Th = rotlH(curH, curL, shift);
+            const Tl = rotlL(curH, curL, shift);
+            const PI = SHA3_PI[t];
+            curH = s[PI];
+            curL = s[PI + 1];
+            s[PI] = Th;
+            s[PI + 1] = Tl;
+        }
+        // Chi (χ)
+        for (let y = 0; y < 50; y += 10) {
+            for (let x = 0; x < 10; x++)
+                B[x] = s[y + x];
+            for (let x = 0; x < 10; x++)
+                s[y + x] ^= ~B[(x + 2) % 10] & B[(x + 4) % 10];
+        }
+        // Iota (ι)
+        s[0] ^= SHA3_IOTA_H[round];
+        s[1] ^= SHA3_IOTA_L[round];
+    }
+    B.fill(0);
+}
+class Keccak extends Hash$1 {
+    // NOTE: we accept arguments in bytes instead of bits here.
+    constructor(blockLen, suffix, outputLen, enableXOF = false, rounds = 24) {
+        super();
+        this.blockLen = blockLen;
+        this.suffix = suffix;
+        this.outputLen = outputLen;
+        this.enableXOF = enableXOF;
+        this.rounds = rounds;
+        this.pos = 0;
+        this.posOut = 0;
+        this.finished = false;
+        this.destroyed = false;
+        // Can be passed from user as dkLen
+        anumber$1(outputLen);
+        // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
+        if (0 >= this.blockLen || this.blockLen >= 200)
+            throw new Error('Sha3 supports only keccak-f1600 function');
+        this.state = new Uint8Array(200);
+        this.state32 = u32(this.state);
+    }
+    keccak() {
+        if (!isLE)
+            byteSwap32(this.state32);
+        keccakP(this.state32, this.rounds);
+        if (!isLE)
+            byteSwap32(this.state32);
+        this.posOut = 0;
+        this.pos = 0;
+    }
+    update(data) {
+        aexists$1(this);
+        const { blockLen, state } = this;
+        data = toBytes$1(data);
+        const len = data.length;
+        for (let pos = 0; pos < len;) {
+            const take = Math.min(blockLen - this.pos, len - pos);
+            for (let i = 0; i < take; i++)
+                state[this.pos++] ^= data[pos++];
+            if (this.pos === blockLen)
+                this.keccak();
+        }
+        return this;
+    }
+    finish() {
+        if (this.finished)
+            return;
+        this.finished = true;
+        const { state, suffix, pos, blockLen } = this;
+        // Do the padding
+        state[pos] ^= suffix;
+        if ((suffix & 0x80) !== 0 && pos === blockLen - 1)
+            this.keccak();
+        state[blockLen - 1] ^= 0x80;
+        this.keccak();
+    }
+    writeInto(out) {
+        aexists$1(this, false);
+        abytes$2(out);
+        this.finish();
+        const bufferOut = this.state;
+        const { blockLen } = this;
+        for (let pos = 0, len = out.length; pos < len;) {
+            if (this.posOut >= blockLen)
+                this.keccak();
+            const take = Math.min(blockLen - this.posOut, len - pos);
+            out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);
+            this.posOut += take;
+            pos += take;
+        }
+        return out;
+    }
+    xofInto(out) {
+        // Sha3/Keccak usage with XOF is probably mistake, only SHAKE instances can do XOF
+        if (!this.enableXOF)
+            throw new Error('XOF is not possible for this instance');
+        return this.writeInto(out);
+    }
+    xof(bytes) {
+        anumber$1(bytes);
+        return this.xofInto(new Uint8Array(bytes));
+    }
+    digestInto(out) {
+        aoutput(out, this);
+        if (this.finished)
+            throw new Error('digest() was already called');
+        this.writeInto(out);
+        this.destroy();
+        return out;
+    }
+    digest() {
+        return this.digestInto(new Uint8Array(this.outputLen));
+    }
+    destroy() {
+        this.destroyed = true;
+        this.state.fill(0);
+    }
+    _cloneInto(to) {
+        const { blockLen, suffix, outputLen, rounds, enableXOF } = this;
+        to || (to = new Keccak(blockLen, suffix, outputLen, enableXOF, rounds));
+        to.state32.set(this.state32);
+        to.pos = this.pos;
+        to.posOut = this.posOut;
+        to.finished = this.finished;
+        to.rounds = rounds;
+        // Suffix can change in cSHAKE
+        to.suffix = suffix;
+        to.outputLen = outputLen;
+        to.enableXOF = enableXOF;
+        to.destroyed = this.destroyed;
+        return to;
+    }
+}
+const gen = (suffix, blockLen, outputLen) => wrapConstructor(() => new Keccak(blockLen, suffix, outputLen));
+/**
+ * keccak-256 hash function. Different from SHA3-256.
+ * @param message - that would be hashed
+ */
+const keccak_256 = /* @__PURE__ */ gen(0x01, 136, 256 / 8);
+
+/**
+ * Polyfill for Safari 14
+ */
+function setBigUint64(view, byteOffset, value, isLE) {
+    if (typeof view.setBigUint64 === 'function')
+        return view.setBigUint64(byteOffset, value, isLE);
+    const _32n = BigInt(32);
+    const _u32_max = BigInt(0xffffffff);
+    const wh = Number((value >> _32n) & _u32_max);
+    const wl = Number(value & _u32_max);
+    const h = isLE ? 4 : 0;
+    const l = isLE ? 0 : 4;
+    view.setUint32(byteOffset + h, wh, isLE);
+    view.setUint32(byteOffset + l, wl, isLE);
+}
+/**
+ * Choice: a ? b : c
+ */
+const Chi = (a, b, c) => (a & b) ^ (~a & c);
+/**
+ * Majority function, true if any two inputs is true
+ */
+const Maj = (a, b, c) => (a & b) ^ (a & c) ^ (b & c);
+/**
+ * Merkle-Damgard hash construction base class.
+ * Could be used to create MD5, RIPEMD, SHA1, SHA2.
+ */
+class HashMD extends Hash$1 {
+    constructor(blockLen, outputLen, padOffset, isLE) {
+        super();
+        this.blockLen = blockLen;
+        this.outputLen = outputLen;
+        this.padOffset = padOffset;
+        this.isLE = isLE;
+        this.finished = false;
+        this.length = 0;
+        this.pos = 0;
+        this.destroyed = false;
+        this.buffer = new Uint8Array(blockLen);
+        this.view = createView(this.buffer);
+    }
+    update(data) {
+        aexists$1(this);
+        const { view, buffer, blockLen } = this;
+        data = toBytes$1(data);
+        const len = data.length;
+        for (let pos = 0; pos < len;) {
+            const take = Math.min(blockLen - this.pos, len - pos);
+            // Fast path: we have at least one block in input, cast it to view and process
+            if (take === blockLen) {
+                const dataView = createView(data);
+                for (; blockLen <= len - pos; pos += blockLen)
+                    this.process(dataView, pos);
+                continue;
+            }
+            buffer.set(data.subarray(pos, pos + take), this.pos);
+            this.pos += take;
+            pos += take;
+            if (this.pos === blockLen) {
+                this.process(view, 0);
+                this.pos = 0;
+            }
+        }
+        this.length += data.length;
+        this.roundClean();
+        return this;
+    }
+    digestInto(out) {
+        aexists$1(this);
+        aoutput(out, this);
+        this.finished = true;
+        // Padding
+        // We can avoid allocation of buffer for padding completely if it
+        // was previously not allocated here. But it won't change performance.
+        const { buffer, view, blockLen, isLE } = this;
+        let { pos } = this;
+        // append the bit '1' to the message
+        buffer[pos++] = 0b10000000;
+        this.buffer.subarray(pos).fill(0);
+        // we have less than padOffset left in buffer, so we cannot put length in
+        // current block, need process it and pad again
+        if (this.padOffset > blockLen - pos) {
+            this.process(view, 0);
+            pos = 0;
+        }
+        // Pad until full block byte with zeros
+        for (let i = pos; i < blockLen; i++)
+            buffer[i] = 0;
+        // Note: sha512 requires length to be 128bit integer, but length in JS will overflow before that
+        // You need to write around 2 exabytes (u64_max / 8 / (1024**6)) for this to happen.
+        // So we just write lowest 64 bits of that value.
+        setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
+        this.process(view, 0);
+        const oview = createView(out);
+        const len = this.outputLen;
+        // NOTE: we do division by 4 later, which should be fused in single op with modulo by JIT
+        if (len % 4)
+            throw new Error('_sha2: outputLen should be aligned to 32bit');
+        const outLen = len / 4;
+        const state = this.get();
+        if (outLen > state.length)
+            throw new Error('_sha2: outputLen bigger than state');
+        for (let i = 0; i < outLen; i++)
+            oview.setUint32(4 * i, state[i], isLE);
+    }
+    digest() {
+        const { buffer, outputLen } = this;
+        this.digestInto(buffer);
+        const res = buffer.slice(0, outputLen);
+        this.destroy();
+        return res;
+    }
+    _cloneInto(to) {
+        to || (to = new this.constructor());
+        to.set(...this.get());
+        const { blockLen, buffer, length, finished, destroyed, pos } = this;
+        to.length = length;
+        to.pos = pos;
+        to.finished = finished;
+        to.destroyed = destroyed;
+        if (length % blockLen)
+            to.buffer.set(buffer);
+        return to;
+    }
+}
+
+// SHA2-256 need to try 2^128 hashes to execute birthday attack.
+// BTC network is doing 2^70 hashes/sec (2^95 hashes/year) as per late 2024.
+// Round constants:
+// first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
+// prettier-ignore
+const SHA256_K = /* @__PURE__ */ new Uint32Array([
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+]);
+// Initial state:
+// first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19
+// prettier-ignore
+const SHA256_IV = /* @__PURE__ */ new Uint32Array([
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+]);
+// Temporary buffer, not used to store anything between runs
+// Named this way because it matches specification.
+const SHA256_W = /* @__PURE__ */ new Uint32Array(64);
+class SHA256 extends HashMD {
+    constructor() {
+        super(64, 32, 8, false);
+        // We cannot use array here since array allows indexing by variable
+        // which means optimizer/compiler cannot use registers.
+        this.A = SHA256_IV[0] | 0;
+        this.B = SHA256_IV[1] | 0;
+        this.C = SHA256_IV[2] | 0;
+        this.D = SHA256_IV[3] | 0;
+        this.E = SHA256_IV[4] | 0;
+        this.F = SHA256_IV[5] | 0;
+        this.G = SHA256_IV[6] | 0;
+        this.H = SHA256_IV[7] | 0;
+    }
+    get() {
+        const { A, B, C, D, E, F, G, H } = this;
+        return [A, B, C, D, E, F, G, H];
+    }
+    // prettier-ignore
+    set(A, B, C, D, E, F, G, H) {
+        this.A = A | 0;
+        this.B = B | 0;
+        this.C = C | 0;
+        this.D = D | 0;
+        this.E = E | 0;
+        this.F = F | 0;
+        this.G = G | 0;
+        this.H = H | 0;
+    }
+    process(view, offset) {
+        // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
+        for (let i = 0; i < 16; i++, offset += 4)
+            SHA256_W[i] = view.getUint32(offset, false);
+        for (let i = 16; i < 64; i++) {
+            const W15 = SHA256_W[i - 15];
+            const W2 = SHA256_W[i - 2];
+            const s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ (W15 >>> 3);
+            const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ (W2 >>> 10);
+            SHA256_W[i] = (s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16]) | 0;
+        }
+        // Compression function main loop, 64 rounds
+        let { A, B, C, D, E, F, G, H } = this;
+        for (let i = 0; i < 64; i++) {
+            const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
+            const T1 = (H + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i]) | 0;
+            const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
+            const T2 = (sigma0 + Maj(A, B, C)) | 0;
+            H = G;
+            G = F;
+            F = E;
+            E = (D + T1) | 0;
+            D = C;
+            C = B;
+            B = A;
+            A = (T1 + T2) | 0;
+        }
+        // Add the compressed chunk to the current hash value
+        A = (A + this.A) | 0;
+        B = (B + this.B) | 0;
+        C = (C + this.C) | 0;
+        D = (D + this.D) | 0;
+        E = (E + this.E) | 0;
+        F = (F + this.F) | 0;
+        G = (G + this.G) | 0;
+        H = (H + this.H) | 0;
+        this.set(A, B, C, D, E, F, G, H);
+    }
+    roundClean() {
+        SHA256_W.fill(0);
+    }
+    destroy() {
+        this.set(0, 0, 0, 0, 0, 0, 0, 0);
+        this.buffer.fill(0);
+    }
+}
+/**
+ * SHA2-256 hash function
+ * @param message - data that would be hashed
+ */
+const sha256 = /* @__PURE__ */ wrapConstructor(() => new SHA256());
+
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// 100 lines of code in the file are duplicated from noble-hashes (utils).
+// This is OK: `abstract` directory does not use noble-hashes.
+// User may opt-in into using different hashing library. This way, noble-hashes
+// won't be included into their bundle.
+const _0n$3 = /* @__PURE__ */ BigInt(0);
+const _1n$3 = /* @__PURE__ */ BigInt(1);
+const _2n$1 = /* @__PURE__ */ BigInt(2);
+function isBytes$1(a) {
+    return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
+}
+function abytes$1(item) {
+    if (!isBytes$1(item))
+        throw new Error('Uint8Array expected');
+}
+function abool(title, value) {
+    if (typeof value !== 'boolean')
+        throw new Error(title + ' boolean expected, got ' + value);
+}
+// Array where index 0xf0 (240) is mapped to string 'f0'
+const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
+/**
+ * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
+ */
+function bytesToHex(bytes) {
+    abytes$1(bytes);
+    // pre-caching improves the speed 6x
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) {
+        hex += hexes[bytes[i]];
+    }
+    return hex;
+}
+function numberToHexUnpadded(num) {
+    const hex = num.toString(16);
+    return hex.length & 1 ? '0' + hex : hex;
+}
+function hexToNumber(hex) {
+    if (typeof hex !== 'string')
+        throw new Error('hex string expected, got ' + typeof hex);
+    return hex === '' ? _0n$3 : BigInt('0x' + hex); // Big Endian
+}
+// We use optimized technique to convert hex string to byte array
+const asciis = { _0: 48, _9: 57, A: 65, F: 70, a: 97, f: 102 };
+function asciiToBase16(ch) {
+    if (ch >= asciis._0 && ch <= asciis._9)
+        return ch - asciis._0; // '2' => 50-48
+    if (ch >= asciis.A && ch <= asciis.F)
+        return ch - (asciis.A - 10); // 'B' => 66-(65-10)
+    if (ch >= asciis.a && ch <= asciis.f)
+        return ch - (asciis.a - 10); // 'b' => 98-(97-10)
+    return;
+}
+/**
+ * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
+ */
+function hexToBytes(hex) {
+    if (typeof hex !== 'string')
+        throw new Error('hex string expected, got ' + typeof hex);
+    const hl = hex.length;
+    const al = hl / 2;
+    if (hl % 2)
+        throw new Error('hex string expected, got unpadded hex of length ' + hl);
+    const array = new Uint8Array(al);
+    for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
+        const n1 = asciiToBase16(hex.charCodeAt(hi));
+        const n2 = asciiToBase16(hex.charCodeAt(hi + 1));
+        if (n1 === undefined || n2 === undefined) {
+            const char = hex[hi] + hex[hi + 1];
+            throw new Error('hex string expected, got non-hex character "' + char + '" at index ' + hi);
+        }
+        array[ai] = n1 * 16 + n2; // multiply first octet, e.g. 'a3' => 10*16+3 => 160 + 3 => 163
+    }
+    return array;
+}
+// BE: Big Endian, LE: Little Endian
+function bytesToNumberBE(bytes) {
+    return hexToNumber(bytesToHex(bytes));
+}
+function bytesToNumberLE(bytes) {
+    abytes$1(bytes);
+    return hexToNumber(bytesToHex(Uint8Array.from(bytes).reverse()));
+}
+function numberToBytesBE(n, len) {
+    return hexToBytes(n.toString(16).padStart(len * 2, '0'));
+}
+function numberToBytesLE(n, len) {
+    return numberToBytesBE(n, len).reverse();
+}
+// Unpadded, rarely used
+function numberToVarBytesBE(n) {
+    return hexToBytes(numberToHexUnpadded(n));
+}
+/**
+ * Takes hex string or Uint8Array, converts to Uint8Array.
+ * Validates output length.
+ * Will throw error for other types.
+ * @param title descriptive title for an error e.g. 'private key'
+ * @param hex hex string or Uint8Array
+ * @param expectedLength optional, will compare to result array's length
+ * @returns
+ */
+function ensureBytes(title, hex, expectedLength) {
+    let res;
+    if (typeof hex === 'string') {
+        try {
+            res = hexToBytes(hex);
+        }
+        catch (e) {
+            throw new Error(title + ' must be hex string or Uint8Array, cause: ' + e);
+        }
+    }
+    else if (isBytes$1(hex)) {
+        // Uint8Array.from() instead of hash.slice() because node.js Buffer
+        // is instance of Uint8Array, and its slice() creates **mutable** copy
+        res = Uint8Array.from(hex);
+    }
+    else {
+        throw new Error(title + ' must be hex string or Uint8Array');
+    }
+    const len = res.length;
+    if (typeof expectedLength === 'number' && len !== expectedLength)
+        throw new Error(title + ' of length ' + expectedLength + ' expected, got ' + len);
+    return res;
+}
+/**
+ * Copies several Uint8Arrays into one.
+ */
+function concatBytes$1(...arrays) {
+    let sum = 0;
+    for (let i = 0; i < arrays.length; i++) {
+        const a = arrays[i];
+        abytes$1(a);
+        sum += a.length;
+    }
+    const res = new Uint8Array(sum);
+    for (let i = 0, pad = 0; i < arrays.length; i++) {
+        const a = arrays[i];
+        res.set(a, pad);
+        pad += a.length;
+    }
+    return res;
+}
+// Compares 2 u8a-s in kinda constant time
+function equalBytes(a, b) {
+    if (a.length !== b.length)
+        return false;
+    let diff = 0;
+    for (let i = 0; i < a.length; i++)
+        diff |= a[i] ^ b[i];
+    return diff === 0;
+}
+/**
+ * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
+ */
+function utf8ToBytes$1(str) {
+    if (typeof str !== 'string')
+        throw new Error('string expected');
+    return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
+}
+// Is positive bigint
+const isPosBig = (n) => typeof n === 'bigint' && _0n$3 <= n;
+function inRange(n, min, max) {
+    return isPosBig(n) && isPosBig(min) && isPosBig(max) && min <= n && n < max;
+}
+/**
+ * Asserts min <= n < max. NOTE: It's < max and not <= max.
+ * @example
+ * aInRange('x', x, 1n, 256n); // would assume x is in (1n..255n)
+ */
+function aInRange(title, n, min, max) {
+    // Why min <= n < max and not a (min < n < max) OR b (min <= n <= max)?
+    // consider P=256n, min=0n, max=P
+    // - a for min=0 would require -1:          `inRange('x', x, -1n, P)`
+    // - b would commonly require subtraction:  `inRange('x', x, 0n, P - 1n)`
+    // - our way is the cleanest:               `inRange('x', x, 0n, P)
+    if (!inRange(n, min, max))
+        throw new Error('expected valid ' + title + ': ' + min + ' <= n < ' + max + ', got ' + n);
+}
+// Bit operations
+/**
+ * Calculates amount of bits in a bigint.
+ * Same as `n.toString(2).length`
+ */
+function bitLen(n) {
+    let len;
+    for (len = 0; n > _0n$3; n >>= _1n$3, len += 1)
+        ;
+    return len;
+}
+/**
+ * Gets single bit at position.
+ * NOTE: first bit position is 0 (same as arrays)
+ * Same as `!!+Array.from(n.toString(2)).reverse()[pos]`
+ */
+function bitGet(n, pos) {
+    return (n >> BigInt(pos)) & _1n$3;
+}
+/**
+ * Sets single bit at position.
+ */
+function bitSet(n, pos, value) {
+    return n | ((value ? _1n$3 : _0n$3) << BigInt(pos));
+}
+/**
+ * Calculate mask for N bits. Not using ** operator with bigints because of old engines.
+ * Same as BigInt(`0b${Array(i).fill('1').join('')}`)
+ */
+const bitMask = (n) => (_2n$1 << BigInt(n - 1)) - _1n$3;
+// DRBG
+const u8n = (data) => new Uint8Array(data); // creates Uint8Array
+const u8fr = (arr) => Uint8Array.from(arr); // another shortcut
+/**
+ * Minimal HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
+ * @returns function that will call DRBG until 2nd arg returns something meaningful
+ * @example
+ *   const drbg = createHmacDRBG<Key>(32, 32, hmac);
+ *   drbg(seed, bytesToKey); // bytesToKey must return Key or undefined
+ */
+function createHmacDrbg(hashLen, qByteLen, hmacFn) {
+    if (typeof hashLen !== 'number' || hashLen < 2)
+        throw new Error('hashLen must be a number');
+    if (typeof qByteLen !== 'number' || qByteLen < 2)
+        throw new Error('qByteLen must be a number');
+    if (typeof hmacFn !== 'function')
+        throw new Error('hmacFn must be a function');
+    // Step B, Step C: set hashLen to 8*ceil(hlen/8)
+    let v = u8n(hashLen); // Minimal non-full-spec HMAC-DRBG from NIST 800-90 for RFC6979 sigs.
+    let k = u8n(hashLen); // Steps B and C of RFC6979 3.2: set hashLen, in our case always same
+    let i = 0; // Iterations counter, will throw when over 1000
+    const reset = () => {
+        v.fill(1);
+        k.fill(0);
+        i = 0;
+    };
+    const h = (...b) => hmacFn(k, v, ...b); // hmac(k)(v, ...values)
+    const reseed = (seed = u8n()) => {
+        // HMAC-DRBG reseed() function. Steps D-G
+        k = h(u8fr([0x00]), seed); // k = hmac(k || v || 0x00 || seed)
+        v = h(); // v = hmac(k || v)
+        if (seed.length === 0)
+            return;
+        k = h(u8fr([0x01]), seed); // k = hmac(k || v || 0x01 || seed)
+        v = h(); // v = hmac(k || v)
+    };
+    const gen = () => {
+        // HMAC-DRBG generate() function
+        if (i++ >= 1000)
+            throw new Error('drbg: tried 1000 values');
+        let len = 0;
+        const out = [];
+        while (len < qByteLen) {
+            v = h();
+            const sl = v.slice();
+            out.push(sl);
+            len += v.length;
+        }
+        return concatBytes$1(...out);
+    };
+    const genUntil = (seed, pred) => {
+        reset();
+        reseed(seed); // Steps D-G
+        let res = undefined; // Step H: grind until k is in [1..n-1]
+        while (!(res = pred(gen())))
+            reseed();
+        reset();
+        return res;
+    };
+    return genUntil;
+}
+// Validating curves and fields
+const validatorFns = {
+    bigint: (val) => typeof val === 'bigint',
+    function: (val) => typeof val === 'function',
+    boolean: (val) => typeof val === 'boolean',
+    string: (val) => typeof val === 'string',
+    stringOrUint8Array: (val) => typeof val === 'string' || isBytes$1(val),
+    isSafeInteger: (val) => Number.isSafeInteger(val),
+    array: (val) => Array.isArray(val),
+    field: (val, object) => object.Fp.isValid(val),
+    hash: (val) => typeof val === 'function' && Number.isSafeInteger(val.outputLen),
+};
+// type Record<K extends string | number | symbol, T> = { [P in K]: T; }
+function validateObject(object, validators, optValidators = {}) {
+    const checkField = (fieldName, type, isOptional) => {
+        const checkVal = validatorFns[type];
+        if (typeof checkVal !== 'function')
+            throw new Error('invalid validator function');
+        const val = object[fieldName];
+        if (isOptional && val === undefined)
+            return;
+        if (!checkVal(val, object)) {
+            throw new Error('param ' + String(fieldName) + ' is invalid. Expected ' + type + ', got ' + val);
+        }
+    };
+    for (const [fieldName, type] of Object.entries(validators))
+        checkField(fieldName, type, false);
+    for (const [fieldName, type] of Object.entries(optValidators))
+        checkField(fieldName, type, true);
+    return object;
+}
+// validate type tests
+// const o: { a: number; b: number; c: number } = { a: 1, b: 5, c: 6 };
+// const z0 = validateObject(o, { a: 'isSafeInteger' }, { c: 'bigint' }); // Ok!
+// // Should fail type-check
+// const z1 = validateObject(o, { a: 'tmp' }, { c: 'zz' });
+// const z2 = validateObject(o, { a: 'isSafeInteger' }, { c: 'zz' });
+// const z3 = validateObject(o, { test: 'boolean', z: 'bug' });
+// const z4 = validateObject(o, { a: 'boolean', z: 'bug' });
+/**
+ * throws not implemented error
+ */
+const notImplemented = () => {
+    throw new Error('not implemented');
+};
+/**
+ * Memoizes (caches) computation result.
+ * Uses WeakMap: the value is going auto-cleaned by GC after last reference is removed.
+ */
+function memoized(fn) {
+    const map = new WeakMap();
+    return (arg, ...args) => {
+        const val = map.get(arg);
+        if (val !== undefined)
+            return val;
+        const computed = fn(arg, ...args);
+        map.set(arg, computed);
+        return computed;
+    };
+}
+
+const ut = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	aInRange: aInRange,
+	abool: abool,
+	abytes: abytes$1,
+	bitGet: bitGet,
+	bitLen: bitLen,
+	bitMask: bitMask,
+	bitSet: bitSet,
+	bytesToHex: bytesToHex,
+	bytesToNumberBE: bytesToNumberBE,
+	bytesToNumberLE: bytesToNumberLE,
+	concatBytes: concatBytes$1,
+	createHmacDrbg: createHmacDrbg,
+	ensureBytes: ensureBytes,
+	equalBytes: equalBytes,
+	hexToBytes: hexToBytes,
+	hexToNumber: hexToNumber,
+	inRange: inRange,
+	isBytes: isBytes$1,
+	memoized: memoized,
+	notImplemented: notImplemented,
+	numberToBytesBE: numberToBytesBE,
+	numberToBytesLE: numberToBytesLE,
+	numberToHexUnpadded: numberToHexUnpadded,
+	numberToVarBytesBE: numberToVarBytesBE,
+	utf8ToBytes: utf8ToBytes$1,
+	validateObject: validateObject
+});
+
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// Utilities for modular arithmetics and finite fields
+// prettier-ignore
+const _0n$2 = BigInt(0), _1n$2 = BigInt(1), _2n = /* @__PURE__ */ BigInt(2), _3n$1 = /* @__PURE__ */ BigInt(3);
+// prettier-ignore
+const _4n = /* @__PURE__ */ BigInt(4), _5n = /* @__PURE__ */ BigInt(5), _8n = /* @__PURE__ */ BigInt(8);
+// Calculates a modulo b
+function mod(a, b) {
+    const result = a % b;
+    return result >= _0n$2 ? result : b + result;
+}
+/**
+ * Efficiently raise num to power and do modular division.
+ * Unsafe in some contexts: uses ladder, so can expose bigint bits.
+ * @example
+ * pow(2n, 6n, 11n) // 64n % 11n == 9n
+ */
+// TODO: use field version && remove
+function pow(num, power, modulo) {
+    if (power < _0n$2)
+        throw new Error('invalid exponent, negatives unsupported');
+    if (modulo <= _0n$2)
+        throw new Error('invalid modulus');
+    if (modulo === _1n$2)
+        return _0n$2;
+    let res = _1n$2;
+    while (power > _0n$2) {
+        if (power & _1n$2)
+            res = (res * num) % modulo;
+        num = (num * num) % modulo;
+        power >>= _1n$2;
+    }
+    return res;
+}
+// Inverses number over modulo
+function invert(number, modulo) {
+    if (number === _0n$2)
+        throw new Error('invert: expected non-zero number');
+    if (modulo <= _0n$2)
+        throw new Error('invert: expected positive modulus, got ' + modulo);
+    // Euclidean GCD https://brilliant.org/wiki/extended-euclidean-algorithm/
+    // Fermat's little theorem "CT-like" version inv(n) = n^(m-2) mod m is 30x slower.
+    let a = mod(number, modulo);
+    let b = modulo;
+    // prettier-ignore
+    let x = _0n$2, u = _1n$2;
+    while (a !== _0n$2) {
+        // JIT applies optimization if those two lines follow each other
+        const q = b / a;
+        const r = b % a;
+        const m = x - u * q;
+        // prettier-ignore
+        b = a, a = r, x = u, u = m;
+    }
+    const gcd = b;
+    if (gcd !== _1n$2)
+        throw new Error('invert: does not exist');
+    return mod(x, modulo);
+}
+/**
+ * Tonelli-Shanks square root search algorithm.
+ * 1. https://eprint.iacr.org/2012/685.pdf (page 12)
+ * 2. Square Roots from 1; 24, 51, 10 to Dan Shanks
+ * Will start an infinite loop if field order P is not prime.
+ * @param P field order
+ * @returns function that takes field Fp (created from P) and number n
+ */
+function tonelliShanks(P) {
+    // Legendre constant: used to calculate Legendre symbol (a | p),
+    // which denotes the value of a^((p-1)/2) (mod p).
+    // (a | p) ≡ 1    if a is a square (mod p)
+    // (a | p) ≡ -1   if a is not a square (mod p)
+    // (a | p) ≡ 0    if a ≡ 0 (mod p)
+    const legendreC = (P - _1n$2) / _2n;
+    let Q, S, Z;
+    // Step 1: By factoring out powers of 2 from p - 1,
+    // find q and s such that p - 1 = q*(2^s) with q odd
+    for (Q = P - _1n$2, S = 0; Q % _2n === _0n$2; Q /= _2n, S++)
+        ;
+    // Step 2: Select a non-square z such that (z | p) ≡ -1 and set c ≡ zq
+    for (Z = _2n; Z < P && pow(Z, legendreC, P) !== P - _1n$2; Z++) {
+        // Crash instead of infinity loop, we cannot reasonable count until P.
+        if (Z > 1000)
+            throw new Error('Cannot find square root: likely non-prime P');
+    }
+    // Fast-path
+    if (S === 1) {
+        const p1div4 = (P + _1n$2) / _4n;
+        return function tonelliFast(Fp, n) {
+            const root = Fp.pow(n, p1div4);
+            if (!Fp.eql(Fp.sqr(root), n))
+                throw new Error('Cannot find square root');
+            return root;
+        };
+    }
+    // Slow-path
+    const Q1div2 = (Q + _1n$2) / _2n;
+    return function tonelliSlow(Fp, n) {
+        // Step 0: Check that n is indeed a square: (n | p) should not be ≡ -1
+        if (Fp.pow(n, legendreC) === Fp.neg(Fp.ONE))
+            throw new Error('Cannot find square root');
+        let r = S;
+        // TODO: will fail at Fp2/etc
+        let g = Fp.pow(Fp.mul(Fp.ONE, Z), Q); // will update both x and b
+        let x = Fp.pow(n, Q1div2); // first guess at the square root
+        let b = Fp.pow(n, Q); // first guess at the fudge factor
+        while (!Fp.eql(b, Fp.ONE)) {
+            if (Fp.eql(b, Fp.ZERO))
+                return Fp.ZERO; // https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm (4. If t = 0, return r = 0)
+            // Find m such b^(2^m)==1
+            let m = 1;
+            for (let t2 = Fp.sqr(b); m < r; m++) {
+                if (Fp.eql(t2, Fp.ONE))
+                    break;
+                t2 = Fp.sqr(t2); // t2 *= t2
+            }
+            // NOTE: r-m-1 can be bigger than 32, need to convert to bigint before shift, otherwise there will be overflow
+            const ge = Fp.pow(g, _1n$2 << BigInt(r - m - 1)); // ge = 2^(r-m-1)
+            g = Fp.sqr(ge); // g = ge * ge
+            x = Fp.mul(x, ge); // x *= ge
+            b = Fp.mul(b, g); // b *= g
+            r = m;
+        }
+        return x;
+    };
+}
+function FpSqrt(P) {
+    // NOTE: different algorithms can give different roots, it is up to user to decide which one they want.
+    // For example there is FpSqrtOdd/FpSqrtEven to choice root based on oddness (used for hash-to-curve).
+    // P ≡ 3 (mod 4)
+    // √n = n^((P+1)/4)
+    if (P % _4n === _3n$1) {
+        // Not all roots possible!
+        // const ORDER =
+        //   0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn;
+        // const NUM = 72057594037927816n;
+        const p1div4 = (P + _1n$2) / _4n;
+        return function sqrt3mod4(Fp, n) {
+            const root = Fp.pow(n, p1div4);
+            // Throw if root**2 != n
+            if (!Fp.eql(Fp.sqr(root), n))
+                throw new Error('Cannot find square root');
+            return root;
+        };
+    }
+    // Atkin algorithm for q ≡ 5 (mod 8), https://eprint.iacr.org/2012/685.pdf (page 10)
+    if (P % _8n === _5n) {
+        const c1 = (P - _5n) / _8n;
+        return function sqrt5mod8(Fp, n) {
+            const n2 = Fp.mul(n, _2n);
+            const v = Fp.pow(n2, c1);
+            const nv = Fp.mul(n, v);
+            const i = Fp.mul(Fp.mul(nv, _2n), v);
+            const root = Fp.mul(nv, Fp.sub(i, Fp.ONE));
+            if (!Fp.eql(Fp.sqr(root), n))
+                throw new Error('Cannot find square root');
+            return root;
+        };
+    }
+    // Other cases: Tonelli-Shanks algorithm
+    return tonelliShanks(P);
+}
+// prettier-ignore
+const FIELD_FIELDS = [
+    'create', 'isValid', 'is0', 'neg', 'inv', 'sqrt', 'sqr',
+    'eql', 'add', 'sub', 'mul', 'pow', 'div',
+    'addN', 'subN', 'mulN', 'sqrN'
+];
+function validateField(field) {
+    const initial = {
+        ORDER: 'bigint',
+        MASK: 'bigint',
+        BYTES: 'isSafeInteger',
+        BITS: 'isSafeInteger',
+    };
+    const opts = FIELD_FIELDS.reduce((map, val) => {
+        map[val] = 'function';
+        return map;
+    }, initial);
+    return validateObject(field, opts);
+}
+// Generic field functions
+/**
+ * Same as `pow` but for Fp: non-constant-time.
+ * Unsafe in some contexts: uses ladder, so can expose bigint bits.
+ */
+function FpPow(f, num, power) {
+    // Should have same speed as pow for bigints
+    // TODO: benchmark!
+    if (power < _0n$2)
+        throw new Error('invalid exponent, negatives unsupported');
+    if (power === _0n$2)
+        return f.ONE;
+    if (power === _1n$2)
+        return num;
+    let p = f.ONE;
+    let d = num;
+    while (power > _0n$2) {
+        if (power & _1n$2)
+            p = f.mul(p, d);
+        d = f.sqr(d);
+        power >>= _1n$2;
+    }
+    return p;
+}
+/**
+ * Efficiently invert an array of Field elements.
+ * `inv(0)` will return `undefined` here: make sure to throw an error.
+ */
+function FpInvertBatch(f, nums) {
+    const tmp = new Array(nums.length);
+    // Walk from first to last, multiply them by each other MOD p
+    const lastMultiplied = nums.reduce((acc, num, i) => {
+        if (f.is0(num))
+            return acc;
+        tmp[i] = acc;
+        return f.mul(acc, num);
+    }, f.ONE);
+    // Invert last element
+    const inverted = f.inv(lastMultiplied);
+    // Walk from last to first, multiply them by inverted each other MOD p
+    nums.reduceRight((acc, num, i) => {
+        if (f.is0(num))
+            return acc;
+        tmp[i] = f.mul(acc, tmp[i]);
+        return f.mul(acc, num);
+    }, inverted);
+    return tmp;
+}
+// CURVE.n lengths
+function nLength(n, nBitLength) {
+    // Bit size, byte size of CURVE.n
+    const _nBitLength = nBitLength !== undefined ? nBitLength : n.toString(2).length;
+    const nByteLength = Math.ceil(_nBitLength / 8);
+    return { nBitLength: _nBitLength, nByteLength };
+}
+/**
+ * Initializes a finite field over prime. **Non-primes are not supported.**
+ * Do not init in loop: slow. Very fragile: always run a benchmark on a change.
+ * Major performance optimizations:
+ * * a) denormalized operations like mulN instead of mul
+ * * b) same object shape: never add or remove keys
+ * * c) Object.freeze
+ * NOTE: operations don't check 'isValid' for all elements for performance reasons,
+ * it is caller responsibility to check this.
+ * This is low-level code, please make sure you know what you doing.
+ * @param ORDER prime positive bigint
+ * @param bitLen how many bits the field consumes
+ * @param isLE (def: false) if encoding / decoding should be in little-endian
+ * @param redef optional faster redefinitions of sqrt and other methods
+ */
+function Field(ORDER, bitLen, isLE = false, redef = {}) {
+    if (ORDER <= _0n$2)
+        throw new Error('invalid field: expected ORDER > 0, got ' + ORDER);
+    const { nBitLength: BITS, nByteLength: BYTES } = nLength(ORDER, bitLen);
+    if (BYTES > 2048)
+        throw new Error('invalid field: expected ORDER of <= 2048 bytes');
+    let sqrtP; // cached sqrtP
+    const f = Object.freeze({
+        ORDER,
+        BITS,
+        BYTES,
+        MASK: bitMask(BITS),
+        ZERO: _0n$2,
+        ONE: _1n$2,
+        create: (num) => mod(num, ORDER),
+        isValid: (num) => {
+            if (typeof num !== 'bigint')
+                throw new Error('invalid field element: expected bigint, got ' + typeof num);
+            return _0n$2 <= num && num < ORDER; // 0 is valid element, but it's not invertible
+        },
+        is0: (num) => num === _0n$2,
+        isOdd: (num) => (num & _1n$2) === _1n$2,
+        neg: (num) => mod(-num, ORDER),
+        eql: (lhs, rhs) => lhs === rhs,
+        sqr: (num) => mod(num * num, ORDER),
+        add: (lhs, rhs) => mod(lhs + rhs, ORDER),
+        sub: (lhs, rhs) => mod(lhs - rhs, ORDER),
+        mul: (lhs, rhs) => mod(lhs * rhs, ORDER),
+        pow: (num, power) => FpPow(f, num, power),
+        div: (lhs, rhs) => mod(lhs * invert(rhs, ORDER), ORDER),
+        // Same as above, but doesn't normalize
+        sqrN: (num) => num * num,
+        addN: (lhs, rhs) => lhs + rhs,
+        subN: (lhs, rhs) => lhs - rhs,
+        mulN: (lhs, rhs) => lhs * rhs,
+        inv: (num) => invert(num, ORDER),
+        sqrt: redef.sqrt ||
+            ((n) => {
+                if (!sqrtP)
+                    sqrtP = FpSqrt(ORDER);
+                return sqrtP(f, n);
+            }),
+        invertBatch: (lst) => FpInvertBatch(f, lst),
+        // TODO: do we really need constant cmov?
+        // We don't have const-time bigints anyway, so probably will be not very useful
+        cmov: (a, b, c) => (c ? b : a),
+        toBytes: (num) => (isLE ? numberToBytesLE(num, BYTES) : numberToBytesBE(num, BYTES)),
+        fromBytes: (bytes) => {
+            if (bytes.length !== BYTES)
+                throw new Error('Field.fromBytes: expected ' + BYTES + ' bytes, got ' + bytes.length);
+            return isLE ? bytesToNumberLE(bytes) : bytesToNumberBE(bytes);
+        },
+    });
+    return Object.freeze(f);
+}
+/**
+ * Returns total number of bytes consumed by the field element.
+ * For example, 32 bytes for usual 256-bit weierstrass curve.
+ * @param fieldOrder number of field elements, usually CURVE.n
+ * @returns byte length of field
+ */
+function getFieldBytesLength(fieldOrder) {
+    if (typeof fieldOrder !== 'bigint')
+        throw new Error('field order must be bigint');
+    const bitLength = fieldOrder.toString(2).length;
+    return Math.ceil(bitLength / 8);
+}
+/**
+ * Returns minimal amount of bytes that can be safely reduced
+ * by field order.
+ * Should be 2^-128 for 128-bit curve such as P256.
+ * @param fieldOrder number of field elements, usually CURVE.n
+ * @returns byte length of target hash
+ */
+function getMinHashLength(fieldOrder) {
+    const length = getFieldBytesLength(fieldOrder);
+    return length + Math.ceil(length / 2);
+}
+/**
+ * "Constant-time" private key generation utility.
+ * Can take (n + n/2) or more bytes of uniform input e.g. from CSPRNG or KDF
+ * and convert them into private scalar, with the modulo bias being negligible.
+ * Needs at least 48 bytes of input for 32-byte private key.
+ * https://research.kudelskisecurity.com/2020/07/28/the-definitive-guide-to-modulo-bias-and-how-to-avoid-it/
+ * FIPS 186-5, A.2 https://csrc.nist.gov/publications/detail/fips/186/5/final
+ * RFC 9380, https://www.rfc-editor.org/rfc/rfc9380#section-5
+ * @param hash hash output from SHA3 or a similar function
+ * @param groupOrder size of subgroup - (e.g. secp256k1.CURVE.n)
+ * @param isLE interpret hash bytes as LE num
+ * @returns valid private scalar
+ */
+function mapHashToField(key, fieldOrder, isLE = false) {
+    const len = key.length;
+    const fieldLen = getFieldBytesLength(fieldOrder);
+    const minLen = getMinHashLength(fieldOrder);
+    // No small numbers: need to understand bias story. No huge numbers: easier to detect JS timings.
+    if (len < 16 || len < minLen || len > 1024)
+        throw new Error('expected ' + minLen + '-1024 bytes of input, got ' + len);
+    const num = isLE ? bytesToNumberBE(key) : bytesToNumberLE(key);
+    // `mod(x, 11)` can sometimes produce 0. `mod(x, 10) + 1` is the same, but no 0
+    const reduced = mod(num, fieldOrder - _1n$2) + _1n$2;
+    return isLE ? numberToBytesLE(reduced, fieldLen) : numberToBytesBE(reduced, fieldLen);
+}
+
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 // Poseidon Hash: https://eprint.iacr.org/2019/458.pdf, https://www.poseidon-hash.info
-function validateOpts(opts) {
+function validateOpts$1(opts) {
     const { Fp, mds, reversePartialPowIdx: rev, roundConstants: rc } = opts;
     const { roundsFull, roundsPartial, sboxPower, t } = opts;
-    validateField$2(Fp);
+    validateField(Fp);
     for (const i of ['t', 'roundsFull', 'roundsPartial']) {
         if (typeof opts[i] !== 'number' || !Number.isSafeInteger(opts[i]))
             throw new Error('invalid number ' + i);
@@ -397112,7 +395719,7 @@ function validateOpts(opts) {
     if (!sboxPower || ![3, 5, 7].includes(sboxPower))
         throw new Error('invalid sboxPower');
     const _sboxPower = BigInt(sboxPower);
-    let sboxFn = (n) => FpPow$2(Fp, n, _sboxPower);
+    let sboxFn = (n) => FpPow(Fp, n, _sboxPower);
     // Unwrapped sbox power for common cases (195->142μs)
     if (sboxPower === 3)
         sboxFn = (n) => Fp.mul(Fp.sqrN(n), n);
@@ -397121,7 +395728,7 @@ function validateOpts(opts) {
     return Object.freeze({ ...opts, rounds, sboxFn, roundConstants, mds: _mds });
 }
 function poseidon(opts) {
-    const _opts = validateOpts(opts);
+    const _opts = validateOpts$1(opts);
     const { Fp, mds, roundConstants, rounds: totalRounds, roundsPartial, sboxFn, t } = _opts;
     const halfRoundsFull = _opts.roundsFull / 2;
     const partialIdx = _opts.reversePartialPowIdx ? t - 1 : 0;
@@ -397162,6 +395769,1505 @@ function poseidon(opts) {
     return poseidonHash;
 }
 
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// Abelian group utilities
+const _0n$1 = BigInt(0);
+const _1n$1 = BigInt(1);
+function constTimeNegate(condition, item) {
+    const neg = item.negate();
+    return condition ? neg : item;
+}
+function validateW(W, bits) {
+    if (!Number.isSafeInteger(W) || W <= 0 || W > bits)
+        throw new Error('invalid window size, expected [1..' + bits + '], got W=' + W);
+}
+function calcWOpts(W, bits) {
+    validateW(W, bits);
+    const windows = Math.ceil(bits / W) + 1; // +1, because
+    const windowSize = 2 ** (W - 1); // -1 because we skip zero
+    return { windows, windowSize };
+}
+function validateMSMPoints(points, c) {
+    if (!Array.isArray(points))
+        throw new Error('array expected');
+    points.forEach((p, i) => {
+        if (!(p instanceof c))
+            throw new Error('invalid point at index ' + i);
+    });
+}
+function validateMSMScalars(scalars, field) {
+    if (!Array.isArray(scalars))
+        throw new Error('array of scalars expected');
+    scalars.forEach((s, i) => {
+        if (!field.isValid(s))
+            throw new Error('invalid scalar at index ' + i);
+    });
+}
+// Since points in different groups cannot be equal (different object constructor),
+// we can have single place to store precomputes
+const pointPrecomputes = new WeakMap();
+const pointWindowSizes = new WeakMap(); // This allows use make points immutable (nothing changes inside)
+function getW(P) {
+    return pointWindowSizes.get(P) || 1;
+}
+// Elliptic curve multiplication of Point by scalar. Fragile.
+// Scalars should always be less than curve order: this should be checked inside of a curve itself.
+// Creates precomputation tables for fast multiplication:
+// - private scalar is split by fixed size windows of W bits
+// - every window point is collected from window's table & added to accumulator
+// - since windows are different, same point inside tables won't be accessed more than once per calc
+// - each multiplication is 'Math.ceil(CURVE_ORDER / 𝑊) + 1' point additions (fixed for any scalar)
+// - +1 window is neccessary for wNAF
+// - wNAF reduces table size: 2x less memory + 2x faster generation, but 10% slower multiplication
+// TODO: Research returning 2d JS array of windows, instead of a single window. This would allow
+// windows to be in different memory locations
+function wNAF(c, bits) {
+    return {
+        constTimeNegate,
+        hasPrecomputes(elm) {
+            return getW(elm) !== 1;
+        },
+        // non-const time multiplication ladder
+        unsafeLadder(elm, n, p = c.ZERO) {
+            let d = elm;
+            while (n > _0n$1) {
+                if (n & _1n$1)
+                    p = p.add(d);
+                d = d.double();
+                n >>= _1n$1;
+            }
+            return p;
+        },
+        /**
+         * Creates a wNAF precomputation window. Used for caching.
+         * Default window size is set by `utils.precompute()` and is equal to 8.
+         * Number of precomputed points depends on the curve size:
+         * 2^(𝑊−1) * (Math.ceil(𝑛 / 𝑊) + 1), where:
+         * - 𝑊 is the window size
+         * - 𝑛 is the bitlength of the curve order.
+         * For a 256-bit curve and window size 8, the number of precomputed points is 128 * 33 = 4224.
+         * @param elm Point instance
+         * @param W window size
+         * @returns precomputed point tables flattened to a single array
+         */
+        precomputeWindow(elm, W) {
+            const { windows, windowSize } = calcWOpts(W, bits);
+            const points = [];
+            let p = elm;
+            let base = p;
+            for (let window = 0; window < windows; window++) {
+                base = p;
+                points.push(base);
+                // =1, because we skip zero
+                for (let i = 1; i < windowSize; i++) {
+                    base = base.add(p);
+                    points.push(base);
+                }
+                p = base.double();
+            }
+            return points;
+        },
+        /**
+         * Implements ec multiplication using precomputed tables and w-ary non-adjacent form.
+         * @param W window size
+         * @param precomputes precomputed tables
+         * @param n scalar (we don't check here, but should be less than curve order)
+         * @returns real and fake (for const-time) points
+         */
+        wNAF(W, precomputes, n) {
+            // TODO: maybe check that scalar is less than group order? wNAF behavious is undefined otherwise
+            // But need to carefully remove other checks before wNAF. ORDER == bits here
+            const { windows, windowSize } = calcWOpts(W, bits);
+            let p = c.ZERO;
+            let f = c.BASE;
+            const mask = BigInt(2 ** W - 1); // Create mask with W ones: 0b1111 for W=4 etc.
+            const maxNumber = 2 ** W;
+            const shiftBy = BigInt(W);
+            for (let window = 0; window < windows; window++) {
+                const offset = window * windowSize;
+                // Extract W bits.
+                let wbits = Number(n & mask);
+                // Shift number by W bits.
+                n >>= shiftBy;
+                // If the bits are bigger than max size, we'll split those.
+                // +224 => 256 - 32
+                if (wbits > windowSize) {
+                    wbits -= maxNumber;
+                    n += _1n$1;
+                }
+                // This code was first written with assumption that 'f' and 'p' will never be infinity point:
+                // since each addition is multiplied by 2 ** W, it cannot cancel each other. However,
+                // there is negate now: it is possible that negated element from low value
+                // would be the same as high element, which will create carry into next window.
+                // It's not obvious how this can fail, but still worth investigating later.
+                // Check if we're onto Zero point.
+                // Add random point inside current window to f.
+                const offset1 = offset;
+                const offset2 = offset + Math.abs(wbits) - 1; // -1 because we skip zero
+                const cond1 = window % 2 !== 0;
+                const cond2 = wbits < 0;
+                if (wbits === 0) {
+                    // The most important part for const-time getPublicKey
+                    f = f.add(constTimeNegate(cond1, precomputes[offset1]));
+                }
+                else {
+                    p = p.add(constTimeNegate(cond2, precomputes[offset2]));
+                }
+            }
+            // JIT-compiler should not eliminate f here, since it will later be used in normalizeZ()
+            // Even if the variable is still unused, there are some checks which will
+            // throw an exception, so compiler needs to prove they won't happen, which is hard.
+            // At this point there is a way to F be infinity-point even if p is not,
+            // which makes it less const-time: around 1 bigint multiply.
+            return { p, f };
+        },
+        /**
+         * Implements ec unsafe (non const-time) multiplication using precomputed tables and w-ary non-adjacent form.
+         * @param W window size
+         * @param precomputes precomputed tables
+         * @param n scalar (we don't check here, but should be less than curve order)
+         * @param acc accumulator point to add result of multiplication
+         * @returns point
+         */
+        wNAFUnsafe(W, precomputes, n, acc = c.ZERO) {
+            const { windows, windowSize } = calcWOpts(W, bits);
+            const mask = BigInt(2 ** W - 1); // Create mask with W ones: 0b1111 for W=4 etc.
+            const maxNumber = 2 ** W;
+            const shiftBy = BigInt(W);
+            for (let window = 0; window < windows; window++) {
+                const offset = window * windowSize;
+                if (n === _0n$1)
+                    break; // No need to go over empty scalar
+                // Extract W bits.
+                let wbits = Number(n & mask);
+                // Shift number by W bits.
+                n >>= shiftBy;
+                // If the bits are bigger than max size, we'll split those.
+                // +224 => 256 - 32
+                if (wbits > windowSize) {
+                    wbits -= maxNumber;
+                    n += _1n$1;
+                }
+                if (wbits === 0)
+                    continue;
+                let curr = precomputes[offset + Math.abs(wbits) - 1]; // -1 because we skip zero
+                if (wbits < 0)
+                    curr = curr.negate();
+                // NOTE: by re-using acc, we can save a lot of additions in case of MSM
+                acc = acc.add(curr);
+            }
+            return acc;
+        },
+        getPrecomputes(W, P, transform) {
+            // Calculate precomputes on a first run, reuse them after
+            let comp = pointPrecomputes.get(P);
+            if (!comp) {
+                comp = this.precomputeWindow(P, W);
+                if (W !== 1)
+                    pointPrecomputes.set(P, transform(comp));
+            }
+            return comp;
+        },
+        wNAFCached(P, n, transform) {
+            const W = getW(P);
+            return this.wNAF(W, this.getPrecomputes(W, P, transform), n);
+        },
+        wNAFCachedUnsafe(P, n, transform, prev) {
+            const W = getW(P);
+            if (W === 1)
+                return this.unsafeLadder(P, n, prev); // For W=1 ladder is ~x2 faster
+            return this.wNAFUnsafe(W, this.getPrecomputes(W, P, transform), n, prev);
+        },
+        // We calculate precomputes for elliptic curve point multiplication
+        // using windowed method. This specifies window size and
+        // stores precomputed values. Usually only base point would be precomputed.
+        setWindowSize(P, W) {
+            validateW(W, bits);
+            pointWindowSizes.set(P, W);
+            pointPrecomputes.delete(P);
+        },
+    };
+}
+/**
+ * Pippenger algorithm for multi-scalar multiplication (MSM, Pa + Qb + Rc + ...).
+ * 30x faster vs naive addition on L=4096, 10x faster with precomputes.
+ * For N=254bit, L=1, it does: 1024 ADD + 254 DBL. For L=5: 1536 ADD + 254 DBL.
+ * Algorithmically constant-time (for same L), even when 1 point + scalar, or when scalar = 0.
+ * @param c Curve Point constructor
+ * @param fieldN field over CURVE.N - important that it's not over CURVE.P
+ * @param points array of L curve points
+ * @param scalars array of L scalars (aka private keys / bigints)
+ */
+function pippenger(c, fieldN, points, scalars) {
+    // If we split scalars by some window (let's say 8 bits), every chunk will only
+    // take 256 buckets even if there are 4096 scalars, also re-uses double.
+    // TODO:
+    // - https://eprint.iacr.org/2024/750.pdf
+    // - https://tches.iacr.org/index.php/TCHES/article/view/10287
+    // 0 is accepted in scalars
+    validateMSMPoints(points, c);
+    validateMSMScalars(scalars, fieldN);
+    if (points.length !== scalars.length)
+        throw new Error('arrays of points and scalars must have equal length');
+    const zero = c.ZERO;
+    const wbits = bitLen(BigInt(points.length));
+    const windowSize = wbits > 12 ? wbits - 3 : wbits > 4 ? wbits - 2 : wbits ? 2 : 1; // in bits
+    const MASK = (1 << windowSize) - 1;
+    const buckets = new Array(MASK + 1).fill(zero); // +1 for zero array
+    const lastBits = Math.floor((fieldN.BITS - 1) / windowSize) * windowSize;
+    let sum = zero;
+    for (let i = lastBits; i >= 0; i -= windowSize) {
+        buckets.fill(zero);
+        for (let j = 0; j < scalars.length; j++) {
+            const scalar = scalars[j];
+            const wbits = Number((scalar >> BigInt(i)) & BigInt(MASK));
+            buckets[wbits] = buckets[wbits].add(points[j]);
+        }
+        let resI = zero; // not using this will do small speed-up, but will lose ct
+        // Skip first bucket, because it is zero
+        for (let j = buckets.length - 1, sumI = zero; j > 0; j--) {
+            sumI = sumI.add(buckets[j]);
+            resI = resI.add(sumI);
+        }
+        sum = sum.add(resI);
+        if (i !== 0)
+            for (let j = 0; j < windowSize; j++)
+                sum = sum.double();
+    }
+    return sum;
+}
+function validateBasic(curve) {
+    validateField(curve.Fp);
+    validateObject(curve, {
+        n: 'bigint',
+        h: 'bigint',
+        Gx: 'field',
+        Gy: 'field',
+    }, {
+        nBitLength: 'isSafeInteger',
+        nByteLength: 'isSafeInteger',
+    });
+    // Set defaults
+    return Object.freeze({
+        ...nLength(curve.n, curve.nBitLength),
+        ...curve,
+        ...{ p: curve.Fp.ORDER },
+    });
+}
+
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// Short Weierstrass curve. The formula is: y² = x³ + ax + b
+function validateSigVerOpts(opts) {
+    if (opts.lowS !== undefined)
+        abool('lowS', opts.lowS);
+    if (opts.prehash !== undefined)
+        abool('prehash', opts.prehash);
+}
+function validatePointOpts(curve) {
+    const opts = validateBasic(curve);
+    validateObject(opts, {
+        a: 'field',
+        b: 'field',
+    }, {
+        allowedPrivateKeyLengths: 'array',
+        wrapPrivateKey: 'boolean',
+        isTorsionFree: 'function',
+        clearCofactor: 'function',
+        allowInfinityPoint: 'boolean',
+        fromBytes: 'function',
+        toBytes: 'function',
+    });
+    const { endo, Fp, a } = opts;
+    if (endo) {
+        if (!Fp.eql(a, Fp.ZERO)) {
+            throw new Error('invalid endomorphism, can only be defined for Koblitz curves that have a=0');
+        }
+        if (typeof endo !== 'object' ||
+            typeof endo.beta !== 'bigint' ||
+            typeof endo.splitScalar !== 'function') {
+            throw new Error('invalid endomorphism, expected beta: bigint and splitScalar: function');
+        }
+    }
+    return Object.freeze({ ...opts });
+}
+const { bytesToNumberBE: b2n, hexToBytes: h2b } = ut;
+/**
+ * ASN.1 DER encoding utilities. ASN is very complex & fragile. Format:
+ *
+ *     [0x30 (SEQUENCE), bytelength, 0x02 (INTEGER), intLength, R, 0x02 (INTEGER), intLength, S]
+ *
+ * Docs: https://letsencrypt.org/docs/a-warm-welcome-to-asn1-and-der/, https://luca.ntop.org/Teaching/Appunti/asn1.html
+ */
+const DER = {
+    // asn.1 DER encoding utils
+    Err: class DERErr extends Error {
+        constructor(m = '') {
+            super(m);
+        }
+    },
+    // Basic building block is TLV (Tag-Length-Value)
+    _tlv: {
+        encode: (tag, data) => {
+            const { Err: E } = DER;
+            if (tag < 0 || tag > 256)
+                throw new E('tlv.encode: wrong tag');
+            if (data.length & 1)
+                throw new E('tlv.encode: unpadded data');
+            const dataLen = data.length / 2;
+            const len = numberToHexUnpadded(dataLen);
+            if ((len.length / 2) & 128)
+                throw new E('tlv.encode: long form length too big');
+            // length of length with long form flag
+            const lenLen = dataLen > 127 ? numberToHexUnpadded((len.length / 2) | 128) : '';
+            const t = numberToHexUnpadded(tag);
+            return t + lenLen + len + data;
+        },
+        // v - value, l - left bytes (unparsed)
+        decode(tag, data) {
+            const { Err: E } = DER;
+            let pos = 0;
+            if (tag < 0 || tag > 256)
+                throw new E('tlv.encode: wrong tag');
+            if (data.length < 2 || data[pos++] !== tag)
+                throw new E('tlv.decode: wrong tlv');
+            const first = data[pos++];
+            const isLong = !!(first & 128); // First bit of first length byte is flag for short/long form
+            let length = 0;
+            if (!isLong)
+                length = first;
+            else {
+                // Long form: [longFlag(1bit), lengthLength(7bit), length (BE)]
+                const lenLen = first & 127;
+                if (!lenLen)
+                    throw new E('tlv.decode(long): indefinite length not supported');
+                if (lenLen > 4)
+                    throw new E('tlv.decode(long): byte length is too big'); // this will overflow u32 in js
+                const lengthBytes = data.subarray(pos, pos + lenLen);
+                if (lengthBytes.length !== lenLen)
+                    throw new E('tlv.decode: length bytes not complete');
+                if (lengthBytes[0] === 0)
+                    throw new E('tlv.decode(long): zero leftmost byte');
+                for (const b of lengthBytes)
+                    length = (length << 8) | b;
+                pos += lenLen;
+                if (length < 128)
+                    throw new E('tlv.decode(long): not minimal encoding');
+            }
+            const v = data.subarray(pos, pos + length);
+            if (v.length !== length)
+                throw new E('tlv.decode: wrong value length');
+            return { v, l: data.subarray(pos + length) };
+        },
+    },
+    // https://crypto.stackexchange.com/a/57734 Leftmost bit of first byte is 'negative' flag,
+    // since we always use positive integers here. It must always be empty:
+    // - add zero byte if exists
+    // - if next byte doesn't have a flag, leading zero is not allowed (minimal encoding)
+    _int: {
+        encode(num) {
+            const { Err: E } = DER;
+            if (num < _0n)
+                throw new E('integer: negative integers are not allowed');
+            let hex = numberToHexUnpadded(num);
+            // Pad with zero byte if negative flag is present
+            if (Number.parseInt(hex[0], 16) & 0b1000)
+                hex = '00' + hex;
+            if (hex.length & 1)
+                throw new E('unexpected DER parsing assertion: unpadded hex');
+            return hex;
+        },
+        decode(data) {
+            const { Err: E } = DER;
+            if (data[0] & 128)
+                throw new E('invalid signature integer: negative');
+            if (data[0] === 0x00 && !(data[1] & 128))
+                throw new E('invalid signature integer: unnecessary leading zero');
+            return b2n(data);
+        },
+    },
+    toSig(hex) {
+        // parse DER signature
+        const { Err: E, _int: int, _tlv: tlv } = DER;
+        const data = typeof hex === 'string' ? h2b(hex) : hex;
+        abytes$1(data);
+        const { v: seqBytes, l: seqLeftBytes } = tlv.decode(0x30, data);
+        if (seqLeftBytes.length)
+            throw new E('invalid signature: left bytes after parsing');
+        const { v: rBytes, l: rLeftBytes } = tlv.decode(0x02, seqBytes);
+        const { v: sBytes, l: sLeftBytes } = tlv.decode(0x02, rLeftBytes);
+        if (sLeftBytes.length)
+            throw new E('invalid signature: left bytes after parsing');
+        return { r: int.decode(rBytes), s: int.decode(sBytes) };
+    },
+    hexFromSig(sig) {
+        const { _tlv: tlv, _int: int } = DER;
+        const rs = tlv.encode(0x02, int.encode(sig.r));
+        const ss = tlv.encode(0x02, int.encode(sig.s));
+        const seq = rs + ss;
+        return tlv.encode(0x30, seq);
+    },
+};
+// Be friendly to bad ECMAScript parsers by not using bigint literals
+// prettier-ignore
+const _0n = BigInt(0), _1n = BigInt(1); BigInt(2); const _3n = BigInt(3); BigInt(4);
+function weierstrassPoints(opts) {
+    const CURVE = validatePointOpts(opts);
+    const { Fp } = CURVE; // All curves has same field / group length as for now, but they can differ
+    const Fn = Field(CURVE.n, CURVE.nBitLength);
+    const toBytes = CURVE.toBytes ||
+        ((_c, point, _isCompressed) => {
+            const a = point.toAffine();
+            return concatBytes$1(Uint8Array.from([0x04]), Fp.toBytes(a.x), Fp.toBytes(a.y));
+        });
+    const fromBytes = CURVE.fromBytes ||
+        ((bytes) => {
+            // const head = bytes[0];
+            const tail = bytes.subarray(1);
+            // if (head !== 0x04) throw new Error('Only non-compressed encoding is supported');
+            const x = Fp.fromBytes(tail.subarray(0, Fp.BYTES));
+            const y = Fp.fromBytes(tail.subarray(Fp.BYTES, 2 * Fp.BYTES));
+            return { x, y };
+        });
+    /**
+     * y² = x³ + ax + b: Short weierstrass curve formula
+     * @returns y²
+     */
+    function weierstrassEquation(x) {
+        const { a, b } = CURVE;
+        const x2 = Fp.sqr(x); // x * x
+        const x3 = Fp.mul(x2, x); // x2 * x
+        return Fp.add(Fp.add(x3, Fp.mul(x, a)), b); // x3 + a * x + b
+    }
+    // Validate whether the passed curve params are valid.
+    // We check if curve equation works for generator point.
+    // `assertValidity()` won't work: `isTorsionFree()` is not available at this point in bls12-381.
+    // ProjectivePoint class has not been initialized yet.
+    if (!Fp.eql(Fp.sqr(CURVE.Gy), weierstrassEquation(CURVE.Gx)))
+        throw new Error('bad generator point: equation left != right');
+    // Valid group elements reside in range 1..n-1
+    function isWithinCurveOrder(num) {
+        return inRange(num, _1n, CURVE.n);
+    }
+    // Validates if priv key is valid and converts it to bigint.
+    // Supports options allowedPrivateKeyLengths and wrapPrivateKey.
+    function normPrivateKeyToScalar(key) {
+        const { allowedPrivateKeyLengths: lengths, nByteLength, wrapPrivateKey, n: N } = CURVE;
+        if (lengths && typeof key !== 'bigint') {
+            if (isBytes$1(key))
+                key = bytesToHex(key);
+            // Normalize to hex string, pad. E.g. P521 would norm 130-132 char hex to 132-char bytes
+            if (typeof key !== 'string' || !lengths.includes(key.length))
+                throw new Error('invalid private key');
+            key = key.padStart(nByteLength * 2, '0');
+        }
+        let num;
+        try {
+            num =
+                typeof key === 'bigint'
+                    ? key
+                    : bytesToNumberBE(ensureBytes('private key', key, nByteLength));
+        }
+        catch (error) {
+            throw new Error('invalid private key, expected hex or ' + nByteLength + ' bytes, got ' + typeof key);
+        }
+        if (wrapPrivateKey)
+            num = mod(num, N); // disabled by default, enabled for BLS
+        aInRange('private key', num, _1n, N); // num in range [1..N-1]
+        return num;
+    }
+    function assertPrjPoint(other) {
+        if (!(other instanceof Point))
+            throw new Error('ProjectivePoint expected');
+    }
+    // Memoized toAffine / validity check. They are heavy. Points are immutable.
+    // Converts Projective point to affine (x, y) coordinates.
+    // Can accept precomputed Z^-1 - for example, from invertBatch.
+    // (x, y, z) ∋ (x=x/z, y=y/z)
+    const toAffineMemo = memoized((p, iz) => {
+        const { px: x, py: y, pz: z } = p;
+        // Fast-path for normalized points
+        if (Fp.eql(z, Fp.ONE))
+            return { x, y };
+        const is0 = p.is0();
+        // If invZ was 0, we return zero point. However we still want to execute
+        // all operations, so we replace invZ with a random number, 1.
+        if (iz == null)
+            iz = is0 ? Fp.ONE : Fp.inv(z);
+        const ax = Fp.mul(x, iz);
+        const ay = Fp.mul(y, iz);
+        const zz = Fp.mul(z, iz);
+        if (is0)
+            return { x: Fp.ZERO, y: Fp.ZERO };
+        if (!Fp.eql(zz, Fp.ONE))
+            throw new Error('invZ was invalid');
+        return { x: ax, y: ay };
+    });
+    // NOTE: on exception this will crash 'cached' and no value will be set.
+    // Otherwise true will be return
+    const assertValidMemo = memoized((p) => {
+        if (p.is0()) {
+            // (0, 1, 0) aka ZERO is invalid in most contexts.
+            // In BLS, ZERO can be serialized, so we allow it.
+            // (0, 0, 0) is invalid representation of ZERO.
+            if (CURVE.allowInfinityPoint && !Fp.is0(p.py))
+                return;
+            throw new Error('bad point: ZERO');
+        }
+        // Some 3rd-party test vectors require different wording between here & `fromCompressedHex`
+        const { x, y } = p.toAffine();
+        // Check if x, y are valid field elements
+        if (!Fp.isValid(x) || !Fp.isValid(y))
+            throw new Error('bad point: x or y not FE');
+        const left = Fp.sqr(y); // y²
+        const right = weierstrassEquation(x); // x³ + ax + b
+        if (!Fp.eql(left, right))
+            throw new Error('bad point: equation left != right');
+        if (!p.isTorsionFree())
+            throw new Error('bad point: not in prime-order subgroup');
+        return true;
+    });
+    /**
+     * Projective Point works in 3d / projective (homogeneous) coordinates: (x, y, z) ∋ (x=x/z, y=y/z)
+     * Default Point works in 2d / affine coordinates: (x, y)
+     * We're doing calculations in projective, because its operations don't require costly inversion.
+     */
+    class Point {
+        constructor(px, py, pz) {
+            this.px = px;
+            this.py = py;
+            this.pz = pz;
+            if (px == null || !Fp.isValid(px))
+                throw new Error('x required');
+            if (py == null || !Fp.isValid(py))
+                throw new Error('y required');
+            if (pz == null || !Fp.isValid(pz))
+                throw new Error('z required');
+            Object.freeze(this);
+        }
+        // Does not validate if the point is on-curve.
+        // Use fromHex instead, or call assertValidity() later.
+        static fromAffine(p) {
+            const { x, y } = p || {};
+            if (!p || !Fp.isValid(x) || !Fp.isValid(y))
+                throw new Error('invalid affine point');
+            if (p instanceof Point)
+                throw new Error('projective point not allowed');
+            const is0 = (i) => Fp.eql(i, Fp.ZERO);
+            // fromAffine(x:0, y:0) would produce (x:0, y:0, z:1), but we need (x:0, y:1, z:0)
+            if (is0(x) && is0(y))
+                return Point.ZERO;
+            return new Point(x, y, Fp.ONE);
+        }
+        get x() {
+            return this.toAffine().x;
+        }
+        get y() {
+            return this.toAffine().y;
+        }
+        /**
+         * Takes a bunch of Projective Points but executes only one
+         * inversion on all of them. Inversion is very slow operation,
+         * so this improves performance massively.
+         * Optimization: converts a list of projective points to a list of identical points with Z=1.
+         */
+        static normalizeZ(points) {
+            const toInv = Fp.invertBatch(points.map((p) => p.pz));
+            return points.map((p, i) => p.toAffine(toInv[i])).map(Point.fromAffine);
+        }
+        /**
+         * Converts hash string or Uint8Array to Point.
+         * @param hex short/long ECDSA hex
+         */
+        static fromHex(hex) {
+            const P = Point.fromAffine(fromBytes(ensureBytes('pointHex', hex)));
+            P.assertValidity();
+            return P;
+        }
+        // Multiplies generator point by privateKey.
+        static fromPrivateKey(privateKey) {
+            return Point.BASE.multiply(normPrivateKeyToScalar(privateKey));
+        }
+        // Multiscalar Multiplication
+        static msm(points, scalars) {
+            return pippenger(Point, Fn, points, scalars);
+        }
+        // "Private method", don't use it directly
+        _setWindowSize(windowSize) {
+            wnaf.setWindowSize(this, windowSize);
+        }
+        // A point on curve is valid if it conforms to equation.
+        assertValidity() {
+            assertValidMemo(this);
+        }
+        hasEvenY() {
+            const { y } = this.toAffine();
+            if (Fp.isOdd)
+                return !Fp.isOdd(y);
+            throw new Error("Field doesn't support isOdd");
+        }
+        /**
+         * Compare one point to another.
+         */
+        equals(other) {
+            assertPrjPoint(other);
+            const { px: X1, py: Y1, pz: Z1 } = this;
+            const { px: X2, py: Y2, pz: Z2 } = other;
+            const U1 = Fp.eql(Fp.mul(X1, Z2), Fp.mul(X2, Z1));
+            const U2 = Fp.eql(Fp.mul(Y1, Z2), Fp.mul(Y2, Z1));
+            return U1 && U2;
+        }
+        /**
+         * Flips point to one corresponding to (x, -y) in Affine coordinates.
+         */
+        negate() {
+            return new Point(this.px, Fp.neg(this.py), this.pz);
+        }
+        // Renes-Costello-Batina exception-free doubling formula.
+        // There is 30% faster Jacobian formula, but it is not complete.
+        // https://eprint.iacr.org/2015/1060, algorithm 3
+        // Cost: 8M + 3S + 3*a + 2*b3 + 15add.
+        double() {
+            const { a, b } = CURVE;
+            const b3 = Fp.mul(b, _3n);
+            const { px: X1, py: Y1, pz: Z1 } = this;
+            let X3 = Fp.ZERO, Y3 = Fp.ZERO, Z3 = Fp.ZERO; // prettier-ignore
+            let t0 = Fp.mul(X1, X1); // step 1
+            let t1 = Fp.mul(Y1, Y1);
+            let t2 = Fp.mul(Z1, Z1);
+            let t3 = Fp.mul(X1, Y1);
+            t3 = Fp.add(t3, t3); // step 5
+            Z3 = Fp.mul(X1, Z1);
+            Z3 = Fp.add(Z3, Z3);
+            X3 = Fp.mul(a, Z3);
+            Y3 = Fp.mul(b3, t2);
+            Y3 = Fp.add(X3, Y3); // step 10
+            X3 = Fp.sub(t1, Y3);
+            Y3 = Fp.add(t1, Y3);
+            Y3 = Fp.mul(X3, Y3);
+            X3 = Fp.mul(t3, X3);
+            Z3 = Fp.mul(b3, Z3); // step 15
+            t2 = Fp.mul(a, t2);
+            t3 = Fp.sub(t0, t2);
+            t3 = Fp.mul(a, t3);
+            t3 = Fp.add(t3, Z3);
+            Z3 = Fp.add(t0, t0); // step 20
+            t0 = Fp.add(Z3, t0);
+            t0 = Fp.add(t0, t2);
+            t0 = Fp.mul(t0, t3);
+            Y3 = Fp.add(Y3, t0);
+            t2 = Fp.mul(Y1, Z1); // step 25
+            t2 = Fp.add(t2, t2);
+            t0 = Fp.mul(t2, t3);
+            X3 = Fp.sub(X3, t0);
+            Z3 = Fp.mul(t2, t1);
+            Z3 = Fp.add(Z3, Z3); // step 30
+            Z3 = Fp.add(Z3, Z3);
+            return new Point(X3, Y3, Z3);
+        }
+        // Renes-Costello-Batina exception-free addition formula.
+        // There is 30% faster Jacobian formula, but it is not complete.
+        // https://eprint.iacr.org/2015/1060, algorithm 1
+        // Cost: 12M + 0S + 3*a + 3*b3 + 23add.
+        add(other) {
+            assertPrjPoint(other);
+            const { px: X1, py: Y1, pz: Z1 } = this;
+            const { px: X2, py: Y2, pz: Z2 } = other;
+            let X3 = Fp.ZERO, Y3 = Fp.ZERO, Z3 = Fp.ZERO; // prettier-ignore
+            const a = CURVE.a;
+            const b3 = Fp.mul(CURVE.b, _3n);
+            let t0 = Fp.mul(X1, X2); // step 1
+            let t1 = Fp.mul(Y1, Y2);
+            let t2 = Fp.mul(Z1, Z2);
+            let t3 = Fp.add(X1, Y1);
+            let t4 = Fp.add(X2, Y2); // step 5
+            t3 = Fp.mul(t3, t4);
+            t4 = Fp.add(t0, t1);
+            t3 = Fp.sub(t3, t4);
+            t4 = Fp.add(X1, Z1);
+            let t5 = Fp.add(X2, Z2); // step 10
+            t4 = Fp.mul(t4, t5);
+            t5 = Fp.add(t0, t2);
+            t4 = Fp.sub(t4, t5);
+            t5 = Fp.add(Y1, Z1);
+            X3 = Fp.add(Y2, Z2); // step 15
+            t5 = Fp.mul(t5, X3);
+            X3 = Fp.add(t1, t2);
+            t5 = Fp.sub(t5, X3);
+            Z3 = Fp.mul(a, t4);
+            X3 = Fp.mul(b3, t2); // step 20
+            Z3 = Fp.add(X3, Z3);
+            X3 = Fp.sub(t1, Z3);
+            Z3 = Fp.add(t1, Z3);
+            Y3 = Fp.mul(X3, Z3);
+            t1 = Fp.add(t0, t0); // step 25
+            t1 = Fp.add(t1, t0);
+            t2 = Fp.mul(a, t2);
+            t4 = Fp.mul(b3, t4);
+            t1 = Fp.add(t1, t2);
+            t2 = Fp.sub(t0, t2); // step 30
+            t2 = Fp.mul(a, t2);
+            t4 = Fp.add(t4, t2);
+            t0 = Fp.mul(t1, t4);
+            Y3 = Fp.add(Y3, t0);
+            t0 = Fp.mul(t5, t4); // step 35
+            X3 = Fp.mul(t3, X3);
+            X3 = Fp.sub(X3, t0);
+            t0 = Fp.mul(t3, t1);
+            Z3 = Fp.mul(t5, Z3);
+            Z3 = Fp.add(Z3, t0); // step 40
+            return new Point(X3, Y3, Z3);
+        }
+        subtract(other) {
+            return this.add(other.negate());
+        }
+        is0() {
+            return this.equals(Point.ZERO);
+        }
+        wNAF(n) {
+            return wnaf.wNAFCached(this, n, Point.normalizeZ);
+        }
+        /**
+         * Non-constant-time multiplication. Uses double-and-add algorithm.
+         * It's faster, but should only be used when you don't care about
+         * an exposed private key e.g. sig verification, which works over *public* keys.
+         */
+        multiplyUnsafe(sc) {
+            const { endo, n: N } = CURVE;
+            aInRange('scalar', sc, _0n, N);
+            const I = Point.ZERO;
+            if (sc === _0n)
+                return I;
+            if (this.is0() || sc === _1n)
+                return this;
+            // Case a: no endomorphism. Case b: has precomputes.
+            if (!endo || wnaf.hasPrecomputes(this))
+                return wnaf.wNAFCachedUnsafe(this, sc, Point.normalizeZ);
+            // Case c: endomorphism
+            let { k1neg, k1, k2neg, k2 } = endo.splitScalar(sc);
+            let k1p = I;
+            let k2p = I;
+            let d = this;
+            while (k1 > _0n || k2 > _0n) {
+                if (k1 & _1n)
+                    k1p = k1p.add(d);
+                if (k2 & _1n)
+                    k2p = k2p.add(d);
+                d = d.double();
+                k1 >>= _1n;
+                k2 >>= _1n;
+            }
+            if (k1neg)
+                k1p = k1p.negate();
+            if (k2neg)
+                k2p = k2p.negate();
+            k2p = new Point(Fp.mul(k2p.px, endo.beta), k2p.py, k2p.pz);
+            return k1p.add(k2p);
+        }
+        /**
+         * Constant time multiplication.
+         * Uses wNAF method. Windowed method may be 10% faster,
+         * but takes 2x longer to generate and consumes 2x memory.
+         * Uses precomputes when available.
+         * Uses endomorphism for Koblitz curves.
+         * @param scalar by which the point would be multiplied
+         * @returns New point
+         */
+        multiply(scalar) {
+            const { endo, n: N } = CURVE;
+            aInRange('scalar', scalar, _1n, N);
+            let point, fake; // Fake point is used to const-time mult
+            if (endo) {
+                const { k1neg, k1, k2neg, k2 } = endo.splitScalar(scalar);
+                let { p: k1p, f: f1p } = this.wNAF(k1);
+                let { p: k2p, f: f2p } = this.wNAF(k2);
+                k1p = wnaf.constTimeNegate(k1neg, k1p);
+                k2p = wnaf.constTimeNegate(k2neg, k2p);
+                k2p = new Point(Fp.mul(k2p.px, endo.beta), k2p.py, k2p.pz);
+                point = k1p.add(k2p);
+                fake = f1p.add(f2p);
+            }
+            else {
+                const { p, f } = this.wNAF(scalar);
+                point = p;
+                fake = f;
+            }
+            // Normalize `z` for both points, but return only real one
+            return Point.normalizeZ([point, fake])[0];
+        }
+        /**
+         * Efficiently calculate `aP + bQ`. Unsafe, can expose private key, if used incorrectly.
+         * Not using Strauss-Shamir trick: precomputation tables are faster.
+         * The trick could be useful if both P and Q are not G (not in our case).
+         * @returns non-zero affine point
+         */
+        multiplyAndAddUnsafe(Q, a, b) {
+            const G = Point.BASE; // No Strauss-Shamir trick: we have 10% faster G precomputes
+            const mul = (P, a // Select faster multiply() method
+            ) => (a === _0n || a === _1n || !P.equals(G) ? P.multiplyUnsafe(a) : P.multiply(a));
+            const sum = mul(this, a).add(mul(Q, b));
+            return sum.is0() ? undefined : sum;
+        }
+        // Converts Projective point to affine (x, y) coordinates.
+        // Can accept precomputed Z^-1 - for example, from invertBatch.
+        // (x, y, z) ∋ (x=x/z, y=y/z)
+        toAffine(iz) {
+            return toAffineMemo(this, iz);
+        }
+        isTorsionFree() {
+            const { h: cofactor, isTorsionFree } = CURVE;
+            if (cofactor === _1n)
+                return true; // No subgroups, always torsion-free
+            if (isTorsionFree)
+                return isTorsionFree(Point, this);
+            throw new Error('isTorsionFree() has not been declared for the elliptic curve');
+        }
+        clearCofactor() {
+            const { h: cofactor, clearCofactor } = CURVE;
+            if (cofactor === _1n)
+                return this; // Fast-path
+            if (clearCofactor)
+                return clearCofactor(Point, this);
+            return this.multiplyUnsafe(CURVE.h);
+        }
+        toRawBytes(isCompressed = true) {
+            abool('isCompressed', isCompressed);
+            this.assertValidity();
+            return toBytes(Point, this, isCompressed);
+        }
+        toHex(isCompressed = true) {
+            abool('isCompressed', isCompressed);
+            return bytesToHex(this.toRawBytes(isCompressed));
+        }
+    }
+    Point.BASE = new Point(CURVE.Gx, CURVE.Gy, Fp.ONE);
+    Point.ZERO = new Point(Fp.ZERO, Fp.ONE, Fp.ZERO);
+    const _bits = CURVE.nBitLength;
+    const wnaf = wNAF(Point, CURVE.endo ? Math.ceil(_bits / 2) : _bits);
+    // Validate if generator point is on curve
+    return {
+        CURVE,
+        ProjectivePoint: Point,
+        normPrivateKeyToScalar,
+        weierstrassEquation,
+        isWithinCurveOrder,
+    };
+}
+function validateOpts(curve) {
+    const opts = validateBasic(curve);
+    validateObject(opts, {
+        hash: 'hash',
+        hmac: 'function',
+        randomBytes: 'function',
+    }, {
+        bits2int: 'function',
+        bits2int_modN: 'function',
+        lowS: 'boolean',
+    });
+    return Object.freeze({ lowS: true, ...opts });
+}
+/**
+ * Creates short weierstrass curve and ECDSA signature methods for it.
+ * @example
+ * import { Field } from '@noble/curves/abstract/modular';
+ * // Before that, define BigInt-s: a, b, p, n, Gx, Gy
+ * const curve = weierstrass({ a, b, Fp: Field(p), n, Gx, Gy, h: 1n })
+ */
+function weierstrass(curveDef) {
+    const CURVE = validateOpts(curveDef);
+    const { Fp, n: CURVE_ORDER } = CURVE;
+    const compressedLen = Fp.BYTES + 1; // e.g. 33 for 32
+    const uncompressedLen = 2 * Fp.BYTES + 1; // e.g. 65 for 32
+    function modN(a) {
+        return mod(a, CURVE_ORDER);
+    }
+    function invN(a) {
+        return invert(a, CURVE_ORDER);
+    }
+    const { ProjectivePoint: Point, normPrivateKeyToScalar, weierstrassEquation, isWithinCurveOrder, } = weierstrassPoints({
+        ...CURVE,
+        toBytes(_c, point, isCompressed) {
+            const a = point.toAffine();
+            const x = Fp.toBytes(a.x);
+            const cat = concatBytes$1;
+            abool('isCompressed', isCompressed);
+            if (isCompressed) {
+                return cat(Uint8Array.from([point.hasEvenY() ? 0x02 : 0x03]), x);
+            }
+            else {
+                return cat(Uint8Array.from([0x04]), x, Fp.toBytes(a.y));
+            }
+        },
+        fromBytes(bytes) {
+            const len = bytes.length;
+            const head = bytes[0];
+            const tail = bytes.subarray(1);
+            // this.assertValidity() is done inside of fromHex
+            if (len === compressedLen && (head === 0x02 || head === 0x03)) {
+                const x = bytesToNumberBE(tail);
+                if (!inRange(x, _1n, Fp.ORDER))
+                    throw new Error('Point is not on curve');
+                const y2 = weierstrassEquation(x); // y² = x³ + ax + b
+                let y;
+                try {
+                    y = Fp.sqrt(y2); // y = y² ^ (p+1)/4
+                }
+                catch (sqrtError) {
+                    const suffix = sqrtError instanceof Error ? ': ' + sqrtError.message : '';
+                    throw new Error('Point is not on curve' + suffix);
+                }
+                const isYOdd = (y & _1n) === _1n;
+                // ECDSA
+                const isHeadOdd = (head & 1) === 1;
+                if (isHeadOdd !== isYOdd)
+                    y = Fp.neg(y);
+                return { x, y };
+            }
+            else if (len === uncompressedLen && head === 0x04) {
+                const x = Fp.fromBytes(tail.subarray(0, Fp.BYTES));
+                const y = Fp.fromBytes(tail.subarray(Fp.BYTES, 2 * Fp.BYTES));
+                return { x, y };
+            }
+            else {
+                const cl = compressedLen;
+                const ul = uncompressedLen;
+                throw new Error('invalid Point, expected length of ' + cl + ', or uncompressed ' + ul + ', got ' + len);
+            }
+        },
+    });
+    const numToNByteStr = (num) => bytesToHex(numberToBytesBE(num, CURVE.nByteLength));
+    function isBiggerThanHalfOrder(number) {
+        const HALF = CURVE_ORDER >> _1n;
+        return number > HALF;
+    }
+    function normalizeS(s) {
+        return isBiggerThanHalfOrder(s) ? modN(-s) : s;
+    }
+    // slice bytes num
+    const slcNum = (b, from, to) => bytesToNumberBE(b.slice(from, to));
+    /**
+     * ECDSA signature with its (r, s) properties. Supports DER & compact representations.
+     */
+    class Signature {
+        constructor(r, s, recovery) {
+            this.r = r;
+            this.s = s;
+            this.recovery = recovery;
+            this.assertValidity();
+        }
+        // pair (bytes of r, bytes of s)
+        static fromCompact(hex) {
+            const l = CURVE.nByteLength;
+            hex = ensureBytes('compactSignature', hex, l * 2);
+            return new Signature(slcNum(hex, 0, l), slcNum(hex, l, 2 * l));
+        }
+        // DER encoded ECDSA signature
+        // https://bitcoin.stackexchange.com/questions/57644/what-are-the-parts-of-a-bitcoin-transaction-input-script
+        static fromDER(hex) {
+            const { r, s } = DER.toSig(ensureBytes('DER', hex));
+            return new Signature(r, s);
+        }
+        assertValidity() {
+            aInRange('r', this.r, _1n, CURVE_ORDER); // r in [1..N]
+            aInRange('s', this.s, _1n, CURVE_ORDER); // s in [1..N]
+        }
+        addRecoveryBit(recovery) {
+            return new Signature(this.r, this.s, recovery);
+        }
+        recoverPublicKey(msgHash) {
+            const { r, s, recovery: rec } = this;
+            const h = bits2int_modN(ensureBytes('msgHash', msgHash)); // Truncate hash
+            if (rec == null || ![0, 1, 2, 3].includes(rec))
+                throw new Error('recovery id invalid');
+            const radj = rec === 2 || rec === 3 ? r + CURVE.n : r;
+            if (radj >= Fp.ORDER)
+                throw new Error('recovery id 2 or 3 invalid');
+            const prefix = (rec & 1) === 0 ? '02' : '03';
+            const R = Point.fromHex(prefix + numToNByteStr(radj));
+            const ir = invN(radj); // r^-1
+            const u1 = modN(-h * ir); // -hr^-1
+            const u2 = modN(s * ir); // sr^-1
+            const Q = Point.BASE.multiplyAndAddUnsafe(R, u1, u2); // (sr^-1)R-(hr^-1)G = -(hr^-1)G + (sr^-1)
+            if (!Q)
+                throw new Error('point at infinify'); // unsafe is fine: no priv data leaked
+            Q.assertValidity();
+            return Q;
+        }
+        // Signatures should be low-s, to prevent malleability.
+        hasHighS() {
+            return isBiggerThanHalfOrder(this.s);
+        }
+        normalizeS() {
+            return this.hasHighS() ? new Signature(this.r, modN(-this.s), this.recovery) : this;
+        }
+        // DER-encoded
+        toDERRawBytes() {
+            return hexToBytes(this.toDERHex());
+        }
+        toDERHex() {
+            return DER.hexFromSig({ r: this.r, s: this.s });
+        }
+        // padded bytes of r, then padded bytes of s
+        toCompactRawBytes() {
+            return hexToBytes(this.toCompactHex());
+        }
+        toCompactHex() {
+            return numToNByteStr(this.r) + numToNByteStr(this.s);
+        }
+    }
+    const utils = {
+        isValidPrivateKey(privateKey) {
+            try {
+                normPrivateKeyToScalar(privateKey);
+                return true;
+            }
+            catch (error) {
+                return false;
+            }
+        },
+        normPrivateKeyToScalar: normPrivateKeyToScalar,
+        /**
+         * Produces cryptographically secure private key from random of size
+         * (groupLen + ceil(groupLen / 2)) with modulo bias being negligible.
+         */
+        randomPrivateKey: () => {
+            const length = getMinHashLength(CURVE.n);
+            return mapHashToField(CURVE.randomBytes(length), CURVE.n);
+        },
+        /**
+         * Creates precompute table for an arbitrary EC point. Makes point "cached".
+         * Allows to massively speed-up `point.multiply(scalar)`.
+         * @returns cached point
+         * @example
+         * const fast = utils.precompute(8, ProjectivePoint.fromHex(someonesPubKey));
+         * fast.multiply(privKey); // much faster ECDH now
+         */
+        precompute(windowSize = 8, point = Point.BASE) {
+            point._setWindowSize(windowSize);
+            point.multiply(BigInt(3)); // 3 is arbitrary, just need any number here
+            return point;
+        },
+    };
+    /**
+     * Computes public key for a private key. Checks for validity of the private key.
+     * @param privateKey private key
+     * @param isCompressed whether to return compact (default), or full key
+     * @returns Public key, full when isCompressed=false; short when isCompressed=true
+     */
+    function getPublicKey(privateKey, isCompressed = true) {
+        return Point.fromPrivateKey(privateKey).toRawBytes(isCompressed);
+    }
+    /**
+     * Quick and dirty check for item being public key. Does not validate hex, or being on-curve.
+     */
+    function isProbPub(item) {
+        const arr = isBytes$1(item);
+        const str = typeof item === 'string';
+        const len = (arr || str) && item.length;
+        if (arr)
+            return len === compressedLen || len === uncompressedLen;
+        if (str)
+            return len === 2 * compressedLen || len === 2 * uncompressedLen;
+        if (item instanceof Point)
+            return true;
+        return false;
+    }
+    /**
+     * ECDH (Elliptic Curve Diffie Hellman).
+     * Computes shared public key from private key and public key.
+     * Checks: 1) private key validity 2) shared key is on-curve.
+     * Does NOT hash the result.
+     * @param privateA private key
+     * @param publicB different public key
+     * @param isCompressed whether to return compact (default), or full key
+     * @returns shared public key
+     */
+    function getSharedSecret(privateA, publicB, isCompressed = true) {
+        if (isProbPub(privateA))
+            throw new Error('first arg must be private key');
+        if (!isProbPub(publicB))
+            throw new Error('second arg must be public key');
+        const b = Point.fromHex(publicB); // check for being on-curve
+        return b.multiply(normPrivateKeyToScalar(privateA)).toRawBytes(isCompressed);
+    }
+    // RFC6979: ensure ECDSA msg is X bytes and < N. RFC suggests optional truncating via bits2octets.
+    // FIPS 186-4 4.6 suggests the leftmost min(nBitLen, outLen) bits, which matches bits2int.
+    // bits2int can produce res>N, we can do mod(res, N) since the bitLen is the same.
+    // int2octets can't be used; pads small msgs with 0: unacceptatble for trunc as per RFC vectors
+    const bits2int = CURVE.bits2int ||
+        function (bytes) {
+            // Our custom check "just in case"
+            if (bytes.length > 8192)
+                throw new Error('input is too large');
+            // For curves with nBitLength % 8 !== 0: bits2octets(bits2octets(m)) !== bits2octets(m)
+            // for some cases, since bytes.length * 8 is not actual bitLength.
+            const num = bytesToNumberBE(bytes); // check for == u8 done here
+            const delta = bytes.length * 8 - CURVE.nBitLength; // truncate to nBitLength leftmost bits
+            return delta > 0 ? num >> BigInt(delta) : num;
+        };
+    const bits2int_modN = CURVE.bits2int_modN ||
+        function (bytes) {
+            return modN(bits2int(bytes)); // can't use bytesToNumberBE here
+        };
+    // NOTE: pads output with zero as per spec
+    const ORDER_MASK = bitMask(CURVE.nBitLength);
+    /**
+     * Converts to bytes. Checks if num in `[0..ORDER_MASK-1]` e.g.: `[0..2^256-1]`.
+     */
+    function int2octets(num) {
+        aInRange('num < 2^' + CURVE.nBitLength, num, _0n, ORDER_MASK);
+        // works with order, can have different size than numToField!
+        return numberToBytesBE(num, CURVE.nByteLength);
+    }
+    // Steps A, D of RFC6979 3.2
+    // Creates RFC6979 seed; converts msg/privKey to numbers.
+    // Used only in sign, not in verify.
+    // NOTE: we cannot assume here that msgHash has same amount of bytes as curve order,
+    // this will be invalid at least for P521. Also it can be bigger for P224 + SHA256
+    function prepSig(msgHash, privateKey, opts = defaultSigOpts) {
+        if (['recovered', 'canonical'].some((k) => k in opts))
+            throw new Error('sign() legacy options not supported');
+        const { hash, randomBytes } = CURVE;
+        let { lowS, prehash, extraEntropy: ent } = opts; // generates low-s sigs by default
+        if (lowS == null)
+            lowS = true; // RFC6979 3.2: we skip step A, because we already provide hash
+        msgHash = ensureBytes('msgHash', msgHash);
+        validateSigVerOpts(opts);
+        if (prehash)
+            msgHash = ensureBytes('prehashed msgHash', hash(msgHash));
+        // We can't later call bits2octets, since nested bits2int is broken for curves
+        // with nBitLength % 8 !== 0. Because of that, we unwrap it here as int2octets call.
+        // const bits2octets = (bits) => int2octets(bits2int_modN(bits))
+        const h1int = bits2int_modN(msgHash);
+        const d = normPrivateKeyToScalar(privateKey); // validate private key, convert to bigint
+        const seedArgs = [int2octets(d), int2octets(h1int)];
+        // extraEntropy. RFC6979 3.6: additional k' (optional).
+        if (ent != null && ent !== false) {
+            // K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1) || k')
+            const e = ent === true ? randomBytes(Fp.BYTES) : ent; // generate random bytes OR pass as-is
+            seedArgs.push(ensureBytes('extraEntropy', e)); // check for being bytes
+        }
+        const seed = concatBytes$1(...seedArgs); // Step D of RFC6979 3.2
+        const m = h1int; // NOTE: no need to call bits2int second time here, it is inside truncateHash!
+        // Converts signature params into point w r/s, checks result for validity.
+        function k2sig(kBytes) {
+            // RFC 6979 Section 3.2, step 3: k = bits2int(T)
+            const k = bits2int(kBytes); // Cannot use fields methods, since it is group element
+            if (!isWithinCurveOrder(k))
+                return; // Important: all mod() calls here must be done over N
+            const ik = invN(k); // k^-1 mod n
+            const q = Point.BASE.multiply(k).toAffine(); // q = Gk
+            const r = modN(q.x); // r = q.x mod n
+            if (r === _0n)
+                return;
+            // Can use scalar blinding b^-1(bm + bdr) where b ∈ [1,q−1] according to
+            // https://tches.iacr.org/index.php/TCHES/article/view/7337/6509. We've decided against it:
+            // a) dependency on CSPRNG b) 15% slowdown c) doesn't really help since bigints are not CT
+            const s = modN(ik * modN(m + r * d)); // Not using blinding here
+            if (s === _0n)
+                return;
+            let recovery = (q.x === r ? 0 : 2) | Number(q.y & _1n); // recovery bit (2 or 3, when q.x > n)
+            let normS = s;
+            if (lowS && isBiggerThanHalfOrder(s)) {
+                normS = normalizeS(s); // if lowS was passed, ensure s is always
+                recovery ^= 1; // // in the bottom half of N
+            }
+            return new Signature(r, normS, recovery); // use normS, not s
+        }
+        return { seed, k2sig };
+    }
+    const defaultSigOpts = { lowS: CURVE.lowS, prehash: false };
+    const defaultVerOpts = { lowS: CURVE.lowS, prehash: false };
+    /**
+     * Signs message hash with a private key.
+     * ```
+     * sign(m, d, k) where
+     *   (x, y) = G × k
+     *   r = x mod n
+     *   s = (m + dr)/k mod n
+     * ```
+     * @param msgHash NOT message. msg needs to be hashed to `msgHash`, or use `prehash`.
+     * @param privKey private key
+     * @param opts lowS for non-malleable sigs. extraEntropy for mixing randomness into k. prehash will hash first arg.
+     * @returns signature with recovery param
+     */
+    function sign(msgHash, privKey, opts = defaultSigOpts) {
+        const { seed, k2sig } = prepSig(msgHash, privKey, opts); // Steps A, D of RFC6979 3.2.
+        const C = CURVE;
+        const drbg = createHmacDrbg(C.hash.outputLen, C.nByteLength, C.hmac);
+        return drbg(seed, k2sig); // Steps B, C, D, E, F, G
+    }
+    // Enable precomputes. Slows down first publicKey computation by 20ms.
+    Point.BASE._setWindowSize(8);
+    // utils.precompute(8, ProjectivePoint.BASE)
+    /**
+     * Verifies a signature against message hash and public key.
+     * Rejects lowS signatures by default: to override,
+     * specify option `{lowS: false}`. Implements section 4.1.4 from https://www.secg.org/sec1-v2.pdf:
+     *
+     * ```
+     * verify(r, s, h, P) where
+     *   U1 = hs^-1 mod n
+     *   U2 = rs^-1 mod n
+     *   R = U1⋅G - U2⋅P
+     *   mod(R.x, n) == r
+     * ```
+     */
+    function verify(signature, msgHash, publicKey, opts = defaultVerOpts) {
+        const sg = signature;
+        msgHash = ensureBytes('msgHash', msgHash);
+        publicKey = ensureBytes('publicKey', publicKey);
+        const { lowS, prehash, format } = opts;
+        // Verify opts, deduce signature format
+        validateSigVerOpts(opts);
+        if ('strict' in opts)
+            throw new Error('options.strict was renamed to lowS');
+        if (format !== undefined && format !== 'compact' && format !== 'der')
+            throw new Error('format must be compact or der');
+        const isHex = typeof sg === 'string' || isBytes$1(sg);
+        const isObj = !isHex &&
+            !format &&
+            typeof sg === 'object' &&
+            sg !== null &&
+            typeof sg.r === 'bigint' &&
+            typeof sg.s === 'bigint';
+        if (!isHex && !isObj)
+            throw new Error('invalid signature, expected Uint8Array, hex string or Signature instance');
+        let _sig = undefined;
+        let P;
+        try {
+            if (isObj)
+                _sig = new Signature(sg.r, sg.s);
+            if (isHex) {
+                // Signature can be represented in 2 ways: compact (2*nByteLength) & DER (variable-length).
+                // Since DER can also be 2*nByteLength bytes, we check for it first.
+                try {
+                    if (format !== 'compact')
+                        _sig = Signature.fromDER(sg);
+                }
+                catch (derError) {
+                    if (!(derError instanceof DER.Err))
+                        throw derError;
+                }
+                if (!_sig && format !== 'der')
+                    _sig = Signature.fromCompact(sg);
+            }
+            P = Point.fromHex(publicKey);
+        }
+        catch (error) {
+            return false;
+        }
+        if (!_sig)
+            return false;
+        if (lowS && _sig.hasHighS())
+            return false;
+        if (prehash)
+            msgHash = CURVE.hash(msgHash);
+        const { r, s } = _sig;
+        const h = bits2int_modN(msgHash); // Cannot use fields methods, since it is group element
+        const is = invN(s); // s^-1
+        const u1 = modN(h * is); // u1 = hs^-1 mod n
+        const u2 = modN(r * is); // u2 = rs^-1 mod n
+        const R = Point.BASE.multiplyAndAddUnsafe(P, u1, u2)?.toAffine(); // R = u1⋅G + u2⋅P
+        if (!R)
+            return false;
+        const v = modN(R.x);
+        return v === r;
+    }
+    return {
+        CURVE,
+        getPublicKey,
+        getSharedSecret,
+        sign,
+        verify,
+        ProjectivePoint: Point,
+        Signature,
+        utils,
+    };
+}
+
+function anumber(n) {
+    if (!Number.isSafeInteger(n) || n < 0)
+        throw new Error('positive integer expected, got ' + n);
+}
+// copied from utils
+function isBytes(a) {
+    return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
+}
+function abytes(b, ...lengths) {
+    if (!isBytes(b))
+        throw new Error('Uint8Array expected');
+    if (lengths.length > 0 && !lengths.includes(b.length))
+        throw new Error('Uint8Array expected of length ' + lengths + ', got length=' + b.length);
+}
+function ahash(h) {
+    if (typeof h !== 'function' || typeof h.create !== 'function')
+        throw new Error('Hash should be wrapped by utils.wrapConstructor');
+    anumber(h.outputLen);
+    anumber(h.blockLen);
+}
+function aexists(instance, checkFinished = true) {
+    if (instance.destroyed)
+        throw new Error('Hash instance has been destroyed');
+    if (checkFinished && instance.finished)
+        throw new Error('Hash#digest() has already been called');
+}
+
+const crypto = typeof globalThis === 'object' && 'crypto' in globalThis ? globalThis.crypto : undefined;
+
+/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
+// node.js versions earlier than v19 don't declare it in global scope.
+// For node.js, package.json#exports field mapping rewrites import
+// from `crypto` to `cryptoNode`, which imports native module.
+// Makes the utils un-importable in browsers without a bundler.
+// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
+/**
+ * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
+ */
+function utf8ToBytes(str) {
+    if (typeof str !== 'string')
+        throw new Error('utf8ToBytes expected string, got ' + typeof str);
+    return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
+}
+/**
+ * Normalizes (non-hex) string or Uint8Array to Uint8Array.
+ * Warning: when Uint8Array is passed, it would NOT get copied.
+ * Keep in mind for future mutable operations.
+ */
+function toBytes(data) {
+    if (typeof data === 'string')
+        data = utf8ToBytes(data);
+    abytes(data);
+    return data;
+}
+/**
+ * Copies several Uint8Arrays into one.
+ */
+function concatBytes(...arrays) {
+    let sum = 0;
+    for (let i = 0; i < arrays.length; i++) {
+        const a = arrays[i];
+        abytes(a);
+        sum += a.length;
+    }
+    const res = new Uint8Array(sum);
+    for (let i = 0, pad = 0; i < arrays.length; i++) {
+        const a = arrays[i];
+        res.set(a, pad);
+        pad += a.length;
+    }
+    return res;
+}
+// For runtime check if class implements interface
+class Hash {
+    // Safe version that clones internal state
+    clone() {
+        return this._cloneInto();
+    }
+}
+/**
+ * Secure PRNG. Uses `crypto.getRandomValues`, which defers to OS.
+ */
+function randomBytes(bytesLength = 32) {
+    if (crypto && typeof crypto.getRandomValues === 'function') {
+        return crypto.getRandomValues(new Uint8Array(bytesLength));
+    }
+    // Legacy Node.js compatibility
+    if (crypto && typeof crypto.randomBytes === 'function') {
+        return crypto.randomBytes(bytesLength);
+    }
+    throw new Error('crypto.getRandomValues must be defined');
+}
+
+// HMAC (RFC 2104)
+class HMAC extends Hash {
+    constructor(hash, _key) {
+        super();
+        this.finished = false;
+        this.destroyed = false;
+        ahash(hash);
+        const key = toBytes(_key);
+        this.iHash = hash.create();
+        if (typeof this.iHash.update !== 'function')
+            throw new Error('Expected instance of class which extends utils.Hash');
+        this.blockLen = this.iHash.blockLen;
+        this.outputLen = this.iHash.outputLen;
+        const blockLen = this.blockLen;
+        const pad = new Uint8Array(blockLen);
+        // blockLen can be bigger than outputLen
+        pad.set(key.length > blockLen ? hash.create().update(key).digest() : key);
+        for (let i = 0; i < pad.length; i++)
+            pad[i] ^= 0x36;
+        this.iHash.update(pad);
+        // By doing update (processing of first block) of outer hash here we can re-use it between multiple calls via clone
+        this.oHash = hash.create();
+        // Undo internal XOR && apply outer XOR
+        for (let i = 0; i < pad.length; i++)
+            pad[i] ^= 0x36 ^ 0x5c;
+        this.oHash.update(pad);
+        pad.fill(0);
+    }
+    update(buf) {
+        aexists(this);
+        this.iHash.update(buf);
+        return this;
+    }
+    digestInto(out) {
+        aexists(this);
+        abytes(out, this.outputLen);
+        this.finished = true;
+        this.iHash.digestInto(out);
+        this.oHash.update(out);
+        this.oHash.digestInto(out);
+        this.destroy();
+    }
+    digest() {
+        const out = new Uint8Array(this.oHash.outputLen);
+        this.digestInto(out);
+        return out;
+    }
+    _cloneInto(to) {
+        // Create new instance without calling constructor since key already in state and we don't know it.
+        to || (to = Object.create(Object.getPrototypeOf(this), {}));
+        const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
+        to = to;
+        to.finished = finished;
+        to.destroyed = destroyed;
+        to.blockLen = blockLen;
+        to.outputLen = outputLen;
+        to.oHash = oHash._cloneInto(to.oHash);
+        to.iHash = iHash._cloneInto(to.iHash);
+        return to;
+    }
+    destroy() {
+        this.destroyed = true;
+        this.oHash.destroy();
+        this.iHash.destroy();
+    }
+}
+/**
+ * HMAC: RFC2104 message authentication code.
+ * @param hash - function that would be used e.g. sha256
+ * @param key - message key
+ * @param message - message data
+ * @example
+ * import { hmac } from '@noble/hashes/hmac';
+ * import { sha256 } from '@noble/hashes/sha2';
+ * const mac1 = hmac(sha256, 'key', 'message');
+ */
+const hmac = (hash, key, message) => new HMAC(hash, key).update(message).digest();
+hmac.create = (hash, key) => new HMAC(hash, key);
+
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+// connects noble-curves to noble-hashes
+function getHash(hash) {
+    return {
+        hash,
+        hmac: (key, ...msgs) => hmac(hash, key, concatBytes(...msgs)),
+        randomBytes,
+    };
+}
+
 /*! scure-starknet - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 const CURVE_ORDER = BigInt('3618502788666131213697322783095070105526743751716087489154079457884512865583');
 // 2**251, limit for msgHash and Signature.r
@@ -397172,7 +397278,7 @@ function bits2int(bytes) {
         bytes = bytes.subarray(1); // strip leading 0s
     // Copy-pasted from weierstrass.ts
     const delta = bytes.length * 8 - nBitLength;
-    const num = bytesToNumberBE$2(bytes);
+    const num = bytesToNumberBE(bytes);
     return delta > 0 ? num >> BigInt(delta) : num;
 }
 function hex0xToBytes(hex) {
@@ -397181,14 +397287,14 @@ function hex0xToBytes(hex) {
         if (hex.length & 1)
             hex = '0' + hex; // allow unpadded hex
     }
-    return hexToBytes$4(hex);
+    return hexToBytes(hex);
 }
-const curve = weierstrass$3({
+const curve = weierstrass({
     a: BigInt(1), // Params: a, b
     b: BigInt('3141592653589793238462643383279502884197169399375105820974944592307816406665'),
     // Field over which we'll do calculations; 2n**251n + 17n * 2n**192n + 1n
     // There is no efficient sqrt for field (P%4==1)
-    Fp: Field$2(BigInt('0x800000000000011000000000000000000000000000000000000000000000001')),
+    Fp: Field(BigInt('0x800000000000011000000000000000000000000000000000000000000000001')),
     n: CURVE_ORDER, // Curve order, total count of valid points in the field.
     nBitLength, // len(bin(N).replace('0b',''))
     // Base point (x, y) aka generator point
@@ -397196,16 +397302,16 @@ const curve = weierstrass$3({
     Gy: BigInt('152666792071518830868575557812948353041420400780739481342941381225525861407'),
     h: BigInt(1), // cofactor
     lowS: false, // Allow high-s signatures
-    ...getHash$2(sha256$2),
+    ...getHash(sha256),
     // Custom truncation routines for stark curve
     bits2int,
     bits2int_modN: (bytes) => {
         // 2102820b232636d200cb21f1d330f20d096cae09d1bf3edb1cc333ddee11318 =>
         // 2102820b232636d200cb21f1d330f20d096cae09d1bf3edb1cc333ddee113180
-        const hex = bytesToNumberBE$2(bytes).toString(16); // toHex unpadded
+        const hex = bytesToNumberBE(bytes).toString(16); // toHex unpadded
         if (hex.length === 63)
             bytes = hex0xToBytes(hex + '0'); // append trailing 0
-        return mod$2(bits2int(bytes), CURVE_ORDER);
+        return mod(bits2int(bytes), CURVE_ORDER);
     },
 });
 const { CURVE, ProjectivePoint, Signature, utils } = curve;
@@ -397248,16 +397354,16 @@ function pedersenPrecompute(p1, p2) {
 }
 pedersenPrecompute(PEDERSEN_POINTS[1], PEDERSEN_POINTS[2]);
 pedersenPrecompute(PEDERSEN_POINTS[3], PEDERSEN_POINTS[4]);
-const MASK_250 = bitMask$2(250);
-const keccak = (data) => bytesToNumberBE$2(keccak_256$2(data)) & MASK_250;
+const MASK_250 = bitMask(250);
+const keccak = (data) => bytesToNumberBE(keccak_256(data)) & MASK_250;
 // Poseidon hash
 // Unused for now
 // export const Fp253 = Field(
 //   BigInt('14474011154664525231415395255581126252639794253786371766033694892385558855681')
 // ); // 2^253 + 2^199 + 1
-const Fp251 = Field$2(BigInt('3618502788666131213697322783095070105623107215331596699973092056135872020481')); // 2^251 + 17 * 2^192 + 1
+const Fp251 = Field(BigInt('3618502788666131213697322783095070105623107215331596699973092056135872020481')); // 2^251 + 17 * 2^192 + 1
 function poseidonRoundConstant(Fp, name, idx) {
-    const val = Fp.fromBytes(sha256$2(utf8ToBytes$7(`${name}${idx}`)));
+    const val = Fp.fromBytes(sha256(utf8ToBytes$2(`${name}${idx}`)));
     return Fp.create(val);
 }
 const MDS_SMALL = [
@@ -397266,7 +397372,7 @@ const MDS_SMALL = [
     [1, 1, -2],
 ].map((i) => i.map(BigInt));
 function poseidonBasic(opts, mds) {
-    validateField$2(opts.Fp);
+    validateField(opts.Fp);
     if (!Number.isSafeInteger(opts.rate) || !Number.isSafeInteger(opts.capacity))
         throw new Error(`Wrong poseidon opts: ${opts}`);
     const m = opts.rate + opts.capacity;
@@ -404748,6 +404854,10 @@ function createIndexer(indexerName, preset) {
     });
   }
   definition.plugins = [
+    internalContext({
+      indexerName,
+      availableIndexers
+    }),
     inMemoryPersistence(),
     ...definition.plugins ?? [],
     logger({ logger: reporter })
