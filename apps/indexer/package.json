@@ -9,9 +9,9 @@
   "packageManager": "pnpm@9.15.2",
 
   "scripts": {
-    "build": "apibara build",
+    "build": "pnpm apibara build",
     "dev": "pnpm with-env apibara dev",
-    "start": "apibara start",
+    "start": "pnpm apibara start",
     "lint": "biome check .",
     "lint:fix": "pnpm lint --write",
     "test": "vitest",
