@@ -1,3 +1,4 @@
+import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { ContractAddress, getAddressFromEntity, getAddressNameFromEntity, ID, world } from "@bibliothecadao/eternum";
@@ -167,8 +168,8 @@ export const EventStream = () => {
                   </span>
                   {event.position && (
                     <div className="hidden md:flex">
-                      <ViewOnMapIcon hideTooltip={true} position={event.position} />
-                      <NavigateToPositionIcon hideTooltip={true} position={event.position} />
+                      <ViewOnMapIcon hideTooltip={true} position={new Position(event.position)} />
+                      <NavigateToPositionIcon hideTooltip={true} position={new Position(event.position)} />
                     </div>
                   )}
                   <div className="hidden md:block">

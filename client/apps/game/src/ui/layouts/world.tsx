@@ -15,8 +15,8 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Leva } from "leva";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { Redirect } from "wouter";
 import { env } from "../../../env";
+import { NotLoggedInMessage } from "../components/not-logged-in-message";
 import { IS_MOBILE } from "../config";
 
 // Lazy load components
@@ -100,6 +100,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
   const battleView = useUIStore((state) => state.battleView);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   // Setup hooks
   useStructureEntityId();
@@ -108,7 +109,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const setLoading = useUIStore((state) => state.setLoading);
 
   const dojo = useDojo();
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const playerStructures = usePlayerStructures();
 
@@ -276,76 +276,81 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   );
 
   return (
-    <div
-      onClick={(e) => {
-        e.stopPropagation();
-      }}
-      onDoubleClick={(e) => {
-        e.stopPropagation();
-      }}
-      onMouseMove={(e) => {
-        e.stopPropagation();
-      }}
-      id="world"
-      className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
-    >
-      <div className="vignette" />
+    <>
+      <NotLoggedInMessage />
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+        }}
+        onMouseMove={(e) => {
+          e.stopPropagation();
+        }}
+        id="world"
+        className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
+      >
+        <div className="vignette" />
 
-      <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
-        {IS_MOBILE && <OrientationOverlay />}
-        <LoadingOroborus loading={isLoadingScreenEnabled} />
-        <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
-        <BlankOverlayContainer open={showBlankOverlay}>
-          <Onboarding backgroundImage={backgroundImage} />
-        </BlankOverlayContainer>
-        <ActionInstructions />
-        {!IS_MOBILE && (
-          <>
-            <ActionInfo />
-            <ArmyInfoLabel />
-            <StructureInfoLabel />
-            <BattleInfoLabel />
-          </>
-        )}
-
-        {battleViewContent}
-
-        <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
-          <LeftMiddleContainer>
-            <LeftNavigationModule />
-          </LeftMiddleContainer>
-
-          <TopCenterContainer>
-            <TopMiddleNavigation />
-          </TopCenterContainer>
-
-          <BottomMiddleContainer>
-            <SelectedArmy />
-          </BottomMiddleContainer>
-
+        <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
+          {IS_MOBILE && <OrientationOverlay />}
+          <LoadingOroborus loading={isLoadingScreenEnabled} />
+          <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
+          <BlankOverlayContainer open={showBlankOverlay}>
+            <Onboarding backgroundImage={backgroundImage} />
+          </BlankOverlayContainer>
+          {/* <Onboarding backgroundImage={backgroundImage} /> */}
+          <ActionInstructions />
           {!IS_MOBILE && (
             <>
-              <BottomRightContainer>
-                <MiniMapNavigation />
-              </BottomRightContainer>
-              <RightMiddleContainer>
-                <RightNavigationModule />
-              </RightMiddleContainer>
+              <ActionInfo />
+              <ArmyInfoLabel />
+              <StructureInfoLabel />
+              <BattleInfoLabel />
             </>
           )}
 
-          <TopLeftContainer>
-            <TopLeftNavigation structures={playerStructures} />
-          </TopLeftContainer>
-        </div>
+          {battleViewContent}
 
-        <Redirect to="/" />
-        <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
-        <Tooltip />
-        <VersionDisplay />
-        <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
-      </Suspense>
-    </div>
+          <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
+            <LeftMiddleContainer>
+              <LeftNavigationModule />
+            </LeftMiddleContainer>
+
+            <TopCenterContainer>
+              <TopMiddleNavigation />
+            </TopCenterContainer>
+
+            <BottomMiddleContainer>
+              <SelectedArmy />
+            </BottomMiddleContainer>
+
+            {!IS_MOBILE && (
+              <>
+                <BottomRightContainer>
+                  <MiniMapNavigation />
+                </BottomRightContainer>
+                <RightMiddleContainer>
+                  <RightNavigationModule />
+                </RightMiddleContainer>
+              </>
+            )}
+
+            <TopLeftContainer>
+              <TopLeftNavigation structures={playerStructures} />
+            </TopLeftContainer>
+          </div>
+
+          {/* todo: put this somewhere else maybe ? */}
+          {/* <Redirect to="/" /> */}
+          <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
+          <Tooltip />
+          <VersionDisplay />
+          <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
+        </Suspense>
+      </div>
+    </>
   );
 };
 

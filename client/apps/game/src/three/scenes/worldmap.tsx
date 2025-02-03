@@ -85,7 +85,7 @@ export default class WorldmapScene extends HexagonScene {
     this.biome = new Biome();
 
     this.structurePreview = new StructurePreview(this.scene);
-    this.tileManager = new TileManager(this.dojo.components, this.dojo.network.provider, { col: 0, row: 0 });
+    this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
@@ -298,13 +298,10 @@ export default class WorldmapScene extends HexagonScene {
     this.clearCache();
     this.totalStructures = this.structureManager.getTotalStructures() + 1;
 
+    const account = useAccountStore.getState().account;
+
     this.tileManager
-      .placeStructure(
-        useAccountStore.getState().account!,
-        this.structureEntityId,
-        buildingType.type,
-        contractHexPosition,
-      )
+      .placeStructure(account!, this.structureEntityId, buildingType.type, contractHexPosition)
       .catch(() => {
         this.structureManager.structures.removeStructureFromPosition(hexCoords);
         this.structureManager.structureHexCoords.get(hexCoords.col)?.delete(hexCoords.row);
@@ -336,6 +333,9 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    // Check if account exists before allowing actions
+    const account = useAccountStore.getState().account;
+
     const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
 
     const { selectedEntityId, travelPaths } = this.state.armyActions;
@@ -351,13 +351,7 @@ export default class WorldmapScene extends HexagonScene {
             selectedEntityId,
           );
           playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-          armyMovementManager.moveArmy(
-            useAccountStore.getState().account!,
-            selectedPath,
-            isExplored,
-            currentBlockTimestamp,
-            currentArmiesTick,
-          );
+          armyMovementManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
           this.state.updateHoveredHex(null);
         }
       }

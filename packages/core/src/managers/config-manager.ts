@@ -33,8 +33,6 @@ export class ClientConfigManager {
     this.components = components;
     this.config = config;
 
-    console.log("setting dojo for config manager");
-
     this.initializeResourceInputs();
     this.initializeResourceOutput();
     this.initializeHyperstructureTotalCosts();

@@ -137,7 +137,7 @@ export default class HexceptionScene extends HexagonScene {
     this.loadBuildingModels();
     this.loadBiomeModels(900);
 
-    this.tileManager = new TileManager(this.dojo.components, this.dojo.network.provider, { col: 0, row: 0 });
+    this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
     this.setup();
 
@@ -304,13 +304,17 @@ export default class HexceptionScene extends HexagonScene {
 
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
+
+    // Check if account exists before allowing actions
+    const account = useAccountStore.getState().account;
     if (buildingType) {
       // if building mode
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
         this.clearBuildingMode();
         try {
           await this.tileManager.placeBuilding(
-            useAccountStore.getState().account!,
+            account!,
+            this.state.structureEntityId,
             buildingType.type,
             normalizedCoords,
             buildingType.resource,

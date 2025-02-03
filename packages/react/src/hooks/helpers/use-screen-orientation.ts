@@ -44,11 +44,6 @@ export const useScreenOrientation = () => {
     } else if (element.mozRequestFullScreen) {
       element.mozRequestFullScreen();
     }
-
-    // (A2) THEN LOCK ORIENTATION
-    // screen.orientation.lock("landscape").catch((e: any) => {
-    //   console.log(e);
-    // });
   };
 
   const exitFullScreen = (doc: DocumentWithFullscreen) => {

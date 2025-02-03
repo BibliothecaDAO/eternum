@@ -60,12 +60,11 @@ interface UIStore {
   setShowMinimap: (show: boolean) => void;
   selectedPlayer: ContractAddress | null;
   setSelectedPlayer: (player: ContractAddress | null) => void;
-  isSpectatorMode: boolean;
-  setSpectatorMode: (enabled: boolean) => void;
   hasAcceptedToS: boolean;
   setHasAcceptedToS: (accepted: boolean) => void;
   showToS: boolean;
   setShowToS: (show: boolean) => void;
+  setModal: (content: React.ReactNode | null, show: boolean) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -79,7 +78,9 @@ export const useUIStore = create(
     showBlurOverlay: false,
     setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
     showBlankOverlay: true,
-    setShowBlankOverlay: (show) => set({ showBlankOverlay: show }),
+    setShowBlankOverlay: (show) => {
+      set({ showBlankOverlay: show });
+    },
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
     isSoundOn: localStorage.getItem("soundEnabled") ? localStorage.getItem("soundEnabled") === "true" : true,
@@ -125,8 +126,6 @@ export const useUIStore = create(
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
-    isSpectatorMode: false,
-    setSpectatorMode: (enabled: boolean) => set({ isSpectatorMode: enabled }),
     hasAcceptedToS: localStorage.getItem("hasAcceptedToS") ? localStorage.getItem("hasAcceptedToS") === "true" : false,
     setHasAcceptedToS: (accepted: boolean) => {
       set({ hasAcceptedToS: accepted });
@@ -134,6 +133,7 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
+    setModal: (content: React.ReactNode | null, show: boolean) => set({ modalContent: content, showModal: show }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),

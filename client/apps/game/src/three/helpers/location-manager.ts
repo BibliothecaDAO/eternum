@@ -24,9 +24,4 @@ export class LocationManager {
     this.updateUrlParams();
     return this.urlParams.has("row") && this.urlParams.has("col");
   }
-
-  public static updateUrl(url: string) {
-    window.history.pushState({}, "", url);
-    window.dispatchEvent(new Event("urlChanged"));
-  }
 }

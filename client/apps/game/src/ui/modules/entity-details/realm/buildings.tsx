@@ -50,13 +50,13 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
   const handlePauseResumeProduction = (paused: boolean, innerCol: number, innerRow: number) => {
     setIsLoading({ isLoading: true, innerCol, innerRow });
-    const tileManager = new TileManager(dojo.setup.components, dojo.network.provider, {
+    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
       col: structure.position!.x,
       row: structure.position!.y,
     });
 
     const action = paused ? tileManager.resumeProduction : tileManager.pauseProduction;
-    action(dojo.account.account, innerCol, innerRow).then(() => {
+    action(dojo.account.account, structureEntityId, innerCol, innerRow).then(() => {
       setIsLoading({ isLoading: false, innerCol, innerRow });
     });
   };
@@ -164,7 +164,6 @@ interface BuildingRowProps {
   handlePauseResumeProduction: (paused: boolean, innerCol: number, innerRow: number) => void;
 }
 const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction }: BuildingRowProps) => {
-  console.log(building.category);
   return (
     <div className="flex flex-col p-2 mb-4 text-md rounded transition-colors border border-gold/10">
       <div className="flex justify-between items-center mb-4">

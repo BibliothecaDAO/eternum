@@ -129,6 +129,58 @@ export class Biome {
   }
 }
 
+function analyzeBiomeDistribution(centerX: number, centerY: number, radius: number) {
+  const biome = new Biome();
+  const biomeCounts: Record<BiomeType, number> = {
+    DeepOcean: 0,
+    Ocean: 0,
+    Beach: 0,
+    Scorched: 0,
+    Bare: 0,
+    Tundra: 0,
+    Snow: 0,
+    TemperateDesert: 0,
+    Shrubland: 0,
+    Taiga: 0,
+    Grassland: 0,
+    TemperateDeciduousForest: 0,
+    TemperateRainForest: 0,
+    SubtropicalDesert: 0,
+    TropicalSeasonalForest: 0,
+    TropicalRainForest: 0,
+  };
+
+  const startX = centerX - radius;
+  const endX = centerX + radius;
+  const startY = centerY - radius;
+  const endY = centerY + radius;
+  let totalTiles = 0;
+
+  for (let x = startX; x <= endX; x++) {
+    for (let y = startY; y <= endY; y++) {
+      const biomeType = biome.getBiome(x, y);
+      biomeCounts[biomeType]++;
+      totalTiles++;
+    }
+  }
+
+  console.log(`\nBiome Distribution Analysis`);
+  console.log(`Center: (${centerX}, ${centerY})`);
+  console.log(`Radius: ${radius} tiles`);
+  console.log(`Total area: ${totalTiles} tiles\n`);
+  console.log("Biome Counts:");
+
+  Object.entries(biomeCounts)
+    .sort(([, a], [, b]) => b - a)
+    .forEach(([biomeType, count]) => {
+      const percentage = ((count / totalTiles) * 100).toFixed(2);
+      console.log(`${biomeType}: ${count} tiles (${percentage}%)`);
+    });
+}
+
+// Example usage:
+// analyzeBiomeDistribution(2147483646, 2147483646, 500);
+
 // function testBiomeGeneration() {
 //   const biome = new Biome();
 //   const start = 5000871265127650;
