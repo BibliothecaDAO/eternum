@@ -6,8 +6,6 @@
   "author": "",
   "license": "ISC",
   "type": "module",
-  "packageManager": "pnpm@9.15.2",
-
   "scripts": {
     "build": "pnpm apibara build",
     "dev": "pnpm with-env apibara dev",
