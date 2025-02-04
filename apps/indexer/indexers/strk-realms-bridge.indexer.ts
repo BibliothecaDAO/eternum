@@ -37,7 +37,7 @@ export function createIndexer<
 
     finality: "accepted",
     startingCursor: {
-      orderKey: 76_103n,
+      orderKey: env.VITE_PUBLIC_CHAIN === "sepolia" ? 76_103n : 664_161n,
     },
     filter: {
       events: [
@@ -55,7 +55,7 @@ export function createIndexer<
       drizzleStorage({
         db: database,
         idColumn: "_id",
-        persistState: false,
+        persistState: true,
         indexerName: "starknet-realms-bridge",
       }),
     ],
@@ -125,7 +125,6 @@ export function createIndexer<
             eventName: "bridge::interfaces::DepositRequestInitiated",
             event,
           });
-          logger.info(args);
           const hash = uint256.bnToUint256(args.req_content.hash);
           const id = [
             BigInt(hash.low),
@@ -142,8 +141,8 @@ export function createIndexer<
             .insert(realmsBridgeRequests)
             .values({
               from_chain: l2ChainId,
-              from_address: numberToHex(args.req_content.owner_l1.address),
-              to_address: args.req_content.owner_l2,
+              from_address: args.req_content.owner_l2,
+              to_address: numberToHex(args.req_content.owner_l1.address),
               token_ids: args.req_content.ids,
               timestamp: block?.header?.timestamp,
               hash: transactionHash,

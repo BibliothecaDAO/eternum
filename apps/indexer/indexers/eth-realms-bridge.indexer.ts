@@ -14,7 +14,6 @@ import { db } from "@realms-world/db/client";
 import {
   realmsBridgeRequests,
   realmsBridgeEvents,
-  bridgeEventTypeEnum,
 } from "@realms-world/db/schema";
 import { useLogger } from "@apibara/indexer/plugins";
 import { env } from "../env";
@@ -23,7 +22,6 @@ import {
   STARKNET_MESSAGING,
   REALMS_BRIDGE_ADDRESS,
 } from "@realms-world/constants";
-import { number } from "zod";
 
 const abi = parseAbi([
   "event LogMessageToL2(address indexed fromAddress, uint256 indexed toAddress,uint256 indexed selector,uint256[] payload,uint256 nonce,uint256 fee)",
