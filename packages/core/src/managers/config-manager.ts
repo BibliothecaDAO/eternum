@@ -100,18 +100,16 @@ export class ClientConfigManager {
     );
   }
 
+  // todo: need to get directly from chain
   private initializeResourceOutput() {
     if (!this.components) return;
 
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
-      const productionConfig = getComponentValue(
-        this.components.ProductionConfig,
-        getEntityIdFromKeys([BigInt(resourceType)]),
-      );
+      const resourceOutput = this.config.resources.resourceOutputs[Number(resourceType)];
 
       this.resourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
-        amount: this.divideByPrecision(Number(productionConfig?.amount_per_building_per_tick)),
+        amount: resourceOutput,
       };
     }
   }

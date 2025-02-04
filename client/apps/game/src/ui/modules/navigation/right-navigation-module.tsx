@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
+import { ProductionModal } from "@/ui/components/production/production-modal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import CircleButton from "@/ui/elements/circle-button";
@@ -16,6 +17,7 @@ export const RightNavigationModule = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const navigation = useMemo(
     () => [
@@ -42,8 +44,10 @@ export const RightNavigationModule = () => {
             size="xl"
             tooltipLocation="top"
             label="Production"
-            active={view === RightView.ResourceTable}
-            onClick={() => setView(view === RightView.ResourceTable ? RightView.None : RightView.ResourceTable)}
+            active={view === RightView.Production}
+            onClick={() => {
+              toggleModal(<ProductionModal />);
+            }}
           />
         ),
       },

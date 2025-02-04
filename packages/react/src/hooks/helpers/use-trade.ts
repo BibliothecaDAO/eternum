@@ -1,16 +1,15 @@
-import { computeTrades, ContractAddress, ResourcesIds } from "@bibliothecadao/eternum";
+import { computeTrades, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { useDojo, usePlayerRealms } from "../";
+import { useDojo, usePlayerOwnedRealms } from "../";
 
 export function useMarket(currentBlockTimestamp: number) {
   const {
-    account: { account },
     setup: { components },
   } = useDojo();
 
-  const playerRealms = usePlayerRealms(ContractAddress(account.address));
+  const playerRealms = usePlayerOwnedRealms();
 
   const allMarket = useEntityQuery([
     HasValue(components.Status, { value: 0n }),
@@ -21,7 +20,7 @@ export function useMarket(currentBlockTimestamp: number) {
   }, [allMarket]);
 
   const userTrades = useMemo(() => {
-    return allTrades.filter((trade) => playerRealms.map((realm) => realm.entity_id).includes(trade.makerId));
+    return allTrades.filter((trade) => playerRealms.map((realm) => realm.entityId).includes(trade.makerId));
   }, [allTrades]);
 
   const bidOffers = useMemo(() => {

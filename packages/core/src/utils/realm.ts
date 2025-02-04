@@ -6,11 +6,10 @@ import { findResourceIdByTrait, orders } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
-import { packResources } from "./packed-data";
+import { packResources, unpackResources } from "./packed-data";
 
-export const getRealmWithPosition = (entityId: ID, components: ClientComponents) => {
+export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
   const { Realm, Owner, Position } = components;
-  const entity = getEntityIdFromKeys([BigInt(entityId)]);
   const realm = getComponentValue(Realm, entity);
   if (!realm) return undefined;
 
@@ -19,6 +18,7 @@ export const getRealmWithPosition = (entityId: ID, components: ClientComponents)
 
   return {
     ...realm,
+    resources: unpackResources(BigInt(realm.produced_resources)),
     position,
     name: getRealmNameById(realm.realm_id),
     owner,
@@ -72,6 +72,8 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
 
     const name = getRealmNameById(realm_id);
 
+    const resources = unpackResources(BigInt(produced_resources));
+
     const { address } = owner;
 
     return {
@@ -79,7 +81,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       entityId: entity_id,
       name,
       level,
-      resourceTypesPacked: produced_resources,
+      resources,
       order,
       position,
       ...population,

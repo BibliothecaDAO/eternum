@@ -88,6 +88,7 @@ export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+  resources: ResourcesIds[];
 };
 export interface Prize {
   id: QuestType;
@@ -579,7 +580,7 @@ export interface RealmInfo {
   realmId: ID;
   entityId: ID;
   name: string;
-  resourceTypesPacked: bigint;
+  resources: ResourcesIds[];
   order: number;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   population?: number | undefined;

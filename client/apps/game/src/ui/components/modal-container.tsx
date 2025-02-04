@@ -13,7 +13,7 @@ export const ModalContainer = ({ children, size = "full" }: ModalContainerProps)
 
   const containerClasses =
     size === "full"
-      ? "w-full h-full   p-4"
+      ? "w-full h-full pb-20"
       : "w-1/2 h-1/2 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2";
 
   const handleEscapePress = useCallback(
