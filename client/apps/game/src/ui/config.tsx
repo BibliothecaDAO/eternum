@@ -94,6 +94,7 @@ export const BuildingThumbs = {
   trophy: "/images/buildings/thumb/trophy.png",
   discord: "/images/buildings/thumb/discord.png",
   rewards: "/images/buildings/thumb/rewards.png",
+  production: "/images/buildings/thumb/anvil.png",
 };
 
 export enum MenuEnum {
@@ -104,4 +105,5 @@ export enum MenuEnum {
   resourceArrivals = "resourceArrivals",
   trade = "trade",
   resourceTable = "resourceTable",
+  production = "production",
 }

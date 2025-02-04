@@ -33,6 +33,20 @@ export const RightNavigationModule = () => {
           />
         ),
       },
+      {
+        name: MenuEnum.production,
+        button: (
+          <CircleButton
+            className="production-selector"
+            image={BuildingThumbs.production}
+            size="xl"
+            tooltipLocation="top"
+            label="Production"
+            active={view === RightView.ResourceTable}
+            onClick={() => setView(view === RightView.ResourceTable ? RightView.None : RightView.ResourceTable)}
+          />
+        ),
+      },
     ],
     [view, structureEntityId],
   );
