@@ -188,7 +188,7 @@ export function createIndexer<
               hash: log.transactionHash,
               type: eventType,
               id: decoded.args.payload,
-            });
+            }).onConflictDoNothing();
           }
         }
       }

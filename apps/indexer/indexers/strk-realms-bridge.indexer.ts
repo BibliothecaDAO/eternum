@@ -19,7 +19,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
   return createIndexer({ database: db });
 }
 const chainId =
-  env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
+  env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
 const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
@@ -55,7 +55,7 @@ export function createIndexer<
       drizzleStorage({
         db: database,
         idColumn: "_id",
-        persistState: true,
+        persistState: false,
         indexerName: "starknet-realms-bridge",
       }),
     ],
@@ -103,22 +103,13 @@ export function createIndexer<
             })
             .onConflictDoNothing();
 
-          /*const eventTypeMap = {
-            LogMessageToL2: "deposit_initiated_l1",
-            ConsumedMessageToL2: "withdraw_completed_l2",
-            LogMessageToL1: "withdraw_available_l1",
-            ConsumedMessageToL1: "withdraw_completed_l1",
-          };
-
-          const eventType = eventTypeMap[decoded.eventName];*/
-         // if (eventType) {
             await db.insert(realmsBridgeEvents).values({
               timestamp: block?.header?.timestamp,
               hash: transactionHash,
               type: "withdraw_completed_l2",
               id,
             }).onConflictDoNothing();
-         // }
+
         } else if (event.keys[0] === getSelector("DepositRequestInitiated")) {
           const { args, transactionHash } = decodeEvent({
             abi,
