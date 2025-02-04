@@ -42,11 +42,11 @@ export function createIndexer<
     filter: {
       events: [
         {
-          address: REALMS_BRIDGE_ADDRESS[chainId] as `0x${string}`,
+          address: REALMS_BRIDGE_ADDRESS[l2ChainId] as `0x${string}`,
           keys: [getSelector("WithdrawRequestCompleted") as `0x${string}`],
         },
         {
-          address: REALMS_BRIDGE_ADDRESS[chainId] as `0x${string}`,
+          address: REALMS_BRIDGE_ADDRESS[l2ChainId] as `0x${string}`,
           keys: [getSelector("DepositRequestInitiated") as `0x${string}`],
         },
       ],
@@ -55,7 +55,7 @@ export function createIndexer<
       drizzleStorage({
         db: database,
         idColumn: "_id",
-        persistState: false,
+        persistState: true,
         indexerName: "starknet-realms-bridge",
       }),
     ],
