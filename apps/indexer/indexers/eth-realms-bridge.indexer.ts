@@ -61,7 +61,7 @@ export function createIndexer<
         ? "https://ethereum-sepolia.preview.apibara.org"
         : "https://ethereum.preview.apibara.org",
     finality: "accepted",
-    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6180467n : 20638058n,
+    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 7635993n : 20638058n,
     filter: {
       logs: [
         {
@@ -119,7 +119,7 @@ export function createIndexer<
         db: database,
         persistState: true,
         idColumn: "_id",
-        indexerName: "realms-bridge",
+        indexerName: "eth-realms-bridge",
       }),
     ],
     async transform({ endCursor, context, block, finality }) {

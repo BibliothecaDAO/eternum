@@ -6,7 +6,7 @@ export const REALMS_BRIDGE_ADDRESS: Record<number | string, string> = {
     [ChainId.SN_MAIN]:
       "0x013ae4e41ff29ee8311c84b024ac59a0c13f73fa1ba0cea02fbbf7880ec4835a",
     [ChainId.SN_SEPOLIA]:
-      "0x467f6b080db9734b8b0a2ccb7fd020914e47f2f62aa668f56c4124946e4eb70",
+      "0x0467f6b080db9734b8b0a2ccb7fd020914e47f2f62aa668f56c4124946e4eb70",
   };
 
   export const LORDS_BRIDGE_ADDRESS: Record<number | string, string> = {

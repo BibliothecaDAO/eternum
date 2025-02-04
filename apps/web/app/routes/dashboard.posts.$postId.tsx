@@ -79,7 +79,7 @@ function DashboardPostsPostIdComponent() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={5}
-                className="shadow w-full p-2 rounded"
+                className="shadow-sm w-full p-2 rounded"
                 placeholder="Write some notes here..."
               />
               <div className="italic text-xs">

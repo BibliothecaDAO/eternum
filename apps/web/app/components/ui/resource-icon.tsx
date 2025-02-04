@@ -191,7 +191,7 @@ export const ResourceIcon = ({
               Components[props.resource.replace(" ", "").replace("'", "")]
                 ?.name}
           </span>
-          <div className="absolute bottom-0 left-1/2 z-[100] h-3 w-3 -translate-x-1/2 translate-y-1/2 rotate-45 bg-black"></div>
+          <div className="absolute bottom-0 left-1/2 z-100 h-3 w-3 -translate-x-1/2 translate-y-1/2 rotate-45 bg-black"></div>
         </div>
       )}
     </div>

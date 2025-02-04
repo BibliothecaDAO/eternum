@@ -42,7 +42,7 @@ function MediaPlaceholder({ className }: { className?: string }) {
     return (
         <div
             className={cn(
-                "flex flex-shrink-0 items-center justify-center bg-secondary",
+                "flex shrink-0 items-center justify-center bg-secondary",
                 className,
             )}
         >
@@ -73,7 +73,7 @@ export default function Media({
 
     if (mediaFormat === "video") {
         return (
-            <video autoPlay className={cn("flex-shrink-0", className)} loop muted>
+            <video autoPlay className={cn("shrink-0", className)} loop muted>
                 <source src={mediaSrc} type="video/mp4" />
                 Your browser does not support the video tag.
             </video>
@@ -82,15 +82,15 @@ export default function Media({
 
     return (
         <>
-            <div className="relative flex-shrink-0">
+            <div className="relative shrink-0">
                 {status === "loading" && (
-                    <Skeleton className="absolute inset-0 flex-shrink-0" />
+                    <Skeleton className="absolute inset-0 shrink-0" />
                 )}
                 <img
                    /* unoptimized
                     priority={priority}*/
                     alt={alt}
-                    className={cn("flex-shrink-0", className)}
+                    className={cn("shrink-0", className)}
                     onError={() => setStatus("error")}
                     onLoadStart={() => setStatus("loading")}
                     onLoad={() => setStatus("loaded")}

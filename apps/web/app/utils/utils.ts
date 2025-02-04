@@ -18,10 +18,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function shortenAddress(str = "") {
-  const formatted = formatAddress(str);
+  let formatted = formatAddress(str);
+
+  // Only remove extra zeros after "0x" if there's at least one non-zero digit.
+  if (/[^0]/.test(formatted.slice(2))) {
+    formatted = formatted.replace(/^(0x)0+/, "$1");
+  }
 
   return `${formatted.slice(0, 6)}...${formatted.slice(formatted.length - 4)}`;
 }
+
 export function formatAddress(address: string) {
   //if (address.length === 42) return getAddress(address);
   try {

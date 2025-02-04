@@ -112,12 +112,12 @@ function RouteComponent() {
             From:
             {selectedAsset === "Ethereum" ? (
               <>
-                <EthereumIcon className="!w-6 !h-6" />
+                <EthereumIcon className="w-6! h-6!" />
                 Ethereum
               </>
             ) : (
               <>
-                <StarknetIcon className="!w-6 !h-6" />
+                <StarknetIcon className="w-6! h-6!" />
                 Starknet
               </>
             )}
@@ -129,12 +129,12 @@ function RouteComponent() {
             To:
             {selectedAsset === "Ethereum" ? (
               <>
-                <StarknetIcon className="!w-6 !h-6" />
+                <StarknetIcon className="w-6! h-6!" />
                 Starknet
               </>
             ) : (
               <>
-                <EthereumIcon className="!w-6 !h-6" />
+                <EthereumIcon className="w-6! h-6!" />
                 Ethereum
               </>
             )}

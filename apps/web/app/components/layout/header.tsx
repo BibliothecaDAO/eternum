@@ -19,10 +19,10 @@ export function Header() {
         "flex sticky  z-50 top-0 shrink-0 items-center transition-[width,height] ease-linear  border-b bg-sidebar"
       )}
     >
-      <div className="flex w-full gap-2 h-[--header-height]">
+      <div className="flex w-full gap-2 h-(--header-height)">
         <div
           className={
-            `${open ? "w-[--sidebar-width]" : "w-[--sidebar-width-icon]"}` +
+            `${open ? "w-(--sidebar-width)" : "w-(--sidebar-width-icon)"}` +
             " border-r flex items-center justify-center"
           }
         >

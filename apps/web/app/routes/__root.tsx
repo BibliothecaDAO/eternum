@@ -44,7 +44,7 @@ function RootComponent() {
   });
   return (
     <>
-      <div className={`[--header-height:calc(theme(spacing.14))]`}>
+      <div className={`[--header-height:calc(--spacing(14))]`}>
         <WagmiProvider config={config}>
           <StarknetProvider>
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
