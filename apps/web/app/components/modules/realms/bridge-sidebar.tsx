@@ -52,9 +52,9 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   const { toast } = useToast();
 
   const bridgeTxsQuery = trpc.bridgeTransactions.useQuery({
-    l1Account: l1Address,
+    l1Account: l1Address?.toLowerCase(),
     l2Account: l2Address,
-  });
+  }, {enabled: !!l1Address || !!l2Address});
   const bridgeTxs = bridgeTxsQuery.data || [];
 
   const {
