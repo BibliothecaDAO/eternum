@@ -30,13 +30,11 @@ const abi = parseAbi([
   "event ConsumedMessageToL1(uint256 indexed fromAddress,address indexed toAddress,uint256[] payload)",
 ]);
 
-// Determine chain IDs based on environment
 const chainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
 const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
-// USDC Transfers on Ethereum
 export default function (runtimeConfig: ApibaraRuntimeConfig) {
   return createIndexer({
     database: db,
@@ -49,6 +47,7 @@ export function createIndexer<
   TSchema extends
     TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
 >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
+  console.log(env.VITE_PUBLIC_CHAIN);
   console.log("messaging ", STARKNET_MESSAGING[chainId]);
   console.log("from ", REALMS_BRIDGE_ADDRESS[chainId]);
   console.log("to " + BigInt(REALMS_BRIDGE_ADDRESS[l2ChainId]));
@@ -58,8 +57,8 @@ export function createIndexer<
       env.VITE_PUBLIC_CHAIN === "sepolia"
         ? "https://ethereum-sepolia.preview.apibara.org"
         : "https://ethereum.preview.apibara.org",
-    finality: "accepted",
-    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 20_638_058n,
+    finality: "pending",
+    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 204_33_152n,
     filter: {
       logs: [
         {
@@ -165,8 +164,8 @@ export function createIndexer<
             .insert(realmsBridgeRequests)
             .values({
               from_chain: fromChain,
-              from_address:numberToHex(decoded.args.payload[2]),
-              to_address:numberToHex(decoded.args.payload[3]),
+              from_address: numberToHex(decoded.args.payload[2]),
+              to_address: numberToHex(decoded.args.payload[3]),
               token_ids: tokenIds,
               timestamp: header?.timestamp,
               hash: log.transactionHash,
@@ -183,12 +182,15 @@ export function createIndexer<
 
           const eventType = eventTypeMap[decoded.eventName];
           if (eventType) {
-            await db.insert(realmsBridgeEvents).values({
-              timestamp: header?.timestamp,
-              hash: log.transactionHash,
-              type: eventType,
-              id: decoded.args.payload,
-            }).onConflictDoNothing();
+            await db
+              .insert(realmsBridgeEvents)
+              .values({
+                timestamp: header?.timestamp,
+                hash: log.transactionHash,
+                type: eventType,
+                id: decoded.args.payload,
+              })
+              .onConflictDoNothing();
           }
         }
       }

@@ -35,7 +35,7 @@ export function createIndexer<
         ? "https://starknet-sepolia.preview.apibara.org"
         : "https://starknet.preview.apibara.org",
 
-    finality: "accepted",
+    finality: "pending",
     startingCursor: {
       orderKey: env.VITE_PUBLIC_CHAIN === "sepolia" ? 76_103n : 664_161n,
     },
