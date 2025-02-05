@@ -1,5 +1,13 @@
 import { Button } from "@/shared/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/shared/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/shared/ui/sheet";
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { ModeToggle } from "./mode-toggle";
@@ -9,13 +17,18 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
 
   const navigation = [
     { name: "Overview", href: "/overview" },
     { name: "Settings", href: "/settings" },
   ];
+
+  const handleLogout = () => {
+    setOpen(false);
+    setLocation("/");
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -59,8 +72,12 @@ export function Layout({ children }: LayoutProps) {
                 <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-              <nav className="flex flex-col space-y-4">
+            <SheetContent side="left">
+              <SheetHeader>
+                <SheetTitle>Eternum</SheetTitle>
+                <SheetDescription>Where do you want to go?</SheetDescription>
+              </SheetHeader>
+              <nav className="flex flex-col space-y-4 py-4">
                 {navigation.map((item) => (
                   <Link key={item.href} href={item.href}>
                     <a
@@ -74,6 +91,9 @@ export function Layout({ children }: LayoutProps) {
                   </Link>
                 ))}
               </nav>
+              <SheetFooter>
+                <Button onClick={handleLogout}>Logout</Button>
+              </SheetFooter>
             </SheetContent>
           </Sheet>
           <div className="mr-4 hidden lg:flex">
