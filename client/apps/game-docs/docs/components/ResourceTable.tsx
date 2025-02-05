@@ -1,24 +1,22 @@
-import {
-  findResourceById,
-  RESOURCE_PRODUCTION_INPUT_RESOURCES,
-  RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
-  ResourcesIds,
-} from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { findResourceById, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import ResourceIcon from "./ResourceIcon";
+
+const eternumConfig = ETERNUM_CONFIG();
 
 export default function ResourceTable() {
   const resourceTable = useMemo(() => {
     const resources = [];
-    for (const resourceId of Object.keys(RESOURCE_PRODUCTION_INPUT_RESOURCES) as unknown as ResourcesIds[]) {
+    for (const resourceId of Object.keys(eternumConfig.resources.resourceInputs) as unknown as ResourcesIds[]) {
       if (resourceId === ResourcesIds.Lords) continue;
       const calldata = {
         resource: findResourceById(Number(resourceId)),
-        amount: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS[resourceId],
+        amount: eternumConfig.resources.resourceInputs[resourceId],
         resource_type: resourceId,
-        cost: RESOURCE_PRODUCTION_INPUT_RESOURCES[resourceId].map((cost: any) => ({
+        cost: eternumConfig.resources.resourceInputs[resourceId].map((cost: any) => ({
           ...cost,
-          amount: cost.amount * ETERNUM_CONFIG().resources.resourcePrecision,
+          amount: cost.amount * RESOURCE_PRECISION,
           name: findResourceById(cost.resource)?.trait || "",
         })),
       };

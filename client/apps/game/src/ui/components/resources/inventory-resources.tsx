@@ -1,8 +1,14 @@
 import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getBalance, getInventoryResources, ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  divideByPrecision,
+  getBalance,
+  getInventoryResources,
+  ID,
+  Resource,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 

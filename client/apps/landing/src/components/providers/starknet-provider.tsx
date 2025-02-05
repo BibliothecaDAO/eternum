@@ -6,7 +6,7 @@ import { constants } from "starknet";
 import { env } from "../../../env";
 import { getResourceAddresses } from "../ui/utils/addresses";
 
-const resourceAddresses = await getResourceAddresses();
+const resourceAddresses = getResourceAddresses();
 
 const LORDS = resourceAddresses["LORDS"][1].toString();
 const otherResources = Object.entries(resourceAddresses)
@@ -16,20 +16,16 @@ const otherResources = Object.entries(resourceAddresses)
 const theme: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "eternum";
-const preset: string = "eternum";
 
 const cartridgeController = new ControllerConnector({
   chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
   defaultChainId: constants.StarknetChainId.SN_SEPOLIA,
   namespace,
   slot,
-  preset,
-  policies: {},
   theme,
   tokens: {
     erc20: [LORDS, ...otherResources],
   },
-  // namespace,
 });
 
 export function StarknetProvider({ children, onlyCartridge }: { children: React.ReactNode; onlyCartridge?: boolean }) {

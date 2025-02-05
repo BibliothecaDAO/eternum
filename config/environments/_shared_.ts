@@ -7,7 +7,7 @@ import {
   ResourcesIds,
   type Config,
 } from "@bibliothecadao/eternum";
-import { getGameManifest, getSeasonAddresses, type Chain } from "../utils/utils";
+import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
 import {
   BUILDING_CAPACITY,
@@ -128,8 +128,6 @@ export const SEASON_PASS_ADDRESS = "0x0"; // set in indexer.sh
 export const REALMS_ADDRESS = "0x0"; // set in indexer.sh
 export const LORDS_ADDRESS = "0x0"; // set in indexer.sh
 
-// Bridge Fees (using 10_000 precision)
-export const BRIDGE_FEE_DENOMINATOR = 10_000;
 export const VELORDS_FEE_ON_DEPOSIT = 400; // 4%
 export const VELORDS_FEE_ON_WITHDRAWAL = 400; // 4%
 export const SEASON_POOL_FEE_ON_DEPOSIT = 400; // 4%
@@ -137,7 +135,7 @@ export const SEASON_POOL_FEE_ON_WITHDRAWAL = 400; // 4%
 export const CLIENT_FEE_ON_DEPOSIT = 200; // 2%
 export const CLIENT_FEE_ON_WITHDRAWAL = 200; // 2%
 export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
-export const SEASON_POOL_FEE_RECIPIENT = BigInt(getContractByName(manifest, `${NAMESPACE}-season_systems`));
+export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
 export const MAX_BANK_FEE_ON_DEPOSIT = 0; // 10%
 export const MAX_BANK_FEE_ON_WITHDRAWAL = 0; // 10%
 
@@ -270,8 +268,8 @@ export const EternumGlobalConfig: Config = {
     season_pool_fee_on_wtdr_percent: SEASON_POOL_FEE_ON_WITHDRAWAL,
     client_fee_on_dpt_percent: CLIENT_FEE_ON_DEPOSIT,
     client_fee_on_wtdr_percent: CLIENT_FEE_ON_WITHDRAWAL,
-    velords_fee_recipient: BigInt(VELORDS_FEE_RECIPIENT),
-    season_pool_fee_recipient: BigInt(SEASON_POOL_FEE_RECIPIENT),
+    velords_fee_recipient: VELORDS_FEE_RECIPIENT,
+    season_pool_fee_recipient: SEASON_POOL_FEE_RECIPIENT,
     max_bank_fee_dpt_percent: MAX_BANK_FEE_ON_DEPOSIT,
     max_bank_fee_wtdr_percent: MAX_BANK_FEE_ON_WITHDRAWAL,
   },

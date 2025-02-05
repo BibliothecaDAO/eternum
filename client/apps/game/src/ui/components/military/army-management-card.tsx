@@ -1,23 +1,26 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
+import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import TextInput from "@/ui/elements/text-input";
-import {
-  currencyFormat,
-  divideByPrecision,
-  formatNumber,
-  formatStringNumber,
-  getEntityIdFromKeys,
-  multiplyByPrecision,
-} from "@/ui/utils/utils";
+import { currencyFormat, formatNumber, formatStringNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ArmyInfo, ArmyManager, configManager, getBalance, ID, Position, ResourcesIds } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import {
+  ArmyInfo,
+  ArmyManager,
+  configManager,
+  divideByPrecision,
+  getBalance,
+  ID,
+  multiplyByPrecision,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
@@ -152,7 +155,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
         <div className="flex justify-between   p-2 text-xs">
           <div className="self-center flex flex-row mr-auto px-3 font-bold items-center gap-x-1">
             {army.isHome ? <span className="text-green">At Base</span> : armyPosition ? `On Map` : "Unknown"}
-            <ViewOnMapIcon position={armyPosition} />
+            <ViewOnMapIcon position={new PositionInterface(armyPosition)} />
           </div>
         </div>
         <div className="flex flex-col relative  p-2">
@@ -274,16 +277,12 @@ export const ViewOnMapIcon = ({
   hideTooltip = false,
   className,
 }: {
-  position: Position;
+  position: PositionInterface;
   hideTooltip?: boolean;
   className?: string;
 }) => {
-  const { handleUrlChange, isMapView } = useQuery();
-
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setTooltip = useUIStore((state) => state.setTooltip);
-
-  const url = new PositionInterface(position).toMapLocationUrl();
+  const navigateToMapView = useNavigateToMapView();
 
   return (
     <Map
@@ -293,10 +292,7 @@ export const ViewOnMapIcon = ({
       )}
       onClick={() => {
         setTooltip(null);
-        handleUrlChange(url);
-        if (!isMapView) {
-          setIsLoadingScreenEnabled(true);
-        }
+        navigateToMapView(position);
       }}
       onMouseEnter={() => {
         if (hideTooltip) return;

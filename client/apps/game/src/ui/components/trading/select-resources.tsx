@@ -3,9 +3,8 @@ import Button from "@/ui/elements/button";
 import ListSelect from "@/ui/elements/list-select";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ID, RESOURCE_TIERS, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
+import { divideByPrecision, getBalance, ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 

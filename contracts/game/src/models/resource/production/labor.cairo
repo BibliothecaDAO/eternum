@@ -67,7 +67,7 @@ impl LaborImpl of LaborTrait {
 
         let mut resource = ResourceImpl::get(ref world, (entity_id, resource_type));
         let resource_production_config: ProductionConfig = world.read_model(resource_type);
-        resource.production.use_labor(@resource_production_config, labor_amount);
+        resource.production.spend_labor_resource(@resource_production_config, labor_amount);
         world.write_model(@resource);
 
         // ** BURN LABOR AMOUNT FROM LABOR RESOURCE ** //

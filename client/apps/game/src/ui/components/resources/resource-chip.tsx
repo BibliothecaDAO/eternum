@@ -1,9 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, currencyIntlFormat, divideByPrecision, gramToKg } from "@/ui/utils/utils";
+import { currencyFormat, currencyIntlFormat, gramToKg } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
+  divideByPrecision,
   findResourceById,
   formatTime,
   getIconResourceId,

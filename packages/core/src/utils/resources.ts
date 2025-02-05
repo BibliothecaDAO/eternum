@@ -4,7 +4,7 @@ import { BuildingType, RESOURCE_PRECISION, resources, ResourcesIds } from "../co
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../managers";
 import { configManager } from "../managers/config-manager";
-import { ID, Resource, ResourceInputs } from "../types";
+import { ID, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
 import { unpackResources } from "./packed-data";
 
 // used for entities that don't have any production
@@ -92,6 +92,13 @@ export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: 
   return multipliedCosts;
 };
 
+export const scaleResources = (resources: any[], multiplier: number): any[] => {
+  return resources.map((resource) => ({
+    ...resource,
+    amount: resource.amount * multiplier,
+  }));
+};
+
 export const uniqueResourceInputs = (
   resourcesProduced: number[],
   resourceProductionInputResources: ResourceInputs,
@@ -141,10 +148,22 @@ export const getStartingResources = (
   return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm, resourceProductionInputResources);
 };
 
-export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * RESOURCE_PRECISION);
-}
+export const scaleResourceCostMinMax = (
+  resourceCost: ResourceCostMinMax[],
+  multiplier: number,
+): ResourceCostMinMax[] => {
+  return resourceCost.map((resource) => ({
+    ...resource,
+    min_amount: resource.min_amount * multiplier,
+    max_amount: resource.max_amount * multiplier,
+  }));
+};
 
-export function divideByPrecision(value: number): number {
-  return value / RESOURCE_PRECISION;
-}
+export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
+  let multipliedCosts: ResourceOutputs = {};
+
+  for (let buildingType in resourceOutputs) {
+    multipliedCosts[buildingType] = resourceOutputs[buildingType] * multiplier;
+  }
+  return multipliedCosts;
+};

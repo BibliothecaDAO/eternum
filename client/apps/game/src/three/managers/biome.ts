@@ -1,28 +1,35 @@
-import { snoise } from "@dojoengine/utils";
+import { Fixed, FixedTrait } from "@/utils/biome/fixed-point";
+import { noise as snoise } from "@/utils/biome/simplex-noise";
+import { Vec3 } from "@/utils/biome/vec3";
 import * as THREE from "three";
 
-const MAP_AMPLITUDE = 60;
-const MOISTURE_OCTAVE = 2;
-const ELEVATION_OCTAVES = [1, 0.25, 0.1];
-const ELEVATION_OCTAVES_SUM = ELEVATION_OCTAVES.reduce((a, b) => a + b, 0);
+const MAP_AMPLITUDE = FixedTrait.fromInt(60n);
+const MOISTURE_OCTAVE = FixedTrait.fromInt(2n);
+const ELEVATION_OCTAVES = [
+  FixedTrait.fromInt(1n), // 1
+  FixedTrait.fromRatio(1n, 4n), // 0.25
+  FixedTrait.fromRatio(1n, 10n), // 0.1
+];
+const ELEVATION_OCTAVES_SUM = ELEVATION_OCTAVES.reduce((a, b) => a.add(b), FixedTrait.ZERO);
 
-export type BiomeType =
-  | "DeepOcean"
-  | "Ocean"
-  | "Beach"
-  | "Scorched"
-  | "Bare"
-  | "Tundra"
-  | "Snow"
-  | "TemperateDesert"
-  | "Shrubland"
-  | "Taiga"
-  | "Grassland"
-  | "TemperateDeciduousForest"
-  | "TemperateRainForest"
-  | "SubtropicalDesert"
-  | "TropicalSeasonalForest"
-  | "TropicalRainForest";
+export enum BiomeType {
+  DeepOcean = "DeepOcean",
+  Ocean = "Ocean",
+  Beach = "Beach",
+  Scorched = "Scorched",
+  Bare = "Bare",
+  Tundra = "Tundra",
+  Snow = "Snow",
+  TemperateDesert = "TemperateDesert",
+  Shrubland = "Shrubland",
+  Taiga = "Taiga",
+  Grassland = "Grassland",
+  TemperateDeciduousForest = "TemperateDeciduousForest",
+  TemperateRainForest = "TemperateRainForest",
+  SubtropicalDesert = "SubtropicalDesert",
+  TropicalSeasonalForest = "TropicalSeasonalForest",
+  TropicalRainForest = "TropicalRainForest",
+}
 
 export const BIOME_COLORS: Record<BiomeType, THREE.Color> = {
   DeepOcean: new THREE.Color("#4a6b63"),
@@ -44,12 +51,12 @@ export const BIOME_COLORS: Record<BiomeType, THREE.Color> = {
 };
 
 const LEVEL = {
-  DEEP_OCEAN: 0.25,
-  OCEAN: 0.5,
-  SAND: 0.53,
-  FOREST: 0.6,
-  DESERT: 0.72,
-  MOUNTAIN: 0.8,
+  DEEP_OCEAN: FixedTrait.fromRatio(25n, 100n), // 0.25
+  OCEAN: FixedTrait.fromRatio(50n, 100n), // 0.5
+  SAND: FixedTrait.fromRatio(53n, 100n), // 0.53
+  FOREST: FixedTrait.fromRatio(60n, 100n), // 0.6
+  DESERT: FixedTrait.fromRatio(72n, 100n), // 0.72
+  MOUNTAIN: FixedTrait.fromRatio(80n, 100n), // 0.8
 };
 
 export class Biome {
@@ -64,52 +71,72 @@ export class Biome {
   private calculateElevation(
     col: number,
     row: number,
-    mapAmplitude: number,
-    octaves: number[],
-    octavesSum: number,
-  ): number {
-    let elevation = 0;
+    mapAmplitude: Fixed,
+    octaves: Fixed[],
+    octavesSum: Fixed,
+  ): Fixed {
+    let elevation = FixedTrait.ZERO;
+    let _100 = FixedTrait.fromInt(100n);
+    let _2 = FixedTrait.fromInt(2n);
     for (const octave of octaves) {
-      const x = col / octave / mapAmplitude;
-      const z = row / octave / mapAmplitude;
-      const noise = ((snoise([x, 0, z]) + 1) * 100) / 2;
-      elevation += octave * Math.floor(noise);
+      let x = FixedTrait.fromInt(BigInt(col)).div(octave).div(mapAmplitude);
+      let z = FixedTrait.fromInt(BigInt(row)).div(octave).div(mapAmplitude);
+
+      let sn = snoise(Vec3.new(x, FixedTrait.ZERO, z));
+      const noise = sn.add(FixedTrait.ONE).mul(_100).div(_2);
+      elevation = elevation.add(octave.mul(noise.floor()));
     }
-    elevation = elevation / octavesSum;
-    return elevation / 100;
+
+    return elevation.div(octavesSum).div(FixedTrait.fromInt(100n));
   }
 
-  private calculateMoisture(col: number, row: number, mapAmplitude: number, moistureOctave: number): number {
-    const moistureX = (moistureOctave * col) / mapAmplitude;
-    const moistureZ = (moistureOctave * row) / mapAmplitude;
-    const noise = ((snoise([moistureX, 0, moistureZ]) + 1) * 100) / 2;
-    return Math.floor(noise) / 100;
+  private calculateMoisture(col: number, row: number, mapAmplitude: Fixed, moistureOctave: Fixed): Fixed {
+    const moistureX = moistureOctave.mul(FixedTrait.fromInt(BigInt(col))).div(mapAmplitude);
+    const moistureZ = moistureOctave.mul(FixedTrait.fromInt(BigInt(row))).div(mapAmplitude);
+    const noise = snoise(Vec3.new(moistureX, FixedTrait.ZERO, moistureZ))
+      .add(FixedTrait.ONE)
+      .mul(FixedTrait.fromInt(100n))
+      .div(FixedTrait.fromInt(2n));
+    return FixedTrait.floor(noise).div(FixedTrait.fromInt(100n));
   }
 
-  private determineBiome(elevation: number, moisture: number, level: typeof LEVEL): BiomeType {
-    if (elevation < level.DEEP_OCEAN) return "DeepOcean";
-    if (elevation < level.OCEAN) return "Ocean";
-    if (elevation < level.SAND) return "Beach";
-    if (elevation > level.MOUNTAIN) {
-      if (moisture < 0.1) return "Scorched";
-      if (moisture < 0.4) return "Bare";
-      if (moisture < 0.5) return "Tundra";
-      return "Snow";
+  private determineBiome(elevation: Fixed, moisture: Fixed, level: typeof LEVEL): BiomeType {
+    if (elevation.value < level.DEEP_OCEAN.value) return BiomeType.DeepOcean;
+    if (elevation.value < level.OCEAN.value) return BiomeType.Ocean;
+    if (elevation.value < level.SAND.value) return BiomeType.Beach;
+
+    if (elevation.value > level.MOUNTAIN.value) {
+      if (moisture.value < FixedTrait.fromRatio(10n, 100n).value) return BiomeType.Scorched;
+      if (moisture.value < FixedTrait.fromRatio(40n, 100n).value) return BiomeType.Bare;
+      if (moisture.value < FixedTrait.fromRatio(50n, 100n).value) return BiomeType.Tundra;
+      return BiomeType.Snow;
     }
-    if (elevation > level.DESERT) {
-      if (moisture < 0.33) return "TemperateDesert";
-      if (moisture < 0.66) return "Shrubland";
-      return "Taiga";
+    if (elevation.value > level.DESERT.value) {
+      if (moisture.value < FixedTrait.fromRatio(33n, 100n).value) return BiomeType.TemperateDesert;
+      if (moisture.value < FixedTrait.fromRatio(66n, 100n).value) return BiomeType.Shrubland;
+      return BiomeType.Taiga;
     }
-    if (elevation > level.FOREST) {
-      if (moisture < 0.16) return "TemperateDesert";
-      if (moisture < 0.5) return "Grassland";
-      if (moisture < 0.83) return "TemperateDeciduousForest";
-      return "TemperateRainForest";
+    if (elevation.value > level.FOREST.value) {
+      if (moisture.value < FixedTrait.fromRatio(16n, 100n).value) return BiomeType.TemperateDesert;
+      if (moisture.value < FixedTrait.fromRatio(50n, 100n).value) return BiomeType.Grassland;
+      if (moisture.value < FixedTrait.fromRatio(83n, 100n).value) return BiomeType.TemperateDeciduousForest;
+      return BiomeType.TemperateRainForest;
     }
-    if (moisture < 0.16) return "SubtropicalDesert";
-    if (moisture < 0.33) return "Grassland";
-    if (moisture < 0.66) return "TropicalSeasonalForest";
-    return "TropicalRainForest";
+    if (moisture.value < FixedTrait.fromRatio(16n, 100n).value) return BiomeType.SubtropicalDesert;
+    if (moisture.value < FixedTrait.fromRatio(33n, 100n).value) return BiomeType.Grassland;
+    if (moisture.value < FixedTrait.fromRatio(66n, 100n).value) return BiomeType.TropicalSeasonalForest;
+    return BiomeType.TropicalRainForest;
   }
 }
+
+// function testBiomeGeneration() {
+//   const biome = new Biome();
+//   const start = 5000871265127650;
+//   const end = 5000871265127678;
+//   for (let i = start; i <= end; i++) {
+//     const result = biome.getBiome(i - 5, i + 10);
+//     console.log(`biome for ${i - 5} ${i + 10} is ${result} \n`);
+//   }
+// }
+
+// testBiomeGeneration();

@@ -11,7 +11,6 @@ export const getRemainingCapacityInKg = (
 ) => {
   const totalCapacity = getArmyTotalCapacityInKg(army, capacity); // in kg
   const weight = getArmyWeightInKg(armyWeight); // in kg
-  console.log({ totalCapacity, weight });
   return totalCapacity - weight; // in kg
 };
 

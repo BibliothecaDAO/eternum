@@ -6,17 +6,25 @@ import { Position } from "@/types/position";
 import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
-import { ACCOUNT_CHANGE_EVENT, SpectateButton } from "@/ui/modules/onboarding/steps";
+import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
+import { getRandomRealmEntity } from "@/utils/realms";
 import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
-import { DojoContext, useQuery } from "@bibliothecadao/react";
+import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { HasValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
+import { useNavigateToHexView } from "../helpers/use-navigate";
+import { useNavigateToRealmViewByAccount } from "../helpers/use-navigate-to-realm-view-by-account";
+
+export const NULL_ACCOUNT = {
+  address: "0x0",
+  privateKey: "0x0",
+} as const;
 
 const requiredEnvs: (keyof Env)[] = [
   "VITE_PUBLIC_MASTER_ADDRESS",
@@ -81,7 +89,7 @@ export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderP
     <DojoContextProvider
       value={value}
       masterAccount={masterAccount}
-      controllerAccount={controllerAccount!}
+      controllerAccount={controllerAccount || null}
       backgroundImage={backgroundImage}
     >
       {children}
@@ -100,12 +108,10 @@ const DojoContextProvider = ({
   controllerAccount: AccountInterface | null;
   backgroundImage: string;
 }) => {
-  const setSpectatorMode = useUIStore((state) => state.setSpectatorMode);
-  const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
-  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const setAddressName = useAddressStore((state) => state.setAddressName);
+  useNavigateToRealmViewByAccount(value.components);
 
-  const { handleUrlChange } = useQuery();
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const setAddressName = useAddressStore((state) => state.setAddressName);
 
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
@@ -114,6 +120,8 @@ const DojoContextProvider = ({
   const { isConnected, isConnecting, connector } = useAccount();
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
+
+  const navigateToHexView = useNavigateToHexView();
 
   const [retries, setRetries] = useState(0);
 
@@ -127,14 +135,23 @@ const DojoContextProvider = ({
     }
   };
 
+  const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
+    new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey),
+  );
+
   const onSpectatorModeClick = () => {
-    setSpectatorMode(true);
-    handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
-    window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-    showBlankOverlay(false);
+    const randomRealmEntity = getRandomRealmEntity(value.components);
+    const position = randomRealmEntity && getComponentValue(value.components.Position, randomRealmEntity);
+    position && navigateToHexView(new Position(position));
   };
 
-  const accountToUse = isSpectatorMode ? new Account(value.network.provider.provider, "0x0", "0x0") : controllerAccount;
+  useEffect(() => {
+    if (!controllerAccount) {
+      setAccountToUse(new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey));
+    } else {
+      setAccountToUse(controllerAccount);
+    }
+  }, [controllerAccount]);
 
   useEffect(() => {
     const setUserName = async () => {
@@ -188,7 +205,7 @@ const DojoContextProvider = ({
     );
   }
 
-  if (!isConnected && !isConnecting && !controllerAccount && !isSpectatorMode) {
+  if (!isConnected && !isConnecting && showBlankOverlay) {
     return (
       <>
         <CountdownTimer backgroundImage={backgroundImage} />
@@ -226,7 +243,7 @@ const DojoContextProvider = ({
         ...value,
         masterAccount,
         account: {
-          account: accountToUse as Account | AccountInterface,
+          account: accountToUse,
           accountDisplay: displayAddress((accountToUse as Account | AccountInterface)?.address || ""),
         },
       }}

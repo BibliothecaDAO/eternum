@@ -2,7 +2,7 @@ import { graphql } from "../gql";
 
 export const GET_ENTITIES_RESOURCES = graphql(`
   query getEntitiesResources($entityIds: [u32!]!) {
-    s0EternumResourceModels(where: { entity_idIN: $entityIds }, limit: 8000) {
+    s1EternumResourceModels(where: { entity_idIN: $entityIds }, limit: 8000) {
       edges {
         node {
           entity_id

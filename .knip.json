@@ -6,7 +6,7 @@
     "**/vitest**",
     "client/apps/game/src/setupTests.ts",
 
-    "client/sdk/packages/**",
+    "packages/**",
 
     "**/**__test__**/**",
     "**/**__tests__**/**",
@@ -21,6 +21,13 @@
     "client/apps/game-docs/docs/**",
     "client/apps/game-docs/vocs.config.ts",
 
-    "client/apps/game/src/ui/modules/chat/**"
+    "client/apps/game/src/ui/modules/chat/**",
+
+    "client/apps/game-docs/env.ts",
+
+    "config/**",
+    "contracts/**",
+
+    "**/global.d.ts"
   ]
 }

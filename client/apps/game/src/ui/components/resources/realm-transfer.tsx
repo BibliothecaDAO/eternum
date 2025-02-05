@@ -3,7 +3,7 @@ import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat } from "@/ui/utils/utils";
 import {
   ID,
   PlayerStructure,
@@ -12,6 +12,7 @@ import {
   calculateDonkeysNeeded,
   findResourceById,
   getTotalResourceWeight,
+  multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";

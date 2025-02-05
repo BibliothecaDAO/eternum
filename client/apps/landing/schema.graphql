@@ -365,7 +365,7 @@ type World__Query {
     offset: Int
     order: World__ModelOrder
   ): World__ModelConnection
-  s0EternumAcceptOrderModels(
+  s1EternumAcceptOrderModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -375,7 +375,7 @@ type World__Query {
     order: s1_eternum_AcceptOrderOrder
     where: s1_eternum_AcceptOrderWhereInput
   ): s1_eternum_AcceptOrderConnection
-  s0EternumAcceptPartialOrderModels(
+  s1EternumAcceptPartialOrderModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -385,7 +385,7 @@ type World__Query {
     order: s1_eternum_AcceptPartialOrderOrder
     where: s1_eternum_AcceptPartialOrderWhereInput
   ): s1_eternum_AcceptPartialOrderConnection
-  s0EternumAddressNameModels(
+  s1EternumAddressNameModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -395,7 +395,7 @@ type World__Query {
     order: s1_eternum_AddressNameOrder
     where: s1_eternum_AddressNameWhereInput
   ): s1_eternum_AddressNameConnection
-  s0EternumArmyModels(
+  s1EternumArmyModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -405,7 +405,7 @@ type World__Query {
     order: s1_eternum_ArmyOrder
     where: s1_eternum_ArmyWhereInput
   ): s1_eternum_ArmyConnection
-  s0EternumArrivalTimeModels(
+  s1EternumArrivalTimeModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -415,7 +415,7 @@ type World__Query {
     order: s1_eternum_ArrivalTimeOrder
     where: s1_eternum_ArrivalTimeWhereInput
   ): s1_eternum_ArrivalTimeConnection
-  s0EternumBankConfigModels(
+  s1EternumBankConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -425,7 +425,7 @@ type World__Query {
     order: s1_eternum_BankConfigOrder
     where: s1_eternum_BankConfigWhereInput
   ): s1_eternum_BankConfigConnection
-  s0EternumBankModels(
+  s1EternumBankModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -435,7 +435,7 @@ type World__Query {
     order: s1_eternum_BankOrder
     where: s1_eternum_BankWhereInput
   ): s1_eternum_BankConnection
-  s0EternumBattleClaimDataModels(
+  s1EternumBattleClaimDataModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -445,7 +445,7 @@ type World__Query {
     order: s1_eternum_BattleClaimDataOrder
     where: s1_eternum_BattleClaimDataWhereInput
   ): s1_eternum_BattleClaimDataConnection
-  s0EternumBattleConfigModels(
+  s1EternumBattleConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -455,7 +455,7 @@ type World__Query {
     order: s1_eternum_BattleConfigOrder
     where: s1_eternum_BattleConfigWhereInput
   ): s1_eternum_BattleConfigConnection
-  s0EternumBattleJoinDataModels(
+  s1EternumBattleJoinDataModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -465,7 +465,7 @@ type World__Query {
     order: s1_eternum_BattleJoinDataOrder
     where: s1_eternum_BattleJoinDataWhereInput
   ): s1_eternum_BattleJoinDataConnection
-  s0EternumBattleLeaveDataModels(
+  s1EternumBattleLeaveDataModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -475,7 +475,7 @@ type World__Query {
     order: s1_eternum_BattleLeaveDataOrder
     where: s1_eternum_BattleLeaveDataWhereInput
   ): s1_eternum_BattleLeaveDataConnection
-  s0EternumBattleModels(
+  s1EternumBattleModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -485,7 +485,7 @@ type World__Query {
     order: s1_eternum_BattleOrder
     where: s1_eternum_BattleWhereInput
   ): s1_eternum_BattleConnection
-  s0EternumBattlePillageDataModels(
+  s1EternumBattlePillageDataModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -495,7 +495,7 @@ type World__Query {
     order: s1_eternum_BattlePillageDataOrder
     where: s1_eternum_BattlePillageDataWhereInput
   ): s1_eternum_BattlePillageDataConnection
-  s0EternumBattleStartDataModels(
+  s1EternumBattleStartDataModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -505,7 +505,7 @@ type World__Query {
     order: s1_eternum_BattleStartDataOrder
     where: s1_eternum_BattleStartDataWhereInput
   ): s1_eternum_BattleStartDataConnection
-  s0EternumBuildingCategoryPopConfigModels(
+  s1EternumBuildingCategoryPopConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -515,7 +515,7 @@ type World__Query {
     order: s1_eternum_BuildingCategoryPopConfigOrder
     where: s1_eternum_BuildingCategoryPopConfigWhereInput
   ): s1_eternum_BuildingCategoryPopConfigConnection
-  s0EternumBuildingConfigModels(
+  s1EternumBuildingConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -525,7 +525,7 @@ type World__Query {
     order: s1_eternum_BuildingConfigOrder
     where: s1_eternum_BuildingConfigWhereInput
   ): s1_eternum_BuildingConfigConnection
-  s0EternumBuildingGeneralConfigModels(
+  s1EternumBuildingGeneralConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -535,7 +535,7 @@ type World__Query {
     order: s1_eternum_BuildingGeneralConfigOrder
     where: s1_eternum_BuildingGeneralConfigWhereInput
   ): s1_eternum_BuildingGeneralConfigConnection
-  s0EternumBuildingModels(
+  s1EternumBuildingModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -545,7 +545,7 @@ type World__Query {
     order: s1_eternum_BuildingOrder
     where: s1_eternum_BuildingWhereInput
   ): s1_eternum_BuildingConnection
-  s0EternumBuildingQuantityv2Models(
+  s1EternumBuildingQuantityv2Models(
     after: Cursor
     before: Cursor
     first: Int
@@ -555,7 +555,7 @@ type World__Query {
     order: s1_eternum_BuildingQuantityv2Order
     where: s1_eternum_BuildingQuantityv2WhereInput
   ): s1_eternum_BuildingQuantityv2Connection
-  s0EternumBurnDonkeyModels(
+  s1EternumBurnDonkeyModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -565,7 +565,7 @@ type World__Query {
     order: s1_eternum_BurnDonkeyOrder
     where: s1_eternum_BurnDonkeyWhereInput
   ): s1_eternum_BurnDonkeyConnection
-  s0EternumCancelOrderModels(
+  s1EternumCancelOrderModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -575,7 +575,7 @@ type World__Query {
     order: s1_eternum_CancelOrderOrder
     where: s1_eternum_CancelOrderWhereInput
   ): s1_eternum_CancelOrderConnection
-  s0EternumCapacityCategoryModels(
+  s1EternumCapacityCategoryModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -585,7 +585,7 @@ type World__Query {
     order: s1_eternum_CapacityCategoryOrder
     where: s1_eternum_CapacityCategoryWhereInput
   ): s1_eternum_CapacityCategoryConnection
-  s0EternumCapacityConfigModels(
+  s1EternumCapacityConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -595,7 +595,7 @@ type World__Query {
     order: s1_eternum_CapacityConfigOrder
     where: s1_eternum_CapacityConfigWhereInput
   ): s1_eternum_CapacityConfigConnection
-  s0EternumContributionModels(
+  s1EternumContributionModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -605,7 +605,7 @@ type World__Query {
     order: s1_eternum_ContributionOrder
     where: s1_eternum_ContributionWhereInput
   ): s1_eternum_ContributionConnection
-  s0EternumCreateGuildModels(
+  s1EternumCreateGuildModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -615,7 +615,7 @@ type World__Query {
     order: s1_eternum_CreateGuildOrder
     where: s1_eternum_CreateGuildWhereInput
   ): s1_eternum_CreateGuildConnection
-  s0EternumCreateOrderModels(
+  s1EternumCreateOrderModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -625,7 +625,7 @@ type World__Query {
     order: s1_eternum_CreateOrderOrder
     where: s1_eternum_CreateOrderWhereInput
   ): s1_eternum_CreateOrderConnection
-  s0EternumDetachedResourceModels(
+  s1EternumDetachedResourceModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -635,7 +635,7 @@ type World__Query {
     order: s1_eternum_DetachedResourceOrder
     where: s1_eternum_DetachedResourceWhereInput
   ): s1_eternum_DetachedResourceConnection
-  s0EternumEntityNameModels(
+  s1EternumEntityNameModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -645,7 +645,7 @@ type World__Query {
     order: s1_eternum_EntityNameOrder
     where: s1_eternum_EntityNameWhereInput
   ): s1_eternum_EntityNameConnection
-  s0EternumEntityOwnerModels(
+  s1EternumEntityOwnerModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -655,7 +655,7 @@ type World__Query {
     order: s1_eternum_EntityOwnerOrder
     where: s1_eternum_EntityOwnerWhereInput
   ): s1_eternum_EntityOwnerConnection
-  s0EternumEpochModels(
+  s1EternumEpochModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -665,7 +665,7 @@ type World__Query {
     order: s1_eternum_EpochOrder
     where: s1_eternum_EpochWhereInput
   ): s1_eternum_EpochConnection
-  s0EternumFragmentMineDiscoveredModels(
+  s1EternumFragmentMineDiscoveredModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -675,7 +675,7 @@ type World__Query {
     order: s1_eternum_FragmentMineDiscoveredOrder
     where: s1_eternum_FragmentMineDiscoveredWhereInput
   ): s1_eternum_FragmentMineDiscoveredConnection
-  s0EternumGameEndedModels(
+  s1EternumGameEndedModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -685,7 +685,7 @@ type World__Query {
     order: s1_eternum_GameEndedOrder
     where: s1_eternum_GameEndedWhereInput
   ): s1_eternum_GameEndedConnection
-  s0EternumGuildMemberModels(
+  s1EternumGuildMemberModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -695,7 +695,7 @@ type World__Query {
     order: s1_eternum_GuildMemberOrder
     where: s1_eternum_GuildMemberWhereInput
   ): s1_eternum_GuildMemberConnection
-  s0EternumGuildModels(
+  s1EternumGuildModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -705,7 +705,7 @@ type World__Query {
     order: s1_eternum_GuildOrder
     where: s1_eternum_GuildWhereInput
   ): s1_eternum_GuildConnection
-  s0EternumGuildWhitelistModels(
+  s1EternumGuildWhitelistModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -715,7 +715,7 @@ type World__Query {
     order: s1_eternum_GuildWhitelistOrder
     where: s1_eternum_GuildWhitelistWhereInput
   ): s1_eternum_GuildWhitelistConnection
-  s0EternumHealthModels(
+  s1EternumHealthModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -725,7 +725,7 @@ type World__Query {
     order: s1_eternum_HealthOrder
     where: s1_eternum_HealthWhereInput
   ): s1_eternum_HealthConnection
-  s0EternumHyperstructureCoOwnersChangeModels(
+  s1EternumHyperstructureCoOwnersChangeModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -735,7 +735,7 @@ type World__Query {
     order: s1_eternum_HyperstructureCoOwnersChangeOrder
     where: s1_eternum_HyperstructureCoOwnersChangeWhereInput
   ): s1_eternum_HyperstructureCoOwnersChangeConnection
-  s0EternumHyperstructureConfigModels(
+  s1EternumHyperstructureConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -745,7 +745,7 @@ type World__Query {
     order: s1_eternum_HyperstructureConfigOrder
     where: s1_eternum_HyperstructureConfigWhereInput
   ): s1_eternum_HyperstructureConfigConnection
-  s0EternumHyperstructureContributionModels(
+  s1EternumHyperstructureContributionModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -755,7 +755,7 @@ type World__Query {
     order: s1_eternum_HyperstructureContributionOrder
     where: s1_eternum_HyperstructureContributionWhereInput
   ): s1_eternum_HyperstructureContributionConnection
-  s0EternumHyperstructureFinishedModels(
+  s1EternumHyperstructureFinishedModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -765,7 +765,7 @@ type World__Query {
     order: s1_eternum_HyperstructureFinishedOrder
     where: s1_eternum_HyperstructureFinishedWhereInput
   ): s1_eternum_HyperstructureFinishedConnection
-  s0EternumHyperstructureModels(
+  s1EternumHyperstructureModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -775,7 +775,7 @@ type World__Query {
     order: s1_eternum_HyperstructureOrder
     where: s1_eternum_HyperstructureWhereInput
   ): s1_eternum_HyperstructureConnection
-  s0EternumHyperstructureResourceConfigModels(
+  s1EternumHyperstructureResourceConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -785,7 +785,7 @@ type World__Query {
     order: s1_eternum_HyperstructureResourceConfigOrder
     where: s1_eternum_HyperstructureResourceConfigWhereInput
   ): s1_eternum_HyperstructureResourceConfigConnection
-  s0EternumHyperstructureStartedModels(
+  s1EternumHyperstructureStartedModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -795,7 +795,7 @@ type World__Query {
     order: s1_eternum_HyperstructureStartedOrder
     where: s1_eternum_HyperstructureStartedWhereInput
   ): s1_eternum_HyperstructureStartedConnection
-  s0EternumJoinGuildModels(
+  s1EternumJoinGuildModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -805,7 +805,7 @@ type World__Query {
     order: s1_eternum_JoinGuildOrder
     where: s1_eternum_JoinGuildWhereInput
   ): s1_eternum_JoinGuildConnection
-  s0EternumLeaderboardEntryModels(
+  s1EternumLeaderboardEntryModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -815,7 +815,7 @@ type World__Query {
     order: s1_eternum_LeaderboardEntryOrder
     where: s1_eternum_LeaderboardEntryWhereInput
   ): s1_eternum_LeaderboardEntryConnection
-  s0EternumLeaderboardModels(
+  s1EternumLeaderboardModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -825,7 +825,7 @@ type World__Query {
     order: s1_eternum_LeaderboardOrder
     where: s1_eternum_LeaderboardWhereInput
   ): s1_eternum_LeaderboardConnection
-  s0EternumLeaderboardRegisterContributionModels(
+  s1EternumLeaderboardRegisterContributionModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -835,7 +835,7 @@ type World__Query {
     order: s1_eternum_LeaderboardRegisterContributionOrder
     where: s1_eternum_LeaderboardRegisterContributionWhereInput
   ): s1_eternum_LeaderboardRegisterContributionConnection
-  s0EternumLeaderboardRegisterShareModels(
+  s1EternumLeaderboardRegisterShareModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -845,7 +845,7 @@ type World__Query {
     order: s1_eternum_LeaderboardRegisterShareOrder
     where: s1_eternum_LeaderboardRegisterShareWhereInput
   ): s1_eternum_LeaderboardRegisterShareConnection
-  s0EternumLeaderboardRegisteredModels(
+  s1EternumLeaderboardRegisteredModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -855,7 +855,7 @@ type World__Query {
     order: s1_eternum_LeaderboardRegisteredOrder
     where: s1_eternum_LeaderboardRegisteredWhereInput
   ): s1_eternum_LeaderboardRegisteredConnection
-  s0EternumLeaderboardRewardClaimedModels(
+  s1EternumLeaderboardRewardClaimedModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -865,7 +865,7 @@ type World__Query {
     order: s1_eternum_LeaderboardRewardClaimedOrder
     where: s1_eternum_LeaderboardRewardClaimedWhereInput
   ): s1_eternum_LeaderboardRewardClaimedConnection
-  s0EternumLevelingConfigModels(
+  s1EternumLevelingConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -875,7 +875,7 @@ type World__Query {
     order: s1_eternum_LevelingConfigOrder
     where: s1_eternum_LevelingConfigWhereInput
   ): s1_eternum_LevelingConfigConnection
-  s0EternumLiquidityEventModels(
+  s1EternumLiquidityEventModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -885,7 +885,7 @@ type World__Query {
     order: s1_eternum_LiquidityEventOrder
     where: s1_eternum_LiquidityEventWhereInput
   ): s1_eternum_LiquidityEventConnection
-  s0EternumLiquidityModels(
+  s1EternumLiquidityModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -895,7 +895,7 @@ type World__Query {
     order: s1_eternum_LiquidityOrder
     where: s1_eternum_LiquidityWhereInput
   ): s1_eternum_LiquidityConnection
-  s0EternumMapConfigModels(
+  s1EternumMapConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -905,7 +905,7 @@ type World__Query {
     order: s1_eternum_MapConfigOrder
     where: s1_eternum_MapConfigWhereInput
   ): s1_eternum_MapConfigConnection
-  s0EternumMapExploredModels(
+  s1EternumMapExploredModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -915,7 +915,7 @@ type World__Query {
     order: s1_eternum_MapExploredOrder
     where: s1_eternum_MapExploredWhereInput
   ): s1_eternum_MapExploredConnection
-  s0EternumMarketModels(
+  s1EternumMarketModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -925,7 +925,7 @@ type World__Query {
     order: s1_eternum_MarketOrder
     where: s1_eternum_MarketWhereInput
   ): s1_eternum_MarketConnection
-  s0EternumMercenariesConfigModels(
+  s1EternumMercenariesConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -935,7 +935,7 @@ type World__Query {
     order: s1_eternum_MercenariesConfigOrder
     where: s1_eternum_MercenariesConfigWhereInput
   ): s1_eternum_MercenariesConfigConnection
-  s0EternumMessageModels(
+  s1EternumMessageModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -945,7 +945,7 @@ type World__Query {
     order: s1_eternum_MessageOrder
     where: s1_eternum_MessageWhereInput
   ): s1_eternum_MessageConnection
-  s0EternumMovableModels(
+  s1EternumMovableModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -955,7 +955,7 @@ type World__Query {
     order: s1_eternum_MovableOrder
     where: s1_eternum_MovableWhereInput
   ): s1_eternum_MovableConnection
-  s0EternumOrdersModels(
+  s1EternumOrdersModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -965,7 +965,7 @@ type World__Query {
     order: s1_eternum_OrdersOrder
     where: s1_eternum_OrdersWhereInput
   ): s1_eternum_OrdersConnection
-  s0EternumOwnedResourcesTrackerModels(
+  s1EternumOwnedResourcesTrackerModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -975,7 +975,7 @@ type World__Query {
     order: s1_eternum_OwnedResourcesTrackerOrder
     where: s1_eternum_OwnedResourcesTrackerWhereInput
   ): s1_eternum_OwnedResourcesTrackerConnection
-  s0EternumOwnerModels(
+  s1EternumOwnerModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -985,7 +985,7 @@ type World__Query {
     order: s1_eternum_OwnerOrder
     where: s1_eternum_OwnerWhereInput
   ): s1_eternum_OwnerConnection
-  s0EternumPopulationConfigModels(
+  s1EternumPopulationConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -995,7 +995,7 @@ type World__Query {
     order: s1_eternum_PopulationConfigOrder
     where: s1_eternum_PopulationConfigWhereInput
   ): s1_eternum_PopulationConfigConnection
-  s0EternumPopulationModels(
+  s1EternumPopulationModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1005,7 +1005,7 @@ type World__Query {
     order: s1_eternum_PopulationOrder
     where: s1_eternum_PopulationWhereInput
   ): s1_eternum_PopulationConnection
-  s0EternumPositionModels(
+  s1EternumPositionModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1015,7 +1015,7 @@ type World__Query {
     order: s1_eternum_PositionOrder
     where: s1_eternum_PositionWhereInput
   ): s1_eternum_PositionConnection
-  s0EternumProductionConfigModels(
+  s1EternumProductionConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1025,7 +1025,7 @@ type World__Query {
     order: s1_eternum_ProductionConfigOrder
     where: s1_eternum_ProductionConfigWhereInput
   ): s1_eternum_ProductionConfigConnection
-  s0EternumProductionDeadlineModels(
+  s1EternumProductionDeadlineModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1035,7 +1035,7 @@ type World__Query {
     order: s1_eternum_ProductionDeadlineOrder
     where: s1_eternum_ProductionDeadlineWhereInput
   ): s1_eternum_ProductionDeadlineConnection
-  s0EternumProductionInputModels(
+  s1EternumProductionInputModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1045,7 +1045,7 @@ type World__Query {
     order: s1_eternum_ProductionInputOrder
     where: s1_eternum_ProductionInputWhereInput
   ): s1_eternum_ProductionInputConnection
-  s0EternumProductionModels(
+  s1EternumProductionModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1055,7 +1055,7 @@ type World__Query {
     order: s1_eternum_ProductionOrder
     where: s1_eternum_ProductionWhereInput
   ): s1_eternum_ProductionConnection
-  s0EternumProductionOutputModels(
+  s1EternumProductionOutputModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1065,7 +1065,7 @@ type World__Query {
     order: s1_eternum_ProductionOutputOrder
     where: s1_eternum_ProductionOutputWhereInput
   ): s1_eternum_ProductionOutputConnection
-  s0EternumProgressModels(
+  s1EternumProgressModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1075,7 +1075,7 @@ type World__Query {
     order: s1_eternum_ProgressOrder
     where: s1_eternum_ProgressWhereInput
   ): s1_eternum_ProgressConnection
-  s0EternumProtecteeModels(
+  s1EternumProtecteeModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1085,7 +1085,7 @@ type World__Query {
     order: s1_eternum_ProtecteeOrder
     where: s1_eternum_ProtecteeWhereInput
   ): s1_eternum_ProtecteeConnection
-  s0EternumProtectorModels(
+  s1EternumProtectorModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1095,7 +1095,7 @@ type World__Query {
     order: s1_eternum_ProtectorOrder
     where: s1_eternum_ProtectorWhereInput
   ): s1_eternum_ProtectorConnection
-  s0EternumQuantityModels(
+  s1EternumQuantityModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1105,7 +1105,7 @@ type World__Query {
     order: s1_eternum_QuantityOrder
     where: s1_eternum_QuantityWhereInput
   ): s1_eternum_QuantityConnection
-  s0EternumQuantityTrackerModels(
+  s1EternumQuantityTrackerModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1116,7 +1116,7 @@ type World__Query {
     where: s1_eternum_QuantityTrackerWhereInput
   ): s1_eternum_QuantityTrackerConnection
 
-  s0EternumQuestConfigModels(
+  s1EternumQuestConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1126,7 +1126,7 @@ type World__Query {
     order: s1_eternum_QuestConfigOrder
     where: s1_eternum_QuestConfigWhereInput
   ): s1_eternum_QuestConfigConnection
-  s0EternumQuestModels(
+  s1EternumQuestModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1136,7 +1136,7 @@ type World__Query {
     order: s1_eternum_QuestOrder
     where: s1_eternum_QuestWhereInput
   ): s1_eternum_QuestConnection
-  s0EternumQuestRewardConfigModels(
+  s1EternumQuestRewardConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1146,7 +1146,7 @@ type World__Query {
     order: s1_eternum_QuestRewardConfigOrder
     where: s1_eternum_QuestRewardConfigWhereInput
   ): s1_eternum_QuestRewardConfigConnection
-  s0EternumRealmLevelConfigModels(
+  s1EternumRealmLevelConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1156,7 +1156,7 @@ type World__Query {
     order: s1_eternum_RealmLevelConfigOrder
     where: s1_eternum_RealmLevelConfigWhereInput
   ): s1_eternum_RealmLevelConfigConnection
-  s0EternumRealmMaxLevelConfigModels(
+  s1EternumRealmMaxLevelConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1166,7 +1166,7 @@ type World__Query {
     order: s1_eternum_RealmMaxLevelConfigOrder
     where: s1_eternum_RealmMaxLevelConfigWhereInput
   ): s1_eternum_RealmMaxLevelConfigConnection
-  s0EternumRealmModels(
+  s1EternumRealmModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1176,7 +1176,7 @@ type World__Query {
     order: s1_eternum_RealmOrder
     where: s1_eternum_RealmWhereInput
   ): s1_eternum_RealmConnection
-  s0EternumResourceAllowanceModels(
+  s1EternumResourceAllowanceModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1186,7 +1186,7 @@ type World__Query {
     order: s1_eternum_ResourceAllowanceOrder
     where: s1_eternum_ResourceAllowanceWhereInput
   ): s1_eternum_ResourceAllowanceConnection
-  s0EternumResourceBridgeConfigModels(
+  s1EternumResourceBridgeConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1196,7 +1196,7 @@ type World__Query {
     order: s1_eternum_ResourceBridgeConfigOrder
     where: s1_eternum_ResourceBridgeConfigWhereInput
   ): s1_eternum_ResourceBridgeConfigConnection
-  s0EternumResourceBridgeFeeSplitConfigModels(
+  s1EternumResourceBridgeFeeSplitConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1206,7 +1206,7 @@ type World__Query {
     order: s1_eternum_ResourceBridgeFeeSplitConfigOrder
     where: s1_eternum_ResourceBridgeFeeSplitConfigWhereInput
   ): s1_eternum_ResourceBridgeFeeSplitConfigConnection
-  s0EternumResourceBridgeWhitelistConfigModels(
+  s1EternumResourceBridgeWhitelistConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1216,7 +1216,7 @@ type World__Query {
     order: s1_eternum_ResourceBridgeWhitelistConfigOrder
     where: s1_eternum_ResourceBridgeWhitelistConfigWhereInput
   ): s1_eternum_ResourceBridgeWhitelistConfigConnection
-  s0EternumResourceCostModels(
+  s1EternumResourceCostModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1226,7 +1226,7 @@ type World__Query {
     order: s1_eternum_ResourceCostOrder
     where: s1_eternum_ResourceCostWhereInput
   ): s1_eternum_ResourceCostConnection
-  s0EternumResourceModels(
+  s1EternumResourceModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1236,7 +1236,7 @@ type World__Query {
     order: s1_eternum_ResourceOrder
     where: s1_eternum_ResourceWhereInput
   ): s1_eternum_ResourceConnection
-  s0EternumResourceTransferLockModels(
+  s1EternumResourceTransferLockModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1246,7 +1246,7 @@ type World__Query {
     order: s1_eternum_ResourceTransferLockOrder
     where: s1_eternum_ResourceTransferLockWhereInput
   ): s1_eternum_ResourceTransferLockConnection
-  s0EternumSeasonAddressesConfigModels(
+  s1EternumSeasonAddressesConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1256,7 +1256,7 @@ type World__Query {
     order: s1_eternum_SeasonAddressesConfigOrder
     where: s1_eternum_SeasonAddressesConfigWhereInput
   ): s1_eternum_SeasonAddressesConfigConnection
-  s0EternumSeasonBridgeConfigModels(
+  s1EternumSeasonBridgeConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1266,7 +1266,7 @@ type World__Query {
     order: s1_eternum_SeasonBridgeConfigOrder
     where: s1_eternum_SeasonBridgeConfigWhereInput
   ): s1_eternum_SeasonBridgeConfigConnection
-  s0EternumSeasonModels(
+  s1EternumSeasonModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1276,7 +1276,7 @@ type World__Query {
     order: s1_eternum_SeasonOrder
     where: s1_eternum_SeasonWhereInput
   ): s1_eternum_SeasonConnection
-  s0EternumSettleRealmDataModels(
+  s1EternumSettleRealmDataModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1286,7 +1286,7 @@ type World__Query {
     order: s1_eternum_SettleRealmDataOrder
     where: s1_eternum_SettleRealmDataWhereInput
   ): s1_eternum_SettleRealmDataConnection
-  s0EternumSettlementConfigModels(
+  s1EternumSettlementConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1296,7 +1296,7 @@ type World__Query {
     order: s1_eternum_SettlementConfigOrder
     where: s1_eternum_SettlementConfigWhereInput
   ): s1_eternum_SettlementConfigConnection
-  s0EternumSpeedConfigModels(
+  s1EternumSpeedConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1306,7 +1306,7 @@ type World__Query {
     order: s1_eternum_SpeedConfigOrder
     where: s1_eternum_SpeedConfigWhereInput
   ): s1_eternum_SpeedConfigConnection
-  s0EternumStaminaConfigModels(
+  s1EternumStaminaConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1316,7 +1316,7 @@ type World__Query {
     order: s1_eternum_StaminaConfigOrder
     where: s1_eternum_StaminaConfigWhereInput
   ): s1_eternum_StaminaConfigConnection
-  s0EternumStaminaModels(
+  s1EternumStaminaModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1326,7 +1326,7 @@ type World__Query {
     order: s1_eternum_StaminaOrder
     where: s1_eternum_StaminaWhereInput
   ): s1_eternum_StaminaConnection
-  s0EternumStaminaRefillConfigModels(
+  s1EternumStaminaRefillConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1336,7 +1336,7 @@ type World__Query {
     order: s1_eternum_StaminaRefillConfigOrder
     where: s1_eternum_StaminaRefillConfigWhereInput
   ): s1_eternum_StaminaRefillConfigConnection
-  s0EternumStatusModels(
+  s1EternumStatusModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1346,7 +1346,7 @@ type World__Query {
     order: s1_eternum_StatusOrder
     where: s1_eternum_StatusWhereInput
   ): s1_eternum_StatusConnection
-  s0EternumStructureCountModels(
+  s1EternumStructureCountModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1356,7 +1356,7 @@ type World__Query {
     order: s1_eternum_StructureCountOrder
     where: s1_eternum_StructureCountWhereInput
   ): s1_eternum_StructureCountConnection
-  s0EternumStructureModels(
+  s1EternumStructureModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1366,7 +1366,7 @@ type World__Query {
     order: s1_eternum_StructureOrder
     where: s1_eternum_StructureWhereInput
   ): s1_eternum_StructureConnection
-  s0EternumSwapEventModels(
+  s1EternumSwapEventModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1376,7 +1376,7 @@ type World__Query {
     order: s1_eternum_SwapEventOrder
     where: s1_eternum_SwapEventWhereInput
   ): s1_eternum_SwapEventConnection
-  s0EternumTickConfigModels(
+  s1EternumTickConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1386,7 +1386,7 @@ type World__Query {
     order: s1_eternum_TickConfigOrder
     where: s1_eternum_TickConfigWhereInput
   ): s1_eternum_TickConfigConnection
-  s0EternumTileModels(
+  s1EternumTileModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1396,7 +1396,7 @@ type World__Query {
     order: s1_eternum_TileOrder
     where: s1_eternum_TileWhereInput
   ): s1_eternum_TileConnection
-  s0EternumTradeModels(
+  s1EternumTradeModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1406,7 +1406,7 @@ type World__Query {
     order: s1_eternum_TradeOrder
     where: s1_eternum_TradeWhereInput
   ): s1_eternum_TradeConnection
-  s0EternumTransferModels(
+  s1EternumTransferModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1416,7 +1416,7 @@ type World__Query {
     order: s1_eternum_TransferOrder
     where: s1_eternum_TransferWhereInput
   ): s1_eternum_TransferConnection
-  s0EternumTravelFoodCostConfigModels(
+  s1EternumTravelFoodCostConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1426,7 +1426,7 @@ type World__Query {
     order: s1_eternum_TravelFoodCostConfigOrder
     where: s1_eternum_TravelFoodCostConfigWhereInput
   ): s1_eternum_TravelFoodCostConfigConnection
-  s0EternumTravelModels(
+  s1EternumTravelModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1436,7 +1436,7 @@ type World__Query {
     order: s1_eternum_TravelOrder
     where: s1_eternum_TravelWhereInput
   ): s1_eternum_TravelConnection
-  s0EternumTravelStaminaCostConfigModels(
+  s1EternumTravelStaminaCostConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1446,7 +1446,7 @@ type World__Query {
     order: s1_eternum_TravelStaminaCostConfigOrder
     where: s1_eternum_TravelStaminaCostConfigWhereInput
   ): s1_eternum_TravelStaminaCostConfigConnection
-  s0EternumTroopConfigModels(
+  s1EternumTroopConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1456,7 +1456,7 @@ type World__Query {
     order: s1_eternum_TroopConfigOrder
     where: s1_eternum_TroopConfigWhereInput
   ): s1_eternum_TroopConfigConnection
-  s0EternumTrophyCreationModels(
+  s1EternumTrophyCreationModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1466,7 +1466,7 @@ type World__Query {
     order: s1_eternum_TrophyCreationOrder
     where: s1_eternum_TrophyCreationWhereInput
   ): s1_eternum_TrophyCreationConnection
-  s0EternumTrophyProgressionModels(
+  s1EternumTrophyProgressionModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1476,7 +1476,7 @@ type World__Query {
     order: s1_eternum_TrophyProgressionOrder
     where: s1_eternum_TrophyProgressionWhereInput
   ): s1_eternum_TrophyProgressionConnection
-  s0EternumVrfConfigModels(
+  s1EternumVrfConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1486,7 +1486,7 @@ type World__Query {
     order: s1_eternum_VRFConfigOrder
     where: s1_eternum_VRFConfigWhereInput
   ): s1_eternum_VRFConfigConnection
-  s0EternumWeightConfigModels(
+  s1EternumWeightConfigModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1496,7 +1496,7 @@ type World__Query {
     order: s1_eternum_WeightConfigOrder
     where: s1_eternum_WeightConfigWhereInput
   ): s1_eternum_WeightConfigConnection
-  s0EternumWeightModels(
+  s1EternumWeightModels(
     after: Cursor
     before: Cursor
     first: Int
@@ -1506,7 +1506,7 @@ type World__Query {
     order: s1_eternum_WeightOrder
     where: s1_eternum_WeightWhereInput
   ): s1_eternum_WeightConnection
-  s0EternumWorldConfigModels(
+  s1EternumWorldConfigModels(
     after: Cursor
     before: Cursor
     first: Int

@@ -62,6 +62,7 @@ export default defineConfig({
       events: "events",
       "@": path.resolve(__dirname, "./src"),
       "@config": path.resolve(__dirname, "../../../config/utils/utils"),
+      "@contracts": path.resolve(__dirname, "../../../contracts/utils/utils"),
     },
   },
   build: {

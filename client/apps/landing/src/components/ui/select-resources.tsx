@@ -1,12 +1,11 @@
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
-import { ID, resources } from "@bibliothecadao/eternum";
+import { divideByPrecision, ID, resources } from "@bibliothecadao/eternum";
 import { XIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Button } from "./button";
 import ListSelect from "./elements/list-select";
 import { NumberInput } from "./elements/number-input";
 import { ResourceCost } from "./elements/resource-cost";
-import { divideByPrecision } from "./utils/utils";
 
 export const SelectResources = ({
   selectedResourceIds,
@@ -41,7 +40,7 @@ export const SelectResources = ({
       {selectedResourceIds.map((id: any, index: any) => {
         const resource = getBalance(id);
         const options = [resources.find((res) => res.id === id), ...unselectedResources]
-          .filter((res) => getBalance(res.id) > 0)
+          .filter((res) => getBalance(res?.id || 0) > 0)
           .map((res: any) => ({
             id: res.id,
             label: <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(res.id) || 0)} />,
@@ -63,7 +62,7 @@ export const SelectResources = ({
               </Button>
             )}
             <ListSelect
-              className="overflow-hidden"
+              className="overflow-hidden h-10"
               options={options}
               value={selectedResourceIds[index]}
               onChange={(value) => {
@@ -77,11 +76,10 @@ export const SelectResources = ({
                   ...remainingAmounts,
                   [value]: divideByPrecision(getBalance(value) || 0),
                 });
-                // playResourceSound(value);
               }}
             />
             <NumberInput
-              className="h-14 "
+              className="h-10"
               max={divideByPrecision(resource?.balance || 0)}
               min={1}
               value={selectedResourceAmounts[id]}
@@ -143,7 +141,7 @@ export const SelectSingleResource = ({
       {selectedResourceIds.map((id: any, index: any) => {
         const resourceBalance = getBalance(id);
         const options = [resources.find((res) => res.id === id), ...unselectedResources]
-          .filter((res) => getBalance(res.id) > 0)
+          .filter((res) => getBalance(res?.id || 0) > 0)
           .map((res: any) => ({
             id: res.id,
             label: <ResourceCost resourceId={res.id} amount={divideByPrecision(getBalance(res.id) || 0)} />,
@@ -167,7 +165,6 @@ export const SelectSingleResource = ({
                     ...remainingAmounts,
                     [value]: divideByPrecision(getBalance(value) || 0),
                   });
-                  // playResourceSound(value);
                 }}
               />
               <NumberInput
@@ -184,7 +181,7 @@ export const SelectSingleResource = ({
               />
               {selectedResourceIds.length > 1 && (
                 <Button
-                  variant="red"
+                  variant="destructive"
                   className="px-0"
                   onClick={() => {
                     const updatedResourceIds = selectedResourceIds.filter((_: any, i: any) => i !== index);
@@ -192,7 +189,7 @@ export const SelectSingleResource = ({
                     const { [id]: _, ...updatedAmounts } = selectedResourceAmounts;
                     setSelectedResourceAmounts(updatedAmounts);
                   }}
-                  size="xs"
+                  size="sm"
                 >
                   <XIcon className="w-4 h-4" />
                 </Button>

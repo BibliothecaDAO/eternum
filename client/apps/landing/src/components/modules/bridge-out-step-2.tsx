@@ -38,27 +38,13 @@ export const BridgeOutStep2 = () => {
     }[]
   >([]);
 
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  /*const donkeysArrivals = useMemo(() => {
-    if (bankPosition) {
-      return getOwnerArrivalsAtBank(realmEntityIds as number[]);
-    }
-  }, [realmEntityIds, refreshTrigger, bankPosition]);*/
-
-  /*const donkeyArrivalsEntityIds = useMemo(() => {
-    return donkeyArrivals?.map((entity) => {
-      const position = getComponentValue(dojo.setup.components.Position, entity);
-      return position?.entity_id;
-    });
-  }, [donkeyArrivals]) as number[];*/
-
-  //useSyncEntity(donkeyArrivalsEntityIds);
+  const [_, setRefreshTrigger] = useState(0);
 
   const { bridgeFinishWithdrawFromRealm } = useBridgeAsset();
 
   const onFinishWithdrawFromBank = async () => {
     if (selectedResourceIds.length) {
-      const resourceAddresses = await getResourceAddresses();
+      const resourceAddresses = getResourceAddresses();
       const donkeyResources = selectedResourceIds.map((id, index) => ({
         tokenAddress: resourceAddresses[ResourcesIds[id].toUpperCase() as keyof typeof resourceAddresses][1],
         from_entity_id: Array.from(selectedDonkeys)[index],
@@ -93,11 +79,11 @@ export const BridgeOutStep2 = () => {
     setSelectedResourceIds(allResources.map((r) => r.resourceId as never));
     setSelectedResourceAmounts(
       allResources.reduce(
-        (acc, r) => ({
+        (acc: Record<string, number>, r) => ({
           ...acc,
           [r.resourceId]: (acc[r.resourceId] || 0) + r.amount / RESOURCE_PRECISION,
         }),
-        {},
+        {} as Record<string, number>,
       ),
     );
   };
@@ -307,11 +293,11 @@ export const BridgeOutStep2 = () => {
           </div>
           {Object.entries(selectedResourceAmounts).map(([id, amount]) => {
             if (amount === 0) return null;
-            const resourceName = ResourcesIds[id as keyof typeof ResourcesIds];
+            const resource = ResourcesIds[Number(id)];
             return (
               <div key={id} className="flex justify-between text-sm font-normal">
                 <div className="flex items-center gap-2">
-                  <ResourceIcon resource={resourceName} size="md" /> {resourceName}
+                  <ResourceIcon resource={resource} size="md" /> {resource}
                 </div>
                 <div>{(amount - Number(resourceFees.find((fee) => fee.id === id)?.totalFee ?? 0)).toFixed(2)}</div>
               </div>

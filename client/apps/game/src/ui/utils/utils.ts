@@ -1,7 +1,7 @@
 import { SortInterface } from "@/ui/elements/sort-button";
 import {
   ContractAddress,
-  RESOURCE_PRECISION,
+  divideByPrecision,
   ResourceCost,
   ResourcesIds,
   toHexString,
@@ -42,14 +42,6 @@ export function currencyIntlFormat(num: number, decimals: number = 2): string {
 export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
-}
-
-export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * RESOURCE_PRECISION);
-}
-
-export function divideByPrecision(value: number): number {
-  return value / RESOURCE_PRECISION;
 }
 
 export function divideByPrecisionFormatted(value: number): string {

@@ -1482,7 +1482,7 @@
     },
     {
       "address": "0x158114da9a538d75512dc29b3d1995ff551dfb61bee80996232abe54b8febc2",
-      "class_hash": "0x2d35042bdc3fe8f799396ce2cf9c31deb666e63df2427688a4a8605e34d846",
+      "class_hash": "0x6020cd4dce4dce9b5a4a68a70daa898537b224b3a5a9e80f64bdbc6e80b897e",
       "abi": [
         {
           "type": "impl",
@@ -1686,7 +1686,7 @@
     },
     {
       "address": "0x66bc2d8ef45ce10d3847cc901a41af6a05db34c0ea0ab87fc332ca8c9b2ccb0",
-      "class_hash": "0x1f9260c45aed95e060c98434c5922c5dfef7c82a62b47ae42496815c3dc6401",
+      "class_hash": "0xfcba7b3b68a6c50b899999c57a97cc280044a6d3eb1853860714d1ca8b5f15",
       "abi": [
         {
           "type": "impl",
@@ -2001,7 +2001,7 @@
     },
     {
       "address": "0x73dff02735d7031496afb34d28f6fd935d8f8e2db14b0877aaf871b3d11f524",
-      "class_hash": "0x688863adfa91d251a6d09d09c156264d2c6d1128e70c759bd2848abbbe11fc6",
+      "class_hash": "0x41d596efc4a6d03213daf7b9e4e8bedc5e92bc77e40ea66105f79989a1d2845",
       "abi": [
         {
           "type": "impl",
@@ -2382,7 +2382,7 @@
     },
     {
       "address": "0x5827e314ca954f7eb04127a2a321e5c1f8fa6d51546b8fa6d6b38830f2b6d18",
-      "class_hash": "0x7fb2e9574aa693d81a15f3734dd0a8612ba8d64057b2aef692bd3117118a446",
+      "class_hash": "0x37798122f6085a277eedb203c93fe5ee2fbc99afe7427e4508b79000301dc2c",
       "abi": [
         {
           "type": "impl",
@@ -2994,10 +2994,6 @@
                 },
                 {
                   "name": "produced_amount",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "labor_amount",
                   "type": "core::integer::u128"
                 }
               ],
@@ -4065,212 +4061,8 @@
       ]
     },
     {
-      "address": "0x2c4b344be05a87cd6f26defb2056e5e55b1770abd9a57f899f73ba8eb4e2f2f",
-      "class_hash": "0x5eade382aa35597f5cbbee1c9366af3e78caef7ba002534aabfe11c24487bce",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "dev_realm_systems__ContractImpl",
-          "interface_name": "dojo::contract::interface::IContract"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::interface::IContract",
-          "items": []
-        },
-        {
-          "type": "impl",
-          "name": "dev_realm_systems__DeployedContractImpl",
-          "interface_name": "dojo::meta::interface::IDeployedResource"
-        },
-        {
-          "type": "struct",
-          "name": "core::byte_array::ByteArray",
-          "members": [
-            {
-              "name": "data",
-              "type": "core::array::Array::<core::bytes_31::bytes31>"
-            },
-            {
-              "name": "pending_word",
-              "type": "core::felt252"
-            },
-            {
-              "name": "pending_word_len",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::meta::interface::IDeployedResource",
-          "items": [
-            {
-              "type": "function",
-              "name": "dojo_name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "DevRealmSystemsImpl",
-          "interface_name": "s1_eternum::systems::dev::contracts::realm::IDevRealmSystems"
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::dev::contracts::realm::IDevRealmSystems",
-          "items": [
-            {
-              "type": "function",
-              "name": "create",
-              "inputs": [
-                {
-                  "name": "realm_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "frontend",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
-        },
-        {
-          "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::iworld::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::world_provider::IWorldProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "world_dispatcher",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::world::iworld::IWorldDispatcher"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "UpgradeableImpl",
-          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::upgradeable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "constructor",
-          "name": "constructor",
-          "inputs": []
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "Upgraded",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "s1_eternum::systems::dev::contracts::realm::dev_realm_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "WorldProviderEvent",
-              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "nested"
-            }
-          ]
-        }
-      ],
-      "init_calldata": [],
-      "tag": "s1_eternum-dev_realm_systems",
-      "selector": "0x32279d1c73c6356f5f15ff0e59adc6bfc45ffcde796c785452f6944b9b36ef1",
-      "systems": [
-        "create",
-        "upgrade"
-      ]
-    },
-    {
       "address": "0x1c8793d542cb6fb3cb140279ece63cdb8265868874e2aed3dce8a7b7cffd256",
-      "class_hash": "0x7d9a070d9ded75006a3b6ee02cee0601012901e7910978c390cb28a232a26cc",
+      "class_hash": "0x3f098fd71b6f1a1437772a724b7b3fa91389d3cc9cb946381ff049f4b4deafd",
       "abi": [
         {
           "type": "impl",
@@ -4959,7 +4751,7 @@
     },
     {
       "address": "0xd4a3c274fbdc8ca6fc0c0a2e1bdb9f4ef78ec6efe253592e936bd2e5db712f",
-      "class_hash": "0x1af127b3e1737bc103072be80c6927cdc90616df78597a5e225f6ab981ad6e4",
+      "class_hash": "0x7e3fc4e262618f16424b6d0014737c31110891610b18fb44788169480b83113",
       "abi": [
         {
           "type": "impl",
@@ -5336,7 +5128,7 @@
     },
     {
       "address": "0x12b32981130d1089c5642125fbe96cdb4da0562e904eb8da590a30ea4f0aa9d",
-      "class_hash": "0x39da4b5a4c779a5961a30a6bd3be3002f7ac8ca7fcb261bae647262cb03f8df",
+      "class_hash": "0x56e732616b199de6b6f08b185d4a925ca611a466ac94263004af7d72f81084c",
       "abi": [
         {
           "type": "impl",
@@ -5609,7 +5401,7 @@
     },
     {
       "address": "0x43b2a3f4e47fa52ef2549162f89258dbcbd23bc62a51d0a331b80039a66bc9b",
-      "class_hash": "0x23550c76e27c75c2c2aab7aaca5bc20b9595837ff35fdb95cd538c3d3f2466c",
+      "class_hash": "0x1829437a65fddf03e8f1322558035b38be8c06a5dd81f6a863a68569364b4cc",
       "abi": [
         {
           "type": "impl",
@@ -5894,7 +5686,7 @@
     },
     {
       "address": "0x6e173c5aca48a948de710aea5492c1df18a3f477b666a9af82281e1024e7bd2",
-      "class_hash": "0x3bb707045c5ff3766935a9bece0717a1adf395e9f109cf9e0f8d025bfeadc6d",
+      "class_hash": "0x466e7ebd1333acd3f8d1280605da3d47f0defc727e4e14a55d41e088272f936",
       "abi": [
         {
           "type": "impl",
@@ -6549,7 +6341,7 @@
     },
     {
       "address": "0x47773b52867c0867b40b26408e3ff84fca0b1a9afe55c0cb0fe284c1a18c3d8",
-      "class_hash": "0x2d8e31a55fd8bf1e95262a07e57c0b97db4a1ae573f4e9d07b6b8fdb863cc43",
+      "class_hash": "0x580ae58de580e41af4107e2b651ba52fa4ebeb5266568c6658cfa95fdecf48b",
       "abi": [
         {
           "type": "impl",
@@ -6984,7 +6776,7 @@
     },
     {
       "address": "0x30b9c5bf6c05b8e950901079bba39766f4a4d23466f2df0258e1ecca3731e19",
-      "class_hash": "0x567e142c27b39221110078e7ffc6f3d24ee35d07978b548cb799d777d81baba",
+      "class_hash": "0x227365531efc583855affe2ccf2e38c08b13436e71228a003960a1f45d05ec3",
       "abi": [
         {
           "type": "impl",
@@ -7226,7 +7018,7 @@
     },
     {
       "address": "0x1e859bd917c725f938d7ffecdd9f687e04af2b44cf534848895e7efa946378a",
-      "class_hash": "0x50d051cf375ddb6427d781b0e7f5c7670f3a0c3cea45ed487154c6fe33cdacf",
+      "class_hash": "0x62d54b6b3e65921272e1fb14ea5388119d3910abc1856ea79db87c6ca1ae90e",
       "abi": [
         {
           "type": "impl",
@@ -7535,7 +7327,7 @@
     },
     {
       "address": "0x7e9f737c5c89d0f4e2c2b9f0ffda396da22b2c9fa14106f2d940dddae35497a",
-      "class_hash": "0x4e3a61a93c7703b04df217cf8e8b43698187f9a7434c457f29f3602f8ceb190",
+      "class_hash": "0x3565c033b9ab7fd56f044c9ba70e983b30354e3d35d6d0c65592a6e7a2e131d",
       "abi": [
         {
           "type": "impl",
@@ -8032,7 +7824,7 @@
     },
     {
       "address": "0x67d9fbdbb222b30679aa4b6d4d15f0e16f984603996111c6ef8b425293d29c7",
-      "class_hash": "0x6ecba556869f9af550c06eebf09953b9a9b5e021d1841e1fdba2893f6375787",
+      "class_hash": "0x1ba743062d12d4e056335b18ad188f32ece928103d1c2fe57c4e57148de9d57",
       "abi": [
         {
           "type": "impl",
@@ -8277,7 +8069,7 @@
     },
     {
       "address": "0x4949075e31363f02ac3d4374bf1cb726873cd55a3f572dc85ddc9f8ef89c351",
-      "class_hash": "0xc9da769a96f6e3aacd9c9329f89fc32c82a3318f82a92373cf4eaf3759f230",
+      "class_hash": "0xb00fb0d9ea7c7a27c1271c9de87d829f7d690e3f6966ebd69204743304fb3a",
       "abi": [
         {
           "type": "impl",
@@ -8578,7 +8370,7 @@
     },
     {
       "address": "0x5bb3ed403abb2ceeb6ce8911052a4f9c922f2d4777427454fcbea605192ddc9",
-      "class_hash": "0x1dea2c672934cc98154903b1e64e34287fbd24ffa3be05415371f9a21638484",
+      "class_hash": "0x49442e8242359125e36140e04d2acaa96e4d28397ae604a5793ece34587ba8b",
       "abi": [
         {
           "type": "impl",
@@ -8822,7 +8614,7 @@
     },
     {
       "address": "0x4d6d43ec3fe5fb0d22398f9aee1846285e7c44bfa3900b7e490d18a9fb4eae4",
-      "class_hash": "0x710a28a02d258fc3ac7b008f52d1bcb472249ac0948221d328858c01b08a889",
+      "class_hash": "0x2d6f05a2d585b43e9c6e30c686465d8e73413b059812129cfa372a9f7e6971b",
       "abi": [
         {
           "type": "impl",

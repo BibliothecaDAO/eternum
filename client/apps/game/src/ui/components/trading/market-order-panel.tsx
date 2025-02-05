@@ -4,15 +4,17 @@ import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
   configManager,
+  divideByPrecision,
   DONKEY_ENTITY_TYPE,
   findResourceById,
   getRealmAddressName,
   getTotalResourceWeight,
+  multiplyByPrecision,
   RESOURCE_PRECISION,
   ResourceManager,
   ResourcesIds,
@@ -379,6 +381,21 @@ const OrderRow = memo(
       }
     };
 
+    const onCancel = async () => {
+      try {
+        setLoading(true);
+        await dojo.setup.systemCalls.cancel_order({
+          signer: dojo.account.account,
+          trade_id: offer.tradeId,
+          return_resources: returnResources,
+        });
+      } catch (error) {
+        console.error("Failed to cancel order", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     return (
       <div
         key={offer.tradeId}
@@ -409,9 +426,7 @@ const OrderRow = memo(
           {!isSelf ? (
             <Button
               isLoading={loading}
-              onClick={() => {
-                setConfirmOrderModal(true);
-              }}
+              onClick={() => setConfirmOrderModal(true)}
               size="xs"
               className={`self-center flex flex-grow ${isMakerResourcesLocked ? "pointer-events-none" : ""}`}
             >
@@ -419,15 +434,7 @@ const OrderRow = memo(
             </Button>
           ) : (
             <Button
-              onClick={async () => {
-                setLoading(true);
-                await dojo.setup.systemCalls.cancel_order({
-                  signer: dojo.account.account,
-                  trade_id: offer.tradeId,
-                  return_resources: returnResources,
-                });
-                setLoading(false);
-              }}
+              onClick={() => setConfirmOrderModal(true)}
               variant="danger"
               size="xs"
               className={clsx("self-center", { disable: isMakerResourcesLocked })}
@@ -444,44 +451,48 @@ const OrderRow = memo(
         </div>
         {confirmOrderModal && (
           <ConfirmationPopup
-            title="Confirm Trade"
-            onConfirm={onAccept}
-            disabled={!isBuy && donkeysNeeded > donkeyBalance}
-            onCancel={() => {
-              setConfirmOrderModal(false);
-            }}
+            title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
+            onConfirm={isSelf ? onCancel : onAccept}
+            onCancel={() => setConfirmOrderModal(false)}
+            isLoading={loading}
+            disabled={(!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0}
           >
-            <div className=" p-8 rounded">
-              <div className="text-center text-lg">
-                <div className="flex gap-3">
+            {isSelf ? (
+              <div className="p-4 text-center">
+                <p>Are you sure you want to cancel this order?</p>
+              </div>
+            ) : (
+              <div className="p-4 text-center">
+                <div className="flex gap-3 mb-4">
                   <NumberInput
                     value={inputValue}
-                    className="w-full col-span-3"
+                    className="w-full"
                     onChange={setInputValue}
                     max={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
                   />
                   <Button
-                    onClick={() => {
+                    onClick={() =>
                       setInputValue(
                         divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
-                      );
-                    }}
+                      )
+                    }
                   >
                     Max
                   </Button>
                 </div>
-                <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
-                <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
-                <span className="font-bold">{currencyFormat(calculatedLords, 2)}</span> Lords
-              </div>
-
-              <div className="flex justify-between mt-4">
-                <div className="text-right">Donkeys Required for Transfer</div>
-                <div className={`text-gold text-left ${donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}`}>
-                  {donkeysNeeded} [{donkeyBalance}]
+                <p className="mb-2">
+                  <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
+                  <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
+                  <span className="font-bold">{currencyFormat(calculatedLords, 2)}</span> Lords
+                </p>
+                <div className="flex justify-between mt-4">
+                  <div>Donkeys Required</div>
+                  <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
+                    {donkeysNeeded} [{donkeyBalance}]
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </ConfirmationPopup>
         )}
       </div>
@@ -495,6 +506,7 @@ const OrderCreation = memo(
     const [resource, setResource] = useState(RESOURCE_PRECISION);
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
+    const [showConfirmation, setShowConfirmation] = useState(false);
     const { currentBlockTimestamp } = useBlockTimestamp();
 
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
@@ -533,17 +545,22 @@ const OrderCreation = memo(
       if (!currentBlockTimestamp) return;
       setLoading(true);
 
-      await create_order({
-        signer: account,
-        maker_id: entityId,
-        maker_gives_resources: makerGives,
-        taker_id: 0,
-        taker_gives_resources: takerGives,
-        expires_at: currentBlockTimestamp + ONE_MONTH,
-      }).finally(() => {
+      try {
+        await create_order({
+          signer: account,
+          maker_id: entityId,
+          maker_gives_resources: makerGives,
+          taker_id: 0,
+          taker_gives_resources: takerGives,
+          expires_at: currentBlockTimestamp + ONE_MONTH,
+        });
         playLordsSound();
+      } catch (error) {
+        console.error("Failed to create order:", error);
+      } finally {
         setLoading(false);
-      });
+        setShowConfirmation(false);
+      }
     };
 
     const orderWeight = useMemo(() => {
@@ -600,7 +617,7 @@ const OrderCreation = memo(
 
     return (
       <div
-        className={`flex justify-between p-4 text-xl flex-wrap mt-auto  bg-gold/5 border-gold/10 border rounded-xl ${
+        className={`flex justify-between p-4 text-xl flex-wrap mt-auto bg-gold/5 border-gold/10 border rounded-xl ${
           isBuy ? "order-create-buy-selector" : "order-create-sell-selector"
         }`}
       >
@@ -681,13 +698,35 @@ const OrderCreation = memo(
             disabled={!enoughDonkeys || !canBuy}
             isLoading={loading}
             className="mt-4 h-8"
-            onClick={createOrder}
+            onClick={() => setShowConfirmation(true)}
             size="md"
             variant="primary"
           >
             Create {isBuy ? "Buy " : "Sell "} Order of {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
           </Button>
         </div>
+
+        {showConfirmation && (
+          <ConfirmationPopup
+            title={`Confirm ${isBuy ? "Buy" : "Sell"} Order`}
+            onConfirm={createOrder}
+            onCancel={() => setShowConfirmation(false)}
+            isLoading={loading}
+          >
+            <div className="p-4 text-center">
+              <p className="mb-4">Are you sure you want to create this order?</p>
+              <div className="flex flex-col gap-2">
+                <div>
+                  Amount: {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
+                </div>
+                <div>Price: {lords.toLocaleString()} Lords</div>
+                <div>
+                  Rate: {Number(bid).toFixed(4)} Lords/{findResourceById(resourceId)?.trait}
+                </div>
+              </div>
+            </div>
+          </ConfirmationPopup>
+        )}
       </div>
     );
   },

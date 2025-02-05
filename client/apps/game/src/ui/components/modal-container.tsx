@@ -34,9 +34,9 @@ export const ModalContainer = ({ children, size = "full" }: ModalContainerProps)
   }, [handleEscapePress]);
 
   return (
-    <div className={` bg-brown/90 text-gold ${containerClasses} fixed`} tabIndex={0}>
-      <div className="flex justify-end absolute right-3 top-3">
-        <Button className="!p-4" size="xs" variant="default" onClick={() => toggleModal(null)}>
+    <div className={`z-50 bg-brown/90 text-gold ${containerClasses} fixed`} tabIndex={0}>
+      <div className="flex justify-end p-3">
+        <Button className="!p-4" size="xs" variant="danger" onClick={() => toggleModal(null)}>
           <X className="w-4 h-4" />
         </Button>
       </div>

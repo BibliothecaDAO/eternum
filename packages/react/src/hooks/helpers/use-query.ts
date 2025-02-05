@@ -4,6 +4,7 @@ import { useSearch } from "wouter/use-location";
 
 export const useQuery = () => {
   const searchString = useSearch();
+
   const [location, setLocation] = useLocation();
 
   const handleUrlChange = useCallback(

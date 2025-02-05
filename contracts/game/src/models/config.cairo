@@ -530,7 +530,7 @@ pub struct ProductionConfig {
     resource_type: u8,
     // production amount per tick
     produced_amount: u128,
-    // labor cost amount per tick
+    // todo: remove 
     labor_cost: u128,
 }
 

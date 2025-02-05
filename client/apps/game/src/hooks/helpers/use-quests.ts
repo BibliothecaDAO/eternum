@@ -1,17 +1,11 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Prize, QuestType } from "@bibliothecadao/eternum";
+import { Prize, QuestStatus, QuestType } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { QUEST_DETAILS } from "./use-starting-tutorial";
-
-export enum QuestStatus {
-  InProgress,
-  Completed,
-  Claimed,
-}
 
 export const useQuests = () => {
   const questStatus = useQuestClaimStatus();

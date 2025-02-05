@@ -12,10 +12,10 @@ export function useTravel(fromId: ID, toId: ID, secPerKm: number, pickup?: boole
   });
 
   const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) => {
-    const fromPosition = entityPositions?.s0EternumPositionModels?.edges?.find(
+    const fromPosition = entityPositions?.s1EternumPositionModels?.edges?.find(
       (entity) => entity?.node?.entity_id == fromId,
     );
-    const toPosition = entityPositions?.s0EternumPositionModels?.edges?.find(
+    const toPosition = entityPositions?.s1EternumPositionModels?.edges?.find(
       (entity) => entity?.node?.entity_id == toId,
     );
     if (!fromPosition || !toPosition) return;

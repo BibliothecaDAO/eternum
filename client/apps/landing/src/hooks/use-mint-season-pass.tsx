@@ -12,7 +12,7 @@ export const useMintSeasonPass = () => {
 
   const { contract } = useContract({
     abi,
-    address: seasonPassAddress,
+    address: seasonPassAddress as `0x${string}`,
   });
 
   const { send, isPending, isSuccess } = useSendTransaction({});

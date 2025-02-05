@@ -40,7 +40,7 @@ export const Rewards = () => {
 
   useEffect(() => {
     const init = async () => {
-      const address = await getLordsAddress();
+      const address = getLordsAddress();
       setLordsAddress(address);
     };
     init();
@@ -83,7 +83,7 @@ export const Rewards = () => {
   }, [leaderboardManager]);
 
   const claimRewards = useCallback(async () => {
-    const lordsAddress = await getLordsAddress();
+    const lordsAddress = getLordsAddress();
     setIsLoading(true);
     try {
       await claim_leaderboard_rewards({

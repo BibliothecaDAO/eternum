@@ -1,11 +1,8 @@
 import { lordsAddress } from "@/config";
-// why not working
-// import { env } from "env";
+import { Chain, getGameManifest } from "@contracts";
 import { useEffect, useState } from "react";
-import { Chain, getGameManifest } from "../../../../../config/utils/utils";
 import { env } from "../../env";
 import { useDojo } from "./context/dojo-context";
-
 const { VITE_PUBLIC_CHAIN } = env;
 
 export const useLordsBridgeBalance = () => {

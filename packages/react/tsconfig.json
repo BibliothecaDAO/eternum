@@ -1,22 +1,7 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "ESNext",
-    "declaration": true,
-    "outDir": "./dist",
-    "sourceMap": true,
-    "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "moduleResolution": "node",
-    "noUnusedParameters": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "strictNullChecks": true,
-    "esModuleInterop": true,
-    "allowJs": true
+    "outDir": "../../dist/react"
   },
-  "include": ["src/**/*.ts"],
-  "skipLibCheck": true,
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "include": ["src/**/*.ts"]
 }

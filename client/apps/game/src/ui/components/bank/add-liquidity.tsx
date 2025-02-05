@@ -4,9 +4,17 @@ import { LiquidityTableHeader } from "@/ui/components/bank/liquidity-table";
 import { ResourceBar } from "@/ui/components/bank/resource-bar";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ContractAddress, ID, MarketManager, ResourcesIds, getBalance, resources } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  divideByPrecision,
+  getBalance,
+  ID,
+  MarketManager,
+  multiplyByPrecision,
+  resources,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { useDojo, useIsStructureResourcesLocked, usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 

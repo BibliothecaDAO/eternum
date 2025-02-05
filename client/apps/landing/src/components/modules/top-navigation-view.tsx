@@ -3,7 +3,6 @@ import ControllerConnector from "@cartridge/connector/controller";
 import { ExitIcon } from "@radix-ui/react-icons";
 import { useAccount } from "@starknet-react/core";
 import { PlayIcon } from "lucide-react";
-import { Uint256, uint256 } from "starknet";
 import { formatEther } from "viem";
 import { env } from "../../../env";
 import { Button } from "../ui/button";
@@ -14,7 +13,7 @@ import { SeasonRegistrationTimer } from "./season-registration-timer";
 import { SeasonStartTimer } from "./season-start-timer";
 
 interface TopNavigationViewProps {
-  lordsBalance: Uint256 | undefined;
+  lordsBalance: bigint;
   onMintTestLords: () => Promise<void>;
   connectors: any[];
   onConnect: (connector: any) => void;
@@ -28,7 +27,6 @@ export const TopNavigationView = ({
   connectors,
   onConnect,
   onDisconnect,
-  //accountAddress,
 }: TopNavigationViewProps) => {
   const { address, connector, isConnected } = useAccount();
 
@@ -41,7 +39,7 @@ export const TopNavigationView = ({
         {lordsBalance ? (
           <div className="text-sm px-2 rounded border font-number flex items-center gap-2">
             <ResourceIcon withTooltip={false} resource="Lords" size="lg" />{" "}
-            {Number(formatEther(uint256.uint256ToBN(lordsBalance))).toFixed(2)}
+            {Number(formatEther(lordsBalance)).toFixed(2)}
           </div>
         ) : null}
 

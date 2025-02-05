@@ -153,7 +153,6 @@ mod map_generation_systems {
         }
 
         fn get_shards_reward(ref world: WorldStorage, randomness: u256, mine_entity_id: ID) -> u128 {
-            let shards_production_config: ProductionConfig = world.read_model(ResourceTypes::EARTHEN_SHARD);
             let random_multiplier: u128 = *random::choices(
                 array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span(),
                 array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span(),
@@ -164,10 +163,7 @@ mod map_generation_systems {
             )[0];
             let min_production_amount: u128 = 100_000 * RESOURCE_PRECISION;
             let actual_production_amount: u128 = min_production_amount * random_multiplier;
-            let mut labor_amount_required: u128 = actual_production_amount / shards_production_config.labor_cost;
-            if actual_production_amount % shards_production_config.labor_cost != 0 {
-                labor_amount_required += 1;
-            }
+            let mut labor_amount_required: u128 = actual_production_amount;
 
             labor_amount_required
         }
