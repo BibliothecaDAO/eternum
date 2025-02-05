@@ -51,7 +51,7 @@ export const RealmInfoHeader = ({
       {/* Second row */}
       <div className="flex items-center space-x-2">
         <div>
-          <h1 className="text-5xl font-bold bokor">
+          <h1 className="text-5xl font-bold font-bokor">
             {realmName}{" "}
             <span className="text-3xl font-normal text-muted-foreground">
               {RealmLevelNames[RealmLevels[realmLevel]]}

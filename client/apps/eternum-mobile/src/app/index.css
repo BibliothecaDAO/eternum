@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-.bokor {
+.font-bokor {
   font-family: "Bokor", system-ui;
 }
 
