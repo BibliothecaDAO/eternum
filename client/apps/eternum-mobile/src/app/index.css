@@ -1,6 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Sedan:ital@0;1&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Bokor&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.bokor {
+  font-family: "Bokor", system-ui;
+}
 
 @layer base {
   :root {
