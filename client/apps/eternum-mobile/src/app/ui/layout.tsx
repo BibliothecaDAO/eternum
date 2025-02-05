@@ -2,6 +2,7 @@ import { Button } from "@/shared/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/shared/ui/sheet";
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { ModeToggle } from "./mode-toggle";
 
 interface LayoutProps {
   children: ReactNode;
@@ -18,7 +19,7 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b">
+      <header className="border-b px-2">
         <div className="container flex h-14 items-center">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -87,9 +88,10 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex-1">
             <h1 className="text-lg font-semibold">Eternum</h1>
           </div>
+          <ModeToggle />
         </div>
       </header>
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 px-2">{children}</main>
     </div>
   );
 }

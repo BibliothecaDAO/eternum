@@ -2,7 +2,7 @@ import { LoginPage } from "@/pages/login/ui/login-page";
 import { OverviewPage } from "@/pages/overview/ui/overview-page";
 import { SettingsPage } from "@/pages/settings/ui/settings-page";
 import { Route, Switch } from "wouter";
-import { Layout } from "./layout";
+import { Layout } from "./ui/layout";
 
 function App() {
   return (
