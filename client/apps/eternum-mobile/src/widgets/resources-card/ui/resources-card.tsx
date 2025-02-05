@@ -1,4 +1,5 @@
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
@@ -58,12 +59,17 @@ export const ResourcesCard = ({ className }: ResourcesCardProps) => {
             if (!resource) return null;
 
             return (
-              <div key={resource.id} className="flex items-center space-x-4">
-                <ResourceIcon resourceId={resource.id} className="h-8 w-8" />
-                <div className="flex flex-col">
-                  <span className="font-medium">{resource.trait}</span>
-                  <span className="text-sm text-muted-foreground">{amount}</span>
+              <div key={resource.id} className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <ResourceIcon resourceId={resource.id} className="h-8 w-8" />
+                  <div className="flex flex-col">
+                    <span className="font-medium">{resource.trait}</span>
+                    <span className="text-sm text-muted-foreground">{amount}</span>
+                  </div>
                 </div>
+                <Button variant="secondary" size="sm">
+                  Trade
+                </Button>
               </div>
             );
           })}
