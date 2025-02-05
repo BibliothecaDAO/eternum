@@ -59,7 +59,7 @@ export function createIndexer<
         ? "https://ethereum-sepolia.preview.apibara.org"
         : "https://ethereum.preview.apibara.org",
     finality: "accepted",
-    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 215_30_000n,
+    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 204_33_152n,
     filter: {
       logs: [
         {
