@@ -1,10 +1,11 @@
 import react from "@vitejs/plugin-react";
 import path, { resolve } from "path";
 import { defineConfig } from "vite";
+import wasm from "vite-plugin-wasm";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), wasm()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
