@@ -19,6 +19,7 @@ import BridgeSidebar from "@/components/modules/realms/bridge-sidebar";
 import { getCoreRowModel, getPaginationRowModel, RowSelectionState, useReactTable } from "@tanstack/react-table";
 import { CollectionAddresses } from "@realms-world/constants";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { Alert } from "@/components/ui/alert";
 
 export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
@@ -28,10 +29,10 @@ function RouteComponent() {
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
 
-  const l1RealmsQuery = trpc.l1Realms.useQuery({address: l1Address},{refetchInterval: 10000});
+  const l1RealmsQuery = trpc.l1Realms.useQuery({address: l1Address},{refetchInterval: 10000, enabled: !!l1Address});
   const l1Realms = l1RealmsQuery.data
 
-  const l2RealmsQuery = trpc.realms.useQuery({address: l2Address, collectionAddress: CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as string}, {refetchInterval: 10000});
+  const l2RealmsQuery = trpc.realms.useQuery({address: l2Address, collectionAddress: CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as string}, {refetchInterval: 10000, enabled: !!l2Address});
   const l2Realms = l2RealmsQuery.data
 
   const [selectedAsset, setSelectedAsset] = useState<"Ethereum" | "Starknet">(
@@ -131,6 +132,8 @@ function RouteComponent() {
             )}
           </Button>
         </div>
+        {selectedAsset === "Ethereum" && !l1Address && <Alert className="mb-2 text-muted-foreground">Connect your Ethereum wallet to bridge realms</Alert>}
+        {selectedAsset === "Starknet" && !l2Address && <Alert className="mb-2 text-muted-foreground">Connect your Starknet wallet to bridge realms</Alert>}
         <Suspense fallback={<div>Loading...</div>}>
           <BridgeTable
             table={table}

@@ -11,6 +11,7 @@ import { db } from "@realms-world/db/client";
 import { realmsBridgeRequests } from "@realms-world/db/schema";
 import { CollectionAddresses, Collections, ChainId } from "@realms-world/constants";
 import { PortfolioCollectionApiResponse } from "@/lib/ark/getPortfolioTokens";
+
 const SUPPORTED_L1_CHAIN_ID =
 process.env.VITE_PUBLIC_CHAIN == "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
 /**
@@ -72,6 +73,8 @@ const POSTS = [
 const RESERVOIR_API_URL = `https://api${process.env.VITE_PUBLIC_CHAIN === "sepolia" ? "-sepolia" : ""
 }.reservoir.tools`;
 
+const ARK_MARKETPLACE_API_URL = `https://api.marketplace${process.env.VITE_PUBLIC_CHAIN === "sepolia" ? ".dev" : ""}.arkproject.dev`
+
 const appRouter = t.router({
   hello: t.procedure.query(() => "Hello world!"),
   posts: t.procedure.query(async (_) => {
@@ -124,7 +127,7 @@ const appRouter = t.router({
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              "x-api-key": "c3324c8a-80c4-5983-bf8b-3033750c2e0a",
+              "x-api-key": process.env.VITE_RESERVOIR_API_KEY ?? "",
               "Access-Control-Allow-Origin": "*",
             },
           }
@@ -150,9 +153,8 @@ const appRouter = t.router({
         `page=${page}`,
         collectionAddress && `collection=${collectionAddress}`,
       ];
-
       const response = await fetch(
-        `${process.env.VITE_PUBLIC_ARK_MARKETPLACE_API}/portfolio/${address}?${queryParams.join("&")}`,
+        `${ARK_MARKETPLACE_API_URL}/portfolio/${address}?${queryParams.join("&")}`,
         {
           method: "GET",
           headers: {
