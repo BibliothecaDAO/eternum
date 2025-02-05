@@ -3,7 +3,7 @@ use cubit::f128::types::fixed::{FixedTrait, Fixed};
 use cubit::f128::types::vec3::{Vec3, Vec3Trait};
 
 use s1_eternum::utils::map::constants::fixed_constants as fc;
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 pub enum Biome {
     DeepOcean,
     Ocean,

@@ -31,6 +31,21 @@ struct Cube {
     s: i128
 }
 
+#[derive(Copy, Drop, Serde, Default, IntrospectPacked)]
+pub struct Travel {
+    blocked: bool,
+    round_trip: bool,
+    start_coord: Coord,
+    next_coord: Coord
+}
+
+#[derive(Copy, Drop, Serde, Default, IntrospectPacked)]
+pub struct Stamina {
+    amount: u32,
+    last_refill_tick: u32
+}
+
+
 impl CubeZeroable of Zeroable<Cube> {
     fn zero() -> Cube {
         Cube { q: 0, r: 0, s: 0 }
@@ -209,6 +224,22 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
     }
 }
 
+#[derive(Introspect, Copy, Drop, Serde, Default)]
+pub enum OccupiedBy {
+    Structure(ID),
+    Donkey(ID),
+    Explorer(ID),
+}
+
+#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
+#[dojo::model]
+pub struct Occupiers {
+    #[key]
+    x: u32,
+    #[key]
+    y: u32,
+    values: Span<OccupiedBy>,
+}
 
 #[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]

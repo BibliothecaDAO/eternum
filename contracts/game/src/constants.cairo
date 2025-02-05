@@ -106,12 +106,18 @@ mod ResourceTypes {
     const LABOR: u8 = 23;
     const EARTHEN_SHARD: u8 = 24;
     const DONKEY: u8 = 25;
-    const KNIGHT: u8 = 26;
-    const CROSSBOWMAN: u8 = 27;
-    const PALADIN: u8 = 28;
-    const WHEAT: u8 = 29;
-    const FISH: u8 = 30;
-    const LORDS: u8 = 31;
+    const KNIGHT_T1: u8 = 26;
+    const KNIGHT_T2: u8 = 27;
+    const KNIGHT_T3: u8 = 28;
+    const CROSSBOWMAN_T1: u8 = 29;
+    const CROSSBOWMAN_T2: u8 = 30;
+    const CROSSBOWMAN_T3: u8 = 31;
+    const PALADIN_T1: u8 = 32;
+    const PALADIN_T2: u8 = 33;
+    const PALADIN_T3: u8 = 34;
+    const WHEAT: u8 = 35;
+    const FISH: u8 = 36;
+    const LORDS: u8 = 37;
 }
 
 
@@ -167,16 +173,28 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
     } else if resource_type == 25 {
         "DONKEY"
     } else if resource_type == 26 {
-        "KNIGHT"
+        "T1 KNIGHT"
     } else if resource_type == 27 {
-        "CROSSBOWMAN"
+        "T2 KNIGHT"
     } else if resource_type == 28 {
-        "PALADIN"
+        "T3 KNIGHT"
     } else if resource_type == 29 {
-        "WHEAT"
+        "T1 CROSSBOWMAN"
     } else if resource_type == 30 {
-        "FISH"
+        "T2 CROSSBOWMAN"
     } else if resource_type == 31 {
+        "T3 CROSSBOWMAN"
+    } else if resource_type == 32 {
+        "T1 PALADIN"
+    } else if resource_type == 33 {
+        "T2 PALADIN"
+    } else if resource_type == 34 {
+        "T3 PALADIN"
+    } else if resource_type == 35 {
+        "WHEAT"
+    } else if resource_type == 36 {
+        "FISH"
+    } else if resource_type == 37 {
         "LORDS"
     } else {
         format!("{} (unknown resource name)", resource_type)
