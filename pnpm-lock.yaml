@@ -248,6 +248,9 @@ importers:
       wouter:
         specifier: ^2.12.1
         version: 2.12.1(react@18.3.1)
+      zustand:
+        specifier: ^4.5.2
+        version: 4.5.6(@types/react@18.3.18)(react@18.3.1)
     devDependencies:
       '@eslint/js':
         specifier: ^9.17.0

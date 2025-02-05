@@ -20,7 +20,8 @@
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "wouter": "^2.12.1"
+    "wouter": "^2.12.1",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
