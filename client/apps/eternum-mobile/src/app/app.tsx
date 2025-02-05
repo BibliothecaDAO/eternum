@@ -1,20 +1,26 @@
-import { Button } from "@/shared/ui/button";
-import { useState } from "react";
+import { LoginPage } from "@/pages/login/ui/login-page";
+import { OverviewPage } from "@/pages/overview/ui/overview-page";
+import { SettingsPage } from "@/pages/settings/ui/settings-page";
+import { Route, Switch } from "wouter";
+import { Layout } from "./layout";
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <>
-      <h1 className="text-3xl font-bold">Vite + React</h1>
-      <div className="card">
-        <Button onClick={() => setCount((count) => count + 1)}>count is {count}</Button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
-    </>
+    <div className="min-h-screen bg-background text-foreground">
+      <Switch>
+        <Route path="/" component={LoginPage} />
+        <Route path="/overview">
+          <Layout>
+            <OverviewPage />
+          </Layout>
+        </Route>
+        <Route path="/settings">
+          <Layout>
+            <SettingsPage />
+          </Layout>
+        </Route>
+      </Switch>
+    </div>
   );
 }
 
