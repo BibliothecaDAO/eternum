@@ -47,6 +47,7 @@ export function createIndexer<
   TSchema extends
     TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
 >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
+  console.log('eth indexer started')
   console.log(env.VITE_PUBLIC_CHAIN);
   console.log("messaging ", STARKNET_MESSAGING[chainId]);
   console.log("from ", REALMS_BRIDGE_ADDRESS[chainId]);
@@ -57,8 +58,8 @@ export function createIndexer<
       env.VITE_PUBLIC_CHAIN === "sepolia"
         ? "https://ethereum-sepolia.preview.apibara.org"
         : "https://ethereum.preview.apibara.org",
-    finality: "pending",
-    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 204_33_152n,
+    finality: "accepted",
+    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 215_30_000n,
     filter: {
       logs: [
         {
