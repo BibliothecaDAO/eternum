@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 
 export function SettingsPage() {
   return (
-    <div className="container py-6">
+    <div className="container p-4">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
       <div className="space-y-4">
         <Card>
