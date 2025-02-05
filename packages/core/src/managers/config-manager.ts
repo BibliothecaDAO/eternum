@@ -23,6 +23,16 @@ export class ClientConfigManager {
   private config!: Config;
   resourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
+  resourceLaborOutput: Record<
+    number,
+    {
+      resource_rarity: number;
+      depreciation_percent_num: number;
+      depreciation_percent_denom: number;
+      wheat_burn_per_labor: number;
+      fish_burn_per_labor: number;
+    }
+  > = {};
   hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   buildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
@@ -35,6 +45,7 @@ export class ClientConfigManager {
 
     this.initializeResourceInputs();
     this.initializeResourceOutput();
+    this.initializeResourceLaborOutput();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
     this.initializeResourceBuildingCosts();
@@ -112,6 +123,14 @@ export class ClientConfigManager {
         amount: resourceOutput,
       };
     }
+  }
+
+  private initializeResourceLaborOutput() {
+    this.resourceLaborOutput = Object.fromEntries(
+      Object.entries(this.config.resources.resourceProductionByLaborParams)
+        .filter(([key, value]) => value.resource_rarity > 0)
+        .map(([key, value]) => [Number(key), value]),
+    );
   }
 
   private initializeHyperstructureTotalCosts() {

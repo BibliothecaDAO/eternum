@@ -1,4 +1,9 @@
-import { ResourcesIds, type ProductionByLaborParams, type ResourceInputs, type ResourceOutputs } from "@bibliothecadao/eternum";
+import {
+  ResourcesIds,
+  type ProductionByLaborParams,
+  type ResourceInputs,
+  type ResourceOutputs,
+} from "@bibliothecadao/eternum";
 
 // weight in kg
 export const RESOURCES_WEIGHTS_GRAM: { [key in ResourcesIds]: number } = {

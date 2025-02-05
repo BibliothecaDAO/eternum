@@ -295,7 +295,7 @@ const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; en
             notation: "compact",
             maximumFractionDigits: 1,
           }).format(divideByPrecision(balance || 0))}
-          <ResourceIcon className="ml-1" isLabor={false} withTooltip={false} resource={trait || ""} size="xs" />
+          <ResourceIcon className="ml-1" withTooltip={false} resource={trait || ""} size="xs" />
         </span>
       </div>
     </BaseStructureExtraContent>

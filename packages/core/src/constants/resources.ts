@@ -215,7 +215,7 @@ export const resources: Array<Resources> = [
   },
   {
     trait: "Dragonhide",
-    value: 23,
+    value: 22,
     colour: "#ec4899",
     id: 22,
     description:
@@ -421,6 +421,7 @@ export const GET_RESOURCE_TIER = (resource: ResourcesIds): ResourceTier => {
 
 export const RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
+  labor: [ResourcesIds.Labor],
   military: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],
   transport: [ResourcesIds.Donkey],
   food: [ResourcesIds.Fish, ResourcesIds.Wheat],

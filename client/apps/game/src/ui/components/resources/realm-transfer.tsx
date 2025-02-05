@@ -105,7 +105,6 @@ export const RealmTransfer = memo(
         <div className="p-4">
           <div>
             <ResourceIcon
-              isLabor={false}
               withTooltip={false}
               resource={findResourceById(resource)?.trait as string}
               size="xxl"
