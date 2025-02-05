@@ -10,17 +10,15 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 
-import { marketPlaceClientBuilder } from "@/lib/ark/client";
 import { useAccount } from "@starknet-react/core";
-import { realmsQueryOptions } from "@/queryOptions/realmsQueryOptions";
-import { useSuspenseQuery } from "@tanstack/react-query";
+
 import { useAccount as useL1Account } from "wagmi";
 import { trpc } from "@/router";
 
 import BridgeSidebar from "@/components/modules/realms/bridge-sidebar";
 import { getCoreRowModel, getPaginationRowModel, RowSelectionState, useReactTable } from "@tanstack/react-table";
-import { CollectionAddresses, ChainId } from "@realms-world/constants";
-import { SUPPORTED_L1_CHAIN_ID, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { CollectionAddresses } from "@realms-world/constants";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 
 export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
@@ -30,18 +28,11 @@ function RouteComponent() {
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
 
-
-  const l1RealmsQuery = trpc.l1Realms.useQuery({address: l1Address});
+  const l1RealmsQuery = trpc.l1Realms.useQuery({address: l1Address},{refetchInterval: 10000});
   const l1Realms = l1RealmsQuery.data
 
-  const arkClient = marketPlaceClientBuilder(window.fetch.bind(window));
-  const { data: realms } = useSuspenseQuery(
-    realmsQueryOptions({
-      walletAddress: l2Address ?? "",
-      client: arkClient,
-      collectionAddress: CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as string,
-    })
-  );
+  const l2RealmsQuery = trpc.realms.useQuery({address: l2Address, collectionAddress: CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as string}, {refetchInterval: 10000});
+  const l2Realms = l2RealmsQuery.data
 
   const [selectedAsset, setSelectedAsset] = useState<"Ethereum" | "Starknet">(
     "Ethereum"
@@ -61,14 +52,14 @@ function RouteComponent() {
       );
     } else {
       return (
-        realms?.data.map((realm) => ({
+        l2Realms?.data.map((realm) => ({
           token_id: realm.token_id,
           name: realm.metadata?.name,
           attributes: realm.metadata?.attributes,
         })) ?? []
       );
     }
-  }, [selectedAsset, realms, l1Realms]);
+  }, [selectedAsset, l2Realms, l1Realms]);
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
@@ -148,6 +139,7 @@ function RouteComponent() {
       </SidebarInset>
       <BridgeSidebar
         selectedRows={selectedRows}
+        setRowSelection={setRowSelection}
         selectedAsset={selectedAsset}
       />
     </SidebarProvider>

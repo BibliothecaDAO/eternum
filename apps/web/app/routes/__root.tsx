@@ -17,7 +17,6 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 
 import { Header } from "@/components/layout/header";
 import { StarknetProvider } from "@/providers/starknet";
-import { ArkClient } from "@/lib/ark/client";
 import { ThemeProvider } from "@/providers/theme";
 import "@rainbow-me/rainbowkit/styles.css";
 
@@ -25,9 +24,9 @@ import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import { mainnet, sepolia} from "wagmi/chains";
 import { env } from "env";
+import { Toaster } from "@/components/ui/toaster";
 export interface RouterAppContext {
   trpcQueryUtils: typeof trpcQueryUtils;
-  arkClient: ArkClient;
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
@@ -67,6 +66,7 @@ function RootComponent() {
           </div>*/}
                   </SidebarInset>
                 </div>
+                <Toaster />
               </SidebarProvider>
             </ThemeProvider>
           </StarknetProvider>

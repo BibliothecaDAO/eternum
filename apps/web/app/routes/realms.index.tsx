@@ -1,12 +1,9 @@
 import { RealmCard } from "@/components/modules/realms/realm-card";
-import { marketPlaceClientBuilder } from "@/lib/ark/client";
-import { realmsQueryOptions } from "@/queryOptions/realmsQueryOptions";
-import { CollectionAddresses, ChainId } from "@realms-world/constants";
+import { trpc } from "@/router";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { CollectionAddresses } from "@realms-world/constants";
 import { useAccount } from "@starknet-react/core";
-import {
-  useQueryErrorResetBoundary,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useQueryErrorResetBoundary } from "@tanstack/react-query";
 import {
   createFileRoute,
   ErrorComponent,
@@ -18,7 +15,6 @@ import React from "react";
 export class RealmsNotFoundError extends Error {}
 
 export const Route = createFileRoute("/realms/")({
- 
   errorComponent: PostErrorComponent,
   component: RealmsComponent,
 });
@@ -47,24 +43,32 @@ export function PostErrorComponent({ error }: ErrorComponentProps) {
   );
 }
 function RealmsComponent() {
-  //const postId = Route.useParams().postId
-  const arkClient = marketPlaceClientBuilder(window.fetch.bind(window));
-  const {address} = useAccount()
+  const { address } = useAccount();
 
-  const { data: realms } = useSuspenseQuery(
-    realmsQueryOptions({
-      walletAddress: address,
-      client: arkClient,
-      collectionAddress: CollectionAddresses.realms[ChainId.SN_MAIN] as string,
-    })
+  const l2RealmsQuery = trpc.realms.useQuery(
+    {
+      address: address,
+      collectionAddress: CollectionAddresses.realms[
+        SUPPORTED_L2_CHAIN_ID
+      ] as string,
+    },
+    { refetchInterval: 10000 }
   );
+  const l2Realms = l2RealmsQuery.data;
+
+  if (!address) {
+    return <div>Connect Starknet Wallet to view your Realms</div>;
+  }
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-4">
-      {realms?.data.map((realm) => {
-        return (
-          <RealmCard key={realm.token_id} token={realm} isGrid={true} />
-        );
-      })}
+      {l2Realms?.data.length
+        ? l2Realms?.data.map((realm) => {
+            return (
+              <RealmCard key={realm.token_id} token={realm} isGrid={true} />
+            );
+          })
+        : "No Realms Found in wallet"}
     </div>
   );
 }

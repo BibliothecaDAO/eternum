@@ -2,12 +2,11 @@
 
 import { useCallback } from "react";
 import { StarknetBridgeRealms as L1_REALMS_BRIDGE_ABI } from "@/abi/L1/StarknetBridgeRealms";
-import { SUPPORTED_L1_CHAIN_ID } from "@/constants/env";
-import { hash, shortString, uint256 } from "starknet";
-import { parseGwei } from "viem";
+import { uint256 } from "starknet";
 import { useWriteContract } from "wagmi";
 
 import { REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
+import { SUPPORTED_L1_CHAIN_ID } from "@/utils/utils";
 
 const FUNCTION = "withdrawTokens";
 

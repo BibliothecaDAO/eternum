@@ -10,6 +10,7 @@ import { eq, or, desc } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 import { realmsBridgeRequests } from "@realms-world/db/schema";
 import { CollectionAddresses, Collections, ChainId } from "@realms-world/constants";
+import { PortfolioCollectionApiResponse } from "@/lib/ark/getPortfolioTokens";
 const SUPPORTED_L1_CHAIN_ID =
 process.env.VITE_PUBLIC_CHAIN == "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
 /**
@@ -129,10 +130,41 @@ const appRouter = t.router({
           }
         );
         const data = await response.json();
-        console.log(data)
         return data as paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"];
       }
     }),
+  realms: t.procedure
+  .input(
+    z.object({
+      address: z.string().optional(),
+      collectionAddress: z.string().optional(),
+      itemsPerPage: z.number().optional().default(100),
+      page: z.number().optional().default(1),
+    }).optional()
+  )
+  .query(async (req) => {
+    if (req.input?.address) {
+      const {address, itemsPerPage, page, collectionAddress} = req.input;
+      const queryParams = [
+        `items_per_page=${itemsPerPage}`,
+        `page=${page}`,
+        collectionAddress && `collection=${collectionAddress}`,
+      ];
+
+      const response = await fetch(
+        `${process.env.VITE_PUBLIC_ARK_MARKETPLACE_API}/portfolio/${address}?${queryParams.join("&")}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
+      const data = await response.json();
+      return data as PortfolioCollectionApiResponse;
+    }
+  }),
 });
 
 export type AppRouter = typeof appRouter;

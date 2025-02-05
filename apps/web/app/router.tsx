@@ -6,15 +6,14 @@ import {
 } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import { createTRPCQueryUtils, createTRPCReact } from "@trpc/react-query";
-import { routerWithQueryClient } from "@tanstack/react-router-with-query";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
 import { Spinner } from "./routes/-components/spinner";
 import type { AppRouter } from "../trpc-server.handler";
-import { marketPlaceClientBuilder } from "./lib/ark/client";
 import SuperJSON from "superjson";
+import { inferRouterOutputs } from "@trpc/server";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +34,7 @@ export const queryClient = new QueryClient({
 });
 
 export const trpc = createTRPCReact<AppRouter>({});
+export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export const trpcClient = trpc.createClient({
   links: [
@@ -53,7 +53,6 @@ export const trpcQueryUtils = createTRPCQueryUtils({
   client: trpcClient,
 });
 
-export const arkClient = marketPlaceClientBuilder(window.fetch.bind(window));
 
 export function createRouter() {
   const router = createTanStackRouter({
@@ -61,7 +60,6 @@ export function createRouter() {
     defaultPreload: "intent",
     context: {
       trpcQueryUtils,
-      arkClient,
     },
     defaultPendingComponent: () => (
       <div className={`p-2 text-2xl`}>

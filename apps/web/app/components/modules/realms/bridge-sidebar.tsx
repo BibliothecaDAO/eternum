@@ -10,27 +10,18 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 
-import { Row } from "@tanstack/react-table";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { Row, RowSelectionState } from "@tanstack/react-table";
+import { ChevronRight } from "lucide-react";
 import { Realm } from "./bridge-table";
 import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount as useL1Account } from "wagmi";
-import { useAccount, useExplorer } from "@starknet-react/core";
+import { useAccount } from "@starknet-react/core";
 import { trpc } from "@/router";
-import { shortenAddress } from "@/utils/utils";
-import { Badge } from "@/components/ui/badge";
-import { ChainId } from "@realms-world/constants";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+
 import { useMemo } from "react";
 import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
 import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
-import { TransactionChains } from "./bridge-tx-chains";
 import {
   Collapsible,
   CollapsibleContent,
@@ -41,11 +32,13 @@ import BridgeTransactionHistory from "./bridge-tx";
 interface BridgeSidebarProps {
   selectedRows: Row<Realm>[];
   selectedAsset: string;
+  setRowSelection: (rowSelection: RowSelectionState) => void;
 }
 
 const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   selectedRows,
   selectedAsset,
+  setRowSelection
 }) => {
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
@@ -54,7 +47,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   const bridgeTxsQuery = trpc.bridgeTransactions.useQuery({
     l1Account: l1Address?.toLowerCase(),
     l2Account: l2Address,
-  }, {enabled: !!l1Address || !!l2Address});
+  }, {enabled: !!l1Address || !!l2Address, refetchInterval: 10000});
   const bridgeTxs = bridgeTxsQuery.data || [];
 
   const {
@@ -103,7 +96,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
     } else {
       hash = await initiateWithdraw();
     }
-    /*if (hash) {*/
+    if (hash) {
     toast({
       title: "Bridge Realms",
       description:
@@ -111,7 +104,8 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           ? `${selectedRows.length} Realms will be appear in your L2 wallet in a few minutes`
           : `${selectedRows.length} Realms will require a transction in ~6 hours to finalize your withdrawal`,
     });
-    /*}*/
+    setRowSelection({});
+    }
   };
 
 

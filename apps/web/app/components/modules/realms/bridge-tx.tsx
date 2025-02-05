@@ -13,22 +13,39 @@ import { useExplorer } from "@starknet-react/core";
 import { Link } from "@tanstack/react-router";
 import { cn, shortenAddress } from "@/utils/utils";
 import { ArrowRight } from "lucide-react";
+import { useWriteFinalizeWithdrawRealms } from "@/hooks/bridge/useWriteFinalizeWithdrawRealms";
+import { toast } from "@/hooks/use-toast";
 
 const BridgeTransactionHistory: React.FC<{
   transactions: RouterOutputs["bridgeTransactions"];
 }> = ({ transactions }) => {
   const explorer = useExplorer();
+  const { writeAsync, data, isPending: isWithdrawPending } = useWriteFinalizeWithdrawRealms();
+
+  const handleCompleteWithdraw = async (
+    transaction: RouterOutputs["bridgeTransactions"][number]
+  ) => {
+    console.log(transaction);
+    const hash = await writeAsync({
+      hash: transaction.req_hash,
+      l1Address: transaction.to_address,
+      l2Address: transaction.from_address,
+      tokenIds: transaction.token_ids.map((id) => BigInt(id)),
+    });
+    if (hash) {
+      toast({
+        title: "Withdraw completed",
+        description: `Realms withdrawn to your Ethereum account at ${hash}`,
+      });
+    }
+  };
   return (
     <Accordion type="single" collapsible>
       {transactions?.map((transaction) => {
-        const isCompleted = useMemo(
-          () =>
-            transaction.events.some(
-              (event) =>
-                event.type === "withdraw_completed_l1" ||
-                event.type === "withdraw_completed_l2"
-            ),
-          [transaction.events]
+        const isCompleted = transaction.events.some(
+          (event) =>
+            event.type === "withdraw_completed_l1" ||
+            event.type === "withdraw_completed_l2"
         );
 
         return (
@@ -56,20 +73,27 @@ const BridgeTransactionHistory: React.FC<{
                       </Badge>
                     )}
                   </div>
-                  {isCompleted ? <span className="text-muted-foreground">Completed</span> :
-                  transaction.events.some(event => event.type === "withdraw_available_l1") ? (
+                  {isCompleted ? (
+                    <span className="text-muted-foreground">Completed</span>
+                  ) : transaction.events.some(
+                      (event) => event.type === "withdraw_available_l1"
+                    ) ? (
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
+                        handleCompleteWithdraw(transaction);
                         // Handle complete withdraw here.
                       }}
                       className="rounded border-green-500 mt-2 z-20"
+                      disabled={isWithdrawPending}
                     >
                       Complete Withdraw
                     </Button>
-                  ):  <span className="text-muted-foreground">In Progress</span>}
+                  ) : (
+                    <span className="text-muted-foreground">In Progress</span>
+                  )}
                 </div>
               </div>
             </AccordionTrigger>
