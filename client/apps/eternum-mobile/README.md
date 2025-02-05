@@ -1,50 +1,60 @@
-# React + TypeScript + Vite
+# Eternum Mobile Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A mobile game client built with:
 
-Currently, two official plugins are available:
+- React + TypeScript
+- wouter for routing
+- zustand for state management
+- shadcn/ui components
+- TailwindCSS
+- pnpm package manager
+- Vite
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Project Structure (Feature-Sliced Design)
 
-## Expanding the ESLint configuration
+### Layers
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+Modules on one layer can only know about and import from modules from the layers strictly below. (e.g. `src/widgets` can
+only import from `src/features`, `src/shared`, you cannot import from `src/pages` or `src/app` or `src/widgets`)
 
-- Configure the top-level `parserOptions` property like this:
+- `src/app/` — everything that makes the app run — routing, entrypoints, global styles, providers.
+- `src/pages/` — full pages or large parts of a page in nested routing.
+- `src/widgets/` — large self-contained chunks of functionality or UI, usually delivering an entire use case.
+- `src/features/` — reused implementations of entire product features, i.e. actions that bring business value to the
+  user.
+- `src/shared/` — reusable functionality, especially when it's detached from the specifics of the project/business
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### Slices
+
+Folders inside Layers are called Slices and are grouped by business domain. Slices cannot use other slices on the same
+layer, and that helps with high cohesion and low coupling.
+
+Example:
+
+```
+src/
+  - pages/
+    - login/
+    - worldmap/
+    - settings/
+  - widgets/
+    - resource-list/
+    - navigation/
+    - header/
+  - features/
+    - hyperstructures/
+    - trade/
+    - armies/
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+### Segments
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+Slices are grouped into segments.
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+Example:
+
+- `ui` — everything related to UI display: UI components, date formatters, styles, etc.
+- `api` — backend interactions: request functions, data types, mappers, etc.
+- `model` — the data model: schemas, interfaces, stores, and business logic.
+- `lib` — library code that other modules on this slice need.
+- `config` — configuration files and feature flags.
