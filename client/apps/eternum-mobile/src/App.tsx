@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./App.css";
-import { Button } from "./shared/components/ui/button";
+import { Button } from "./shared/ui/button";
 
 function App() {
   const [count, setCount] = useState(0);
