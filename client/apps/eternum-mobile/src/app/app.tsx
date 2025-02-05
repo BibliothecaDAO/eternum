@@ -1,9 +1,8 @@
-import { LoginPage } from "@/pages/login/ui/login-page";
-import { OverviewPage } from "@/pages/overview/ui/overview-page";
-import { SettingsPage } from "@/pages/settings/ui/settings-page";
+import { LoginPage } from "@/pages/login";
+import { RealmPage } from "@/pages/realm";
+import { SettingsPage } from "@/pages/settings";
 import { Route, Switch } from "wouter";
 import { Layout } from "./ui/layout";
-
 function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -11,7 +10,7 @@ function App() {
         <Route path="/" component={LoginPage} />
         <Route path="/overview">
           <Layout>
-            <OverviewPage />
+            <RealmPage />
           </Layout>
         </Route>
         <Route path="/settings">

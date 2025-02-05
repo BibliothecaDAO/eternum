@@ -13,7 +13,9 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 
 const navigation = [
-  { name: "Overview", href: "/overview" },
+  { name: "Realm", href: "/realm" },
+  { name: "Trade", href: "/trade" },
+  { name: "Chat", href: "/chat" },
   { name: "Settings", href: "/settings" },
 ];
 
@@ -70,7 +72,7 @@ export function Header() {
           <SheetContent side="left">
             <SheetHeader>
               <SheetTitle>Eternum</SheetTitle>
-              <SheetDescription>Where do you want to go?</SheetDescription>
+              <SheetDescription>Game Navigation</SheetDescription>
             </SheetHeader>
             <nav className="flex flex-col space-y-4 py-4">
               {navigation.map((item) => (
