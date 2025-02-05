@@ -1,6 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { RealmInfoHeader } from "@/widgets/realm-info-header";
 import { RealmLevels } from "@bibliothecadao/eternum";
+import { ClaimTab, ManageTab, MilitaryTab, OverviewTab } from "./tabs";
 
 export const RealmPage = () => {
   return (
@@ -13,12 +14,31 @@ export const RealmPage = () => {
         coordinates={{ x: 10, y: 10 }}
         realmNumber={6132}
       />
-      <Card>
-        <CardHeader>
-          <CardTitle>Realm Overview</CardTitle>
-        </CardHeader>
-        <CardContent>{/* Realm content will go here */}</CardContent>
-      </Card>
+
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="manage">Manage</TabsTrigger>
+          <TabsTrigger value="military">Military</TabsTrigger>
+          <TabsTrigger value="claim">Claim</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-4">
+          <OverviewTab />
+        </TabsContent>
+
+        <TabsContent value="manage" className="mt-4">
+          <ManageTab />
+        </TabsContent>
+
+        <TabsContent value="military" className="mt-4">
+          <MilitaryTab />
+        </TabsContent>
+
+        <TabsContent value="claim" className="mt-4">
+          <ClaimTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
