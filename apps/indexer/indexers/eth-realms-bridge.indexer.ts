@@ -169,8 +169,9 @@ export function createIndexer<
               to_address: numberToHex(decoded.args.payload[3]),
               token_ids: tokenIds,
               timestamp: header?.timestamp,
-              hash: log.transactionHash,
+              tx_hash: log.transactionHash,
               id: decoded.args.payload,
+              req_hash: uint256.uint256ToBN({low: decoded.args.payload[0], high: decoded.args.payload[1]}),
             })
             .onConflictDoNothing();
 

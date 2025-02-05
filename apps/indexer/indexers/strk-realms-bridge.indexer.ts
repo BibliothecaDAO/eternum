@@ -98,8 +98,9 @@ export function createIndexer<
               to_address: args.req_content.owner_l2,
               token_ids: args.req_content.ids,
               timestamp: block?.header?.timestamp,
-              hash: transactionHash,
-              id
+              tx_hash: transactionHash,
+              id,
+              req_hash: args.req_content.hash
             })
             .onConflictDoNothing();
 
@@ -136,7 +137,8 @@ export function createIndexer<
               to_address: numberToHex(args.req_content.owner_l1.address),
               token_ids: args.req_content.ids,
               timestamp: block?.header?.timestamp,
-              hash: transactionHash,
+              tx_hash: transactionHash,
+              req_hash: args.req_content.hash,
               id
             })
             .onConflictDoNothing();
