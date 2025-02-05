@@ -698,3 +698,45 @@ export interface DetachLordsProps extends SystemSigner {
 export interface MintTestLordsProps extends SystemSigner {
   lords_address: num.BigNumberish;
 }
+
+/**
+ * Props for burning resources to produce labor
+ */
+export interface BurnOtherResourcesForLaborProductionProps {
+  /** ID of the realm entity */
+  entity_id: number;
+  /** Array of resource types to burn */
+  resource_types: number[];
+  /** Array of resource amounts to burn */
+  resource_amounts: number[];
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
+}
+
+/**
+ * Props for burning labor to produce other resources
+ */
+export interface BurnLaborResourcesForOtherProductionProps {
+  /** ID of the realm entity */
+  from_entity_id: number;
+  /** Array of labor amounts to burn */
+  labor_amounts: number[];
+  /** Array of resource types to produce */
+  produced_resource_types: number[];
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
+}
+
+/**
+ * Props for burning predefined resources to produce other resources
+ */
+export interface BurnOtherPredefinedResourcesForResourcesProps {
+  /** ID of the realm entity */
+  from_entity_id: number;
+  /** Array of resource types to produce */
+  produced_resource_types: number[];
+  /** Array of production tick counts */
+  production_tick_counts: number[];
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
+}

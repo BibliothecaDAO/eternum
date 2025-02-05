@@ -299,6 +299,24 @@ export function createSystemCalls({
     }
   };
 
+  const burn_other_resources_for_labor_production = async (
+    props: SystemProps.BurnOtherResourcesForLaborProductionProps,
+  ) => {
+    await provider.burn_other_resources_for_labor_production(props);
+  };
+
+  const burn_labor_resources_for_other_production = async (
+    props: SystemProps.BurnLaborResourcesForOtherProductionProps,
+  ) => {
+    await provider.burn_labor_resources_for_other_production(props);
+  };
+
+  const burn_other_predefined_resources_for_resources = async (
+    props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps,
+  ) => {
+    await provider.burn_other_predefined_resources_for_resources(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -371,6 +389,10 @@ export function createSystemCalls({
     bridge_resources_into_realm: withAuth(bridge_resources_into_realm),
     bridge_start_withdraw_from_realm: withAuth(bridge_start_withdraw_from_realm),
     bridge_finish_withdraw_from_realm: withAuth(bridge_finish_withdraw_from_realm),
+
+    burn_other_resources_for_labor_production: withAuth(burn_other_resources_for_labor_production),
+    burn_labor_resources_for_other_production: withAuth(burn_labor_resources_for_other_production),
+    burn_other_predefined_resources_for_resources: withAuth(burn_other_predefined_resources_for_resources),
   };
 
   return systemCalls;

@@ -14,7 +14,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface ProductionBodyProps {
   realmEntityId: ID;
@@ -167,6 +167,9 @@ const ProductionControls = ({
   setProductionAmount,
   handleProduce,
   realm,
+  ticks,
+  setTicks,
+  isLoading,
 }: {
   selectedResource: number | null;
   useRawResources: boolean;
@@ -175,6 +178,9 @@ const ProductionControls = ({
   setProductionAmount: (value: number) => void;
   handleProduce: () => void;
   realm: RealmInfoType;
+  ticks: number | undefined;
+  setTicks: (value: number) => void;
+  isLoading: boolean;
 }) => {
   if (!selectedResource) {
     return (
@@ -191,9 +197,20 @@ const ProductionControls = ({
     },
   } = useDojo();
 
-  const inputResources = useMemo(() => {
-    return configManager.resourceInputs[selectedResource];
+  const outputResource = useMemo(() => {
+    return configManager.resourceOutput[selectedResource];
   }, [selectedResource]);
+
+  const inputResources = useMemo(() => {
+    return configManager.resourceInputs[selectedResource].map((resource) => ({
+      ...resource,
+      amount: resource.amount / outputResource.amount,
+    }));
+  }, [selectedResource, outputResource]);
+
+  useEffect(() => {
+    setTicks(Math.floor(productionAmount / outputResource.amount));
+  }, [productionAmount]);
 
   const resourceBalances = useMemo(() => {
     if (!selectedResource || !inputResources) return {};
@@ -276,7 +293,7 @@ const ProductionControls = ({
                   <div className="flex items-center justify-between w-full">
                     <div className="w-2/3">
                       <NumberInput
-                        value={input.amount * productionAmount}
+                        value={Math.round(input.amount * productionAmount)}
                         onChange={(value) => handleInputChange(value, input.resource)}
                         min={0}
                         max={resourceBalances[input.resource] || 0}
@@ -318,20 +335,50 @@ const ProductionControls = ({
       </div>
 
       {/* Output */}
-      <div className="mb-4">
-        <h4 className="text-xl mb-2">Output</h4>
-        <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" />
-          <NumberInput value={productionAmount} onChange={(value) => setProductionAmount(value)} min={1} />
-          <span className="text-sm text-gold/60">
-            → {productionAmount} {ResourcesIds[selectedResource]}
+      <div className="mb-4 p-4 rounded-lg border-2 border-gold/30">
+        <h4 className="text-xl mb-4 text-gold">Output</h4>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" />
+            <span className="text-gold/80">Amount:</span>
+          </div>
+          <NumberInput
+            value={Math.round(productionAmount)}
+            onChange={(value) => setProductionAmount(value)}
+            min={1}
+            className="rounded-md border-gold/30 hover:border-gold/50"
+          />
+        </div>
+        <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
+          <span className="text-gold/80">Production Time:</span>
+          <span className="font-medium">
+            {ticks
+              ? (() => {
+                  const days = Math.floor(ticks / (24 * 60 * 60));
+                  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
+                  const minutes = Math.floor((ticks % (60 * 60)) / 60);
+                  const seconds = ticks % 60;
+
+                  return [
+                    days > 0 ? `${days}d ` : "",
+                    hours > 0 ? `${hours}h ` : "",
+                    minutes > 0 ? `${minutes}m ` : "",
+                    `${seconds}s`,
+                  ].join("");
+                })()
+              : "0s"}
           </span>
-          <span className="ml-2">Time: 2:30</span>
         </div>
       </div>
 
       <div className="flex justify-center">
-        <Button onClick={handleProduce} disabled={isOverBalance} variant="primary">
+        <Button
+          onClick={handleProduce}
+          disabled={isOverBalance}
+          isLoading={isLoading}
+          variant="primary"
+          className="px-8 py-2"
+        >
           Start Production
         </Button>
       </div>
@@ -343,15 +390,40 @@ export const ProductionBody = ({ realm }: { realm: RealmInfoType }) => {
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
   const [useRawResources, setUseRawResources] = useState(true);
   const [productionAmount, setProductionAmount] = useState(1);
+  const [ticks, setTicks] = useState<number | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleProduce = () => {
-    if (!selectedResource) return;
+  const {
+    setup: {
+      account: { account },
+      systemCalls: { burn_other_predefined_resources_for_resources },
+    },
+  } = useDojo();
 
-    console.log({
-      resource: ResourcesIds[selectedResource],
-      type: useRawResources ? "raw" : "labor",
-      amount: productionAmount,
-    });
+  const handleProduce = async () => {
+    if (!selectedResource || !ticks) return;
+
+    setIsLoading(true);
+
+    const calldata = {
+      from_entity_id: realm.entityId,
+      produced_resource_types: [selectedResource],
+      production_tick_counts: [ticks],
+    };
+
+    console.log({ calldata });
+
+    try {
+      await burn_other_predefined_resources_for_resources({
+        ...calldata,
+        signer: account,
+      });
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error(error);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -366,6 +438,9 @@ export const ProductionBody = ({ realm }: { realm: RealmInfoType }) => {
         setProductionAmount={setProductionAmount}
         handleProduce={handleProduce}
         realm={realm}
+        ticks={ticks}
+        setTicks={setTicks}
+        isLoading={isLoading}
       />
     </div>
   );

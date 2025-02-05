@@ -1,7 +1,7 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, gramToKg } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   divideByPrecision,
@@ -32,31 +32,27 @@ export const ResourceChip = ({
   const resourceManager = useResourceManager(entityId, resourceId);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
-
   const [showPerHour, setShowPerHour] = useState(true);
-
   const [balance, setBalance] = useState(0);
 
   const getBalance = useCallback(() => {
     return resourceManager.balance(tick);
   }, [resourceManager, tick]);
 
-  const getProduction = useCallback(() => {
-    return resourceManager.getProduction();
-  }, [resourceManager]);
-
   const production = useMemo(() => {
     setBalance(getBalance());
-    return getProduction();
-  }, [getBalance, getProduction]);
+    return resourceManager.getProduction();
+  }, [getBalance, resourceManager]);
 
   const maxAmountStorable = useMemo(() => {
     return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeight(resourceId) || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
 
+  const { currentDefaultTick: currentTick } = useBlockTimestamp();
+
   const timeUntilValueReached = useMemo(() => {
-    return resourceManager.timeUntilValueReached(getBlockTimestamp().currentDefaultTick, 0);
-  }, [resourceManager, production?.production_rate]);
+    return resourceManager.timeUntilValueReached(currentTick);
+  }, [resourceManager, currentTick]);
 
   const productionRate = useMemo(() => {
     return Number(divideByPrecision(Number(production?.production_rate || 0)));
@@ -64,17 +60,24 @@ export const ResourceChip = ({
 
   const productionEndsAt = useMemo(() => {
     return resourceManager.getProductionEndsAt();
-  }, [production]);
+  }, [resourceManager]);
+
+  const isActive = useMemo(() => {
+    return resourceManager.isActive();
+  }, [resourceManager]);
+
+  if (resourceManager.isFood()) {
+    console.log({ productionFood: resourceManager.getProduction() });
+  }
 
   useEffect(() => {
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
-
-    let realTick = getBlockTimestamp().currentDefaultTick;
+    let realTick = currentTick;
 
     const newBalance = resourceManager.balance(realTick);
     setBalance(newBalance);
 
-    if (Math.abs(productionRate) > 0) {
+    if (isActive) {
       const interval = setInterval(() => {
         realTick += 1;
         const newBalance = resourceManager.balance(realTick);
@@ -82,7 +85,7 @@ export const ResourceChip = ({
       }, tickTime);
       return () => clearInterval(interval);
     }
-  }, [setBalance, resourceManager, resourceId, production]);
+  }, [resourceManager, currentTick, isActive]);
 
   const icon = useMemo(
     () => (
@@ -94,12 +97,12 @@ export const ResourceChip = ({
         className="mr-3 self-center"
       />
     ),
-    [resourceId],
+    [resourceId, isLabor],
   );
 
   const reachedMaxCap = useMemo(() => {
-    return maxAmountStorable === balance && Math.abs(productionRate) > 0;
-  }, [maxAmountStorable, balance, production]);
+    return maxAmountStorable === balance && isActive;
+  }, [maxAmountStorable, balance, isActive]);
 
   const handleMouseEnter = useCallback(() => {
     setTooltip({
@@ -134,7 +137,7 @@ export const ResourceChip = ({
               : ""}
           </div>
 
-          {Math.abs(productionRate) > 0 && productionEndsAt > getBlockTimestamp().currentDefaultTick ? (
+          {isActive && (productionEndsAt > currentTick || resourceManager.isFood()) ? (
             <div
               className={`${
                 productionRate < 0 ? "text-light-red" : "text-green/80"
