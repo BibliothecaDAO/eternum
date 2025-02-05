@@ -1,12 +1,12 @@
-import { FC } from "react";
-
-interface RealmInfoProps {
+export const RealmInfo = ({
+  level = 1,
+  population = 100,
+  storage = 1000,
+}: {
   level: number;
   population: number;
   storage: number;
-}
-
-export const RealmInfo: FC<RealmInfoProps> = ({ level = 1, population = 100, storage = 1000 }) => (
+}) => (
   <div className="bg-brown/20 p-4 rounded-lg">
     <h3 className="text-2xl font-bold mb-2">Realm Info</h3>
     <div className="grid grid-cols-4 gap-4">

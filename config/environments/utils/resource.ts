@@ -77,7 +77,7 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
 export const RESOURCE_PRODUCTION_THROUGH_LABOR: ProductionByLaborParams = {
   [ResourcesIds.Wood]: {
     resource_rarity: 100,
-    depreciation_percent_num: 100,
+    depreciation_percent_num: 10,
     depreciation_percent_denom: 100,
     wheat_burn_per_labor: 250_000,
     fish_burn_per_labor: 300_000,
