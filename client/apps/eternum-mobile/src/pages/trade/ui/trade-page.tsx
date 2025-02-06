@@ -1,5 +1,7 @@
 import { Button } from "@/shared/ui/button";
+import { Card, CardContent } from "@/shared/ui/card";
 import { SwapInput } from "@/widgets/swap-input";
+import { resources } from "@bibliothecadao/eternum";
 import { ArrowDownUp } from "lucide-react";
 import { useState } from "react";
 
@@ -18,6 +20,9 @@ export const TradePage = () => {
     setBuyAmount(sellAmount);
     setSellAmount(tempAmount);
   };
+
+  const sellResource = resources.find((r) => r.id === sellResourceId);
+  const buyResource = resources.find((r) => r.id === buyResourceId);
 
   return (
     <div className="container p-4 space-y-6">
@@ -49,6 +54,51 @@ export const TradePage = () => {
           onResourceChange={setBuyResourceId}
         />
       </div>
+
+      <Button className="w-full" size="lg" disabled={!buyAmount || !sellAmount}>
+        Swap {sellAmount} {sellResource?.trait} for {buyAmount} {buyResource?.trait}
+      </Button>
+
+      {/* Summary Section */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Price</span>
+            <span>
+              1 {sellResource?.trait} = 0.002 {buyResource?.trait}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Slippage</span>
+            <span className="text-red-500">-1.5%</span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Bank Owner Fees</span>
+            <span className="text-red-500">12 LORDS</span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">LP Fees</span>
+            <span className="text-red-500">5 LORDS</span>
+          </div>
+
+          <div className="h-px bg-border my-2" />
+
+          <div className="flex justify-between items-center text-lg font-medium">
+            <span>Total</span>
+            <div className="flex flex-col items-end">
+              <span>
+                {sellAmount} {sellResource?.trait}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                ≈ {buyAmount} {buyResource?.trait}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
