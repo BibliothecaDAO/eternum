@@ -1,9 +1,12 @@
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
+import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/shared/ui/drawer";
 import { Input } from "@/shared/ui/input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { ScrollArea } from "@/shared/ui/scroll-area";
 import { resources } from "@bibliothecadao/eternum";
+import { Search } from "lucide-react";
+import { useState } from "react";
 
 interface SwapInputProps {
   direction: "buy" | "sell";
@@ -14,6 +17,7 @@ interface SwapInputProps {
 }
 
 export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onResourceChange }: SwapInputProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
   // Dummy balance for demonstration
   const balance = Math.floor(Math.random() * 1000);
 
@@ -21,30 +25,62 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
     onAmountChange?.(Math.floor((balance * percentage) / 100));
   };
 
+  const selectedResource = resources.find((r) => r.id === resourceId);
+  const filteredResources = resources.filter((resource) =>
+    resource.trait.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
   return (
     <Card>
       <CardContent className="p-4 space-y-4">
         {/* Top section */}
         <div className="flex justify-between items-center">
           <div className="text-lg font-medium capitalize">{direction}</div>
-          <Select value={String(resourceId)} onValueChange={(value) => onResourceChange?.(Number(value))}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {resources.map((resource) => (
-                <SelectItem key={resource.id} value={String(resource.id)}>
-                  <div className="flex items-center gap-2">
-                    <ResourceIcon resourceId={resource.id} size={20} />
-                    <div className="flex flex-col">
-                      <span className="font-medium">{resource.trait}</span>
-                      <span className="text-xs text-muted-foreground">Balance: {balance}</span>
-                    </div>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button variant="outline" className="w-[200px] justify-between">
+                <div className="flex items-center gap-2">
+                  {selectedResource && <ResourceIcon resourceId={selectedResource.id} size={20} />}
+                  <span>{selectedResource?.trait}</span>
+                </div>
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <DrawerHeader>
+                <DrawerTitle>Select Resource</DrawerTitle>
+                <div className="relative mt-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search resources..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </DrawerHeader>
+              <ScrollArea className="h-[50vh] px-4">
+                <div className="space-y-2">
+                  {filteredResources.map((resource) => (
+                    <DrawerClose key={resource.id} asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => onResourceChange?.(resource.id)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <ResourceIcon resourceId={resource.id} size={24} />
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">{resource.trait}</span>
+                            <span className="text-xs text-muted-foreground">Balance: {balance}</span>
+                          </div>
+                        </div>
+                      </Button>
+                    </DrawerClose>
+                  ))}
+                </div>
+              </ScrollArea>
+            </DrawerContent>
+          </Drawer>
         </div>
 
         {/* Middle section - Amount input */}
@@ -59,7 +95,7 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
         {/* Bottom section */}
         <div className="flex justify-between items-center">
           <div className="text-sm text-muted-foreground">
-            Balance: {balance} {resources.find((r) => r.id === resourceId)?.trait}
+            Balance: {balance} {selectedResource?.trait}
           </div>
           <div className="flex gap-1">
             {[10, 25, 50, 100].map((percentage) => (
