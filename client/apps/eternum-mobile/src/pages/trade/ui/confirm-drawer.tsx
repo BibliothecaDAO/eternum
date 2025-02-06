@@ -33,8 +33,10 @@ export const ConfirmDrawer = ({
   // Reset state when drawer is closed
   useEffect(() => {
     if (!isOpen) {
-      setState("confirm");
-      setError("");
+      setTimeout(() => {
+        setState("confirm");
+        setError("");
+      }, 500);
     }
   }, [isOpen]);
 
