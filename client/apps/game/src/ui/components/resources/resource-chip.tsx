@@ -2,14 +2,12 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat, gramToKg } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   divideByPrecision,
   findResourceById,
   formatTime,
   ID,
-  ResourcesIds,
   TickIds,
   TimeFormat,
 } from "@bibliothecadao/eternum";
@@ -66,17 +64,6 @@ export const ResourceChip = ({
   const isActive = useMemo(() => {
     return resourceManager.isActive();
   }, [resourceManager]);
-
-  if (resourceManager.isFood()) {
-    console.log({ productionFood: resourceManager.getProduction() });
-  }
-
-  if (resourceManager.resourceId === ResourcesIds.Crossbowman) {
-    console.log({
-      productionCrossbowman: resourceManager.getProduction(),
-      currentTimestamp: getBlockTimestamp().currentDefaultTick,
-    });
-  }
 
   useEffect(() => {
     const tickTime = configManager.getTick(TickIds.Default) * 1000;

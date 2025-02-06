@@ -58,8 +58,6 @@ export const ResourceProductionControls = ({
       signer: account,
     };
 
-    console.log({ calldata });
-
     try {
       await burn_other_predefined_resources_for_resources(calldata);
     } catch (error) {
@@ -82,8 +80,6 @@ export const ResourceProductionControls = ({
         produced_resource_types: [selectedResource],
         signer: account,
       };
-
-      console.log({ calldata });
 
       try {
         await burn_labor_resources_for_other_production(calldata);
@@ -137,13 +133,6 @@ export const ResourceProductionControls = ({
   const isOverBalance = useMemo(() => {
     return Object.values(currentInputs).some(({ resource, amount }) => {
       const balance = resourceBalances[Number(resource)] || 0;
-      console.log({
-        balance,
-        amount,
-        productionAmount,
-        outputResource,
-        result: amount * productionAmount,
-      });
       return amount * productionAmount > balance;
     });
   }, [resourceBalances, productionAmount, currentInputs]);

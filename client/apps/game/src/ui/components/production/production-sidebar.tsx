@@ -2,7 +2,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getEntityIdFromKeys, ID, RealmInfo, resources } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 
 interface ProductionSidebarProps {
   realms: RealmInfo[];
@@ -68,7 +68,9 @@ const SidebarRealm = ({
   );
 };
 
-export const ProductionSidebar = ({ realms, selectedRealmEntityId, onSelectRealm }: ProductionSidebarProps) => {
+export const ProductionSidebar = memo(({ realms, selectedRealmEntityId, onSelectRealm }: ProductionSidebarProps) => {
+  console.log("production sidebar");
+
   return (
     <div className="space-y-4">
       {realms.map((realm) => (
@@ -81,4 +83,4 @@ export const ProductionSidebar = ({ realms, selectedRealmEntityId, onSelectRealm
       ))}
     </div>
   );
-};
+});

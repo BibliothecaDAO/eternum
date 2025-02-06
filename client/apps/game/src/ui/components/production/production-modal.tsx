@@ -1,8 +1,8 @@
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { RealmInfo } from "@bibliothecadao/eternum";
+import { ID, RealmInfo } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealms } from "@bibliothecadao/react";
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useCallback, useState } from "react";
 
 const ProductionSidebar = lazy(() =>
   import("./production-sidebar").then((module) => ({ default: module.ProductionSidebar })),
@@ -14,6 +14,14 @@ export const ProductionModal = () => {
   const playerRealms = usePlayerOwnedRealms();
   const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(playerRealms[0]);
 
+  const handleSelectRealm = useCallback(
+    (id: ID) => {
+      const realm = playerRealms.find((r) => r.entityId === id);
+      setSelectedRealm(realm);
+    },
+    [playerRealms],
+  );
+
   return (
     <ModalContainer size="full">
       <div className="production-modal-selector container border mx-auto grid grid-cols-12 bg-dark border-gold/30 h-full row-span-12 rounded-2xl relative">
@@ -23,10 +31,7 @@ export const ProductionModal = () => {
               <ProductionSidebar
                 realms={playerRealms}
                 selectedRealmEntityId={selectedRealm?.entityId || 0}
-                onSelectRealm={(id) => {
-                  const realm = playerRealms.find((r) => r.entityId === id);
-                  setSelectedRealm(realm);
-                }}
+                onSelectRealm={handleSelectRealm}
               />
             )}
           </Suspense>

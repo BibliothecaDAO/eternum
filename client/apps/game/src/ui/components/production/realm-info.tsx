@@ -1,7 +1,8 @@
 import { CapacityInfo } from "@/ui/modules/navigation/capacity-info";
 import { RealmInfo as RealmInfoType, StructureType } from "@bibliothecadao/eternum";
+import { memo } from "react";
 
-export const RealmInfo = ({ realm }: { realm: RealmInfoType }) => {
+export const RealmInfo = memo(({ realm }: { realm: RealmInfoType }) => {
   return (
     <div className="bg-brown/20 p-4 rounded-lg space-y-4">
       <h3 className="text-2xl font-bold">Realm Info</h3>
@@ -22,4 +23,4 @@ export const RealmInfo = ({ realm }: { realm: RealmInfoType }) => {
       </div>
     </div>
   );
-};
+});

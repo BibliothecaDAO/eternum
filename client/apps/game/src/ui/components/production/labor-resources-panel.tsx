@@ -23,8 +23,6 @@ export const LaborResourcesPanel = ({
   const laborConfig = getLaborConfig(selectedResource);
   const laborInputResources = laborConfig?.inputResources;
 
-  console.log({ laborInputResources, selectedResource });
-
   const handleInputChange = (value: number, inputResource: number) => {
     if (!laborInputResources) return;
     const resourceConfig = laborInputResources.find((r) => r.resource === inputResource);

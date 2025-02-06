@@ -73,7 +73,6 @@ export const LeftNavigationModule = memo(() => {
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
   const disableButtons = !structureIsMine && account.address !== "0x0";
-  console.log({ account, structureIsMine, disableButtons });
 
   const isRealm = useMemo(
     () => Boolean(structureInfo) && String(structureInfo?.structureCategory) === "Realm",

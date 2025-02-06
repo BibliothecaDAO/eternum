@@ -37,8 +37,6 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
       signer: account,
     };
 
-    console.log({ calldata });
-
     try {
       await burn_other_resources_for_labor_production(calldata);
     } catch (error) {
@@ -84,7 +82,6 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
       (id) => typeof id === "number" && !selectedResources.map((r) => r.id).includes(id as number),
     );
     if (availableResourceIds.length > 0) {
-      console.log({ availableResourceIds });
       setSelectedResources([...selectedResources, { id: availableResourceIds[0] as number, amount: 0 }]);
     }
   };
