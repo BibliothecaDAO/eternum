@@ -7,9 +7,11 @@ import { RealmInfo } from "./realm-info";
 export const ProductionBody = ({ realm }: { realm: RealmInfoType }) => {
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
 
+  console.log({ realm });
+
   return (
     <div className="space-y-4">
-      <RealmInfo level={realm.level} population={realm.population || 0} storage={realm.capacity || 0} />
+      <RealmInfo realm={realm} />
       <BuildingsList realm={realm} onSelectProduction={setSelectedResource} selectedResource={selectedResource} />
       {selectedResource && <ProductionControls selectedResource={selectedResource} realm={realm} />}
     </div>

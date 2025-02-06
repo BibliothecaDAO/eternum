@@ -15,15 +15,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 
-export const LaborProductionControls = ({
-  productionAmount,
-  setProductionAmount,
-  realm,
-}: {
-  productionAmount: number;
-  setProductionAmount: (value: number) => void;
-  realm: RealmInfo;
-}) => {
+export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   const {
     setup: {
       account: { account },
@@ -33,14 +25,15 @@ export const LaborProductionControls = ({
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedResources, setSelectedResources] = useState<{ id: number; amount: number }[]>([]);
 
   const handleProduce = async () => {
     setIsLoading(true);
 
     const calldata = {
       entity_id: realm.entityId,
-      resource_types: [selectedLaborResource],
-      resource_amounts: [multiplyByPrecision(productionAmount)],
+      resource_types: selectedResources.map((r) => r.id),
+      resource_amounts: selectedResources.map((r) => multiplyByPrecision(r.amount)),
       signer: account,
     };
 
@@ -55,33 +48,27 @@ export const LaborProductionControls = ({
     }
   };
 
-  const [selectedLaborResource, setSelectedLaborResource] = useState<number>(ResourcesIds.Wood);
-
   const laborConfig = useMemo(() => {
-    return getLaborConfig(selectedLaborResource);
-  }, [selectedLaborResource]);
+    return selectedResources.map((r) => getLaborConfig(r.id));
+  }, [selectedResources]);
 
   const { laborAmount, ticks } = useMemo(() => {
-    if (!laborConfig) return { laborAmount: 0, ticks: 0 };
+    if (!laborConfig.length) return { laborAmount: 0, ticks: 0 };
+    const totalLaborAmount = selectedResources.reduce((acc, resource, index) => {
+      return acc + resource.amount * (laborConfig[index]?.laborProductionPerResource ?? 0);
+    }, 0);
 
-    console.log({ laborConfig });
+    const maxTicks = Math.max(
+      ...laborConfig.map((config, index) => {
+        return Math.ceil(
+          (selectedResources[index].amount * (config?.laborProductionPerResource || 0)) /
+            (config?.laborRatePerTick || 0),
+        );
+      }),
+    );
 
-    const laborAmount = productionAmount * laborConfig.laborProductionPerResource;
-
-    const ticks = Math.ceil(laborAmount / laborConfig.laborRatePerTick);
-
-    console.log({ laborAmount, ticks, laborConfig: laborConfig.laborRatePerTick });
-
-    return { laborAmount, ticks };
-  }, [laborConfig, productionAmount]);
-
-  const resourceConsumption = useMemo(() => {
-    if (!laborConfig) return { wheat: 0, fish: 0 };
-    return {
-      wheat: laborAmount * laborConfig.wheatBurnPerLabor || 0,
-      fish: laborAmount * laborConfig.fishBurnPerLabor || 0,
-    };
-  }, [laborConfig, productionAmount]);
+    return { laborAmount: totalLaborAmount, ticks: maxTicks };
+  }, [laborConfig, selectedResources]);
 
   const availableResources = useMemo(() => {
     return Object.values(ResourcesIds)
@@ -92,159 +79,138 @@ export const LaborProductionControls = ({
       }));
   }, [realm.entityId]);
 
-  const calculateMaxProduction = useMemo(() => {
-    if (!laborConfig) return 0;
-
-    const selectedResourceBalance = divideByPrecision(
-      Number(availableResources.find((r) => r.id === selectedLaborResource)?.balance || 0),
+  const addResource = () => {
+    const availableResourceIds = Object.values(ResourcesIds).filter(
+      (id) => typeof id === "number" && !selectedResources.map((r) => r.id).includes(id as number),
     );
-
-    const maxAmounts = [selectedResourceBalance];
-
-    if (laborConfig.wheatBurnPerLabor > 0) {
-      const wheatBalance = divideByPrecision(
-        Number(availableResources.find((r) => r.id === ResourcesIds.Wheat)?.balance || 0),
-      );
-      maxAmounts.push(Math.floor(wheatBalance / laborConfig.wheatBurnPerLabor));
+    if (availableResourceIds.length > 0) {
+      console.log({ availableResourceIds });
+      setSelectedResources([...selectedResources, { id: availableResourceIds[0] as number, amount: 0 }]);
     }
+  };
 
-    if (laborConfig.fishBurnPerLabor > 0) {
-      const fishBalance = divideByPrecision(
-        Number(availableResources.find((r) => r.id === ResourcesIds.Fish)?.balance || 0),
-      );
-      maxAmounts.push(Math.floor(fishBalance / laborConfig.fishBurnPerLabor));
-    }
+  const removeResource = (index: number) => {
+    setSelectedResources(selectedResources.filter((_, i) => i !== index));
+  };
 
-    return Math.max(0, Math.min(...maxAmounts));
-  }, [availableResources, laborConfig, selectedLaborResource]);
+  const updateResourceId = (index: number, id: number) => {
+    const newResources = [...selectedResources];
+    newResources[index].id = id;
+    setSelectedResources(newResources);
+  };
 
-  const handleMaxClick = () => {
-    setProductionAmount(calculateMaxProduction);
+  const updateResourceAmount = (index: number, amount: number) => {
+    const newResources = [...selectedResources];
+    newResources[index].amount = amount;
+    setSelectedResources(newResources);
+  };
+
+  const handleMaxClick = (index: number) => {
+    const resource = selectedResources[index];
+    const balance = divideByPrecision(Number(availableResources.find((r) => r.id === resource.id)?.balance || 0));
+    const newResources = [...selectedResources];
+    newResources[index].amount = balance;
+    setSelectedResources(newResources);
   };
 
   return (
     <div className="bg-brown/20 p-4 rounded-lg">
       <h3 className="text-2xl font-bold mb-4">Labor Production</h3>
 
-      <div className="flex gap-4 mb-4">
-        <div className="flex-1">
-          <h4 className="text-xl mb-2">Select Resource to Convert</h4>
-          <SelectResource
-            onSelect={(resourceId) => setSelectedLaborResource(resourceId || ResourcesIds.Wood)}
-            className="w-full bg-dark-brown rounded border border-gold/30"
-            realmProduction={true}
-          />
-        </div>
+      <div className="space-y-4 mb-4">
+        {selectedResources.map((resource, index) => (
+          <div key={index} className="flex gap-4 items-center">
+            <div className="flex-1">
+              <SelectResource
+                onSelect={(resourceId) => updateResourceId(index, resourceId || 0)}
+                className="w-full bg-dark-brown rounded border border-gold/30"
+                realmProduction={true}
+                defaultValue={resource.id}
+                excludeResourceIds={selectedResources.map((r) => r.id).filter((id) => id !== resource.id)}
+              />
+            </div>
 
-        {selectedLaborResource && (
-          <div className="flex-1">
-            <h4 className="text-xl mb-2">Input Amount</h4>
-            <div className="flex items-center gap-3">
-              <ResourceIcon resource={ResourcesIds[selectedLaborResource]} size="sm" />
-              <div className="flex items-center justify-between w-full">
-                <div className="w-2/3">
-                  <NumberInput
-                    value={productionAmount}
-                    onChange={setProductionAmount}
-                    min={1}
-                    max={calculateMaxProduction}
-                    className="rounded-md border-gold/30 hover:border-gold/50"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleMaxClick}
-                    className="px-2 py-1 text-sm bg-gold/20 hover:bg-gold/30 text-gold rounded"
-                  >
-                    MAX
-                  </button>
-                  <span className="text-sm font-medium text-gold/60">
-                    {divideByPrecision(
-                      Number(availableResources.find((r) => r.id === selectedLaborResource)?.balance || 0),
-                    )}
-                  </span>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <ResourceIcon resource={ResourcesIds[resource.id]} size="sm" />
+                <div className="flex items-center justify-between w-full">
+                  <div className="w-2/3">
+                    <NumberInput
+                      value={resource.amount}
+                      onChange={(value) => updateResourceAmount(index, value)}
+                      min={1}
+                      className="rounded-md border-gold/30 hover:border-gold/50"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleMaxClick(index)}
+                      className="px-2 py-1 text-sm bg-gold/20 hover:bg-gold/30 text-gold rounded"
+                    >
+                      MAX
+                    </button>
+                    <span className="text-sm font-medium text-gold/60">
+                      {divideByPrecision(Number(availableResources.find((r) => r.id === resource.id)?.balance || 0))}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
 
-      {selectedLaborResource && (
-        <>
-          <div className="mb-4 p-4 rounded-lg border-2 border-gold/30">
-            <h4 className="text-xl mb-2">Production Details</h4>
-            <div className="space-y-3 text-gold/80">
-              <div className="flex items-center gap-2">
-                <ResourceIcon resource={findResourceById(ResourcesIds.Labor)?.trait || ""} size="sm" />
-                <span>Labor Generated:</span>
-                <span className="font-medium">{laborAmount}</span>
-              </div>
-
-              {resourceConsumption.wheat > 0 && (
-                <div className="flex items-center gap-2">
-                  <ResourceIcon resource={findResourceById(ResourcesIds.Wheat)?.trait || ""} size="sm" />
-                  <span>Wheat Consumed:</span>
-                  <span className="font-medium">{resourceConsumption.wheat}</span>
-                  <span className="text-sm text-gold/60">
-                    (Available:{" "}
-                    {divideByPrecision(
-                      Number(availableResources.find((r) => r.id === ResourcesIds.Wheat)?.balance || 0),
-                    )}
-                    )
-                  </span>
-                </div>
-              )}
-
-              {resourceConsumption.fish > 0 && (
-                <div className="flex items-center gap-2">
-                  <ResourceIcon resource={findResourceById(ResourcesIds.Fish)?.trait || ""} size="sm" />
-                  <span>Fish Consumed:</span>
-                  <span className="font-medium">{resourceConsumption.fish}</span>
-                  <span className="text-sm text-gold/60">
-                    (Available:{" "}
-                    {divideByPrecision(
-                      Number(availableResources.find((r) => r.id === ResourcesIds.Fish)?.balance || 0),
-                    )}
-                    )
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
-                <span>Time Required:</span>
-                <span className="font-medium">
-                  {(() => {
-                    const days = Math.floor(ticks / (24 * 60 * 60));
-                    const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
-                    const minutes = Math.floor((ticks % (60 * 60)) / 60);
-                    const seconds = ticks % 60;
-
-                    return [
-                      days > 0 ? `${days}d ` : "",
-                      hours > 0 ? `${hours}h ` : "",
-                      minutes > 0 ? `${minutes}m ` : "",
-                      `${seconds}s`,
-                    ].join("");
-                  })()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-center">
-            <Button
-              onClick={handleProduce}
-              disabled={!selectedLaborResource || productionAmount <= 0}
-              isLoading={isLoading}
-              variant="primary"
-              className="px-8 py-2"
-            >
-              Start Labor Production
+            <Button onClick={() => removeResource(index)} variant="secondary" className="px-2">
+              Remove
             </Button>
           </div>
-        </>
-      )}
+        ))}
+
+        <Button onClick={addResource} variant="secondary" className="w-full">
+          Add Resource
+        </Button>
+      </div>
+
+      <>
+        <div className="mb-4 p-4 rounded-lg border-2 border-gold/30">
+          <h4 className="text-xl mb-2">Production Details</h4>
+          <div className="space-y-3 text-gold/80">
+            <div className="flex items-center gap-2">
+              <ResourceIcon resource={findResourceById(ResourcesIds.Labor)?.trait || ""} size="sm" />
+              <span>Total Labor Generated:</span>
+              <span className="font-medium">{laborAmount}</span>
+            </div>
+
+            <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
+              <span>Time Required:</span>
+              <span className="font-medium">
+                {(() => {
+                  const days = Math.floor(ticks / (24 * 60 * 60));
+                  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
+                  const minutes = Math.floor((ticks % (60 * 60)) / 60);
+                  const seconds = ticks % 60;
+
+                  return [
+                    days > 0 ? `${days}d ` : "",
+                    hours > 0 ? `${hours}h ` : "",
+                    minutes > 0 ? `${minutes}m ` : "",
+                    `${seconds}s`,
+                  ].join("");
+                })()}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <Button
+            onClick={handleProduce}
+            disabled={selectedResources.length === 0 || selectedResources.some((r) => r.amount <= 0)}
+            isLoading={isLoading}
+            variant="primary"
+            className="px-8 py-2"
+          >
+            Start Labor Production
+          </Button>
+        </div>
+      </>
     </div>
   );
 };

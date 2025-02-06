@@ -1,8 +1,8 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { configManager } from "..";
-import { findResourceIdByTrait, orders } from "../constants";
+import { configManager, gramToKg } from "..";
+import { BuildingType, CapacityConfigCategory, findResourceIdByTrait, orders } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
@@ -67,6 +67,16 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   const position = getComponentValue(components.Position, entity);
   const population = getComponentValue(components.Population, entity);
 
+  const storehouses = (() => {
+    const quantity =
+      getComponentValue(
+        components.BuildingQuantityv2,
+        getEntityIdFromKeys([BigInt(realm?.entity_id || 0), BigInt(BuildingType.Storehouse)]),
+      )?.value || 0;
+    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
+    return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
+  })();
+
   if (realm && owner && position) {
     const { realm_id, entity_id, produced_resources, order, level } = realm;
 
@@ -79,6 +89,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
     return {
       realmId: realm_id,
       entityId: entity_id,
+      storehouses,
       name,
       level,
       resources,

@@ -590,6 +590,10 @@ export interface RealmInfo {
   ownerName: string;
   hasWonder: boolean;
   level: number;
+  storehouses: {
+    capacityKg: number;
+    quantity: number;
+  };
 }
 
 export interface PlayerInfo {

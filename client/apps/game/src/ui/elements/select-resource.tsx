@@ -11,16 +11,18 @@ interface SelectResourceProps {
   className?: string;
   realmProduction?: boolean;
   defaultValue?: number;
+  excludeResourceIds?: number[];
 }
 
 export const SelectResource: React.FC<SelectResourceProps> = ({
   onSelect,
   className,
   realmProduction = false,
-  defaultValue = ResourcesIds.Wood,
+  defaultValue,
+  excludeResourceIds = [],
 }) => {
   const [searchInput, setSearchInput] = useState("");
-  const [selectedResource, setSelectedResource] = useState<string>(defaultValue.toString());
+  const [selectedResource, setSelectedResource] = useState<string>(defaultValue?.toString() || "");
   const [open, setOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +35,8 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
     ResourcesIds.Fish,
     ResourcesIds.Wheat,
     ResourcesIds.Donkey,
+    ResourcesIds.Lords,
+    ResourcesIds.Labor,
   ];
 
   const orderedResources = useMemo(() => {
@@ -41,9 +45,10 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
       .filter((resourceId) => {
         if (resourceId === ResourcesIds.Lords) return false;
         if (realmProduction && REALM_PRODUCTION_EXCLUDED.includes(resourceId)) return false;
+        if (excludeResourceIds.includes(resourceId)) return false;
         return true;
       });
-  }, [realmProduction]);
+  }, [realmProduction, excludeResourceIds]);
 
   const filteredResourceIds = orderedResources.filter((resourceId) =>
     ResourcesIds[resourceId].toLowerCase().startsWith(searchInput.toLowerCase()),
@@ -77,7 +82,9 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
 
   // Call onSelect with default value on mount
   React.useEffect(() => {
-    onSelect(defaultValue);
+    if (defaultValue !== undefined) {
+      onSelect(defaultValue);
+    }
   }, []);
 
   return (

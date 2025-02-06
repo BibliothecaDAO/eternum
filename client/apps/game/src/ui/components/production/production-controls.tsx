@@ -11,13 +11,7 @@ export const ProductionControls = ({ selectedResource, realm }: { selectedResour
   const [ticks, setTicks] = useState<number | undefined>();
 
   if (isLaborMode) {
-    return (
-      <LaborProductionControls
-        productionAmount={productionAmount}
-        setProductionAmount={setProductionAmount}
-        realm={realm}
-      />
-    );
+    return <LaborProductionControls realm={realm} />;
   }
 
   return (

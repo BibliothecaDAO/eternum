@@ -1,16 +1,20 @@
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { getLaborConfig } from "@/utils/labor";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   divideByPrecision,
-  getEntityIdFromKeys,
+  multiplyByPrecision,
   RealmInfo,
+  ResourceManager,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
+import { LaborResourcesPanel } from "./labor-resources-panel";
+import { RawResourcesPanel } from "./raw-resources-panel";
 
 export const ResourceProductionControls = ({
   selectedResource,
@@ -34,14 +38,17 @@ export const ResourceProductionControls = ({
   const {
     setup: {
       account: { account },
-      systemCalls: { burn_other_predefined_resources_for_resources },
+      systemCalls: { burn_other_predefined_resources_for_resources, burn_labor_resources_for_other_production },
+      components,
       components: { Resource },
     },
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleProduce = async () => {
+  const laborConfig = useMemo(() => getLaborConfig(selectedResource), [selectedResource]);
+
+  const handleRawResourcesProduce = async () => {
     if (!ticks) return;
     setIsLoading(true);
     const calldata = {
@@ -50,6 +57,8 @@ export const ResourceProductionControls = ({
       production_tick_counts: [ticks],
       signer: account,
     };
+
+    console.log({ calldata });
 
     try {
       await burn_other_predefined_resources_for_resources(calldata);
@@ -60,134 +69,123 @@ export const ResourceProductionControls = ({
     }
   };
 
+  const handleLaborResourcesProduce = async () => {
+    if (!laborConfig) return;
+    const laborNeeded = Math.round(laborConfig.laborBurnPerResource * productionAmount);
+
+    if (productionAmount > 0 && laborNeeded > 0 && productionAmount > 0) {
+      setIsLoading(true);
+
+      const calldata = {
+        from_entity_id: realm.entityId,
+        labor_amounts: [multiplyByPrecision(laborNeeded)],
+        produced_resource_types: [selectedResource],
+        signer: account,
+      };
+
+      console.log({ calldata });
+
+      try {
+        await burn_labor_resources_for_other_production(calldata);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   const outputResource = useMemo(() => {
     return configManager.resourceOutput[selectedResource];
   }, [selectedResource]);
 
-  const inputResources = useMemo(() => {
-    return configManager.resourceInputs[selectedResource].map((resource) => ({
-      ...resource,
-      amount: resource.amount / outputResource.amount,
-    }));
-  }, [selectedResource, outputResource]);
+  const resourceBalances = useMemo(() => {
+    if (!selectedResource) return {};
+
+    const balances: Record<number, number> = {};
+    const allResources = [
+      ...configManager.resourceInputs[selectedResource],
+      { resource: selectedResource, amount: 1 },
+      { resource: ResourcesIds.Labor, amount: 1 },
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ];
+
+    const { currentDefaultTick } = getBlockTimestamp();
+
+    allResources.forEach((resource) => {
+      const resourceManager = new ResourceManager(components, realm.entityId, resource.resource);
+      const balance = resourceManager.balance(currentDefaultTick);
+      balances[resource.resource] = divideByPrecision(balance);
+    });
+    return balances;
+  }, [selectedResource, Resource, realm.entityId]);
 
   useEffect(() => {
     setTicks(Math.floor(productionAmount / outputResource.amount));
   }, [productionAmount]);
 
-  const resourceBalances = useMemo(() => {
-    if (!selectedResource || !inputResources) return {};
-
-    const balances: Record<number, number> = {};
-    [...inputResources, { resource: selectedResource, amount: 1 }].forEach((resource) => {
-      const value = getComponentValue(
-        Resource,
-        getEntityIdFromKeys([BigInt(realm.entityId), BigInt(resource.resource)]),
-      );
-      balances[resource.resource] = divideByPrecision(Number(value?.balance || 0));
-    });
-    return balances;
-  }, [selectedResource, inputResources, Resource, realm.entityId]);
-
-  const handleInputChange = (value: number, inputResource: number) => {
-    if (!inputResources) return;
-
-    const resourceConfig = inputResources.find((r) => r.resource === inputResource);
-    if (!resourceConfig) return;
-
-    const newAmount = value / resourceConfig.amount;
-    setProductionAmount(newAmount);
-  };
-
-  const calculateMaxProduction = () => {
-    if (!inputResources || !resourceBalances) return 1;
-
-    const maxAmounts = inputResources.map((input) => {
-      const balance = resourceBalances[input.resource] || 0;
-      return Math.floor(balance / input.amount);
-    });
-
-    return Math.max(1, Math.min(...maxAmounts));
-  };
-
-  const handleMaxClick = () => {
-    setProductionAmount(calculateMaxProduction());
-  };
+  const currentInputs = useMemo(() => {
+    return useRawResources
+      ? configManager.resourceInputs[selectedResource].map(({ resource, amount }) => ({
+          resource,
+          amount: amount / outputResource.amount,
+        }))
+      : laborConfig?.inputResources || [];
+  }, [useRawResources, selectedResource, laborConfig]);
 
   const isOverBalance = useMemo(() => {
-    if (!inputResources || !resourceBalances) return false;
-
-    return inputResources.some((input) => {
-      const required = input.amount * productionAmount;
-      const balance = resourceBalances[input.resource] || 0;
-      return required > balance;
+    return Object.values(currentInputs).some(({ resource, amount }) => {
+      const balance = resourceBalances[Number(resource)] || 0;
+      console.log({
+        balance,
+        amount,
+        productionAmount,
+        outputResource,
+        result: amount * productionAmount,
+      });
+      return amount * productionAmount > balance;
     });
-  }, [inputResources, resourceBalances, productionAmount]);
+  }, [resourceBalances, productionAmount, currentInputs]);
+
+  const isDisabled = useMemo(() => {
+    if (isOverBalance) return true;
+    if (useRawResources) {
+      return !ticks || ticks <= 0;
+    } else {
+      if (!laborConfig) return true;
+      const laborNeeded = Math.round(laborConfig.laborBurnPerResource * productionAmount);
+      return productionAmount <= 0 || laborNeeded <= 0;
+    }
+  }, [isOverBalance, useRawResources, ticks, laborConfig, productionAmount]);
+
+  if (currentInputs.length === 0) return null;
 
   return (
     <div className="bg-brown/20 p-4 rounded-lg">
       <h3 className="text-2xl font-bold mb-4">Start Production - {ResourcesIds[selectedResource]}</h3>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        {/* Raw Resources */}
-        <div
-          className={`p-4 rounded-lg border-2 cursor-pointer ${
-            useRawResources ? "border-gold" : "border-transparent opacity-50"
-          }`}
-          onClick={() => setUseRawResources(true)}
-        >
-          <h4 className="text-xl mb-2">Raw Resources</h4>
-          <div className="space-y-2">
-            {inputResources?.map((input) => {
-              const balance = resourceBalances[input.resource] || 0;
-              return (
-                <div
-                  key={input.resource}
-                  className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors"
-                >
-                  <ResourceIcon resource={ResourcesIds[input.resource]} size="sm" />
-                  <div className="flex items-center justify-between w-full">
-                    <div className="w-2/3">
-                      <NumberInput
-                        value={Math.round(input.amount * productionAmount)}
-                        onChange={(value) => handleInputChange(value, input.resource)}
-                        min={0}
-                        max={resourceBalances[input.resource] || 0}
-                        className="rounded-md border-gold/30 hover:border-gold/50"
-                      />
-                    </div>
-                    <span
-                      className={`text-sm font-medium ${
-                        resourceBalances[input.resource] < input.amount * productionAmount
-                          ? "text-order-giants"
-                          : "text-gold/60"
-                      }`}
-                    >
-                      {balance}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-            <button
-              onClick={handleMaxClick}
-              className="mt-2 px-3 py-1 text-sm bg-gold/20 hover:bg-gold/30 text-gold rounded"
-            >
-              MAX
-            </button>
-          </div>
-        </div>
+      <div className={`grid ${laborConfig ? "grid-cols-2" : "grid-cols-1"} gap-4 mb-4`}>
+        <RawResourcesPanel
+          selectedResource={selectedResource}
+          productionAmount={productionAmount}
+          setProductionAmount={setProductionAmount}
+          resourceBalances={resourceBalances}
+          isSelected={useRawResources}
+          onSelect={() => setUseRawResources(true)}
+          outputResource={outputResource}
+        />
 
-        {/* Labor Costs */}
-        <div
-          className={`p-4 rounded-lg border-2 cursor-pointer ${
-            !useRawResources ? "border-gold" : "border-transparent opacity-50"
-          }`}
-          onClick={() => setUseRawResources(false)}
-        >
-          <h4 className="text-xl mb-2">Labor</h4>
-          <div className="space-y-2">{/* Add labor inputs */}</div>
-        </div>
+        {laborConfig && (
+          <LaborResourcesPanel
+            selectedResource={selectedResource}
+            productionAmount={productionAmount}
+            setProductionAmount={setProductionAmount}
+            resourceBalances={resourceBalances}
+            isSelected={!useRawResources}
+            onSelect={() => setUseRawResources(false)}
+          />
+        )}
       </div>
 
       {/* Output */}
@@ -229,8 +227,8 @@ export const ResourceProductionControls = ({
 
       <div className="flex justify-center">
         <Button
-          onClick={handleProduce}
-          disabled={isOverBalance}
+          onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
+          disabled={isDisabled}
           isLoading={isLoading}
           variant="primary"
           className="px-8 py-2"
