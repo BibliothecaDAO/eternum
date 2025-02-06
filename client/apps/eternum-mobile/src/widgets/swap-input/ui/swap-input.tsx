@@ -63,7 +63,7 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
           </div>
           <div className="flex gap-1">
             {[10, 25, 50, 100].map((percentage) => (
-              <Button key={percentage} variant="outline" size="sm" onClick={() => handlePercentageClick(percentage)}>
+              <Button key={percentage} variant="secondary" size="sm" onClick={() => handlePercentageClick(percentage)}>
                 {percentage === 100 ? "All" : `${percentage}%`}
               </Button>
             ))}

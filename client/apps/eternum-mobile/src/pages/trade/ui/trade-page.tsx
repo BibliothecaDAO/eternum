@@ -21,8 +21,8 @@ export const TradePage = () => {
 
   return (
     <div className="container p-4 space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">The Lord Market</h1>
+      <div className="space-y-1 text-center">
+        <h1 className="text-3xl font-bold font-bokor">The Lords Market</h1>
         <p className="text-muted-foreground">Choose pair to swap resources</p>
       </div>
 
