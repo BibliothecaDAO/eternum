@@ -1,4 +1,5 @@
 import { RealmCard } from "@/components/modules/realms/realm-card";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/router";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { CollectionAddresses } from "@realms-world/constants";
@@ -8,8 +9,10 @@ import {
   createFileRoute,
   ErrorComponent,
   ErrorComponentProps,
+  Link,
   useRouter,
 } from "@tanstack/react-router";
+import { HandCoins, Ship } from "lucide-react";
 import React from "react";
 
 export class RealmsNotFoundError extends Error {}
@@ -61,14 +64,28 @@ function RealmsComponent() {
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-4">
-      {l2Realms?.data.length
-        ? l2Realms?.data.map((realm) => {
-            return (
-              <RealmCard key={realm.token_id} token={realm} isGrid={true} />
-            );
-          })
-        : "No Realms Found in wallet"}
+    <div className="flex flex-col gap-2 p-4">
+      <div className="flex gap-2">
+        <Link to={`/realms/bridge`}>
+          <Button variant={"outline"} size="lg" className="rounded px-3">
+            <Ship /> Starknet Bridge
+          </Button>
+        </Link>
+        <Link to={`/claims/realms`}>
+          <Button variant={"outline"} size="lg" className="rounded px-3">
+            <HandCoins /> Claim Lords Rewards
+          </Button>
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-4">
+        {l2Realms?.data.length
+          ? l2Realms?.data.map((realm) => {
+              return (
+                <RealmCard key={realm.token_id} token={realm} isGrid={true} />
+              );
+            })
+          : "No Realms Found in wallet"}
+      </div>
     </div>
   );
 }

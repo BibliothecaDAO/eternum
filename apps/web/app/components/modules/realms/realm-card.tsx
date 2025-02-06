@@ -4,6 +4,7 @@ import Media from "./media";
 import { AnimatedMap } from "@/components/icons/AnimatedMap";
 import RealmResources from "./realm-resources";
 import { CollectionAddresses, ChainId } from "@realms-world/constants";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 
 export const RealmCard = ({
   token,
@@ -60,10 +61,9 @@ const GridDetails = ({
       </div>
     </div>
     <div className="h-[48px]">
-      {CollectionAddresses.realms[ChainId.SN_MAIN] == token.collection_address.toString()}
       {token.metadata?.attributes &&
         [
-          CollectionAddresses.realms[ChainId.SN_MAIN],
+          CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID],
         ].includes(token.collection_address as `0x${string}`) && (
           <RealmResources traits={token.metadata.attributes} />
         )}

@@ -2,17 +2,29 @@ import { Separator } from "@radix-ui/react-separator";
 import { SidebarTrigger, useSidebar } from "../ui/sidebar";
 import { Breadcrumbs } from "./breadcrumbs";
 import { StarknetWalletButton } from "./starknet-wallet-button";
-import { useAccount } from "@starknet-react/core";
+import { useAccount, useDisconnect, useExplorer } from "@starknet-react/core";
 import { Button } from "../ui/button";
 import { cn, shortenAddress } from "@/utils/utils";
 import { ModeToggle } from "./mode-toggle";
 import { Link } from "@tanstack/react-router";
 import RWLogo from "@/components/icons/rw-logo.svg";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Avatar, AvatarImage } from "../ui/avatar";
+import { DropdownMenuGroup } from "@radix-ui/react-dropdown-menu";
+import { Check, Copy, ExternalLink, Unplug } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 export function Header() {
   const { address } = useAccount();
   const { open } = useSidebar();
+  const { disconnect } = useDisconnect();
+  const explorer = useExplorer();
   return (
     <header
       className={cn(
@@ -43,16 +55,74 @@ export function Header() {
             <Breadcrumbs />
           </div>
           {address ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button>{shortenAddress(address)}</Button>
-              </PopoverTrigger>
-              <PopoverContent>
-                <div className="flex flex-col gap-2">
-                  <div className="flex">{shortenAddress(address)}</div>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex items-center gap-2 rounded px-3"
+                >
+                  <Avatar className="size-6 mr-1">
+                    <AvatarImage
+                      src={`https://api.dicebear.com/6.x/bottts-neutral/svg?seed=${address}`}
+                    />
+                  </Avatar>
+                  {shortenAddress(address)}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel className="flex flex-col gap-6 p-4">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="size-8 mr-1">
+                      <AvatarImage
+                        src={`https://api.dicebear.com/6.x/bottts-neutral/svg?seed=${address}`}
+                      />
+                    </Avatar>
+                    <div className="text-xl">{shortenAddress(address)}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a href={explorer.contract(address)} target="_blank">
+                      <Button
+                        variant={"outline"}
+                        size="icon"
+                        className="rounded-full"
+                      >
+                        <ExternalLink />
+                      </Button>
+                    </a>
+                    <Button
+                      variant={"outline"}
+                      size="icon"
+                      className="rounded-full"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(address);
+                        } catch (error) {
+                          console.error("Failed to copy address:", error);
+                        }
+                        toast({
+                          description: (
+                            <div className="flex items-center gap-2">
+                              <Check className="text-green-500" />
+                              <span>Address copied to clipboard</span>
+                            </div>
+                          ),
+                        });
+                      }}
+                    >
+                      <Copy />
+                    </Button>
+                    <Button
+                      variant={"outline"}
+                      className="rounded-full"
+                      onClick={() => disconnect()}
+                    >
+                      <Unplug /> Disconnect
+                    </Button>
+                  </div>
+                </DropdownMenuLabel>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <StarknetWalletButton />
           )}

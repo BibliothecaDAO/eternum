@@ -85,5 +85,8 @@
     "tailwindcss": "4.0.0",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4"
+  },
+  "overrides": {
+    "react-is": "^19.0.0"
   }
 }

@@ -65,7 +65,7 @@ const data = {
         },
         {
           title: "Claim Rewards",
-          url: "/realms/claim",
+          url: "/claims/realms",
         },
         {
           title: "Eternum Season Passes",
@@ -93,7 +93,7 @@ const data = {
   lords: [
     {
       title: "veLords (staking)",
-      url: "#",
+      url: "/velords",
       icon: Banknote,
       isActive: true,
       items: [
@@ -118,7 +118,7 @@ const data = {
       items: [
         {
           title: "Realms Emissions",
-          url: "#",
+          url: "/claims/realms",
         },
         {
           title: "Legacy Claims",

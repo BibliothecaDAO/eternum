@@ -36,3 +36,16 @@ export function formatAddress(address: string) {
     return address;
   }
 }
+export function formatNumber(
+  amount: number | null | undefined,
+  maximumFractionDigits = 2,
+) {
+  if (amount === null || amount === undefined) {
+    return "-";
+  }
+  const formatter = new Intl.NumberFormat("en-US", {
+    maximumFractionDigits,
+  });
+
+  return formatter.format(amount);
+}
