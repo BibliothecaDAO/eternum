@@ -63,9 +63,11 @@ const WorkersHutInfo = () => {
 export const CapacityInfo = ({
   structureEntityId,
   structureCategory,
+  className,
 }: {
   structureEntityId: number;
   structureCategory?: StructureType;
+  className?: string;
 }) => {
   const { setup } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -75,7 +77,7 @@ export const CapacityInfo = ({
   }, [structureEntityId, setup.components]);
 
   return (
-    <div className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30">
+    <div className={className}>
       {realmInfo?.storehouses && (
         <div
           onMouseEnter={() => {

@@ -55,7 +55,7 @@ export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Ope
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 
 export const BUILDING_IMAGES_PATH = {
-  [BuildingType.Castle]: "",
+  [BuildingType.Castle]: `${BUILD_IMAGES_PREFIX}castleZero.png`,
   [BuildingType.Bank]: "",
   [BuildingType.FragmentMine]: "",
   [BuildingType.Resource]: `${BUILD_IMAGES_PREFIX}mine.png`,

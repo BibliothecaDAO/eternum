@@ -67,12 +67,12 @@ const getRealmImgFromEntityId = (realmEntityId: ID | undefined) => {
 
     switch (realm?.level) {
       case RealmLevels.City - 1:
-        return "./images/buildings/thumb/castleOne.png";
+        return "./images/buildings/construction/castleOne.png";
       case RealmLevels.Kingdom - 1:
-        return "./images/buildings/thumb/castleTwo.png";
+        return "./images/buildings/construction/castleTwo.png";
       case RealmLevels.Empire - 1:
-        return "./images/buildings/thumb/castleThree.png";
+        return "./images/buildings/construction/castleThree.png";
     }
   }
-  return "./images/buildings/thumb/castleZero.png";
+  return "./images/buildings/construction/castleZero.png";
 };

@@ -7,8 +7,6 @@ import { RealmInfo } from "./realm-info";
 export const ProductionBody = ({ realm }: { realm: RealmInfoType }) => {
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
 
-  console.log({ realm });
-
   return (
     <div className="space-y-4">
       <RealmInfo realm={realm} />

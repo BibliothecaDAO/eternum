@@ -188,6 +188,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         <CapacityInfo
           structureEntityId={structureEntityId}
           structureCategory={StructureType[structure.structureCategory as keyof typeof StructureType]}
+          className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30"
         />
         <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30">
           <div className="cycle-selector flex justify-center md:justify-start">

@@ -59,21 +59,23 @@ export const BuildingsList = ({
       .filter((production) => production !== null);
   }, [producedResources]);
 
-  console.log({ productions });
-
   return (
     <div className="bg-dark-brown/90 backdrop-blur-sm p-6 rounded-xl border border-gold/20 shadow-lg h-[400px] overflow-y-auto">
       <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4">Production Buildings</h3>
       <div className="space-y-4 min-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-        {/* TODO: fix bg image to the production buildings */}
         {productions.map((production) => {
-          const bgImage = production.buildings[0]?.category
-            ? BUILDING_IMAGES_PATH[
-                BuildingType[
-                  production.buildings[0].category as keyof typeof BuildingType
-                ] as keyof typeof BUILDING_IMAGES_PATH
-              ]
-            : "";
+          let bgImage = "";
+          if (production.isLabor) {
+            bgImage = BUILDING_IMAGES_PATH[BuildingType.Castle as keyof typeof BUILDING_IMAGES_PATH];
+          } else {
+            bgImage = production.buildings[0]?.category
+              ? BUILDING_IMAGES_PATH[
+                  BuildingType[
+                    production.buildings[0].category as keyof typeof BuildingType
+                  ] as keyof typeof BUILDING_IMAGES_PATH
+                ]
+              : "";
+          }
 
           return (
             <div
