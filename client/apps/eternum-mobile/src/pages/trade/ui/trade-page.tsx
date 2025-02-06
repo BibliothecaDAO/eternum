@@ -4,12 +4,14 @@ import { SwapInput } from "@/widgets/swap-input";
 import { resources } from "@bibliothecadao/eternum";
 import { ArrowDownUp } from "lucide-react";
 import { useState } from "react";
+import { ConfirmDrawer } from "./confirm-drawer";
 
 export const TradePage = () => {
   const [buyAmount, setBuyAmount] = useState(0);
   const [sellAmount, setSellAmount] = useState(0);
   const [buyResourceId, setBuyResourceId] = useState(1); // Default to first resource
   const [sellResourceId, setSellResourceId] = useState(2); // Default to second resource
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const handleSwap = () => {
     const tempResourceId = buyResourceId;
@@ -23,6 +25,11 @@ export const TradePage = () => {
 
   const sellResource = resources.find((r) => r.id === sellResourceId);
   const buyResource = resources.find((r) => r.id === buyResourceId);
+
+  const handleConfirmSwap = async () => {
+    // Simulate API call
+    await new Promise((resolve, reject) => setTimeout(Math.random() > 0.5 ? resolve : reject, 2000));
+  };
 
   return (
     <div className="container p-4 space-y-6">
@@ -55,7 +62,7 @@ export const TradePage = () => {
         />
       </div>
 
-      <Button className="w-full" size="lg" disabled={!buyAmount || !sellAmount}>
+      <Button className="w-full" size="lg" disabled={!buyAmount || !sellAmount} onClick={() => setIsConfirmOpen(true)}>
         Swap {sellAmount} {sellResource?.trait} for {buyAmount} {buyResource?.trait}
       </Button>
 
@@ -99,6 +106,18 @@ export const TradePage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {sellResource && buyResource && (
+        <ConfirmDrawer
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          sellAmount={sellAmount}
+          buyAmount={buyAmount}
+          sellResource={sellResource}
+          buyResource={buyResource}
+          onConfirm={handleConfirmSwap}
+        />
+      )}
     </div>
   );
 };
