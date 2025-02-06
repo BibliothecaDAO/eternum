@@ -28,11 +28,11 @@ export const TradePage = () => {
 
       <div className="space-y-4 relative">
         <SwapInput
-          direction="buy"
-          amount={buyAmount}
-          resourceId={buyResourceId}
-          onAmountChange={setBuyAmount}
-          onResourceChange={setBuyResourceId}
+          direction="sell"
+          amount={sellAmount}
+          resourceId={sellResourceId}
+          onAmountChange={setSellAmount}
+          onResourceChange={setSellResourceId}
         />
 
         <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 !mt-[0] z-10">
@@ -42,11 +42,11 @@ export const TradePage = () => {
         </div>
 
         <SwapInput
-          direction="sell"
-          amount={sellAmount}
-          resourceId={sellResourceId}
-          onAmountChange={setSellAmount}
-          onResourceChange={setSellResourceId}
+          direction="buy"
+          amount={buyAmount}
+          resourceId={buyResourceId}
+          onAmountChange={setBuyAmount}
+          onResourceChange={setBuyResourceId}
         />
       </div>
     </div>
