@@ -1,5 +1,8 @@
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use s1_eternum::alias::ID;
+use s1_eternum::models::weight::W3eight;
+use s1_eternum::models::stamina::{StaminaTrait, StaminaImpl, Stamina};
+use cubit::f128::types::fixed::{FixedTrait, Fixed, ONE_u128, HALF_u128};
+
 use starknet::ContractAddress;
 
 
@@ -22,9 +25,9 @@ enum TroopTier {
 struct Troops {
     category: TroopType,
     tier: TroopTier,
-    health: u64,
+    health: u128,
     stamina: Stamina,
-    weight: Weeeight
+    weight: W3eight
 }
 
 
@@ -160,9 +163,16 @@ struct CombatConfig {
     //
     damage_bonus_num: u16,
     stamina_bonus_value: u16,
-    //
-    stamina_maximum: u16,
-
+    // max stamina for each troop type
+    stamina_knight_max: u16,
+    stamina_paladin_max: u16,
+    stamina_crossbowman_max: u16,
+    // amount of stamina gained per tick
+    stamina_gain_per_tick: u16,
+    // stamina required to attack
+    stamina_attack_req: u64,
+    // maximum stamina that can be used during attack
+    stamina_attack_max: u64,
 }
 
 #[generate_trait]
@@ -201,7 +211,49 @@ impl TroopsImpl of TroopsTrait {
         }
     }
 
-    fn _damage_inflicted_by(ref self: Troops, biome: Biome, config: CombatConfig) -> u128 {
+    fn _damage_inflicted_by(ref self: Troops, biome: Biome, config: CombatConfig, current_tick: u64) -> u128 {
+
+        //////// SELF DAMAGE BONUS ////////
+
+        // check that the troop has enough stamina to attack
+        self.stamina.refill(ref world, self.category, config, current_tick);
+        assert!(self.stamina.amount >= config.stamina_attack_req, "stamina is not enough to attack (1)");
+
+        // calculate damage bonus
+        let max_additional_stamina = config.stamina_attack_max - config.stamina_attack_req;
+        let self_additional_stamina = self.stamina.amount - config.stamina_attack_req;
+        let self_damage_bonus = core::cmp::min(self_additional_stamina, max_additional_stamina);
+        
+        // spend stamina for attack
+        self.stamina.spend(config.stamina_attack_req + self_damage_bonus, ref world, current_tick);
+
+
+
+        //////// OTHER'S DAMAGE PENALTY ////////
+
+        // spend other's stamina for defense
+        other.stamina.refill(ref world, other.category, config, current_tick);
+        let other_stamina_taken = core::cmp::min(other.stamina.amount, config.stamina_attack_req);
+        other.stamina.spend(other_stamina_taken, ref world, current_tick);
+        
+        // calculate defender's damage penalty based on stamina
+        let other_stamina_penalty = 0;
+        if other_stamina_taken < config.stamina_attack_req {
+            use cubit::f128::types::fixed::{FixedTrait, Fixed, ONE_u128};
+
+            let FIXED_0_5 = FixedTrait::new(HALF_u128, false);
+            let FIXED_STAMINA_REQ = FixedTrait::new_unscaled(config.stamina_attack_req.into(), false);
+            let FIXED_OTHER_STAMINA = FixedTrait::new_unscaled( other.stamina.amount.into(), false);
+            let FIXED_OTHER_DAMAGE_PENALTY = FIXED_0_5 + (FIXED_0_5 * FIXED_OTHER_STAMINA / FIXED_STAMINA_REQ);
+        }
+
+
+
+        // calculate damage
+
+
+
+        
         let base_damage = config._base_damage(self.category);
 
         let damage = match self.tier {

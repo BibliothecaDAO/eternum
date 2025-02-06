@@ -1,5 +1,5 @@
 mod capacity;
-// mod troop;
+mod troop;
 mod config;
 mod event;
 mod guild;

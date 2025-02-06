@@ -141,7 +141,7 @@ mod realm_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure caller owns the realm
-            let structure: Structure = world.read_model(realm_id);
+            let mut structure: Structure = world.read_model(realm_id);
             structure.owner.assert_caller_owner();
 
             // ensure entity is a realm
@@ -175,6 +175,11 @@ mod realm_systems {
             // set new level
             realm.level = next_level;
             world.write_model(@realm);
+
+            // allow structure more one more army
+            structure.troop.max_troops_allowed += 1;
+            structure.troop.max_guards_allowed += 1;
+            world.write_model(@structure);
 
             // [Achievement] Upgrade to max level
             if realm.level == max_level {
