@@ -2,23 +2,93 @@ use array::SpanTrait;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{BattleConfig, TickConfig, TickTrait};
 use s1_eternum::models::position::Coord;
+use s1_eternum::models::owner::Owner;
 use starknet::ContractAddress;
 use traits::Into;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Structure {
     #[key]
     entity_id: ID,
     category: StructureCategory,
-    created_at: u64
+    owner: Owner,
+    coord: Coord,
+    troop: StructureTroop,
+    created_at: u64,
 }
 
+#[derive(Introspect, Copy, Drop, Serde)]
+struct StructureTroop {
+    // maximum total explorer + guards allowed for this structure
+    max_troops_allowed: u32,
+    // maximum number of guards allowed for this structure
+    max_guards_allowed: u32,
+    // number of guards currently in this structure
+    guard_count: u32,
+    // list of explorers associated with this structure
+    explorers: Span<ID>,
+}
+
+// implement Default trait
 
 #[generate_trait]
 impl StructureImpl of StructureTrait {
-    fn assert_is_structure(self: Structure) {
-        assert!(self.is_structure(), "entity {} is not a structure", self.entity_id)
+
+    fn default() -> Structure {
+        Structure {
+            entity_id: 0,
+            category: StructureCategory::None,
+            owner: Owner {
+                entity_id: 0,
+                address: Zeroable::zero(),
+            },
+            coord: Coord { x: 0, y: 0 },
+            troop: StructureTroop {
+                max_troops_allowed: 0,
+                max_guards_allowed: 0,
+                guard_count: 0,
+                explorers: array![].span(),
+            },
+            created_at: 0,
+        }
+    }
+
+    fn new(entity_id: ID, category: StructureCategory, coord: Coord, owner: Owner) -> Structure {
+        assert!(category != StructureCategory::None, "category cannot be none");
+        let mut structure: Structure = Self::default();
+        structure.entity_id = entity_id;
+        structure.category = category;
+        structure.coord = coord;
+        structure.owner = owner;
+
+        match category {
+            StructureCategory::Realm => {
+                structure.troop.max_troops_allowed = 2;
+                structure.troop.max_guards_allowed = 1; // 1 guard, 1 explorer
+            },
+            StructureCategory::Hyperstructure => {
+                structure.troop.max_troops_allowed = 4;
+                structure.troop.max_guards_allowed = 4; // 4 guards, 0 explorers
+            },
+            StructureCategory::Bank => {
+                structure.troop.max_troops_allowed = 4;
+                structure.troop.max_guards_allowed = 4; // 4 guards, 0 explorers
+            },
+            StructureCategory::FragmentMine => {
+                structure.troop.max_troops_allowed = 1;
+                structure.troop.max_guards_allowed = 1; // 1 guard, 0 explorers
+            },
+            _ => {
+                panic!("invalid structure category");
+            }
+        }
+        structure.created_at = starknet::get_block_timestamp();
+        structure
+    }
+
+    fn assert_exists(self: Structure) {
+        assert!(self.exists(), "entity {} is not a structure", self.entity_id)
     }
 
     fn assert_no_initial_attack_immunity(self: Structure, battle_config: BattleConfig, tick_config: TickConfig) {
@@ -26,7 +96,7 @@ impl StructureImpl of StructureTrait {
         assert!(no_initial_attack_immunity, "{}", reason);
     }
 
-    fn is_structure(self: Structure) -> bool {
+    fn exists(self: Structure) -> bool {
         self.category != StructureCategory::None
     }
 
@@ -59,8 +129,9 @@ impl StructureImpl of StructureTrait {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, Introspect)]
+#[derive(PartialEq, Copy, Drop, Serde, Introspect, Default)]
 enum StructureCategory {
+    #[default]
     None,
     Realm,
     Hyperstructure,
@@ -77,25 +148,5 @@ impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
             StructureCategory::Bank => 3,
             StructureCategory::FragmentMine => 4,
         }
-    }
-}
-
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct StructureCount {
-    #[key]
-    coord: Coord,
-    count: u8
-}
-
-#[generate_trait]
-impl StructureCountImpl of StructureCountTrait {
-    fn assert_none(self: StructureCount) {
-        assert!(self.count == 0, "structure exists at this location");
-    }
-
-    fn is_none(self: StructureCount) -> bool {
-        self.count == 0
     }
 }

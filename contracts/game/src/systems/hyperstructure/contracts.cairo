@@ -63,9 +63,9 @@ mod hyperstructure_systems {
             capacity::{CapacityCategory},
             hyperstructure::{Progress, Contribution, Hyperstructure, HyperstructureImpl, Epoch, Access},
             owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait}, season::{Leaderboard},
-            position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
+            position::{Coord, Position, PositionIntoCoord, Occupier, OccupierTrait, OccupiedBy}, realm::{Realm},
             resource::resource::{Resource, ResourceImpl, ResourceCost},
-            structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember},
+            structure::{Structure, StructureCategory, StructureImpl}, guild::{GuildMember},
             name::{AddressName}
         },
         systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
@@ -143,8 +143,8 @@ mod hyperstructure_systems {
             InternalTravelSystemsImpl::assert_tile_explored(world, coord);
 
             // assert no structure is already built on the coords
-            let structure_count: StructureCount = world.read_model(coord);
-            structure_count.assert_none();
+            let occupier: Occupier = world.read_model(coord);
+            assert!(occupier.not_occupied(), "something exists on this coords");
 
             let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
             let shard_resource_tier: u32 = get_resource_tier(ResourceTypes::EARTHEN_SHARD).into();
@@ -162,12 +162,13 @@ mod hyperstructure_systems {
 
             let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
             let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
-            world
-                .write_model(
-                    @Structure {
-                        entity_id: new_uuid, category: StructureCategory::Hyperstructure, created_at: current_time
-                    }
-                );
+   
+            let owner: Owner = Owner { entity_id: new_uuid, address: starknet::get_caller_address() };
+            let structure: Structure = StructureImpl::new(new_uuid, StructureCategory::Hyperstructure, coord, owner);
+            world.write_model(@structure);
+
+            let occupier: Occupier = Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(new_uuid) };
+            world.write_model(@occupier);
 
             world
                 .write_model(
@@ -183,10 +184,7 @@ mod hyperstructure_systems {
                 );
 
             world.write_model(@CapacityCategory { entity_id: new_uuid, category: CapacityConfigCategory::Structure },);
-            world.write_model(@StructureCount { coord, count: 1 },);
-            world.write_model(@Position { entity_id: new_uuid, x: coord.x, y: coord.y },);
-            world.write_model(@Owner { entity_id: new_uuid, address: starknet::get_caller_address() },);
-            world.write_model(@EntityOwner { entity_id: new_uuid, entity_owner_id: new_uuid },);
+
             world
                 .write_model(
                     @Progress {

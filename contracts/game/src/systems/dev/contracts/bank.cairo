@@ -29,9 +29,9 @@ mod dev_bank_systems {
     use s1_eternum::models::config::{BankConfig, CapacityConfigCategory, MercenariesConfig};
     use s1_eternum::models::name::{EntityName};
     use s1_eternum::models::owner::{Owner, EntityOwner};
-    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::position::{Position, Coord, Occupier, OccupiedBy};
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
+    use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
     use s1_eternum::systems::map::map_generation::{
@@ -61,20 +61,24 @@ mod dev_bank_systems {
             let admin = starknet::get_caller_address();
 
             // bank
-            world.write_model(@EntityName { entity_id: ADMIN_BANK_ENTITY_ID, name, },);
-            world
-                .write_model(
-                    @Structure {
-                        entity_id: ADMIN_BANK_ENTITY_ID,
-                        category: StructureCategory::Bank,
-                        created_at: starknet::get_block_timestamp()
-                    }
-                );
-            world.write_model(@StructureCount { coord, count: 1 });
+
+            // save bank structure
+            let owner: Owner = Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin };
+            let structure: Structure = StructureImpl::new(ADMIN_BANK_ENTITY_ID, StructureCategory::Bank, coord, owner);
+            world.write_model(@structure);
+
+            // save occupier
+            world.write_model(@Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(ADMIN_BANK_ENTITY_ID) });
+
+            // save bank name
+            world.write_model(@EntityName { entity_id: ADMIN_BANK_ENTITY_ID, name, });
+
+            // save capacity
             world
                 .write_model(
                     @CapacityCategory { entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure }
                 );
+            
             world
                 .write_model(
                     @Bank {
@@ -86,15 +90,10 @@ mod dev_bank_systems {
                         exists: true
                     },
                 );
-            world.write_model(@Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },);
-            world.write_model(@Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin },);
-            world.write_model(@EntityOwner { entity_id: ADMIN_BANK_ENTITY_ID, entity_owner_id: ADMIN_BANK_ENTITY_ID },);
 
             let (contract_address, _) = world.dns(@"map_generation_systems").unwrap();
             let map_generation_contract = IMapGenerationSystemsDispatcher { contract_address };
-
             let seed = 'I AM SEED FOR THE DEV BANK'.into() - starknet::get_block_timestamp().into();
-
             map_generation_contract.add_mercenaries_to_structure(seed, ADMIN_BANK_ENTITY_ID);
 
             ADMIN_BANK_ENTITY_ID

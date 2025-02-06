@@ -40,8 +40,8 @@ mod realm_systems {
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::movable::Movable;
     use s1_eternum::models::name::{AddressName};
-    use s1_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
-    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::owner::{Owner, OwnerTrait};
+    use s1_eternum::models::position::{Position, Coord, Occupier, OccupierTrait, OccupiedBy};
     use s1_eternum::models::quantity::QuantityTracker;
     use s1_eternum::models::quest::{Quest};
     use s1_eternum::models::realm::{
@@ -53,7 +53,7 @@ mod realm_systems {
         DetachedResource, Resource, ResourceImpl, ResourceTrait, ResourceFoodImpl, ResourceFoodTrait
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
+    use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
     use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait
@@ -138,16 +138,17 @@ mod realm_systems {
 
 
         fn upgrade_level(ref self: ContractState, realm_id: ID) {
-            // ensure caller owns the realm
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let entity_owner: EntityOwner = world.read_model(realm_id);
-            entity_owner.assert_caller_owner(world);
+
+            // ensure caller owns the realm
+            let structure: Structure = world.read_model(realm_id);
+            structure.owner.assert_caller_owner();
 
             // ensure entity is a realm
-            let mut realm: Realm = world.read_model(realm_id);
-            realm.assert_is_set();
+            assert(structure.category == StructureCategory::Realm, 'entity is not a realm');
 
             // ensure realm is not already at max level
+            let mut realm: Realm = world.read_model(realm_id);
             let max_level = realm.max_level(world);
             assert(realm.level < max_level, 'realm is already at max level');
 
@@ -190,11 +191,11 @@ mod realm_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure entity is a realm
-            let realm: Realm = world.read_model(entity_id);
-            realm.assert_is_set();
+            let structure: Structure = world.read_model(entity_id);
+            assert(structure.category == StructureCategory::Realm, 'entity is not a realm');
 
-            let entity_owner: EntityOwner = world.read_model(entity_id);
-            entity_owner.assert_caller_owner(world);
+            // ensure caller owns the realm
+            structure.owner.assert_caller_owner();
 
             // ensure quest is not already completed
             let mut quest: Quest = world.read_model((entity_id, quest_id));
@@ -205,6 +206,7 @@ mod realm_systems {
             assert(quest_reward_config.detached_resource_count > 0, 'quest has no rewards');
 
             let mut index = 0;
+            let realm: Realm = world.read_model(entity_id);
             loop {
                 if index == quest_reward_config.detached_resource_count {
                     break;
@@ -261,18 +263,19 @@ mod realm_systems {
             let has_wonder = RealmReferenceImpl::wonder_mapping(wonder.into()) != "None";
             let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
             let entity_id = world.dispatcher.uuid();
-            let now = starknet::get_block_timestamp();
-            world.write_model(@Owner { entity_id: entity_id.into(), address: owner });
-            world.write_model(@EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() });
-            world
-                .write_model(
-                    @Structure { entity_id: entity_id.into(), category: StructureCategory::Realm, created_at: now, }
-                );
-            world.write_model(@StructureCount { coord, count: 1 });
+
+            let owner: Owner = Owner { entity_id: entity_id.into(), address: owner };
+            let structure: Structure = StructureImpl::new(entity_id.into(), StructureCategory::Realm, coord, owner);
+            world.write_model(@structure);
+
+            let occupier: Occupier = Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(entity_id.into()) };
+            world.write_model(@occupier);
+
             world
                 .write_model(
                     @CapacityCategory { entity_id: entity_id.into(), category: CapacityConfigCategory::Structure }
                 );
+
             world
                 .write_model(
                     @Realm {
@@ -284,7 +287,6 @@ mod realm_systems {
                         has_wonder,
                     }
                 );
-            world.write_model(@Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, });
 
             // explore tile where realm sits if not already explored
             let mut tile: Tile = world.read_model((coord.x, coord.y));
@@ -360,15 +362,11 @@ mod realm_systems {
             let mut settlement_config: SettlementConfig = world.read_model(WORLD_CONFIG_ID);
             while (!found_coords) {
                 coord = settlement_config.get_next_settlement_coord();
-                let mut structure_count: StructureCount = world.read_model(coord);
-                if structure_count.is_none() {
-                    found_coords = true;
-                    structure_count.count = 1;
-                    world.write_model(@structure_count);
-                }
-                // save the new config so that if there's no already a structure at the coord we can find a new one
-                world.write_model(@settlement_config);
+                let occupier: Occupier = world.read_model(coord);
+                if occupier.not_occupied() {found_coords = true;}
             };
+            // save the new config so that if there's no already a structure at the coord we can find a new one
+            world.write_model(@settlement_config);
 
             return coord;
         }

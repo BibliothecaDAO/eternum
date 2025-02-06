@@ -55,7 +55,6 @@ use s1_eternum::models::season::m_LeaderboardRewardClaimed;
 use s1_eternum::models::season::m_Season;
 use s1_eternum::models::stamina::m_Stamina;
 use s1_eternum::models::structure::m_Structure;
-use s1_eternum::models::structure::m_StructureCount;
 use s1_eternum::models::trade::{m_Status, m_Trade};
 use s1_eternum::models::weight::m_Weight;
 
@@ -169,7 +168,6 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_Season::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Stamina::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Structure::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Model(m_StructureCount::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Status::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Trade::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Weight::TEST_CLASS_HASH.try_into().unwrap()),

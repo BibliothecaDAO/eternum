@@ -97,7 +97,7 @@ impl ProductionImpl of ProductionTrait {
         let num_ticks_produced: u128 = current_tick.into() - start_tick.into();
         let mut total_produced_amount = num_ticks_produced * self.production_rate;
 
-        // limit amount of resources produced by the output_amount_left
+        // limit amount of resources produced by the output amount left
         if !Self::is_free_production(resource.resource_type) {
             total_produced_amount = min(total_produced_amount, self.output_amount_left);
             self.decrease_output_amout_left(total_produced_amount);

@@ -24,10 +24,10 @@ mod bank_systems {
     use s1_eternum::models::capacity::{CapacityCategory};
     use s1_eternum::models::config::{BankConfig, CapacityConfigCategory};
     use s1_eternum::models::owner::{Owner, EntityOwner};
-    use s1_eternum::models::position::{Position, Coord};
+    use s1_eternum::models::position::{Position, Coord, Occupier, OccupierTrait, OccupiedBy};
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
+    use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
     use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
     use traits::Into;
@@ -91,25 +91,22 @@ mod bank_systems {
             //todo: check that tile is explored
 
             // ensure that the coord is not occupied by any other structure
-            let structure_count: StructureCount = world.read_model(coord);
-            structure_count.assert_none();
+            let mut occupier: Occupier = world.read_model(coord);
+            assert!(occupier.not_occupied(), "bank location is not empty");
 
             // remove the resources from the realm
             let bank_config: BankConfig = world.read_model(WORLD_CONFIG_ID);
             let mut realm_resource: Resource = world.read_model((realm_entity_id, ResourceTypes::LORDS));
-
             realm_resource.burn(bank_config.lords_cost);
             realm_resource.save(ref world);
 
-            world
-                .write_model(
-                    @Structure {
-                        entity_id: bank_entity_id,
-                        category: StructureCategory::Bank,
-                        created_at: starknet::get_block_timestamp()
-                    },
-                );
-            world.write_model(@StructureCount { coord, count: 1 },);
+            let owner: Owner = Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() };
+            let structure: Structure = StructureImpl::new(bank_entity_id, StructureCategory::Bank, coord, owner);
+            world.write_model(@structure);
+
+            occupier.entity = OccupiedBy::Structure(bank_entity_id);            
+            world.write_model(@occupier);
+
             world
                 .write_model(
                     @CapacityCategory { entity_id: bank_entity_id, category: CapacityConfigCategory::Structure },
@@ -125,8 +122,6 @@ mod bank_systems {
                         exists: true
                     }
                 );
-            world.write_model(@Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },);
-            world.write_model(@Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() });
 
             bank_entity_id
         }

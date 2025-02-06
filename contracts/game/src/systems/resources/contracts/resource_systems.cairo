@@ -196,7 +196,7 @@ mod resource_systems {
 
             // ensure bank_id is a valid bank
             let bank_structure: Structure = world.read_model(bank_id);
-            bank_structure.assert_is_structure();
+            bank_structure.assert_exists();
             assert!(bank_structure.category == StructureCategory::Bank, "structure is not a bank");
 
             // ensure owner and bank are not in the same location

@@ -23,9 +23,9 @@ mod map_generation_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
     use s1_eternum::models::capacity::{CapacityCategory};
-    use s1_eternum::models::combat::{
-        Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
-    };
+    // use s1_eternum::models::combat::{
+    //     Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
+    // };
     use s1_eternum::models::config::{
         ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, MercenariesConfig, TroopConfigImpl,
         TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig, TravelFoodCostConfigImpl, VRFConfigImpl
@@ -33,7 +33,7 @@ mod map_generation_systems {
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
     use s1_eternum::models::owner::{Owner, EntityOwner, OwnerTrait, EntityOwnerTrait};
-    use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position};
+    use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, Occupier, OccupiedBy};
     use s1_eternum::models::quantity::Quantity;
     use s1_eternum::models::realm::{Realm};
     use s1_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
@@ -43,9 +43,9 @@ mod map_generation_systems {
     };
 
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::stamina::StaminaImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
-    use s1_eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
+    // use s1_eternum::models::stamina::StaminaImpl;
+    use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
+    // use s1_eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
     use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use s1_eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
@@ -112,44 +112,45 @@ mod map_generation_systems {
         }
 
         fn add_mercenaries_to_structure(ref world: WorldStorage, randomness: u256, structure_entity_id: ID) -> ID {
-            let mercenaries_config: MercenariesConfig = world.read_model(WORLD_CONFIG_ID);
+            // let mercenaries_config: MercenariesConfig = world.read_model(WORLD_CONFIG_ID);
 
-            let army_entity_id = InternalTroopImpl::create_defensive_army(ref world, structure_entity_id);
+            // let army_entity_id: ID = 0;
+            // // let army_entity_id = InternalTroopImpl::create_defensive_army(ref world, structure_entity_id);
 
-            let mut seed: u256 = randomness;
+            // let mut seed: u256 = randomness;
 
-            let random_knights_amount: u64 = random::random(
-                seed, 1, mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
-            )
-                .try_into()
-                .unwrap()
-                + mercenaries_config.knights_lower_bound;
-            let random_paladins_amount: u64 = random::random(
-                seed, 2, mercenaries_config.paladins_upper_bound.into() - mercenaries_config.paladins_lower_bound.into()
-            )
-                .try_into()
-                .unwrap()
-                + mercenaries_config.paladins_lower_bound;
-            let random_crossbowmen_amount: u64 = random::random(
-                seed,
-                3,
-                mercenaries_config.crossbowmen_upper_bound.into() - mercenaries_config.crossbowmen_lower_bound.into()
-            )
-                .try_into()
-                .unwrap()
-                + mercenaries_config.crossbowmen_lower_bound;
+            // let random_knights_amount: u64 = random::random(
+            //     seed, 1, mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
+            // )
+            //     .try_into()
+            //     .unwrap()
+            //     + mercenaries_config.knights_lower_bound;
+            // let random_paladins_amount: u64 = random::random(
+            //     seed, 2, mercenaries_config.paladins_upper_bound.into() - mercenaries_config.paladins_lower_bound.into()
+            // )
+            //     .try_into()
+            //     .unwrap()
+            //     + mercenaries_config.paladins_lower_bound;
+            // let random_crossbowmen_amount: u64 = random::random(
+            //     seed,
+            //     3,
+            //     mercenaries_config.crossbowmen_upper_bound.into() - mercenaries_config.crossbowmen_lower_bound.into()
+            // )
+            //     .try_into()
+            //     .unwrap()
+            //     + mercenaries_config.crossbowmen_lower_bound;
 
-            let mut troops = Troops {
-                knight_count: random_knights_amount,
-                paladin_count: random_paladins_amount,
-                crossbowman_count: random_crossbowmen_amount
-            };
+            // let mut troops = Troops {
+            //     knight_count: random_knights_amount,
+            //     paladin_count: random_paladins_amount,
+            //     crossbowman_count: random_crossbowmen_amount
+            // };
 
-            troops.normalize_counts();
+            // // troops.normalize_counts();
 
-            InternalTroopImpl::add_troops_to_army(ref world, troops, army_entity_id);
+            // InternalTroopImpl::add_troops_to_army(ref world, troops, army_entity_id);
 
-            army_entity_id
+            0
         }
 
         fn get_shards_reward(ref world: WorldStorage, randomness: u256, mine_entity_id: ID) -> u128 {
@@ -227,19 +228,14 @@ mod map_generation_systems {
 
         fn create_shard_mine_structure(ref world: WorldStorage, coord: Coord) -> ID {
             let entity_id: ID = world.dispatcher.uuid();
-            world.write_model(@EntityOwner { entity_id: entity_id, entity_owner_id: entity_id });
-            world
-                .write_model(
-                    @Structure {
-                        entity_id: entity_id,
-                        category: StructureCategory::FragmentMine,
-                        created_at: starknet::get_block_timestamp()
-                    }
-                );
-            world.write_model(@StructureCount { coord: coord, count: 1 });
-            world.write_model(@CapacityCategory { entity_id: entity_id, category: CapacityConfigCategory::Structure });
-            world.write_model(@Position { entity_id: entity_id, x: coord.x, y: coord.y });
+            let owner: Owner = Owner { entity_id: entity_id, address: starknet::get_caller_address() };
+            let structure: Structure = StructureImpl::new(entity_id, StructureCategory::FragmentMine, coord, owner);
+            world.write_model(@structure);
 
+            let occupier: Occupier = Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(entity_id) };
+            world.write_model(@occupier);
+
+            world.write_model(@CapacityCategory { entity_id: entity_id, category: CapacityConfigCategory::Structure });
             entity_id
         }
     }

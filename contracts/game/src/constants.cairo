@@ -217,9 +217,15 @@ mod ResourceTiers {
 fn get_resource_tier(resource_type: u8) -> u8 {
     if resource_type == ResourceTypes::LORDS || resource_type == ResourceTypes::EARTHEN_SHARD {
         ResourceTiers::LORDS
-    } else if resource_type == ResourceTypes::KNIGHT
-        || resource_type == ResourceTypes::CROSSBOWMAN
-        || resource_type == ResourceTypes::PALADIN {
+    } else if resource_type == ResourceTypes::KNIGHT_T1
+        || resource_type == ResourceTypes::KNIGHT_T2
+        || resource_type == ResourceTypes::KNIGHT_T3
+        || resource_type == ResourceTypes::CROSSBOWMAN_T1
+        || resource_type == ResourceTypes::CROSSBOWMAN_T2
+        || resource_type == ResourceTypes::CROSSBOWMAN_T3
+        || resource_type == ResourceTypes::PALADIN_T1
+        || resource_type == ResourceTypes::PALADIN_T2
+        || resource_type == ResourceTypes::PALADIN_T3 {
         ResourceTiers::MILITARY
     } else if resource_type == ResourceTypes::DONKEY {
         ResourceTiers::TRANSPORT
@@ -285,9 +291,15 @@ fn get_resources_without_earthenshards() -> Span<u8> {
         ResourceTypes::DRAGONHIDE,
         ResourceTypes::LABOR,
         ResourceTypes::DONKEY,
-        ResourceTypes::KNIGHT,
-        ResourceTypes::CROSSBOWMAN,
-        ResourceTypes::PALADIN,
+        ResourceTypes::KNIGHT_T1,
+        ResourceTypes::KNIGHT_T2,
+        ResourceTypes::KNIGHT_T3,
+        ResourceTypes::CROSSBOWMAN_T1,
+        ResourceTypes::CROSSBOWMAN_T2,
+        ResourceTypes::CROSSBOWMAN_T3,
+        ResourceTypes::PALADIN_T1,
+        ResourceTypes::PALADIN_T2,
+        ResourceTypes::PALADIN_T3,
         ResourceTypes::LORDS,
         ResourceTypes::WHEAT,
         ResourceTypes::FISH,
@@ -353,8 +365,8 @@ fn get_contributable_resources_with_rarity() -> Span<(u8, u128)> {
 }
 
 fn get_resources_without_earthenshards_probs() -> Span<u128> {
-    // 35
-    return array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span();
+    // 36
+    return array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1,1,1,1,1,1].span();
 }
 
 

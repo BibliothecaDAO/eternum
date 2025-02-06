@@ -239,7 +239,7 @@ mod resource_bridge_systems {
 
             // ensure transfer recipient is a realm
             let recipient_structure: Structure = world.read_model(recipient_realm_id);
-            recipient_structure.assert_is_structure();
+            recipient_structure.assert_exists();
             assert!(recipient_structure.category == StructureCategory::Realm, "recipient structure is not a realm");
 
             // ensure bridge deposit is not paused
@@ -285,12 +285,12 @@ mod resource_bridge_systems {
 
             // ensure through bank is a bank
             let through_bank: Structure = world.read_model(through_bank_id);
-            through_bank.assert_is_structure();
+            through_bank.assert_exists();
             assert!(through_bank.category == StructureCategory::Bank, "through bank is not a bank");
 
             // ensure transfer recipient is a realm
             let recipient_structure: Structure = world.read_model(recipient_realm_id);
-            recipient_structure.assert_is_structure();
+            recipient_structure.assert_exists();
             assert!(recipient_structure.category == StructureCategory::Realm, "recipient structure is not a realm");
 
             // ensure bridge deposit is not paused
@@ -349,12 +349,12 @@ mod resource_bridge_systems {
 
             // ensure through bank is a bank
             let through_bank: Structure = world.read_model(through_bank_id);
-            through_bank.assert_is_structure();
+            through_bank.assert_exists();
             assert!(through_bank.category == StructureCategory::Bank, "through bank is not a bank");
 
             // ensure from_realm_id is a realm
             let from_structure: Structure = world.read_model(from_realm_id);
-            from_structure.assert_is_structure();
+            from_structure.assert_exists();
             assert!(from_structure.category == StructureCategory::Realm, "from structure is not a realm");
 
             // ensure bridge withdrawal is not paused
@@ -389,7 +389,7 @@ mod resource_bridge_systems {
 
             // ensure through bank is a bank
             let through_bank: Structure = world.read_model(through_bank_id);
-            through_bank.assert_is_structure();
+            through_bank.assert_exists();
             assert!(through_bank.category == StructureCategory::Bank, "through bank is not a bank");
 
             // ensure from_entity is at the bank

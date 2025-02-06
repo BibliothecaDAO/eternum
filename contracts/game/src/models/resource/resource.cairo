@@ -177,8 +177,8 @@ impl ResourceImpl of ResourceTrait {
         assert!(resource.resource_type.is_non_zero(), "invalid resource specified");
 
         let entity_structure: Structure = world.read_model(resource.entity_id);
-        let entity_is_structure = entity_structure.is_structure();
-        if entity_is_structure {
+        let entity_exists = entity_structure.exists();
+        if entity_exists {
             resource.update_balance(ref world);
         }
 
@@ -212,7 +212,7 @@ impl ResourceImpl of ResourceTrait {
         };
 
         let entity_structure: Structure = world.read_model(self.entity_id);
-        if entity_structure.is_structure() {
+        if entity_structure.exists() {
             // limit balance by storehouse capacity
             self.limit_balance_by_storehouse_capacity(ref world);
         }

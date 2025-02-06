@@ -9,7 +9,7 @@ use s1_eternum::models::owner::Owner;
 use s1_eternum::models::position::{Position, Coord};
 use s1_eternum::models::resource::resource::Resource;
 use s1_eternum::models::season::{Leaderboard, LeaderboardEntry, LeaderboardEntryImpl};
-use s1_eternum::models::structure::{Structure, StructureCount, StructureCountTrait, StructureCategory};
+use s1_eternum::models::structure::{Structure, StructureCategory};
 use s1_eternum::systems::config::contracts::{
     config_systems, config_systems::HyperstructureConfigImpl, IHyperstructureConfigDispatcher, IHyperstructureConfig,
     IHyperstructureConfigDispatcherTrait

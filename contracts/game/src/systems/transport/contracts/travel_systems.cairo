@@ -19,7 +19,6 @@ mod travel_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{WORLD_CONFIG_ID, TravelTypes, DEFAULT_NS};
-    use s1_eternum::models::combat::Army;
     use s1_eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::movable::{Movable, ArrivalTime};
@@ -30,7 +29,7 @@ mod travel_systems {
     use s1_eternum::models::realm::Realm;
 
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::stamina::StaminaImpl;
+    // use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::weight::Weight;
 
     use starknet::ContractAddress;
@@ -53,76 +52,40 @@ mod travel_systems {
 
     #[abi(embed_v0)]
     impl TravelSystemsImpl of super::ITravelSystems<ContractState> {
-        /// Travel to a destination
-        ///
-        /// This system can be called to move an entity from
-        /// its current location to another coordinate on the map. It
-        //  is however crucial that the entity has all the necessary
-        //  models or components allowing it to move (i.e it must be movable)
-        ///
-        /// # Arguments
-        ///
-        /// * `travelling_entity_id` - The ID of the entity that is travelling
-        /// * `destination_coord` - The coordinate to travel to
-        ///
-        // fn travel(ref self: ContractState, travelling_entity_id: ID, destination_coord: Coord) {
-        //     let mut world = self.world(DEFAULT_NS());
-        //     SeasonImpl::assert_season_is_not_over(world);
 
-        //     // todo@security prevent free transport units from travelling
-        //     let travelling_entity_owner: EntityOwner = world.read_model(travelling_entity_id);
-        //     travelling_entity_owner.assert_caller_owner(world);
-
-        //     let travelling_entity_movable: Movable = world.read_model(travelling_entity_id);
-        //     assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');
-        //     assert(travelling_entity_movable.blocked == false, 'entity is blocked');
-
-        //     let travelling_entity_arrival_time: ArrivalTime = world.read_model(travelling_entity_id);
-        //     let ts = starknet::get_block_timestamp();
-        //     assert(travelling_entity_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
-
-        //     let travelling_entity_position: Position = world.read_model(travelling_entity_id);
-        //     let travelling_entity_coord: Coord = travelling_entity_position.into();
-        //     assert(travelling_entity_coord != destination_coord, 'entity is at destination');
-
-        //     InternalTravelSystemsImpl::travel(
-        //         ref world, travelling_entity_id, travelling_entity_movable, travelling_entity_coord,
-        //         destination_coord
-        //     );
-        // }
 
         fn travel_hex(ref self: ContractState, travelling_entity_id: ID, directions: Span<Direction>) {
-            let mut world = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            // let mut world = self.world(DEFAULT_NS());
+            // SeasonImpl::assert_season_is_not_over(world);
 
-            let travelling_entity_owner: EntityOwner = world.read_model(travelling_entity_id);
-            travelling_entity_owner.assert_caller_owner(world);
+            // let travelling_entity_owner: EntityOwner = world.read_model(travelling_entity_id);
+            // travelling_entity_owner.assert_caller_owner(world);
 
-            let travelling_entity_movable: Movable = world.read_model(travelling_entity_id);
-            assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');
-            assert(travelling_entity_movable.blocked == false, 'entity is blocked');
+            // let travelling_entity_movable: Movable = world.read_model(travelling_entity_id);
+            // assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');
+            // assert(travelling_entity_movable.blocked == false, 'entity is blocked');
 
-            let travelling_entity_arrival_time: ArrivalTime = world.read_model(travelling_entity_id);
-            let ts = starknet::get_block_timestamp();
-            assert(travelling_entity_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
+            // let travelling_entity_arrival_time: ArrivalTime = world.read_model(travelling_entity_id);
+            // let ts = starknet::get_block_timestamp();
+            // assert(travelling_entity_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
 
-            let travelling_entity_position: Position = world.read_model(travelling_entity_id);
-            let travelling_entity_coord: Coord = travelling_entity_position.into();
+            // let travelling_entity_position: Position = world.read_model(travelling_entity_id);
+            // let travelling_entity_coord: Coord = travelling_entity_position.into();
 
-            let num_moves = directions.len().try_into().unwrap();
-            let mut stamina_cost: TravelStaminaCostConfig = world.read_model((WORLD_CONFIG_ID, TravelTypes::TRAVEL));
-            let mut stamina_cost = stamina_cost.cost;
-            stamina_cost = stamina_cost * num_moves;
+            // let num_moves = directions.len().try_into().unwrap();
+            // let mut stamina_cost: TravelStaminaCostConfig = world.read_model((WORLD_CONFIG_ID, TravelTypes::TRAVEL));
+            // let mut stamina_cost = stamina_cost.cost;
+            // stamina_cost = stamina_cost * num_moves;
 
-            StaminaImpl::handle_stamina_costs(travelling_entity_id, stamina_cost, ref world);
+            // StaminaImpl::handle_stamina_costs(travelling_entity_id, stamina_cost, ref world);
 
-            let transport_owner_entity: EntityOwner = world.read_model(travelling_entity_id);
+            // let transport_owner_entity: EntityOwner = world.read_model(travelling_entity_id);
 
-            let army: Army = world.read_model(travelling_entity_id);
+            // let army: Army = world.read_model(travelling_entity_id);
 
-            TravelFoodCostConfigImpl::pay_travel_cost(ref world, transport_owner_entity, army.troops, directions.len());
+            // // TravelFoodCostConfigImpl::pay_travel_cost(ref world, transport_owner_entity, army.troops, directions.len());
 
-            InternalTravelSystemsImpl::travel_hex(ref world, travelling_entity_id, travelling_entity_coord, directions);
+            // InternalTravelSystemsImpl::travel_hex(ref world, travelling_entity_id, travelling_entity_coord, directions);
         }
     }
 

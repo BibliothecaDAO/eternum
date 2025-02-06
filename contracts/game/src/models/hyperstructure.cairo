@@ -7,7 +7,7 @@ use s1_eternum::{
     models::{
         owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
         resource::resource::{Resource, ResourceImpl, ResourceCost},
-        structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}, guild::{GuildMember}
+        structure::{Structure, StructureCategory}, guild::{GuildMember}
     },
 };
 

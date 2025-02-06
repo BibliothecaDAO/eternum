@@ -131,7 +131,7 @@ impl DirectionDisplay of Display<Direction> {
 }
 
 
-#[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug)]
+#[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug, Default)]
 struct Coord {
     x: u32,
     y: u32
@@ -224,22 +224,37 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
     }
 }
 
-#[derive(Introspect, Copy, Drop, Serde, Default)]
+#[derive(Introspect, Copy, Drop, Serde, Default, PartialEq)]
 pub enum OccupiedBy {
-    Structure(ID),
-    Donkey(ID),
-    Explorer(ID),
+    #[default]
+    None: ID,
+    Structure: ID,
+    Explorer: ID
 }
 
 #[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]
-pub struct Occupiers {
+pub struct Occupier {
     #[key]
     x: u32,
     #[key]
     y: u32,
-    values: Span<OccupiedBy>,
+    entity: OccupiedBy,
 }
+
+#[generate_trait]
+impl OccupierImpl of OccupierTrait {
+    #[inline(always)]
+    fn occupied(self: Occupier) -> bool {
+        self.entity != OccupiedBy::None(0)
+    }
+
+    #[inline(always)]
+    fn not_occupied(self: Occupier) -> bool {
+        self.entity == OccupiedBy::None(0)
+    }
+}
+
 
 #[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]

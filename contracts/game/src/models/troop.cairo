@@ -33,12 +33,105 @@ struct Troops {
 pub struct GuardTroops {
     #[key]
     structure_id: ID,
-    slot_1: Troops,
-    slot_2: Troops,
-    slot_3: Troops,
-    slot_4: Troops,
-    defeated_at: u128,
-    defeated_slot: u8,
+    // slot 4
+    delta: Troops,
+    // slot 3
+    charlie: Troops,
+    // slot 2
+    bravo: Troops,
+    // slot 1
+    alpha: Troops,
+
+    delta_destroyed_at: u32,
+    charlie_destroyed_at: u32,
+    bravo_destroyed_at: u32,
+    alpha_destroyed_at: u32,   
+}
+
+
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq, Default)]
+enum GuardSlot {
+    None,
+    Delta,
+    Charlie,
+    Bravo,
+    Alpha,
+}
+
+#[generate_trait]
+pub impl GuardImpl of GuardTrait {
+
+    fn next_attack_slot(ref self: GuardTroops, max_allowed_guards: felt252 ) -> GuardSlot {
+        // Check slots from highest to lowest based on max_allowed_guards
+        match max_allowed_guards {
+            0 => panic!("max_allowed_guards must be greater than 0"),
+            1 => {
+                if self.delta.health.is_zero() {
+                    GuardSlot::None
+                } else {
+                    GuardSlot::Delta
+                }
+            },
+            2 => {
+                if self.delta.health.is_zero() {
+                    GuardSlot::None
+                } else if self.charlie.health.is_zero() {
+                    GuardSlot::Delta
+                } else {
+                    GuardSlot::Charlie
+                }
+            },
+            3 => {
+                if self.delta.health.is_zero() {
+                    GuardSlot::None
+                } else if self.charlie.health.is_zero() {
+                    GuardSlot::Delta
+                } else if self.bravo.health.is_zero() {
+                    GuardSlot::Charlie
+                } else {
+                    GuardSlot::Bravo
+                }
+                    
+            },
+            4 => {
+                if self.delta.health.is_zero() {
+                    GuardSlot::None
+                } else if self.charlie.health.is_zero() {
+                    GuardSlot::Delta
+                } else if self.bravo.health.is_zero() {
+                    GuardSlot::Charlie
+                } else if self.alpha.health.is_zero() {
+                    GuardSlot::Bravo
+                } else {
+                    GuardSlot::Alpha
+                }
+            },
+            _ => panic!("max_allowed_guards must be between 1 and 4")
+        }
+    }
+
+    fn get_slot(ref self: GuardTroops, slot: GuardSlot) -> (Troops, u32) {
+        assert!(slot != GuardSlot::None, "slot must not be none");
+
+        match slot {
+            GuardSlot::None => (Default::default(), 0),
+            GuardSlot::Delta => (self.delta, self.delta_destroyed_at),
+            GuardSlot::Charlie => (self.charlie, self.charlie_destroyed_at),
+            GuardSlot::Bravo => (self.bravo, self.bravo_destroyed_at),
+            GuardSlot::Alpha => (self.alpha, self.alpha_destroyed_at)
+        }
+    }
+
+    fn set_slot(ref self: GuardTroops, slot: GuardSlot, troops: Troops) {
+        assert!(slot != GuardSlot::None, "slot must not be none");
+
+        match slot {
+            GuardSlot::Delta => {self.delta = troops;},
+            GuardSlot::Charlie => {self.charlie = troops;},
+            GuardSlot::Bravo => {self.bravo = troops;},
+            GuardSlot::Alpha => {self.alpha = troops;}
+        }
+    }
 }
 
 
@@ -74,14 +167,6 @@ struct CombatConfig {
 
 #[generate_trait]
 impl CombatConfigImpl of CombatConfigTrait {
-
-
-
-
-
- 
-    
-
     fn stamina(ref self: CombatConfig, troop: Troops, biome: Biome) -> u16 {
         let base_stamina = self._base_stamina(troop.category);
 

@@ -1,6 +1,5 @@
 use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
-use s1_eternum::models::combat::{Troops};
 use s1_eternum::models::config::{
     TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonAddressesConfig,
@@ -228,7 +227,6 @@ mod config_systems {
         POPULATION_CONFIG_ID, DEFAULT_NS
     };
     use s1_eternum::models::bank::bank::{Bank};
-    use s1_eternum::models::combat::{Troops};
 
     use s1_eternum::models::config::{
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestRewardConfig, MapConfig,
