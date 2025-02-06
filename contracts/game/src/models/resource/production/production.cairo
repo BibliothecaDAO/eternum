@@ -235,9 +235,11 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         // add produced resource amount to factory
         let mut produced_resource = ResourceImpl::get(ref world, (from_entity_id, produced_resource_type));
         let mut produced_resource_production = produced_resource.production;
-        produced_resource_production.increase_output_amout_left(production_tick_count * RESOURCE_PRECISION);
+        let amount_per_tick = produced_resource_production_config.amount_per_building_per_tick;
+        produced_resource_production.increase_output_amout_left(production_tick_count * amount_per_tick);
         produced_resource.production = produced_resource_production;
         produced_resource.save(ref world);
+        
         // todo add event here
     }
 }
