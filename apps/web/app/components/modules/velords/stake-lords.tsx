@@ -13,23 +13,24 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Unlock } from "lucide-react";
+import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
 import {
-  Label,
-  PolarRadiusAxis,
-  RadialBar,
-  RadialBarChart,
-} from "recharts";
-import { Address, useAccount, useBalance, useContract, useReadContract, useSendTransaction } from "@starknet-react/core";
-import { shortenAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+  Address,
+  useAccount,
+  useBalance,
+  useContract,
+  useReadContract,
+  useSendTransaction,
+} from "@starknet-react/core";
+import { abbreviateNumber, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { LORDS, StakingAddresses } from "@realms-world/constants";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { StakeDialog } from "./stake-dialog";
 import { VeLords } from "@/abi/L2/VeLords";
 import { BlockNumber, BlockTag } from "starknet";
 import { formatEther } from "viem";
 import { UnlockDialog } from "./unlock-dialog";
-import { toast } from "@/hooks/use-toast";
+
 const chartConfig = {
   locked: {
     label: "Staked",
@@ -40,6 +41,9 @@ const chartConfig = {
     color: "hsl(var(--chart-1))",
   },
 } satisfies ChartConfig;
+
+// Helper function to abbreviate numbers
+
 
 export const StakeLords = () => {
   const { address } = useAccount();
@@ -80,12 +84,21 @@ export const StakeLords = () => {
     data: withdrawHash,
     isPending: withdrawsSubmitting,
   } = useSendTransaction({
-    calls: veLordsContract && address ? [veLordsContract?.populate("withdraw", [])] : undefined,
+    calls:
+      veLordsContract && address
+        ? [veLordsContract?.populate("withdraw", [])]
+        : undefined,
   });
 
-  const chartData = [
-    { month: "January", locked: Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0n))), unlocked: Number(data?.formatted) },
-  ];
+  const chartData = useMemo(() =>  [
+    {
+      month: "January",
+      locked: Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0n))),
+      unlocked: Number(data?.formatted),
+        },
+      ],
+    [ownerLordsLock?.amount, data?.formatted]
+  );
   const totalLords = useMemo(() => {
     return (chartData[0].unlocked ?? 0) + chartData[0].locked;
   }, [chartData[0].unlocked, chartData[0].locked]);
@@ -101,7 +114,7 @@ export const StakeLords = () => {
       <CardContent className="flex flex-1 items-center pb-0">
         <ChartContainer
           config={chartConfig}
-          className="h-[170px] w-full relative"
+          className="h-[180px] w-full relative"
         >
           <RadialBarChart
             accessibilityLayer
@@ -128,18 +141,20 @@ export const StakeLords = () => {
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) - 16}
-                          className="fill-foreground text-2xl font-bold"
+                          className="fill-foreground text-lg font-bold"
                         >
-                          {totalLords.toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                          })}
+                          {ownerLordsLock?.amount
+                            ? abbreviateNumber(formatEther(BigInt(ownerLordsLock.amount)))
+                            : "0"}{" "}
+                          /
+                          {abbreviateNumber(totalLords)}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 4}
                           className="fill-muted-foreground"
                         >
-                          Your Total $LORDS
+                          Staked / Total $LORDS
                         </tspan>
                       </text>
                     );
@@ -147,16 +162,18 @@ export const StakeLords = () => {
                 }}
               />
             </PolarRadiusAxis>
-            <RadialBar
-              dataKey="locked"
-              stackId="a"
-              fill="var(--color-locked)"
-              cornerRadius={5}
-            />
+
             <RadialBar
               dataKey="unlocked"
               stackId="a"
               fill="var(--color-unlocked)"
+              cornerRadius={5}
+            />            
+            <RadialBar
+            order={0}
+              dataKey="locked"
+              stackId="a"
+              fill="var(--color-locked)"
               cornerRadius={5}
             />
           </RadialBarChart>
@@ -164,8 +181,16 @@ export const StakeLords = () => {
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex gap-2 mb-4">
-          <StakeDialog ownerLordsLock={ownerLordsLock} lordsBalance={Number(data?.formatted)} manageLordsLock={manageLordsLock}/>
-          <UnlockDialog ownerLordsLock={ownerLordsLock} lordsBalance={Number(data?.formatted)} withdraw={withdraw}/>
+          <StakeDialog
+            ownerLordsLock={ownerLordsLock}
+            lordsBalance={Number(data?.formatted)}
+            manageLordsLock={manageLordsLock}
+          />
+          <UnlockDialog
+            ownerLordsLock={ownerLordsLock}
+            lordsBalance={Number(data?.formatted)}
+            withdraw={withdraw}
+          />
         </div>
         <div className="flex items-center gap-2 font-medium leading-none">
           veLords are entitled to a share of Lords fees from ecosystem games and

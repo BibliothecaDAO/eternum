@@ -30,7 +30,7 @@ export const realmsBridgeRequests = pgTable("realms_bridge_requests", {
   to_address: text("to_address").notNull(),
   timestamp: timestamp("timestamp").notNull(),
   tx_hash: text("tx_hash").notNull(),
-  req_hash:  numeric("req_hash"),
+  req_hash: numeric("req_hash").notNull(),
 });
 
 export const realmsBridgeRequestsRelations = relations(
@@ -43,7 +43,7 @@ export const realmsBridgeEvents = pgTable(
   "realms_bridge_events",
   {
     id: text("id").notNull(),
-    hash: text("hash"),
+    hash: text("hash").notNull(),
     type: bridgeEventTypeEnum().notNull(),
     timestamp: timestamp("timestamp").notNull(),
   },

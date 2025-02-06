@@ -15,7 +15,6 @@ export default function RealmResources({
   traits: TokenMetadataAttribute[];
 }) {
   const resources = traits.filter((trait) => trait.trait_type === "Resource");
-  const [showMore, setShowMore] = useState(false);
   const hiddenCount = resources.length - 4;
 
   return (
@@ -25,7 +24,9 @@ export default function RealmResources({
           key={index}
           className="flex items-center gap-2 rounded-lg bg-secondary p-2"
         >
-          <ResourceIcon size="md" resource={resource.value} />
+          {resource.value && (
+            <ResourceIcon size="md" resource={resource.value} />
+          )}
         </div>
       ))}
       {resources.length > 4 && (
@@ -33,12 +34,7 @@ export default function RealmResources({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  size={"xs"}
-                  className="px-2 pt-1"
-                  //onClick={() => setShowMore(!showMore)}
-                >
+                <Button variant={"outline"} size={"sm"} className="px-2 pt-1">
                   {`+(${hiddenCount})`}
                 </Button>
               </TooltipTrigger>
@@ -53,11 +49,13 @@ export default function RealmResources({
                     <div key={index} className="flex items-center gap-2">
                       <div>
                         <span className="text-xs">{resource.value}</span>
-                        <ResourceIcon
-                          size="md"
-                          withTooltip={false}
-                          resource={resource.value}
-                        />
+                        {resource.value && (
+                          <ResourceIcon
+                            size="md"
+                            withTooltip={false}
+                            resource={resource.value}
+                          />
+                        )}
                       </div>
                     </div>
                   ))}

@@ -1,12 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,24 +9,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { getTimeUntil, toWeeks, WEEK_IN_SECONDS } from "@/utils/time";
 import { formatNumber } from "@/utils/utils";
-import { formatDistanceToNow, getUnixTime } from "date-fns";
-import { Check, Plus, Unlock, Wallet } from "lucide-react";
+import { Check, Unlock } from "lucide-react";
 import { useMemo, useState } from "react";
-import LordsIcon from "@/components/icons/lords.svg";
+import LordsIcon from "@/components/icons/lords.svg?react";
 import { formatEther } from "viem";
-import { useContract } from "@starknet-react/core";
-import { VeLords } from "@/abi/L2/VeLords";
-import { toast } from "@/hooks/use-toast";
 
-function formatLockEndTime(timestamp: number): string {
-  const date = new Date(timestamp * 1000);
-  return `${date.toLocaleDateString()} (${formatDistanceToNow(date, { addSuffix: true })})`;
-}
+import { toast } from "@/hooks/use-toast";
+import { formatLockEndTime } from "@/utils/time";
+
 interface LockInfo {
   amount: bigint;
   end: number;
@@ -51,9 +36,9 @@ export function UnlockDialog({
     end_time: number | bigint;
   };
   lordsBalance?: number | bigint;
-  withdraw: () => Promise<{transaction_hash: string}>;
+  withdraw: () => Promise<{ transaction_hash: string }>;
 }) {
-const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const penalty = useMemo(() => {
     if (ownerLordsLock) {
@@ -65,7 +50,6 @@ const [open, setOpen] = useState(false);
     }
     return 0n;
   }, [ownerLordsLock]);
-
 
   function calculatePenalty(lockInfo: LockInfo): bigint {
     if (lockInfo.amount === 0n) return 0n;
@@ -89,15 +73,15 @@ const [open, setOpen] = useState(false);
   async function handleWithdraw() {
     const hash = await withdraw();
     if (hash) {
-        toast({
-          description: (
-            <div className="flex items-center gap-2">
-              <Check /> Lords Withdrawal successful
-            </div>
-          ),
-        });
-        setOpen(false);
-      }
+      toast({
+        description: (
+          <div className="flex items-center gap-2">
+            <Check /> Lords Withdrawal successful
+          </div>
+        ),
+      });
+      setOpen(false);
+    }
   }
 
   return (
@@ -112,7 +96,8 @@ const [open, setOpen] = useState(false);
         <DialogOverlay />
         <DialogContent>
           <DialogTitle className="text-xl font-bold flex items-center gap-3">
-          <Unlock className="w-6 h-6" />Early Withdrawal
+            <Unlock className="w-6 h-6" />
+            Early Withdrawal
           </DialogTitle>
           <div>
             <Label>Current Lock</Label>
@@ -152,9 +137,11 @@ const [open, setOpen] = useState(false);
               Lords early
             </p>
             <div className="flex">
-            <Card className="w-auto">
+              <Card className="w-auto">
                 <CardHeader className="p-3">
-                  <CardTitle className="text-sm">After Withdrawal Penalty</CardTitle>
+                  <CardTitle className="text-sm">
+                    After Withdrawal Penalty
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {ownerLordsLock?.amount ? (
@@ -167,7 +154,11 @@ const [open, setOpen] = useState(false);
                       </div>
                       <div className="text-xs text-red-300/60">
                         Penalty: {formatEther(BigInt(penalty))} LORDS (
-                        {((Number(penalty) / Number(ownerLordsLock.amount)) * 100).toFixed(2)}%)
+                        {(
+                          (Number(penalty) / Number(ownerLordsLock.amount)) *
+                          100
+                        ).toFixed(2)}
+                        %)
                       </div>
                     </div>
                   ) : (

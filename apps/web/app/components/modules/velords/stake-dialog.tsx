@@ -1,11 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +17,7 @@ import { formatNumber, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { formatDistanceToNow, getUnixTime } from "date-fns";
 import { Check, Plus, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
-import LordsIcon from "@/components/icons/lords.svg";
+import LordsIcon from "@/components/icons/lords.svg?react";
 import { formatEther, parseEther } from "viem";
 import { Address, useAccount, useContract } from "@starknet-react/core";
 import { L2_C1ERC20 } from "@/abi/L2/C1ERC20";
@@ -133,12 +127,6 @@ export function StakeDialog({
       value = (Number(lordsBalance) * fraction).toString();
     }
     setStakeAmount(value);
-  };
-
-  const handleStake = () => {
-    // Implement your staking logic here
-    console.log("Staking", stakeAmount);
-    // You might want to close the dialog after staking.
   };
 
   return (
@@ -259,7 +247,11 @@ export function StakeDialog({
             )}
           </div>
           <DialogFooter>
-            <Button disabled={!stakeAmount && !lockWeeks} className="w-full" onClick={manageLock}>
+            <Button
+              disabled={!stakeAmount && !lockWeeks}
+              className="w-full"
+              onClick={manageLock}
+            >
               Stake
             </Button>
           </DialogFooter>

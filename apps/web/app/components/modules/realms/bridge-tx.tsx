@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   Accordion,
   AccordionContent,
@@ -20,12 +20,12 @@ const BridgeTransactionHistory: React.FC<{
   transactions: RouterOutputs["bridgeTransactions"];
 }> = ({ transactions }) => {
   const explorer = useExplorer();
-  const { writeAsync, data, isPending: isWithdrawPending } = useWriteFinalizeWithdrawRealms();
+  const { writeAsync, isPending: isWithdrawPending } =
+    useWriteFinalizeWithdrawRealms();
 
   const handleCompleteWithdraw = async (
     transaction: RouterOutputs["bridgeTransactions"][number]
   ) => {
-    console.log(transaction);
     const hash = await writeAsync({
       hash: transaction.req_hash,
       l1Address: transaction.to_address,
@@ -84,7 +84,6 @@ const BridgeTransactionHistory: React.FC<{
                       onClick={(e) => {
                         e.stopPropagation();
                         handleCompleteWithdraw(transaction);
-                        // Handle complete withdraw here.
                       }}
                       className="rounded border-green-500 mt-2 z-20"
                       disabled={isWithdrawPending}

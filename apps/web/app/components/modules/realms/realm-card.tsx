@@ -3,7 +3,7 @@ import { CollectionToken, PortfolioToken } from "@/types/ark";
 import Media from "./media";
 import { AnimatedMap } from "@/components/icons/AnimatedMap";
 import RealmResources from "./realm-resources";
-import { CollectionAddresses, ChainId } from "@realms-world/constants";
+import { CollectionAddresses } from "@realms-world/constants";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 
 export const RealmCard = ({
@@ -30,12 +30,12 @@ export const RealmCard = ({
         </div>
       )}
       <CardContent className="p-4">
-      {isGrid && (
-        <span className="absolute bottom-1 right-1 bg-black px-1 py-1 text-xs">
-          #{token.token_id}
-        </span>
-      )}
-      <GridDetails token={token} />
+        {isGrid && (
+          <span className="absolute bottom-1 right-1 bg-black px-1 py-1 text-xs">
+            #{token.token_id}
+          </span>
+        )}
+        <GridDetails token={token} />
       </CardContent>
     </Card>
   );
@@ -62,11 +62,9 @@ const GridDetails = ({
     </div>
     <div className="h-[48px]">
       {token.metadata?.attributes &&
-        [
-          CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID],
-        ].includes(token.collection_address as `0x${string}`) && (
-          <RealmResources traits={token.metadata.attributes} />
-        )}
+        [CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID]].includes(
+          token.collection_address as `0x${string}`
+        ) && <RealmResources traits={token.metadata.attributes} />}
     </div>
   </div>
 );

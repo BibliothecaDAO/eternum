@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAccount, useConnect } from "@starknet-react/core";
-import { Connector, StarknetkitConnector, useStarknetkitConnectModal } from "starknetkit";
+import {
+  Connector,
+  StarknetkitConnector,
+  useStarknetkitConnectModal,
+} from "starknetkit";
 import { Button } from "../ui/button";
 import { getConnectorIcon, getLastConnector } from "@/utils/connectWallet";
 import { ArrowDownIcon } from "lucide-react";
@@ -17,7 +21,7 @@ export const StarknetWalletButton = () => {
 
   useEffect(() => {
     setLastConnector(getLastConnector(connectors));
-  }, [isConnected]);
+  }, [isConnected, connectors]);
 
   async function openStarknetKitModal() {
     const { connector } = await starknetkitConnectModal();
@@ -53,7 +57,7 @@ export const StarknetWalletButton = () => {
               <Separator orientation="vertical" className="h-6 ml-3 mr-1.5" />
 
               <div
-              className="hover:bg-background/20 p-1"
+                className="hover:bg-background/20 p-1"
                 onClick={(e) => {
                   openStarknetKitModal();
                   e.stopPropagation();

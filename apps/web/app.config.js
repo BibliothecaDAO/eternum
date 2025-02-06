@@ -3,7 +3,7 @@ import reactRefresh from "@vitejs/plugin-react";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 //import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
-import viteTsConfigPaths from 'vite-tsconfig-paths'
+import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
 export default createApp({
@@ -40,17 +40,10 @@ export default createApp({
         }),
         reactRefresh(),
         viteTsConfigPaths({
-          projects: ['./tsconfig.json'],
+          projects: ["./tsconfig.json"],
         }),
         svgr({
           // svgr options: https://react-svgr.com/docs/options/
-          svgrOptions: {
-            exportType: "default",
-            ref: true,
-            svgo: false,
-            titleProp: true,
-          },
-          include: "**/*.svg",
         }),
         tailwindcss(),
       ],

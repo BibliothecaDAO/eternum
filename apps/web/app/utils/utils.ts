@@ -49,3 +49,12 @@ export function formatNumber(
 
   return formatter.format(amount);
 }
+export function abbreviateNumber(value: number | string): string {
+  const num = typeof value === "number" ? value : parseFloat(value);
+  if (isNaN(num)) return "0";
+  if (Math.abs(num) < 1e3) return num.toString();
+  if (Math.abs(num) >= 1e9) return (num / 1e9).toFixed(1).replace(/\.0$/, "") + "b";
+  if (Math.abs(num) >= 1e6) return (num / 1e6).toFixed(1).replace(/\.0$/, "") + "m";
+  if (Math.abs(num) >= 1e3) return (num / 1e3).toFixed(1).replace(/\.0$/, "") + "k";
+  return num.toString();
+}

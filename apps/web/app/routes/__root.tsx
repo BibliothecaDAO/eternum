@@ -7,12 +7,8 @@ import {
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
-import { Spinner } from "./-components/spinner";
-import type { queryClient, trpcQueryUtils } from "../router";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import type { trpcQueryUtils } from "../router";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 
 import { Header } from "@/components/layout/header";
@@ -22,7 +18,7 @@ import "@rainbow-me/rainbowkit/styles.css";
 
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { mainnet, sepolia} from "wagmi/chains";
+import { mainnet, sepolia } from "wagmi/chains";
 import { env } from "env";
 import { Toaster } from "@/components/ui/toaster";
 export interface RouterAppContext {

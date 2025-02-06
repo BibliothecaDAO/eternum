@@ -2,20 +2,13 @@
 
 import * as React from "react";
 import {
-  AudioWaveform,
   Banknote,
   BookOpen,
-  Bot,
-  Command,
   ExternalLink,
   Frame,
-  GalleryVerticalEnd,
   Map,
   Newspaper,
   PieChart,
-  PiggyBank,
-  Settings2,
-  SquareTerminal,
 } from "lucide-react";
 
 import { NavMain } from "@/components/layout/nav-main";
@@ -27,31 +20,8 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Link } from "@tanstack/react-router";
-// This is sample data.
+
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
   assets: [
     {
       title: "Realms",
@@ -227,9 +197,12 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" {...props} className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
-      <SidebarHeader className="items-center">
-      </SidebarHeader>
+    <Sidebar
+      collapsible="icon"
+      {...props}
+      className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
+    >
+      <SidebarHeader className="items-center"></SidebarHeader>
       <SidebarContent>
         <NavMain label="Game Assets" items={data.assets} />
         <NavMain label="Lords" items={data.lords} />

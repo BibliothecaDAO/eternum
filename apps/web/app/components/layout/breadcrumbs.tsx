@@ -1,12 +1,12 @@
-import { isMatch, Link, useMatches } from '@tanstack/react-router'
+import { isMatch, Link, useMatches } from "@tanstack/react-router";
 
 export const Breadcrumbs = () => {
-  const matches = useMatches()
-  if (matches.some((match) => match.status === 'pending')) return null
-  
+  const matches = useMatches();
+  if (matches.some((match) => match.status === "pending")) return null;
+
   const matchesWithCrumbs = matches.filter((match) =>
-    isMatch(match, 'loaderData.crumb'),
-  )
+    isMatch(match, "loaderData.crumb")
+  );
 
   return (
     <nav>
@@ -17,11 +17,11 @@ export const Breadcrumbs = () => {
               {match.loaderData?.crumb}
             </Link>
             {i + 1 < matchesWithCrumbs.length ? (
-              <span className="">{'>'}</span>
+              <span className="">{">"}</span>
             ) : null}
           </li>
         ))}
       </ul>
     </nav>
-  )
-}
+  );
+};

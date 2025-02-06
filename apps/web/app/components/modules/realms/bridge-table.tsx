@@ -15,15 +15,9 @@ import {
 } from "@tanstack/react-table";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import RealmResources from "./realm-resources";
-import { TokenMetadataAttribute } from "@/types/ark";
+import { BridgeRealm } from "@/types/ark";
 
-export type Realm = {
-  token_id?: string;
-  name?: string;
-  attributes?: TokenMetadataAttribute[];
-};
-
-export const columns: ColumnDef<Realm>[] = [
+export const columns: ColumnDef<BridgeRealm>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -77,7 +71,7 @@ export const columns: ColumnDef<Realm>[] = [
 ];
 
 type BridgeTableProps = {
-  table: ReactTable<Realm>;
+  table: ReactTable<BridgeRealm>;
 };
 
 export const BridgeTable: React.FC<BridgeTableProps> = ({ table }) => {

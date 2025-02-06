@@ -12,7 +12,6 @@ import {
 
 import { Row, RowSelectionState } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
-import { Realm } from "./bridge-table";
 import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount as useL1Account } from "wagmi";
@@ -28,9 +27,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import BridgeTransactionHistory from "./bridge-tx";
+import { BridgeRealm } from "@/types/ark";
 
 interface BridgeSidebarProps {
-  selectedRows: Row<Realm>[];
+  selectedRows: Row<BridgeRealm>[];
   selectedAsset: string;
   setRowSelection: (rowSelection: RowSelectionState) => void;
 }
@@ -38,30 +38,30 @@ interface BridgeSidebarProps {
 const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   selectedRows,
   selectedAsset,
-  setRowSelection
+  setRowSelection,
 }) => {
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
   const { toast } = useToast();
 
-  const bridgeTxsQuery = trpc.bridgeTransactions.useQuery({
-    l1Account: l1Address?.toLowerCase(),
-    l2Account: l2Address,
-  }, {enabled: !!l1Address || !!l2Address, refetchInterval: 10000});
+  const bridgeTxsQuery = trpc.bridgeTransactions.useQuery(
+    {
+      l1Account: l1Address?.toLowerCase(),
+      l2Account: l2Address,
+    },
+    { enabled: !!l1Address || !!l2Address, refetchInterval: 10000 }
+  );
   const bridgeTxs = bridgeTxsQuery.data || [];
 
-  const {
-    writeAsync: depositRealms,
-    isPending: isDepositPending,
-    data: depositData,
-  } = useWriteDepositRealms({
-    onSuccess: (data: string) => {
-      toast({
-        title: "Initating Realms Bridge to Starknet",
-        description: `Realms will appear in your L2 wallet in a few minutes`,
-      });
-    },
-  });
+  const { writeAsync: depositRealms, isPending: isDepositPending } =
+    useWriteDepositRealms({
+      onSuccess: () => {
+        toast({
+          title: "Initating Realms Bridge to Starknet",
+          description: `Realms will appear in your L2 wallet in a few minutes`,
+        });
+      },
+    });
 
   const tokenIds = useMemo(
     () => selectedRows.map((row) => row.getValue("token_id") as string),
@@ -75,11 +75,9 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
     isPending: isApproveForAllPending,
   } = useERC721Approval();
 
-  const {
-    initiateWithdraw,
-    isPending: isWithdrawPending,
-    data: withdrawData,
-  } = useBridgeL2Realms({ selectedTokenIds: tokenIds });
+  const { initiateWithdraw, isPending: isWithdrawPending } = useBridgeL2Realms({
+    selectedTokenIds: tokenIds,
+  });
 
   const onBridge = async () => {
     let hash;
@@ -92,23 +90,20 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
         tokenIds: tokenIds.map((id) => BigInt(id)),
         l2Address: l2Address,
       });
-      console.log(hash);
     } else {
       hash = await initiateWithdraw();
     }
     if (hash) {
-    toast({
-      title: "Bridge Realms",
-      description:
-        selectedAsset === "Ethereum"
-          ? `${selectedRows.length} Realms will be appear in your L2 wallet in a few minutes`
-          : `${selectedRows.length} Realms will require a transction in ~6 hours to finalize your withdrawal`,
-    });
-    setRowSelection({});
+      toast({
+        title: "Bridge Realms",
+        description:
+          selectedAsset === "Ethereum"
+            ? `${selectedRows.length} Realms will be appear in your L2 wallet in a few minutes`
+            : `${selectedRows.length} Realms will require a transction in ~6 hours to finalize your withdrawal`,
+      });
+      setRowSelection({});
     }
   };
-
-
 
   return (
     <Sidebar
@@ -147,7 +142,12 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
             </Button>
           ) : (
             <Button
-              disabled={!selectedRows.length || isDepositPending || !l2Address}
+              disabled={
+                !selectedRows.length ||
+                isDepositPending ||
+                !l2Address ||
+                isWithdrawPending
+              }
               className="w-full"
               onClick={onBridge}
             >

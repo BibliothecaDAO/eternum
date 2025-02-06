@@ -7,8 +7,8 @@ import { Button } from "../ui/button";
 import { cn, shortenAddress } from "@/utils/utils";
 import { ModeToggle } from "./mode-toggle";
 import { Link } from "@tanstack/react-router";
-import RWLogo from "@/components/icons/rw-logo.svg";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+
+import RWLogo from "@/components/icons/rw-logo.svg?react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Avatar, AvatarImage } from "../ui/avatar";
-import { DropdownMenuGroup } from "@radix-ui/react-dropdown-menu";
 import { Check, Copy, ExternalLink, Unplug } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
