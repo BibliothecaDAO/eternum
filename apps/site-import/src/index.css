@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 346.8 77.2% 49.8%;
+    --primary-foreground: 355.7 100% 97.3%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 346.8 77.2% 49.8%;
+    --radius: 0rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --font-doto: "Doto";
+    --font-inconsolata: "Inconsolata";
+    --font-bebas-neue: "Bebas Neue";
+    --font-silkscreen: "Silkscreen";
+  }
+  
+  .dark {
+    --background: 351.3 50% 10%;
+    --foreground: 351.3 5% 90%;
+    --card: 351.3 50% 10%;
+    --card-foreground: 351.3 5% 90%;
+    --popover: 351.3 50% 5%;
+    --popover-foreground: 351.3 5% 90%;
+    --primary: 351.3 94.5% 71.4%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 351.3 30% 20%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 313.3 30% 25%;
+    --muted-foreground: 351.3 5% 60%;
+    --accent: 313.3 30% 25%;
+    --accent-foreground: 351.3 5% 90%;
+    --destructive: 0 100% 30%;
+    --destructive-foreground: 351.3 5% 90%;
+    --border: 351.3 30% 26%;
+    --input: 351.3 30% 26%;
+    --ring: 351.3 94.5% 71.4%;
+    --radius: 0rem;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* (The rest of your index.css remains unchanged. ) */
+/* @font-face {
+  font-family: "ST-Tokyo";
+  src: url("/ST-Tokyo.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "The Seasons";
+  src: url("/theseasons-reg.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "The Seasons";
+  src: url("/theseasons-it.otf") format("opentype");
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Marijan";
+  src: url("/Marijan.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+} */
+
+.glitch-text {
+  text-shadow: 
+    0.05em 0 0 rgba(255,0,0,0.75),
+    -0.025em -0.05em 0 rgba(0,255,0,0.75),
+    0.025em 0.05em 0 rgba(0,0,255,0.75);
+  animation: glitch 500ms infinite;
+}
+
+@keyframes glitch {
+  0% {
+    text-shadow: 
+      0.05em 0 0 rgba(255,0,0,0.75),
+      -0.05em -0.025em 0 rgba(0,255,0,0.75),
+      -0.025em 0.05em 0 rgba(0,0,255,0.75);
+  }
+  14% {
+    text-shadow: 
+      0.05em 0 0 rgba(255,0,0,0.75),
+      -0.05em -0.025em 0 rgba(0,255,0,0.75),
+      -0.025em 0.05em 0 rgba(0,0,255,0.75);
+  }
+  15% {
+    text-shadow: 
+      -0.05em -0.025em 0 rgba(255,0,0,0.75),
+      0.025em 0.025em 0 rgba(0,255,0,0.75),
+      -0.05em -0.05em 0 rgba(0,0,255,0.75);
+  }
+  49% {
+    text-shadow: 
+      -0.05em -0.025em 0 rgba(255,0,0,0.75),
+      0.025em 0.025em 0 rgba(0,255,0,0.75),
+      -0.05em -0.05em 0 rgba(0,0,255,0.75);
+  }
+  50% {
+    text-shadow: 
+      0.025em 0.05em 0 rgba(255,0,0,0.75),
+      0.05em 0 0 rgba(0,255,0,0.75),
+      0 -0.05em 0 rgba(0,0,255,0.75);
+  }
+  99% {
+    text-shadow: 
+      0.025em 0.05em 0 rgba(255,0,0,0.75),
+      0.05em 0 0 rgba(0,255,0,0.75),
+      0 -0.05em 0 rgba(0,0,255,0.75);
+  }
+  100% {
+    text-shadow: 
+      -0.025em 0 0 rgba(255,0,0,0.75),
+      -0.025em -0.025em 0 rgba(0,255,0,0.75),
+      -0.025em -0.05em 0 rgba(0,0,255,0.75);
+  }
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Add these styles to hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Add smooth scrolling to the container */
+.snap-mandatory {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar but keep functionality */
+.snap-mandatory {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.snap-mandatory::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevent scroll chaining */
+.snap-mandatory {
+  overscroll-behavior-y: contain;
+}
+
+@font-face {
+  font-family: "Doto";
+  src: url("/Doto.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-bebas-neue);
+}
+
+p, span, a, li {
+  font-family: var(--font-inconsolata);
+}
