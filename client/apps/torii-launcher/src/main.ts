@@ -168,7 +168,7 @@ async function handleTorii() {
   } else {
     // Check current torii version
     const versionResult = spawnSync(path.join(DOJO_PATH, "bin", "torii"), ["--version"]);
-    const currentVersion = versionResult.stdout.toString().trim();
+    const currentVersion = versionResult.stdout.toString().replace(/torii/g, "").replace(/\s+/g, "");
 
     if (currentVersion !== TORII_VERSION) {
       normalLog(`Updating torii from ${currentVersion} to ${TORII_VERSION}`);
