@@ -5,6 +5,7 @@ import {
   DrawerClose,
   DrawerContent,
   DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -137,21 +138,26 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
         </div>
 
         {/* Numeric Keyboard */}
-        {showKeyboard && (
-          <Drawer open={showKeyboard} onOpenChange={setShowKeyboard}>
-            <DrawerContent>
-              <DrawerHeader>
-                <DrawerTitle className="text-3xl font-bokor text-center">Enter Amount</DrawerTitle>
-                <DrawerDescription className="text-xl">
-                  {amount} {selectedResource?.trait}
-                </DrawerDescription>
-              </DrawerHeader>
-              <div className="p-4">
-                <NumericKeyboard onKeyPress={handleKeyPress} />
-              </div>
-            </DrawerContent>
-          </Drawer>
-        )}
+        <Drawer open={showKeyboard} onOpenChange={setShowKeyboard}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle className="text-3xl font-bokor text-center">Enter Amount</DrawerTitle>
+              <DrawerDescription className="text-xl">
+                {amount} {selectedResource?.trait}
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="p-4">
+              <NumericKeyboard onKeyPress={handleKeyPress} />
+            </div>
+            <DrawerFooter>
+              <DrawerClose asChild>
+                <Button className="w-full" size="lg">
+                  Confirm
+                </Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
       </CardContent>
     </Card>
   );
