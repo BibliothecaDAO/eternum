@@ -25,6 +25,10 @@ export const StorehouseInfo = ({ storehouseCapacity }: { storehouseCapacity: num
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
             {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
           </li>
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Labor)).toLocaleString()} Labor
+          </li>
         </ul>
         <ul className="list-none">
           <li className="flex items-center">

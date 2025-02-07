@@ -701,12 +701,16 @@ export const policies: ContractPolicies = {
         entrypoint: "resume_building_production",
       },
       {
-        name: "make_production_labor",
-        entrypoint: "make_production_labor",
+        name: "burn_labor_resources_for_other_production",
+        entrypoint: "burn_labor_resources_for_other_production",
       },
       {
-        name: "burn_production_labor",
-        entrypoint: "burn_production_labor",
+        name: "burn_other_predefined_resources_for_resources",
+        entrypoint: "burn_other_predefined_resources_for_resources",
+      },
+      {
+        name: "burn_other_resources_for_labor_production",
+        entrypoint: "burn_other_resources_for_labor_production",
       },
       {
         name: "world_dispatcher",
