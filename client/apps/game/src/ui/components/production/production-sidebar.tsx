@@ -69,8 +69,6 @@ const SidebarRealm = ({
 };
 
 export const ProductionSidebar = memo(({ realms, selectedRealmEntityId, onSelectRealm }: ProductionSidebarProps) => {
-  console.log("production sidebar");
-
   return (
     <div className="space-y-4">
       {realms.map((realm) => (
