@@ -46,6 +46,6 @@
     "@types/node": "^20.11.10"
   },
   "peerDependencies": {
-    "starknet": "6.11.0"
+    "starknet": "6.23.1"
   }
 }

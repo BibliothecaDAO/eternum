@@ -7,41 +7,41 @@ import type { ForgeConfig } from "@electron-forge/shared-types";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
 const config: ForgeConfig = {
-	packagerConfig: {
-		asar: false,
-		icon: "public/icon",
-	},
-	rebuildConfig: {},
-	publishers: [
-		{
-		  name: '@electron-forge/publisher-s3',
-		  config: {
-			bucket: 'eternum-torii-updates',
-			public: true
-		  }
-	},
+  packagerConfig: {
+    asar: false,
+    icon: "public/icon",
+  },
+  rebuildConfig: {},
+  publishers: [
+    {
+      name: "@electron-forge/publisher-s3",
+      config: {
+        bucket: "eternum-torii-updates",
+        public: true,
+      },
+    },
   ],
   makers: [
     new MakerSquirrel({}),
     {
-		name: '@electron-forge/maker-zip',
-		config: (arch:string) => ({
-		  // Note that we must provide this S3 URL here
-		  // in order to support smooth version transitions
-		  // especially when using a CDN to front your updates
-		  macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`
-		})
-	  },
-	  {
-		name: '@electron-forge/maker-zip',
-		config: (arch: string) => ({
-		  // Note that we must provide this S3 URL here
-		  // in order to support smooth version transitions
-		  // especially when using a CDN to front your updates
-		  macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`
-		})
-	  },
-  
+      name: "@electron-forge/maker-zip",
+      config: (arch: string) => ({
+        // Note that we must provide this S3 URL here
+        // in order to support smooth version transitions
+        // especially when using a CDN to front your updates
+        macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`,
+      }),
+    },
+    {
+      name: "@electron-forge/maker-zip",
+      config: (arch: string) => ({
+        // Note that we must provide this S3 URL here
+        // in order to support smooth version transitions
+        // especially when using a CDN to front your updates
+        macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`,
+      }),
+    },
+
     new MakerRpm({}),
     new MakerDeb({}),
     {
