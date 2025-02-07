@@ -17,6 +17,7 @@ import { Leva } from "leva";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
+import { RealmTransferManager } from "../components/resources/realm-transfer-manager";
 import { IS_MOBILE } from "../config";
 
 // Lazy load components
@@ -278,6 +279,17 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
     <>
       <NotLoggedInMessage />
+      {/* Modal layer */}
+      <div className="fixed inset-0 z-30 pointer-events-none">
+        <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
+      </div>
+
+      {/* OSWindow layer */}
+      <div className="fixed inset-0 z-40 pointer-events-none">
+        <RealmTransferManager />
+      </div>
+
+      {/* Main world layer */}
       <div
         onClick={(e) => {
           e.stopPropagation();
@@ -296,7 +308,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
           {IS_MOBILE && <OrientationOverlay />}
           <LoadingOroborus loading={isLoadingScreenEnabled} />
-          <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
           <BlankOverlayContainer open={showBlankOverlay}>
             <Onboarding backgroundImage={backgroundImage} />
           </BlankOverlayContainer>

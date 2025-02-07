@@ -21,6 +21,7 @@ export interface OSInterface {
   height?: string;
   width?: string;
   hintSection?: HintSection;
+  className?: string;
 }
 
 export interface ExpandableOSInterface extends OSInterface {

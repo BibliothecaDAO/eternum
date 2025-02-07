@@ -13,7 +13,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RealmTransfer } from "./realm-transfer";
 
 export const ResourceChip = ({
   isLabor = false,
@@ -114,76 +113,73 @@ export const ResourceChip = ({
   const togglePopup = useUIStore((state) => state.togglePopup);
 
   return (
-    <>
-      <RealmTransfer balance={balance} resource={resourceId} tick={tick} />
-      <div
-        className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20`}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        {icon}
-        <div className="grid grid-cols-10 w-full">
-          <div className="self-center font-bold col-span-3">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+    <div
+      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {icon}
+      <div className="grid grid-cols-10 w-full">
+        <div className="self-center font-bold col-span-3">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
 
-          <div className="self-center m-y-auto font-bold col-span-4 text-center">
-            {timeUntilValueReached !== 0
-              ? formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)
-              : ""}
-          </div>
-
-          {isActive && (productionEndsAt > currentTick || resourceManager.isFood()) ? (
-            <div
-              className={`${
-                productionRate < 0 ? "text-light-red" : "text-green/80"
-              } self-center px-2 flex font-bold text-[10px] col-span-3 text-center mx-auto`}
-            >
-              <div className={`self-center`}>
-                +
-                {showPerHour
-                  ? `${currencyIntlFormat(productionRate * 60 * 60, 2)}/h`
-                  : `${currencyIntlFormat(productionRate, 2)}/s`}
-              </div>
-            </div>
-          ) : (
-            <div
-              onMouseEnter={() => {
-                setTooltip({
-                  position: "top",
-                  content: (
-                    <>
-                      {reachedMaxCap
-                        ? "Production has stopped because the max balance has been reached"
-                        : "Production has stopped because labor has been depleted"}
-                    </>
-                  ),
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-              className="self-center px-2 col-span-3 mx-auto"
-            >
-              {reachedMaxCap ? "MaxCap" : ""}
-            </div>
-          )}
+        <div className="self-center m-y-auto font-bold col-span-4 text-center">
+          {timeUntilValueReached !== 0
+            ? formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)
+            : ""}
         </div>
-        <button onClick={() => togglePopup(resourceId.toString())} className="ml-2 p-1 hover:bg-gold/20 rounded">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 text-gold"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+
+        {isActive && (productionEndsAt > currentTick || resourceManager.isFood()) ? (
+          <div
+            className={`${
+              productionRate < 0 ? "text-light-red" : "text-green/80"
+            } self-center px-2 flex font-bold text-[10px] col-span-3 text-center mx-auto`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-            />
-          </svg>
-        </button>
+            <div className={`self-center`}>
+              +
+              {showPerHour
+                ? `${currencyIntlFormat(productionRate * 60 * 60, 2)}/h`
+                : `${currencyIntlFormat(productionRate, 2)}/s`}
+            </div>
+          </div>
+        ) : (
+          <div
+            onMouseEnter={() => {
+              setTooltip({
+                position: "top",
+                content: (
+                  <>
+                    {reachedMaxCap
+                      ? "Production has stopped because the max balance has been reached"
+                      : "Production has stopped because labor has been depleted"}
+                  </>
+                ),
+              });
+            }}
+            onMouseLeave={() => {
+              setTooltip(null);
+            }}
+            className="self-center px-2 col-span-3 mx-auto"
+          >
+            {reachedMaxCap ? "MaxCap" : ""}
+          </div>
+        )}
       </div>
-    </>
+      <button onClick={() => togglePopup(resourceId.toString())} className="ml-2 p-1 hover:bg-gold/20 rounded">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-gold"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+          />
+        </svg>
+      </button>
+    </div>
   );
 };
