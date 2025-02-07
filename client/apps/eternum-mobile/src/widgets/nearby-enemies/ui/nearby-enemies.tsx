@@ -44,13 +44,18 @@ export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
 
   return (
     <Card className={cn(bgColor)}>
-      <CardContent className="space-y-2 p-4">
+      <CardContent className="space-y-3 p-4">
         <CardTitle className={cn("text-sm flex w-full items-center gap-2", color)}>
           <Icon className="w-4 h-4" />
-          <span className="font-bold">{enemiesCount}</span> enemies around
+          Nearby Armies
         </CardTitle>
-        <div className="text-xs flex items-center gap-1">
-          <span className="font-semibold">{distance}</span> Hexes Away
+        <div className="text-xs space-y-1">
+          <div>
+            <span className="font-bold">{enemiesCount}</span> enemies around
+          </div>
+          <div>
+            <span className="font-semibold">{distance}</span> Hexes Away
+          </div>
         </div>
         <Button variant="secondary" size="sm" className="w-full font-semibold" onClick={onView}>
           View Details

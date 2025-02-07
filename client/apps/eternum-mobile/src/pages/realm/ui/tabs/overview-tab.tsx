@@ -1,3 +1,4 @@
+import { ArrivedDonkeys } from "@/widgets/arrived-donkeys";
 import { NearbyEnemies } from "@/widgets/nearby-enemies";
 import { ResourcesCard } from "@/widgets/resources-card";
 import { UpgradeCastle } from "@/widgets/upgrade-castle";
@@ -16,13 +17,17 @@ export function OverviewTab() {
     switchTab("military");
   }, [switchTab]);
 
+  const handleClaimDonkeys = useCallback(() => {
+    switchTab("claim");
+  }, [switchTab]);
+
   return (
     <div className="space-y-4">
       <ResourcesCard />
       <UpgradeCastle castleLevel={1} onUpgrade={handleUpgrade} />
       <div className="grid grid-cols-2 gap-4">
         <NearbyEnemies entityId={1} onView={handleViewEnemies} />
-        <NearbyEnemies entityId={2} onView={handleViewEnemies} />
+        <ArrivedDonkeys entityId={2} onClaim={handleClaimDonkeys} />
       </div>
     </div>
   );
