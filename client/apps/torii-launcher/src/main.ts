@@ -211,8 +211,8 @@ async function handleTorii() {
 
     child.stderr.on("error", (data: any) => {
       //   console.log("data", data);
-      //   errorLog(`stderr: ${data}`);
-      //   sendNotification({ type: "error", message: data });
+      errorLog(`stderr: ${data}`);
+      sendNotification({ type: "Error", message: data });
     });
 
     let firstPass = true;
