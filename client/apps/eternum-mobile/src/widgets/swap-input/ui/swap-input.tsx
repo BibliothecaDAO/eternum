@@ -47,7 +47,7 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
             </DrawerTrigger>
             <DrawerContent>
               <DrawerHeader>
-                <DrawerTitle>Select Resource</DrawerTitle>
+                <DrawerTitle className="text-3xl font-bokor text-center">Select Resource</DrawerTitle>
                 <div className="relative mt-4">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
