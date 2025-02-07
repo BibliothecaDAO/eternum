@@ -12,10 +12,12 @@ export const RealmTransferManager = ({ zIndex = 100 }: { zIndex?: number }) => {
 const RealmTransferContainer = ({ resource, zIndex }: { resource: number; zIndex: number }) => {
   const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
 
+  const togglePopup = useUIStore.getState().togglePopup(resource.toString());
+
   return (
     <OSWindow
       title={resources.find((r) => r.id === resource)?.trait ?? ""}
-      onClick={() => useUIStore.getState().togglePopup(resource.toString())}
+      onClick={() => togglePopup}
       show={isOpen}
       className={`z-[${zIndex}]`}
     >
