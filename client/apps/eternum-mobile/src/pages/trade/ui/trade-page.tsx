@@ -4,7 +4,7 @@ import { SwapInput } from "@/widgets/swap-input";
 import { resources } from "@bibliothecadao/eternum";
 import { ArrowDownUp } from "lucide-react";
 import { useState } from "react";
-import { ConfirmDrawer } from "./confirm-drawer";
+import { SwapConfirmDrawer } from "./swap-confirm-drawer";
 
 export const TradePage = () => {
   const [buyAmount, setBuyAmount] = useState(0);
@@ -108,7 +108,7 @@ export const TradePage = () => {
       </Card>
 
       {sellResource && buyResource && (
-        <ConfirmDrawer
+        <SwapConfirmDrawer
           isOpen={isConfirmOpen}
           onClose={() => setIsConfirmOpen(false)}
           sellAmount={sellAmount}

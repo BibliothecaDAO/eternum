@@ -17,7 +17,7 @@ interface ConfirmDrawerProps {
 
 type SwapState = "confirm" | "swapping" | "success" | "error";
 
-export const ConfirmDrawer = ({
+export const SwapConfirmDrawer = ({
   isOpen,
   onClose,
   sellAmount,
