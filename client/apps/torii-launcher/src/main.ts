@@ -165,6 +165,16 @@ async function handleTorii() {
     normalLog("torii not found, installing");
     await installTorii();
     normalLog("torii installed");
+  } else {
+    // Check current torii version
+    const versionResult = spawnSync(path.join(DOJO_PATH, "bin", "torii"), ["--version"]);
+    const currentVersion = versionResult.stdout.toString().trim();
+
+    if (currentVersion !== TORII_VERSION) {
+      normalLog(`Updating torii from ${currentVersion} to ${TORII_VERSION}`);
+      await installTorii();
+      normalLog("torii updated");
+    }
   }
 
   const toriiTomlPath = path.join(__dirname, "./torii/torii.toml");
