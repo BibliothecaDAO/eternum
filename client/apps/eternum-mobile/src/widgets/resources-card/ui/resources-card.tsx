@@ -3,6 +3,7 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
+import { ScrollArea } from "@/shared/ui/scroll-area";
 import { resources } from "@bibliothecadao/eternum";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
@@ -53,26 +54,30 @@ export const ResourcesCard = ({ className }: ResourcesCardProps) => {
         </div>
 
         {/* Expanded view - vertical list */}
-        <CollapsibleContent className="space-y-2">
-          {resourceAmounts.map(({ id, amount }) => {
-            const resource = resources.find((r) => r.id === id);
-            if (!resource) return null;
+        <CollapsibleContent className="relative">
+          <ScrollArea className="h-[30vh]">
+            <div className="space-y-2">
+              {resourceAmounts.map(({ id, amount }) => {
+                const resource = resources.find((r) => r.id === id);
+                if (!resource) return null;
 
-            return (
-              <div key={resource.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <ResourceIcon resourceId={resource.id} className="h-8 w-8" />
-                  <div className="flex flex-col">
-                    <span className="font-medium">{resource.trait}</span>
-                    <span className="text-sm text-muted-foreground">{amount}</span>
+                return (
+                  <div key={resource.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <ResourceIcon resourceId={resource.id} className="h-8 w-8" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{resource.trait}</span>
+                        <span className="text-sm text-muted-foreground">{amount}</span>
+                      </div>
+                    </div>
+                    <Button variant="secondary" size="sm">
+                      Trade
+                    </Button>
                   </div>
-                </div>
-                <Button variant="secondary" size="sm">
-                  Trade
-                </Button>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </ScrollArea>
         </CollapsibleContent>
       </Collapsible>
     </Card>
