@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "pnpm with-env vinxi dev",
     "build": "vinxi build",
+    "lint": "eslint",
     "start": "vinxi start",
     "with-env": "dotenv -e ../../.env --"
   },

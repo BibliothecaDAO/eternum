@@ -1,11 +1,7 @@
-import type { Abi, Call } from "starknet";
+import type { Call } from "starknet";
 import { useMemo } from "react";
 import { RealmsBridge } from "@/abi/L2/RealmsBridge";
-import {
-  useContract,
-  useNetwork,
-  useSendTransaction,
-} from "@starknet-react/core";
+import { useContract, useSendTransaction } from "@starknet-react/core";
 import { useAccount as useL1Account } from "wagmi";
 
 import { REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
@@ -23,15 +19,14 @@ export const useWriteInitiateWithdrawRealms = ({
     address: REALMS_BRIDGE_ADDRESS[SUPPORTED_L2_CHAIN_ID] as `0x${string}`,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const calls: Call[] = useMemo(() => {
-    if (!selectedTokenIds.length || !addressL1) return [];
+    if (!selectedTokenIds.length || !addressL1 || !contract) return [];
 
     return [
       contract?.populate("deposit_tokens", [
         Date.now(),
         addressL1,
-        selectedTokenIds,
+        selectedTokenIds.map((tokenId) => BigInt(tokenId)),
       ]),
     ];
   }, [selectedTokenIds, addressL1, contract]);
@@ -40,6 +35,6 @@ export const useWriteInitiateWithdrawRealms = ({
 
   return {
     calls,
-    ...sendTx
+    ...sendTx,
   };
 };

@@ -2,7 +2,6 @@ import type { ReactElement } from "react";
 import clsx from "clsx";
 
 type Props = {
-  isLabor?: boolean;
   resource: string;
   size: keyof (typeof STYLES)["size"];
   className?: string;
@@ -161,7 +160,6 @@ const STYLES = {
 } as const;
 
 export const ResourceIcon = ({
-  isLabor = false,
   withTooltip = true,
   tooltipText,
   ...props

@@ -10,14 +10,13 @@
     "build": "apibara build",
     "dev": "pnpm with-env apibara dev",
     "start": "pnpm  with-env apibara start",
-    "lint": "biome check .",
+    "lint": "eslint",
     "lint:fix": "pnpm lint --write",
     "test": "vitest",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
     "drizzle:push": "drizzle-kit push",
     "with-env": "dotenv -e ../../.env --"
-
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.1.6",
@@ -43,6 +42,5 @@
     "starknet": "^6.11.0",
     "viem": "catalog:",
     "zod": "catalog:"
-
   }
 }

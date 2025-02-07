@@ -1,8 +1,7 @@
 import { useCallback, useMemo } from "react";
-import {ERC721} from "@/abi/L2/ERC721";
+import { ERC721 } from "@/abi/L2/ERC721";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-//import { TransactionType } from "@/constants/transactions";
-//import { useTransactionManager } from "@/stores/useTransasctionManager";
+
 import {
   useAccount,
   useReadContract,
@@ -11,7 +10,6 @@ import {
 
 import {
   CollectionAddresses,
-  Collections,
   REALMS_BRIDGE_ADDRESS,
 } from "@realms-world/constants";
 
@@ -71,7 +69,7 @@ export function useBridgeL2Realms({
     });*/
 
     return tx;
-  }, [sendAsync/*, transactions*/]);
+  }, [sendAsync /*, transactions*/]);
 
   return {
     isApprovedForAll,

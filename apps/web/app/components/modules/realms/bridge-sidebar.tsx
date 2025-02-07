@@ -10,7 +10,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 
-import { Row, RowSelectionState } from "@tanstack/react-table";
+import type { Row, RowSelectionState } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
 import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
 import { useToast } from "@/hooks/use-toast";
@@ -27,7 +27,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import BridgeTransactionHistory from "./bridge-tx";
-import { BridgeRealm } from "@/types/ark";
+import type { BridgeRealm } from "@/types/ark";
 
 interface BridgeSidebarProps {
   selectedRows: Row<BridgeRealm>[];
@@ -51,7 +51,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
     },
     { enabled: !!l1Address || !!l2Address, refetchInterval: 10000 }
   );
-  const bridgeTxs = bridgeTxsQuery.data || [];
+  const bridgeTxs = bridgeTxsQuery.data ?? [];
 
   const { writeAsync: depositRealms, isPending: isDepositPending } =
     useWriteDepositRealms({
@@ -63,8 +63,8 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
       },
     });
 
-  const tokenIds = useMemo(
-    () => selectedRows.map((row) => row.getValue("token_id") as string),
+  const tokenIds: string[] = useMemo(
+    () => selectedRows.map((row) => row.getValue("token_id")),
     [selectedRows]
   );
 
@@ -80,7 +80,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   });
 
   const onBridge = async () => {
-    let hash;
+    let hash: string | undefined;
     if (selectedAsset === "Ethereum") {
       if (!l2Address) throw new Error("Missing L2 Address");
       if (!isApprovedForAll) {
@@ -91,7 +91,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
         l2Address: l2Address,
       });
     } else {
-      hash = await initiateWithdraw();
+      hash = (await initiateWithdraw()).transaction_hash;
     }
     if (hash) {
       toast({

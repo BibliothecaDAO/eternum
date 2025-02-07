@@ -3,7 +3,7 @@ import { StarknetBridgeRealms as L1_REALMS_BRIDGE_ABI } from "@/abi/L1/StarknetB
 import { parseGwei } from "viem";
 import { useWriteContract } from "wagmi";
 
-import { ChainId, REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
+import { REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
 import { SUPPORTED_L1_CHAIN_ID } from "@/utils/utils";
 
 const FUNCTION = "depositTokens";
@@ -39,7 +39,7 @@ export function useWriteDepositRealms({
         value: parseGwei((40000 * tokenIds.length).toString()),
       });
     },
-    [writeContractAsync],
+    [writeContractAsync]
   );
   return { writeAsync, error, ...writeReturn };
 }

@@ -24,10 +24,8 @@ export const useWriteInitiateWithdrawLords = ({
     address: l2BridgeAddress as `0x${string}`,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const calls: Call[] = useMemo(() => {
-    if (!amount || !addressL1) return [];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    if (!amount || !addressL1 || !contract) return [];
     return [
       contract?.populate("initiate_withdrawal", [
         addressL1,

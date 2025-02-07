@@ -1,6 +1,6 @@
 import type { Call } from "starknet";
 import { useMemo } from "react";
-import {ERC721} from "@/abi/L2/ERC721";
+import { ERC721 } from "@/abi/L2/ERC721";
 import {
   useContract,
   useSendTransaction as useL2ContractWrite,
@@ -23,10 +23,8 @@ export const useERC721Approval = ({
     address: contractAddress as `0x${string}`,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const calls: Call[] = useMemo(() => {
-    if (!contractAddress || !operator || !addressL1) return [];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    if (!contractAddress || !operator || !addressL1 || !contract) return [];
     return [
       contract?.populate("set_approval_for_all", [
         operator,

@@ -2,7 +2,7 @@ import { EvmStream } from "@apibara/evm";
 import { defineIndexer } from "@apibara/indexer";
 import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
 
-import type { ApibaraRuntimeConfig } from "apibara/types";
+//import type { ApibaraRuntimeConfig } from "apibara/types";
 import type {
   ExtractTablesWithRelations,
   TablesRelationalConfig,
@@ -35,7 +35,7 @@ const chainId =
 const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
-export default function (runtimeConfig: ApibaraRuntimeConfig) {
+export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({
     database: db,
   });
@@ -47,7 +47,7 @@ export function createIndexer<
   TSchema extends
     TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
 >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
-  console.log('eth indexer started')
+  console.log("eth indexer started");
   console.log(env.VITE_PUBLIC_CHAIN);
   console.log("messaging ", STARKNET_MESSAGING[chainId]);
   console.log("from ", REALMS_BRIDGE_ADDRESS[chainId]);
@@ -59,7 +59,8 @@ export function createIndexer<
         ? "https://ethereum-sepolia.preview.apibara.org"
         : "https://ethereum.preview.apibara.org",
     finality: "accepted",
-    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 204_33_152n,
+    startingBlock:
+      env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 204_33_152n,
     filter: {
       logs: [
         {
@@ -120,7 +121,7 @@ export function createIndexer<
         indexerName: "eth-realms-bridge",
       }),
     ],
-    async transform({ endCursor, context, block, finality }) {
+    async transform({ endCursor, block, finality }) {
       const logger = useLogger();
       const { db } = useDrizzleStorage();
       const { logs, header } = block;
@@ -154,46 +155,47 @@ export function createIndexer<
           });
         });
 
-        if (log.data && decoded) {
-          const fromChain =
-            decoded.eventName === "LogMessageToL1" ||
-            decoded.eventName === "ConsumedMessageToL1"
-              ? l2ChainId
-              : chainId;
+        const fromChain =
+          decoded.eventName === "LogMessageToL1" ||
+          decoded.eventName === "ConsumedMessageToL1"
+            ? l2ChainId
+            : chainId;
 
+        await db
+          .insert(realmsBridgeRequests)
+          .values({
+            from_chain: fromChain,
+            from_address: numberToHex(decoded.args.payload[2]),
+            to_address: numberToHex(decoded.args.payload[3]),
+            token_ids: tokenIds,
+            timestamp: header.timestamp,
+            tx_hash: log.transactionHash,
+            id: decoded.args.payload,
+            req_hash: uint256.uint256ToBN({
+              low: decoded.args.payload[0],
+              high: decoded.args.payload[1],
+            }),
+          })
+          .onConflictDoNothing();
+
+        const eventTypeMap = {
+          LogMessageToL2: "deposit_initiated_l1",
+          ConsumedMessageToL2: "withdraw_completed_l2",
+          LogMessageToL1: "withdraw_available_l1",
+          ConsumedMessageToL1: "withdraw_completed_l1",
+        };
+
+        const eventType = eventTypeMap[decoded.eventName];
+        if (eventType) {
           await db
-            .insert(realmsBridgeRequests)
+            .insert(realmsBridgeEvents)
             .values({
-              from_chain: fromChain,
-              from_address: numberToHex(decoded.args.payload[2]),
-              to_address: numberToHex(decoded.args.payload[3]),
-              token_ids: tokenIds,
-              timestamp: header?.timestamp,
-              tx_hash: log.transactionHash,
+              timestamp: header.timestamp,
+              hash: log.transactionHash,
+              type: eventType,
               id: decoded.args.payload,
-              req_hash: uint256.uint256ToBN({low: decoded.args.payload[0], high: decoded.args.payload[1]}),
             })
             .onConflictDoNothing();
-
-          const eventTypeMap = {
-            LogMessageToL2: "deposit_initiated_l1",
-            ConsumedMessageToL2: "withdraw_completed_l2",
-            LogMessageToL1: "withdraw_available_l1",
-            ConsumedMessageToL1: "withdraw_completed_l1",
-          };
-
-          const eventType = eventTypeMap[decoded.eventName];
-          if (eventType) {
-            await db
-              .insert(realmsBridgeEvents)
-              .values({
-                timestamp: header?.timestamp,
-                hash: log.transactionHash,
-                type: eventType,
-                id: decoded.args.payload,
-              })
-              .onConflictDoNothing();
-          }
         }
       }
     },

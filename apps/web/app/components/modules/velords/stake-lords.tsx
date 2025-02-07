@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardHeader,
@@ -44,10 +43,9 @@ const chartConfig = {
 
 // Helper function to abbreviate numbers
 
-
 export const StakeLords = () => {
   const { address } = useAccount();
-  const { isLoading, data } = useBalance({
+  const { data } = useBalance({
     address,
     token: LORDS[SUPPORTED_L2_CHAIN_ID]?.address as Address,
     watch: true,
@@ -67,41 +65,31 @@ export const StakeLords = () => {
     abi: VeLords,
     address: veLordsAddress as Address,
   });
-  const {
-    sendAsync: manageLordsLock,
-    data: manageHash,
-    isPending: manageIsSubmitting,
-  } = useSendTransaction({});
+  const { sendAsync: manageLordsLock } = useSendTransaction({});
 
-  const {
-    sendAsync: claimRewards,
-    data: claimHash,
-    isPending: claimIsSubmitting,
-  } = useSendTransaction({});
-
-  const {
-    sendAsync: withdraw,
-    data: withdrawHash,
-    isPending: withdrawsSubmitting,
-  } = useSendTransaction({
+  const { sendAsync: withdraw } = useSendTransaction({
     calls:
       veLordsContract && address
         ? [veLordsContract?.populate("withdraw", [])]
         : undefined,
   });
 
-  const chartData = useMemo(() =>  [
-    {
-      month: "January",
-      locked: Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0n))),
-      unlocked: Number(data?.formatted),
-        },
-      ],
+  const chartData = useMemo(
+    () => [
+      {
+        month: "January",
+        locked: Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0n))),
+        unlocked: Number(data?.formatted),
+      },
+    ],
     [ownerLordsLock?.amount, data?.formatted]
   );
   const totalLords = useMemo(() => {
-    return (chartData[0].unlocked ?? 0) + chartData[0].locked;
-  }, [chartData[0].unlocked, chartData[0].locked]);
+    return (
+      Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0n))) +
+      Number(data?.formatted)
+    );
+  }, [ownerLordsLock?.amount, data?.formatted]);
 
   return (
     <Card className="flex flex-col">
@@ -144,10 +132,11 @@ export const StakeLords = () => {
                           className="fill-foreground text-lg font-bold"
                         >
                           {ownerLordsLock?.amount
-                            ? abbreviateNumber(formatEther(BigInt(ownerLordsLock.amount)))
+                            ? abbreviateNumber(
+                                formatEther(BigInt(ownerLordsLock.amount))
+                              )
                             : "0"}{" "}
-                          /
-                          {abbreviateNumber(totalLords)}
+                          /{abbreviateNumber(totalLords)}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
@@ -168,9 +157,9 @@ export const StakeLords = () => {
               stackId="a"
               fill="var(--color-unlocked)"
               cornerRadius={5}
-            />            
+            />
             <RadialBar
-            order={0}
+              order={0}
               dataKey="locked"
               stackId="a"
               fill="var(--color-locked)"

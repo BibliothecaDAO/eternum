@@ -23,14 +23,15 @@ export const Route = createFileRoute("/realms/")({
 });
 export function PostErrorComponent({ error }: ErrorComponentProps) {
   const router = useRouter();
-  if (error instanceof RealmsNotFoundError) {
-    return <div>{error.message}</div>;
-  }
   const queryErrorResetBoundary = useQueryErrorResetBoundary();
 
   React.useEffect(() => {
     queryErrorResetBoundary.reset();
   }, [queryErrorResetBoundary]);
+
+  if (error instanceof RealmsNotFoundError) {
+    return <div>{error.message}</div>;
+  }
 
   return (
     <div>

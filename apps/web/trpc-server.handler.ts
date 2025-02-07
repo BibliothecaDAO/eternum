@@ -9,11 +9,16 @@ import type { SQL } from "@realms-world/db";
 import { eq, or, desc } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 import { realmsBridgeRequests } from "@realms-world/db/schema";
-import { CollectionAddresses, Collections, ChainId } from "@realms-world/constants";
-import { PortfolioCollectionApiResponse } from "@/lib/ark/getPortfolioTokens";
-
+import {
+  CollectionAddresses,
+  Collections,
+  ChainId,
+} from "@realms-world/constants";
+import { PortfolioCollectionApiResponse } from "@/types/ark";
 const SUPPORTED_L1_CHAIN_ID =
-process.env.VITE_PUBLIC_CHAIN == "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
+  process.env.VITE_PUBLIC_CHAIN == "sepolia"
+    ? ChainId.SEPOLIA
+    : ChainId.MAINNET;
 /**
  * 1. CONTEXT
  *
@@ -30,12 +35,12 @@ export const createTRPCContext = (opts: {
   headers: Headers;
   //session: any | null;
 }) => {
- //const session = opts.session;
+  //const session = opts.session;
   const source = opts.headers.get("x-trpc-source") ?? "unknown";
-  console.log(">>> tRPC Request from", source, "by"/*, session?.user*/);
+  console.log(">>> tRPC Request from", source, "by" /*, session?.user*/);
 
   return {
-   // session,
+    // session,
     db,
   };
 };
@@ -70,14 +75,15 @@ const POSTS = [
   { id: "10", title: "Tenth post" },
 ];
 
-const RESERVOIR_API_URL = `https://api${process.env.VITE_PUBLIC_CHAIN === "sepolia" ? "-sepolia" : ""
+const RESERVOIR_API_URL = `https://api${
+  process.env.VITE_PUBLIC_CHAIN === "sepolia" ? "-sepolia" : ""
 }.reservoir.tools`;
 
-const ARK_MARKETPLACE_API_URL = `https://api.marketplace${process.env.VITE_PUBLIC_CHAIN === "sepolia" ? ".dev" : ""}.arkproject.dev`
+const ARK_MARKETPLACE_API_URL = `https://api.marketplace${process.env.VITE_PUBLIC_CHAIN === "sepolia" ? ".dev" : ""}.arkproject.dev`;
 
 const appRouter = t.router({
   hello: t.procedure.query(() => "Hello world!"),
-  posts: t.procedure.query(async (_) => {
+  posts: t.procedure.query(async () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     return POSTS;
   }),
@@ -92,7 +98,7 @@ const appRouter = t.router({
     )
     .query(({ ctx, input }) => {
       const { l1Account, l2Account } = input ?? {};
-      let whereFilter: SQL[] = [];
+      const whereFilter: SQL[] = [];
       if (l1Account) {
         whereFilter.push(
           eq(realmsBridgeRequests.from_address, l1Account.toLowerCase()),
@@ -115,9 +121,11 @@ const appRouter = t.router({
     }),
   l1Realms: t.procedure
     .input(
-      z.object({
-        address: z.string().optional(),
-      }).optional()
+      z
+        .object({
+          address: z.string().optional(),
+        })
+        .optional()
     )
     .query(async (req) => {
       if (req.input?.address) {
@@ -137,36 +145,38 @@ const appRouter = t.router({
       }
     }),
   realms: t.procedure
-  .input(
-    z.object({
-      address: z.string().optional(),
-      collectionAddress: z.string().optional(),
-      itemsPerPage: z.number().optional().default(100),
-      page: z.number().optional().default(1),
-    }).optional()
-  )
-  .query(async (req) => {
-    if (req.input?.address) {
-      const {address, itemsPerPage, page, collectionAddress} = req.input;
-      const queryParams = [
-        `items_per_page=${itemsPerPage}`,
-        `page=${page}`,
-        collectionAddress && `collection=${collectionAddress}`,
-      ];
-      const response = await fetch(
-        `${ARK_MARKETPLACE_API_URL}/portfolio/${address}?${queryParams.join("&")}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-        }
-      );
-      const data = await response.json();
-      return data as PortfolioCollectionApiResponse;
-    }
-  }),
+    .input(
+      z
+        .object({
+          address: z.string().optional(),
+          collectionAddress: z.string().optional(),
+          itemsPerPage: z.number().optional().default(100),
+          page: z.number().optional().default(1),
+        })
+        .optional()
+    )
+    .query(async (req) => {
+      if (req.input?.address) {
+        const { address, itemsPerPage, page, collectionAddress } = req.input;
+        const queryParams = [
+          `items_per_page=${itemsPerPage}`,
+          `page=${page}`,
+          collectionAddress && `collection=${collectionAddress}`,
+        ];
+        const response = await fetch(
+          `${ARK_MARKETPLACE_API_URL}/portfolio/${address}?${queryParams.join("&")}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+          }
+        );
+        const data = await response.json();
+        return data as PortfolioCollectionApiResponse;
+      }
+    }),
 });
 
 export type AppRouter = typeof appRouter;
@@ -181,7 +191,7 @@ export default defineEventHandler((event) => {
       createContext() {
         const heads = new Headers(request.headers);
         heads.set("x-trpc-source", "rsc");
-      
+
         return createTRPCContext({
           //session: await auth(),
           headers: heads,

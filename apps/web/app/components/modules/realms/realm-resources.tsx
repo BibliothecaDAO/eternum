@@ -1,6 +1,5 @@
 import { ResourceIcon } from "@/components/ui/resource-icon";
 import { TokenMetadataAttribute } from "@/types/ark";
-import { useState } from "react";
 import {
   Tooltip,
   TooltipContent,

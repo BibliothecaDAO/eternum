@@ -8,14 +8,15 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import {
+import type {
   ColumnDef,
-  Table as ReactTable,
+  Table as ReactTable} from "@tanstack/react-table";
+import {
   flexRender,
 } from "@tanstack/react-table";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import RealmResources from "./realm-resources";
-import { BridgeRealm } from "@/types/ark";
+import type { BridgeRealm } from "@/types/ark";
 
 export const columns: ColumnDef<BridgeRealm>[] = [
   {
@@ -70,9 +71,9 @@ export const columns: ColumnDef<BridgeRealm>[] = [
   },
 ];
 
-type BridgeTableProps = {
+interface BridgeTableProps {
   table: ReactTable<BridgeRealm>;
-};
+}
 
 export const BridgeTable: React.FC<BridgeTableProps> = ({ table }) => {
   return (
@@ -98,7 +99,7 @@ export const BridgeTable: React.FC<BridgeTableProps> = ({ table }) => {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}

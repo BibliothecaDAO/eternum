@@ -2,7 +2,6 @@ import {
   differenceInSeconds,
   formatDistanceToNow,
   fromUnixTime,
-  getUnixTime,
 } from "date-fns";
 
 export const WEEK_IN_SECONDS = 7 * 24 * 60 * 60; // 1 week in seconds

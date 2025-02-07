@@ -8,9 +8,9 @@ export enum Collections {
     ETERNUM_0 = "eternum-0",
   }
   
-  export const CollectionAddresses: {
-    readonly [key in Collections]: Partial<{ [key in ChainId]: `0x${string}` }>;
-  } = {
+  export const CollectionAddresses: Readonly<
+    Record<Collections, Partial<Record<ChainId, `0x${string}`>>>
+  > = {
     [Collections.REALMS]: {
       [ChainId.MAINNET]: "0x07afe30cb3e53dba6801aa0ea647a0ecea7cbe18d",
       [ChainId.SEPOLIA]: "0x0A642270Cc73B2FC1605307F853712F944394564",
@@ -111,9 +111,9 @@ export enum Collections {
     LEGACY_REWARD = "legacyreward",
   }
   
-  export const StakingAddresses: {
-    readonly [key in StakingContracts]: Partial<{ [key in ChainId]: string }>;
-  } = {
+  export const StakingAddresses: Readonly<
+    Record<StakingContracts, Partial<Record<ChainId, string>>>
+  > = {
     [StakingContracts.GALLEON]: {
       [ChainId.MAINNET]: "0x17963290db8c30552d0cfa2a6453ff20a28c31a2",
       [ChainId.SEPOLIA]: "0x7cb8c2a2e635b8518a3d8e6d70480583c85a7297",

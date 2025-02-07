@@ -1,15 +1,24 @@
-import { type NodePgDatabase, drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { drizzle } from "drizzle-orm/neon-http";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import config from "../drizzle.config";
+
+import type { NeonQueryFunction } from "@neondatabase/serverless";
+import { neon, neonConfig } from "@neondatabase/serverless";
 
 import * as schema from "./schema";
 import { env } from "../env";
 
-const connectionString = env.DATABASE_URL 
+if (!env.VERCEL_ENV) {
+  neonConfig.wsProxy = (/*host*/) => `127.0.0.1/v1`;
+  neonConfig.useSecureWebSocket = false;
+  neonConfig.pipelineTLS = false;
+  neonConfig.pipelineConnect = false;
+}
 
-const pool = new pg.Pool({
-  connectionString,
-});
+export const neonSql = neon(
+  config.dbCredentials.url
+) satisfies NeonQueryFunction<boolean, boolean>;
 
-export const db = drizzle(pool, { schema });
+export const db = drizzle(neonSql, { schema });
 
 export type Database = NodePgDatabase<typeof schema>;

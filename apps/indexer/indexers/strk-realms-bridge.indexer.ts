@@ -3,19 +3,23 @@ import { defineIndexer } from "@apibara/indexer";
 import { useLogger } from "@apibara/indexer/plugins";
 import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import type { ApibaraRuntimeConfig } from "apibara/types";
+//import type { ApibaraRuntimeConfig } from "apibara/types";
 import type {
   ExtractTablesWithRelations,
   TablesRelationalConfig,
 } from "drizzle-orm";
 import { db } from "@realms-world/db/client";
-import { hash, Abi, uint256 } from "starknet";
+import type { Abi } from "starknet";
+import { uint256 } from "starknet";
 import { ChainId, REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
 import { env } from "../env";
-import { formatUnits, numberToHex } from "viem";
-import { realmsBridgeEvents, realmsBridgeRequests } from "@realms-world/db/schema";
+import { numberToHex } from "viem";
+import {
+  realmsBridgeEvents,
+  realmsBridgeRequests,
+} from "@realms-world/db/schema";
 
-export default function (runtimeConfig: ApibaraRuntimeConfig) {
+export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({ database: db });
 }
 const chainId =
@@ -43,11 +47,11 @@ export function createIndexer<
       events: [
         {
           address: REALMS_BRIDGE_ADDRESS[l2ChainId] as `0x${string}`,
-          keys: [getSelector("WithdrawRequestCompleted") as `0x${string}`],
+          keys: [getSelector("WithdrawRequestCompleted")],
         },
         {
           address: REALMS_BRIDGE_ADDRESS[l2ChainId] as `0x${string}`,
-          keys: [getSelector("DepositRequestInitiated") as `0x${string}`],
+          keys: [getSelector("DepositRequestInitiated")],
         },
       ],
     },
@@ -59,7 +63,7 @@ export function createIndexer<
         indexerName: "starknet-realms-bridge",
       }),
     ],
-    async transform({ endCursor, block, context, finality }) {
+    async transform({ endCursor, block, finality }) {
       const logger = useLogger();
       const { db } = useDrizzleStorage();
       const { events } = block;
@@ -74,22 +78,26 @@ export function createIndexer<
       for (const event of events) {
         if (event.keys[0] === getSelector("WithdrawRequestCompleted")) {
           const { args, transactionHash } = decodeEvent({
+            //@ts-expect-error should accept value
             abi,
             eventName: "bridge::interfaces::WithdrawRequestCompleted",
             event,
           });
+          //@ts-expect-error should accept value
           const hash = uint256.bnToUint256(args.req_content.hash);
           const id = [
             BigInt(hash.low),
             BigInt(hash.high),
             args.req_content.owner_l1.address,
+            //@ts-expect-error should accept value
             BigInt(args.req_content.owner_l2),
             args.req_content.ids.length,
-            ...args.req_content.ids.flatMap(id => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            ...args.req_content.ids.flatMap((id: bigint) => {
               const token = uint256.bnToUint256(id);
               return [Number(token.low), Number(token.high)];
             }),
-          ]
+          ];
           await db
             .insert(realmsBridgeRequests)
             .values({
@@ -97,20 +105,22 @@ export function createIndexer<
               from_address: numberToHex(args.req_content.owner_l1.address),
               to_address: args.req_content.owner_l2,
               token_ids: args.req_content.ids,
-              timestamp: block?.header?.timestamp,
+              timestamp: block.header.timestamp,
               tx_hash: transactionHash,
               id,
-              req_hash: args.req_content.hash
+              req_hash: args.req_content.hash,
             })
             .onConflictDoNothing();
 
-            await db.insert(realmsBridgeEvents).values({
-              timestamp: block?.header?.timestamp,
+          await db
+            .insert(realmsBridgeEvents)
+            .values({
+              timestamp: block.header.timestamp,
               hash: transactionHash,
               type: "withdraw_completed_l2",
               id,
-            }).onConflictDoNothing();
-
+            })
+            .onConflictDoNothing();
         } else if (event.keys[0] === getSelector("DepositRequestInitiated")) {
           const { args, transactionHash } = decodeEvent({
             abi,
@@ -124,11 +134,12 @@ export function createIndexer<
             args.req_content.owner_l1.address,
             BigInt(args.req_content.owner_l2),
             args.req_content.ids.length,
-            ...args.req_content.ids.flatMap(id => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            ...args.req_content.ids.flatMap((id: bigint) => {
               const token = uint256.bnToUint256(id);
               return [Number(token.low), Number(token.high)];
             }),
-          ]
+          ];
           await db
             .insert(realmsBridgeRequests)
             .values({
@@ -136,25 +147,25 @@ export function createIndexer<
               from_address: args.req_content.owner_l2,
               to_address: numberToHex(args.req_content.owner_l1.address),
               token_ids: args.req_content.ids,
-              timestamp: block?.header?.timestamp,
+              timestamp: block.header.timestamp,
               tx_hash: transactionHash,
               req_hash: args.req_content.hash,
-              id
+              id,
             })
             .onConflictDoNothing();
-            await db.insert(realmsBridgeEvents).values({
-              timestamp: block?.header?.timestamp,
+          await db
+            .insert(realmsBridgeEvents)
+            .values({
+              timestamp: block.header.timestamp,
               hash: transactionHash,
               type: "deposit_initiated_l2",
               id,
-            }).onConflictDoNothing();
+            })
+            .onConflictDoNothing();
         }
       }
     },
   });
-}
-function prettyAddress(address: string) {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 const abi = [

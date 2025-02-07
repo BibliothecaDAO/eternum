@@ -1,5 +1,4 @@
 import {
-  Link,
   Outlet,
   createRootRouteWithContext,
   useRouterState,
@@ -30,7 +29,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 });
 
 function RootComponent() {
-  const isFetching = useRouterState({ select: (s) => s.isLoading });
+  //const isFetching = useRouterState({ select: (s) => s.isLoading });
   const config = getDefaultConfig({
     appName: "Realms.World",
     projectId: "c8d27e7d62b1bb4d1ea2e6d4ed1604ee",

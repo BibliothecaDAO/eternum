@@ -1,5 +1,5 @@
 import EthereumIcon from "@/components/icons/ethereum.svg?react";
-import StarknetIcon from "@/components/icons/starknet.svg?reac";
+import StarknetIcon from "@/components/icons/starknet.svg?react";
 import { ChainId } from "@realms-world/constants";
 import { ArrowRight } from "lucide-react";
 export const TransactionChains: React.FC<{ fromChain: string | number }> = ({
