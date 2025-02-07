@@ -12,6 +12,10 @@ export enum RealmLevelNames {
   Empire = "Empire",
 }
 
+export const getLevelName = (level: RealmLevels): string => {
+  return RealmLevelNames[RealmLevels[level] as keyof typeof RealmLevelNames];
+};
+
 export const LEVEL_DESCRIPTIONS = {
   [RealmLevels.Settlement]: "A small settlement with a few buildings. You have 6 buildable hexes.",
   [RealmLevels.City]: "You will have 18 buildable hexes, and a glorious city with many districts.",
