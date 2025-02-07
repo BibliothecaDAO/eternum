@@ -1,4 +1,4 @@
-export const WORLD_ADDRESS = "0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f";
+export const WORLD_ADDRESS = "0x489ee246082cd1a1676dd03c334f85eb8b2960cb78701ae1b974c61a8373aaa";
 
 export const MAINNET_WORLD_BLOCK = 940000;
 export const MAINNET_RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet";
