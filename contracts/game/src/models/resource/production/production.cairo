@@ -177,7 +177,7 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         ResourceFoodImpl::pay(ref world, from_entity_id, wheat_burn_amount, fish_burn_amount);
 
         // get the amount of produced resource the specified labor can create
-        let produced_resource_rarity: u128 = produced_resource_labor_burn_strategy.resource_rarity * RESOURCE_PRECISION;
+        let produced_resource_rarity: u128 = produced_resource_labor_burn_strategy.resource_rarity;
         let produced_resource_depreciation_num: u128 = produced_resource_labor_burn_strategy
             .depreciation_percent_num
             .into();

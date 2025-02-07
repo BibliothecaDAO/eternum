@@ -2,11 +2,8 @@ import { configManager, ResourcesIds } from "@bibliothecadao/eternum";
 
 type LaborConfig = {
   laborProductionPerResource: number;
-  wheatBurnPerLabor: number;
-  fishBurnPerLabor: number;
-  laborRatePerTick: number;
-  resourceProductionPerLabor: number;
   laborBurnPerResource: number;
+  laborRatePerTick: number;
   inputResources: { resource: ResourcesIds; amount: number }[];
 };
 
@@ -21,20 +18,17 @@ export const getLaborConfig = (resourceId: number): LaborConfig | undefined => {
 
   return {
     laborProductionPerResource: laborConfig.resource_rarity,
-    resourceProductionPerLabor: (1 / laborConfig.resource_rarity) * depreciation,
     laborBurnPerResource: laborConfig.resource_rarity / depreciation,
-    wheatBurnPerLabor: laborConfig.wheat_burn_per_labor,
-    fishBurnPerLabor: laborConfig.fish_burn_per_labor,
     laborRatePerTick: laborResource.amount,
     inputResources: [
       { resource: ResourcesIds.Labor, amount: laborConfig.resource_rarity / depreciation },
       {
         resource: ResourcesIds.Wheat,
-        amount: laborConfig.wheat_burn_per_labor * laborConfig.resource_rarity,
+        amount: (laborConfig.wheat_burn_per_labor * laborConfig.resource_rarity) / depreciation,
       },
       {
         resource: ResourcesIds.Fish,
-        amount: laborConfig.fish_burn_per_labor * laborConfig.resource_rarity,
+        amount: (laborConfig.fish_burn_per_labor * laborConfig.resource_rarity) / depreciation,
       },
     ],
   };
