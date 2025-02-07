@@ -3,11 +3,13 @@ import { resources } from "@bibliothecadao/eternum";
 import { OSWindow } from "../navigation/os-window";
 import { RealmTransfer } from "./realm-transfer";
 
-export const RealmTransferManager = () => {
-  return resources.map((resource) => <RealmTransferContainer key={resource.id} resource={resource.id} />);
+export const RealmTransferManager = ({ zIndex = 100 }: { zIndex?: number }) => {
+  return resources.map((resource) => (
+    <RealmTransferContainer key={resource.id} resource={resource.id} zIndex={zIndex} />
+  ));
 };
 
-const RealmTransferContainer = ({ resource }: { resource: number }) => {
+const RealmTransferContainer = ({ resource, zIndex }: { resource: number; zIndex: number }) => {
   const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
 
   return (
@@ -15,7 +17,7 @@ const RealmTransferContainer = ({ resource }: { resource: number }) => {
       title={resources.find((r) => r.id === resource)?.trait ?? ""}
       onClick={() => useUIStore.getState().togglePopup(resource.toString())}
       show={isOpen}
-      className="z-[100]"
+      className={`z-[${zIndex}]`}
     >
       <RealmTransfer resource={resource} />
     </OSWindow>
