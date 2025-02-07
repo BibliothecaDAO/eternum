@@ -1,6 +1,14 @@
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
-import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/shared/ui/drawer";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/shared/ui/drawer";
 import { Input } from "@/shared/ui/input";
 import { NumericKeyboard } from "@/shared/ui/numeric-keyboard";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
@@ -134,6 +142,9 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
             <DrawerContent>
               <DrawerHeader>
                 <DrawerTitle className="text-3xl font-bokor text-center">Enter Amount</DrawerTitle>
+                <DrawerDescription className="text-xl">
+                  {amount} {selectedResource?.trait}
+                </DrawerDescription>
               </DrawerHeader>
               <div className="p-4">
                 <NumericKeyboard onKeyPress={handleKeyPress} />
