@@ -54,9 +54,9 @@ export const ResourcesCard = ({ className }: ResourcesCardProps) => {
         </div>
 
         {/* Expanded view - vertical list */}
-        <CollapsibleContent className="relative">
+        <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
           <ScrollArea className="h-[30vh]">
-            <div className="space-y-2">
+            <div className="space-y-2 px-2">
               {resourceAmounts.map(({ id, amount }) => {
                 const resource = resources.find((r) => r.id === id);
                 if (!resource) return null;
