@@ -72,16 +72,15 @@ export function UnlockDialog({
 
   async function handleWithdraw() {
     const hash = await withdraw();
-    if (hash) {
       toast({
         description: (
           <div className="flex items-center gap-2">
-            <Check /> Lords Withdrawal successful
+            <Check /> Lords Withdrawal successful {hash.transaction_hash}
           </div>
         ),
       });
       setOpen(false);
-    }
+    
   }
 
   return (
@@ -111,7 +110,7 @@ export function UnlockDialog({
                     <div className="flex items-center gap-2">
                       <LordsIcon className="w-4 h-4" />{" "}
                       {formatNumber(
-                        Number(formatEther(BigInt(ownerLordsLock?.amount)))
+                        Number(formatEther(BigInt(ownerLordsLock.amount)))
                       )}
                     </div>
                   ) : (

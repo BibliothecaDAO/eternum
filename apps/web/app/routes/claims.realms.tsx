@@ -1,3 +1,4 @@
+import { ClaimRewards } from '@/components/modules/velords/claim-rewards'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/claims/realms')({
@@ -5,5 +6,5 @@ export const Route = createFileRoute('/claims/realms')({
 })
 
 function RouteComponent() {
-  return <div>Hello "/claims/realms"!</div>
+  return <div><ClaimRewards /></div>
 }

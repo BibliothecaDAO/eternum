@@ -6,15 +6,17 @@ import {
   CardDescription,
   CardFooter,
 } from "@/components/ui/card";
+import type {
+  ChartConfig} from "@/components/ui/chart";
 import {
-  ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
+import type {
+  Address} from "@starknet-react/core";
 import {
-  Address,
   useAccount,
   useBalance,
   useContract,
@@ -26,7 +28,8 @@ import { LORDS, StakingAddresses } from "@realms-world/constants";
 import { useMemo } from "react";
 import { StakeDialog } from "./stake-dialog";
 import { VeLords } from "@/abi/L2/VeLords";
-import { BlockNumber, BlockTag } from "starknet";
+import type { BlockNumber} from "starknet";
+import { BlockTag } from "starknet";
 import { formatEther } from "viem";
 import { UnlockDialog } from "./unlock-dialog";
 
@@ -70,7 +73,7 @@ export const StakeLords = () => {
   const { sendAsync: withdraw } = useSendTransaction({
     calls:
       veLordsContract && address
-        ? [veLordsContract?.populate("withdraw", [])]
+        ? [veLordsContract.populate("withdraw", [])]
         : undefined,
   });
 
@@ -128,7 +131,7 @@ export const StakeLords = () => {
                       <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
                         <tspan
                           x={viewBox.cx}
-                          y={(viewBox.cy || 0) - 16}
+                          y={(viewBox.cy ?? 0) - 16}
                           className="fill-foreground text-lg font-bold"
                         >
                           {ownerLordsLock?.amount
@@ -140,7 +143,7 @@ export const StakeLords = () => {
                         </tspan>
                         <tspan
                           x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 4}
+                          y={(viewBox.cy ?? 0) + 4}
                           className="fill-muted-foreground"
                         >
                           Staked / Total $LORDS

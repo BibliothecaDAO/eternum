@@ -1,10 +1,10 @@
-import { Connector } from "@starknet-react/core";
+import type { Connector } from "@starknet-react/core";
 
 export const getLastConnector = (connectors: Connector[]): Connector | null => {
     if (localStorage.getItem("lastUsedConnector")) {
       const connectordId = localStorage.getItem("lastUsedConnector");
       const connector = connectors.find((item) => item.id === connectordId);
-      return connector || null;
+      return connector ?? null;
     }
     return null;
   };

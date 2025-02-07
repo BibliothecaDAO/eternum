@@ -19,10 +19,11 @@ import { Check, Plus, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { formatEther, parseEther } from "viem";
-import { Address, useAccount, useContract } from "@starknet-react/core";
+import type { Address} from "@starknet-react/core";
+import { useAccount, useContract } from "@starknet-react/core";
 import { L2_C1ERC20 } from "@/abi/L2/C1ERC20";
 import { LORDS, StakingAddresses } from "@realms-world/constants";
-import { Call } from "starknet";
+import type { Call } from "starknet";
 import { VeLords } from "@/abi/L2/VeLords";
 import { toast } from "@/hooks/use-toast";
 
@@ -86,26 +87,26 @@ export function StakeDialog({
   const manageLock = async () => {
     if (address && lordsContract && veLords) {
       const hash = await manageLordsLock([
-        lordsContract?.populate("approve", [
+        lordsContract.populate("approve", [
           veLordsAddress as `0x${string}`,
-          parseEther(stakeAmount ?? "0"),
+          parseEther(stakeAmount),
         ]),
-        veLords?.populate("manage_lock", [
-          parseEther(stakeAmount ?? "0"),
+        veLords.populate("manage_lock", [
+          parseEther(stakeAmount),
           newLockEndTime,
           address,
         ]),
       ]);
-      if (hash) {
+
         toast({
           description: (
             <div className="flex items-center gap-2">
-              <Check /> Lords Lock Update successful
+              <Check /> Lords Lock Update successful {hash.transaction_hash}
             </div>
           ),
         });
         setOpen(false);
-      }
+      
     }
   };
 
@@ -154,7 +155,7 @@ export function StakeDialog({
                     <div className="flex items-center gap-2">
                       <LordsIcon className="w-4 h-4" />{" "}
                       {formatNumber(
-                        Number(formatEther(BigInt(ownerLordsLock?.amount)))
+                        Number(formatEther(BigInt(ownerLordsLock.amount)))
                       )}
                     </div>
                   ) : (

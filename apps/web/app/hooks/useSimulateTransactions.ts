@@ -1,27 +1,31 @@
 import { useMemo } from "react";
+import type {
+  Invocations} from "starknet";
 import {
-  type AccountInterface,
-  type Call,
-  type SimulateTransactionResponse,
-  type SimulateTransactionDetails,
-  TransactionType,
-  Invocations,
+  
+  
+  
+  
+  TransactionType
 } from "starknet";
+import type {AccountInterface, Call, SimulateTransactionResponse, SimulateTransactionDetails} from "starknet";
 
 import { useAccount, useInvalidateOnBlock } from "@starknet-react/core";
-import {
+import type {
   QueryKey,
-  useQuery,
-  UseQueryResult,
-  type UseQueryOptions as UseQueryOptions_,
+  UseQueryResult} from "@tanstack/react-query";
+import {
+  useQuery
+  
 } from "@tanstack/react-query";
+import type {UseQueryOptions as UseQueryOptions_} from "@tanstack/react-query";
 
-export type SimulateTransactionsArgs = {
+export interface SimulateTransactionsArgs {
   /** List of smart contract calls to simulate. */
   calls?: Call[];
   /** Simualte Transaction options. */
   options?: SimulateTransactionDetails;
-};
+}
 type UseQueryProps<
   TQueryFnData = unknown,
   TError = unknown,
@@ -111,6 +115,6 @@ function queryFn({
       type: TransactionType.INVOKE,
       ...call,
     }));
-    return account?.simulateTransaction(callMap as Invocations, options);
+    return account.simulateTransaction(callMap as Invocations, options);
   };
 }

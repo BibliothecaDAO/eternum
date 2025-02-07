@@ -26,7 +26,7 @@ export const useERC721Approval = ({
   const calls: Call[] = useMemo(() => {
     if (!contractAddress || !operator || !addressL1 || !contract) return [];
     return [
-      contract?.populate("set_approval_for_all", [
+      contract.populate("set_approval_for_all", [
         operator,
         removeApproval ? false : true,
       ]),

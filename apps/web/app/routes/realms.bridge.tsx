@@ -16,7 +16,8 @@ import { useAccount as useL1Account } from "wagmi";
 import { trpc } from "@/router";
 
 import BridgeSidebar from "@/components/modules/realms/bridge-sidebar";
-import { getCoreRowModel, getPaginationRowModel, RowSelectionState, useReactTable } from "@tanstack/react-table";
+import type { RowSelectionState} from "@tanstack/react-table";
+import { getCoreRowModel, getPaginationRowModel, useReactTable } from "@tanstack/react-table";
 import { CollectionAddresses } from "@realms-world/constants";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { Alert } from "@/components/ui/alert";
@@ -42,10 +43,10 @@ function RouteComponent() {
   const mappedRealms = useMemo(() => {
     if (selectedAsset === "Ethereum" && l1Realms) {
       return (
-        l1Realms?.tokens?.map((realm) => ({
-          token_id: realm?.token?.tokenId,
-          name: realm?.token?.name,
-          attributes: realm?.token?.attributes?.map((attribute) => ({
+        l1Realms.tokens?.map((realm) => ({
+          token_id: realm.token?.tokenId,
+          name: realm.token?.name,
+          attributes: realm.token?.attributes?.map((attribute) => ({
             ...attribute,
             trait_type: attribute.key,
           })) ?? [],
@@ -65,7 +66,7 @@ function RouteComponent() {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const table = useReactTable({
-    data: mappedRealms ?? [],
+    data: mappedRealms,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

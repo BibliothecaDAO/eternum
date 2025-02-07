@@ -1,5 +1,5 @@
 import { ResourceIcon } from "@/components/ui/resource-icon";
-import { TokenMetadataAttribute } from "@/types/ark";
+import type { TokenMetadataAttribute } from "@/types/ark";
 import {
   Tooltip,
   TooltipContent,

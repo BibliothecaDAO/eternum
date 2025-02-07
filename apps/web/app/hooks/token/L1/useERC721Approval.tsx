@@ -37,6 +37,7 @@ export default function useERC721Approval() {
 
   useEffect(() => {
     if (address && !isApprovedForAll) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       refetch();
     }
   }, [blockNumber, refetch, address, isApprovedForAll]);

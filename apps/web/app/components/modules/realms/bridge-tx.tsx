@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TransactionChains } from "./bridge-tx-chains";
-import { RouterOutputs } from "@/router";
+import type { RouterOutputs } from "@/router";
 import { useExplorer } from "@starknet-react/core";
 import { Link } from "@tanstack/react-router";
 import { cn, shortenAddress } from "@/utils/utils";
@@ -41,7 +41,7 @@ const BridgeTransactionHistory: React.FC<{
   };
   return (
     <Accordion type="single" collapsible>
-      {transactions?.map((transaction) => {
+      {transactions.map((transaction) => {
         const isCompleted = transaction.events.some(
           (event) =>
             event.type === "withdraw_completed_l1" ||

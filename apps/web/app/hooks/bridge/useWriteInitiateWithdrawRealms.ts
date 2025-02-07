@@ -23,7 +23,7 @@ export const useWriteInitiateWithdrawRealms = ({
     if (!selectedTokenIds.length || !addressL1 || !contract) return [];
 
     return [
-      contract?.populate("deposit_tokens", [
+      contract.populate("deposit_tokens", [
         Date.now(),
         addressL1,
         selectedTokenIds.map((tokenId) => BigInt(tokenId)),

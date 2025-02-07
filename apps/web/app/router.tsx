@@ -13,7 +13,7 @@ import { routeTree } from "./routeTree.gen";
 import { Spinner } from "./routes/-components/spinner";
 import type { AppRouter } from "../trpc-server.handler";
 import SuperJSON from "superjson";
-import { inferRouterOutputs } from "@trpc/server";
+import type { inferRouterOutputs } from "@trpc/server";
 
 export const queryClient = new QueryClient({
   defaultOptions: {

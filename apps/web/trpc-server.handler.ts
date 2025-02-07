@@ -1,4 +1,4 @@
-import { paths } from "@reservoir0x/reservoir-sdk";
+import type { paths } from "@reservoir0x/reservoir-sdk";
 import { defineEventHandler, toWebRequest } from "@tanstack/start/server";
 import { initTRPC } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
@@ -14,7 +14,7 @@ import {
   Collections,
   ChainId,
 } from "@realms-world/constants";
-import { PortfolioCollectionApiResponse } from "@/types/ark";
+import type { PortfolioCollectionApiResponse } from "@/types/ark";
 const SUPPORTED_L1_CHAIN_ID =
   process.env.VITE_PUBLIC_CHAIN == "sepolia"
     ? ChainId.SEPOLIA
@@ -140,8 +140,8 @@ const appRouter = t.router({
             },
           }
         );
-        const data = await response.json();
-        return data as paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"];
+        const data = await response.json() as paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"];
+        return data;
       }
     }),
   realms: t.procedure
@@ -173,8 +173,8 @@ const appRouter = t.router({
             },
           }
         );
-        const data = await response.json();
-        return data as PortfolioCollectionApiResponse;
+        const data = await response.json() as PortfolioCollectionApiResponse;
+        return data;
       }
     }),
 });

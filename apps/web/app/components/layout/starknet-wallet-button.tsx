@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAccount, useConnect } from "@starknet-react/core";
-import {
+import type {
   Connector,
-  StarknetkitConnector,
+  StarknetkitConnector} from "starknetkit";
+import {
   useStarknetkitConnectModal,
 } from "starknetkit";
 import { Button } from "../ui/button";

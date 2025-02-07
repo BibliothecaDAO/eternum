@@ -213,11 +213,11 @@ export interface Token {
 export interface Filters {
   traits: Record<string, string[]>;
 }
-export type BridgeRealm = {
+export interface BridgeRealm {
   token_id?: string;
   name?: string;
   attributes?: TokenMetadataAttribute[];
-};
+}
 export interface PortfolioCollectionApiResponse {
   token_count: number;
   data: PortfolioToken[];

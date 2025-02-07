@@ -4,7 +4,7 @@ import { StakeLords } from "@/components/modules/velords/stake-lords";
 import { trpc } from "@/router";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { StakingAddresses } from "@realms-world/constants";
-import { Address } from "@starknet-react/core";
+import type { Address } from "@starknet-react/core";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatEther } from "viem";
 import { useReadContract } from "wagmi";
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/velords/")({
 
 function RouteComponent() {
   const veLordsBurnsQuery = trpc.posts.useQuery();
-  const veLordsBurns = veLordsBurnsQuery.data || [];
+  const veLordsBurns = veLordsBurnsQuery.data ?? [];
   const { data: totalSupply } = useReadContract({
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as Address,
     abi: VeLords,

@@ -10,6 +10,7 @@ import "./index.css"
 // Set up a Router instance
 const router = createRouter()
 
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const rootElement = document.getElementById('root')!
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)

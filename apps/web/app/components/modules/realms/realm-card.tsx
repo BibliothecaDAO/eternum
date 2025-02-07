@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { CollectionToken, PortfolioToken } from "@/types/ark";
+import type { CollectionToken, PortfolioToken } from "@/types/ark";
 import Media from "./media";
 import { AnimatedMap } from "@/components/icons/AnimatedMap";
 import RealmResources from "./realm-resources";
@@ -17,9 +17,9 @@ export const RealmCard = ({
     <Card className="overflow-hidden">
       {token.metadata?.image ? (
         <Media
-          src={token.metadata?.image}
-          alt={token.metadata?.name}
-          mediaKey={token.metadata?.image_key}
+          src={token.metadata.image}
+          alt={token.metadata.name}
+          mediaKey={token.metadata.image_key}
           /*className={isGrid ? "mx-auto" : ""}
   width={imageSize}
   height={imageSize}*/

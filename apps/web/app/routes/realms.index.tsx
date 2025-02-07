@@ -5,10 +5,11 @@ import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { CollectionAddresses } from "@realms-world/constants";
 import { useAccount } from "@starknet-react/core";
 import { useQueryErrorResetBoundary } from "@tanstack/react-query";
+import type {
+  ErrorComponentProps} from "@tanstack/react-router";
 import {
   createFileRoute,
   ErrorComponent,
-  ErrorComponentProps,
   Link,
   useRouter,
 } from "@tanstack/react-router";
@@ -36,8 +37,8 @@ export function PostErrorComponent({ error }: ErrorComponentProps) {
   return (
     <div>
       <button
-        onClick={() => {
-          router.invalidate();
+        onClick={async() => {
+          await router.invalidate();
         }}
       >
         retry
@@ -80,7 +81,7 @@ function RealmsComponent() {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-4">
         {l2Realms?.data.length
-          ? l2Realms?.data.map((realm) => {
+          ? l2Realms.data.map((realm) => {
               return (
                 <RealmCard key={realm.token_id} token={realm} isGrid={true} />
               );

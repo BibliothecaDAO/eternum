@@ -1,5 +1,5 @@
 import ControllerConnector from "@cartridge/connector/controller";
-import { ColorMode } from "@cartridge/controller";
+import type { ColorMode } from "@cartridge/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import {
   StarknetConfig,
@@ -23,7 +23,7 @@ const otherResources = Object.entries(resourceAddresses)
   .filter(([key]) => key !== "LORDS")
   .map(([_, [__, address]]) => address);
 */
-const theme: string = "eternum";
+const theme = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 //const namespace: string = "eternum";
 const colorMode: ColorMode = "dark";

@@ -9,6 +9,7 @@ const envSchema = z.object({
   VITE_PUBLIC_IPFS_GATEWAY: z.string().url().optional(),
 
   VITE_PUBLIC_SLOT: z.string(),
+  VITE_PUBLIC_NODE_URL: z.string().url().optional(),
 
   VITE_RESERVOIR_API_KEY: z.string(),
 });

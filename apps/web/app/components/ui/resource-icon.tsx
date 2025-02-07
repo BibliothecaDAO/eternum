@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import clsx from "clsx";
 
-type Props = {
+interface Props {
   resource: string;
   size: keyof (typeof STYLES)["size"];
   className?: string;
@@ -9,14 +9,14 @@ type Props = {
   withTooltip?: boolean;
   containerClassName?: string;
   tooltipText?: string; // Added custom tooltip text as optional
-};
+}
 
-type Resource = {
+interface Resource {
   component: ReactElement;
   name: string;
-};
+}
 
-const Components: { [key: string]: Resource } = Object.freeze({
+const Components: Record<string, Resource> = Object.freeze({
   Adamantine: {
     component: <img src={`/realms/resources/20.png`} />,
     name: "Adamantine",
@@ -173,13 +173,13 @@ export const ResourceIcon = ({
       >
         {
           Components[props.resource.replace(" ", "").replace("'", "")]
-            ?.component
+            .component
         }
       </div>
 
       {props.label && (
         <span className="ml-4 self-center text-center">
-          {Components[props.resource.replace(" ", "").replace("'", "")]?.name}
+          {Components[props.resource.replace(" ", "").replace("'", "")].name}
         </span>
       )}
       {withTooltip && (
@@ -187,7 +187,7 @@ export const ResourceIcon = ({
           <span className="whitespace-no-wrap bg-gray-1000 relative z-10 rounded p-2 text-xs leading-none shadow-lg">
             {tooltipText ||
               Components[props.resource.replace(" ", "").replace("'", "")]
-                ?.name}
+                .name}
           </span>
           <div className="absolute bottom-0 left-1/2 z-100 h-3 w-3 -translate-x-1/2 translate-y-1/2 rotate-45 bg-black"></div>
         </div>
