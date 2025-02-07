@@ -308,24 +308,33 @@ pub struct TickConfig {
     tick_interval_in_seconds: u64
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct StaminaRefillConfig {
-    #[key]
-    config_id: ID,
-    amount_per_tick: u16,
-    start_boost_tick_count: u8
+
+#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
+struct CombatConfig {
+    // Base damage values for each troop type
+    knight_base_damage: u16,
+    crossbowman_base_damage: u16,
+    paladin_base_damage: u16,
+
+    // Damage bonuses for tiers
+    // t1_damage_bonus == Fixed::ONE
+    t2_damage_bonus: u16, // In the contracts, we do Fixed::ONE * t2_damage_bonus
+    t3_damage_bonus: u16, // In the contracts, we do Fixed::ONE * t3_damage_bonus
+
+    // Biome and stamina related bonuses
+    damage_bonus_num: u16,      // Used for biome damage calculations
+    damage_scaling_factor: u16, // Used in damage calculations for troop scaling
+    stamina_bonus_value: u16,   // Used for stamina movement bonuses
+
+    // Stamina configuration 
+    stamina_gain_per_tick: u32,   // Stamina gained per tick
+    stamina_knight_max: u32,      // Maximum stamina for knights
+    stamina_paladin_max: u32,     // Maximum stamina for paladins
+    stamina_crossbowman_max: u32, // Maximum stamina for crossbowmen
+    stamina_attack_req: u64,      // Minimum stamina required to attack
+    stamina_attack_max: u64,      // Maximum stamina that can be used in attack
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct StaminaConfig {
-    #[key]
-    config_id: ID,
-    #[key]
-    unit_type: u8,
-    max_stamina: u16,
-}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

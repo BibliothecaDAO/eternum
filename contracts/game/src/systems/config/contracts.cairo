@@ -231,7 +231,7 @@ mod config_systems {
     use s1_eternum::models::config::{
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestRewardConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
-        PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
+        PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
         RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig,
@@ -430,15 +430,6 @@ mod config_systems {
         }
     }
 
-    #[abi(embed_v0)]
-    impl TravelStaminaCostConfigImpl of super::ITravelStaminaCostConfig<ContractState> {
-        fn set_travel_stamina_cost_config(ref self: ContractState, travel_type: u8, cost: u16) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            world.write_model(@TravelStaminaCostConfig { config_id: WORLD_CONFIG_ID, travel_type, cost });
-        }
-    }
 
     #[abi(embed_v0)]
     impl WeightConfigImpl of super::IWeightConfig<ContractState> {
@@ -478,15 +469,6 @@ mod config_systems {
         }
     }
 
-    #[abi(embed_v0)]
-    impl StaminaConfigImpl of super::IStaminaConfig<ContractState> {
-        fn set_stamina_config(ref self: ContractState, unit_type: u8, max_stamina: u16) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            world.write_model(@StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type, max_stamina });
-        }
-    }
 
     #[abi(embed_v0)]
     impl TravelFoodCostConfigImpl of super::ITravelFoodCostConfig<ContractState> {
@@ -499,18 +481,6 @@ mod config_systems {
         }
     }
 
-    #[abi(embed_v0)]
-    impl StaminaRefillConfigImpl of super::IStaminaRefillConfig<ContractState> {
-        fn set_stamina_refill_config(ref self: ContractState, amount_per_tick: u16, start_boost_tick_count: u8) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            world
-                .write_model(
-                    @StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick, start_boost_tick_count }
-                );
-        }
-    }
 
     #[abi(embed_v0)]
     impl LevelingConfigImpl of super::ILevelingConfig<ContractState> {

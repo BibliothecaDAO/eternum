@@ -47,14 +47,14 @@ pub struct W3eight {
 
 #[generate_trait]
 impl W3eightImpl of W3eightTrait {
-    fn deduct(ref self: W3eight, amount: u128) {
-        if self.capacity != Bounded::Max {
+    fn deduct(ref self: W3eight, amount: u64) {
+        if self.capacity != Bounded::MAX {
             self.weight -= amount;
         }
     }
 
-    fn add(ref self: W3eight, amount: u128) {
-        if self.capacity != Bounded::Max {
+    fn add(ref self: W3eight, amount: u64) {
+        if self.capacity != Bounded::MAX {
             self.weight += amount;
             assert!(self.weight <= self.capacity, "{} weight + {} weight > {} capacity", self.weight, amount, self.capacity);
         }
