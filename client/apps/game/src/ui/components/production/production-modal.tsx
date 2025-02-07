@@ -1,8 +1,9 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ID, RealmInfo } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealms } from "@bibliothecadao/react";
-import { Suspense, lazy, useCallback, useState } from "react";
+import { Suspense, lazy, useCallback, useMemo, useState } from "react";
 
 const ProductionSidebar = lazy(() =>
   import("./production-sidebar").then((module) => ({ default: module.ProductionSidebar })),
@@ -12,7 +13,14 @@ const ProductionBody = lazy(() => import("./production-body").then((module) => (
 
 export const ProductionModal = () => {
   const playerRealms = usePlayerOwnedRealms();
-  const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(playerRealms[0]);
+
+  const initialRealm = useMemo(() => {
+    const structureEntityId = useUIStore.getState().structureEntityId;
+    const selectedRealm = playerRealms.find((r) => r.entityId === structureEntityId);
+    return selectedRealm;
+  }, [playerRealms]);
+
+  const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(initialRealm || playerRealms[0]);
 
   const handleSelectRealm = useCallback(
     (id: ID) => {
