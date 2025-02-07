@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "types": ["vite-plugin-svgr/client"],
+    "paths": {
+      "*": ["node_modules/*"],
+    },
+    "jsx": "react-jsx"
+  },
+  "include": ["src/**/*"]
+}
