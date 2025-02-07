@@ -6,7 +6,7 @@ import { UpgradeDrawer } from "./upgrade-drawer";
 
 interface UpgradeCastleProps {
   castleLevel: number;
-  onUpgrade: () => void;
+  onUpgrade: () => Promise<void>;
 }
 
 export const UpgradeCastle = ({ castleLevel, onUpgrade }: UpgradeCastleProps) => {
