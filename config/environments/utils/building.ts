@@ -111,9 +111,9 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
   ],
 };
 
-//  Note: ensure that no resource associated with some other building 
+//  Note: ensure that no resource associated with some other building
 //      is also associated with a resource building cost
-//      (e.g. dont add Labor resource here again because it is 
+//      (e.g. dont add Labor resource here again because it is
 //      already associated with the Labor building)
 export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Wood]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],

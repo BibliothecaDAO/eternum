@@ -168,7 +168,6 @@ export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplie
   return multipliedCosts;
 };
 
-
 export const scaleResourceProductionByLaborParams = (config: ProductionByLaborParams, multiplier: number) => {
   let multipliedValues: ProductionByLaborParams = {};
 

@@ -865,7 +865,7 @@ export function defineContractComponents(world: World) {
           },
         },
       );
-    })(),  
+    })(),
     ProductionConfig: (() => {
       return defineComponent(
         world,
