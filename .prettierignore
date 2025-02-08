@@ -21,3 +21,6 @@
 **/gql
 **/*.graphql
 **/*.gen.ts
+
+# ignore json files
+**/*.json

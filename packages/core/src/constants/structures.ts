@@ -27,7 +27,6 @@ export enum BuildingType {
   WorkersHut = 10,
   // unused
   WatchTower = 11,
-  // unused
   Walls = 12,
   Storehouse = 13,
   Bank = 14,

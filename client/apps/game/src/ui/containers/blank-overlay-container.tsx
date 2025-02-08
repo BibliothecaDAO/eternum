@@ -4,9 +4,10 @@ import { Fragment, memo } from "react";
 type BlurOverlayContainerProps = {
   children?: React.ReactNode;
   open: boolean;
+  zIndex?: number;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const BlankOverlayContainer = memo(({ children, open }: BlurOverlayContainerProps) => {
+export const BlankOverlayContainer = memo(({ children, open, zIndex = 10001 }: BlurOverlayContainerProps) => {
   return (
     <Transition
       show={open}
@@ -18,7 +19,10 @@ export const BlankOverlayContainer = memo(({ children, open }: BlurOverlayContai
       leaveFrom="opacity-100"
       leaveTo="opacity-0"
     >
-      <div className="top-0 left-0 flex justify-center items-center rounded-lg z-[10001] fixed w-screen h-screen pointer-events-auto">
+      <div
+        className={`top-0 left-0 flex justify-center items-center rounded-lg fixed w-screen h-screen pointer-events-auto`}
+        style={{ zIndex }}
+      >
         {children}
       </div>
     </Transition>

@@ -27,8 +27,6 @@ export const useEntities = () => {
     refetchInterval: 10_000,
   });
 
-  console.log({ data });
-
   const playerRealms = useMemo(() => {
     if (!data) return [];
 

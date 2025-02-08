@@ -34,7 +34,7 @@ export enum ResourcesIds {
   Sapphire = 20,
   EtherealSilica = 21,
   Dragonhide = 22,
-  // Demonhide = 23,
+  Labor = 23,
   AncientFragment = 24,
   Donkey = 25,
   Knight = 26,

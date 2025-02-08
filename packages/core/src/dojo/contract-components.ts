@@ -871,33 +871,25 @@ export function defineContractComponents(world: World) {
         world,
         {
           resource_type: RecsType.Number,
-          produced_amount: RecsType.BigInt,
-          labor_cost: RecsType.BigInt,
+          amount_per_building_per_tick: RecsType.BigInt,
+          labor_burn_strategy: {
+            resource_rarity: RecsType.BigInt,
+            depreciation_percent_num: RecsType.Number,
+            depreciation_percent_denom: RecsType.Number,
+            wheat_burn_per_labor: RecsType.BigInt,
+            fish_burn_per_labor: RecsType.BigInt,
+          },
+          multiple_resource_burn_strategy: {
+            required_resources_id: RecsType.Number,
+            required_resources_count: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "ProductionConfig",
-            types: ["u8", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    LaborConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          resource_type: RecsType.Number,
-          input_id: RecsType.Number,
-          input_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "LaborConfig",
-            types: ["u8", "u32", "u8"],
-            customTypes: [],
+            types: ["u8", "u128", "u128", "u16", "u16", "u128", "u128", "u32", "u8"],
+            customTypes: ["LaborBurnPrStrategy", "MultipleResourceBurnPrStrategy"],
           },
         },
       );
@@ -1059,7 +1051,7 @@ export function defineContractComponents(world: World) {
           production: {
             building_count: RecsType.Number,
             production_rate: RecsType.BigInt,
-            labor_units_left: RecsType.BigInt,
+            output_amount_left: RecsType.BigInt,
             last_updated_tick: RecsType.Number,
           },
         },
@@ -1067,7 +1059,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Resource",
-            types: ["u32", "u8", "u128", "u8", "u128", "u64", "u32"],
+            types: ["u32", "u8", "u128", "u8", "u128", "u128", "u32"],
             customTypes: [],
           },
         },

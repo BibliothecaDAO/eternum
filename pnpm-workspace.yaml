@@ -1,6 +1,9 @@
 packages:
   - "client"
-  - "client/apps/*"
+  - "client/apps/landing"
+  - "client/apps/game"
+  - "client/apps/balancing"
+  - "client/apps/game-docs"
   - "config"
   - "packages/*"
   - "contracts/season_pass/scripts/deployment"

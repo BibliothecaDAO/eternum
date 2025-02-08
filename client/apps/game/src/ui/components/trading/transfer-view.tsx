@@ -8,7 +8,7 @@ import {
   getGuildMembersFromPlayerAddress,
   getRealmNameById,
 } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerRealms, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo, usePlayerOwnedRealms, usePlayerStructures } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
@@ -20,7 +20,7 @@ export const TransferView = () => {
   } = useDojo();
   const { Structure, Position, Owner, Realm } = components;
 
-  const playerRealms = usePlayerRealms();
+  const playerRealms = usePlayerOwnedRealms();
   const playerStructures = usePlayerStructures();
 
   const [guildOnly, setGuildOnly] = useState(false);

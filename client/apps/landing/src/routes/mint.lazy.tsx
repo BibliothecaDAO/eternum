@@ -51,7 +51,7 @@ function Mint() {
     [data, realmsAddress],
   );
 
-  const isDev = import.meta.env.VITE_PUBLIC_CHAIN === "local" || import.meta.env.VITE_PUBLIC_DEV === "true";
+  const isDev = import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet";
 
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
     useNftSelection({ userAddress: address as `0x${string}` });

@@ -1917,23 +1917,21 @@ export class EternumProvider extends EnhancedDojoProvider {
       return {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
         entrypoint: "set_production_config",
-        calldata: [call.resource_type, call.amount],
-      };
-    });
-
-    const laborCalldataArray = calls.map((call) => {
-      return {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-        entrypoint: "set_labor_config",
         calldata: [
           call.resource_type,
-          call.cost.length,
-          ...call.cost.flatMap(({ resource, amount }) => [resource, amount]),
+          call.amount_per_building_per_tick,
+          call.labor_burn_strategy.resource_rarity,
+          call.labor_burn_strategy.depreciation_percent_num,
+          call.labor_burn_strategy.depreciation_percent_denom,
+          call.labor_burn_strategy.wheat_burn_per_labor,
+          call.labor_burn_strategy.fish_burn_per_labor,
+          call.predefined_resource_burn_cost.length,
+          ...call.predefined_resource_burn_cost.flatMap(({ resource, amount }) => [resource, amount]),
         ],
       };
     });
-    const calldataArray = [...productionCalldataArray, ...laborCalldataArray];
-    return await this.executeAndCheckTransaction(signer, calldataArray);
+
+    return await this.executeAndCheckTransaction(signer, productionCalldataArray);
   }
 
   public async set_bank_config(props: SystemProps.SetBankConfigProps) {
@@ -2353,5 +2351,118 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "detach_lords",
       calldata: [uint256.bnToUint256(token_id), uint256.bnToUint256(amount)],
     });
+  }
+
+  /**
+   * Burn other resources to produce labor
+   *
+   * @param props - Properties for burning resources for labor
+   * @param props.entity_id - ID of the realm entity
+   * @param props.resource_types - Array of resource types to burn
+   * @param props.resource_amounts - Array of resource amounts to burn
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Burn 100 wood and 50 stone to produce labor
+   * {
+   *   entity_id: 123,
+   *   resource_types: [1, 2], // wood and stone
+   *   resource_amounts: [100, 50],
+   *   signer: account
+   * }
+   * ```
+   */
+  public async burn_other_resources_for_labor_production(props: SystemProps.BurnOtherResourcesForLaborProductionProps) {
+    const { entity_id, resource_types, resource_amounts, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "burn_other_resources_for_labor_production",
+      calldata: [entity_id, resource_types.length, ...resource_types, resource_amounts.length, ...resource_amounts],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Burn labor resources to produce other resources
+   *
+   * @param props - Properties for burning labor for resources
+   * @param props.from_entity_id - ID of the realm entity
+   * @param props.labor_amounts - Array of labor amounts to burn
+   * @param props.produced_resource_types - Array of resource types to produce
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Burn 200 labor to produce wood and stone
+   * {
+   *   from_entity_id: 123,
+   *   labor_amounts: [100, 100],
+   *   produced_resource_types: [1, 2], // wood and stone
+   *   signer: account
+   * }
+   * ```
+   */
+  public async burn_labor_resources_for_other_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
+    const { from_entity_id, labor_amounts, produced_resource_types, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "burn_labor_resources_for_other_production",
+      calldata: [
+        from_entity_id,
+        labor_amounts.length,
+        ...labor_amounts,
+        produced_resource_types.length,
+        ...produced_resource_types,
+      ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Burn predefined resources to produce other resources
+   *
+   * @param props - Properties for burning predefined resources
+   * @param props.from_entity_id - ID of the realm entity
+   * @param props.produced_resource_types - Array of resource types to produce
+   * @param props.production_tick_counts - Array of production tick counts
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Burn predefined resources to produce gold for 2 ticks
+   * {
+   *   from_entity_id: 123,
+   *   produced_resource_types: [5], // gold
+   *   production_tick_counts: [2],
+   *   signer: account
+   * }
+   * ```
+   */
+  public async burn_other_predefined_resources_for_resources(
+    props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps,
+  ) {
+    const { from_entity_id, produced_resource_types, production_tick_counts, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "burn_other_predefined_resources_for_resources",
+      calldata: [
+        from_entity_id,
+        produced_resource_types.length,
+        ...produced_resource_types,
+        production_tick_counts.length,
+        ...production_tick_counts,
+      ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
   }
 }

@@ -88,6 +88,7 @@ export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+  resources: ResourcesIds[];
 };
 export interface Prize {
   id: QuestType;
@@ -412,6 +413,16 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
+export interface ProductionByLaborParams {
+  [key: number]: {
+    resource_rarity: number;
+    depreciation_percent_num: number;
+    depreciation_percent_denom: number;
+    wheat_burn_per_labor: number;
+    fish_burn_per_labor: number;
+  };
+}
+
 export interface Config {
   stamina: {
     travelCost: number;
@@ -427,7 +438,7 @@ export interface Config {
     resourceInputs: ResourceInputs;
     resourceOutputs: ResourceOutputs;
     resourceWeightsGrams: { [key in ResourcesIds]: number };
-    resourceBuildingCosts: ResourceInputs;
+    resourceProductionByLaborParams: ProductionByLaborParams;
     resourceRarity: { [key in ResourcesIds]?: number };
   };
   banks: {
@@ -539,7 +550,8 @@ export interface Config {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
     buildingResourceProduced: Partial<{ [key in BuildingType]: number }>;
-    buildingCosts: ResourceInputs;
+    otherBuildingCosts: ResourceInputs;
+    resourceBuildingCosts: ResourceInputs;
     buildingFixedCostScalePercent: number;
   };
 
@@ -568,7 +580,7 @@ export interface RealmInfo {
   realmId: ID;
   entityId: ID;
   name: string;
-  resourceTypesPacked: bigint;
+  resources: ResourcesIds[];
   order: number;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   population?: number | undefined;
@@ -578,6 +590,10 @@ export interface RealmInfo {
   ownerName: string;
   hasWonder: boolean;
   level: number;
+  storehouses: {
+    capacityKg: number;
+    quantity: number;
+  };
 }
 
 export interface PlayerInfo {

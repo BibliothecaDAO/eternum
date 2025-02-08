@@ -9,7 +9,7 @@ export const getRandomRealmEntity = (components: ClientComponents) => {
   const realms = runQuery([Has(components.Realm)]);
 
   if (realms.size === 0) {
-    throw new Error("No realm entities found");
+    return;
   }
 
   // Optimize for large sets by avoiding Array.from

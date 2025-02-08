@@ -13,6 +13,7 @@ import {
   scaleResourceCostMinMax,
   scaleResourceInputs,
   scaleResourceOutputs,
+  scaleResourceProductionByLaborParams,
   scaleResources,
   TickIds,
   TravelTypes,
@@ -190,29 +191,51 @@ export const setProductionConfig = async (config: Config) => {
     config.config.resources.resourcePrecision,
   );
 
+  const scaledResourceProductionByLaborParams = scaleResourceProductionByLaborParams(
+    config.config.resources.resourceProductionByLaborParams,
+    config.config.resources.resourcePrecision,
+  );
+
   for (const resourceId of Object.keys(scaledResourceInputs) as unknown as ResourcesIds[]) {
-    const outputAmountPerLabor = scaledResourceOutputs[resourceId];
-    const resourceCostPerLabor = scaledResourceInputs[resourceId];
+    const outputAmountPerBuildingPerTick = scaledResourceOutputs[resourceId];
+    const predefinedResourceBurnCost = scaledResourceInputs[resourceId];
+    const resourceProductionByLaborParams = scaledResourceProductionByLaborParams[resourceId];
     const calldata = {
-      amount: outputAmountPerLabor,
       resource_type: resourceId,
-      cost: resourceCostPerLabor,
+      amount_per_building_per_tick: outputAmountPerBuildingPerTick,
+      predefined_resource_burn_cost: predefinedResourceBurnCost,
+      labor_burn_strategy: resourceProductionByLaborParams,
     };
+
     calldataArray.push(calldata);
 
     console.log(
       chalk.cyan(`
     ┌─ ${chalk.yellow(ResourcesIds[calldata.resource_type])}
-    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per labor:`)} ${chalk.white(`${inGameAmount(calldata.amount, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
-    │  ${chalk.gray(`Cost of producing 1 ${ResourcesIds[calldata.resource_type]} labor:`)} ${
-      calldata.cost.length > 0
-        ? calldata.cost
+    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building:`)} ${chalk.white(`${inGameAmount(calldata.amount_per_building_per_tick, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
+    │  ${chalk.gray(``)}
+    │  ${chalk.gray(`Using Labor Burn Production Strategy:`)}
+    │     ${chalk.gray(``)} ${
+      calldata.labor_burn_strategy.resource_rarity === 0
+        ? chalk.red("Cannot be produced with labor")
+        : `
+    │     ${chalk.gray(`Resource Rarity:`)} ${chalk.white(` ${calldata.labor_burn_strategy.resource_rarity}`)}
+    │     ${chalk.gray(`Depreciation Rate:`)} ${chalk.white(` ${(calldata.labor_burn_strategy.depreciation_percent_num / calldata.labor_burn_strategy.depreciation_percent_denom) * 100}%`)}
+    │     ${chalk.gray(`Wheat Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.wheat_burn_per_labor, config.config))}
+    │     ${chalk.gray(`Fish Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.fish_burn_per_labor, config.config))}`
+    }
+    │  ${chalk.gray(``)}
+    │  ${chalk.gray(`Using Multiple Resource Burn Production Strategy:`)}
+    │  ${
+      calldata.predefined_resource_burn_cost.length > 0
+        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
+          calldata.predefined_resource_burn_cost
             .map(
               (c) => `
-    │     ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
+    │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
             )
             .join("")
-        : chalk.blue("Can't be produced with resources")
+        : `    ${chalk.blue("Can't be produced with multiple resources")}`
     }
     └────────────────────────────────`),
     );
@@ -358,14 +381,14 @@ export const setBuildingConfig = async (config: Config) => {
 
   const calldataArray = [];
   const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
-  const buildingCosts = config.config.buildings.buildingCosts;
-  const scaledNonResourceBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
+  const buildingCosts = config.config.buildings.otherBuildingCosts;
+  const scaledOtherBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
   const BUILDING_COST_DISPLAY_ROWS = 6;
 
   // Non Resource Building Config
   for (const buildingId of Object.keys(buildingResourceProduced) as unknown as BuildingType[]) {
-    if (scaledNonResourceBuildingCosts[buildingId].length !== 0) {
-      const costs = scaledNonResourceBuildingCosts[buildingId];
+    if (scaledOtherBuildingCosts[buildingId].length !== 0) {
+      const costs = scaledOtherBuildingCosts[buildingId];
       const calldata = {
         building_category: buildingId,
         building_resource_type: buildingResourceProduced[buildingId] as ResourcesIds,

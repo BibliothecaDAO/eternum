@@ -75,10 +75,12 @@ export abstract class HexagonScene {
       (state) => ({
         leftNavigationView: state.leftNavigationView,
         rightNavigationView: state.rightNavigationView,
+        structureEntityId: state.structureEntityId,
       }),
-      ({ leftNavigationView, rightNavigationView }) => {
+      ({ leftNavigationView, rightNavigationView, structureEntityId }) => {
         this.state.leftNavigationView = leftNavigationView;
         this.state.rightNavigationView = rightNavigationView;
+        this.state.structureEntityId = structureEntityId;
       },
     );
   }

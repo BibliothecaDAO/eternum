@@ -37,7 +37,7 @@ mod map_generation_systems {
     use s1_eternum::models::quantity::Quantity;
     use s1_eternum::models::realm::{Realm};
     use s1_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
-    use s1_eternum::models::resource::production::labor::{LaborImpl};
+    use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
     use s1_eternum::models::resource::resource::{
         Resource, ResourceImpl, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };
@@ -163,9 +163,8 @@ mod map_generation_systems {
             )[0];
             let min_production_amount: u128 = 100_000 * RESOURCE_PRECISION;
             let actual_production_amount: u128 = min_production_amount * random_multiplier;
-            let mut labor_amount_required: u128 = actual_production_amount;
 
-            labor_amount_required
+            return actual_production_amount;
         }
 
 
@@ -194,20 +193,16 @@ mod map_generation_systems {
                     ref world, 0, mine_structure_entity_id, mercenaries_config.rewards, 0, false, false
                 );
 
-                let labor_amount_required = Self::get_shards_reward(ref world, vrf_seed, mine_structure_entity_id);
+                let shards_reward_amount = Self::get_shards_reward(ref world, vrf_seed, mine_structure_entity_id);
 
                 // add earthenshard labor to mine balance
-                let shards_labor_resource_type = LaborImpl::labor_resource_from_regular(ResourceTypes::EARTHEN_SHARD);
-                let mut shards_labor_resource = ResourceImpl::get(
-                    ref world, (mine_structure_entity_id, shards_labor_resource_type)
+                let mut shards_resource = ResourceImpl::get(
+                    ref world, (mine_structure_entity_id, ResourceTypes::EARTHEN_SHARD)
                 );
-                shards_labor_resource.add(labor_amount_required);
-                shards_labor_resource.save(ref world);
-
-                // add labor to production machine
-                LaborImpl::burn_labor(
-                    ref world, mine_structure_entity_id, ResourceTypes::EARTHEN_SHARD, labor_amount_required
-                );
+                let mut shards_resource_production = shards_resource.production;
+                shards_resource_production.increase_output_amout_left(shards_reward_amount);
+                shards_resource.production = shards_resource_production;
+                shards_resource.save(ref world);
 
                 // create shards production building
                 BuildingImpl::create(

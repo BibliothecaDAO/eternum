@@ -93,6 +93,10 @@ const MiniMapNavigation = lazy(() =>
   import("../modules/navigation/mini-map-navigation").then((module) => ({ default: module.MiniMapNavigation })),
 );
 
+const RealmTransferManager = lazy(() =>
+  import("../components/resources/realm-transfer-manager").then((module) => ({ default: module.RealmTransferManager })),
+);
+
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -278,6 +282,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
     <>
       <NotLoggedInMessage />
+
+      {/* Main world layer */}
       <div
         onClick={(e) => {
           e.stopPropagation();
@@ -296,11 +302,13 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
           {IS_MOBILE && <OrientationOverlay />}
           <LoadingOroborus loading={isLoadingScreenEnabled} />
-          <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
-          <BlankOverlayContainer open={showBlankOverlay}>
+          <RealmTransferManager zIndex={100} />
+          <BlankOverlayContainer zIndex={90} open={showModal}>
+            {modalContent}
+          </BlankOverlayContainer>
+          <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
             <Onboarding backgroundImage={backgroundImage} />
           </BlankOverlayContainer>
-          {/* <Onboarding backgroundImage={backgroundImage} /> */}
           <ActionInstructions />
           {!IS_MOBILE && (
             <>

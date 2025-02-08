@@ -466,9 +466,18 @@ export interface SetTickConfigProps extends SystemSigner {
 export interface SetProductionConfigProps extends SystemSigner {
   calls: {
     resource_type: num.BigNumberish;
-    amount: num.BigNumberish;
-    cost: ResourceCosts[];
+    amount_per_building_per_tick: num.BigNumberish;
+    labor_burn_strategy: LaborBurnProductionStrategy;
+    predefined_resource_burn_cost: ResourceCosts[];
   }[];
+}
+
+interface LaborBurnProductionStrategy {
+  resource_rarity: num.BigNumberish;
+  depreciation_percent_num: num.BigNumberish;
+  depreciation_percent_denom: num.BigNumberish;
+  wheat_burn_per_labor: num.BigNumberish;
+  fish_burn_per_labor: num.BigNumberish;
 }
 
 export interface SetBankConfigProps extends SystemSigner {
@@ -688,4 +697,46 @@ export interface DetachLordsProps extends SystemSigner {
 
 export interface MintTestLordsProps extends SystemSigner {
   lords_address: num.BigNumberish;
+}
+
+/**
+ * Props for burning resources to produce labor
+ */
+export interface BurnOtherResourcesForLaborProductionProps {
+  /** ID of the realm entity */
+  entity_id: number;
+  /** Array of resource types to burn */
+  resource_types: number[];
+  /** Array of resource amounts to burn */
+  resource_amounts: number[];
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
+}
+
+/**
+ * Props for burning labor to produce other resources
+ */
+export interface BurnLaborResourcesForOtherProductionProps {
+  /** ID of the realm entity */
+  from_entity_id: number;
+  /** Array of labor amounts to burn */
+  labor_amounts: number[];
+  /** Array of resource types to produce */
+  produced_resource_types: number[];
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
+}
+
+/**
+ * Props for burning predefined resources to produce other resources
+ */
+export interface BurnOtherPredefinedResourcesForResourcesProps {
+  /** ID of the realm entity */
+  from_entity_id: number;
+  /** Array of resource types to produce */
+  produced_resource_types: number[];
+  /** Array of production tick counts */
+  production_tick_counts: number[];
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
 }

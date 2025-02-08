@@ -1,9 +1,9 @@
 {
   "world": {
     "class_hash": "0x45575a88cc5cef1e444c77ce60b7b4c9e73a01cbbe20926d5a4c72a94011410",
-    "address": "0x489ee246082cd1a1676dd03c334f85eb8b2960cb78701ae1b974c61a8373aaa",
-    "seed": "s1_eternum-11",
-    "name": "Realms: Eternum",
+    "address": "0x663558449893cb8d1052bedf2ba82d9840580b7a4c88778c6c43de06c72fdd4",
+    "seed": "eternum-sepolia-s1.1",
+    "name": "Eternum Sepolia",
     "entrypoints": [
       "uuid",
       "set_metadata",
@@ -1252,7 +1252,7 @@
   },
   "contracts": [
     {
-      "address": "0x22fca458aa0869b4cacca2098ae8fe3cc462bc5cef9dd222a5a68055cb8906b",
+      "address": "0x561b10faf4a0809ea306e266bb3c3c91022af032575483fcc633ed6b9d0c9ac",
       "class_hash": "0x38b8eea12d619d5ef8dd3ce5fd038a6bef762b64d911a3e3947892f09ceaeab",
       "abi": [
         {
@@ -1481,8 +1481,8 @@
       ]
     },
     {
-      "address": "0x158114da9a538d75512dc29b3d1995ff551dfb61bee80996232abe54b8febc2",
-      "class_hash": "0x6020cd4dce4dce9b5a4a68a70daa898537b224b3a5a9e80f64bdbc6e80b897e",
+      "address": "0x4da090eae1bd76c455948aa43755ce1a322c4c717abb98ffd2992fd4d9fe5fe",
+      "class_hash": "0x205d037fb517aca51484f6d89dae7b11c6dceed1d55943c21ea1e70bc62cc",
       "abi": [
         {
           "type": "impl",
@@ -1685,8 +1685,8 @@
       ]
     },
     {
-      "address": "0x66bc2d8ef45ce10d3847cc901a41af6a05db34c0ea0ab87fc332ca8c9b2ccb0",
-      "class_hash": "0xfcba7b3b68a6c50b899999c57a97cc280044a6d3eb1853860714d1ca8b5f15",
+      "address": "0x29c169487fb01d1692f7d7eb3f8e1e0cb84956b4d202483c1673baeec878f49",
+      "class_hash": "0x6ec06498582ccec7dd073f767ddcee7350bfcb4211f9238316599bb28c9330f",
       "abi": [
         {
           "type": "impl",
@@ -2000,8 +2000,8 @@
       ]
     },
     {
-      "address": "0x73dff02735d7031496afb34d28f6fd935d8f8e2db14b0877aaf871b3d11f524",
-      "class_hash": "0x41d596efc4a6d03213daf7b9e4e8bedc5e92bc77e40ea66105f79989a1d2845",
+      "address": "0x32762adec37d1e60a05fcba2637ec7549f3c53ebf049fcb5d210cab0e1e5049",
+      "class_hash": "0x2ad3b3278498fafb701f93b6836fd9f9b9c5cd2e050d18c5ebb1caaecbef3c",
       "abi": [
         {
           "type": "impl",
@@ -2381,8 +2381,8 @@
       ]
     },
     {
-      "address": "0x5827e314ca954f7eb04127a2a321e5c1f8fa6d51546b8fa6d6b38830f2b6d18",
-      "class_hash": "0x37798122f6085a277eedb203c93fe5ee2fbc99afe7427e4508b79000301dc2c",
+      "address": "0xb3d474aded507a7350baa69474463d33886be66ed6d1a0ae8d1a4f19d919a",
+      "class_hash": "0x747b7a6788796c5f9899d3b7db8931ba43475a5c3393eff28f156c8761a31c3",
       "abi": [
         {
           "type": "impl",
@@ -2981,6 +2981,32 @@
           "interface_name": "s1_eternum::systems::config::contracts::IProductionConfig"
         },
         {
+          "type": "struct",
+          "name": "s1_eternum::models::config::LaborBurnPrStrategy",
+          "members": [
+            {
+              "name": "resource_rarity",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "depreciation_percent_num",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "depreciation_percent_denom",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "wheat_burn_per_labor",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "fish_burn_per_labor",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "s1_eternum::systems::config::contracts::IProductionConfig",
           "items": [
@@ -2993,34 +3019,15 @@
                   "type": "core::integer::u8"
                 },
                 {
-                  "name": "produced_amount",
+                  "name": "amount_per_building_per_tick",
                   "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "LaborConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::ILaborConfig"
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ILaborConfig",
-          "items": [
-            {
-              "type": "function",
-              "name": "set_labor_config",
-              "inputs": [
-                {
-                  "name": "resource_type",
-                  "type": "core::integer::u8"
                 },
                 {
-                  "name": "cost",
+                  "name": "labor_burn_strategy",
+                  "type": "s1_eternum::models::config::LaborBurnPrStrategy"
+                },
+                {
+                  "name": "predefined_resource_burn_cost",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
@@ -3803,7 +3810,6 @@
         "set_stamina_refill_config",
         "set_leveling_config",
         "set_production_config",
-        "set_labor_config",
         "set_speed_config",
         "set_hyperstructure_config",
         "set_bank_config",
@@ -3823,7 +3829,7 @@
       ]
     },
     {
-      "address": "0x6c0ae788bf4a46b49a57a67944bfb614c8da00b2b99c5d2917ec9bafb8ed460",
+      "address": "0x502c164cb455df87523c1dedd1bca31f84d2e606ddc65bcb269a498aa359ed",
       "class_hash": "0x52cc13796077949a91149c8870679bff30e880faacc1696c444db1ffc2e03ba",
       "abi": [
         {
@@ -4061,8 +4067,8 @@
       ]
     },
     {
-      "address": "0x1c8793d542cb6fb3cb140279ece63cdb8265868874e2aed3dce8a7b7cffd256",
-      "class_hash": "0x3f098fd71b6f1a1437772a724b7b3fa91389d3cc9cb946381ff049f4b4deafd",
+      "address": "0x7f180ec4de002861bf8e86cdd9f41e19165c468ea7703ccc7c707702fa6909c",
+      "class_hash": "0x568e9e9963345b80ed1bfcf91d08d78dd12bcc96280ce9f85ec3a104f602594",
       "abi": [
         {
           "type": "impl",
@@ -4275,7 +4281,7 @@
       ]
     },
     {
-      "address": "0x4204a54ee15c321687de3b19ca4ccc01a65a1dff5b034cb6799ff32f73f106f",
+      "address": "0x7287d38e8142f45849f596515a72595b9f61d7eee866f12f5da6befec1ccd3e",
       "class_hash": "0x41e1faef49fb72e1e20ffcf0c2c15e99f80cf95dc8ae3414b5c0e31ecce6b6f",
       "abi": [
         {
@@ -4451,7 +4457,7 @@
       ]
     },
     {
-      "address": "0x345779feb4e212431505dff8d8581c38de82201ad9cb6bc32d7bb547087f402",
+      "address": "0x654e2cfc842dd37395a4595dc8bb78f6546c2b377b5fa74ff2487a3ea8c25d6",
       "class_hash": "0x6178332d6302e2ccebecc0cdf7ef676443384f9e3dcffbcbb1cb9056c05b11e",
       "abi": [
         {
@@ -4750,8 +4756,8 @@
       ]
     },
     {
-      "address": "0xd4a3c274fbdc8ca6fc0c0a2e1bdb9f4ef78ec6efe253592e936bd2e5db712f",
-      "class_hash": "0x7e3fc4e262618f16424b6d0014737c31110891610b18fb44788169480b83113",
+      "address": "0x1c148f3082414b1bf1320d421bad2a325675545f1f213af3219c3727f0de11e",
+      "class_hash": "0xa9133f3532a2a84bb5594c4cd32f77d1c8618954f3410c8b2068104fa39987",
       "abi": [
         {
           "type": "impl",
@@ -5127,8 +5133,8 @@
       ]
     },
     {
-      "address": "0x12b32981130d1089c5642125fbe96cdb4da0562e904eb8da590a30ea4f0aa9d",
-      "class_hash": "0x56e732616b199de6b6f08b185d4a925ca611a466ac94263004af7d72f81084c",
+      "address": "0x171c6fae95acd58233dfa472e86184a53f42da7d9a4dd94ff4b2a2f3dd8e9de",
+      "class_hash": "0x49e8054a2fde6f49ce8b2563d677efd248bbeadf1f753e59a41ba7d3b9efe8f",
       "abi": [
         {
           "type": "impl",
@@ -5400,8 +5406,8 @@
       ]
     },
     {
-      "address": "0x43b2a3f4e47fa52ef2549162f89258dbcbd23bc62a51d0a331b80039a66bc9b",
-      "class_hash": "0x1829437a65fddf03e8f1322558035b38be8c06a5dd81f6a863a68569364b4cc",
+      "address": "0x6f29997ad3fec03fa79e043d69260b39baf0690cc5198bdec510ba0d9d200af",
+      "class_hash": "0x43b25f249e159cfbe93bb91651c5833cc04dda10534c2b6a64eab6ec260cd63",
       "abi": [
         {
           "type": "impl",
@@ -5685,8 +5691,8 @@
       ]
     },
     {
-      "address": "0x6e173c5aca48a948de710aea5492c1df18a3f477b666a9af82281e1024e7bd2",
-      "class_hash": "0x466e7ebd1333acd3f8d1280605da3d47f0defc727e4e14a55d41e088272f936",
+      "address": "0x79300036c247389c377da6b3f01106509aa35c75e16a290d385ceec66857f98",
+      "class_hash": "0x6feebc73f723c38719ee76e2499d8dd53fc1a2c9a30027ef28eeb642944cb8d",
       "abi": [
         {
           "type": "impl",
@@ -5919,7 +5925,7 @@
       ]
     },
     {
-      "address": "0x7ad2d6a7a566fece8c3cb08b96ca16c43f6981c77f7e1b2fa2112aac2976661",
+      "address": "0x34a8564ce24af9c57333fdf579945eba6a99a0624ca0d0a428905e074c2ada0",
       "class_hash": "0x6a06d111761024260598c4cab0bad06ba15ec09331b176f9223e62ef2093508",
       "abi": [
         {
@@ -6136,7 +6142,7 @@
       ]
     },
     {
-      "address": "0x5f20dfb2ac256e7b8394d2ac6bbd12288c2844c64143a87e27cb5bd3027ebc0",
+      "address": "0x442687ef27c6fcb84177efac8b75ec80b8be87d40f9befe2780bf2ea98a8c08",
       "class_hash": "0x57f36faf3ab21b910521f361bbc7bcd09758bc4ba46015f2bad0f15f6bf53ff",
       "abi": [
         {
@@ -6340,8 +6346,8 @@
       ]
     },
     {
-      "address": "0x47773b52867c0867b40b26408e3ff84fca0b1a9afe55c0cb0fe284c1a18c3d8",
-      "class_hash": "0x580ae58de580e41af4107e2b651ba52fa4ebeb5266568c6658cfa95fdecf48b",
+      "address": "0x56347b8808383046242a9240124ac42b4d8a718ba2925bb900ba6a3ac7c8454",
+      "class_hash": "0x57ccb39e09ebb4b3344d31fcda27a29738766869446911235aa8cce0fb31af5",
       "abi": [
         {
           "type": "impl",
@@ -6529,6 +6535,26 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u128>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u128>"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "s1_eternum::systems::production::contracts::IProductionContract",
           "items": [
@@ -6606,19 +6632,19 @@
             },
             {
               "type": "function",
-              "name": "make_production_labor",
+              "name": "burn_other_resources_for_labor_production",
               "inputs": [
                 {
                   "name": "entity_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "resource_type",
-                  "type": "core::integer::u8"
+                  "name": "resource_types",
+                  "type": "core::array::Span::<core::integer::u8>"
                 },
                 {
-                  "name": "labor_amount",
-                  "type": "core::integer::u128"
+                  "name": "resource_amounts",
+                  "type": "core::array::Span::<core::integer::u128>"
                 }
               ],
               "outputs": [],
@@ -6626,19 +6652,39 @@
             },
             {
               "type": "function",
-              "name": "burn_production_labor",
+              "name": "burn_labor_resources_for_other_production",
               "inputs": [
                 {
-                  "name": "entity_id",
+                  "name": "from_entity_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "resource_type",
-                  "type": "core::integer::u8"
+                  "name": "labor_amounts",
+                  "type": "core::array::Span::<core::integer::u128>"
                 },
                 {
-                  "name": "labor_amount",
-                  "type": "core::integer::u128"
+                  "name": "produced_resource_types",
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "burn_other_predefined_resources_for_resources",
+              "inputs": [
+                {
+                  "name": "from_entity_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "produced_resource_types",
+                  "type": "core::array::Span::<core::integer::u8>"
+                },
+                {
+                  "name": "production_tick_counts",
+                  "type": "core::array::Span::<core::integer::u128>"
                 }
               ],
               "outputs": [],
@@ -6769,14 +6815,15 @@
         "destroy_building",
         "pause_building_production",
         "resume_building_production",
-        "make_production_labor",
-        "burn_production_labor",
+        "burn_other_resources_for_labor_production",
+        "burn_labor_resources_for_other_production",
+        "burn_other_predefined_resources_for_resources",
         "upgrade"
       ]
     },
     {
-      "address": "0x30b9c5bf6c05b8e950901079bba39766f4a4d23466f2df0258e1ecca3731e19",
-      "class_hash": "0x227365531efc583855affe2ccf2e38c08b13436e71228a003960a1f45d05ec3",
+      "address": "0x13f688b9e847a188d6e3306c57ad4cedc846207ec0d4214d3adb966f89abda6",
+      "class_hash": "0x624789ed60dbb1ffa7075f19b968fe21082b4a2e24649624450f6a032867404",
       "abi": [
         {
           "type": "impl",
@@ -7017,8 +7064,8 @@
       ]
     },
     {
-      "address": "0x1e859bd917c725f938d7ffecdd9f687e04af2b44cf534848895e7efa946378a",
-      "class_hash": "0x62d54b6b3e65921272e1fb14ea5388119d3910abc1856ea79db87c6ca1ae90e",
+      "address": "0x3eb0f666216653f8bd1b27b4640e4730580f5899b73456c059fb157e1e1e9a",
+      "class_hash": "0x7361d220d222dce19ff7a7334da11cfe9b9ef8bdeb2ab068d6f0b435db0255a",
       "abi": [
         {
           "type": "impl",
@@ -7326,8 +7373,8 @@
       ]
     },
     {
-      "address": "0x7e9f737c5c89d0f4e2c2b9f0ffda396da22b2c9fa14106f2d940dddae35497a",
-      "class_hash": "0x3565c033b9ab7fd56f044c9ba70e983b30354e3d35d6d0c65592a6e7a2e131d",
+      "address": "0x524a24ace42046b73845153567d5a31ca914aaabbf34fd4c4fe758da41e66df",
+      "class_hash": "0x26911f009cb5948dcbf27e3782f3572436f26d7e70bbe87957819015b67f20c",
       "abi": [
         {
           "type": "impl",
@@ -7586,7 +7633,7 @@
       ]
     },
     {
-      "address": "0x6f2ca7adc33ebf6cbe7d539cb50dff53cffcc701ac252b65eadc9454e12e247",
+      "address": "0x6f1ecad7e45043715d052ec7075910fe49379ccec56caa30773bffb1bd8ce42",
       "class_hash": "0x59c55e3ca487de1ccb5b6cf174ac5c70d98b4af6db76b9987843dc08520cef3",
       "abi": [
         {
@@ -7823,8 +7870,8 @@
       ]
     },
     {
-      "address": "0x67d9fbdbb222b30679aa4b6d4d15f0e16f984603996111c6ef8b425293d29c7",
-      "class_hash": "0x1ba743062d12d4e056335b18ad188f32ece928103d1c2fe57c4e57148de9d57",
+      "address": "0x3c4b44ff5b2dd18a8e388d38f453cfc4c5262d110b13f5f26a5c28e5ac40fd9",
+      "class_hash": "0x291d4795f52427b407b35a8b4d94e001b62d37dcd77faff84b41361e29a4f0d",
       "abi": [
         {
           "type": "impl",
@@ -8068,8 +8115,8 @@
       ]
     },
     {
-      "address": "0x4949075e31363f02ac3d4374bf1cb726873cd55a3f572dc85ddc9f8ef89c351",
-      "class_hash": "0xb00fb0d9ea7c7a27c1271c9de87d829f7d690e3f6966ebd69204743304fb3a",
+      "address": "0x2dde744795e94a6c8934f224741da3e0408d82c07463858b7566664f7bb8633",
+      "class_hash": "0x357ca13c3a158d43bc1f5d7c902eefbeadad3a3b43c6228bb5727a78a310d6f",
       "abi": [
         {
           "type": "impl",
@@ -8369,8 +8416,8 @@
       ]
     },
     {
-      "address": "0x5bb3ed403abb2ceeb6ce8911052a4f9c922f2d4777427454fcbea605192ddc9",
-      "class_hash": "0x49442e8242359125e36140e04d2acaa96e4d28397ae604a5793ece34587ba8b",
+      "address": "0x7d2fb638516c4a32858ef7bf09865389edc60c3cb9e6d4d0049c0ad7a214c6a",
+      "class_hash": "0x4dcd50d3a264279a3745d63f7b48d1753991091101ff4bd9b930de1f0d9fa16",
       "abi": [
         {
           "type": "impl",
@@ -8613,8 +8660,8 @@
       ]
     },
     {
-      "address": "0x4d6d43ec3fe5fb0d22398f9aee1846285e7c44bfa3900b7e490d18a9fb4eae4",
-      "class_hash": "0x2d6f05a2d585b43e9c6e30c686465d8e73413b059812129cfa372a9f7e6971b",
+      "address": "0x133660106d03c9811a9ce63fe2464e99f0816b83439c55003ebdde53f560655",
+      "class_hash": "0x24ad1ba7ad9d438f816ae4e8c1451c5db113e15dcac0fde483e3472b55ae715",
       "abi": [
         {
           "type": "impl",
@@ -9067,12 +9114,6 @@
     },
     {
       "members": [],
-      "class_hash": "0x328f1fff82bb8aeba6b1e75fc1edf15d815324486c97df194a8ad682bd419f6",
-      "tag": "s1_eternum-LaborConfig",
-      "selector": "0x6f056844c678da88f4b2829f7252b9264702448b0305224729f30026db3f644"
-    },
-    {
-      "members": [],
       "class_hash": "0x5f9e1048bc3fcab978c16ea514c906e08a6a908a551b01c9d8d56991eb3be12",
       "tag": "s1_eternum-Leaderboard",
       "selector": "0x2731a4b2cc1d25c3605cbd9f58fb010860aa57f2fd978b012309815622bad38"
@@ -9187,7 +9228,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x4482f857b3d5e6d6d1fb9d5680663a1e0eda04699b105aa565490498e395d1e",
+      "class_hash": "0x1dbf495a2614ebff450da2c0b88a9ada07716e5c3546c7dab92691e40bcee21",
       "tag": "s1_eternum-ProductionConfig",
       "selector": "0x38bacafc2ceed54f95033f7529efa9559f877aea41db072b797235cee383a06"
     },
@@ -9253,7 +9294,7 @@
     },
     {
       "members": [],
-      "class_hash": "0xc58be0c889a407b92a5b1df7f1221567a43ee5a3f5315464f3c598aafa1725",
+      "class_hash": "0x295211961c83e77d8c315214c3ac2bff8890e822b3b9f7e244af4a905cfd53e",
       "tag": "s1_eternum-Resource",
       "selector": "0x6bd14dc16a7f05252fcf2fb66630b8f05d39d75b36f55013334a4b3bb8fec57"
     },

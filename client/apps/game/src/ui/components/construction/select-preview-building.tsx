@@ -26,7 +26,6 @@ import {
   ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
-  unpackResources,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoResult, useDojo } from "@bibliothecadao/react";
@@ -62,14 +61,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       key !== "Hyperstructure",
   );
 
-  const realmResourceIds = useMemo(() => {
-    if (realm) {
-      return unpackResources(BigInt(realm.resourceTypesPacked));
-    } else {
-      return [];
-    }
-  }, [realm]);
-
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
@@ -90,7 +81,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
         component: (
           <div className="resource-cards-selector grid grid-cols-2 gap-2 p-2">
-            {realmResourceIds.map((resourceId) => {
+            {realm?.resources.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
               const buildingCosts = getResourceBuildingCosts(entityId, dojo, resourceId);
@@ -272,7 +263,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
       },
     ],
-    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
+    [realm, entityId, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (

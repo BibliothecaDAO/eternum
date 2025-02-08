@@ -48,11 +48,10 @@ mod realm_systems {
         Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl, RealmNameAndAttrsDecodingTrait,
         RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
     };
-    use s1_eternum::models::resource::production::labor::{LaborImpl};
+    use s1_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
     use s1_eternum::models::resource::resource::{
         DetachedResource, Resource, ResourceImpl, ResourceTrait, ResourceFoodImpl, ResourceFoodTrait
     };
-
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
     use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
@@ -292,6 +291,9 @@ mod realm_systems {
             if tile.explored_at.is_zero() {
                 InternalMapSystemsImpl::explore(ref world, entity_id.into(), coord, array![(1, 0)].span());
             }
+
+            // place castle building
+            BuildingImpl::create(ref world, entity_id, BuildingCategory::Castle, Option::None, BuildingImpl::center(),);
 
             (entity_id, realm_produced_resources_packed)
         }

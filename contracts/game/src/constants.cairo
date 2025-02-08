@@ -100,10 +100,10 @@ mod ResourceTypes {
     const ETHEREAL_SILICA: u8 = 21;
     const DRAGONHIDE: u8 = 22;
 
-    // THE RESOURCE IDS ABOVE MUST MATCH THE 
+    // THE RESOURCE IDS ABOVE MUST MATCH THE
     // RESOURCE IDS IN THE SEASON PASS
 
-    const DEMONHIDE: u8 = 23;
+    const LABOR: u8 = 23;
     const EARTHEN_SHARD: u8 = 24;
     const DONKEY: u8 = 25;
     const KNIGHT: u8 = 26;
@@ -112,16 +112,8 @@ mod ResourceTypes {
     const WHEAT: u8 = 29;
     const FISH: u8 = 30;
     const LORDS: u8 = 31;
-    // note: resource labor is max u8  - resource_type
-// e.g Stone labor = 255 - 1 = 254
 }
 
-const FIRST_REGULAR_RESOURCE_ID: u8 = 1;
-const LAST_REGULAR_RESOURCE_ID: u8 = 31;
-
-
-const FIRST_LABOR_RESOURCE_ID: u8 = 255 - LAST_REGULAR_RESOURCE_ID;
-const LAST_LABOR_RESOURCE_ID: u8 = 255 - FIRST_REGULAR_RESOURCE_ID;
 
 fn resource_type_name(resource_type: u8) -> ByteArray {
     if resource_type == 1 {
@@ -169,7 +161,7 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
     } else if resource_type == 22 {
         "DRAGONHIDE"
     } else if resource_type == 23 {
-        "DEMONHIDE"
+        "LABOR"
     } else if resource_type == 24 {
         "EARTHEN SHARD"
     } else if resource_type == 25 {
@@ -184,71 +176,8 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
         "WHEAT"
     } else if resource_type == 30 {
         "FISH"
-    } else if resource_type == LAST_REGULAR_RESOURCE_ID {
+    } else if resource_type == 31 {
         "LORDS"
-        // LABOR
-    } else if resource_type == 255 - 1 {
-        "STONE LABOR"
-    } else if resource_type == 255 - 2 {
-        "COAL LABOR"
-    } else if resource_type == 255 - 3 {
-        "WOOD LABOR"
-    } else if resource_type == 255 - 4 {
-        "COPPER LABOR"
-    } else if resource_type == 255 - 5 {
-        "IRONWOOD LABOR"
-    } else if resource_type == 255 - 6 {
-        "OBSIDIAN LABOR"
-    } else if resource_type == 255 - 7 {
-        "GOLD LABOR"
-    } else if resource_type == 255 - 8 {
-        "SILVER LABOR"
-    } else if resource_type == 255 - 9 {
-        "MITHRAL LABOR"
-    } else if resource_type == 255 - 10 {
-        "ALCHEMICAL SILVER LABOR"
-    } else if resource_type == 255 - 11 {
-        "COLD IRON LABOR"
-    } else if resource_type == 255 - 12 {
-        "DEEP CRYSTAL LABOR"
-    } else if resource_type == 255 - 13 {
-        "RUBY LABOR"
-    } else if resource_type == 255 - 14 {
-        "DIAMONDS LABOR"
-    } else if resource_type == 255 - 15 {
-        "HARTWOOD LABOR"
-    } else if resource_type == 255 - 16 {
-        "IGNIUM LABOR"
-    } else if resource_type == 255 - 17 {
-        "TWILIGHT QUARTZ LABOR"
-    } else if resource_type == 255 - 18 {
-        "TRUE ICE LABOR"
-    } else if resource_type == 255 - 19 {
-        "ADAMANTINE LABOR"
-    } else if resource_type == 255 - 20 {
-        "SAPPHIRE LABOR"
-    } else if resource_type == 255 - 21 {
-        "ETHEREAL SILICA LABOR"
-    } else if resource_type == 255 - 22 {
-        "DRAGONHIDE LABOR"
-    } else if resource_type == 255 - 23 {
-        "DEMONHIDE LABOR"
-    } else if resource_type == 255 - 24 {
-        "EARTHEN SHARD LABOR"
-    } else if resource_type == 255 - 25 {
-        "DONKEY LABOR"
-    } else if resource_type == 255 - 26 {
-        "KNIGHT LABOR"
-    } else if resource_type == 255 - 27 {
-        "CROSSBOWMAN LABOR"
-    } else if resource_type == 255 - 28 {
-        "PALADIN LABOR"
-    } else if resource_type == 255 - 29 {
-        "WHEAT LABOR"
-    } else if resource_type == 255 - 30 {
-        "FISH LABOR"
-    } else if resource_type == 255 - 31 {
-        "LORDS LABOR"
     } else {
         format!("{} (unknown resource name)", resource_type)
     }
@@ -336,7 +265,7 @@ fn get_resources_without_earthenshards() -> Span<u8> {
         ResourceTypes::ADAMANTINE,
         ResourceTypes::MITHRAL,
         ResourceTypes::DRAGONHIDE,
-        ResourceTypes::DEMONHIDE,
+        ResourceTypes::LABOR,
         ResourceTypes::DONKEY,
         ResourceTypes::KNIGHT,
         ResourceTypes::CROSSBOWMAN,
