@@ -18,6 +18,7 @@ import {
   HexPosition,
   RealmLevels,
   ResourceIdToMiningType,
+  ResourceManager,
   ResourceMiningTypes,
   ResourcesIds,
   SetupResult,
@@ -383,6 +384,13 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
     const building = this.tileManager.getBuilding(normalizedCoords);
+
+    const productionManager = building
+      ? new ResourceManager(this.dojo.components, this.state.structureEntityId, building?.produced_resource_type)
+      : undefined;
+
+    const isActive = productionManager?.isActive();
+
     if (building && building.produced_resource_type) {
       this.state.setTooltip({
         content: (
@@ -393,8 +401,8 @@ export default class HexceptionScene extends HexagonScene {
             />
             <div>Producing {findResourceById(building.produced_resource_type as ResourcesIds)?.trait}</div>
             <div>—</div>
-            <div className={clsx(building.paused ? "text-order-giants" : "text-order-brilliance")}>
-              {building.paused ? "Paused" : "Active"}
+            <div className={clsx(!isActive ? "text-order-giants" : "text-order-brilliance")}>
+              {!isActive ? "Paused" : "Active"}
             </div>
           </div>
         ),
