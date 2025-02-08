@@ -34,7 +34,6 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     },
     account: { account },
   } = useDojo();
-  const togglePopup = useUIStore((state) => state.togglePopup);
 
   const { currentDefaultTick: tick } = useBlockTimestamp();
 
