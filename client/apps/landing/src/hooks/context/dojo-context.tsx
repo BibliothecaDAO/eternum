@@ -1,6 +1,5 @@
 import { displayAddress } from "@/lib/utils";
-import { SetupResult } from "@bibliothecadao/eternum";
-import { DojoResult } from "@bibliothecadao/react";
+import { SetupNetworkResult, SetupResult } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
@@ -8,6 +7,13 @@ import { env } from "../../../env";
 interface DojoAccount {
   account: Account | AccountInterface | null;
   accountDisplay: string;
+}
+
+interface DojoResult {
+  setup: DojoContextType;
+  account: DojoAccount;
+  network: SetupNetworkResult;
+  masterAccount: Account | AccountInterface;
 }
 
 interface DojoContextType extends SetupResult {
