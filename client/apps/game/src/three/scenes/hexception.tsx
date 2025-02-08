@@ -477,7 +477,7 @@ export default class HexceptionScene extends HexagonScene {
           let buildingGroup: BUILDINGS_GROUPS;
           let buildingType: BUILDINGS_CATEGORIES_TYPES;
 
-          if (building.resource && (building.resource < 24 || building.resource === ResourcesIds.AncientFragment)) {
+          if (building.resource && (building.resource < 23 || building.resource === ResourcesIds.AncientFragment)) {
             buildingGroup = BUILDINGS_GROUPS.RESOURCES_MINING;
             buildingType = ResourceIdToMiningType[building.resource as ResourcesIds] as ResourceMiningTypes;
           } else {
@@ -646,6 +646,7 @@ export default class HexceptionScene extends HexagonScene {
 
         let withBuilding = false;
         const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
+
         if (building) {
           withBuilding = true;
           const buildingObj = dummy.clone();
@@ -717,6 +718,7 @@ export default class HexceptionScene extends HexagonScene {
   ) => {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
+
     if (structureType && structureType !== StructureType.Realm) {
       existingBuildings.push({
         col: BUILDINGS_CENTER[0],
