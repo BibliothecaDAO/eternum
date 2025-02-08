@@ -30,14 +30,14 @@ rules.push(
     test: /\.css$/,
     include: [path.resolve(__dirname, "src")],
     use: ["style-loader", "css-loader", "postcss-loader"],
-  }
+  },
 );
 
 plugins.push(
   new HtmlWebpackPlugin({
     template: path.resolve(__dirname, "app/src/index.html"),
     filename: "index.html",
-  })
+  }),
 );
 export const rendererConfig: Configuration = {
   module: {
