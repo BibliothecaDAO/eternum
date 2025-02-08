@@ -28,6 +28,7 @@ mod bank {
 
 mod resource {
     mod resource;
+    mod r3esource;
     mod production {
         mod building;
         mod production;

@@ -160,7 +160,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 production.decrease_building_count();
 
                 // decrease production rate
-                production.decrease_production_rate(production_amount);
+                production.decrease_production_rate(production_amount.try_into().unwrap());
             },
             false => {
                 // update bonus received percent
@@ -175,7 +175,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 production.increase_building_count();
 
                 // increase production rate
-                production.increase_production_rate(production_amount);
+                production.increase_production_rate(production_amount.try_into().unwrap());
             }
         }
         // save production
@@ -288,7 +288,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             let recipient_building_resource_production_amount: u128 = recipient_building.production_amount(ref world);
             let mut recipient_building_resource_production: Production = recipient_building_resource.production;
             recipient_building_resource_production
-                .decrease_production_rate(recipient_building_resource_production_amount);
+                .decrease_production_rate(recipient_building_resource_production_amount.try_into().unwrap());
 
             // update the recipient building's bonus percent
             if delete {
@@ -300,7 +300,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
             // update the global resource production to reflect the new production rate
             recipient_building_resource_production
-                .increase_production_rate(recipient_building.production_amount(ref world));
+                .increase_production_rate(recipient_building.production_amount(ref world).try_into().unwrap());
             recipient_building_resource.production = recipient_building_resource_production;
             world.write_model(@recipient_building_resource);
         }

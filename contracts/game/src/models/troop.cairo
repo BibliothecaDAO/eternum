@@ -1,8 +1,4 @@
-use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
-
 use s1_eternum::alias::ID;
-use s1_eternum::models::weight::W3eight;
 use s1_eternum::models::stamina::{StaminaTrait, StaminaImpl, Stamina};
 use s1_eternum::models::config::CombatConfig;
 use s1_eternum::models::position::Coord;
@@ -37,7 +33,6 @@ struct Troops {
     tier: TroopTier,
     count: u128,
     stamina: Stamina,
-    weight: W3eight
 }
 
 
@@ -436,7 +431,7 @@ impl TroopsImpl of TroopsTrait {
         }
     }
 
-    fn attack(ref self: Troops, ref world: WorldStorage, ref bravo: Troops, biome: Biome, config: CombatConfig, current_tick: u64) {
+    fn attack(ref self: Troops, ref bravo: Troops, biome: Biome, config: CombatConfig, current_tick: u64) {
 
         let mut alpha = self;
 

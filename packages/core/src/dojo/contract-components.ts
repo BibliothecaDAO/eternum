@@ -1059,7 +1059,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Resource",
-            types: ["u32", "u8", "u128", "u8", "u128", "u128", "u32"],
+            types: ["u32", "u8", "u128", "u8", "u64", "u128", "u32"],
             customTypes: [],
           },
         },
