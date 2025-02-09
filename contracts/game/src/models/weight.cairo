@@ -2,6 +2,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::models::config::{CapacityConfig, CapacityConfigTrait};
 use s1_eternum::models::quantity::{Quantity};
 use core::num::traits::Bounded;
+use core::zeroable::Zeroable;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -43,6 +44,20 @@ impl WeightImpl of WeightTrait {
 pub struct W3eight {
     capacity: u128,
     weight: u128,
+}
+
+impl WeightZeroableImpl of Zeroable<W3eight> {
+    fn zero() -> W3eight {
+        W3eight { capacity: 0, weight: 0 }
+    }
+
+    fn is_non_zero(self: W3eight) -> bool {
+        self.weight > 0 || self.capacity > 0
+    }
+
+    fn is_zero(self: W3eight) -> bool {
+        !self.is_non_zero()
+    }
 }
 
 #[generate_trait]

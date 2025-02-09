@@ -6,6 +6,7 @@ use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{ResourceTypes, resource_type_name};
+use s1_eternum::models::config::W3eightConfig;
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::weight::{W3eight, W3eightImpl};
 #[derive(Copy, Drop, Serde)]
@@ -31,10 +32,37 @@ impl SingleR33esourceDisplay of Display<SingleR33esource> {
 }
 
 
+#[generate_trait]
+impl WeightStoreImpl of WeightStoreTrait {
+    fn retrieve(ref world: WorldStorage, entity_id: ID) -> W3eight {
+        assert!(entity_id.is_non_zero(), "entity id not found");
+        R3esourceImpl::read_weight(ref world, entity_id)
+    }
+
+    fn store(ref self: W3eight, ref world: WorldStorage, entity_id: ID) {
+        R3esourceImpl::write_weight(ref world, entity_id, self);
+    }
+}
+
+#[generate_trait]
+impl WeightUnitImpl of WeightUnitTrait {
+    fn grams(ref world: WorldStorage, resource_type: u8) -> u128 {
+        let unit_weight_config: W3eightConfig = world.read_model(resource_type);
+        unit_weight_config.weight_gram
+    }
+}
+
 
 #[generate_trait]
 impl SingleR33esourceStoreImpl of SingleR33esourceStoreTrait {
-    fn retrieve(ref world: WorldStorage, entity_id: ID, resource_type: u8, ref entity_weight: W3eight, resource_weight: u128, current_tick: Option<u32>) -> SingleR33esource {
+    fn retrieve(
+        ref world: WorldStorage, 
+        entity_id: ID, 
+        resource_type: u8, 
+        ref entity_weight: W3eight, 
+        unit_weight_grams: u128, 
+        current_tick: Option<u32>)
+         -> SingleR33esource {
         assert!(entity_id.is_non_zero(), "entity id not found");
         assert!(resource_type.is_non_zero(), "invalid resource specified");
 
@@ -51,19 +79,25 @@ impl SingleR33esourceStoreImpl of SingleR33esourceStoreTrait {
         let mut resource 
             = SingleR33esource { entity_id, resource_type, balance, production, produces};
         if resource.produces && resource.production.last_updated_tick != current_tick.unwrap() {
-            ProductionImpl::harvest(
-                ref resource, 
-                ref entity_weight, 
-                resource_weight, 
-                current_tick.unwrap()
-            );
-            Self::update(ref resource, ref world);
+            // harvest the resource and get the amount of resources produced
+            let harvest_amount: u128 = ProductionImpl::harvest(ref resource, current_tick.unwrap());
+
+            // add the produced amount to the resource balance
+            let mut entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, entity_id);
+            if harvest_amount.is_non_zero() {
+                let unit_weight_grams: u128 = WeightUnitImpl::grams(ref world, resource_type);
+                resource.add(harvest_amount, ref entity_weight, unit_weight_grams);
+            }
+
+            // commit entity resource and weight
+            resource.store(ref world);
+            entity_weight.store(ref world, entity_id);
         }
 
         return resource;
     }
 
-    fn update(ref self: SingleR33esource, ref world: WorldStorage) {
+    fn store(ref self: SingleR33esource, ref world: WorldStorage) {
         R3esourceImpl::write_balance(ref world, self.entity_id, self.resource_type, self.balance);
         if self.produces {
             R3esourceImpl::write_production(ref world, self.entity_id, self.resource_type, self.production);
@@ -77,40 +111,44 @@ impl SingleR33esourceStoreImpl of SingleR33esourceStoreTrait {
 impl SingleR33esourceImpl of SingleR33esourceTrait {
 
     #[inline(always)]
-    fn spend(ref self: SingleR33esource, ref entity_weight: W3eight, amount: u128, resource_weight: u128) {
+    fn spend(ref self: SingleR33esource, amount: u128, ref entity_weight: W3eight, unit_weight: u128) {
 
         assert!(self.balance >= amount, "Insufficient Balance: {} < {}", self, amount);
-
         self.balance -= amount;
-        entity_weight.deduct(resource_weight * amount);
-  
+        entity_weight.deduct(amount * unit_weight);
         // todo add event here to show amount burnt
     }
 
+
     #[inline(always)]
-    fn add(ref self: SingleR33esource, amount: u128, ref entity_weight: W3eight,  resource_weight: u128) {
-        //todo: increase capacity with storehouse buildings
+    fn add(ref self: SingleR33esource, amount: u128, ref entity_weight: W3eight, unit_weight: u128) -> u128 {
 
-        let left_capacity: u128 = entity_weight.unused();
-        let mut max_storable: u128 = amount;
-        let mut total_weight: u128 = resource_weight * amount;
-        if left_capacity < total_weight {
-            max_storable = left_capacity / resource_weight;
-            total_weight = max_storable * resource_weight; // ensure total weight is an exact multiple
-            // todo add event here to show amount burnt left_capacity % weight
+        // todo: increase capacity with storehouse buildings
 
-        }
+        let (max_storable, total_weight) 
+            = Self::storable_amount(amount, entity_weight.unused(), unit_weight);
 
         self.balance += max_storable;
         entity_weight.add(total_weight);
 
         // todo add event here to show amount burnt
+        max_storable
     }
 
     #[inline(always)]
-    fn save(ref self: SingleR33esource, ref world: WorldStorage) {
-        SingleR33esourceStoreImpl::update(ref self, ref world);
+    fn storable_amount(amount: u128, storage_left: u128, unit_weight: u128) -> (u128, u128) {
+        let mut max_storable: u128 = amount;
+        let mut total_weight: u128 = unit_weight * amount;
+        
+        if storage_left < total_weight {
+            max_storable = storage_left / unit_weight;
+            total_weight = max_storable * unit_weight; // ensure total weight is an exact multiple
+            // todo add event here to show amount burnt storage_left % weight
+        }
+        
+        (max_storable, total_weight)
     }
+
 
 }
 
@@ -128,14 +166,14 @@ impl StructureSingleR33esourceFoodImpl of StructureSingleR33esourceFoodTrait {
         ref world: WorldStorage, 
         entity_id: ID, 
         ref entity_weight: W3eight,
-        resource_weight: u128,
+        unit_weight: u128,
     ) -> (SingleR33esource, SingleR33esource) {
         let wheat 
             = SingleR33esourceStoreImpl::retrieve(
-                ref world, entity_id, ResourceTypes::WHEAT, ref entity_weight, resource_weight, Option::None);
+                ref world, entity_id, ResourceTypes::WHEAT, ref entity_weight, unit_weight, Option::None);
         let fish 
             = SingleR33esourceStoreImpl::retrieve(
-                ref world, entity_id, ResourceTypes::FISH, ref entity_weight, resource_weight, Option::None);
+                ref world, entity_id, ResourceTypes::FISH, ref entity_weight, unit_weight, Option::None);
         (wheat, fish)
     }
 }

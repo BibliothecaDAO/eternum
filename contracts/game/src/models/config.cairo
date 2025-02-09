@@ -486,6 +486,16 @@ impl TickImpl of TickTrait {
 // weight
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
+pub struct W3eightConfig {
+    #[key]
+    resource_type: ID,
+    weight_gram: u128
+}
+
+
+// weight
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
 pub struct WeightConfig {
     #[key]
     config_id: ID,
