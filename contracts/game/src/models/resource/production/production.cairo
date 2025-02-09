@@ -19,7 +19,7 @@ use s1_eternum::models::weight::{W3eight};
 use s1_eternum::utils::math::{min};
 use starknet::get_block_timestamp;
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 pub struct Production {
     // active building count
     building_count: u8,

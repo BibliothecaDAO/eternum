@@ -9,10 +9,10 @@ trait ITroopSystems<TContractState> {
     fn guard_add(ref self: TContractState, for_structure_id: ID, slot: GuardSlot, category: TroopType, tier: TroopTier, amount: u128);
     fn guard_delete(ref self: TContractState, for_structure_id: ID, slot: GuardSlot);
 
-    // fn explorer_create(ref self: TContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128) -> ID;
-    // fn explorer_add(ref self: TContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128);
-    // fn explorer_swap(ref self: TContractState, from_explorer_id: ID, to_explorer_id: ID);
-    // fn explorer_delete(ref self: TContractState, explorer_id: ID);
+    fn explorer_create(ref self: TContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128) -> ID;
+    fn explorer_add(ref self: TContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128);
+    fn explorer_swap(ref self: TContractState, from_explorer_id: ID, to_explorer_id: ID, to_explorer_direction: Direction, count: u128);
+    fn explorer_delete(ref self: TContractState, explorer_id: ID);
     // fn explorer_move(ref self: TContractState, explorer_id: ID, direction: Direction);
 
 }
@@ -31,11 +31,15 @@ mod troop_systems {
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfigTrait,
         CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, CombatConfig
     };
-    use s1_eternum::models::owner::{OwnerTrait, Owner};
-    use s1_eternum::models::position::{Position, Coord, CoordTrait, PositionTrait, Direction};
+    use s1_eternum::models::owner::{OwnerTrait, Owner, EntityOwner, EntityOwnerTrait};
+    use s1_eternum::models::position::{
+        Position, Coord, CoordTrait, PositionTrait, Direction, 
+        Occupier, OccupierTrait, OccupiedBy
+    };
     use s1_eternum::models::resource::resource::{ResourceCost};
     use s1_eternum::models::resource::r3esource::{
         SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl, 
+        R3esource, R3esourceImpl,
         WeightStoreImpl, WeightUnitImpl,
         StructureSingleR33esourceFoodImpl
     };
@@ -43,9 +47,11 @@ mod troop_systems {
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::stamina::{Stamina, StaminaTrait};
     use s1_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
-    use s1_eternum::models::weight::W3eight;
+    use s1_eternum::models::weight::{W3eight, W3eightTrait};
     use s1_eternum::models::troop::{
-        Troops, TroopsTrait, TroopType, TroopTier, GuardSlot, GuardTroops, GuardImpl, GuardTrait
+        Troops, TroopsTrait, TroopType, TroopTier, 
+        GuardSlot, GuardTroops, GuardImpl, GuardTrait,
+        ExplorerTroops
     };
 
     use super::ITroopSystems;
@@ -67,7 +73,7 @@ mod troop_systems {
             // deduct resources used to create guard
             let tick = TickImpl::get_default_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            InternalExplorerImpl::deduct_troop_resource(
+            InternalTroopImpl::update_troop_resource(
                 ref world, for_structure_id, amount, category, tier, current_tick);
 
             // ensure guard slot is valid
@@ -155,174 +161,201 @@ mod troop_systems {
         }
 
         
-        // fn explorer_create(ref self: ContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128) -> ID {
-        //     assert!(amount.is_non_zero(), "amount must be greater than 0");
+        fn explorer_create(ref self: ContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128) -> ID {
+            assert!(amount.is_non_zero(), "amount must be greater than 0");
             
-        //     let mut world = self.world(DEFAULT_NS());
-        //     SeasonImpl::assert_season_is_not_over(world);
+            let mut world = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
    
-        //     // ensure caller owns structure
-        //     let structure: Structure = world.read_model(for_structure_id);
-        //     structure.owner.assert_caller_owner();
+            // ensure caller owns structure
+            let mut structure: Structure = world.read_model(for_structure_id);
+            structure.owner.assert_caller_owner();
 
-        //     // deduct resources used to create explorer
-        //     InternalExplorerImpl::deduct_troop_resource(
-        //         ref world, for_structure_id, amount, category, tier);
+            // deduct resources used to create explorer
+            let tick = TickImpl::get_default_tick_config(ref world);
+            let current_tick: u64 = tick.current().try_into().unwrap();
+            InternalTroopImpl::update_troop_resource(
+                ref world, for_structure_id, amount, category, tier, current_tick);
 
-        //     // create explorer
-        //     let mut explorer_id: ID = world.dispatcher.uuid();
-        //     let coord: Coord = structure.coord;
+            // ensure structure has not reached the hard limit of troops
+            let structure_troop_count = structure.troop.explorers.len() + structure.troop.guard_count;
+            assert!(
+                structure_troop_count < structure.troop.max_troops_allowed, 
+                    "reached limit of troops per structure"
+            );
+
+
+            // create explorer
+            let mut explorer_id: ID = world.dispatcher.uuid();
             
+            // add explorer count to structure
+            let mut explorers: Array<ID> = structure.troop.explorers.into();
+            explorers.append(explorer_id);
+            structure.troop.explorers = explorers.span();
+            world.write_model(@structure);
 
-        //     // ensure structure has not reached the hard limit of troops
-        //     let structure_troop_count = structure.troop.explorers.len() + structure.guard_count;
-        //     assert!(
-        //         structure_troop_count < structure.troop.max_allowed, 
-        //             "reached limit of troops per structure"
-        //     );
-
-        //     // add explorer count to structure
-        //     structure.explorers.all.append(explorer_id);
-        //     world.write_model(@structure);
-
-        //     // add explorer to location occupier
-        //     let mut occupier: Occupier = world.read_model((coord.x, coord.y));
-        //     occupier.values.append(OccupiedBy::Explorer(explorer_id));
-        //     world.write_model(@occupier);
+            // add explorer to location occupier
+            let coord: Coord = structure.coord;
+            let mut occupier: Occupier = world.read_model((coord.x, coord.y));
+            occupier.entity = OccupiedBy::Explorer(explorer_id);
+            world.write_model(@occupier);
 
 
-        //     // todo: ensure max_allowed is updated. ensure it includes
-        //     //       troop_config.army_free_per_structure,
-        //     //       troop_config.army_extra_per_building
-        //     //       troop_config.army_max_per_structure
+            // todo: ensure max_allowed is updated. ensure it includes
+            //       troop_config.army_free_per_structure,
+            //       troop_config.army_extra_per_building
+            //       troop_config.army_max_per_structure
 
 
-        //     // set troop stamina
-        //     let mut troops: Troops = Default::default();
-        //     troops.category = category;
-        //     troops.tier = tier;
-        //     troops.count = amount;
-        //     troops.stamina = Stamina {
-        //         amount: 0,
-        //         last_refill_tick: (
-        //             armies_tick_config.current()
-        //             - stamina_refill_config.start_boost_tick_count.into()
-        //         ),
-        //     };
+            // ensure explorer amount does not exceed max
+            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            assert!(
+                amount <= combat_config.explorer_max_troop_count, 
+                    "reached limit of explorers amount per armys"
+            );
 
-        //     // set owner
-        //     let owner: EntityOwner = EntityOwner {
-        //         entity_id: explorer_id,
-        //         entity_owner_id: structure.entity_id,
-        //     };
+            // set troop stamina
+            let mut troops
+                = Troops {category, tier, count: amount, stamina: Stamina {amount: 0, updated_tick: 0}};
+            troops.stamina.refill(troops.category, combat_config, current_tick);
 
-        //     world
-        //         .write_model(
-        //         @ExplorerTroops {
-        //             explorer_id, 
-        //             coord,
-        //             troops,
-        //             owner,
-        //             travel: Default::default(),
-        //         });
+            // set explorer
+            world
+                .write_model(
+                @ExplorerTroops {
+                    explorer_id, 
+                    coord,
+                    troops,
+                    owner: EntityOwner {
+                        entity_id: explorer_id,
+                        entity_owner_id: structure.entity_id,
+                    }
+                });
 
-        //     explorer_id
+            explorer_id
 
-        //     // todo: limit troop count per explorer
-        // }
+        }
 
-
-        // fn explorer_add(ref self: ContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128) {
-        //     assert!(amount.is_non_zero(), "amount must be greater than 0");
+        fn explorer_add(ref self: ContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128) {
+            assert!(amount.is_non_zero(), "amount must be greater than 0");
             
-        //     let mut world = self.world(DEFAULT_NS());
-        //     SeasonImpl::assert_season_is_not_over(world);
-   
-        //     // ensure caller owns explorer
-        //     let structure: Structure = world.read_model(explorer_id);
-        //     let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-        //     explorer.owner.assert_caller_owner(world);
+            let mut world = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
 
-        //     // ensure explorer is at home 
-        //     let owner_structure_id: ID = explorer.owner.entity_owner_id;
-        //     let explorer_owner_structure: Structure = world.read_model(explorer_owner_structure_id);
-        //     assert!(explorer_owner_structure.coord == explorer.coord, "explorer not at home structure");
+            // ensure caller owns explorer
+            let mut explorer: ExplorerTroops = world.read_model(to_explorer_id);
+            explorer.owner.assert_caller_owner(world);
 
-        //     // deduct resources used to create explorer
-        //     InternalExplorerImpl::deduct_troop_resource(
-        //         ref world, owner_structure_id, amount, category, tier);
+            // ensure explorer is at home 
+            let owner_structure_id: ID = explorer.owner.entity_owner_id;
+            let explorer_owner_structure: Structure = world.read_model(owner_structure_id);
+            assert!(explorer_owner_structure.coord == explorer.coord, "explorer not at home structure");
+
+            // deduct resources used to create explorer
+            let tick = TickImpl::get_default_tick_config(ref world);
+            let current_tick: u64 = tick.current().try_into().unwrap();
+            InternalTroopImpl::update_troop_resource(
+                ref world, owner_structure_id, amount, category, tier, current_tick);
+
+            // add troops to explorer
+            explorer.troops.count += amount;
+            world.write_model(@explorer);
+
+            // update troop capacity
+            InternalTroopImpl::update_capacity(ref world, to_explorer_id, explorer, amount, true);
 
 
-        //     // add troops to explorer
-        //     explorer.troops.count += amount;
-        //     world.write_model(@explorer);
+            // ensure explorer count does not exceed max count
+            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            assert!(
+                explorer.troops.count <= combat_config.explorer_max_troop_count, 
+                    "reached limit of explorers amount per armys"
+            );
 
-        //     // todo: ensure explorer count does not exceed max count
-        //     // todo: ensure explorer is adjacent to home 
-        // }
+        }
 
-
-        // fn explorer_swap(ref self: ContractState, from_explorer_id: ID, to_explorer_id: ID, count: u128) {
-        //     assert!(count.is_non_zero(), "count must be greater than 0");
+        fn explorer_swap(
+            ref self: ContractState, 
+            from_explorer_id: ID, 
+            to_explorer_id: ID, 
+            to_explorer_direction: Direction, 
+            count: u128
+        ) {
+            assert!(count.is_non_zero(), "count must be greater than 0");
             
-        //     let mut world = self.world(DEFAULT_NS());
-        //     SeasonImpl::assert_season_is_not_over(world);
-   
-        //     // ensure caller address owns both explorers 
-        //     // (not necessarily the same structure)
-        //     let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-        //     from_explorer.owner.assert_caller_owner(world);
+            let mut world = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
 
-        //     let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
-        //     to_explorer.owner.assert_caller_owner(world);
+            // ensure caller address owns both explorers 
+            // (not necessarily the same structure)
+            let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
+            from_explorer.owner.assert_caller_owner(world);
 
-        //     // ensure explorers are at same location (??)
-        //     assert!(from_explorer.coord == to_explorer.coord, "explorers are not adjacent");
+            let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+            to_explorer.owner.assert_caller_owner(world);
 
-        //     // ensure both explorers have troops
-        //     assert!(from_explorer.troops.count.is_non_zero(), "from explorer has no troops");
-        //     assert!(to_explorer.troops.count.is_zero(), "to explorer has troops");
+            // ensure explorers are adjacent to one another
+            let to_explorer_coord = to_explorer.coord.neighbor(to_explorer_direction);
+            let to_explorer_occupier: Occupier = world.read_model(to_explorer_coord);
+            assert!(to_explorer_occupier.entity == OccupiedBy::Explorer(to_explorer_id), "to explorer is not at the target coordinate");
 
-        //     // add troops to explorer
-        //     from_explorer.troops.count -= count;
-        //     to_explorer.troops.count += count;
-     
-        //     // ensure there is no stamina advantage gained by swapping
-        //     from_explorer.troops.stamina.refill();
-        //     to_explorer.troops.stamina.refill();
-        //     if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
-        //         to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
-        //     }
+            // ensure both explorers have troops
+            assert!(from_explorer.troops.count.is_non_zero(), "from explorer has no troops");
+            assert!(to_explorer.troops.count.is_zero(), "to explorer has troops");
 
-        //     // update explorer models
-        //     world.write_model(@from_explorer);
-        //     world.write_model(@to_explorer);
+            // update troops
+            from_explorer.troops.count -= count;
+            to_explorer.troops.count += count;
 
-        //     // todo: ensure explorer count does not exceed max count
-        //     // todo: ensure both explorers are adjacent to one another
-        //     // todo: ensure from troop still has enough capacity to carry resources left over 
-        // }
+            // update troop capacity
+            InternalTroopImpl::update_capacity(ref world, from_explorer_id, from_explorer, count, false);
+            InternalTroopImpl::update_capacity(ref world, to_explorer_id, to_explorer, count, true);
 
-        // fn explorer_delete(ref self: ContractState, explorer_id: ID) {
-        //     let mut world = self.world(DEFAULT_NS());
-        //     SeasonImpl::assert_season_is_not_over(world);
+            // get current tick
+            let tick = TickImpl::get_default_tick_config(ref world);
+            let current_tick: u64 = tick.current().try_into().unwrap();
 
-        //     // ensure caller owns explorer
-        //     let structure: Structure = world.read_model(explorer_id);
-        //     let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-        //     explorer.owner.assert_caller_owner(world);
+            // ensure there is no stamina advantage gained by swapping
+            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            from_explorer.troops.stamina.refill(from_explorer.troops.category, combat_config, current_tick);
+            to_explorer.troops.stamina.refill(to_explorer.troops.category, combat_config, current_tick);
+            if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
+                to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
+            }
 
-        //     // ensure army is dead
-        //     assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
+            // update explorer models
+            world.write_model(@from_explorer);
+            world.write_model(@to_explorer);
 
-        //     // get occupier of the explorer's location
-        //     let occupier: Occupier = world.read_model((explorer.coord.x, explorer.coord.y));
-        //     assert!(occupier.values.len() == 1, "error: occupier length is not 1");
+            // ensure to_explorer count does not exceed max count
+            assert!(
+                to_explorer.troops.count <= combat_config.explorer_max_troop_count, 
+                    "reached limit of explorers amount per armys"
+            );
+        }
 
-        //     // delete explorer
-        //     world.erase_model(@explorer);
-        //     world.erase_model(@occupier);
-        // }
+        fn explorer_delete(ref self: ContractState, explorer_id: ID) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            // ensure caller owns explorer
+            let mut explorer: ExplorerTroops = world.read_model(explorer_id);
+            explorer.owner.assert_caller_owner(world);
+
+            // ensure army is dead
+            assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
+
+            let occupier: Occupier = world.read_model((explorer.coord.x, explorer.coord.y));
+            let resource: R3esource = R3esourceImpl::key_only(explorer_id);
+
+            // todo: IMPORTANT: check the cost of erasing the resource model
+    
+            // delete explorer
+            world.erase_model(@occupier);
+            world.erase_model(@explorer);
+            world.erase_model(@resource);
+
+        }
 
         // fn explorer_move(ref self: ContractState, explorer_id: ID, direction: Direction) {
         //     let mut world = self.world(DEFAULT_NS());
@@ -335,57 +368,39 @@ mod troop_systems {
         //     // ensure explorer is alive
         //     assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
 
-        //     // ensure explorer can move (??)
-        //     assert!(explorer.travel.blocked == false, "explorer is blocked from moving");
-
-        //     // let stamina_cost: TravelStaminaCostConfig = world.read_model((WORLD_CONFIG_ID, TravelTypes::EXPLORE));
-        //     // StaminaImpl::handle_stamina_costs(explorer_id, stamina_cost.cost, ref world);
-
-        //     // pay food 
-        //     // TravelFoodCostConfigImpl::pay_exploration_cost(ref world, unit_entity_owner, army.troops);
-
-        //     // mint reward
-        //     // let exploration_reward = MapConfigImpl::random_reward(ref world);
-        //     // InternalResourceSystemsImpl::transfer(ref world, 0, explorer_id, exploration_reward, 0, false, false);
-
         //     // ensure next coordinate is not occupied
         //     let next_coord = explorer.coord.neighbor(direction);
         //     let mut occupier: Occupier = world.read_model((next_coord.x, next_coord.y));
         //     assert!(occupier.values.len() == 0, "next coordinate is occupied");
 
-        //     // explore coordinate
-        //     // InternalMapSystemsImpl::explore(ref world, explorer_id, next_coord, exploration_reward);
+        //     // update explorer position
+        //     explorer.coord = next_coord;
+        //     world.write_model(@explorer);
 
-        //     // attempt to discover shards mine
-        //     // let (contract_address, _) = world.dns(@"map_generation_systems").unwrap();
-        //     // let map_generation_contract = IMapGenerationSystemsDispatcher { contract_address };
-        //     // let is_shards_mine = map_generation_contract.discover_shards_mine(unit_entity_owner, next_coord);
-
-        //     // travel to explored tile location
-        //     InternalTravelSystemsImpl::travel_hex(ref world, explorer_id, current_coord, array![direction].span());
-
-        //     // grant achievement
-        //     // // [Achievement] Explore a tile
-        //     // let player_id: felt252 = starknet::get_caller_address().into();
-        //     // let task_id: felt252 = Task::Explorer.identifier();
-        //     // let time = starknet::get_block_timestamp();
-        //     // let store = StoreTrait::new(world);
-        //     // store.progress(player_id, task_id, count: 1, time: time,);
-
-        //     // // [Achievement] Discover a shards mine
-        //     // if is_shards_mine {
-        //     //     let task_id: felt252 = Task::Discoverer.identifier();
-        //     //     store.progress(player_id, task_id, count: 1, time: time,);
-        //     // }
+        //     // update occupier
+        //     occupier.entity = OccupiedBy::Explorer(explorer_id);
+        //     world.write_model(@occupier);
         // }
-
     }
 
 
     #[generate_trait]
-    pub impl InternalExplorerImpl of InternalExplorerTrait {
+    pub impl InternalTroopImpl of InternalTroopTrait {
 
-        fn deduct_troop_resource(
+        fn update_capacity(ref world: WorldStorage, explorer_id: ID, explorer: ExplorerTroops, troop_amount: u128, add: bool) {
+            // let troop_config: TroopConfig = world.read_model(explorer.troops.category);
+            // let weight_grams: u128 = ResourceUnitImpl::grams(ref world, explorer.troops.category, explorer.troops.tier);
+            let weight_grams: u128 = 200; // todo: remove placeholder
+            let mut troop_weight: W3eight = WeightStoreImpl::retrieve(ref world, explorer_id);
+            if add {
+                troop_weight.add_capacity(weight_grams * troop_amount);
+            } else {
+                troop_weight.deduct_capacity(weight_grams * troop_amount);
+            }
+            troop_weight.store(ref world, explorer_id);
+        }
+
+        fn update_troop_resource(
             ref world: WorldStorage,
             from_structure_id: ID,
             amount: u128, 

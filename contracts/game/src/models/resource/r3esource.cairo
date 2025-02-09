@@ -183,7 +183,7 @@ impl StructureSingleR33esourceFoodImpl of StructureSingleR33esourceFoodTrait {
 
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct R3esource {
     #[key]
@@ -442,5 +442,11 @@ impl R3esourceImpl of R3esourceTrait {
             37 => selector!("LORDS_PRODUCTION"),
             _ => panic!("Invalid resource type"),
         }
+    }
+
+    fn key_only(entity_id: ID) -> R3esource {
+        let mut model: R3esource = Default::default();
+        model.entity_id = entity_id;
+        return model;
     }
 }

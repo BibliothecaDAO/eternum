@@ -18,6 +18,9 @@ pub struct Structure {
     created_at: u64,
 }
 
+
+// todo hmm getting structure will cost more for 
+// players with more explorers
 #[derive(Introspect, Copy, Drop, Serde)]
 struct StructureTroop {
     // maximum total explorer + guards allowed for this structure

@@ -40,7 +40,7 @@ impl WeightImpl of WeightTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 pub struct W3eight {
     capacity: u128,
     weight: u128,
@@ -62,6 +62,19 @@ impl WeightZeroableImpl of Zeroable<W3eight> {
 
 #[generate_trait]
 impl W3eightImpl of W3eightTrait {
+    fn deduct_capacity(ref self: W3eight, amount: u128) {
+        if self.capacity != Bounded::MAX {
+            self.capacity -= amount;
+            assert!(self.weight <= self.capacity, "{} - {} capacity < {} weight", self.capacity, amount, self.weight);
+        }
+    }
+
+    fn add_capacity(ref self: W3eight, amount: u128) {
+        if self.capacity != Bounded::MAX {
+            self.capacity += amount;
+        }
+    }
+
     fn deduct(ref self: W3eight, amount: u128) {
         if self.capacity != Bounded::MAX {
             self.weight -= amount;
@@ -71,7 +84,7 @@ impl W3eightImpl of W3eightTrait {
     fn add(ref self: W3eight, amount: u128) {
         if self.capacity != Bounded::MAX {
             self.weight += amount;
-            assert!(self.weight <= self.capacity, "{} weight + {} weight > {} capacity", self.weight, amount, self.capacity);
+            assert!(self.weight <= self.capacity, "{} + {} weight > {} capacity", self.weight, amount, self.capacity);
         }
     }
 

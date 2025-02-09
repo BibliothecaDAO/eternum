@@ -336,8 +336,13 @@ pub struct CombatConfig {
     stamina_crossbowman_max: u32, // Maximum stamina for crossbowmen
     stamina_attack_req: u64,      // Minimum stamina required to attack
     stamina_attack_max: u64,      // Maximum stamina that can be used in attack
+    stamina_initial: u64,  // Initial stamina for explorers
 
     guard_resurrection_delay: u64,
+    guard_max_troop_count: u128,
+    // explorer
+    explorer_max_troop_count: u128,
+
 }
 
 
