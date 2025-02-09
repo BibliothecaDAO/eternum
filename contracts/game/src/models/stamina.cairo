@@ -10,6 +10,12 @@ pub struct Stamina {
 
 #[generate_trait]
 impl StaminaImpl of StaminaTrait {
+    #[inline(always)]
+    fn reset(ref self: Stamina, current_tick: u64) {
+        self.amount = 0;
+        self.updated_tick = current_tick;
+    }
+
 
     #[inline(always)]
     fn refill(ref self: Stamina, troop_type: TroopType, config: CombatConfig, current_tick: u64) {

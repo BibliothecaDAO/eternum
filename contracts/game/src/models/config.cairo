@@ -310,7 +310,10 @@ pub struct TickConfig {
 
 
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
-struct CombatConfig {
+#[dojo::model]
+pub struct CombatConfig {
+    #[key]
+    config_id: ID,
     // Base damage values for each troop type
     knight_base_damage: u16,
     crossbowman_base_damage: u16,
@@ -333,6 +336,8 @@ struct CombatConfig {
     stamina_crossbowman_max: u32, // Maximum stamina for crossbowmen
     stamina_attack_req: u64,      // Minimum stamina required to attack
     stamina_attack_max: u64,      // Maximum stamina that can be used in attack
+
+    guard_resurrection_delay: u64,
 }
 
 
@@ -479,6 +484,15 @@ impl TickImpl of TickTrait {
 
     fn next_tick_timestamp(self: TickConfig) -> u64 {
         self.current() + self.interval()
+    }
+
+    fn convert_from_seconds(self: TickConfig, seconds: u64) -> u64 {
+        let mut ticks = seconds / self.interval();
+        let rem = seconds % self.interval();
+        if rem.is_non_zero() {
+            ticks += 1;
+        }
+        ticks
     }
 }
 

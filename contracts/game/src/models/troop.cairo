@@ -50,10 +50,10 @@ pub struct GuardTroops {
     // slot 1
     alpha: Troops,
 
-    delta_destroyed_at: u32,
-    charlie_destroyed_at: u32,
-    bravo_destroyed_at: u32,
-    alpha_destroyed_at: u32,   
+    delta_destroyed_tick: u32,
+    charlie_destroyed_tick: u32,
+    bravo_destroyed_tick: u32,
+    alpha_destroyed_tick: u32,   
 }
 
 
@@ -117,21 +117,33 @@ pub impl GuardImpl of GuardTrait {
         }
     }
 
-    fn get_slot(ref self: GuardTroops, slot: GuardSlot) -> (Troops, u32) {
+    fn get_slot(self: GuardTroops, slot: GuardSlot) -> (Troops, u32) {
         match slot {
-            GuardSlot::Delta => (self.delta, self.delta_destroyed_at),
-            GuardSlot::Charlie => (self.charlie, self.charlie_destroyed_at),
-            GuardSlot::Bravo => (self.bravo, self.bravo_destroyed_at),
-            GuardSlot::Alpha => (self.alpha, self.alpha_destroyed_at)
+            GuardSlot::Delta => (self.delta, self.delta_destroyed_tick),
+            GuardSlot::Charlie => (self.charlie, self.charlie_destroyed_tick),
+            GuardSlot::Bravo => (self.bravo, self.bravo_destroyed_tick),
+            GuardSlot::Alpha => (self.alpha, self.alpha_destroyed_tick)
         }
     }
 
-    fn set_slot(ref self: GuardTroops, slot: GuardSlot, troops: Troops) {
+    fn set_slot(ref self: GuardTroops, slot: GuardSlot, troops: Troops, destroyed_tick: u64) {
         match slot {
-            GuardSlot::Delta => {self.delta = troops;},
-            GuardSlot::Charlie => {self.charlie = troops;},
-            GuardSlot::Bravo => {self.bravo = troops;},
-            GuardSlot::Alpha => {self.alpha = troops;}
+            GuardSlot::Delta => {
+                self.delta = troops; 
+                self.delta_destroyed_tick = destroyed_tick.try_into().unwrap();
+            },
+            GuardSlot::Charlie => {
+                self.charlie = troops; 
+                self.charlie_destroyed_tick = destroyed_tick.try_into().unwrap();
+            },
+            GuardSlot::Bravo => {
+                self.bravo = troops; 
+                self.bravo_destroyed_tick = destroyed_tick.try_into().unwrap();
+            },
+            GuardSlot::Alpha => {
+                self.alpha = troops; 
+                self.alpha_destroyed_tick = destroyed_tick.try_into().unwrap();
+            }
         }
     }
 }
