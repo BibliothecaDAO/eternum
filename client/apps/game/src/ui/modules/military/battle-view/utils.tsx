@@ -1,12 +1,5 @@
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
-import { roundDownToPrecision } from "@/ui/utils/utils";
-import {
-  ClientComponents,
-  configManager,
-  Percentage,
-  ResourcesIds,
-  Troops as SdkTroops,
-} from "@bibliothecadao/eternum";
+import { ClientComponents, configManager, Percentage, Troops as SdkTroops } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 
 type ArmyBattleInfo = {
@@ -68,24 +61,4 @@ export const getMaxResourceAmountStolen = (
   if (!attackerArmy) return 0;
   const attackingTroops = getTotalTroops(attackerArmy.troops) / configManager.getResourcePrecision();
   return Math.floor(attackingTroops * getChancesOfSuccess(attackerArmy, defenderArmy, troopConfig));
-};
-
-export const calculateRemainingTroops = (
-  armyInfo: { troops: { crossbowman_count: bigint; knight_count: bigint; paladin_count: bigint } },
-  troopLosses: { crossbowmanLost: number; knightLost: number; paladinLost: number },
-) => {
-  return {
-    [ResourcesIds.Crossbowman]: roundDownToPrecision(
-      armyInfo.troops.crossbowman_count - BigInt(troopLosses.crossbowmanLost),
-      configManager.getResourcePrecision(),
-    ),
-    [ResourcesIds.Knight]: roundDownToPrecision(
-      armyInfo.troops.knight_count - BigInt(troopLosses.knightLost),
-      configManager.getResourcePrecision(),
-    ),
-    [ResourcesIds.Paladin]: roundDownToPrecision(
-      armyInfo.troops.paladin_count - BigInt(troopLosses.paladinLost),
-      configManager.getResourcePrecision(),
-    ),
-  };
 };
