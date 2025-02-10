@@ -6,7 +6,7 @@ import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { BattleSimulation } from "@/ui/modules/simulation/battle-simulation";
+import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
@@ -26,7 +26,7 @@ export const EntitiesArmyTable = () => {
           Simulate a pillage
         </Button>
       </div>
-      <BattleSimulation />
+      <CombatSimulation />
       <PillageSimulation />
       {playerStructures.map((entity: any, index: number) => {
         return (
