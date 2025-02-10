@@ -48,26 +48,53 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({ onSelect, className, d
       }}
     >
       <SelectTrigger className={className}>
-        <SelectValue placeholder="Select biome" />
-      </SelectTrigger>
-      <SelectContent>
-        {Object.values(Biome).map((biome) => (
-          <SelectItem key={biome} value={biome}>
-            <div className="flex flex-col py-0.5">
-              <span className="font-medium text-base">{formatBiomeName(biome)}</span>
-              <div className="flex gap-3 mt-0.5 opacity-80">
+        <SelectValue placeholder="Select biome">
+          {selectedBiome && (
+            <div className="flex items-center justify-start w-full">
+              <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(selectedBiome)}</span>
+              <div className="flex gap-8">
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
-                  const bonus = CombatSimulator.getBiomeBonus(type, biome);
+                  const bonus = CombatSimulator.getBiomeBonus(type, selectedBiome as Biome);
                   return (
-                    <div key={type} className="flex items-center gap-0.5">
-                      <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="xs" />
+                    <div key={type} className="flex items-center gap-2 w-16 justify-end">
+                      <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />
                       <span
                         className={
                           bonus > 1
-                            ? "text-green-600 text-xs"
+                            ? "text-order-brilliance text-xs"
                             : bonus < 1
-                              ? "text-red-600 text-xs"
-                              : "text-gray-400 text-xs"
+                              ? "text-order-giants text-xs"
+                              : "text-gold/50 text-xs"
+                        }
+                      >
+                        {formatBonus(bonus)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {Object.values(Biome).map((biome) => (
+          <SelectItem key={biome} value={biome} className="py-3">
+            <div className="flex items-center justify-between w-full">
+              <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(biome)}</span>
+              <div className="flex gap-8 ml-10">
+                {TROOP_RESOURCES.map(({ type, resourceId }) => {
+                  const bonus = CombatSimulator.getBiomeBonus(type, biome);
+                  return (
+                    <div key={type} className="flex items-center gap-2 w-16 justify-end">
+                      <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />
+                      <span
+                        className={
+                          bonus > 1
+                            ? "text-order-brilliance text-sm font-medium"
+                            : bonus < 1
+                              ? "text-order-giants text-sm font-medium"
+                              : "text-gold/50 text-sm"
                         }
                       >
                         {formatBonus(bonus)}

@@ -13,9 +13,9 @@ export const CombatSimulation = () => {
     <OSWindow
       onClick={() => togglePopup(battleSimulation)}
       show={isOpen}
-      title={"Battle simulation"}
+      title={"Combat simulation"}
       hintSection={HintSection.Combat}
-      width="600px"
+      width="800px"
     >
       <CombatSimulationPanel />
     </OSWindow>
