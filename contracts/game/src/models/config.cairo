@@ -196,6 +196,9 @@ pub struct MapConfig {
     // weight of sucess = 1000
     // ex: if set to 5000
     shards_mines_fail_probability: u128,
+    // Mine discovery rewards
+    mine_wheat_grant_amount: u128,
+    mine_fish_grant_amount: u128,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -309,6 +312,7 @@ pub struct TickConfig {
 }
 
 
+// todo: regroup meaningfully to avoid retrieving too many fields
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
 #[dojo::model]
 pub struct CombatConfig {
@@ -337,108 +341,25 @@ pub struct CombatConfig {
     stamina_attack_req: u64,      // Minimum stamina required to attack
     stamina_attack_max: u64,      // Maximum stamina that can be used in attack
     stamina_initial: u64,  // Initial stamina for explorers
+    stamina_explore_wheat_cost: u128, // stamina burn for exploring
+    stamina_explore_fish_cost: u128, // stamina burn for exploring
+    stamina_travel_wheat_cost: u128, // stamina burn for traveling
+    stamina_travel_fish_cost: u128, // stamina burn for traveling
 
+    //todo: move somewhere else
+    stamina_explore_stamina_cost: u128, // stamina burn for exploring
+    stamina_travel_stamina_cost: u128, // stamina burn for traveling
+    //
     guard_resurrection_delay: u64,
     guard_max_troop_count: u128,
     // explorer
     explorer_max_troop_count: u128,
-
+    // Mercenaries configuration
+    mercenaries_troop_lower_bound: u64,
+    mercenaries_troop_upper_bound: u64,
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct TravelFoodCostConfig {
-    #[key]
-    config_id: ID,
-    #[key]
-    unit_type: u8,
-    explore_wheat_burn_amount: u128,
-    explore_fish_burn_amount: u128,
-    travel_wheat_burn_amount: u128,
-    travel_fish_burn_amount: u128,
-}
-
-#[generate_trait]
-impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
-    // fn pay_exploration_cost(ref world: WorldStorage, unit_entity_owner: EntityOwner, troops: Troops) {
-    //     let unit_owner_id = unit_entity_owner.entity_owner_id;
-    //     assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
-
-    //     let knight_travel_food_cost_config: TravelFoodCostConfig = world
-    //         .read_model((WORLD_CONFIG_ID, ResourceTypes::KNIGHT));
-
-    //     let paladin_travel_food_cost_config: TravelFoodCostConfig = world
-    //         .read_model((WORLD_CONFIG_ID, ResourceTypes::PALADIN));
-
-    //     let crossbowman_travel_food_cost_config: TravelFoodCostConfig = world
-    //         .read_model((WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN));
-
-    //     let knight_wheat_pay_amount = knight_travel_food_cost_config.explore_wheat_burn_amount
-    //         * troops.knight_count.into();
-    //     let knight_fish_pay_amount = knight_travel_food_cost_config.explore_fish_burn_amount
-    //         * troops.knight_count.into();
-
-    //     let paladin_wheat_pay_amount = paladin_travel_food_cost_config.explore_wheat_burn_amount
-    //         * troops.paladin_count.into();
-    //     let paladin_fish_pay_amount = paladin_travel_food_cost_config.explore_fish_burn_amount
-    //         * troops.paladin_count.into();
-
-    //     let crossbowman_wheat_pay_amount = crossbowman_travel_food_cost_config.explore_wheat_burn_amount
-    //         * troops.crossbowman_count.into();
-    //     let crossbowman_fish_pay_amount = crossbowman_travel_food_cost_config.explore_fish_burn_amount
-    //         * troops.crossbowman_count.into();
-
-    //     let mut wheat_pay_amount = knight_wheat_pay_amount + paladin_wheat_pay_amount + crossbowman_wheat_pay_amount;
-    //     let mut fish_pay_amount = knight_fish_pay_amount + paladin_fish_pay_amount + crossbowman_fish_pay_amount;
-    //     assert!(wheat_pay_amount != 0, "Cannot explore with 0 troops");
-    //     assert!(fish_pay_amount != 0, "Cannot explore with 0 troops");
-
-    //     ResourceFoodImpl::pay(ref world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
-    // }
-
-    // fn pay_travel_cost(ref world: WorldStorage, unit_entity_owner: EntityOwner, troops: Troops, steps: usize) {
-    //     let unit_owner_id = unit_entity_owner.entity_owner_id;
-    //     assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
-
-    //     let knight_travel_food_cost_config: TravelFoodCostConfig = world
-    //         .read_model((WORLD_CONFIG_ID, ResourceTypes::KNIGHT));
-
-    //     let paladin_travel_food_cost_config: TravelFoodCostConfig = world
-    //         .read_model((WORLD_CONFIG_ID, ResourceTypes::PALADIN));
-
-    //     let crossbowman_travel_food_cost_config: TravelFoodCostConfig = world
-    //         .read_model((WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN));
-
-    //     let knight_wheat_pay_amount = knight_travel_food_cost_config.travel_wheat_burn_amount
-    //         * troops.knight_count.into()
-    //         * steps.into();
-    //     let knight_fish_pay_amount = knight_travel_food_cost_config.travel_fish_burn_amount
-    //         * troops.knight_count.into()
-    //         * steps.into();
-
-    //     let paladin_wheat_pay_amount = paladin_travel_food_cost_config.travel_wheat_burn_amount
-    //         * troops.paladin_count.into()
-    //         * steps.into();
-    //     let paladin_fish_pay_amount = paladin_travel_food_cost_config.travel_fish_burn_amount
-    //         * troops.paladin_count.into()
-    //         * steps.into();
-
-    //     let crossbowman_wheat_pay_amount = crossbowman_travel_food_cost_config.travel_wheat_burn_amount
-    //         * troops.crossbowman_count.into()
-    //         * steps.into();
-    //     let crossbowman_fish_pay_amount = crossbowman_travel_food_cost_config.travel_fish_burn_amount
-    //         * troops.crossbowman_count.into()
-    //         * steps.into();
-
-    //     let mut wheat_pay_amount = knight_wheat_pay_amount + paladin_wheat_pay_amount + crossbowman_wheat_pay_amount;
-    //     let mut fish_pay_amount = knight_fish_pay_amount + paladin_fish_pay_amount + crossbowman_fish_pay_amount;
-    //     assert!(wheat_pay_amount != 0, "Cannot travel with 0 troops");
-    //     assert!(fish_pay_amount != 0, "Cannot travel with 0 troops");
-
-    //     ResourceFoodImpl::pay(ref world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
-    // }
-}
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
@@ -457,12 +378,7 @@ pub struct MercenariesConfig {
 
 #[generate_trait]
 impl TickImpl of TickTrait {
-    fn get_default_tick_config(ref world: WorldStorage) -> TickConfig {
-        let tick_config: TickConfig = world.read_model((WORLD_CONFIG_ID, TickIds::DEFAULT));
-        return tick_config;
-    }
-
-    fn get_armies_tick_config(ref world: WorldStorage) -> TickConfig {
+    fn retrieve(ref world: WorldStorage) -> TickConfig {
         let tick_config: TickConfig = world.read_model((WORLD_CONFIG_ID, TickIds::ARMIES));
         return tick_config;
     }

@@ -3,10 +3,14 @@ use s1_eternum::alias::ID;
 use s1_eternum::models::config::{BattleConfig, TickConfig, TickTrait};
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::owner::Owner;
+use s1_eternum::models::troop::{GuardTroops, Troops, TroopType, TroopTier};
+use s1_eternum::models::stamina::Stamina;
 use starknet::ContractAddress;
 use traits::Into;
 
-#[derive(Introspect, Copy, Drop, Serde)]
+
+// todo: obtain each value as needed not all at once
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Structure {
     #[key]
@@ -14,6 +18,7 @@ pub struct Structure {
     category: StructureCategory,
     owner: Owner,
     coord: Coord,
+    guards: GuardTroops,
     troop: StructureTroop,
     created_at: u64,
 }
@@ -39,6 +44,15 @@ struct StructureTroop {
 impl StructureImpl of StructureTrait {
 
     fn default() -> Structure {
+        let troops: Troops = Troops {
+            category: TroopType::Knight,
+            tier: TroopTier::T1,
+            count: 0,
+            stamina: Stamina {
+                amount: 0,
+                updated_tick: 0,
+            },
+        };
         Structure {
             entity_id: 0,
             category: StructureCategory::None,
@@ -52,6 +66,16 @@ impl StructureImpl of StructureTrait {
                 max_guards_allowed: 0,
                 guard_count: 0,
                 explorers: array![].span(),
+            },
+            guards: GuardTroops {
+                delta: troops,
+                charlie: troops,
+                bravo: troops,
+                alpha: troops,
+                delta_destroyed_tick: 0,
+                charlie_destroyed_tick: 0,
+                bravo_destroyed_tick: 0,
+                alpha_destroyed_tick: 0,
             },
             created_at: 0,
         }

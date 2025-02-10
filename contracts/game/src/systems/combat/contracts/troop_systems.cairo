@@ -3,19 +3,25 @@ use s1_eternum::models::troop::{TroopType, TroopTier, GuardSlot};
 use s1_eternum::models::position::Direction;
 
 
+
 #[starknet::interface]
 trait ITroopSystems<TContractState> {
-
+    // guard
     fn guard_add(ref self: TContractState, for_structure_id: ID, slot: GuardSlot, category: TroopType, tier: TroopTier, amount: u128);
     fn guard_delete(ref self: TContractState, for_structure_id: ID, slot: GuardSlot);
 
+    // explorer
     fn explorer_create(ref self: TContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128) -> ID;
     fn explorer_add(ref self: TContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128);
     fn explorer_swap(ref self: TContractState, from_explorer_id: ID, to_explorer_id: ID, to_explorer_direction: Direction, count: u128);
     fn explorer_delete(ref self: TContractState, explorer_id: ID);
-    // fn explorer_move(ref self: TContractState, explorer_id: ID, direction: Direction);
-
 }
+
+#[starknet::interface]
+trait ITroopMovementSystems<TContractState> {
+    fn explorer_move(ref self: TContractState, explorer_id: ID, directions: Span<Direction>, explore: bool);
+}
+
 
 #[dojo::contract]
 mod troop_systems {
@@ -24,34 +30,46 @@ mod troop_systems {
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{ResourceTypes};
-    use s1_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
-    use s1_eternum::models::capacity::{CapacityCategory};
-    use s1_eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfigTrait,
-        CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, CombatConfig
-    };
-    use s1_eternum::models::owner::{OwnerTrait, Owner, EntityOwner, EntityOwnerTrait};
-    use s1_eternum::models::position::{
-        Position, Coord, CoordTrait, PositionTrait, Direction, 
-        Occupier, OccupierTrait, OccupiedBy
-    };
-    use s1_eternum::models::resource::resource::{ResourceCost};
-    use s1_eternum::models::resource::r3esource::{
-        SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl, 
-        R3esource, R3esourceImpl,
-        WeightStoreImpl, WeightUnitImpl,
-        StructureSingleR33esourceFoodImpl
+    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
+    use s1_eternum::models::{
+        capacity::{CapacityCategory},
+        config::{
+            TickConfig, TickImpl, TickTrait, 
+            SpeedConfig, 
+            TroopConfig, TroopConfigImpl, TroopConfigTrait, 
+            BattleConfigTrait,
+            CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, 
+            CombatConfig
+        },
+        map::Tile,
+        owner::{OwnerTrait, Owner, EntityOwner, EntityOwnerTrait},
+        position::{Position, Coord, CoordTrait, PositionTrait, Direction, Occupier, OccupierTrait, OccupiedBy},
+        resource::{
+            resource::{ResourceCost},
+            r3esource::{
+                SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl,
+                R3esource, R3esourceImpl,
+                WeightStoreImpl, WeightUnitImpl,
+                StructureSingleR33esourceFoodImpl
+            }
+        },
+        season::SeasonImpl,
+        stamina::{Stamina, StaminaTrait},
+        structure::{Structure, StructureTrait, StructureCategory},
+        troop::{
+            Troops, TroopsTrait, TroopType, TroopTier,
+            GuardSlot, GuardTroops, GuardImpl, GuardTrait,
+            ExplorerTroops
+        },
+        weight::{W3eight, W3eightTrait}
     };
 
-    use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::stamina::{Stamina, StaminaTrait};
-    use s1_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
-    use s1_eternum::models::weight::{W3eight, W3eightTrait};
-    use s1_eternum::models::troop::{
-        Troops, TroopsTrait, TroopType, TroopTier, 
-        GuardSlot, GuardTroops, GuardImpl, GuardTrait,
-        ExplorerTroops
+    use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
+    use s1_eternum::systems::utils::map::iMapImpl;
+
+    use s1_eternum::systems::utils::{
+        mine::iMineDiscoveryImpl,
+        troop::{iExplorerImpl, iTroopImpl}
     };
 
     use super::ITroopSystems;
@@ -71,14 +89,14 @@ mod troop_systems {
             structure.owner.assert_caller_owner();
 
             // deduct resources used to create guard
-            let tick = TickImpl::get_default_tick_config(ref world);
+            let tick = TickImpl::retrieve(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            InternalTroopImpl::update_troop_resource(
+            iTroopImpl::update_troop_resource(
                 ref world, for_structure_id, amount, category, tier, current_tick);
 
             // ensure guard slot is valid
-            let mut guard: GuardTroops = world.read_model(for_structure_id);
-            let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.get_slot(slot);
+            let mut guard: GuardTroops = structure.guards;
+            let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
             
             // ensure delay from troop defeat is over
             let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
@@ -114,11 +132,9 @@ mod troop_systems {
             troops.count += amount;
             troops.stamina.refill(troops.category, combat_config, current_tick);
 
-            // update troop in guard slot
-            guard.set_slot(slot, troops, current_tick);
-            world.write_model(@guard);
-
-            // update structure
+            // update guard slot and structure
+            guard.to_slot(slot, troops, current_tick);
+            structure.guards = guard;
             world.write_model(@structure); 
         }
 
@@ -134,12 +150,12 @@ mod troop_systems {
             structure.owner.assert_caller_owner();
 
             // deduct resources used to create guard
-            let tick = TickImpl::get_default_tick_config(ref world);
+            let tick = TickImpl::retrieve(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
      
             // ensure guard slot is valid
-            let mut guard: GuardTroops = world.read_model(for_structure_id);
-            let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.get_slot(slot);
+            let mut guard: GuardTroops = structure.guards;
+            let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
             
             // ensure delay from troop defeat is over
             let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
@@ -152,11 +168,13 @@ mod troop_systems {
             // clear troop
             troops.count = 0;
             troops.stamina.reset(current_tick);
-            guard.set_slot(slot, troops, current_tick);
-            world.write_model(@guard);
+            guard.to_slot(slot, troops, current_tick);
+            structure.guards = guard;
 
             // reduce structure guard count
             structure.troop.guard_count -= 1;
+
+            // update structure
             world.write_model(@structure);
         }
 
@@ -172,9 +190,9 @@ mod troop_systems {
             structure.owner.assert_caller_owner();
 
             // deduct resources used to create explorer
-            let tick = TickImpl::get_default_tick_config(ref world);
+            let tick = TickImpl::retrieve(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            InternalTroopImpl::update_troop_resource(
+            iTroopImpl::update_troop_resource(
                 ref world, for_structure_id, amount, category, tier, current_tick);
 
             // ensure structure has not reached the hard limit of troops
@@ -252,9 +270,9 @@ mod troop_systems {
             assert!(explorer_owner_structure.coord == explorer.coord, "explorer not at home structure");
 
             // deduct resources used to create explorer
-            let tick = TickImpl::get_default_tick_config(ref world);
+            let tick = TickImpl::retrieve(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            InternalTroopImpl::update_troop_resource(
+            iTroopImpl::update_troop_resource(
                 ref world, owner_structure_id, amount, category, tier, current_tick);
 
             // add troops to explorer
@@ -262,7 +280,7 @@ mod troop_systems {
             world.write_model(@explorer);
 
             // update troop capacity
-            InternalTroopImpl::update_capacity(ref world, to_explorer_id, explorer, amount, true);
+            iExplorerImpl::update_capacity(ref world, to_explorer_id, explorer, amount, true);
 
 
             // ensure explorer count does not exceed max count
@@ -308,11 +326,11 @@ mod troop_systems {
             to_explorer.troops.count += count;
 
             // update troop capacity
-            InternalTroopImpl::update_capacity(ref world, from_explorer_id, from_explorer, count, false);
-            InternalTroopImpl::update_capacity(ref world, to_explorer_id, to_explorer, count, true);
+            iExplorerImpl::update_capacity(ref world, from_explorer_id, from_explorer, count, false);
+            iExplorerImpl::update_capacity(ref world, to_explorer_id, to_explorer, count, true);
 
             // get current tick
-            let tick = TickImpl::get_default_tick_config(ref world);
+            let tick = TickImpl::retrieve(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
@@ -357,93 +375,147 @@ mod troop_systems {
 
         }
 
-        // fn explorer_move(ref self: ContractState, explorer_id: ID, direction: Direction) {
-        //     let mut world = self.world(DEFAULT_NS());
-        //     SeasonImpl::assert_season_is_not_over(world);
-
-        //     // ensure caller owns explorer
-        //     let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-        //     explorer.owner.assert_caller_owner(world);
-
-        //     // ensure explorer is alive
-        //     assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
-
-        //     // ensure next coordinate is not occupied
-        //     let next_coord = explorer.coord.neighbor(direction);
-        //     let mut occupier: Occupier = world.read_model((next_coord.x, next_coord.y));
-        //     assert!(occupier.values.len() == 0, "next coordinate is occupied");
-
-        //     // update explorer position
-        //     explorer.coord = next_coord;
-        //     world.write_model(@explorer);
-
-        //     // update occupier
-        //     occupier.entity = OccupiedBy::Explorer(explorer_id);
-        //     world.write_model(@occupier);
-        // }
     }
+}
 
 
-    #[generate_trait]
-    pub impl InternalTroopImpl of InternalTroopTrait {
 
-        fn update_capacity(ref world: WorldStorage, explorer_id: ID, explorer: ExplorerTroops, troop_amount: u128, add: bool) {
-            // let troop_config: TroopConfig = world.read_model(explorer.troops.category);
-            // let weight_grams: u128 = ResourceUnitImpl::grams(ref world, explorer.troops.category, explorer.troops.tier);
-            let weight_grams: u128 = 200; // todo: remove placeholder
-            let mut troop_weight: W3eight = WeightStoreImpl::retrieve(ref world, explorer_id);
-            if add {
-                troop_weight.add_capacity(weight_grams * troop_amount);
-            } else {
-                troop_weight.deduct_capacity(weight_grams * troop_amount);
-            }
-            troop_weight.store(ref world, explorer_id);
-        }
+#[dojo::contract]
+mod troop_movement_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
+    use s1_eternum::models::{
+        capacity::{CapacityCategory},
+        config::{
+            TickConfig, TickImpl, TickTrait, 
+            SpeedConfig, MapConfig,
+            TroopConfig, TroopConfigImpl, TroopConfigTrait, 
+            BattleConfigTrait,
+            CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, 
+            CombatConfig
+        },
+        map::Tile,
+        owner::{OwnerTrait, Owner, EntityOwner, EntityOwnerTrait},
+        position::{Position, Coord, CoordTrait, PositionTrait, Direction, Occupier, OccupierTrait, OccupiedBy},
+        resource::r3esource::{
+            SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl,
+            WeightStoreImpl, WeightUnitImpl
+        },
+        season::SeasonImpl,
+        stamina::{Stamina, StaminaTrait},
+        structure::{Structure, StructureTrait, StructureCategory},
+        troop::{
+            Troops, TroopsTrait, TroopType, TroopTier,
+            GuardSlot, GuardTroops, GuardImpl, GuardTrait,
+            ExplorerTroops
+        },
+        weight::{W3eight, W3eightTrait}
+    };
 
-        fn update_troop_resource(
-            ref world: WorldStorage,
-            from_structure_id: ID,
-            amount: u128, 
-            category: TroopType, 
-            tier: TroopTier, 
-            current_tick: u64
-        ) {
-            let resource_type = match tier {
-                TroopTier::T1 => {
-                    match category {
-                        TroopType::Knight => ResourceTypes::KNIGHT_T1,
-                        TroopType::Crossbowman => ResourceTypes::CROSSBOWMAN_T1,
-                        TroopType::Paladin => ResourceTypes::PALADIN_T1,
-                    }
-                },
+    use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
+    use s1_eternum::systems::utils::map::iMapImpl;
+    use s1_eternum::systems::utils::{
+        mine::iMineDiscoveryImpl,
+        troop::{iExplorerImpl, iTroopImpl}
+    };
 
-                TroopTier::T2 => {
-                    match category {
-                        TroopType::Knight => ResourceTypes::KNIGHT_T2,
-                        TroopType::Crossbowman => ResourceTypes::CROSSBOWMAN_T2,
-                        TroopType::Paladin => ResourceTypes::PALADIN_T2,
-                    }
-                },
 
-                TroopTier::T3 => {
-                    match category {
-                        TroopType::Knight => ResourceTypes::KNIGHT_T3,
-                        TroopType::Crossbowman => ResourceTypes::CROSSBOWMAN_T3,
-                        TroopType::Paladin => ResourceTypes::PALADIN_T3,
-                    }
+    use super::ITroopMovementSystems;
+
+
+
+    #[abi(embed_v0)]
+    impl TroopMovementSystemsImpl of ITroopMovementSystems<ContractState> {
+
+        fn explorer_move(ref self: ContractState, explorer_id: ID, mut directions: Span<Direction>, explore: bool) {
+            // ensure directions are not empty
+            assert!(directions.len().is_non_zero(), "directions must be greater than 0");
+
+            let mut world = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            // ensure caller owns explorer
+            let mut explorer: ExplorerTroops = world.read_model(explorer_id);
+            explorer.owner.assert_caller_owner(world);
+
+            // ensure explorer is alive
+            assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
+
+            // remove explorer from current occupier
+            let occupier = Occupier{x: explorer.coord.x, y: explorer.coord.y, entity: OccupiedBy::None};
+            world.erase_model(@occupier);
+
+            // move explorer to target coordinate
+            let mut biomes: Array<Biome> = array![];
+            while true {
+                // ensure next coordinate is not occupied
+                let next = explorer.coord.neighbor(*(directions.pop_front().unwrap()));
+                let mut occupier: Occupier = world.read_model((next.x, next.y));
+                assert!(occupier.entity == OccupiedBy::None, "next coordinate is occupied");
+
+                // add biome to biomes
+                let biome = get_biome(next.x.into(), next.y.into());
+                biomes.append(biome);
+
+                let mut tile: Tile = world.read_model((next.x, next.y));
+                if explore {
+                    // ensure only one tile can be explored
+                    assert!(directions.len().is_zero(), "explorer can only move one direction when exploring");
+                    
+                    // ensure target tile is not explored 
+                    assert(tile.explored_at.is_zero(), 'tile is already explored');
+                    
+                    // set tile as explored
+                    iMapImpl::explore(ref world, ref tile, biome);
+
+                    // perform lottery to discover mine
+                    let map_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
+                    iMineDiscoveryImpl::lottery(ref world, starknet::get_caller_address(), next, map_config);
+
+                    // grant resource reward for exploration
+                    let (explore_reward_id, explore_reward_amount) = iExplorerImpl::exploration_reward(ref world, map_config);
+                    let mut explorer_weight: W3eight = WeightStoreImpl::retrieve(ref world, explorer_id);
+                    let resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, explore_reward_id);
+                    let mut resource = SingleR33esourceStoreImpl::retrieve(
+                        ref world, explorer_id, explore_reward_id, ref explorer_weight, resource_weight_grams, false
+                    );
+                    resource.add(explore_reward_amount, ref explorer_weight, resource_weight_grams);
+                    resource.store(ref world);
+                    explorer_weight.store(ref world, explorer_id);
+                    
+                } else {
+                    // ensure all tiles passed through are explored during travel
+                    assert(tile.explored_at.is_non_zero(), 'tile is not explored');
+                }
+
+                // update explorer coordinate
+                explorer.coord = next;
+                
+                // set explorer as occupier of target coordinate    
+                if directions.len().is_zero() {
+                    occupier.entity = OccupiedBy::Explorer(explorer_id);
+                    world.write_model(@occupier);
+                    break;
                 }
             };
 
+            // retrieve combat config
+            let config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
 
-        
-            let mut structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_structure_id);
-            let troop_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, resource_type);
-            let mut structure_troop_resource: SingleR33esource = SingleR33esourceStoreImpl::retrieve(
-                ref world, from_structure_id, resource_type, ref structure_weight, troop_resource_weight_grams, Option::Some(current_tick.try_into().unwrap())
-            );
-            structure_troop_resource.spend(amount, ref structure_weight, troop_resource_weight_grams);
-            structure_troop_resource.store(ref world);
+            // burn stamina cost
+            iExplorerImpl::burn_stamina_cost(
+                    ref world, ref explorer, config, explore, biomes, TickImpl::retrieve(ref world).current());
 
+            // burn food cost
+            iExplorerImpl::burn_food_cost(ref world, ref explorer, config, explore);
+            
+            // update explorer 
+            world.write_model(@explorer);
         }
+
     }
+
 }

@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{
     TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonAddressesConfig,
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig,
     MultipleResourceBurnPrStrategy, LaborBurnPrStrategy
 };
 use s1_eternum::models::position::Coord;
@@ -72,10 +72,6 @@ trait IStaminaConfig<T> {
     fn set_stamina_config(ref self: T, unit_type: u8, max_stamina: u16);
 }
 
-#[starknet::interface]
-trait ITravelFoodCostConfig<T> {
-    fn set_travel_food_cost_config(ref self: T, travel_food_cost_config: TravelFoodCostConfig);
-}
 
 #[starknet::interface]
 trait IStaminaRefillConfig<T> {
@@ -234,7 +230,7 @@ mod config_systems {
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig,
+        RealmMaxLevelConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig,
         MultipleResourceBurnPrStrategy, LaborBurnPrStrategy
     };
 
@@ -469,17 +465,6 @@ mod config_systems {
         }
     }
 
-
-    #[abi(embed_v0)]
-    impl TravelFoodCostConfigImpl of super::ITravelFoodCostConfig<ContractState> {
-        fn set_travel_food_cost_config(ref self: ContractState, mut travel_food_cost_config: TravelFoodCostConfig) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            travel_food_cost_config.config_id = WORLD_CONFIG_ID;
-            world.write_model(@travel_food_cost_config);
-        }
-    }
 
 
     #[abi(embed_v0)]

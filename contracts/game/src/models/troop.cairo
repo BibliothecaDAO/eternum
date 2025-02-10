@@ -37,10 +37,7 @@ struct Troops {
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde )]
-#[dojo::model]
 pub struct GuardTroops {
-    #[key]
-    structure_id: ID,
     // slot 4
     delta: Troops,
     // slot 3
@@ -117,7 +114,7 @@ pub impl GuardImpl of GuardTrait {
         }
     }
 
-    fn get_slot(self: GuardTroops, slot: GuardSlot) -> (Troops, u32) {
+    fn from_slot(self: GuardTroops, slot: GuardSlot) -> (Troops, u32) {
         match slot {
             GuardSlot::Delta => (self.delta, self.delta_destroyed_tick),
             GuardSlot::Charlie => (self.charlie, self.charlie_destroyed_tick),
@@ -126,7 +123,7 @@ pub impl GuardImpl of GuardTrait {
         }
     }
 
-    fn set_slot(ref self: GuardTroops, slot: GuardSlot, troops: Troops, destroyed_tick: u64) {
+    fn to_slot(ref self: GuardTroops, slot: GuardSlot, troops: Troops, destroyed_tick: u64) {
         match slot {
             GuardSlot::Delta => {
                 self.delta = troops; 
@@ -319,7 +316,7 @@ impl TroopsImpl of TroopsTrait {
         }
     }
 
-    fn _stamina_movement_bonus(ref self: Troops, biome: Biome, config: CombatConfig) -> (bool, u16) {
+    fn stamina_movement_bonus(ref self: Troops, biome: Biome, config: CombatConfig) -> (bool, u16) {
         let ZERO: u16 = 0;
         let VALUE: u16 = config.stamina_bonus_value;
         let ADD: bool = true;

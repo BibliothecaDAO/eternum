@@ -54,12 +54,12 @@ mod realm_systems {
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
-    use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait
     };
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
-
+    use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
+    use s1_eternum::systems::utils::map::iMapImpl;
     use starknet::ContractAddress;
     use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait, IERC20Dispatcher, IERC20DispatcherTrait};
 
@@ -296,7 +296,8 @@ mod realm_systems {
             // explore tile where realm sits if not already explored
             let mut tile: Tile = world.read_model((coord.x, coord.y));
             if tile.explored_at.is_zero() {
-                InternalMapSystemsImpl::explore(ref world, entity_id.into(), coord, array![(1, 0)].span());
+                let biome = get_biome(coord.x.into(), coord.y.into());
+                iMapImpl::explore(ref world, ref tile, biome);
             }
 
             // place castle building

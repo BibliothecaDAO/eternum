@@ -1052,7 +1052,7 @@ export function defineContractComponents(world: World) {
             building_count: RecsType.Number,
             production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
-            last_updated_tick: RecsType.Number,
+            last_updated_at: RecsType.Number,
           },
         },
         {
@@ -1370,7 +1370,6 @@ export function defineContractComponents(world: World) {
         {
           col: RecsType.Number,
           row: RecsType.Number,
-          explored_by_id: RecsType.Number,
           explored_at: RecsType.BigInt,
           biome: RecsType.String,
         },
@@ -1378,7 +1377,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Tile",
-            types: ["u32", "u32", "u32", "u64", "enum"],
+            types: ["u32", "u32", "u64", "enum"],
             customTypes: ["Biome"],
           },
         },

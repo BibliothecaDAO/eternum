@@ -23,22 +23,22 @@ use starknet::get_block_timestamp;
 pub struct Production {
     // active building count
     building_count: u8,
-    // production rate per tick
+    // production rate per second
     production_rate: u64,
     // output amount left to be produced
     output_amount_left: u128,
     // last time this struct was updated
-    last_updated_tick: u32,
+    last_updated_at: u32,
 }
 
 impl ProductionZeroable of Zeroable<Production> {
     #[inline(always)]
     fn zero() -> Production {
-        Production { building_count: 0, production_rate: 0, output_amount_left: 0, last_updated_tick: 0 }
+        Production { building_count: 0, production_rate: 0, output_amount_left: 0, last_updated_at: 0 }
     }
     #[inline(always)]
     fn is_zero(self: Production) -> bool {
-        self.building_count == 0 && self.production_rate == 0 && self.output_amount_left == 0 && self.last_updated_tick == 0
+        self.building_count == 0 && self.production_rate == 0 && self.output_amount_left == 0 && self.last_updated_at == 0
     }
 
     #[inline(always)]
@@ -85,8 +85,8 @@ impl ProductionImpl of ProductionTrait {
     }
 
     #[inline(always)]
-    fn set_last_updated_tick(ref self: Production, tick: u32) {
-        self.last_updated_tick = tick;
+    fn set_last_updated_at(ref self: Production, seconds: u32) {
+        self.last_updated_at = seconds;
     }
 
     #[inline(always)]
@@ -96,12 +96,13 @@ impl ProductionImpl of ProductionTrait {
 
     // function must be called on every resource before querying their balance
     // to ensure that the balance is accurate
-    fn harvest(ref resource: SingleR33esource, current_tick: u32) -> u128 {
-        // get start tick before updating last updated tick
-        let start_tick = resource.production.last_updated_tick;
+    fn harvest(ref resource: SingleR33esource) -> u128 {
+        // get start time before updating last updated seconds
+        let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
+        let start_at = resource.production.last_updated_at;
 
         // last updated tick must always be updated
-        resource.production.set_last_updated_tick(current_tick.try_into().unwrap());
+        resource.production.set_last_updated_at(now);
 
         // ensure lords can not be produced
         if resource.resource_type == ResourceTypes::LORDS {return 0;}
@@ -109,8 +110,8 @@ impl ProductionImpl of ProductionTrait {
         if !resource.production.has_building() {return 0;}
 
         // total amount of time resources were produced for
-        let num_ticks_produced: u128 = current_tick.into() - start_tick.into();
-        let mut total_produced_amount = num_ticks_produced * resource.production.production_rate.into();
+        let num_seconds_produced: u128 = (now - start_at).into();
+        let mut total_produced_amount = num_seconds_produced * resource.production.production_rate.into();
 
         // limit amount of resources produced by the output amount left
         if !Self::is_free_production(resource.resource_type) {
@@ -146,11 +147,10 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         );
 
         // remove the resource amount from from_resource balance
-        let current_tick: u32 = TickImpl::get_default_tick_config(ref world).current().try_into().unwrap();
         let mut from_entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_entity_id);
         let resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, from_resource_type);
         let mut from_resource: SingleR33esource = SingleR33esourceStoreImpl::retrieve(
-            ref world, from_entity_id, from_resource_type, ref from_entity_weight, resource_weight_grams, Option::Some(current_tick)
+            ref world, from_entity_id, from_resource_type, ref from_entity_weight, resource_weight_grams, true
         );
         from_resource.spend(from_resource_amount, ref from_entity_weight, resource_weight_grams);
         from_resource.store(ref world);
@@ -159,7 +159,7 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         let labor_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LABOR);
         let mut from_labor_resource: SingleR33esource 
             = SingleR33esourceStoreImpl::retrieve(
-            ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, Option::Some(current_tick)
+            ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true
         );
         let mut from_labor_resource_production: Production = from_labor_resource.production;
         let produced_labor_amount: u128 = from_resource_amount * from_resource_labor_burn_strategy.resource_rarity;
@@ -182,11 +182,10 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         assert!(from_entity_id.is_non_zero(), "zero entity id");
 
         // burn labor from balance
-        let current_tick: u32 = TickImpl::get_default_tick_config(ref world).current().try_into().unwrap();
         let mut from_entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_entity_id);
         let labor_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LABOR);
         let mut labor_resource: SingleR33esource = SingleR33esourceStoreImpl::retrieve(
-            ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, Option::Some(current_tick)
+            ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true
         );
         labor_resource.spend(labor_amount, ref from_entity_weight, labor_resource_weight_grams);
         labor_resource.store(ref world);
@@ -211,7 +210,7 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         // spend wheat resource
         let wheat_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::WHEAT);
         let mut wheat_resource = SingleR33esourceStoreImpl::retrieve(
-            ref world, from_entity_id, ResourceTypes::WHEAT, ref from_entity_weight, wheat_weight_grams, Option::Some(current_tick)
+            ref world, from_entity_id, ResourceTypes::WHEAT, ref from_entity_weight, wheat_weight_grams, true
         );
         wheat_resource.spend(wheat_burn_amount, ref from_entity_weight, wheat_weight_grams);
         wheat_resource.store(ref world);
@@ -219,7 +218,7 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         // spend fish resource
         let fish_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::FISH);
         let mut fish_resource = SingleR33esourceStoreImpl::retrieve(
-            ref world, from_entity_id, ResourceTypes::FISH, ref from_entity_weight, fish_weight_grams, Option::Some(current_tick)
+            ref world, from_entity_id, ResourceTypes::FISH, ref from_entity_weight, fish_weight_grams, true
         );
         fish_resource.spend(fish_burn_amount, ref from_entity_weight, fish_weight_grams);
         fish_resource.store(ref world);
@@ -243,7 +242,7 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         // add produced resource amount to factory
         let resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, produced_resource_type);
         let mut produced_resource = SingleR33esourceStoreImpl::retrieve(
-            ref world, from_entity_id, produced_resource_type, ref from_entity_weight, resource_weight_grams, Option::Some(current_tick)
+            ref world, from_entity_id, produced_resource_type, ref from_entity_weight, resource_weight_grams, true
         );
         let mut produced_resource_production: Production = produced_resource.production;
         produced_resource_production.increase_output_amout_left(produced_resource_amount);
@@ -260,10 +259,10 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
     // burn multiple other predefined resources for production of one resource
     // e.g burn stone, coal and copper for production of gold
     fn burn_other_predefined_resources_for_resource(
-        ref world: WorldStorage, from_entity_id: ID, produced_resource_type: u8, production_tick_count: u128
+        ref world: WorldStorage, from_entity_id: ID, produced_resource_type: u8, production_seconds: u128
     ) {
         assert!(produced_resource_type.is_non_zero(), "wrong resource type");
-        assert!(production_tick_count.is_non_zero(), "zero production tick count");
+        assert!(production_seconds.is_non_zero(), "zero production seconds");
         assert!(from_entity_id.is_non_zero(), "zero entity id");
 
         // ensure there is a config for this labor resource
@@ -275,7 +274,6 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         let other_resources_id = produced_resource_multiple_resource_burn_strategy.required_resources_id;
         assert!(other_resources_count.is_non_zero(), "specified resource can't be produced from other resources");
 
-        let current_tick: u32 = TickImpl::get_default_tick_config(ref world).current().try_into().unwrap();
         let mut from_entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_entity_id);
         for i in 0
             ..other_resources_count {
@@ -287,9 +285,9 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
                 // make payment for produced resource
                 let resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, other_resource_type);
                 let mut other_resource = SingleR33esourceStoreImpl::retrieve(
-                    ref world, from_entity_id, other_resource_type, ref from_entity_weight, resource_weight_grams, Option::Some(current_tick)
+                    ref world, from_entity_id, other_resource_type, ref from_entity_weight, resource_weight_grams, true
                 );
-                other_resource.spend(other_resource_amount * production_tick_count, ref from_entity_weight, resource_weight_grams);
+                other_resource.spend(other_resource_amount * production_seconds, ref from_entity_weight, resource_weight_grams);
                 other_resource.store(ref world);
             };
 
@@ -297,10 +295,10 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         // add produced resource amount to factory
         let produced_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, produced_resource_type);
         let mut produced_resource = SingleR33esourceStoreImpl::retrieve(
-            ref world, from_entity_id, produced_resource_type, ref from_entity_weight, produced_resource_weight_grams, Option::Some(current_tick)
+            ref world, from_entity_id, produced_resource_type, ref from_entity_weight, produced_resource_weight_grams, true
         );
         let mut produced_resource_production: Production = produced_resource.production;
-        produced_resource_production.increase_output_amout_left(production_tick_count * RESOURCE_PRECISION);
+        produced_resource_production.increase_output_amout_left(production_seconds * RESOURCE_PRECISION);
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);
 

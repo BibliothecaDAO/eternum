@@ -61,37 +61,37 @@ impl SingleR33esourceStoreImpl of SingleR33esourceStoreTrait {
         resource_type: u8, 
         ref entity_weight: W3eight, 
         unit_weight_grams: u128, 
-        current_tick: Option<u32>)
+        structure: bool)
          -> SingleR33esource {
         assert!(entity_id.is_non_zero(), "entity id not found");
         assert!(resource_type.is_non_zero(), "invalid resource specified");
 
         let balance: u128 
             = R3esourceImpl::read_balance(ref world, entity_id, resource_type);
-        let (produces, production): (bool, Production) = match current_tick {
-            Option::Some(_) => {
-                (true, R3esourceImpl::read_production(ref world, entity_id, resource_type, current_tick))
-            },
-            Option::None => (false, Zeroable::zero())
-        };
-
         // ensure the balance is updated when entity is a structure
         let mut resource 
-            = SingleR33esource { entity_id, resource_type, balance, production, produces};
-        if resource.produces && resource.production.last_updated_tick != current_tick.unwrap() {
-            // harvest the resource and get the amount of resources produced
-            let harvest_amount: u128 = ProductionImpl::harvest(ref resource, current_tick.unwrap());
+            = SingleR33esource { entity_id, resource_type, balance, production: Zeroable::zero(), produces: structure};
+        if resource.produces  {
+            let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
+            resource.production 
+                = R3esourceImpl::read_production(ref world, entity_id, resource_type);        
+            if resource.production.last_updated_at != now {
+                let mut entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, entity_id);
 
-            // add the produced amount to the resource balance
-            let mut entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, entity_id);
-            if harvest_amount.is_non_zero() {
-                let unit_weight_grams: u128 = WeightUnitImpl::grams(ref world, resource_type);
-                resource.add(harvest_amount, ref entity_weight, unit_weight_grams);
+                // harvest the resource and get the amount of resources produced
+                let harvest_amount: u128 = ProductionImpl::harvest(ref resource);
+
+                // add the produced amount to the resource balance
+                if harvest_amount.is_non_zero() {
+                    let unit_weight_grams: u128 = WeightUnitImpl::grams(ref world, resource_type);
+                    resource.add(harvest_amount, ref entity_weight, unit_weight_grams);
+                }
+
+                // commit entity resource and weight
+                resource.store(ref world);
+                entity_weight.store(ref world, entity_id);
             }
 
-            // commit entity resource and weight
-            resource.store(ref world);
-            entity_weight.store(ref world, entity_id);
         }
 
         return resource;
@@ -160,21 +160,6 @@ impl SingleR33esourceImpl of SingleR33esourceTrait {
 impl StructureSingleR33esourceFoodImpl of StructureSingleR33esourceFoodTrait {
     fn is_food(resource_type: u8) -> bool {
         resource_type == ResourceTypes::WHEAT || resource_type == ResourceTypes::FISH
-    }
-
-    fn retrieve(
-        ref world: WorldStorage, 
-        entity_id: ID, 
-        ref entity_weight: W3eight,
-        unit_weight: u128,
-    ) -> (SingleR33esource, SingleR33esource) {
-        let wheat 
-            = SingleR33esourceStoreImpl::retrieve(
-                ref world, entity_id, ResourceTypes::WHEAT, ref entity_weight, unit_weight, Option::None);
-        let fish 
-            = SingleR33esourceStoreImpl::retrieve(
-                ref world, entity_id, ResourceTypes::FISH, ref entity_weight, unit_weight, Option::None);
-        (wheat, fish)
     }
 }
 
@@ -316,7 +301,7 @@ impl R3esourceImpl of R3esourceTrait {
         );
     }
 
-    fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, current_tick: Option<u32>) -> Production {
+    fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
         return world.read_member(
             Model::<R3esource>::ptr_from_keys(entity_id), 
             Self::production_selector(resource_type.into())

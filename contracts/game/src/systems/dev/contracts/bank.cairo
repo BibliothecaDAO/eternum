@@ -33,10 +33,15 @@ mod dev_bank_systems {
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
-    use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
-    use s1_eternum::systems::map::map_generation::{
-        IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait
-    };
+
+    use s1_eternum::systems::utils::troop::iMercenariesImpl;
+    use s1_eternum::systems::utils::map::iMapImpl;
+    use s1_eternum::utils::map::biomes::{Biome, get_biome};
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::config::CombatConfig;
+    use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
+    use s1_eternum::models::config::TickImpl;
+
     use traits::Into;
 
     const ADMIN_BANK_ACCOUNT_ENTITY_ID: ID = 999999999;
@@ -55,7 +60,11 @@ mod dev_bank_systems {
         ) -> ID {
             // explore the tile
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            InternalMapSystemsImpl::explore(ref world, 0, coord, array![].span());
+            let mut tile: Tile = world.read_model((coord.x, coord.y));
+            assert!(tile.explored_at.is_zero(), "tile already explored");
+
+            let biome = get_biome(coord.x.into(), coord.y.into());
+            iMapImpl::explore(ref world, ref tile, biome);
 
             assert_caller_is_admin(world);
             let admin = starknet::get_caller_address();
@@ -91,10 +100,16 @@ mod dev_bank_systems {
                     },
                 );
 
-            let (contract_address, _) = world.dns(@"map_generation_systems").unwrap();
-            let map_generation_contract = IMapGenerationSystemsDispatcher { contract_address };
-            let seed = 'I AM SEED FOR THE DEV BANK'.into() - starknet::get_block_timestamp().into();
-            map_generation_contract.add_mercenaries_to_structure(seed, ADMIN_BANK_ENTITY_ID);
+
+                
+            // add guards to structure
+            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let slot_tiers = array![(GuardSlot::Alpha, TroopTier::T3, TroopType::Paladin)].span();
+            let tick = TickImpl::retrieve(ref world);
+            let seed = 'JUPITERJUPITER'.into() - starknet::get_block_timestamp().into();
+            iMercenariesImpl::guard_add(
+                ref world, ADMIN_BANK_ENTITY_ID, seed, slot_tiers, combat_config, tick.current());
+
 
             ADMIN_BANK_ENTITY_ID
         }

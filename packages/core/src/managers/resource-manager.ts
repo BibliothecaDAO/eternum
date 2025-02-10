@@ -98,7 +98,7 @@ export class ResourceManager {
 
     if (!production || production.building_count == 0) return 0n;
     
-    let totalAmountProduced = BigInt(currentTick - production.last_updated_tick) * BigInt(production.production_rate);
+    let totalAmountProduced = BigInt(currentTick - production.last_updated_at) * BigInt(production.production_rate);
     if (!this.isFood() && totalAmountProduced > production.output_amount_left) {
       totalAmountProduced = production.output_amount_left;
     }
@@ -118,7 +118,7 @@ export class ResourceManager {
       productionTicksLeft = BigInt(1) << BigInt(64);
     }
 
-    return production.last_updated_tick + Number(productionTicksLeft);
+    return production.last_updated_at + Number(productionTicksLeft);
   }
 
   private _balance(currentTick: number): bigint {

@@ -36,12 +36,7 @@ pub mod production {
     #[cfg(test)]
     mod tests;
 }
-pub mod map {
-    pub mod contracts;
-    pub mod map_generation;
-    #[cfg(test)]
-    mod tests;
-}
+
 pub mod dev {
     pub mod contracts;
 }
@@ -73,4 +68,10 @@ pub mod season {
     pub mod contracts;
     #[cfg(test)]
     mod tests;
+}
+
+pub mod utils {
+    pub mod map;
+    pub mod mine;
+    pub mod troop;
 }

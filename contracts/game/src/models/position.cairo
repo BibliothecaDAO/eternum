@@ -227,7 +227,7 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 #[derive(Introspect, Copy, Drop, Serde, Default, PartialEq)]
 pub enum OccupiedBy {
     #[default]
-    None: ID,
+    None,
     Structure: ID,
     Explorer: ID
 }
@@ -246,12 +246,12 @@ pub struct Occupier {
 impl OccupierImpl of OccupierTrait {
     #[inline(always)]
     fn occupied(self: Occupier) -> bool {
-        self.entity != OccupiedBy::None(0)
+        self.entity != OccupiedBy::None
     }
 
     #[inline(always)]
     fn not_occupied(self: Occupier) -> bool {
-        self.entity == OccupiedBy::None(0)
+        self.entity == OccupiedBy::None
     }
 }
 

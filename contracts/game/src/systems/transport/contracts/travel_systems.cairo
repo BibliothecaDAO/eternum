@@ -19,7 +19,7 @@ mod travel_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{WORLD_CONFIG_ID, TravelTypes, DEFAULT_NS};
-    use s1_eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
+    use s1_eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig};
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::movable::{Movable, ArrivalTime};
     use s1_eternum::models::order::{Orders, OrdersTrait};
