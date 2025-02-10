@@ -10,7 +10,6 @@ type OSWindows =
   | "Quests"
   | "Social"
   | "BattleSimulation"
-  | "PillageSimulation"
   | "Rewards";
 
 export interface OSInterface {
@@ -38,4 +37,3 @@ export const construction: OSWindows = "Construction";
 export const social: OSWindows = "Social";
 export const rewards: OSWindows = "Rewards";
 export const battleSimulation: OSWindows = "BattleSimulation";
-export const pillageSimulation: OSWindows = "PillageSimulation";

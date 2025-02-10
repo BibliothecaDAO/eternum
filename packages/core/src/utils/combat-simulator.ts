@@ -1,3 +1,13 @@
+export class Percentage {
+  static _100() {
+    return 10_000;
+  }
+
+  static get(value: number, numerator: number) {
+    return (value * numerator) / Percentage._100();
+  }
+}
+
 export enum TroopType {
   KNIGHT = "knight",
   CROSSBOWMAN = "crossbowman",

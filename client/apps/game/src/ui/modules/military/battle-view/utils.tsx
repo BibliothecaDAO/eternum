@@ -1,14 +1,11 @@
 import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
-import { roundDownToPrecision, roundUpToPrecision } from "@/ui/utils/utils";
+import { roundDownToPrecision } from "@/ui/utils/utils";
 import {
-  BattleSimulator,
   ClientComponents,
   configManager,
-  HealthSimulator,
   Percentage,
   ResourcesIds,
   Troops as SdkTroops,
-  TroopConfig,
 } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 
@@ -20,15 +17,6 @@ type ArmyBattleInfo = {
   };
   health: { current: bigint; lifetime: bigint };
 };
-
-interface TroopLosses {
-  attackerKnightLost: number;
-  attackerPaladinLost: number;
-  attackerCrossbowmanLost: number;
-  defenderKnightLost: number;
-  defenderPaladinLost: number;
-  defenderCrossbowmanLost: number;
-}
 
 export const getChancesOfSuccess = (
   attackerArmy: ArmyBattleInfo | undefined,
@@ -80,105 +68,6 @@ export const getMaxResourceAmountStolen = (
   if (!attackerArmy) return 0;
   const attackingTroops = getTotalTroops(attackerArmy.troops) / configManager.getResourcePrecision();
   return Math.floor(attackingTroops * getChancesOfSuccess(attackerArmy, defenderArmy, troopConfig));
-};
-
-export const getTroopLossOnRaidPerTroopType = (
-  attackerArmy: ArmyBattleInfo | undefined,
-  defenderArmy: ArmyBattleInfo | undefined,
-  troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
-): TroopLosses => {
-  if (!attackerArmy?.health?.lifetime || !defenderArmy?.health?.lifetime)
-    return {
-      attackerKnightLost: 0,
-      attackerPaladinLost: 0,
-      attackerCrossbowmanLost: 0,
-      defenderKnightLost: 0,
-      defenderPaladinLost: 0,
-      defenderCrossbowmanLost: 0,
-    };
-  const battle = new BattleSimulator(
-    attackerArmy.troops,
-    defenderArmy.troops,
-    new HealthSimulator(attackerArmy.health),
-    new HealthSimulator(defenderArmy.health),
-    new TroopConfig(
-      troopConfig.health,
-      troopConfig.knight_strength,
-      troopConfig.paladin_strength,
-      troopConfig.crossbowman_strength,
-      troopConfig.advantage_percent,
-      troopConfig.disadvantage_percent,
-      troopConfig.battle_time_scale,
-      troopConfig.battle_max_time_seconds,
-    ),
-  );
-  const [attackDelta, defenceDelta] = battle.computeDelta();
-  const duration = battle.calculateDuration();
-  const attackerHealthLoss = Math.floor(
-    (defenceDelta * duration) /
-      troopConfig.pillage_health_divisor /
-      configManager.getResourcePrecision() /
-      configManager.getResourcePrecision(),
-  );
-  const attackerKnightLost = Math.ceil(
-    (Number(attackerArmy.troops.knight_count) * Number(attackerHealthLoss)) / Number(attackerArmy.health.lifetime),
-  );
-  const attackerPaladinLost = Math.ceil(
-    (Number(attackerArmy.troops.paladin_count) * Number(attackerHealthLoss)) / Number(attackerArmy.health.lifetime),
-  );
-  const attackerCrossbowmanLost = Math.ceil(
-    (Number(attackerArmy.troops.crossbowman_count) * Number(attackerHealthLoss)) / Number(attackerArmy.health.lifetime),
-  );
-
-  const defenderHealthLoss = Math.floor(
-    (attackDelta * duration) /
-      troopConfig.pillage_health_divisor /
-      configManager.getResourcePrecision() /
-      configManager.getResourcePrecision(),
-  );
-  const defenderKnightLost = Math.ceil(
-    (Number(defenderArmy.troops.knight_count) * Number(defenderHealthLoss)) / Number(defenderArmy.health.lifetime),
-  );
-  const defenderPaladinLost = Math.ceil(
-    (Number(defenderArmy.troops.paladin_count) * Number(defenderHealthLoss)) / Number(defenderArmy.health.lifetime),
-  );
-  const defenderCrossbowmanLost = Math.ceil(
-    (Number(defenderArmy.troops.crossbowman_count) * Number(defenderHealthLoss)) / Number(defenderArmy.health.lifetime),
-  );
-
-  return {
-    attackerKnightLost,
-    attackerPaladinLost,
-    attackerCrossbowmanLost,
-    defenderKnightLost,
-    defenderPaladinLost,
-    defenderCrossbowmanLost,
-  };
-};
-
-export const getTroopLossOnRaid = (
-  attackerArmy: ArmyBattleInfo | undefined,
-  defenderArmy: ArmyBattleInfo | undefined,
-  troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
-) => {
-  const {
-    attackerKnightLost,
-    attackerPaladinLost,
-    attackerCrossbowmanLost,
-    defenderKnightLost,
-    defenderPaladinLost,
-    defenderCrossbowmanLost,
-  } = getTroopLossOnRaidPerTroopType(attackerArmy, defenderArmy, troopConfig);
-  const attackerTroopsLoss =
-    roundUpToPrecision(BigInt(attackerKnightLost), configManager.getResourcePrecision()) +
-    roundUpToPrecision(BigInt(attackerPaladinLost), configManager.getResourcePrecision()) +
-    roundUpToPrecision(BigInt(attackerCrossbowmanLost), configManager.getResourcePrecision());
-  const defenseTroopsLoss =
-    roundUpToPrecision(BigInt(defenderKnightLost), configManager.getResourcePrecision()) +
-    roundUpToPrecision(BigInt(defenderPaladinLost), configManager.getResourcePrecision()) +
-    roundUpToPrecision(BigInt(defenderCrossbowmanLost), configManager.getResourcePrecision());
-
-  return [attackerTroopsLoss, defenseTroopsLoss];
 };
 
 export const calculateRemainingTroops = (
