@@ -10,7 +10,7 @@ import type {
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { encodeEventTopics, parseAbi, decodeEventLog, numberToHex } from "viem";
 import { uint256 } from "starknet";
-import { db } from "@realms-world/db/client";
+import { db } from "@realms-world/db/poolClient";
 import {
   realmsBridgeRequests,
   realmsBridgeEvents,

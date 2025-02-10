@@ -1,45 +1,50 @@
 {
-    "name": "@realms-world/db",
-    "version": "0.1.0",
-    "private": true,
-    "type": "module",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "default": "./src/index.ts"
-      },
-      "./client": {
-        "types": "./dist/client.d.ts",
-        "default": "./src/client.ts"
-      },
-      "./schema": {
-        "types": "./dist/schema.d.ts",
-        "default": "./src/schema.ts"
-      }
+  "name": "@realms-world/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
     },
-    "license": "MIT",
-    "scripts": {
-      "build": "tsc",
-      "dev": "tsc --watch",
-      "clean": "git clean -xdf .cache .turbo dist node_modules",
-      "lint": "eslint",
-      "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
-      "push": "pnpm with-env drizzle-kit push",
-      "studio": "pnpm with-env drizzle-kit studio",
-      "with-env": "dotenv -e ../../.env --"
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./src/client.ts"
     },
-    "dependencies": {
-      "@neondatabase/serverless": "0.10.4",
-      "drizzle-orm": "catalog:",
-      "drizzle-zod": "^0.6.1",
-      "zod": "catalog:"
+    "./poolClient": {
+      "types": "./dist/poolClient.d.ts",
+      "default": "./src/poolClient.ts"
     },
-    "devDependencies": {
-      "dotenv-cli": "catalog:",
-      "drizzle-kit": "catalog:",
-      "pg": "^8.13.1",
-      "postgres-range": "^1.1.4",
-      "typescript": "catalog:"
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "default": "./src/schema.ts"
     }
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "lint": "eslint",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "push": "pnpm with-env drizzle-kit push",
+    "studio": "pnpm with-env drizzle-kit studio",
+    "with-env": "dotenv -e ../../.env --"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "0.10.4",
+    "drizzle-orm": "catalog:",
+    "drizzle-zod": "^0.6.1",
+    "ws": "^8.18.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.14",
+    "dotenv-cli": "catalog:",
+    "drizzle-kit": "catalog:",
+    "pg": "^8.13.1",
+    "postgres-range": "^1.1.4",
+    "typescript": "catalog:"
   }
-  
+}
