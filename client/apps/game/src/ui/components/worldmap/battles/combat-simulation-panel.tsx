@@ -2,8 +2,8 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { SelectBiome } from "@/ui/elements/select-biome";
 import { SelectTier } from "@/ui/elements/select-tier";
 import { SelectTroop } from "@/ui/elements/select-troop";
-import { Biome, CombatSimulator, ResourcesIds, TroopType, type Army } from "@bibliothecadao/eternum";
-import { useState } from "react";
+import { Biome, CombatParameters, CombatSimulator, ResourcesIds, TroopType, type Army } from "@bibliothecadao/eternum";
+import { useEffect, useState } from "react";
 
 interface ArmyInputProps {
   label: string;
@@ -77,6 +77,51 @@ const ArmyInput = ({ label, army, onChange }: ArmyInputProps) => {
   );
 };
 
+interface ParametersPanelProps {
+  parameters: CombatParameters;
+  onParametersChange: (parameters: CombatParameters) => void;
+  show: boolean;
+}
+
+const ParametersPanel = ({ parameters, onParametersChange, show }: ParametersPanelProps) => {
+  if (!show) return null;
+
+  return (
+    <div className="fixed top-4 right-4 p-4 bg-dark-brown/95 border border-gold/20 rounded-lg shadow-lg z-50 w-80">
+      <h3 className="text-lg font-bold text-gold mb-4">Combat Parameters</h3>
+      <div className="space-y-3">
+        {Object.entries(parameters).map(([key, value]) => (
+          <label key={key} className="flex flex-col">
+            <span className="text-sm font-medium text-gold/80 mb-1">
+              {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+            </span>
+            <input
+              type="number"
+              value={value}
+              onChange={(e) => {
+                const newValue = parseFloat(e.target.value);
+                if (!isNaN(newValue)) {
+                  onParametersChange({ ...parameters, [key]: newValue });
+                }
+              }}
+              min={0}
+              max={key === "c0" || key === "delta" ? 1000000 : 1000}
+              step={key === "c0" || key === "delta" ? 1000 : 0.01}
+              className="px-2 py-1 bg-dark-brown border border-gold/20 rounded text-gold focus:outline-none focus:border-gold/40"
+            />
+          </label>
+        ))}
+        <button
+          className="w-full mt-4 px-4 py-2 bg-gold/20 hover:bg-gold/30 text-gold rounded"
+          onClick={() => onParametersChange(CombatSimulator.getDefaultParameters())}
+        >
+          Reset to Defaults
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export const CombatSimulationPanel = () => {
   const [biome, setBiome] = useState<Biome>(Biome.GRASSLAND);
   const [attacker, setAttacker] = useState<Army>({
@@ -91,8 +136,21 @@ export const CombatSimulationPanel = () => {
     troopType: TroopType.CROSSBOWMAN,
     tier: 1,
   });
+  const [showParameters, setShowParameters] = useState(false);
+  const [parameters, setParameters] = useState<CombatParameters>(CombatSimulator.getDefaultParameters());
 
-  const simulationResult = CombatSimulator.simulateBattle(attacker, defender, biome);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
+        setShowParameters((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const simulationResult = CombatSimulator.simulateBattleWithParams(attacker, defender, biome, parameters);
 
   // Calculate remaining troops based on damage
   const attackerTroopsLost = Math.min(attacker.troopCount, Math.ceil(simulationResult.defenderDamage));
@@ -115,6 +173,7 @@ export const CombatSimulationPanel = () => {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
+      <ParametersPanel parameters={parameters} onParametersChange={setParameters} show={showParameters} />
       <div>
         <label className="flex flex-col">
           <span className="text-sm font-medium text-gold/80 mb-1">Select Biome</span>

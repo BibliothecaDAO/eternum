@@ -40,6 +40,16 @@ export interface Army {
   tier: 1 | 2 | 3;
 }
 
+export interface CombatParameters {
+  baseT1Value: number;
+  staminaAttackThreshold: number;
+  baseDamageFactor: number;
+  betaSmall: number;
+  betaLarge: number;
+  c0: number;
+  delta: number;
+}
+
 export class CombatSimulator {
   private static readonly BASE_T1_VALUE = 100; // Adjust this baseline value as needed
   private static readonly STAMINA_ATTACK_THRESHOLD = 30;
@@ -133,6 +143,55 @@ export class CombatSimulator {
     // Calculate defender damage
     const defenderDamage =
       (this.BASE_DAMAGE_FACTOR *
+        defender.troopCount *
+        (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
+        this.calculateStaminaModifier(defender.stamina, false) *
+        this.getBiomeBonus(defender.troopType, biome)) /
+      Math.pow(totalTroops, betaEff);
+
+    return {
+      attackerDamage,
+      defenderDamage,
+    };
+  }
+
+  // Add getter for default parameters
+  public static getDefaultParameters(): CombatParameters {
+    return {
+      baseT1Value: this.BASE_T1_VALUE,
+      staminaAttackThreshold: this.STAMINA_ATTACK_THRESHOLD,
+      baseDamageFactor: this.BASE_DAMAGE_FACTOR,
+      betaSmall: this.BETA_SMALL,
+      betaLarge: this.BETA_LARGE,
+      c0: this.C0,
+      delta: this.DELTA,
+    };
+  }
+
+  // Add a method to simulate with custom parameters
+  public static simulateBattleWithParams(
+    attacker: Army,
+    defender: Army,
+    biome: Biome,
+    params: CombatParameters,
+  ): { attackerDamage: number; defenderDamage: number } {
+    const totalTroops = attacker.troopCount + defender.troopCount;
+    const betaEff =
+      params.betaSmall -
+      (params.betaSmall - params.betaLarge) * ((Math.tanh((totalTroops - params.c0) / params.delta) + 1) / 2);
+
+    // Calculate attacker damage
+    const attackerDamage =
+      (params.baseDamageFactor *
+        attacker.troopCount *
+        (this.getTierValue(attacker.tier) / this.getTierValue(defender.tier)) *
+        this.calculateStaminaModifier(attacker.stamina, true) *
+        this.getBiomeBonus(attacker.troopType, biome)) /
+      Math.pow(totalTroops, betaEff);
+
+    // Calculate defender damage
+    const defenderDamage =
+      (params.baseDamageFactor *
         defender.troopCount *
         (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
         this.calculateStaminaModifier(defender.stamina, false) *
