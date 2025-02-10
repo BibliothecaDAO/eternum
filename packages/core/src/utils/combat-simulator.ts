@@ -131,6 +131,10 @@ export class CombatSimulator {
     const totalTroops = attacker.troopCount + defender.troopCount;
     const betaEff = this.calculateEffectiveBeta(totalTroops);
 
+    if (totalTroops === 0) {
+      return { attackerDamage: 0, defenderDamage: 0 };
+    }
+
     // Calculate attacker damage
     const attackerDamage =
       (this.BASE_DAMAGE_FACTOR *
