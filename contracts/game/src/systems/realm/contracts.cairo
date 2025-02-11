@@ -367,6 +367,8 @@ mod realm_systems {
             let mut coord: Coord = Coord { x: 0, y: 0 };
             let mut settlement_config: SettlementConfig = world.read_model(WORLD_CONFIG_ID);
             while (!found_coords) {
+                //todo: note: ask if its okay if new realm is not settled at 
+                // correct location when a troop is on it
                 coord = settlement_config.get_next_settlement_coord();
                 let occupier: Occupier = world.read_model(coord);
                 if occupier.not_occupied() {found_coords = true;}
