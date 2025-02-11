@@ -181,15 +181,28 @@ export class ArmyMovementManager {
   }
 
   public findPaths(
+    structureHexes: Map<number, Set<number>>,
     armyHexes: Map<number, Set<number>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     armyStamina: number,
     currentDefaultTick: number,
     currentArmiesTick: number,
   ): TravelPaths {
+    console.log("Finding paths with:", {
+      armyStamina,
+      currentDefaultTick,
+      currentArmiesTick,
+    });
+
     const startPos = this._getCurrentPosition();
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
+
+    console.log("Initial conditions:", {
+      startPos,
+      maxHex,
+      canExplore,
+    });
 
     const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexPosition[] }> =
       [{ position: startPos, staminaUsed: 0, distance: 0, path: [startPos] }];
@@ -201,18 +214,36 @@ export class ArmyMovementManager {
       const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
       const currentKey = TravelPaths.posKey(current);
 
+      console.log("Processing position:", {
+        current,
+        staminaUsed,
+        distance,
+        pathLength: path.length,
+      });
+
       if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
         shortestDistances.set(currentKey, distance);
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
         if (path.length >= 2) {
           travelPaths.set(currentKey, { path, isExplored });
         }
-        if (!isExplored) continue;
 
-        const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-        console.log({ hasArmy });
+        // Skip army and explored checks for start position
+        if (path.length > 1) {
+          if (!isExplored) continue;
 
-        if (hasArmy) continue;
+          const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+          const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+          console.log("Checking position:", {
+            col: current.col,
+            row: current.row,
+            isExplored,
+            hasArmy,
+            hasStructure,
+          });
+
+          if (hasArmy || hasStructure) continue;
+        }
 
         const neighbors = getNeighborHexes(current.col, current.row);
         for (const { col, row } of neighbors) {
@@ -221,14 +252,36 @@ export class ArmyMovementManager {
           const nextPath = [...path, { col, row }];
 
           const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
           const staminaCost = biome ? ArmyMovementManager.staminaDrain(biome) : 0;
           const nextStaminaUsed = staminaUsed + staminaCost;
 
+          console.log("Evaluating neighbor:", {
+            col,
+            row,
+            hasStructure,
+            hasArmy,
+            isExplored,
+            biome,
+            staminaCost,
+            nextStaminaUsed,
+          });
+
           if (nextStaminaUsed > armyStamina) continue;
+          if (hasStructure) continue;
+          if (hasArmy) continue;
 
           if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
             if (!shortestDistances.has(neighborKey) || nextDistance < shortestDistances.get(neighborKey)!) {
+              console.log("Adding to priority queue:", {
+                col,
+                row,
+                nextDistance,
+                nextStaminaUsed,
+              });
+
               priorityQueue.push({
                 position: { col, row },
                 staminaUsed: nextStaminaUsed,

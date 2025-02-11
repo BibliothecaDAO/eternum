@@ -34,7 +34,7 @@ import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { ArmySystemUpdate, SceneName, TileSystemUpdate } from "../types";
+import { ArmySystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 export default class WorldmapScene extends HexagonScene {
@@ -55,6 +55,7 @@ export default class WorldmapScene extends HexagonScene {
   private battleManager: BattleManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   private armyHexes: Map<number, Set<number>> = new Map();
+  private structureHexes: Map<number, Set<number>> = new Map();
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private battles: Map<number, Set<number>> = new Map();
   private tileManager: TileManager;
@@ -130,6 +131,8 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
     this.systemManager.Army.onUpdate((value) => this.updateArmyHexes(value));
     this.systemManager.Structure.onUpdate((value) => {
+      this.updateStructureHexes(value);
+
       const optimisticStructure = this.structureManager.structures.removeStructure(
         Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
       );
@@ -373,7 +376,10 @@ export default class WorldmapScene extends HexagonScene {
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
     const armyStamina = 10;
 
+    console.log("armies", this.armyHexes);
+
     const travelPaths = armyMovementManager.findPaths(
+      this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
       armyStamina,
@@ -426,14 +432,34 @@ export default class WorldmapScene extends HexagonScene {
     const oldCol = oldHexCoords?.col;
     const oldRow = oldHexCoords?.row;
 
-    if (oldCol !== newCol || oldRow !== newRow) {
-      if (oldCol && oldRow) {
+    if (oldCol && oldRow) {
+      if (oldCol !== newCol || oldRow !== newRow) {
         this.armyHexes.get(oldCol)?.delete(oldRow);
-      }
-      if (newCol && newRow) {
+        if (!this.armyHexes.has(newCol)) {
+          this.armyHexes.set(newCol, new Set());
+        }
         this.armyHexes.get(newCol)?.add(newRow);
       }
+    } else {
+      if (!this.armyHexes.has(newCol)) {
+        this.armyHexes.set(newCol, new Set());
+      }
+      this.armyHexes.get(newCol)?.add(newRow);
     }
+  }
+
+  public updateStructureHexes(update: StructureSystemUpdate) {
+    const {
+      hexCoords: { col, row },
+    } = update;
+
+    const newCol = col - FELT_CENTER;
+    const newRow = row - FELT_CENTER;
+
+    if (!this.structureHexes.has(newCol)) {
+      this.structureHexes.set(newCol, new Set());
+    }
+    this.structureHexes.get(newCol)?.add(newRow);
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -546,16 +572,7 @@ export default class WorldmapScene extends HexagonScene {
     return chunks;
   }
 
-  removeCachedMatricesAroundColRow(col: number, row: number) {
-    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
-      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
-        if (i === 0 && j === 0) {
-          continue;
-        }
-        this.removeCachedMatricesForChunk(row + i, col + j);
-      }
-    }
-  }
+  removeCachedMatricesAroundColRow(col: number, row: number) {}
 
   clearCache() {
     this.cachedMatrices.clear();
