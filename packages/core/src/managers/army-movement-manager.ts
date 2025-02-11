@@ -4,6 +4,7 @@ import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
 import { DojoAccount } from "..";
 import {
+  BiomeType,
   CapacityConfigCategory,
   FELT_CENTER,
   getDirectionBetweenAdjacentHexes,
@@ -13,60 +14,12 @@ import {
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
 import { ContractAddress, HexPosition, ID, TravelTypes } from "../types";
-import { multiplyByPrecision } from "../utils";
+import { Biome, multiplyByPrecision } from "../utils";
+import { TravelPaths } from "../utils/travel-path";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacityInKg } from "./utils";
-
-export class TravelPaths {
-  private readonly paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
-
-  constructor() {
-    this.paths = new Map();
-  }
-
-  set(key: string, value: { path: HexPosition[]; isExplored: boolean }): void {
-    this.paths.set(key, value);
-  }
-
-  deleteAll(): void {
-    this.paths.clear();
-  }
-
-  get(key: string): { path: HexPosition[]; isExplored: boolean } | undefined {
-    return this.paths.get(key);
-  }
-
-  has(key: string): boolean {
-    return this.paths.has(key);
-  }
-
-  values(): IterableIterator<{ path: HexPosition[]; isExplored: boolean }> {
-    return this.paths.values();
-  }
-
-  getHighlightedHexes(): Array<{ col: number; row: number }> {
-    return Array.from(this.paths.values()).map(({ path }) => ({
-      col: path[path.length - 1].col - FELT_CENTER,
-      row: path[path.length - 1].row - FELT_CENTER,
-    }));
-  }
-
-  isHighlighted(row: number, col: number): boolean {
-    return this.paths.has(TravelPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER }));
-  }
-
-  getPaths(): Map<string, { path: HexPosition[]; isExplored: boolean }> {
-    return this.paths;
-  }
-
-  static posKey(pos: HexPosition, normalized = false): string {
-    const col = normalized ? pos.col + FELT_CENTER : pos.col;
-    const row = normalized ? pos.row + FELT_CENTER : pos.row;
-    return `${col},${row}`;
-  }
-}
 
 export class ArmyMovementManager {
   private readonly entity: Entity;
@@ -146,8 +99,91 @@ export class ArmyMovementManager {
     };
   }
 
+  public static staminaDrain(biome: BiomeType) {
+    if (biome === BiomeType.Grassland) {
+      return 1;
+    }
+    if (biome === BiomeType.Bare) {
+      return 2;
+    }
+    if (biome === BiomeType.Snow) {
+      return 3;
+    }
+    if (biome === BiomeType.Tundra) {
+      return 4;
+    }
+    return 0;
+  }
+
+  public static findPath(
+    startPos: HexPosition,
+    endPos: HexPosition,
+    armyHexes: Map<number, Set<number>>,
+    exploredHexes: Map<number, Map<number, BiomeType>>,
+  ): HexPosition[] {
+    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexPosition[] }> =
+      [{ position: startPos, staminaUsed: 0, distance: 0, path: [startPos] }];
+    const shortestDistances = new Map<string, { distance: number; staminaUsed: number }>();
+
+    while (priorityQueue.length > 0) {
+      priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed || a.distance - b.distance);
+      const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
+      const currentKey = TravelPaths.posKey(current);
+
+      if (current.col === endPos.col && current.row === endPos.row) {
+        return path;
+      }
+
+      const shortest = shortestDistances.get(currentKey);
+      if (
+        !shortest ||
+        staminaUsed < shortest.staminaUsed ||
+        (staminaUsed === shortest.staminaUsed && distance < shortest.distance)
+      ) {
+        shortestDistances.set(currentKey, { distance, staminaUsed });
+        const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+        if (!isExplored) continue;
+
+        const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+        if (hasArmy) continue;
+
+        const neighbors = getNeighborHexes(current.col, current.row);
+        for (const { col, row } of neighbors) {
+          const neighborKey = TravelPaths.posKey({ col, row });
+          const nextDistance = distance + 1;
+          const nextPath = [...path, { col, row }];
+
+          const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+          const staminaCost = biome ? this.staminaDrain(biome) : 0;
+          const nextStaminaUsed = staminaUsed + staminaCost;
+
+          if (isExplored) {
+            const shortest = shortestDistances.get(neighborKey);
+            if (
+              !shortest ||
+              nextStaminaUsed < shortest.staminaUsed ||
+              (nextStaminaUsed === shortest.staminaUsed && nextDistance < shortest.distance)
+            ) {
+              priorityQueue.push({
+                position: { col, row },
+                staminaUsed: nextStaminaUsed,
+                distance: nextDistance,
+                path: nextPath,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return [];
+  }
+
   public findPaths(
-    exploredHexes: Map<number, Set<number>>,
+    armyHexes: Map<number, Set<number>>,
+    exploredHexes: Map<number, Map<number, BiomeType>>,
+    armyStamina: number,
     currentDefaultTick: number,
     currentArmiesTick: number,
   ): TravelPaths {
@@ -155,15 +191,14 @@ export class ArmyMovementManager {
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
 
-    const priorityQueue: Array<{ position: HexPosition; distance: number; path: HexPosition[] }> = [
-      { position: startPos, distance: 0, path: [startPos] },
-    ];
+    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexPosition[] }> =
+      [{ position: startPos, staminaUsed: 0, distance: 0, path: [startPos] }];
     const travelPaths = new TravelPaths();
     const shortestDistances = new Map<string, number>();
 
     while (priorityQueue.length > 0) {
-      priorityQueue.sort((a, b) => a.distance - b.distance); // This makes the queue work as a priority queue
-      const { position: current, distance, path } = priorityQueue.shift()!;
+      priorityQueue.sort((a, b) => a.distance - b.distance);
+      const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
       const currentKey = TravelPaths.posKey(current);
 
       if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
@@ -174,16 +209,32 @@ export class ArmyMovementManager {
         }
         if (!isExplored) continue;
 
-        const neighbors = getNeighborHexes(current.col, current.row); // This function needs to be defined
+        const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+        console.log({ hasArmy });
+
+        if (hasArmy) continue;
+
+        const neighbors = getNeighborHexes(current.col, current.row);
         for (const { col, row } of neighbors) {
           const neighborKey = TravelPaths.posKey({ col, row });
           const nextDistance = distance + 1;
           const nextPath = [...path, { col, row }];
 
           const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+          const staminaCost = biome ? ArmyMovementManager.staminaDrain(biome) : 0;
+          const nextStaminaUsed = staminaUsed + staminaCost;
+
+          if (nextStaminaUsed > armyStamina) continue;
+
           if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
             if (!shortestDistances.has(neighborKey) || nextDistance < shortestDistances.get(neighborKey)!) {
-              priorityQueue.push({ position: { col, row }, distance: nextDistance, path: nextPath });
+              priorityQueue.push({
+                position: { col, row },
+                staminaUsed: nextStaminaUsed,
+                distance: nextDistance,
+                path: nextPath,
+              });
             }
           }
         }
@@ -238,7 +289,7 @@ export class ArmyMovementManager {
         row,
         explored_by_id: this.entityId,
         explored_at: BigInt(Math.floor(Date.now() / 1000)),
-        biome: "None",
+        biome: Biome.getBiome(col, row),
       },
     });
   };

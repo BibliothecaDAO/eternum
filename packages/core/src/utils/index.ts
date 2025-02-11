@@ -1,5 +1,6 @@
 export * from "./army";
 export * from "./battle-simulator";
+export * from "./biome";
 export * from "./entities";
 export * from "./guild";
 export * from "./leaderboard";
@@ -10,4 +11,5 @@ export * from "./resources";
 export * from "./structure";
 export * from "./trades";
 export * from "./transport";
+export * from "./travel-path";
 export * from "./utils";
