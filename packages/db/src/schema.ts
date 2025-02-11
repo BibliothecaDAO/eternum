@@ -36,7 +36,7 @@ export const realmsBridgeRequestsRelations = relations(
   realmsBridgeRequests,
   ({ many }) => ({
     events: many(realmsBridgeEvents),
-  })
+  }),
 );
 export const realmsBridgeEvents = pgTable(
   "realms_bridge_events",
@@ -46,7 +46,7 @@ export const realmsBridgeEvents = pgTable(
     type: bridgeEventTypeEnum().notNull(),
     timestamp: timestamp("timestamp").notNull(),
   },
-  (t) => [primaryKey({ columns: [t.id, t.type] })]
+  (t) => [primaryKey({ columns: [t.id, t.type] })],
 );
 export const realmsBridgeEventsRelations = relations(
   realmsBridgeEvents,
@@ -55,7 +55,7 @@ export const realmsBridgeEventsRelations = relations(
       fields: [realmsBridgeEvents.id],
       references: [realmsBridgeRequests.id],
     }),
-  })
+  }),
 );
 export const velords_burns = pgTable(
   "dune_velords_burns",
@@ -71,7 +71,7 @@ export const velords_burns = pgTable(
     epoch_total_amount: numeric("epoch_total_amount").notNull(),
     sender_epoch_total_amount: numeric("sender_epoch_total_amount").notNull(),
   },
-  (t) => [primaryKey({ columns: [t.amount, t.transaction_hash] })]
+  (t) => [primaryKey({ columns: [t.amount, t.transaction_hash] })],
 );
 
 export const velords_supply = pgTable("dune_velords_supply", {
@@ -84,13 +84,16 @@ export const velords_supply = pgTable("dune_velords_supply", {
   }).notNull(),
 });
 
-export const lordsRewards = pgTable("lords_rewards", {
-  cursor: bigint("_cursor", { mode: "number" }),
-  hash: text().primaryKey().notNull(),
-  amount: numeric({ precision: 78, scale: 8 }).notNull(),
-  recipient: text().notNull(),
-  timestamp: timestamp({ mode: "string" }).notNull(),
-});
+export const realmsLordsClaims = pgTable(
+  "realms_lords_claims",
+  {
+    hash: text().notNull(),
+    amount: numeric({ precision: 78, scale: 8 }).notNull(),
+    recipient: text().notNull(),
+    timestamp: timestamp({ mode: "string" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.amount, t.hash] })],
+);
 
 export const governances = pgTable(
   "governances",
@@ -114,23 +117,23 @@ export const governances = pgTable(
     return {
       currentdelegates_idx: index("governances_currentdelegates_index").using(
         "btree",
-        table.currentDelegates
+        table.currentDelegates,
       ),
       delegatedvotes_idx: index("governances_delegatedvotes_index").using(
         "btree",
-        table.delegatedVotes
+        table.delegatedVotes,
       ),
       delegatedvotesraw_idx: index("governances_delegatedvotesraw_index").using(
         "btree",
-        table.delegatedVotesRaw
+        table.delegatedVotesRaw,
       ),
       id_idx: index().using("btree", table.id),
       totaldelegates_idx: index("governances_totaldelegates_index").using(
         "btree",
-        table.totalDelegates
+        table.totalDelegates,
       ),
     };
-  }
+  },
 );
 
 export const delegates = pgTable(
@@ -151,7 +154,7 @@ export const delegates = pgTable(
       scale: 20,
     }).notNull(),
     tokenHoldersRepresentedAmount: integer(
-      "tokenHoldersRepresentedAmount"
+      "tokenHoldersRepresentedAmount",
     ).notNull(),
     tokenHoldersRepresented: integer("tokenHoldersRepresented").notNull(),
   },
@@ -159,23 +162,23 @@ export const delegates = pgTable(
     return {
       delegatedvotes_idx: index("delegates_delegatedvotes_index").using(
         "btree",
-        table.delegatedVotes
+        table.delegatedVotes,
       ),
       delegatedvotesraw_idx: index("delegates_delegatedvotesraw_index").using(
         "btree",
-        table.delegatedVotesRaw
+        table.delegatedVotesRaw,
       ),
       governance_idx: index().using("btree", table.governance),
       id_idx: index().using("btree", table.id),
       tokenholdersrepresented_idx: index(
-        "delegates_tokenholdersrepresented_index"
+        "delegates_tokenholdersrepresented_index",
       ).using("btree", table.tokenHoldersRepresented),
       tokenholdersrepresentedamount_idx: index(
-        "delegates_tokenholdersrepresentedamount_index"
+        "delegates_tokenholdersrepresentedamount_index",
       ).using("btree", table.tokenHoldersRepresentedAmount),
       user_idx: index().using("btree", table.user),
     };
-  }
+  },
 );
 
 export const delegateProfiles = pgTable(
@@ -201,5 +204,5 @@ export const delegateProfiles = pgTable(
     return {
       delegateId_idx: index().using("btree", table.delegateId),
     };
-  }
+  },
 );

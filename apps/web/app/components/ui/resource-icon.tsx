@@ -185,7 +185,7 @@ export const ResourceIcon = ({
       {withTooltip && (
         <div className="absolute -top-2 left-1/2 hidden w-max -translate-x-1/2 -translate-y-full flex-col items-center rounded-lg bg-black group-hover:flex">
           <span className="whitespace-no-wrap bg-gray-1000 relative z-10 rounded p-2 text-xs leading-none shadow-lg">
-            {tooltipText ||
+            {tooltipText ??
               Components[props.resource.replace(" ", "").replace("'", "")]
                 .name}
           </span>

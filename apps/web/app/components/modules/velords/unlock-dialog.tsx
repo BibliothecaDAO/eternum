@@ -1,3 +1,5 @@
+import { useMemo, useState } from "react";
+import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -10,14 +12,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { formatNumber } from "@/utils/utils";
-import { Check, Unlock } from "lucide-react";
-import { useMemo, useState } from "react";
-import LordsIcon from "@/components/icons/lords.svg?react";
-import { formatEther } from "viem";
-
 import { toast } from "@/hooks/use-toast";
 import { formatLockEndTime } from "@/utils/time";
+import { formatNumber } from "@/utils/utils";
+import { Check, Unlock } from "lucide-react";
+import { formatEther } from "viem";
 
 interface LockInfo {
   amount: bigint;
@@ -57,13 +56,13 @@ export function UnlockDialog({
     const currentTime = Math.floor(Date.now() / 1000);
     if (lockInfo.end > currentTime) {
       const timeLeft = BigInt(
-        Math.min(lockInfo.end - currentTime, MAX_LOCK_DURATION)
+        Math.min(lockInfo.end - currentTime, MAX_LOCK_DURATION),
       );
       const penaltyRatio = BigInt(
         Math.min(
           Number((timeLeft * SCALE) / BigInt(MAX_LOCK_DURATION)),
-          Number(MAX_PENALTY_RATIO)
-        )
+          Number(MAX_PENALTY_RATIO),
+        ),
       );
       return (lockInfo.amount * penaltyRatio) / SCALE;
     }
@@ -72,35 +71,34 @@ export function UnlockDialog({
 
   async function handleWithdraw() {
     const hash = await withdraw();
-      toast({
-        description: (
-          <div className="flex items-center gap-2">
-            <Check /> Lords Withdrawal successful {hash.transaction_hash}
-          </div>
-        ),
-      });
-      setOpen(false);
-    
+    toast({
+      description: (
+        <div className="flex items-center gap-2">
+          <Check /> Lords Withdrawal successful {hash.transaction_hash}
+        </div>
+      ),
+    });
+    setOpen(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Unlock className="w-4 h-4" />
+          <Unlock className="h-4 w-4" />
           Early Unlock
         </Button>
       </DialogTrigger>
       <DialogPortal>
         <DialogOverlay />
         <DialogContent>
-          <DialogTitle className="text-xl font-bold flex items-center gap-3">
-            <Unlock className="w-6 h-6" />
+          <DialogTitle className="flex items-center gap-3 text-xl font-bold">
+            <Unlock className="h-6 w-6" />
             Early Withdrawal
           </DialogTitle>
           <div>
             <Label>Current Lock</Label>
-            <div className="flex gap-4 my-4">
+            <div className="my-4 flex gap-4">
               <Card>
                 <CardHeader className="p-3">
                   <CardTitle className="text-sm">Locked Lords</CardTitle>
@@ -108,9 +106,9 @@ export function UnlockDialog({
                 <CardContent>
                   {ownerLordsLock?.amount ? (
                     <div className="flex items-center gap-2">
-                      <LordsIcon className="w-4 h-4" />{" "}
+                      <LordsIcon className="h-4 w-4" />{" "}
                       {formatNumber(
-                        Number(formatEther(BigInt(ownerLordsLock.amount)))
+                        Number(formatEther(BigInt(ownerLordsLock.amount))),
                       )}
                     </div>
                   ) : (
@@ -130,7 +128,7 @@ export function UnlockDialog({
               </Card>
             </div>
           </div>
-          <div className="flex flex-col gap-4 mb-4">
+          <div className="mb-4 flex flex-col gap-4">
             <p className="">
               Pay a penalty determined by lock duration to withdraw your locked
               Lords early
@@ -146,9 +144,13 @@ export function UnlockDialog({
                   {ownerLordsLock?.amount ? (
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <LordsIcon className="w-4 h-4" />
-                        {formatEther(
-                          BigInt(ownerLordsLock.amount) - BigInt(penalty)
+                        <LordsIcon className="h-4 w-4" />
+                        {formatNumber(
+                          Number(
+                            formatEther(
+                              BigInt(ownerLordsLock.amount) - BigInt(penalty),
+                            ),
+                          ),
                         )}
                       </div>
                       <div className="text-xs text-red-300/60">

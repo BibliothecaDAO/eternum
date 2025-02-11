@@ -15,8 +15,8 @@ import { Route as IndexImport } from './routes/index'
 import { Route as VelordsIndexImport } from './routes/velords.index'
 import { Route as RealmsIndexImport } from './routes/realms.index'
 import { Route as VelordsClaimImport } from './routes/velords.claim'
+import { Route as RealmsClaimsImport } from './routes/realms.claims'
 import { Route as RealmsBridgeImport } from './routes/realms.bridge'
-import { Route as ClaimsRealmsImport } from './routes/claims.realms'
 
 // Create/Update Routes
 
@@ -44,15 +44,15 @@ const VelordsClaimRoute = VelordsClaimImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const RealmsBridgeRoute = RealmsBridgeImport.update({
-  id: '/realms/bridge',
-  path: '/realms/bridge',
+const RealmsClaimsRoute = RealmsClaimsImport.update({
+  id: '/realms/claims',
+  path: '/realms/claims',
   getParentRoute: () => rootRoute,
 } as any)
 
-const ClaimsRealmsRoute = ClaimsRealmsImport.update({
-  id: '/claims/realms',
-  path: '/claims/realms',
+const RealmsBridgeRoute = RealmsBridgeImport.update({
+  id: '/realms/bridge',
+  path: '/realms/bridge',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -67,18 +67,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/claims/realms': {
-      id: '/claims/realms'
-      path: '/claims/realms'
-      fullPath: '/claims/realms'
-      preLoaderRoute: typeof ClaimsRealmsImport
-      parentRoute: typeof rootRoute
-    }
     '/realms/bridge': {
       id: '/realms/bridge'
       path: '/realms/bridge'
       fullPath: '/realms/bridge'
       preLoaderRoute: typeof RealmsBridgeImport
+      parentRoute: typeof rootRoute
+    }
+    '/realms/claims': {
+      id: '/realms/claims'
+      path: '/realms/claims'
+      fullPath: '/realms/claims'
+      preLoaderRoute: typeof RealmsClaimsImport
       parentRoute: typeof rootRoute
     }
     '/velords/claim': {
@@ -109,8 +109,8 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/claims/realms': typeof ClaimsRealmsRoute
   '/realms/bridge': typeof RealmsBridgeRoute
+  '/realms/claims': typeof RealmsClaimsRoute
   '/velords/claim': typeof VelordsClaimRoute
   '/realms': typeof RealmsIndexRoute
   '/velords': typeof VelordsIndexRoute
@@ -118,8 +118,8 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/claims/realms': typeof ClaimsRealmsRoute
   '/realms/bridge': typeof RealmsBridgeRoute
+  '/realms/claims': typeof RealmsClaimsRoute
   '/velords/claim': typeof VelordsClaimRoute
   '/realms': typeof RealmsIndexRoute
   '/velords': typeof VelordsIndexRoute
@@ -128,8 +128,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/claims/realms': typeof ClaimsRealmsRoute
   '/realms/bridge': typeof RealmsBridgeRoute
+  '/realms/claims': typeof RealmsClaimsRoute
   '/velords/claim': typeof VelordsClaimRoute
   '/realms/': typeof RealmsIndexRoute
   '/velords/': typeof VelordsIndexRoute
@@ -139,24 +139,24 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/claims/realms'
     | '/realms/bridge'
+    | '/realms/claims'
     | '/velords/claim'
     | '/realms'
     | '/velords'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/claims/realms'
     | '/realms/bridge'
+    | '/realms/claims'
     | '/velords/claim'
     | '/realms'
     | '/velords'
   id:
     | '__root__'
     | '/'
-    | '/claims/realms'
     | '/realms/bridge'
+    | '/realms/claims'
     | '/velords/claim'
     | '/realms/'
     | '/velords/'
@@ -165,8 +165,8 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ClaimsRealmsRoute: typeof ClaimsRealmsRoute
   RealmsBridgeRoute: typeof RealmsBridgeRoute
+  RealmsClaimsRoute: typeof RealmsClaimsRoute
   VelordsClaimRoute: typeof VelordsClaimRoute
   RealmsIndexRoute: typeof RealmsIndexRoute
   VelordsIndexRoute: typeof VelordsIndexRoute
@@ -174,8 +174,8 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ClaimsRealmsRoute: ClaimsRealmsRoute,
   RealmsBridgeRoute: RealmsBridgeRoute,
+  RealmsClaimsRoute: RealmsClaimsRoute,
   VelordsClaimRoute: VelordsClaimRoute,
   RealmsIndexRoute: RealmsIndexRoute,
   VelordsIndexRoute: VelordsIndexRoute,
@@ -192,8 +192,8 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/claims/realms",
         "/realms/bridge",
+        "/realms/claims",
         "/velords/claim",
         "/realms/",
         "/velords/"
@@ -202,11 +202,11 @@ export const routeTree = rootRoute
     "/": {
       "filePath": "index.tsx"
     },
-    "/claims/realms": {
-      "filePath": "claims.realms.tsx"
-    },
     "/realms/bridge": {
       "filePath": "realms.bridge.tsx"
+    },
+    "/realms/claims": {
+      "filePath": "realms.claims.tsx"
     },
     "/velords/claim": {
       "filePath": "velords.claim.tsx"

@@ -1,6 +1,14 @@
 "use client";
 
 import * as React from "react";
+import { NavMain } from "@/components/layout/nav-main";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+} from "@/components/ui/sidebar";
 import {
   Banknote,
   BookOpen,
@@ -11,23 +19,13 @@ import {
   PieChart,
 } from "lucide-react";
 
-import { NavMain } from "@/components/layout/nav-main";
-//import { NavUser } from "@/components/layout/nav-user"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-} from "@/components/ui/sidebar";
-
 const data = {
   assets: [
     {
       title: "Realms",
       url: "/realms",
       icon: Banknote,
-      isActive: true,
+
       items: [
         {
           title: "Starknet Bridge",
@@ -35,10 +33,11 @@ const data = {
         },
         {
           title: "Claim Rewards",
-          url: "/claims/realms",
+          url: "/realms/claims",
         },
         {
           title: "Eternum Season Passes",
+          target: "_blank",
           url: "https://empire.realms.world/season-passes",
         },
       ],
@@ -65,7 +64,7 @@ const data = {
       title: "veLords (staking)",
       url: "/velords",
       icon: Banknote,
-      isActive: true,
+
       items: [
         {
           title: "Staking",
@@ -88,7 +87,7 @@ const data = {
       items: [
         {
           title: "Realms Emissions",
-          url: "/claims/realms",
+          url: "/realms/claims",
         },
         {
           title: "Legacy Claims",
@@ -103,7 +102,7 @@ const data = {
       title: "Delegation",
       url: "#",
       icon: Banknote,
-      isActive: true,
+
       items: [
         {
           title: "Delegates List",
@@ -127,7 +126,7 @@ const data = {
       title: "Quick Links",
       url: "#",
       icon: ExternalLink,
-      isActive: true,
+
       items: [
         {
           title: "CoinGecko",
