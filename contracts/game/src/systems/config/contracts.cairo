@@ -1,9 +1,9 @@
 use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{
-    TroopConfig, MapConfig, BattleConfig, CapacityConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig,
-    MultipleResourceBurnPrStrategy, LaborBurnPrStrategy
+    BattleConfig, CapacityConfig, LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy,
+    ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig,
+    SeasonAddressesConfig, TroopConfig,
 };
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::resource::production::building::BuildingCategory;
@@ -11,7 +11,9 @@ use s1_eternum::models::resource::production::building::BuildingCategory;
 #[starknet::interface]
 trait IWorldConfig<T> {
     fn set_world_config(
-        ref self: T, admin_address: starknet::ContractAddress, realm_l2_contract: starknet::ContractAddress
+        ref self: T,
+        admin_address: starknet::ContractAddress,
+        realm_l2_contract: starknet::ContractAddress,
     );
 }
 
@@ -23,7 +25,7 @@ trait ISeasonConfig<T> {
         season_pass_address: starknet::ContractAddress,
         realms_address: starknet::ContractAddress,
         lords_address: starknet::ContractAddress,
-        start_at: u64
+        start_at: u64,
     );
 
     fn set_season_bridge_config(ref self: T, close_after_end_seconds: u64);
@@ -64,7 +66,7 @@ trait ICapacityConfig<T> {
 
 #[starknet::interface]
 trait ITickConfig<T> {
-    fn set_tick_config(ref self: T, tick_id: u8, tick_interval_in_seconds: u64);
+    fn set_tick_config(ref self: T, armies_tick_in_seconds: u64);
 }
 
 #[starknet::interface]
@@ -72,11 +74,6 @@ trait IStaminaConfig<T> {
     fn set_stamina_config(ref self: T, unit_type: u8, max_stamina: u16);
 }
 
-
-#[starknet::interface]
-trait IStaminaRefillConfig<T> {
-    fn set_stamina_refill_config(ref self: T, amount_per_tick: u16, start_boost_tick_count: u8);
-}
 
 #[starknet::interface]
 trait ITransportConfig<T> {
@@ -91,25 +88,7 @@ trait IHyperstructureConfig<T> {
         time_between_shares_change: u64,
         points_per_cycle: u128,
         points_for_win: u128,
-        points_on_completion: u128
-    );
-}
-
-#[starknet::interface]
-trait ILevelingConfig<T> {
-    fn set_leveling_config(
-        ref self: T,
-        config_id: ID,
-        decay_interval: u64,
-        max_level: u64,
-        decay_scaled: u128,
-        cost_percentage_scaled: u128,
-        base_multiplier: u128,
-        wheat_base_amount: u128,
-        fish_base_amount: u128,
-        resource_1_costs: Span<(u8, u128)>,
-        resource_2_costs: Span<(u8, u128)>,
-        resource_3_costs: Span<(u8, u128)>,
+        points_on_completion: u128,
     );
 }
 
@@ -132,7 +111,7 @@ trait IProductionConfig<T> {
         resource_type: u8,
         amount_per_building_per_tick: u128,
         labor_burn_strategy: LaborBurnPrStrategy,
-        predefined_resource_burn_cost: Span<(u8, u128)>
+        predefined_resource_burn_cost: Span<(u8, u128)>,
     );
 }
 
@@ -151,14 +130,17 @@ trait ITroopConfig<T> {
 trait IBuildingConfig<T> {
     fn set_building_general_config(ref self: T, base_cost_percent_increase: u16);
     fn set_building_config(
-        ref self: T, building_category: BuildingCategory, building_resource_type: u8, cost_of_building: Span<(u8, u128)>
+        ref self: T,
+        building_category: BuildingCategory,
+        building_resource_type: u8,
+        cost_of_building: Span<(u8, u128)>,
     );
 }
 
 #[starknet::interface]
 trait IBuildingCategoryPopConfig<T> {
     fn set_building_category_pop_config(
-        ref self: T, building_category: BuildingCategory, population: u32, capacity: u32
+        ref self: T, building_category: BuildingCategory, population: u32, capacity: u32,
     );
 }
 
@@ -172,10 +154,10 @@ trait IPopulationConfig<T> {
 trait IResourceBridgeConfig<T> {
     fn set_resource_bridge_config(ref self: T, resource_bridge_config: ResourceBridgeConfig);
     fn set_resource_bridge_fee_split_config(
-        ref self: T, resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig
+        ref self: T, res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
     );
     fn set_resource_bridge_whitelist_config(
-        ref self: T, resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig
+        ref self: T, resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig,
     );
 }
 
@@ -189,7 +171,7 @@ trait ISettlementConfig<T> {
         points_placed: u32,
         current_layer: u32,
         current_side: u32,
-        current_point_on_side: u32
+        current_point_on_side: u32,
     );
 }
 
@@ -205,27 +187,26 @@ mod config_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{
-        ResourceTypes, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
-        HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID,
-        POPULATION_CONFIG_ID, DEFAULT_NS
+        ARMY_ENTITY_TYPE, BUILDING_CATEGORY_POPULATION_CONFIG_ID, DEFAULT_NS, DONKEY_ENTITY_TYPE,
+        HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, TravelTypes, WORLD_CONFIG_ID,
     };
     use s1_eternum::models::bank::bank::{Bank};
 
     use s1_eternum::models::config::{
-        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestRewardConfig, MapConfig,
-        TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
-        PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig,
-        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
-        BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig,
-        MultipleResourceBurnPrStrategy, LaborBurnPrStrategy
+        WorldConfigUtilImpl, BankConfig, BattleConfig, BuildingCategoryPopConfig, BuildingConfig,
+        BuildingGeneralConfig, CapacityConfig, HyperstructureConfig, HyperstructureResourceConfig,
+        LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy, PopulationConfig,
+        ProductionConfig, QuestRewardConfig, RealmLevelConfig, RealmMaxLevelConfig,
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig,
+        SeasonAddressesConfig, SeasonBridgeConfig, SettlementConfig, SpeedConfig, TickConfig,
+        TroopConfig, WeightConfig, WorldConfig,
     };
 
-    use s1_eternum::models::position::{Position, PositionTrait, Coord};
+    use s1_eternum::models::position::{Coord, Position, PositionTrait};
     use s1_eternum::models::resource::production::building::{BuildingCategory};
-    use s1_eternum::models::resource::resource::{ResourceCost, DetachedResource};
+    use s1_eternum::models::resource::resource::{DetachedResource, ResourceCost};
     use s1_eternum::models::season::{Season};
-    use s1_eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
+    use s1_eternum::utils::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
     // Components
 
@@ -251,7 +232,7 @@ mod config_systems {
 
     // Constuctor
 
-    fn dojo_init(self: @ContractState,) {
+    fn dojo_init(self: @ContractState) {
         // [Event] Emit all Trophy events
         let mut world: WorldStorage = self.world(DEFAULT_NS());
         let mut trophy_id: u8 = TROPHY_COUNT;
@@ -292,12 +273,15 @@ mod config_systems {
         fn set_world_config(
             ref self: ContractState,
             admin_address: starknet::ContractAddress,
-            realm_l2_contract: starknet::ContractAddress
+            realm_l2_contract: starknet::ContractAddress,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@WorldConfig { config_id: WORLD_CONFIG_ID, admin_address, realm_l2_contract });
+            let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
+            world_config.admin_address = admin_address;
+            world_config.realm_l2_contract = realm_l2_contract;
+            world.write_model(@world_config);
         }
     }
 
@@ -309,17 +293,16 @@ mod config_systems {
             season_pass_address: starknet::ContractAddress,
             realms_address: starknet::ContractAddress,
             lords_address: starknet::ContractAddress,
-            start_at: u64
+            start_at: u64,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world
-                .write_model(
-                    @SeasonAddressesConfig {
-                        config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address,
-                    }
-                );
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                selector!("season_addresses_config"),
+                SeasonAddressesConfig { season_pass_address, realms_address, lords_address },
+            );
 
             let mut season: Season = world.read_model(WORLD_CONFIG_ID);
             if !season.is_over {
@@ -333,23 +316,33 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@SeasonBridgeConfig { config_id: WORLD_CONFIG_ID, close_after_end_seconds });
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                selector!("season_bridge_config"),
+                SeasonBridgeConfig { close_after_end_seconds },
+            );
         }
     }
 
     #[abi(embed_v0)]
     impl VRFConfigImpl of super::IVRFConfig<ContractState> {
-        fn set_vrf_config(ref self: ContractState, vrf_provider_address: starknet::ContractAddress) {
+        fn set_vrf_config(
+            ref self: ContractState, vrf_provider_address: starknet::ContractAddress,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@VRFConfig { config_id: WORLD_CONFIG_ID, vrf_provider_address });
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("vrf_provider_address"), vrf_provider_address,
+            );
         }
     }
 
     #[abi(embed_v0)]
     impl QuestConfigImpl of super::IQuestConfig<ContractState> {
-        fn set_quest_reward_config(ref self: ContractState, quest_id: ID, resources: Span<(u8, u128)>) {
+        fn set_quest_reward_config(
+            ref self: ContractState, quest_id: ID, resources: Span<(u8, u128)>,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
@@ -363,11 +356,14 @@ mod config_systems {
             loop {
                 match resources.pop_front() {
                     Option::Some((
-                        resource_type, resource_amount
+                        resource_type, resource_amount,
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                         // ensure lords can't be minted
-                        assert!(resource_type != ResourceTypes::LORDS, "lords can't be minted as part of quest");
+                        assert!(
+                            resource_type != ResourceTypes::LORDS,
+                            "lords can't be minted as part of quest",
+                        );
                         assert(resource_amount > 0, 'amount must not be 0');
 
                         world
@@ -376,17 +372,20 @@ mod config_systems {
                                     entity_id: detached_resource_id,
                                     index,
                                     resource_type,
-                                    resource_amount: resource_amount
-                                }
+                                    resource_amount: resource_amount,
+                                },
                             );
 
                         index += 1;
                     },
-                    Option::None => { break; }
+                    Option::None => { break; },
                 };
             };
 
-            world.write_model(@QuestRewardConfig { quest_id, detached_resource_id, detached_resource_count });
+            world
+                .write_model(
+                    @QuestRewardConfig { quest_id, detached_resource_id, detached_resource_count },
+                );
         }
     }
 
@@ -397,8 +396,7 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            map_config.config_id = WORLD_CONFIG_ID;
-            world.write_model(@map_config);
+            WorldConfigUtilImpl::set_member(ref world, selector!("map_config"), map_config);
         }
     }
 
@@ -425,8 +423,11 @@ mod config_systems {
             world
                 .write_model(
                     @WeightConfig {
-                        config_id: WORLD_CONFIG_ID, weight_config_id: entity_type, entity_type, weight_gram,
-                    }
+                        config_id: WORLD_CONFIG_ID,
+                        weight_config_id: entity_type,
+                        entity_type,
+                        weight_gram,
+                    },
                 );
         }
     }
@@ -444,99 +445,14 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl TickConfigImpl of super::ITickConfig<ContractState> {
-        fn set_tick_config(ref self: ContractState, tick_id: u8, tick_interval_in_seconds: u64) {
+        fn set_tick_config(ref self: ContractState, armies_tick_in_seconds: u64) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
-
-            world.write_model(@TickConfig { config_id: WORLD_CONFIG_ID, tick_id, tick_interval_in_seconds });
-        }
-    }
-
-
-
-    #[abi(embed_v0)]
-    impl LevelingConfigImpl of super::ILevelingConfig<ContractState> {
-        fn set_leveling_config(
-            ref self: ContractState,
-            config_id: ID,
-            decay_interval: u64,
-            max_level: u64,
-            decay_scaled: u128,
-            cost_percentage_scaled: u128,
-            base_multiplier: u128,
-            wheat_base_amount: u128,
-            fish_base_amount: u128,
-            resource_1_costs: Span<(u8, u128)>,
-            resource_2_costs: Span<(u8, u128)>,
-            resource_3_costs: Span<(u8, u128)>,
-        ) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            let resource_1_cost_id = world.dispatcher.uuid();
-            let mut index = 0;
-            loop {
-                if index == resource_1_costs.len() {
-                    break;
-                }
-                let (resource_type, resource_amount) = *resource_1_costs.at(index);
-                world
-                    .write_model(
-                        @ResourceCost { entity_id: resource_1_cost_id, index, resource_type, amount: resource_amount }
-                    );
-
-                index += 1;
-            };
-
-            let resource_2_cost_id = world.dispatcher.uuid();
-            let mut index = 0;
-            loop {
-                if index == resource_2_costs.len() {
-                    break;
-                }
-                let (resource_type, resource_amount) = *resource_2_costs.at(index);
-                world
-                    .write_model(
-                        @ResourceCost { entity_id: resource_2_cost_id, index, resource_type, amount: resource_amount }
-                    );
-
-                index += 1;
-            };
-
-            let resource_3_cost_id = world.dispatcher.uuid();
-            let mut index = 0;
-            loop {
-                if index == resource_3_costs.len() {
-                    break;
-                }
-                let (resource_type, resource_amount) = *resource_3_costs.at(index);
-                world
-                    .write_model(
-                        @ResourceCost { entity_id: resource_3_cost_id, index, resource_type, amount: resource_amount }
-                    );
-
-                index += 1;
-            };
-
-            world
-                .write_model(
-                    @LevelingConfig {
-                        config_id,
-                        decay_interval,
-                        max_level,
-                        wheat_base_amount,
-                        fish_base_amount,
-                        resource_1_cost_id,
-                        resource_2_cost_id,
-                        resource_3_cost_id,
-                        resource_1_cost_count: resource_1_costs.len(),
-                        resource_2_cost_count: resource_2_costs.len(),
-                        resource_3_cost_count: resource_3_costs.len(),
-                        decay_scaled,
-                        cost_percentage_scaled,
-                        base_multiplier,
-                    }
-                );
+            let mut tick_config: TickConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("tick_config"),
+            );
+            tick_config.armies_tick_in_seconds = armies_tick_in_seconds;
+            WorldConfigUtilImpl::set_member(ref world, selector!("tick_config"), tick_config);
         }
     }
 
@@ -548,27 +464,25 @@ mod config_systems {
             resource_type: u8,
             amount_per_building_per_tick: u128,
             labor_burn_strategy: LaborBurnPrStrategy,
-            predefined_resource_burn_cost: Span<(u8, u128)>
+            predefined_resource_burn_cost: Span<(u8, u128)>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             // save multiple resource burn cost
             let predefined_resource_burn_cost_id = world.dispatcher.uuid();
-            for i in 0
-                ..predefined_resource_burn_cost
-                    .len() {
-                        let (resource_type, resource_amount) = *predefined_resource_burn_cost.at(i);
-                        world
-                            .write_model(
-                                @ResourceCost {
-                                    entity_id: predefined_resource_burn_cost_id,
-                                    index: i,
-                                    resource_type,
-                                    amount: resource_amount
-                                }
-                            );
-                    };
+            for i in 0..predefined_resource_burn_cost.len() {
+                let (resource_type, resource_amount) = *predefined_resource_burn_cost.at(i);
+                world
+                    .write_model(
+                        @ResourceCost {
+                            entity_id: predefined_resource_burn_cost_id,
+                            index: i,
+                            resource_type,
+                            amount: resource_amount,
+                        },
+                    );
+            };
 
             // save production config
             let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
@@ -578,7 +492,10 @@ mod config_systems {
                 .multiple_resource_burn_strategy =
                     MultipleResourceBurnPrStrategy {
                         required_resources_id: predefined_resource_burn_cost_id,
-                        required_resources_count: predefined_resource_burn_cost.len().try_into().unwrap()
+                        required_resources_count: predefined_resource_burn_cost
+                            .len()
+                            .try_into()
+                            .unwrap(),
                     };
             world.write_model(@resource_production_config);
         }
@@ -590,10 +507,17 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world
-                .write_model(
-                    @SpeedConfig { config_id: WORLD_CONFIG_ID, speed_config_id: entity_type, entity_type, sec_per_km, }
-                );
+            let mut speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("speed_config"),
+            );
+            if entity_type == ARMY_ENTITY_TYPE {
+                speed_config.army_sec_per_km = sec_per_km;
+            } else if entity_type == DONKEY_ENTITY_TYPE {
+                speed_config.donkey_sec_per_km = sec_per_km;
+            } else {
+                panic!("invalid entity type");
+            }
+            WorldConfigUtilImpl::set_member(ref world, selector!("speed_config"), speed_config);
         }
     }
 
@@ -606,7 +530,7 @@ mod config_systems {
             time_between_shares_change: u64,
             points_per_cycle: u128,
             points_for_win: u128,
-            points_on_completion: u128
+            points_on_completion: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -618,32 +542,37 @@ mod config_systems {
                 world
                     .write_model(
                         @HyperstructureResourceConfig {
-                            config_id: HYPERSTRUCTURE_CONFIG_ID, resource_tier: tier, min_amount, max_amount
-                        }
+                            config_id: HYPERSTRUCTURE_CONFIG_ID,
+                            resource_tier: tier,
+                            min_amount,
+                            max_amount,
+                        },
                     );
                 i += 1;
             };
-            world
-                .write_model(
-                    @HyperstructureConfig {
-                        config_id: HYPERSTRUCTURE_CONFIG_ID,
-                        time_between_shares_change,
-                        points_per_cycle,
-                        points_for_win,
-                        points_on_completion
-                    }
-                );
+            let hyperstructure_config = HyperstructureConfig {
+                time_between_shares_change, points_per_cycle, points_for_win, points_on_completion,
+            };
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("hyperstructure_config"), hyperstructure_config,
+            );
         }
     }
 
 
     #[abi(embed_v0)]
     impl BankConfigImpl of super::IBankConfig<ContractState> {
-        fn set_bank_config(ref self: ContractState, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128) {
+        fn set_bank_config(
+            ref self: ContractState, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_num, lp_fee_denom });
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                selector!("bank_config"),
+                BankConfig { lords_cost, lp_fee_num, lp_fee_denom },
+            );
         }
     }
 
@@ -661,7 +590,10 @@ mod config_systems {
     #[abi(embed_v0)]
     impl BuildingCategoryPopulationConfigImpl of super::IBuildingCategoryPopConfig<ContractState> {
         fn set_building_category_pop_config(
-            ref self: ContractState, building_category: BuildingCategory, population: u32, capacity: u32
+            ref self: ContractState,
+            building_category: BuildingCategory,
+            population: u32,
+            capacity: u32,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -669,8 +601,11 @@ mod config_systems {
             world
                 .write_model(
                     @BuildingCategoryPopConfig {
-                        config_id: BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_category, population, capacity
-                    }
+                        config_id: BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+                        building_category,
+                        population,
+                        capacity,
+                    },
                 )
         }
     }
@@ -681,7 +616,9 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@PopulationConfig { config_id: POPULATION_CONFIG_ID, base_population });
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("population_config"), PopulationConfig { base_population },
+            );
         }
     }
 
@@ -691,14 +628,18 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@BuildingGeneralConfig { config_id: WORLD_CONFIG_ID, base_cost_percent_increase });
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                selector!("building_general_config"),
+                BuildingGeneralConfig { base_cost_percent_increase },
+            );
         }
 
         fn set_building_config(
             ref self: ContractState,
             building_category: BuildingCategory,
             building_resource_type: u8,
-            cost_of_building: Span<(u8, u128)>
+            cost_of_building: Span<(u8, u128)>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -712,7 +653,12 @@ mod config_systems {
                 let (resource_type, resource_amount) = *cost_of_building.at(index);
                 world
                     .write_model(
-                        @ResourceCost { entity_id: resource_cost_id, index, resource_type, amount: resource_amount }
+                        @ResourceCost {
+                            entity_id: resource_cost_id,
+                            index,
+                            resource_type,
+                            amount: resource_amount,
+                        },
                     );
 
                 index += 1;
@@ -724,36 +670,40 @@ mod config_systems {
                         category: building_category,
                         resource_type: building_resource_type,
                         resource_cost_id,
-                        resource_cost_count: cost_of_building.len()
-                    }
+                        resource_cost_count: cost_of_building.len(),
+                    },
                 );
         }
     }
 
 
-
     #[abi(embed_v0)]
     impl IResourceBridgeConfig of super::IResourceBridgeConfig<ContractState> {
-        fn set_resource_bridge_config(ref self: ContractState, mut resource_bridge_config: ResourceBridgeConfig) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            resource_bridge_config.config_id = WORLD_CONFIG_ID;
-            world.write_model(@resource_bridge_config);
-        }
-
-        fn set_resource_bridge_fee_split_config(
-            ref self: ContractState, mut resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig
+        fn set_resource_bridge_config(
+            ref self: ContractState, mut resource_bridge_config: ResourceBridgeConfig,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            resource_bridge_fee_split_config.config_id = WORLD_CONFIG_ID;
-            world.write_model(@resource_bridge_fee_split_config);
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("resource_bridge_config"), resource_bridge_config,
+            );
+        }
+
+        fn set_resource_bridge_fee_split_config(
+            ref self: ContractState, mut res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("res_bridge_fee_split_config"), res_bridge_fee_split_config,
+            );
         }
 
         fn set_resource_bridge_whitelist_config(
-            ref self: ContractState, mut resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig
+            ref self: ContractState,
+            mut resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -762,10 +712,13 @@ mod config_systems {
             // update several functions related to resources in `s1_eternum::constants`
             // so the new resource type is recognized throughout the contract.
 
-            assert!(resource_bridge_whitelist_config.resource_type > 0, "resource type should be non zero");
+            assert!(
+                resource_bridge_whitelist_config.resource_type > 0,
+                "resource type should be non zero",
+            );
             assert!(
                 resource_bridge_whitelist_config.resource_type <= 255,
-                "the system only supports at most 255 resource types"
+                "the system only supports at most 255 resource types",
             );
 
             world.write_model(@resource_bridge_whitelist_config);
@@ -778,25 +731,31 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@RealmMaxLevelConfig { config_id: WORLD_CONFIG_ID, max_level: new_max_level });
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                selector!("realm_max_level_config"),
+                RealmMaxLevelConfig { max_level: new_max_level },
+            );
         }
 
-        fn set_realm_level_config(ref self: ContractState, level: u8, mut resources: Span<(u8, u128)>) {
+        fn set_realm_level_config(
+            ref self: ContractState, level: u8, mut resources: Span<(u8, u128)>,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             let detached_resource_id = world.dispatcher.uuid();
             let detached_resource_count = resources.len();
             let mut index = 0;
-            for (
-                resource_type, resource_amount
-            ) in resources {
+            for (resource_type, resource_amount) in resources {
                 let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                 assert(resource_amount > 0, 'amount must not be 0');
 
                 world
                     .write_model(
-                        @DetachedResource { entity_id: detached_resource_id, index, resource_type, resource_amount }
+                        @DetachedResource {
+                            entity_id: detached_resource_id, index, resource_type, resource_amount,
+                        },
                     );
 
                 index += 1;
@@ -807,8 +766,8 @@ mod config_systems {
                     @RealmLevelConfig {
                         level,
                         required_resources_id: detached_resource_id.into(),
-                        required_resource_count: detached_resource_count.try_into().unwrap()
-                    }
+                        required_resource_count: detached_resource_count.try_into().unwrap(),
+                    },
                 );
         }
     }
@@ -823,24 +782,24 @@ mod config_systems {
             points_placed: u32,
             current_layer: u32,
             current_side: u32,
-            current_point_on_side: u32
+            current_point_on_side: u32,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world
-                .write_model(
-                    @SettlementConfig {
-                        config_id: WORLD_CONFIG_ID,
-                        center,
-                        base_distance,
-                        min_first_layer_distance,
-                        points_placed,
-                        current_layer,
-                        current_side,
-                        current_point_on_side,
-                    }
-                );
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                selector!("settlement_config"),
+                SettlementConfig {
+                    center,
+                    base_distance,
+                    min_first_layer_distance,
+                    points_placed,
+                    current_layer,
+                    current_side,
+                    current_point_on_side,
+                },
+            );
         }
     }
 }

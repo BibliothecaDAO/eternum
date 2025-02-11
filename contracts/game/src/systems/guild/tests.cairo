@@ -1,21 +1,21 @@
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 
 use s1_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
-use s1_eternum::models::name::EntityName;
+use s1_eternum::models::name::AddressName;
 use s1_eternum::models::owner::Owner;
 use s1_eternum::models::position::Position;
 
 use s1_eternum::systems::guild::contracts::{
-    guild_systems, IGuildSystems, IGuildSystemsDispatcher, IGuildSystemsDispatcherTrait
+    IGuildSystems, IGuildSystemsDispatcher, IGuildSystemsDispatcherTrait, guild_systems,
 };
 use s1_eternum::systems::name::contracts::{
-    name_systems, INameSystems, INameSystemsDispatcher, INameSystemsDispatcherTrait
+    INameSystems, INameSystemsDispatcher, INameSystemsDispatcherTrait, name_systems,
 };
 
-use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use s1_eternum::utils::testing::{systems::deploy_system, world::spawn_eternum};
 use starknet::contract_address_const;
 
 
@@ -68,7 +68,7 @@ fn guild_test_create_guild() {
     let guild_owner: Owner = world.read_model(guild_entity_id);
     assert(guild_owner.address.try_into().unwrap() == 'player1', 'Not correct owner of guild');
 
-    let guild_name: EntityName = world.read_model(guild_entity_id);
+    let guild_name: AddressName = world.read_model(guild_entity_id);
     assert(guild_name.name == GUILD_NAME, 'Not correct guildname');
 
     let guild_member: GuildMember = world.read_model('player1');

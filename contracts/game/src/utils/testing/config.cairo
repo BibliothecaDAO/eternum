@@ -1,33 +1,32 @@
-use core::array::{SpanTrait, ArrayTrait, SpanIndex};
+use core::array::{ArrayTrait, SpanIndex, SpanTrait};
 use core::integer::BoundedU128;
 use core::ops::index::IndexView;
 use s1_eternum::constants::{
-    ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds, TravelTypes
+    ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, RESOURCE_PRECISION, ResourceTypes, TickIds, TravelTypes, WORLD_CONFIG_ID,
 };
 
 use s1_eternum::models::{
-    config::{TroopConfig, BattleConfig, CapacityConfig, CapacityConfigCategory, MapConfig, TravelFoodCostConfig},
     combat::Troops,
+    config::{BattleConfig, CapacityCategory, CapacityConfig, MapConfig, TravelFoodCostConfig, TroopConfig},
 };
 
 use s1_eternum::systems::config::contracts::{
-    ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
-    IStaminaRefillConfigDispatcher, IStaminaRefillConfigDispatcherTrait, ICapacityConfigDispatcher,
-    ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
-    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, ISettlementConfigDispatcher,
-    ISettlementConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait, ITickConfigDispatcher,
-    ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait, IProductionConfigDispatcher, IProductionConfigDispatcherTrait,
-    ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait, IBattleConfigDispatcher,
-    IBattleConfigDispatcherTrait, ITravelFoodCostConfigDispatcher, ITravelFoodCostConfigDispatcherTrait,
-    IRealmLevelConfigDispatcher, IRealmLevelConfigDispatcherTrait
+    IBankConfigDispatcher, IBankConfigDispatcherTrait, IBattleConfigDispatcher, IBattleConfigDispatcherTrait,
+    ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
+    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IProductionConfigDispatcher,
+    IProductionConfigDispatcherTrait, IRealmLevelConfigDispatcher, IRealmLevelConfigDispatcherTrait,
+    ISettlementConfigDispatcher, ISettlementConfigDispatcherTrait, IStaminaConfigDispatcher,
+    IStaminaConfigDispatcherTrait, ITickConfigDispatcher, ITickConfigDispatcherTrait, ITransportConfigDispatcher,
+    ITransportConfigDispatcherTrait, ITravelFoodCostConfigDispatcher, ITravelFoodCostConfigDispatcherTrait,
+    ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait, ITroopConfigDispatcher,
+    ITroopConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait,
 };
 
 use s1_eternum::utils::testing::constants::{
-    get_resource_weights, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
-    MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
-    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS,
-    EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK, REALM_MAX_LEVEL
+    EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM,
+    MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
+    MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT, REALM_MAX_LEVEL,
+    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, STOREHOUSE_CAPACITY_GRAMS, get_resource_weights,
 };
 
 use starknet::{ContractAddress};
@@ -53,7 +52,7 @@ fn set_map_config(config_systems_address: ContractAddress) {
     let map_config = MapConfig {
         config_id: WORLD_CONFIG_ID,
         reward_resource_amount: MAP_EXPLORE_RANDOM_MINT_AMOUNT,
-        shards_mines_fail_probability: SHARDS_MINE_FAIL_PROBABILITY_WEIGHT
+        shards_mines_fail_probability: SHARDS_MINE_FAIL_PROBABILITY_WEIGHT,
     };
 
     IMapConfigDispatcher { contract_address: config_systems_address }.set_map_config(map_config);
@@ -61,7 +60,7 @@ fn set_map_config(config_systems_address: ContractAddress) {
 
 fn set_travel_food_cost_config(config_systems_address: ContractAddress) {
     let travel_food_cost_config_dispatcher = ITravelFoodCostConfigDispatcher {
-        contract_address: config_systems_address
+        contract_address: config_systems_address,
     };
 
     travel_food_cost_config_dispatcher
@@ -73,7 +72,7 @@ fn set_travel_food_cost_config(config_systems_address: ContractAddress) {
                 explore_fish_burn_amount: MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
                 travel_wheat_burn_amount: MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT,
                 travel_fish_burn_amount: 1,
-            }
+            },
         );
     travel_food_cost_config_dispatcher
         .set_travel_food_cost_config(
@@ -84,7 +83,7 @@ fn set_travel_food_cost_config(config_systems_address: ContractAddress) {
                 explore_fish_burn_amount: MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
                 travel_wheat_burn_amount: MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT,
                 travel_fish_burn_amount: MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT,
-            }
+            },
         );
     travel_food_cost_config_dispatcher
         .set_travel_food_cost_config(
@@ -95,7 +94,7 @@ fn set_travel_food_cost_config(config_systems_address: ContractAddress) {
                 explore_fish_burn_amount: MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
                 travel_wheat_burn_amount: MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT,
                 travel_fish_burn_amount: MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT,
-            }
+            },
         );
 }
 
@@ -116,7 +115,7 @@ fn get_combat_config() -> TroopConfig {
         battle_leave_slash_num: 25,
         battle_leave_slash_denom: 100,
         battle_time_scale: 1000,
-        battle_max_time_seconds: 2 * 86400
+        battle_max_time_seconds: 2 * 86400,
     };
 }
 
@@ -145,7 +144,6 @@ fn set_mine_production_config(config_systems_address: ContractAddress) {
 }
 
 fn set_stamina_config(config_systems_address: ContractAddress) {
-    IStaminaRefillConfigDispatcher { contract_address: config_systems_address }.set_stamina_refill_config(100, 0);
     IStaminaConfigDispatcher { contract_address: config_systems_address }
         .set_stamina_config(ResourceTypes::PALADIN, 100);
     IStaminaConfigDispatcher { contract_address: config_systems_address }.set_stamina_config(ResourceTypes::KNIGHT, 80);
@@ -155,7 +153,7 @@ fn set_stamina_config(config_systems_address: ContractAddress) {
 
 fn set_travel_and_explore_stamina_cost_config(config_systems_address: ContractAddress) {
     let travel_stamina_cost_dispatcher = ITravelStaminaCostConfigDispatcher {
-        contract_address: config_systems_address
+        contract_address: config_systems_address,
     };
     travel_stamina_cost_dispatcher.set_travel_stamina_cost_config(TravelTypes::TRAVEL, 10);
     travel_stamina_cost_dispatcher.set_travel_stamina_cost_config(TravelTypes::EXPLORE, 20);
@@ -163,47 +161,23 @@ fn set_travel_and_explore_stamina_cost_config(config_systems_address: ContractAd
 
 fn set_capacity_config(config_systems_address: ContractAddress) {
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(
-            CapacityConfig { category: CapacityConfigCategory::Structure, weight_gram: BoundedU128::max(), }
-        );
+        .set_capacity_config(CapacityConfig { category: CapacityCategory::Structure, weight_gram: BoundedU128::max() });
 
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 100_000, });
+        .set_capacity_config(CapacityConfig { category: CapacityCategory::Donkey, weight_gram: 100_000 });
 
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 10_000, });
+        .set_capacity_config(CapacityConfig { category: CapacityCategory::Army, weight_gram: 10_000 });
 
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(
-            CapacityConfig { category: CapacityConfigCategory::Storehouse, weight_gram: STOREHOUSE_CAPACITY_GRAMS, }
+            CapacityConfig { category: CapacityCategory::Storehouse, weight_gram: STOREHOUSE_CAPACITY_GRAMS },
         );
 }
 
 fn set_speed_config(config_systems_address: ContractAddress) {
     ITransportConfigDispatcher { contract_address: config_systems_address }.set_speed_config(ARMY_ENTITY_TYPE, 1);
     ITransportConfigDispatcher { contract_address: config_systems_address }.set_speed_config(DONKEY_ENTITY_TYPE, 60);
-}
-
-fn set_mercenaries_config(config_systems_address: ContractAddress) {
-    let knights_lower_bound = 0;
-    let knights_upper_bound = 4_000_000;
-    let paladins_lower_bound = 0;
-    let paladins_upper_bound = 4_000_000;
-    let crossbowmen_lower_bound = 0;
-    let crossbowmen_upper_bound = 4_000_000;
-
-    let mercenaries_rewards = array![(ResourceTypes::WHEAT, 10_000), (ResourceTypes::FISH, 20_000)].span();
-
-    IMercenariesConfigDispatcher { contract_address: config_systems_address }
-        .set_mercenaries_config(
-            knights_lower_bound,
-            knights_upper_bound,
-            paladins_lower_bound,
-            paladins_upper_bound,
-            crossbowmen_lower_bound,
-            crossbowmen_upper_bound,
-            mercenaries_rewards
-        );
 }
 
 fn set_settlement_config(config_systems_address: ContractAddress) {
@@ -235,12 +209,12 @@ fn set_realm_level_config(config_systems_address: ContractAddress) {
         .set_realm_max_level_config(REALM_MAX_LEVEL);
 
     IRealmLevelConfigDispatcher { contract_address: config_systems_address }
-        .set_realm_level_config(1, array![(ResourceTypes::WHEAT, 100), (ResourceTypes::WOOD, 100),].span());
+        .set_realm_level_config(1, array![(ResourceTypes::WHEAT, 100), (ResourceTypes::WOOD, 100)].span());
 
     IRealmLevelConfigDispatcher { contract_address: config_systems_address }
-        .set_realm_level_config(2, array![(ResourceTypes::STONE, 200), (ResourceTypes::FISH, 200),].span());
+        .set_realm_level_config(2, array![(ResourceTypes::STONE, 200), (ResourceTypes::FISH, 200)].span());
 
     IRealmLevelConfigDispatcher { contract_address: config_systems_address }
-        .set_realm_level_config(3, array![(ResourceTypes::COAL, 300), (ResourceTypes::IRONWOOD, 300),].span());
+        .set_realm_level_config(3, array![(ResourceTypes::COAL, 300), (ResourceTypes::IRONWOOD, 300)].span());
 }
 

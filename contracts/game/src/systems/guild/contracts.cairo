@@ -23,8 +23,7 @@ mod guild_systems {
     use s1_eternum::models::event::{CreateGuild, JoinGuild};
     use s1_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
     use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::name::EntityName;
-    use s1_eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
+    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
     use s1_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
@@ -44,10 +43,12 @@ mod guild_systems {
 
             let guild_uuid: ID = world.dispatcher.uuid();
 
+            let guild_entity_id_felt: felt252 = guild_uuid.into();
+
             world.write_model(@Guild { entity_id: guild_uuid, is_public: is_public, member_count: 1 });
             world.write_model(@Owner { entity_id: guild_uuid, address: caller_address });
             world.write_model(@EntityOwner { entity_id: guild_uuid, entity_owner_id: guild_uuid });
-            world.write_model(@EntityName { entity_id: guild_uuid, name: guild_name });
+            world.write_model(@AddressName { address: guild_entity_id_felt.try_into().unwrap(), name: guild_name });
             world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_uuid });
 
             let timestamp = starknet::get_block_timestamp();
@@ -79,7 +80,7 @@ mod guild_systems {
             world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_entity_id });
             world.write_model(@guild);
 
-            let entity_name: EntityName = world.read_model(guild_entity_id);
+            let entity_name: AddressName = world.read_model(guild_entity_id);
 
             world
                 .emit_event(
@@ -87,13 +88,13 @@ mod guild_systems {
                         guild_entity_id,
                         address: caller_address,
                         guild_name: entity_name.name,
-                        timestamp: starknet::get_block_timestamp()
-                    }
+                        timestamp: starknet::get_block_timestamp(),
+                    },
                 );
         }
 
         fn whitelist_player(
-            ref self: ContractState, player_address_to_whitelist: ContractAddress, guild_entity_id: ID
+            ref self: ContractState, player_address_to_whitelist: ContractAddress, guild_entity_id: ID,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -107,8 +108,8 @@ mod guild_systems {
             world
                 .write_model(
                     @GuildWhitelist {
-                        address: player_address_to_whitelist, guild_entity_id: guild_entity_id, is_whitelisted: true
-                    }
+                        address: player_address_to_whitelist, guild_entity_id: guild_entity_id, is_whitelisted: true,
+                    },
                 );
         }
 
@@ -160,7 +161,7 @@ mod guild_systems {
         }
 
         fn remove_player_from_whitelist(
-            ref self: ContractState, player_address_to_remove: ContractAddress, guild_entity_id: ID
+            ref self: ContractState, player_address_to_remove: ContractAddress, guild_entity_id: ID,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -173,14 +174,14 @@ mod guild_systems {
 
             assert(
                 (guild_owner.address == caller_address) || (player_address_to_remove == caller_address),
-                'Cannot remove from whitelist'
+                'Cannot remove from whitelist',
             );
 
             world
                 .write_model(
                     @GuildWhitelist {
-                        address: player_address_to_remove, guild_entity_id: guild_entity_id, is_whitelisted: false
-                    }
+                        address: player_address_to_remove, guild_entity_id: guild_entity_id, is_whitelisted: false,
+                    },
                 );
         }
     }

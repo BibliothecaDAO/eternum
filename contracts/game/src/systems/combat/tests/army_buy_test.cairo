@@ -1,28 +1,31 @@
 use core::array::SpanTrait;
 
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
-use s1_eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
-use s1_eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig};
+use s1_eternum::constants::{ARMY_ENTITY_TYPE, WORLD_CONFIG_ID};
+use s1_eternum::models::config::{
+    CapacityCategory, CapacityConfig, SettlementConfig, TickConfig, TroopConfig,
+};
 use s1_eternum::models::movable::{Movable};
-use s1_eternum::models::owner::{Owner, EntityOwner};
+use s1_eternum::models::owner::{EntityOwner, Owner};
 use s1_eternum::models::position::{Coord, Position};
 
-use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION};
+use s1_eternum::models::resource::resource::{
+    RESOURCE_PRECISION, Resource, ResourceImpl, ResourceTrait, ResourceTypes,
+};
 use s1_eternum::models::stamina::Stamina;
 use s1_eternum::systems::config::contracts::config_systems;
 use s1_eternum::systems::{
-    realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
-    combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
+    combat::contracts::troop_systems::{troop_systems},
+    realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait, realm_systems},
 };
 use s1_eternum::utils::testing::{
-    config::{get_combat_config, set_capacity_config, set_settlement_config}, world::spawn_eternum,
-    systems::{deploy_realm_systems, deploy_troop_systems, deploy_system},
-    general::{mint, get_default_realm_pos, spawn_realm}
+    config::{get_combat_config, set_capacity_config, set_settlement_config},
+    general::{get_default_realm_pos, mint, spawn_realm},
+    systems::{deploy_realm_systems, deploy_system, deploy_troop_systems}, world::spawn_eternum,
 };
 
 use starknet::ContractAddress;
@@ -43,7 +46,9 @@ fn set_configurations(ref world: WorldStorage) {
     world.write_model_test(@get_combat_config());
     world
         .write_model_test(
-            @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
+            @TickConfig {
+                config_id: WORLD_CONFIG_ID,, tick_interval_in_seconds: 1,
+            },
         );
 }
 
@@ -68,7 +73,7 @@ fn setup() -> (WorldStorage, ITroopContractDispatcher, ID, ID) {
             (ResourceTypes::CROSSBOWMAN, STARTING_CROSSBOWMAN_COUNT),
             (ResourceTypes::PALADIN, STARTING_PALADIN_COUNT),
         ]
-            .span()
+            .span(),
     );
     let army_id = troop_system_dispatcher.army_create(realm_id, false);
 
@@ -94,8 +99,12 @@ fn combat_test_army_buy() {
     assert_eq!(army.troops.crossbowman_count, STARTING_CROSSBOWMAN_COUNT.try_into().unwrap());
 
     let knight_resource: Resource = ResourceImpl::get(ref world, (realm_id, ResourceTypes::KNIGHT));
-    let paladin_resource: Resource = ResourceImpl::get(ref world, (realm_id, ResourceTypes::PALADIN));
-    let crossbowman_resource: Resource = ResourceImpl::get(ref world, (realm_id, ResourceTypes::CROSSBOWMAN));
+    let paladin_resource: Resource = ResourceImpl::get(
+        ref world, (realm_id, ResourceTypes::PALADIN),
+    );
+    let crossbowman_resource: Resource = ResourceImpl::get(
+        ref world, (realm_id, ResourceTypes::CROSSBOWMAN),
+    );
     assert_eq!(knight_resource.balance, 0);
     assert_eq!(paladin_resource.balance, 0);
     assert_eq!(crossbowman_resource.balance, 0);
@@ -106,8 +115,8 @@ fn combat_test_army_buy() {
 #[should_panic(
     expected: (
         "not enough resources, Resource (entity id: 1, resource type: KNIGHT, balance: 0). deduction: 3000000",
-        'ENTRYPOINT_FAILED'
-    )
+        'ENTRYPOINT_FAILED',
+    ),
 )]
 fn combat_test_army_buy__not_enough_resources() {
     let (_world, troop_systems_dispatcher, realm_id, army_id) = setup();

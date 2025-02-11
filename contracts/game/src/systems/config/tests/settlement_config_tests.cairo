@@ -9,7 +9,7 @@ mod tests {
     use s1_eternum::models::structure::{StructureCount};
     use s1_eternum::systems::realm::contracts::realm_systems::InternalRealmLogicImpl;
 
-    use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_settlement_config};
+    use s1_eternum::utils::testing::{config::set_settlement_config, systems::deploy_system, world::spawn_eternum};
 
     #[test]
     fn config_test_get_next_settlement_coord() {
@@ -43,7 +43,7 @@ mod tests {
         let config_systems_address = deploy_system(ref world, "config_systems");
         set_settlement_config(config_systems_address);
 
-        let structure_coords = Coord { x: 2147483646, y: 2147483671, };
+        let structure_coords = Coord { x: 2147483646, y: 2147483671 };
 
         let mut structure_count: StructureCount = world.read_model(structure_coords);
         structure_count.count = 1;

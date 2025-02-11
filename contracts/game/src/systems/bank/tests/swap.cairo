@@ -1,29 +1,29 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
+use s1_eternum::constants::{DONKEY_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
 
 use s1_eternum::models::bank::liquidity::{Liquidity};
 use s1_eternum::models::bank::market::{Market};
 
-use s1_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
+use s1_eternum::models::config::{CapacityCategory, CapacityConfig};
 use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
 use s1_eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
-use s1_eternum::systems::bank::contracts::bank::{bank_systems::InternalBankSystemsImpl, bank_systems};
+use s1_eternum::systems::bank::contracts::bank::{bank_systems, bank_systems::InternalBankSystemsImpl};
 
 use s1_eternum::systems::bank::contracts::liquidity::liquidity_systems;
-use s1_eternum::systems::bank::contracts::liquidity::{ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,};
+use s1_eternum::systems::bank::contracts::liquidity::{ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait};
 use s1_eternum::systems::bank::contracts::swap::swap_systems;
-use s1_eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,};
+use s1_eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
 use s1_eternum::systems::config::contracts::config_systems;
-use s1_eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
-use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
+use s1_eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait};
+use s1_eternum::utils::testing::{config::set_capacity_config, systems::deploy_system, world::spawn_eternum};
 
 use starknet::contract_address_const;
 
@@ -40,9 +40,14 @@ const BANK_ID: ID = 1;
 const DONKEY_CAPACITY: u128 = 10_000;
 
 fn setup(
-    owner_fee_num: u128, owner_fee_denom: u128, lp_fee_num: u128, lp_fee_denom: u128
+    owner_fee_num: u128, owner_fee_denom: u128, lp_fee_num: u128, lp_fee_denom: u128,
 ) -> (
-    WorldStorage, ID, ILiquiditySystemsDispatcher, ISwapSystemsDispatcher, IBankSystemsDispatcher, IBankConfigDispatcher
+    WorldStorage,
+    ID,
+    ILiquiditySystemsDispatcher,
+    ISwapSystemsDispatcher,
+    IBankSystemsDispatcher,
+    IBankConfigDispatcher,
 ) {
     let mut world = spawn_eternum();
 
@@ -60,7 +65,7 @@ fn setup(
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
     let bank_entity_id = InternalBankSystemsImpl::create_bank(
-        ref world, BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom, 0, 0
+        ref world, BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom, 0, 0,
     );
 
     let liquidity_systems_address = deploy_system(ref world, "liquidity_systems");
@@ -70,23 +75,25 @@ fn setup(
     let swap_systems_dispatcher = ISwapSystemsDispatcher { contract_address: swap_systems_address };
 
     // donkeys capcaity
-    world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: DONKEY_CAPACITY, });
+    world.write_model_test(@CapacityConfig { category: CapacityCategory::Donkey, weight_gram: DONKEY_CAPACITY });
 
     // add some resources in the player balance
     // wood, lords, donkeys
     world
         .write_model_test(
-            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE }
-        );
-    world
-        .write_model_test(
-            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE }
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE },
         );
     world
         .write_model_test(
             @Resource {
-                entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
-            }
+                entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE,
+            },
+        );
+    world
+        .write_model_test(
+            @Resource {
+                entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE,
+            },
         );
 
     (
@@ -95,7 +102,7 @@ fn setup(
         liquidity_systems_dispatcher,
         swap_systems_dispatcher,
         bank_systems_dispatcher,
-        bank_config_dispatcher
+        bank_config_dispatcher,
     )
 }
 
@@ -107,10 +114,10 @@ fn bank_test_swap_buy_without_fees() {
         liquidity_systems_dispatcher,
         swap_systems_dispatcher,
         _bank_systems_dispatcher,
-        _bank_config_dispatcher
+        _bank_config_dispatcher,
     ) =
         setup(
-        0, 1, 0, 1
+        0, 1, 0, 1,
     );
 
     let player = starknet::get_caller_address();
@@ -154,10 +161,10 @@ fn bank_test_swap_buy_with_fees() {
         liquidity_systems_dispatcher,
         swap_systems_dispatcher,
         _bank_systems_dispatcher,
-        _bank_config_dispatcher
+        _bank_config_dispatcher,
     ) =
         setup(
-        1, 10, 1, 10
+        1, 10, 1, 10,
     );
 
     let player = starknet::get_caller_address();
@@ -204,10 +211,10 @@ fn bank_test_swap_sell_without_fees() {
         liquidity_systems_dispatcher,
         swap_systems_dispatcher,
         _bank_systems_dispatcher,
-        _bank_config_dispatcher
+        _bank_config_dispatcher,
     ) =
         setup(
-        0, 1, 0, 1
+        0, 1, 0, 1,
     );
 
     let player = starknet::get_caller_address();
@@ -251,10 +258,10 @@ fn bank_test_swap_sell_with_fees() {
         liquidity_systems_dispatcher,
         swap_systems_dispatcher,
         _bank_systems_dispatcher,
-        _bank_config_dispatcher
+        _bank_config_dispatcher,
     ) =
         setup(
-        1, 10, 1, 10
+        1, 10, 1, 10,
     );
 
     let player = starknet::get_caller_address();

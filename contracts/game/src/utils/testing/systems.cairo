@@ -7,18 +7,18 @@ use dojo_cairo_test::deploy_contract;
 use s1_eternum::systems::config::contracts::config_systems;
 
 use s1_eternum::systems::{
-    realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
     combat::contracts::battle_systems::{
-        battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait, battle_pillage_systems,
-        IBattlePillageContractDispatcher, IBattlePillageContractDispatcherTrait
+        IBattleContractDispatcher, IBattleContractDispatcherTrait, IBattlePillageContractDispatcher,
+        IBattlePillageContractDispatcherTrait, battle_pillage_systems, battle_systems,
     },
-    combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
+    combat::contracts::troop_systems::{ITroopContractDispatcher, ITroopContractDispatcherTrait, troop_systems},
+    dev::contracts::resource::{IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait, dev_resource_systems},
     hyperstructure::contracts::{
-        hyperstructure_systems, IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait
+        IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait, hyperstructure_systems,
     },
-    season::contracts::{season_systems, ISeasonSystemsDispatcher, ISeasonSystemsDispatcherTrait},
-    map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait},
-    dev::contracts::resource::{dev_resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait},
+    map::contracts::{IMapSystemsDispatcher, IMapSystemsDispatcherTrait, map_systems},
+    realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait, realm_systems},
+    season::contracts::{ISeasonSystemsDispatcher, ISeasonSystemsDispatcherTrait, season_systems},
 };
 use starknet::{ContractAddress};
 
@@ -38,7 +38,7 @@ fn deploy_realm_systems(ref world: WorldStorage) -> IRealmSystemsDispatcher {
 fn deploy_hyperstructure_systems(ref world: WorldStorage) -> IHyperstructureSystemsDispatcher {
     let hyperstructure_systems_address = deploy_system(ref world, "hyperstructure_systems");
     let hyperstructure_systems_dispatcher = IHyperstructureSystemsDispatcher {
-        contract_address: hyperstructure_systems_address
+        contract_address: hyperstructure_systems_address,
     };
 
     hyperstructure_systems_dispatcher
@@ -67,7 +67,7 @@ fn deploy_battle_systems(ref world: WorldStorage) -> IBattleContractDispatcher {
 fn deploy_battle_pillage_systems(ref world: WorldStorage) -> IBattlePillageContractDispatcher {
     let battle_pillage_systems_address = deploy_system(ref world, "battle_pillage_systems");
     let battle_pillage_systems_dispatcher = IBattlePillageContractDispatcher {
-        contract_address: battle_pillage_systems_address
+        contract_address: battle_pillage_systems_address,
     };
     battle_pillage_systems_dispatcher
 }

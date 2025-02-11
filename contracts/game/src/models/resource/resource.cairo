@@ -1,21 +1,21 @@
-use core::fmt::{Display, Formatter, Error};
+use core::fmt::{Display, Error, Formatter};
 use core::num::traits::Bounded;
 use dojo::model::ModelStorage;
 
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
-    get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG, ResourceTypes, resource_type_name, WORLD_CONFIG_ID
+    GRAMS_PER_KG, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, get_resource_probabilities, resource_type_name,
 };
 use s1_eternum::models::config::{
-    ProductionConfig, TickConfig, TickImpl, TickTrait, CapacityConfig, CapacityConfigCategory, CapacityConfigTrait
+    CapacityCategory, CapacityConfig, CapacityConfigTrait, ProductionConfig, TickConfig, TickImpl, TickTrait,
 };
-use s1_eternum::models::config::{WeightConfigImpl, WeightConfig};
+use s1_eternum::models::config::{WeightConfig, WeightConfigImpl};
 use s1_eternum::models::realm::Realm;
+use s1_eternum::models::resource::production::production::{Production};
 use s1_eternum::models::structure::StructureTrait;
 use s1_eternum::models::structure::{Structure, StructureCategory};
-use s1_eternum::models::resource::production::production::{Production};
-use s1_eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
+use s1_eternum::utils::math::{is_u256_bit_set, min, set_u256_bit};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -34,7 +34,7 @@ impl ResourceDisplay of Display<Resource> {
             "Resource (entity id: {}, resource type: {}, balance: {})",
             *self.entity_id,
             resource_type_name(*self.resource_type),
-            *self.balance
+            *self.balance,
         );
         f.buffer.append(@str);
         Result::Ok(())
@@ -62,7 +62,7 @@ pub struct ResourceCost {
     #[key]
     index: u32,
     resource_type: u8,
-    amount: u128
+    amount: u128,
 }
 
 
@@ -74,7 +74,7 @@ pub struct DetachedResource {
     #[key]
     index: u32,
     resource_type: u8,
-    resource_amount: u128
+    resource_amount: u128,
 }
 
 
@@ -84,7 +84,7 @@ pub struct OwnedResourcesTracker {
     #[key]
     entity_id: ID,
     // todo: use felt252 instead
-    resource_types: u256
+    resource_types: u256,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -132,7 +132,7 @@ impl ResourceFoodImpl of ResourceFoodTrait {
     }
 
     /// Fails if the paid amount is insufficient
-    fn pay(ref world: WorldStorage, entity_id: ID, mut wheat_amount: u128, mut fish_amount: u128,) {
+    fn pay(ref world: WorldStorage, entity_id: ID, mut wheat_amount: u128, mut fish_amount: u128) {
         let (mut wheat, mut fish) = Self::get(ref world, entity_id);
 
         if wheat_amount > wheat.balance {
@@ -149,7 +149,7 @@ impl ResourceFoodImpl of ResourceFoodTrait {
     }
 
     /// Does not fail even if amount is insufficient
-    fn burn(ref world: WorldStorage, entity_id: ID, mut wheat_amount: u128, mut fish_amount: u128,) {
+    fn burn(ref world: WorldStorage, entity_id: ID, mut wheat_amount: u128, mut fish_amount: u128) {
         let mut wheat: Resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::WHEAT));
         let mut fish: Resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::FISH));
 
@@ -203,8 +203,12 @@ impl ResourceImpl of ResourceTrait {
             return;
         };
 
-        // save the updated resource
-        world.write_model(@self);
+        if self.balance == 0 {
+            world.erase_model(@self);
+        } else {
+            // save the updated resource
+            world.write_model(@self);
+        }
     }
 }
 

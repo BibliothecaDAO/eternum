@@ -1,28 +1,27 @@
 use core::array::SpanTrait;
 
 
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
-use s1_eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
-use s1_eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig};
+use s1_eternum::constants::{ARMY_ENTITY_TYPE, WORLD_CONFIG_ID};
+use s1_eternum::models::config::{CapacityCategory, CapacityConfig, SettlementConfig, TickConfig, TroopConfig};
 use s1_eternum::models::movable::{Movable};
-use s1_eternum::models::owner::{Owner, EntityOwner};
+use s1_eternum::models::owner::{EntityOwner, Owner};
 use s1_eternum::models::position::{Coord, Position};
 
-use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION};
+use s1_eternum::models::resource::resource::{RESOURCE_PRECISION, Resource, ResourceImpl, ResourceTrait, ResourceTypes};
 use s1_eternum::models::stamina::Stamina;
 use s1_eternum::systems::config::contracts::config_systems;
 use s1_eternum::systems::{
-    realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
-    combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
+    combat::contracts::troop_systems::{ITroopContractDispatcher, ITroopContractDispatcherTrait, troop_systems},
+    realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait, realm_systems},
 };
 use s1_eternum::utils::testing::{
-    config::{get_combat_config, set_settlement_config}, world::spawn_eternum, systems::deploy_realm_systems,
-    systems::{deploy_troop_systems, deploy_system}, general::{mint, get_default_realm_pos, spawn_realm}
+    config::{get_combat_config, set_settlement_config}, general::{get_default_realm_pos, mint, spawn_realm},
+    systems::deploy_realm_systems, systems::{deploy_system, deploy_troop_systems}, world::spawn_eternum,
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -39,12 +38,12 @@ fn set_configurations(ref world: WorldStorage) {
     world.write_model_test(@get_combat_config());
     world
         .write_model_test(
-            @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
+            @TickConfig { config_id: WORLD_CONFIG_ID, tick_interval_in_seconds: 1 },
         );
-    world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300_000, });
+    world.write_model_test(@CapacityConfig { category: CapacityCategory::Army, weight_gram: 300_000 });
 }
 
-fn setup() -> (WorldStorage, ITroopContractDispatcher, ID,) {
+fn setup() -> (WorldStorage, ITroopContractDispatcher, ID) {
     let mut world = spawn_eternum();
     set_configurations(ref world);
     let troop_system_dispatcher = deploy_troop_systems(ref world);
@@ -64,16 +63,16 @@ fn setup() -> (WorldStorage, ITroopContractDispatcher, ID,) {
             (ResourceTypes::CROSSBOWMAN, STARTING_CROSSBOWMAN_COUNT),
             (ResourceTypes::PALADIN, STARTING_PALADIN_COUNT),
         ]
-            .span()
+            .span(),
     );
 
-    (world, troop_system_dispatcher, realm_id,)
+    (world, troop_system_dispatcher, realm_id)
 }
 
 
 #[test]
 fn combat_test_army_create___attacking_army() {
-    let (mut world, troop_systems_dispatcher, realm_id,) = setup();
+    let (mut world, troop_systems_dispatcher, realm_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     let army_id = troop_systems_dispatcher.army_create(realm_id, false);
 
@@ -102,7 +101,7 @@ fn combat_test_army_create___attacking_army() {
 #[test]
 #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
 fn combat_test_army_create_not_owner() {
-    let (_, troop_systems_dispatcher, realm_id,) = setup();
+    let (_, troop_systems_dispatcher, realm_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<'someone_else'>());
     troop_systems_dispatcher.army_create(realm_id, false);
 }
@@ -111,7 +110,7 @@ fn combat_test_army_create_not_owner() {
 #[test]
 #[should_panic(expected: ("entity 900 is not a structure", 'ENTRYPOINT_FAILED'))]
 fn combat_test_army_create__only_structure_can_create_army() {
-    let (_, troop_systems_dispatcher, _realm_id,) = setup();
+    let (_, troop_systems_dispatcher, _realm_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<0>());
     troop_systems_dispatcher.army_create(900, false);
 }
@@ -119,7 +118,7 @@ fn combat_test_army_create__only_structure_can_create_army() {
 
 #[test]
 fn combat_test_army_create___defending_army() {
-    let (mut world, troop_systems_dispatcher, realm_id,) = setup();
+    let (mut world, troop_systems_dispatcher, realm_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     let army_id = troop_systems_dispatcher.army_create(realm_id, true);
 
@@ -155,7 +154,7 @@ fn combat_test_army_create___defending_army() {
 #[test]
 #[should_panic(expected: ("Structure 1 already has a defensive army", 'ENTRYPOINT_FAILED'))]
 fn combat_test_army_create_defensive_army__only_one_defensive_army() {
-    let (_, troop_systems_dispatcher, realm_id,) = setup();
+    let (_, troop_systems_dispatcher, realm_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     troop_systems_dispatcher.army_create(realm_id, true);
     troop_systems_dispatcher.army_create(realm_id, true);

@@ -1,8 +1,12 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::config::{CapacityConfig, CapacityConfigTrait};
-use s1_eternum::models::quantity::{Quantity};
 use core::num::traits::Bounded;
 use core::zeroable::Zeroable;
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+use s1_eternum::alias::ID;
+use s1_eternum::models::config::{CapacityCategory, CapacityConfig, CapacityConfigTrait};
+use s1_eternum::models::quantity::{Quantity};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -10,6 +14,7 @@ pub struct Weight {
     #[key]
     entity_id: ID,
     value: u128,
+    capacity_category: CapacityCategory,
 }
 
 #[generate_trait]
@@ -37,6 +42,16 @@ impl WeightImpl of WeightTrait {
             capacity.assert_can_carry(quantity, self);
         };
     }
+
+    fn assert_capacity_exists_and_get(ref world: WorldStorage, entity_id: ID) -> CapacityCategory {
+        let weight: Weight = world.read_model(entity_id);
+        assert!(
+            weight.capacity_category != CapacityCategory::None,
+            "capacity category does not exist for entity {}",
+            entity_id,
+        );
+        weight.capacity_category
+    }
 }
 
 
@@ -44,11 +59,16 @@ impl WeightImpl of WeightTrait {
 pub struct W3eight {
     capacity: u128,
     weight: u128,
+    category: CapacityCategory,
 }
 
 impl WeightZeroableImpl of Zeroable<W3eight> {
     fn zero() -> W3eight {
-        W3eight { capacity: 0, weight: 0 }
+        W3eight {
+            capacity: 0,
+            weight: 0,
+            category: CapacityCategory::None,
+        }
     }
 
     fn is_non_zero(self: W3eight) -> bool {

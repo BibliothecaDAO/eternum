@@ -1,5 +1,5 @@
-use s1_eternum::models::resource::production::building::BuildingCategory;
 use s1_eternum::alias::ID;
+use s1_eternum::models::resource::production::building::BuildingCategory;
 use s1_eternum::models::structure::StructureCategory;
 use starknet::ContractAddress;
 
@@ -152,7 +152,7 @@ pub struct CreateGuild {
     #[key]
     guild_entity_id: ID,
     guild_name: felt252,
-    timestamp: u64
+    timestamp: u64,
 }
 
 #[derive(Copy, Drop, Serde)]
@@ -163,5 +163,5 @@ pub struct JoinGuild {
     #[key]
     address: ContractAddress,
     guild_name: felt252,
-    timestamp: u64
+    timestamp: u64,
 }

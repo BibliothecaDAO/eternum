@@ -1,31 +1,30 @@
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::MAX_REALMS_PER_ADDRESS;
 
 use s1_eternum::constants::ResourceTypes;
 use s1_eternum::models::map::Tile;
 use s1_eternum::models::owner::Owner;
 
-use s1_eternum::models::position::{Position, Coord};
+use s1_eternum::models::position::{Coord, Position};
 use s1_eternum::models::realm::{Realm, RealmTrait};
 use s1_eternum::models::resource::resource::DetachedResource;
 use s1_eternum::models::resource::resource::Resource;
 
-use s1_eternum::systems::config::contracts::{config_systems, IQuestConfigDispatcher, IQuestConfigDispatcherTrait};
-use s1_eternum::systems::realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
+use s1_eternum::systems::config::contracts::{IQuestConfigDispatcher, IQuestConfigDispatcherTrait, config_systems};
+use s1_eternum::systems::realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait, realm_systems};
 
 use s1_eternum::utils::map::biomes::Biome;
 
 use s1_eternum::utils::testing::{
-    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_hyperstructure_systems},
+    config::{set_capacity_config, set_combat_config, set_realm_level_config, set_settlement_config},
     general::{
-        spawn_realm, get_default_realm_pos, generate_realm_positions, spawn_hyperstructure,
-        get_default_hyperstructure_coord
+        generate_realm_positions, get_default_hyperstructure_coord, get_default_realm_pos, spawn_hyperstructure,
+        spawn_realm,
     },
-    config::{set_combat_config, set_capacity_config, set_realm_level_config, set_settlement_config}
+    systems::{deploy_hyperstructure_systems, deploy_realm_systems, deploy_system}, world::spawn_eternum,
 };
 use starknet::contract_address_const;
 
@@ -52,7 +51,7 @@ fn setup() -> (WorldStorage, IRealmSystemsDispatcher) {
 
     // set initially minted resources
     let initial_resources = array![
-        (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT), (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
+        (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT), (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT),
     ];
 
     let quest_reward_config_dispatcher = IQuestConfigDispatcher { contract_address: config_systems_address };
@@ -136,7 +135,7 @@ fn realm_test_claim_quest_reward__not_realm() {
     let realm_entity_id = spawn_realm(ref world, 1, get_default_realm_pos().into());
 
     let hyperstructure_entity_id = spawn_hyperstructure(
-        ref world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord()
+        ref world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord(),
     );
 
     realm_systems_dispatcher.quest_claim(QUEST_ID, hyperstructure_entity_id);
@@ -151,13 +150,12 @@ fn realm_test_upgrade_level_success() {
     let realm_entity_id = spawn_realm(ref world, 1, get_default_realm_pos().into());
 
     // Add required resources for upgrade
-    let required_resources = array![(ResourceTypes::WHEAT, 100), (ResourceTypes::WOOD, 100),];
-    for (resource_type, amount) in required_resources
-        .span() {
-            let mut resource: Resource = world.read_model((realm_entity_id, *resource_type));
-            resource.balance += *amount;
-            world.write_model_test(@resource);
-        };
+    let required_resources = array![(ResourceTypes::WHEAT, 100), (ResourceTypes::WOOD, 100)];
+    for (resource_type, amount) in required_resources.span() {
+        let mut resource: Resource = world.read_model((realm_entity_id, *resource_type));
+        resource.balance += *amount;
+        world.write_model_test(@resource);
+    };
 
     // Upgrade level
     realm_systems_dispatcher.upgrade_level(realm_entity_id);
@@ -167,11 +165,10 @@ fn realm_test_upgrade_level_success() {
     assert(realm.level == 1, 'Realm level should be 1');
 
     // Check if resources were consumed
-    for (resource_type, _amount) in required_resources
-        .span() {
-            let resource: Resource = world.read_model((realm_entity_id, *resource_type));
-            assert(resource.balance == 0, 'Resource should be consumed');
-        }
+    for (resource_type, _amount) in required_resources.span() {
+        let resource: Resource = world.read_model((realm_entity_id, *resource_type));
+        assert(resource.balance == 0, 'Resource should be consumed');
+    }
 }
 
 #[test]
@@ -226,8 +223,8 @@ fn realm_test_upgrade_level_max_level() {
 #[should_panic(
     expected: (
         "not enough resources, Resource (entity id: 5, resource type: WHEAT, balance: 0). deduction: 100",
-        'ENTRYPOINT_FAILED'
-    )
+        'ENTRYPOINT_FAILED',
+    ),
 )]
 fn realm_test_upgrade_level_insufficient_resources() {
     let (mut world, realm_systems_dispatcher) = setup();
@@ -256,12 +253,11 @@ fn realm_test_upgrade_level_multiple_times() {
         (ResourceTypes::COAL, 1000),
         (ResourceTypes::IRONWOOD, 1000),
     ];
-    for (resource_type, amount) in required_resources
-        .span() {
-            let mut resource: Resource = world.read_model((realm_entity_id, *resource_type));
-            resource.balance += *amount;
-            world.write_model_test(@resource);
-        };
+    for (resource_type, amount) in required_resources.span() {
+        let mut resource: Resource = world.read_model((realm_entity_id, *resource_type));
+        resource.balance += *amount;
+        world.write_model_test(@resource);
+    };
 
     // Upgrade level multiple times
     realm_systems_dispatcher.upgrade_level(realm_entity_id);
@@ -279,12 +275,11 @@ fn realm_test_upgrade_level_multiple_times() {
         ResourceTypes::STONE,
         ResourceTypes::FISH,
         ResourceTypes::COAL,
-        ResourceTypes::IRONWOOD
+        ResourceTypes::IRONWOOD,
     ];
-    for resource_type in resource_types
-        .span() {
-            let resource: Resource = world.read_model((realm_entity_id, *resource_type));
-            assert!(resource.balance < 1000, "Resource should be partially consumed");
-            assert!(resource.balance > 0, "Resource should not be fully consumed");
-        }
+    for resource_type in resource_types.span() {
+        let resource: Resource = world.read_model((realm_entity_id, *resource_type));
+        assert!(resource.balance < 1000, "Resource should be partially consumed");
+        assert!(resource.balance > 0, "Resource should not be fully consumed");
+    }
 }

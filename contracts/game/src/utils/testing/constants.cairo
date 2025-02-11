@@ -1,4 +1,4 @@
-use s1_eternum::constants::{ResourceTypes, RESOURCE_PRECISION};
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 
 
 use s1_eternum::models::owner::{Owner, OwnerImpl, OwnerTrait};

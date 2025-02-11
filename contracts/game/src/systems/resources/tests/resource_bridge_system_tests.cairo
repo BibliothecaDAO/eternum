@@ -2,29 +2,27 @@ mod resource_bridge_system_tests {
     use core::option::OptionTrait;
     use core::result::ResultTrait;
     use core::traits::Into;
-    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+    use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+    use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::bank::{bank::Bank};
-    use s1_eternum::models::capacity::{CapacityCategory};
-    use s1_eternum::models::config::{CapacityConfigCategory, WeightConfig};
-    use s1_eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
-    use s1_eternum::models::movable::{ArrivalTime};
-    use s1_eternum::models::owner::{Owner, EntityOwner};
-    use s1_eternum::models::position::{Position, Coord};
-    use s1_eternum::models::resource::resource::{Resource, RESOURCE_PRECISION};
+    use s1_eternum::models::config::{CapacityCategory, WeightConfig};
+    use s1_eternum::models::config::{ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig};
+    use s1_eternum::models::owner::{EntityOwner, Owner};
+    use s1_eternum::models::position::{Coord, Position};
+    use s1_eternum::models::resource::resource::{RESOURCE_PRECISION, Resource};
     use s1_eternum::models::structure::{Structure, StructureCategory};
     use s1_eternum::systems::config::contracts::config_systems;
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
-        resource_bridge_systems, resource_bridge_systems::InternalBridgeImpl, IResourceBridgeSystemsDispatcher,
-        IResourceBridgeSystemsDispatcherTrait, ERC20ABIDispatcher, ERC20ABIDispatcherTrait
+        ERC20ABIDispatcher, ERC20ABIDispatcherTrait, IResourceBridgeSystemsDispatcher,
+        IResourceBridgeSystemsDispatcherTrait, resource_bridge_systems, resource_bridge_systems::InternalBridgeImpl,
     };
     use s1_eternum::utils::testing::mock::erc20mock::MockERC20;
     use s1_eternum::utils::testing::{
-        world::spawn_eternum, systems::{deploy_system, deploy_contract}, config::set_capacity_config
+        config::set_capacity_config, systems::{deploy_contract, deploy_system}, world::spawn_eternum,
     };
     use starknet::testing::set_contract_address;
     use starknet::{ContractAddress, contract_address_const};
@@ -138,7 +136,7 @@ mod resource_bridge_system_tests {
         fn deploy_mock_erc20(ref world: WorldStorage) -> ContractAddress {
             set_contract_address(REALM_OWNER_ADDRESS());
             let mock_erc20_calldata: Array<felt252> = array![
-                LORDS_ERC20_SUPPLY().into(), 0, LORDS_ERC20_DECIMALS().into()
+                LORDS_ERC20_SUPPLY().into(), 0, LORDS_ERC20_DECIMALS().into(),
             ];
             let mock_erc20_address = deploy_contract(MockERC20::TEST_CLASS_HASH, mock_erc20_calldata.span());
             set_contract_address(TEST_ADDRESS());
@@ -152,8 +150,8 @@ mod resource_bridge_system_tests {
                         config_id: WORLD_CONFIG_ID,
                         weight_config_id: ResourceTypes::DONKEY.into(),
                         entity_type: ResourceTypes::DONKEY.into(),
-                        weight_gram: 10
-                    }
+                        weight_gram: 10,
+                    },
                 );
             world
                 .write_model_test(
@@ -161,8 +159,8 @@ mod resource_bridge_system_tests {
                         config_id: WORLD_CONFIG_ID,
                         weight_config_id: ResourceTypes::LORDS.into(),
                         entity_type: ResourceTypes::LORDS.into(),
-                        weight_gram: 1
-                    }
+                        weight_gram: 1,
+                    },
                 );
         }
 
@@ -172,36 +170,37 @@ mod resource_bridge_system_tests {
         }
 
         fn setup_bridge_config(ref world: WorldStorage, mock_erc20_address: ContractAddress) {
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                selector!("resource_bridge_config"),
+                ResourceBridgeConfig { deposit_paused: false, withdraw_paused: false },
+            );
             world
                 .write_model_test(
-                    @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: false, withdraw_paused: false }
+                    @ResourceBridgeWhitelistConfig { token: mock_erc20_address, resource_type: ResourceTypes::LORDS },
                 );
-            world
-                .write_model_test(
-                    @ResourceBridgeWhitelistConfig { token: mock_erc20_address, resource_type: ResourceTypes::LORDS }
-                );
-            world
-                .write_model_test(
-                    @ResourceBridgeFeeSplitConfig {
-                        config_id: WORLD_CONFIG_ID,
-                        velords_fee_recipient: VELORDS_ADDRESS(),
-                        season_pool_fee_recipient: SEASON_POOL_ADDRESS(),
-                        velords_fee_on_dpt_percent: 100, // 1% i.e 100/10_000
-                        season_pool_fee_on_dpt_percent: 50, // 0.5% i.e 50/10_000
-                        client_fee_on_dpt_percent: 50, // 0.5% i.e 50/10_000
-                        velords_fee_on_wtdr_percent: 200, // 2% i.e 200/10_000
-                        season_pool_fee_on_wtdr_percent: 100, // 1% i.e 100/10_000
-                        client_fee_on_wtdr_percent: 100, // 1% i.e 100/10_000
-                        max_bank_fee_dpt_percent: 500, // 5% i.e 500/10_000
-                        max_bank_fee_wtdr_percent: 600, // 6% i.e 600/10_000
-                    }
-                );
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                selector!("res_bridge_fee_split_config"),
+                ResourceBridgeFeeSplitConfig {
+                    velords_fee_recipient: VELORDS_ADDRESS(),
+                    season_pool_fee_recipient: SEASON_POOL_ADDRESS(),
+                    velords_fee_on_dpt_percent: 100, // 1% i.e 100/10_000
+                    season_pool_fee_on_dpt_percent: 50, // 0.5% i.e 50/10_000
+                    client_fee_on_dpt_percent: 50, // 0.5% i.e 50/10_000
+                    velords_fee_on_wtdr_percent: 200, // 2% i.e 200/10_000
+                    season_pool_fee_on_wtdr_percent: 100, // 1% i.e 100/10_000
+                    client_fee_on_wtdr_percent: 100, // 1% i.e 100/10_000
+                    max_bank_fee_dpt_percent: 500, // 5% i.e 500/10_000
+                    max_bank_fee_wtdr_percent: 600 // 6% i.e 600/10_000
+                },
+            );
         }
 
         fn make_bank(ref world: WorldStorage, bank_id: ID) {
             world
                 .write_model_test(
-                    @CapacityCategory { entity_id: bank_id.into(), category: CapacityConfigCategory::Structure }
+                    @CapacityCategory { entity_id: bank_id.into(), category: CapacityCategory::Structure },
                 );
             world
                 .write_model_test(
@@ -211,12 +210,12 @@ mod resource_bridge_system_tests {
                         owner_fee_denom: 1,
                         owner_bridge_fee_dpt_percent: BANK_BRIDGE_FEE_DPT_PERCENT(),
                         owner_bridge_fee_wtdr_percent: BANK_BRIDGE_FEE_WTDR_PERCENT(),
-                        exists: true
-                    }
+                        exists: true,
+                    },
                 );
             world
                 .write_model_test(
-                    @Structure { entity_id: bank_id.into(), category: StructureCategory::Bank, created_at: 1 }
+                    @Structure { entity_id: bank_id.into(), category: StructureCategory::Bank, created_at: 1 },
                 );
             world.write_model_test(@Owner { entity_id: bank_id.into(), address: BANK_OWNER_ADDRESS() });
             world.write_model_test(@EntityOwner { entity_id: bank_id.into(), entity_owner_id: bank_id.into() });
@@ -226,11 +225,11 @@ mod resource_bridge_system_tests {
         fn make_realm(ref world: WorldStorage, realm_id: ID) {
             world
                 .write_model_test(
-                    @CapacityCategory { entity_id: realm_id.into(), category: CapacityConfigCategory::Structure }
+                    @CapacityCategory { entity_id: realm_id.into(), category: CapacityCategory::Structure },
                 );
             world
                 .write_model_test(
-                    @Structure { entity_id: realm_id.into(), category: StructureCategory::Realm, created_at: 1 }
+                    @Structure { entity_id: realm_id.into(), category: StructureCategory::Realm, created_at: 1 },
                 );
             world.write_model_test(@Owner { entity_id: realm_id.into(), address: REALM_OWNER_ADDRESS() });
             world.write_model_test(@EntityOwner { entity_id: realm_id.into(), entity_owner_id: realm_id.into() });
@@ -239,8 +238,8 @@ mod resource_bridge_system_tests {
                     @Resource {
                         entity_id: realm_id.into(),
                         resource_type: ResourceTypes::DONKEY,
-                        balance: REALM_INITIAL_DONKEY_BALANCE()
-                    }
+                        balance: REALM_INITIAL_DONKEY_BALANCE(),
+                    },
                 );
             world.write_model_test(@Position { entity_id: realm_id.into(), x: REALM_COORD().x, y: REALM_COORD().y });
         }
@@ -269,14 +268,14 @@ mod resource_bridge_system_tests {
                 bank_id.into(),
                 realm_id.into(),
                 deposit_amount_token_precision,
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
 
         // check that lords were transferred from the caller to the bridge
         assert_eq!(
             token.balance_of(REALM_OWNER_ADDRESS()),
             LORDS_ERC20_SUPPLY().into() - deposit_amount_token_precision,
-            "Incorrect bridger lords balance after deposit"
+            "Incorrect bridger lords balance after deposit",
         );
 
         // check that the bridge is holding the collected lords amount minus the fees
@@ -288,7 +287,7 @@ mod resource_bridge_system_tests {
         assert_eq!(
             token.balance_of(resource_bridge_systems.contract_address),
             expected_bridge_lords_balance,
-            "Incorrect bridge lords balance after deposit"
+            "Incorrect bridge lords balance after deposit",
         );
 
         // check that the velords address received the correct amount of velords fees
@@ -308,7 +307,7 @@ mod resource_bridge_system_tests {
         let deposit_amount_resource_precision: u128 = deposit_amount_no_decimals * RESOURCE_PRECISION;
         let expected_bank_lords_balance = deposit_amount_resource_precision * 1 / 100; // 1% bank fee
         assert_eq!(
-            bank_lords_resource.balance, expected_bank_lords_balance, "Incorrect bank resource balance after deposit"
+            bank_lords_resource.balance, expected_bank_lords_balance, "Incorrect bank resource balance after deposit",
         );
 
         // check that the bank received the correct in game lords resource amount
@@ -319,7 +318,7 @@ mod resource_bridge_system_tests {
         assert_eq!(
             realm_transport_lords_resource.balance,
             expected_realm_transport_lords_balance,
-            "Incorrect realm resource balance after deposit"
+            "Incorrect realm resource balance after deposit",
         );
 
         // ensure realm donkey location is correct
@@ -330,7 +329,7 @@ mod resource_bridge_system_tests {
         // check that realm donkey balance decreased
         let realm_donkey_resource: Resource = world.read_model((realm_id, ResourceTypes::DONKEY));
         assert_lt!(
-            realm_donkey_resource.balance, REALM_INITIAL_DONKEY_BALANCE(), "Realm donkey balance did not decrease"
+            realm_donkey_resource.balance, REALM_INITIAL_DONKEY_BALANCE(), "Realm donkey balance did not decrease",
         );
     }
 
@@ -367,7 +366,7 @@ mod resource_bridge_system_tests {
                 bank_id.into(),
                 realm_id.into(),
                 deposit_amount_token_precision,
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
 
         // Check that lords were transferred from the caller to the bridge
@@ -380,7 +379,7 @@ mod resource_bridge_system_tests {
         assert_eq!(
             token.balance_of(resource_bridge_systems.contract_address),
             expected_bridge_lords_balance,
-            "Incorrect bridge lords balance after deposit"
+            "Incorrect bridge lords balance after deposit",
         );
 
         // Check that the velords address received the correct amount of velords fees
@@ -407,7 +406,7 @@ mod resource_bridge_system_tests {
         assert_eq!(
             realm_transport_lords_resource.balance,
             expected_realm_transport_lords_balance,
-            "Incorrect realm resource balance after deposit"
+            "Incorrect realm resource balance after deposit",
         );
 
         // Ensure realm donkey location is correct
@@ -418,7 +417,7 @@ mod resource_bridge_system_tests {
         // Check that realm donkey balance decreased
         let realm_donkey_resource: Resource = world.read_model((realm_id, ResourceTypes::DONKEY));
         assert_lt!(
-            realm_donkey_resource.balance, REALM_INITIAL_DONKEY_BALANCE(), "Realm donkey balance did not decrease"
+            realm_donkey_resource.balance, REALM_INITIAL_DONKEY_BALANCE(), "Realm donkey balance did not decrease",
         );
     }
 
@@ -449,7 +448,7 @@ mod resource_bridge_system_tests {
                 bank_id.into(),
                 realm_id.into(),
                 deposit_amount_token_precision,
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -476,7 +475,7 @@ mod resource_bridge_system_tests {
                 bank_id.into(),
                 realm_id.into(),
                 deposit_amount_token_precision,
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -501,7 +500,7 @@ mod resource_bridge_system_tests {
                 bank_id.into(),
                 realm_id.into(),
                 deposit_amount_token_precision,
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -513,7 +512,7 @@ mod resource_bridge_system_tests {
         let realm_id: ID = REALM_ID();
         world
             .write_model_test(
-                @Structure { entity_id: not_bank_id.into(), category: StructureCategory::Realm, created_at: 1 }
+                @Structure { entity_id: not_bank_id.into(), category: StructureCategory::Realm, created_at: 1 },
             );
         SetupImpl::make_realm(ref world, realm_id);
 
@@ -530,7 +529,7 @@ mod resource_bridge_system_tests {
                 not_bank_id.into(),
                 realm_id.into(),
                 deposit_amount_token_precision,
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -548,8 +547,8 @@ mod resource_bridge_system_tests {
                 @Structure {
                     entity_id: not_realm_id.into(),
                     category: StructureCategory::Bank, // Using Bank instead of Realm
-                    created_at: 1
-                }
+                    created_at: 1,
+                },
             );
 
         // make realm owner the caller
@@ -567,7 +566,7 @@ mod resource_bridge_system_tests {
                 bank_id.into(),
                 not_realm_id.into(),
                 deposit_amount_token_precision,
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -577,7 +576,7 @@ mod resource_bridge_system_tests {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         world
             .write_model_test(
-                @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: true, withdraw_paused: false }
+                @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: true, withdraw_paused: false },
             );
 
         let bank_id: ID = BANK_ID();
@@ -598,7 +597,7 @@ mod resource_bridge_system_tests {
                 bank_id.into(),
                 realm_id.into(),
                 deposit_amount_token_precision,
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -625,7 +624,7 @@ mod resource_bridge_system_tests {
                 bank_id.into(),
                 realm_id.into(),
                 deposit_amount_token_precision,
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -643,8 +642,8 @@ mod resource_bridge_system_tests {
         world
             .write_model_test(
                 @Resource {
-                    entity_id: realm_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
-                }
+                    entity_id: realm_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance,
+                },
             );
 
         // Make realm owner the caller
@@ -660,12 +659,12 @@ mod resource_bridge_system_tests {
         assert_eq!(
             realm_lords_resource.balance,
             initial_lords_balance - withdraw_amount,
-            "Incorrect realm LORDS balance after withdrawal"
+            "Incorrect realm LORDS balance after withdrawal",
         );
         let realm_donkey_id: u32 = 1; // Assuming this is the first donkey created
         let realm_donkey_lords_resource: Resource = world.read_model((realm_donkey_id, ResourceTypes::LORDS));
         assert_eq!(
-            realm_donkey_lords_resource.balance, withdraw_amount, "Incorrect bank LORDS balance after withdrawal"
+            realm_donkey_lords_resource.balance, withdraw_amount, "Incorrect bank LORDS balance after withdrawal",
         );
 
         // Check that a donkey was created and is at the bank's location
@@ -708,7 +707,7 @@ mod resource_bridge_system_tests {
         // Create a structure that is not a bank
         world
             .write_model_test(
-                @Structure { entity_id: not_bank_id.into(), category: StructureCategory::Realm, created_at: 1 }
+                @Structure { entity_id: not_bank_id.into(), category: StructureCategory::Realm, created_at: 1 },
             );
 
         // Make realm owner the caller
@@ -731,7 +730,7 @@ mod resource_bridge_system_tests {
         // Create a structure that is not a realm
         world
             .write_model_test(
-                @Structure { entity_id: not_realm_id.into(), category: StructureCategory::Bank, created_at: 1 }
+                @Structure { entity_id: not_realm_id.into(), category: StructureCategory::Bank, created_at: 1 },
             );
         world.write_model_test(@EntityOwner { entity_id: not_realm_id.into(), entity_owner_id: not_realm_id.into() });
         world.write_model_test(@Owner { entity_id: not_realm_id.into(), address: REALM_OWNER_ADDRESS() });
@@ -757,7 +756,7 @@ mod resource_bridge_system_tests {
         // Pause withdrawals
         world
             .write_model_test(
-                @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: false, withdraw_paused: true }
+                @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: false, withdraw_paused: true },
             );
 
         // Make realm owner the caller
@@ -791,8 +790,8 @@ mod resource_bridge_system_tests {
     #[should_panic(
         expected: (
             "not enough resources, Resource (entity id: 9899, resource type: LORDS, balance: 100000). deduction: 500000",
-            'ENTRYPOINT_FAILED'
-        )
+            'ENTRYPOINT_FAILED',
+        ),
     )]
     fn resource_bridge_test_start_withdraw_insufficient_balance() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
@@ -806,8 +805,8 @@ mod resource_bridge_system_tests {
         world
             .write_model_test(
                 @Resource {
-                    entity_id: realm_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
-                }
+                    entity_id: realm_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance,
+                },
             );
 
         // Make realm owner the caller
@@ -839,8 +838,8 @@ mod resource_bridge_system_tests {
         world
             .write_model_test(
                 @Resource {
-                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
-                }
+                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance,
+                },
             );
         world.write_model_test(@Position { entity_id: donkey_id.into(), x: BANK_COORD().x, y: BANK_COORD().y });
         world.write_model_test(@EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id });
@@ -851,7 +850,7 @@ mod resource_bridge_system_tests {
         // Perform withdrawal
         resource_bridge_systems
             .finish_withdraw(
-                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS()
+                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
 
         // Check that LORDS were transferred from the donkey to the bridge
@@ -860,9 +859,11 @@ mod resource_bridge_system_tests {
 
         // Check that the bridge transferred the correct amount to the recipient
         let expected_withdraw_amount = InternalBridgeImpl::resource_amount_to_token_amount(
-            token.contract_address, initial_lords_balance
+            token.contract_address, initial_lords_balance,
         );
-        let fee_split_config: ResourceBridgeFeeSplitConfig = world.read_model(WORLD_CONFIG_ID);
+        let fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("res_bridge_fee_split_config"),
+        );
         let total_fee_percent = fee_split_config.velords_fee_on_wtdr_percent
             + fee_split_config.season_pool_fee_on_wtdr_percent
             + fee_split_config.client_fee_on_wtdr_percent
@@ -873,7 +874,7 @@ mod resource_bridge_system_tests {
         assert_eq!(
             token.balance_of(BRIDGER_WITHDRAW_ADDRESS()),
             expected_recipient_amount,
-            "Incorrect recipient LORDS balance after withdrawal"
+            "Incorrect recipient LORDS balance after withdrawal",
         );
         // Check that fees were distributed correctly
         let velords_fee_amount = (expected_withdraw_amount * fee_split_config.velords_fee_on_wtdr_percent.into())
@@ -908,8 +909,8 @@ mod resource_bridge_system_tests {
         world
             .write_model_test(
                 @Resource {
-                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
-                }
+                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance,
+                },
             );
         world.write_model_test(@Position { entity_id: donkey_id.into(), x: BANK_COORD().x, y: BANK_COORD().y });
         world.write_model_test(@EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id });
@@ -920,7 +921,7 @@ mod resource_bridge_system_tests {
         // Attempt withdrawal
         resource_bridge_systems
             .finish_withdraw(
-                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS()
+                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -935,7 +936,7 @@ mod resource_bridge_system_tests {
         // Create a structure that is not a bank
         world
             .write_model_test(
-                @Structure { entity_id: not_bank_id.into(), category: StructureCategory::Realm, created_at: 1 }
+                @Structure { entity_id: not_bank_id.into(), category: StructureCategory::Realm, created_at: 1 },
             );
 
         // Set initial LORDS balance for the realm's donkey at the non-bank location
@@ -944,8 +945,8 @@ mod resource_bridge_system_tests {
         world
             .write_model_test(
                 @Resource {
-                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
-                }
+                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance,
+                },
             );
         world.write_model_test(@Position { entity_id: donkey_id.into(), x: 0, y: 0 });
         world.write_model_test(@EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id });
@@ -960,7 +961,7 @@ mod resource_bridge_system_tests {
                 donkey_id,
                 token.contract_address,
                 BRIDGER_WITHDRAW_ADDRESS(),
-                CLIENT_FEE_RECIPIENT_ADDRESS()
+                CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -979,8 +980,8 @@ mod resource_bridge_system_tests {
         world
             .write_model_test(
                 @Resource {
-                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
-                }
+                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance,
+                },
             );
         world.write_model_test(@Position { entity_id: donkey_id.into(), x: 0, y: 0 });
         world.write_model_test(@EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id });
@@ -991,7 +992,7 @@ mod resource_bridge_system_tests {
         // Attempt withdrawal
         resource_bridge_systems
             .finish_withdraw(
-                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS()
+                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -1010,8 +1011,8 @@ mod resource_bridge_system_tests {
         world
             .write_model_test(
                 @Resource {
-                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
-                }
+                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance,
+                },
             );
         world.write_model_test(@Position { entity_id: donkey_id.into(), x: BANK_COORD().x, y: BANK_COORD().y });
         world.write_model_test(@EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id });
@@ -1019,7 +1020,7 @@ mod resource_bridge_system_tests {
         // Pause withdrawals
         world
             .write_model_test(
-                @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: false, withdraw_paused: true }
+                @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: false, withdraw_paused: true },
             );
 
         // Make realm owner the caller
@@ -1028,7 +1029,7 @@ mod resource_bridge_system_tests {
         // Attempt withdrawal
         resource_bridge_systems
             .finish_withdraw(
-                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS()
+                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -1047,8 +1048,8 @@ mod resource_bridge_system_tests {
         world
             .write_model_test(
                 @Resource {
-                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
-                }
+                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance,
+                },
             );
         world.write_model_test(@Position { entity_id: donkey_id.into(), x: BANK_COORD().x, y: BANK_COORD().y });
         world.write_model_test(@EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id });
@@ -1060,7 +1061,7 @@ mod resource_bridge_system_tests {
         let non_whitelisted_token = contract_address_const::<'non_whitelisted'>();
         resource_bridge_systems
             .finish_withdraw(
-                bank_id, donkey_id, non_whitelisted_token, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS()
+                bank_id, donkey_id, non_whitelisted_token, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
     }
 
@@ -1087,8 +1088,8 @@ mod resource_bridge_system_tests {
         world
             .write_model_test(
                 @Resource {
-                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
-                }
+                    entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance,
+                },
             );
         world.write_model_test(@Position { entity_id: donkey_id.into(), x: BANK_COORD().x, y: BANK_COORD().y });
         world.write_model_test(@EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id });
@@ -1099,7 +1100,7 @@ mod resource_bridge_system_tests {
         // Perform withdrawal
         resource_bridge_systems
             .finish_withdraw(
-                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS()
+                bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
             );
 
         // Check that LORDS were transferred from the donkey to the bridge
@@ -1108,9 +1109,11 @@ mod resource_bridge_system_tests {
 
         // Check that the bridge transferred the correct amount to the recipient
         let expected_withdraw_amount = InternalBridgeImpl::resource_amount_to_token_amount(
-            token.contract_address, initial_lords_balance
+            token.contract_address, initial_lords_balance,
         );
-        let fee_split_config: ResourceBridgeFeeSplitConfig = world.read_model(WORLD_CONFIG_ID);
+        let fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("res_bridge_fee_split_config"),
+        );
         let total_fee_percent = fee_split_config.velords_fee_on_wtdr_percent
             + fee_split_config.season_pool_fee_on_wtdr_percent
             + fee_split_config.client_fee_on_wtdr_percent;
@@ -1120,7 +1123,7 @@ mod resource_bridge_system_tests {
         assert_eq!(
             token.balance_of(BRIDGER_WITHDRAW_ADDRESS()),
             expected_recipient_amount,
-            "Incorrect recipient LORDS balance after withdrawal"
+            "Incorrect recipient LORDS balance after withdrawal",
         );
 
         // Check that fees were distributed correctly

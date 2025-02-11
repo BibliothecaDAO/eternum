@@ -72,7 +72,7 @@ fn random(seed: u256, salt: u128, upper_bound: u128) -> u128 {
 /// See Also: https://docs.python.org/3/library/random.html#random.choices
 ///
 fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
-    population: Span<T>, weights: Span<u128>, mut cum_weights: Span<u128>, k: u128, r: bool, vrf_seed: u256
+    population: Span<T>, weights: Span<u128>, mut cum_weights: Span<u128>, k: u128, r: bool, vrf_seed: u256,
 ) -> Span<T> {
     let mut n = population.len();
     let mut salt: u128 = starknet::get_block_timestamp().into();
@@ -202,7 +202,7 @@ fn cum_sum(a: Span<u128>) -> Span<u128> {
 fn bisect_right(a: Span<u128>, x: u128, lo: u32, hi: Option<u32>) -> u32 {
     let mut hi = match hi {
         Option::Some(hi) => hi,
-        Option::None => a.len().into()
+        Option::None => a.len().into(),
     };
 
     let mut lo = lo;

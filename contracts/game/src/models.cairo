@@ -1,5 +1,3 @@
-mod capacity;
-mod troop;
 mod config;
 mod event;
 mod guild;
@@ -8,7 +6,6 @@ mod map;
 mod message;
 mod movable;
 mod name;
-mod order;
 mod owner;
 mod population;
 mod position;
@@ -19,6 +16,7 @@ mod season;
 mod stamina;
 mod structure;
 mod trade;
+mod troop;
 mod weight;
 mod bank {
     mod bank;
@@ -27,8 +25,8 @@ mod bank {
 }
 
 mod resource {
-    mod resource;
     mod r3esource;
+    mod resource;
     mod production {
         mod building;
         mod production;

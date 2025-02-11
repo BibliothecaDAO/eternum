@@ -1,34 +1,34 @@
 use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::DONKEY_ENTITY_TYPE;
 
 use s1_eternum::constants::ResourceTypes;
+use s1_eternum::models::config::CapacityCategory;
 use s1_eternum::models::config::CapacityConfig;
-use s1_eternum::models::config::CapacityConfigCategory;
-use s1_eternum::models::movable::{Movable, ArrivalTime};
+use s1_eternum::models::movable::Movable;
 use s1_eternum::models::owner::Owner;
 use s1_eternum::models::position::{Position};
 use s1_eternum::models::resource::resource::Resource;
-use s1_eternum::models::trade::{Trade, Status, TradeStatus};
+use s1_eternum::models::trade::{Trade, TradeStatus};
 use s1_eternum::models::weight::Weight;
 
 use s1_eternum::systems::config::contracts::{
-    config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait
+    ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait, ITransportConfigDispatcher,
+    ITransportConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait, config_systems,
 };
 
 use s1_eternum::systems::trade::contracts::trade_systems::{
-    trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
+    ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait, trade_systems,
 };
 
 use s1_eternum::utils::testing::{
-    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm},
-    config::{set_capacity_config, set_settlement_config}
+    config::{set_capacity_config, set_settlement_config}, general::{spawn_realm},
+    systems::{deploy_realm_systems, deploy_system}, world::spawn_eternum,
 };
 use starknet::contract_address_const;
 
@@ -64,7 +64,7 @@ fn setup() -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
 
     // set donkey capacity weight_gram
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000, });
+        .set_capacity_config(CapacityConfig { category: CapacityCategory::Donkey, weight_gram: 1_000_000 });
 
     // maker and taker are at the same location
     // so they can trade without transport
@@ -104,10 +104,10 @@ fn setup() -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
     let trade_id = trade_systems_dispatcher
         .create_order(
             maker_id,
-            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
+            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100)].span(),
             taker_id,
-            array![(ResourceTypes::WOOD, 200), (ResourceTypes::SILVER, 200),].span(),
-            100
+            array![(ResourceTypes::WOOD, 200), (ResourceTypes::SILVER, 200)].span(),
+            100,
         );
 
     (world, trade_id, maker_id, taker_id, trade_systems_dispatcher)
@@ -123,7 +123,7 @@ fn trade_test_cancel() {
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
     trade_systems_dispatcher
-        .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
+        .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100)].span());
 
     // check that maker balance is correct
     let maker_stone_resource: Resource = world.read_model((maker_id, ResourceTypes::STONE));
@@ -132,9 +132,8 @@ fn trade_test_cancel() {
     let maker_gold_resource: Resource = world.read_model((maker_id, ResourceTypes::GOLD));
     assert(maker_gold_resource.balance == 100, 'wrong maker balance');
 
-    // check that trade status is cancelled
-    let trade_status: Status = world.read_model(trade_id);
-    assert(trade_status.value == TradeStatus::CANCELLED, 'wrong trade status');
+    let trade: Trade = world.read_model(trade_id);
+    assert(trade.status == TradeStatus::CANCELLED, 'wrong trade status');
 }
 
 
@@ -146,13 +145,15 @@ fn trade_test_cancel_after_acceptance() {
 
     // accept order
 
-    world.write_model_test(@Status { trade_id, value: TradeStatus::ACCEPTED, });
+    let trade: Trade = world.read_model(trade_id);
+    trade.status = TradeStatus::ACCEPTED;
+    world.write_model_test(@trade);
 
     // cancel order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
     trade_systems_dispatcher
-        .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
+        .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100)].span());
 }
 
 
@@ -168,5 +169,5 @@ fn trade_test_cancel_caller_not_maker() {
 
     // cancel order
     trade_systems_dispatcher
-        .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
+        .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100)].span());
 }
