@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
 import { Route as VelordsIndexImport } from './routes/velords.index'
 import { Route as RealmsIndexImport } from './routes/realms.index'
+import { Route as DelegatesIndexImport } from './routes/delegates.index'
 import { Route as VelordsClaimImport } from './routes/velords.claim'
 import { Route as RealmsClaimsImport } from './routes/realms.claims'
 import { Route as RealmsBridgeImport } from './routes/realms.bridge'
@@ -35,6 +36,12 @@ const VelordsIndexRoute = VelordsIndexImport.update({
 const RealmsIndexRoute = RealmsIndexImport.update({
   id: '/realms/',
   path: '/realms/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DelegatesIndexRoute = DelegatesIndexImport.update({
+  id: '/delegates/',
+  path: '/delegates/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -88,6 +95,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VelordsClaimImport
       parentRoute: typeof rootRoute
     }
+    '/delegates/': {
+      id: '/delegates/'
+      path: '/delegates'
+      fullPath: '/delegates'
+      preLoaderRoute: typeof DelegatesIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/realms/': {
       id: '/realms/'
       path: '/realms'
@@ -112,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
   '/velords/claim': typeof VelordsClaimRoute
+  '/delegates': typeof DelegatesIndexRoute
   '/realms': typeof RealmsIndexRoute
   '/velords': typeof VelordsIndexRoute
 }
@@ -121,6 +136,7 @@ export interface FileRoutesByTo {
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
   '/velords/claim': typeof VelordsClaimRoute
+  '/delegates': typeof DelegatesIndexRoute
   '/realms': typeof RealmsIndexRoute
   '/velords': typeof VelordsIndexRoute
 }
@@ -131,6 +147,7 @@ export interface FileRoutesById {
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
   '/velords/claim': typeof VelordsClaimRoute
+  '/delegates/': typeof DelegatesIndexRoute
   '/realms/': typeof RealmsIndexRoute
   '/velords/': typeof VelordsIndexRoute
 }
@@ -142,6 +159,7 @@ export interface FileRouteTypes {
     | '/realms/bridge'
     | '/realms/claims'
     | '/velords/claim'
+    | '/delegates'
     | '/realms'
     | '/velords'
   fileRoutesByTo: FileRoutesByTo
@@ -150,6 +168,7 @@ export interface FileRouteTypes {
     | '/realms/bridge'
     | '/realms/claims'
     | '/velords/claim'
+    | '/delegates'
     | '/realms'
     | '/velords'
   id:
@@ -158,6 +177,7 @@ export interface FileRouteTypes {
     | '/realms/bridge'
     | '/realms/claims'
     | '/velords/claim'
+    | '/delegates/'
     | '/realms/'
     | '/velords/'
   fileRoutesById: FileRoutesById
@@ -168,6 +188,7 @@ export interface RootRouteChildren {
   RealmsBridgeRoute: typeof RealmsBridgeRoute
   RealmsClaimsRoute: typeof RealmsClaimsRoute
   VelordsClaimRoute: typeof VelordsClaimRoute
+  DelegatesIndexRoute: typeof DelegatesIndexRoute
   RealmsIndexRoute: typeof RealmsIndexRoute
   VelordsIndexRoute: typeof VelordsIndexRoute
 }
@@ -177,6 +198,7 @@ const rootRouteChildren: RootRouteChildren = {
   RealmsBridgeRoute: RealmsBridgeRoute,
   RealmsClaimsRoute: RealmsClaimsRoute,
   VelordsClaimRoute: VelordsClaimRoute,
+  DelegatesIndexRoute: DelegatesIndexRoute,
   RealmsIndexRoute: RealmsIndexRoute,
   VelordsIndexRoute: VelordsIndexRoute,
 }
@@ -195,6 +217,7 @@ export const routeTree = rootRoute
         "/realms/bridge",
         "/realms/claims",
         "/velords/claim",
+        "/delegates/",
         "/realms/",
         "/velords/"
       ]
@@ -210,6 +233,9 @@ export const routeTree = rootRoute
     },
     "/velords/claim": {
       "filePath": "velords.claim.tsx"
+    },
+    "/delegates/": {
+      "filePath": "delegates.index.tsx"
     },
     "/realms/": {
       "filePath": "realms.index.tsx"

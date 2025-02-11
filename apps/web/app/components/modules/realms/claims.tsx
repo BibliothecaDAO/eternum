@@ -10,7 +10,8 @@ import {
   shortenAddress,
   SUPPORTED_L2_CHAIN_ID,
 } from "@/utils/utils";
-import { useAccount, useReadContract } from "@starknet-react/core";
+import { useAccount, useExplorer, useReadContract } from "@starknet-react/core";
+import { ExternalLink } from "lucide-react";
 import { formatEther } from "viem";
 
 import { CollectionAddresses } from "@realms-world/constants";
@@ -81,6 +82,7 @@ export const ClaimRewards = () => {
       ...prev,
     ]);
   };
+  const explorer = useExplorer();
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -158,21 +160,31 @@ export const ClaimRewards = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
-                  <th className="px-4 py-2 text-left">Transaction Hash</th>
                   <th className="px-4 py-2 text-left">Date</th>
                   <th className="px-4 py-2 text-left">Amount (Lords)</th>
-                  <th className="px-4 py-2 text-left">Status</th>
+                  <th className="px-4 py-2 text-left">Recipient</th>
+                  <th className="px-4 py-2 text-left">Transaction Hash</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {pastLordsClaims?.map((tx) => (
                   <tr key={tx.hash}>
-                    <td className="px-4 py-2">{shortenAddress(tx.hash)}</td>
                     <td className="px-4 py-2">{tx.timestamp}</td>
                     <td className="px-4 py-2">
-                      {formatNumber(Number(tx.amount))}
+                      {formatNumber(Number(formatEther(BigInt(tx.amount))))}
                     </td>
-                    <td className="px-4 py-2">{tx.recipient}</td>
+                    <td className="px-4 py-2">
+                      {shortenAddress(tx.recipient)}
+                    </td>
+                    <td className="px-4 py-2">
+                      <a
+                        href={explorer.transaction(tx.hash)}
+                        className="flex items-center gap-2 hover:underline"
+                        target="_blank"
+                      >
+                        {shortenAddress(tx.hash)} <ExternalLink />
+                      </a>
+                    </td>
                   </tr>
                 ))}
               </tbody>

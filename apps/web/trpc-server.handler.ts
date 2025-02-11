@@ -12,11 +12,12 @@ import {
   CollectionAddresses,
   Collections,
 } from "@realms-world/constants";
-import { desc, eq, or } from "@realms-world/db";
+import { and, desc, eq, or } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 import {
   realmsBridgeRequests,
   realmsLordsClaims,
+  velords_burns,
 } from "@realms-world/db/schema";
 
 const SUPPORTED_L1_CHAIN_ID =
@@ -98,10 +99,27 @@ const appRouter = t.router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
       return ctx.db.query.realmsLordsClaims.findMany({
         where: eq(realmsLordsClaims.recipient, input.address),
         orderBy: desc(realmsLordsClaims.timestamp),
+      });
+    }),
+  velordsBurns: t.procedure
+    .input(
+      z.object({
+        sender: z.string().optional(),
+        startTimestamp: z.date().optional(),
+        endTimestamp: z.date().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { sender, startTimestamp, endTimestamp } = input;
+      const whereFilter: SQL[] = sender
+        ? [eq(velords_burns.source, sender.toLowerCase())]
+        : [];
+      return ctx.db.query.velords_burns.findMany({
+        where: and(...whereFilter),
+        //orderBy: desc(realmsLordsClaims.timestamp),
       });
     }),
   bridgeTransactions: t.procedure

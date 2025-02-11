@@ -1,10 +1,10 @@
-import { createApp } from "vinxi";
-import reactRefresh from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import reactRefresh from "@vitejs/plugin-react";
+import { createApp } from "vinxi";
 //import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
 import viteTsConfigPaths from "vite-tsconfig-paths";
-import tailwindcss from "@tailwindcss/vite";
 
 export default createApp({
   server: {
@@ -24,6 +24,14 @@ export default createApp({
       name: "trpc",
       base: "/trpc",
       handler: "./trpc-server.handler.ts",
+      target: "server",
+      plugins: () => [],
+    },
+    {
+      type: "http",
+      name: "api",
+      base: "/api",
+      handler: "./api/index.ts",
       target: "server",
       plugins: () => [],
     },

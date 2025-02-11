@@ -116,12 +116,7 @@ export const VelordsRewards = () => {
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
-          veLords are entitled to a share of Lords fees from ecosystem games and
-          marketplaces. Claimable at weekly epochs
-        </div>
-        <div className="text-muted-foreground leading-none">
-          Note: max 75% penalty for early withdrawal (if withdrawn immediately
-          after locking for 4 years)
+          Rewards for veLords are distributed at weekly epochs
         </div>
       </CardFooter>
     </Card>

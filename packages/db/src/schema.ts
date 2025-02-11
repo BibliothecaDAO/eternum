@@ -88,7 +88,7 @@ export const realmsLordsClaims = pgTable(
   "realms_lords_claims",
   {
     hash: text("hash").notNull(),
-    amount: bigint("amount", { mode: "number" }).notNull(),
+    amount: numeric("amount", { scale: 0 }).notNull(),
     recipient: text("recipient").notNull(),
     timestamp: timestamp({ mode: "string" }).notNull(),
   },

@@ -1,5 +1,6 @@
-import type {
-  ChartConfig} from "@/components/ui/chart";
+import type { ChartConfig } from "@/components/ui/chart";
+import LordsIcon from "@/components/icons/lords.svg?react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartLegend,
@@ -7,10 +8,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import LordsIcon from "@/components/icons/lords.svg?react";
-
 import { Bar, BarChart, CartesianGrid, Line, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 const sourceColors = {
   "Loot Survivor Fees": "hsl(36 88.9% 85.9%)",
@@ -79,10 +77,11 @@ export function VeLordsRewardsChart({
             amounts: Record<string, number>;
             total_amount: number;
             apy: number;
-          }[]
+          }[],
         )
         .sort((a, b) => a.week.localeCompare(b.week))
     : [];
+  console.log(parsedData);
   return (
     <Card>
       <CardHeader>Lords Rewards per Week</CardHeader>
@@ -121,7 +120,7 @@ export function VeLordsRewardsChart({
                 offset: 25,
               }}
             />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            {/*<ChartTooltip content={<ChartTooltipContent />} />*/}
             <ChartLegend content={<ChartLegendContent />} />
 
             {/* Stacked bars for each source */}
@@ -129,7 +128,6 @@ export function VeLordsRewardsChart({
               <Bar
                 key={source}
                 dataKey={`amounts.${source}`}
-                label
                 stackId="rewards"
                 yAxisId="amount"
                 fill={sourceColors[source as keyof typeof sourceColors]}

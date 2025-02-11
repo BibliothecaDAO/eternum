@@ -12,15 +12,19 @@ const envSchema = z.object({
   VITE_PUBLIC_NODE_URL: z.string().url().optional(),
 
   VITE_RESERVOIR_API_KEY: z.string(),
+  VITE_DUNE_API_KEY: z.string().optional(),
 });
 
 let env: z.infer<typeof envSchema>;
-console.log(import.meta.env)
+console.log(import.meta.env);
 try {
   env = envSchema.parse(import.meta.env);
 } catch (error) {
   if (error instanceof z.ZodError) {
-    console.error("❌ Invalid environment variables:", JSON.stringify(error.errors, null, 2));
+    console.error(
+      "❌ Invalid environment variables:",
+      JSON.stringify(error.errors, null, 2),
+    );
   }
   throw new Error("Invalid environment variables");
 }

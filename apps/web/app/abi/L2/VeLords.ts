@@ -7,6 +7,17 @@ export const VeLords = [
     interface_name: "openzeppelin::upgrades::interface::IUpgradeable",
   },
   {
+    name: "total_supply",
+    type: "function",
+    inputs: [],
+    outputs: [
+      {
+        type: "core::integer::u256",
+      },
+    ],
+    state_mutability: "view",
+  },
+  {
     name: "openzeppelin::upgrades::interface::IUpgradeable",
     type: "interface",
     items: [

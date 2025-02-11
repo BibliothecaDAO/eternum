@@ -63,14 +63,14 @@ function RouteComponent() {
             })) ?? [],
         })) ?? []
       );
+    } else if (selectedAsset === "Starknet" && l2Realms) {
+      return l2Realms.data.map((realm) => ({
+        token_id: realm.token_id,
+        name: realm.metadata?.name,
+        attributes: realm.metadata?.attributes,
+      }));
     } else {
-      return (
-        l2Realms?.data.map((realm) => ({
-          token_id: realm.token_id,
-          name: realm.metadata?.name,
-          attributes: realm.metadata?.attributes,
-        })) ?? []
-      );
+      return [];
     }
   }, [selectedAsset, l2Realms, l1Realms]);
 
