@@ -5,8 +5,7 @@ use s1_eternum::models::position::Coord;
 use s1_eternum::models::owner::EntityOwner;
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-
-// use s1_eternum::models::travel::Travel;
+use s1_eternum::constants::RESOURCE_PRECISION;
 use cubit::f128::types::fixed::{FixedTrait, Fixed, ONE_u128, HALF_u128};
 
 use starknet::ContractAddress;
@@ -509,7 +508,10 @@ impl TroopsImpl of TroopsTrait {
 
         // deduct dead troops from each side
         alpha.count -= core::cmp::min(alpha.count, BRAVO_DAMAGE_DEALT.try_into().unwrap());
+        alpha.count -= alpha.count % RESOURCE_PRECISION; // round down to the nearest whole troop
+
         bravo.count -= core::cmp::min(bravo.count, ALPHA_DAMAGE_DEALT.try_into().unwrap());
+        bravo.count -= bravo.count % RESOURCE_PRECISION; // round down to the nearest whole troop
 
         
         // deduct alpha's stamina spent
