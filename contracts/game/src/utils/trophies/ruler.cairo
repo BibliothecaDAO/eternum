@@ -1,6 +1,8 @@
-use s1_eternum::utils::trophies::interface::{TrophyTrait, BushidoTask, Task, TaskTrait};
+use achievement::types::task::{Task as BushidoTask};
+use s1_eternum::utils::tasks::index::{Task, TaskImpl};
+use s1_eternum::utils::trophies::interface::{TrophyTrait};
 
-impl Ruler of TrophyTrait {
+pub impl Ruler of TrophyTrait {
     #[inline]
     fn identifier(level: u8) -> felt252 {
         'RULER'

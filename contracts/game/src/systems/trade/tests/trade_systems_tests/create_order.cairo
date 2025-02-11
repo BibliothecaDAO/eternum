@@ -1,33 +1,33 @@
 use core::array::{ArrayTrait, SpanTrait};
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 use s1_eternum::alias::ID;
 
-use s1_eternum::constants::{ResourceTypes, DONKEY_ENTITY_TYPE};
+use s1_eternum::constants::{DONKEY_ENTITY_TYPE, ResourceTypes};
 
 use s1_eternum::models::{
-    movable::{Movable, ArrivalTime}, owner::Owner, position::Position, resource::resource::{Resource, ResourceImpl},
-    trade::{Trade, Status, TradeStatus}, weight::Weight, config::CapacityConfig, config::CapacityConfigCategory
+    config::CapacityCategory, config::CapacityConfig, movable::Movable, owner::Owner, position::Position,
+    resource::resource::{Resource, ResourceImpl}, trade::{Trade, TradeStatus}, weight::Weight,
 };
 
 use s1_eternum::systems::config::contracts::{
-    config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait
+    ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait, ITransportConfigDispatcher,
+    ITransportConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait, config_systems,
 };
 
 use s1_eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 
 use s1_eternum::systems::trade::contracts::trade_systems::{
-    trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
+    ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait, trade_systems,
 };
 
 
 use s1_eternum::utils::testing::{
-    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
-    general::{spawn_realm, get_default_realm_pos},
-    config::{set_capacity_config, set_settlement_config, set_weight_config}
+    config::{set_capacity_config, set_settlement_config, set_weight_config},
+    general::{get_default_realm_pos, spawn_realm},
+    systems::{deploy_dev_resource_systems, deploy_realm_systems, deploy_system}, world::spawn_eternum,
 };
 use starknet::contract_address_const;
 
@@ -50,12 +50,12 @@ fn setup() -> (WorldStorage, ID, ID, ITradeSystemsDispatcher) {
     dev_resource_systems
         .mint(
             maker_id,
-            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100), (ResourceTypes::DONKEY, 20_000)].span()
+            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100), (ResourceTypes::DONKEY, 20_000)].span(),
         );
     dev_resource_systems
         .mint(
             taker_id,
-            array![(ResourceTypes::STONE, 500), (ResourceTypes::GOLD, 500), (ResourceTypes::DONKEY, 20_000)].span()
+            array![(ResourceTypes::STONE, 500), (ResourceTypes::GOLD, 500), (ResourceTypes::DONKEY, 20_000)].span(),
         );
 
     world.write_model_test(@Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() });
@@ -79,10 +79,10 @@ fn trade_test_create_order() {
     let trade_id = trade_systems_dispatcher
         .create_order(
             maker_id,
-            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
+            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100)].span(),
             taker_id,
-            array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
-            100
+            array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200)].span(),
+            100,
         );
 
     // check maker balances
@@ -103,9 +103,7 @@ fn trade_test_create_order() {
     assert(trade.maker_id == maker_id, 'wrong maker id');
     assert(trade.taker_id == taker_id, 'wrong taker id');
     assert(trade.expires_at == 100, 'expires at is wrong');
-
-    let trade_status: Status = world.read_model(trade_id);
-    assert(trade_status.value == TradeStatus::OPEN, 'wrong trade status');
+    assert(trade.status == TradeStatus::OPEN, 'wrong trade status');
 }
 
 
@@ -121,10 +119,10 @@ fn trade_test_caller_not_maker() {
     trade_systems_dispatcher
         .create_order(
             maker_id,
-            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
+            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100)].span(),
             taker_id,
-            array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
-            100
+            array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200)].span(),
+            100,
         );
 }
 
@@ -134,8 +132,8 @@ fn trade_test_caller_not_maker() {
 #[should_panic(
     expected: (
         "not enough resources, Resource (entity id: 1, resource type: DONKEY, balance: 0). deduction: 1000",
-        'ENTRYPOINT_FAILED'
-    )
+        'ENTRYPOINT_FAILED',
+    ),
 )]
 fn trade_test_transport_not_enough_capacity() {
     let (mut world, maker_id, taker_id, trade_systems_dispatcher) = setup();
@@ -147,10 +145,10 @@ fn trade_test_transport_not_enough_capacity() {
     trade_systems_dispatcher
         .create_order(
             maker_id,
-            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
+            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100)].span(),
             taker_id,
-            array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
-            100
+            array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200)].span(),
+            100,
         );
 }
 
@@ -163,10 +161,10 @@ fn trade_test_create_order_amount_give_0() {
     trade_systems_dispatcher
         .create_order(
             maker_id,
-            array![(ResourceTypes::STONE, 0),].span(),
+            array![(ResourceTypes::STONE, 0)].span(),
             taker_id,
-            array![(ResourceTypes::STONE, 200),].span(),
-            100
+            array![(ResourceTypes::STONE, 200)].span(),
+            100,
         );
 }
 
@@ -179,9 +177,9 @@ fn trade_test_create_order_amount_take_0() {
     trade_systems_dispatcher
         .create_order(
             maker_id,
-            array![(ResourceTypes::STONE, 100),].span(),
+            array![(ResourceTypes::STONE, 100)].span(),
             taker_id,
-            array![(ResourceTypes::STONE, 0),].span(),
-            100
+            array![(ResourceTypes::STONE, 0)].span(),
+            100,
         );
 }

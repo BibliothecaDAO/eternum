@@ -1,34 +1,17 @@
 use s1_eternum::alias::ID;
 
-
 // Config ID to fetch global configs
-const WORLD_CONFIG_ID: ID = 999999999;
-const BUILDING_CONFIG_ID: ID = 999999998;
-const TRANSPORT_CONFIG_ID: ID = 999999996;
-const ROAD_CONFIG_ID: ID = 999999995;
-const COMBAT_CONFIG_ID: ID = 999999994;
-const REALM_LEVELING_CONFIG_ID: ID = 999999993;
-const HYPERSTRUCTURE_CONFIG_ID: ID = 999999992;
-const REALM_FREE_MINT_CONFIG_ID: ID = 999999991;
-const BUILDING_CATEGORY_POPULATION_CONFIG_ID: ID = 999999990;
-const POPULATION_CONFIG_ID: ID = 999999989;
+pub const WORLD_CONFIG_ID: ID = 999999999;
+pub const HYPERSTRUCTURE_CONFIG_ID: ID = 999999998;
+pub const BUILDING_CATEGORY_POPULATION_CONFIG_ID: ID = 999999997;
 
-// 8 bits
-const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
-const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
-
-// leveling tiers
-const HYPERSTRUCTURE_LEVELING_START_TIER: u64 = 0;
-const REALM_LEVELING_START_TIER: u64 = 1;
-
-const GRAMS_PER_KG: u128 = 1_000;
+pub const GRAMS_PER_KG: u128 = 1_000;
 
 // max realms per user
-const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
+pub const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
 
 // resource precision
-const RESOURCE_PRECISION: u128 = 1_000_000_000;
-
+pub const RESOURCE_PRECISION: u128 = 1_000_000_000;
 
 // WONDER QUEST REWARD BOOST
 const WONDER_QUEST_REWARD_BOOST: u128 = 3;
@@ -38,7 +21,7 @@ const WONDER_QUEST_REWARD_BOOST: u128 = 3;
 const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
 
 // Note: Please update this list whenever ResourceTypes are updated
-fn all_resource_ids() -> Array<u8> {
+pub fn all_resource_ids() -> Array<u8> {
     array![
         //
         1,
@@ -77,28 +60,28 @@ fn all_resource_ids() -> Array<u8> {
 
 // Note: Please update the all_resources_ids list whenever ResourceTypes are updated
 mod ResourceTypes {
-    const STONE: u8 = 1;
-    const COAL: u8 = 2;
-    const WOOD: u8 = 3;
-    const COPPER: u8 = 4;
-    const IRONWOOD: u8 = 5;
-    const OBSIDIAN: u8 = 6;
-    const GOLD: u8 = 7;
-    const SILVER: u8 = 8;
-    const MITHRAL: u8 = 9;
-    const ALCHEMICAL_SILVER: u8 = 10;
-    const COLD_IRON: u8 = 11;
-    const DEEP_CRYSTAL: u8 = 12;
-    const RUBY: u8 = 13;
-    const DIAMONDS: u8 = 14;
-    const HARTWOOD: u8 = 15;
-    const IGNIUM: u8 = 16;
-    const TWILIGHT_QUARTZ: u8 = 17;
-    const TRUE_ICE: u8 = 18;
-    const ADAMANTINE: u8 = 19;
-    const SAPPHIRE: u8 = 20;
-    const ETHEREAL_SILICA: u8 = 21;
-    const DRAGONHIDE: u8 = 22;
+    pub const STONE: u8 = 1;
+    pub const COAL: u8 = 2;
+    pub const WOOD: u8 = 3;
+    pub const COPPER: u8 = 4;
+    pub const IRONWOOD: u8 = 5;
+    pub const OBSIDIAN: u8 = 6;
+    pub const GOLD: u8 = 7;
+    pub const SILVER: u8 = 8;
+    pub const MITHRAL: u8 = 9;
+    pub const ALCHEMICAL_SILVER: u8 = 10;
+    pub const COLD_IRON: u8 = 11;
+    pub const DEEP_CRYSTAL: u8 = 12;
+    pub const RUBY: u8 = 13;
+    pub const DIAMONDS: u8 = 14;
+    pub const HARTWOOD: u8 = 15;
+    pub const IGNIUM: u8 = 16;
+    pub const TWILIGHT_QUARTZ: u8 = 17;
+    pub const TRUE_ICE: u8 = 18;
+    pub const ADAMANTINE: u8 = 19;
+    pub const SAPPHIRE: u8 = 20;
+    pub const ETHEREAL_SILICA: u8 = 21;
+    pub const DRAGONHIDE: u8 = 22;
 
     // THE RESOURCE IDS ABOVE MUST MATCH THE
     // RESOURCE IDS IN THE SEASON PASS
@@ -202,16 +185,16 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
 }
 
 
-mod ResourceTiers {
-    const LORDS: u8 = 1;
-    const MILITARY: u8 = 2;
-    const TRANSPORT: u8 = 3;
-    const FOOD: u8 = 4;
-    const COMMON: u8 = 5;
-    const UNCOMMON: u8 = 6;
-    const RARE: u8 = 7;
-    const UNIQUE: u8 = 8;
-    const MYTHIC: u8 = 9;
+pub mod ResourceTiers {
+    pub const LORDS: u8 = 1;
+    pub const MILITARY: u8 = 2;
+    pub const TRANSPORT: u8 = 3;
+    pub const FOOD: u8 = 4;
+    pub const COMMON: u8 = 5;
+    pub const UNCOMMON: u8 = 6;
+    pub const RARE: u8 = 7;
+    pub const UNIQUE: u8 = 8;
+    pub const MYTHIC: u8 = 9;
 }
 
 fn get_resource_tier(resource_type: u8) -> u8 {
@@ -330,7 +313,7 @@ fn get_hyperstructure_construction_resources() -> Span<u8> {
         ResourceTypes::ALCHEMICAL_SILVER,
         ResourceTypes::ADAMANTINE,
         ResourceTypes::MITHRAL,
-        ResourceTypes::DRAGONHIDE
+        ResourceTypes::DRAGONHIDE,
     ]
         .span();
 }
@@ -359,14 +342,17 @@ fn get_contributable_resources_with_rarity() -> Span<(u8, u128)> {
         (ResourceTypes::ADAMANTINE, 9120),
         (ResourceTypes::MITHRAL, 13553),
         (ResourceTypes::DRAGONHIDE, 21792),
-        (ResourceTypes::EARTHEN_SHARD, 2098)
+        (ResourceTypes::EARTHEN_SHARD, 2098),
     ]
         .span();
 }
 
 fn get_resources_without_earthenshards_probs() -> Span<u128> {
     // 36
-    return array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1,1,1,1,1,1].span();
+    return array![
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ]
+        .span();
 }
 
 
@@ -395,7 +381,7 @@ fn get_resource_probabilities() -> Span<(u8, u128)> {
         (ResourceTypes::ADAMANTINE, 22133),
         (ResourceTypes::MITHRAL, 14889),
         (ResourceTypes::DRAGONHIDE, 9256),
-        (ResourceTypes::EARTHEN_SHARD, 22133), // SHARDS
+        (ResourceTypes::EARTHEN_SHARD, 22133) // SHARDS
     ]
         .span();
 }
@@ -408,7 +394,7 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
     loop {
         match zipped.pop_front() {
             Option::Some((
-                resource_type, probability
+                resource_type, probability,
             )) => {
                 resource_types.append(*resource_type);
                 resource_probabilities.append(*probability);
@@ -438,11 +424,6 @@ mod LevelIndex {
 
 mod ErrorMessages {
     const NOT_OWNER: felt252 = 'Not Owner';
-}
-
-mod TickIds {
-    const DEFAULT: u8 = 0;
-    const ARMIES: u8 = 1;
 }
 
 mod TravelTypes {

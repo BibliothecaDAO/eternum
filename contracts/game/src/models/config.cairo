@@ -2,14 +2,13 @@ use core::integer::BoundedU128;
 use cubit::f128::math::comp::{max as fixed_max};
 use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use dojo::model::{ModelStorage, Model};
+use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
-    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
-    split_resources_and_probs, ResourceTypes, ResourceTiers
+    BUILDING_CATEGORY_POPULATION_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, RESOURCE_PRECISION,
+    ResourceTiers, ResourceTypes, WORLD_CONFIG_ID, split_resources_and_probs,
 };
-use s1_eternum::models::capacity::{CapacityCategory, CapacityCategoryImpl, CapacityCategoryTrait};
 use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s1_eternum::models::position::{Coord};
 use s1_eternum::models::quantity::Quantity;
@@ -17,59 +16,80 @@ use s1_eternum::models::resource::production::building::BuildingCategory;
 
 use s1_eternum::models::resource::resource::{ResourceFoodImpl};
 use s1_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
-use s1_eternum::models::weight::Weight;
+use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::utils::map::constants::fixed_constants as fc;
 use s1_eternum::utils::math::{max, min};
-use s1_eternum::utils::random::VRFImpl;
 use s1_eternum::utils::random;
+use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
 
 //
 // GLOBAL CONFIGS
 //
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct WorldConfig {
     #[key]
     config_id: ID,
     admin_address: ContractAddress,
     realm_l2_contract: ContractAddress,
+    vrf_provider_address: ContractAddress,
+    season_addresses_config: SeasonAddressesConfig,
+    season_bridge_config: SeasonBridgeConfig,
+    hyperstructure_config: HyperstructureConfig,
+    stamina_cost_config: StaminaCostConfig,
+    speed_config: SpeedConfig,
+    map_config: MapConfig,
+    settlement_config: SettlementConfig,
+    tick_config: TickConfig,
+    bank_config: BankConfig,
+    population_config: PopulationConfig,
+    resource_bridge_config: ResourceBridgeConfig,
+    res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
+    realm_max_level_config: RealmMaxLevelConfig,
+    building_general_config: BuildingGeneralConfig,
+    troop_damage_config: TroopDamageConfig,
+    troop_stamina_config: TroopStaminaConfig,
+    troop_limit_config: TroopLimitConfig,
+}
+
+#[generate_trait]
+impl WorldConfigUtilImpl of WorldConfigTrait {
+    fn get_member<T, impl TSerde: Serde<T>>(world: WorldStorage, selector: felt252) -> T {
+        world.read_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector)
+    }
+    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
+        ref world: WorldStorage, selector: felt252, value: T,
+    ) {
+        world.write_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)
+    }
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct SeasonAddressesConfig {
-    #[key]
-    config_id: ID,
     season_pass_address: ContractAddress,
     realms_address: ContractAddress,
     lords_address: ContractAddress,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct SeasonBridgeConfig {
-    #[key]
-    config_id: ID,
-    // the number of seconds after the season ends
-    // that the bridge will be closed
     close_after_end_seconds: u64,
 }
 
 #[generate_trait]
 impl SeasonBridgeConfigImpl of SeasonBridgeConfigTrait {
-    fn assert_bridge_is_open(world: WorldStorage) {
+    fn assert_bridge_is_open(self: SeasonBridgeConfig, world: WorldStorage) {
         // ensure season has started
         let season: Season = world.read_model(WORLD_CONFIG_ID);
-        SeasonImpl::assert_has_started(world);
+        season.assert_has_started();
 
         // check if season is over
         if season.ended_at.is_non_zero() {
             // close bridge after grace period has elapsed
-            let season_bridge_config: SeasonBridgeConfig = world.read_model(WORLD_CONFIG_ID);
             let now = starknet::get_block_timestamp();
-            assert!(now <= season.ended_at + season_bridge_config.close_after_end_seconds, "Bridge is closed");
+            assert!(now <= season.ended_at + self.close_after_end_seconds, "Bridge is closed");
         }
     }
 }
@@ -86,19 +106,17 @@ pub struct HyperstructureResourceConfig {
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-struct HyperstructureConfig {
-    #[key]
-    config_id: ID,
-    time_between_shares_change: u64,
+pub struct HyperstructureConfig {
     points_per_cycle: u128,
     points_for_win: u128,
     points_on_completion: u128,
+    time_between_shares_change: u64,
 }
 
 // capacity
-#[derive(PartialEq, Copy, Drop, Serde, Introspect)]
-enum CapacityConfigCategory {
+#[derive(PartialEq, Copy, Drop, Serde, Default, IntrospectPacked)]
+pub enum CapacityCategory {
+    #[default]
     None,
     Structure,
     Donkey,
@@ -106,14 +124,14 @@ enum CapacityConfigCategory {
     Storehouse,
 }
 
-impl CapacityConfigCategoryIntoFelt252 of Into<CapacityConfigCategory, felt252> {
-    fn into(self: CapacityConfigCategory) -> felt252 {
+pub impl CapacityConfigCategoryIntoFelt252 of Into<CapacityCategory, felt252> {
+    fn into(self: CapacityCategory) -> felt252 {
         match self {
-            CapacityConfigCategory::None => 0,
-            CapacityConfigCategory::Structure => 1,
-            CapacityConfigCategory::Donkey => 2,
-            CapacityConfigCategory::Army => 3,
-            CapacityConfigCategory::Storehouse => 4,
+            CapacityCategory::None => 0,
+            CapacityCategory::Structure => 1,
+            CapacityCategory::Donkey => 2,
+            CapacityCategory::Army => 3,
+            CapacityCategory::Storehouse => 4,
         }
     }
 }
@@ -122,24 +140,26 @@ impl CapacityConfigCategoryIntoFelt252 of Into<CapacityConfigCategory, felt252> 
 #[dojo::model]
 pub struct CapacityConfig {
     #[key]
-    category: CapacityConfigCategory,
+    category: CapacityCategory,
     weight_gram: u128,
 }
 
 
 #[generate_trait]
-impl CapacityConfigImpl of CapacityConfigTrait {
-    fn get(ref world: WorldStorage, category: CapacityConfigCategory) -> CapacityConfig {
+pub impl CapacityConfigImpl of CapacityConfigTrait {
+    fn get(ref world: WorldStorage, category: CapacityCategory) -> CapacityConfig {
         world.read_model(category)
     }
 
     fn get_from_entity(ref world: WorldStorage, entity_id: ID) -> CapacityConfig {
-        let capacity_category = CapacityCategoryImpl::assert_exists_and_get(ref world, entity_id);
-        return world.read_model(capacity_category.category);
+        let capacity_category = WeightImpl::assert_capacity_exists_and_get(ref world, entity_id);
+        return world.read_model(capacity_category);
     }
 
     fn assert_can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) {
-        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id);
+        assert!(
+            self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id,
+        );
     }
 
     fn can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) -> bool {
@@ -149,7 +169,8 @@ impl CapacityConfigImpl of CapacityConfigTrait {
             quantity.value
         };
         if self.is_capped() {
-            let entity_total_weight_capacity = self.weight_gram * (quantity_value / RESOURCE_PRECISION);
+            let entity_total_weight_capacity = self.weight_gram
+                * (quantity_value / RESOURCE_PRECISION);
             if entity_total_weight_capacity < weight.value {
                 return false;
             };
@@ -162,34 +183,22 @@ impl CapacityConfigImpl of CapacityConfigTrait {
     }
 }
 
-#[derive(Copy, Drop, Serde)]
-#[dojo::model]
-struct TravelStaminaCostConfig {
-    #[key]
-    config_id: ID,
-    #[key]
-    travel_type: u8,
-    cost: u16,
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+struct StaminaCostConfig {
+    travel_cost: u16,
+    explore_cost: u16,
 }
 
 // speed
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct SpeedConfig {
-    #[key]
-    config_id: ID,
-    #[key]
-    speed_config_id: ID,
-    entity_type: ID,
-    sec_per_km: u16,
+    donkey_sec_per_km: u16,
+    army_sec_per_km: u16,
 }
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct MapConfig {
-    #[key]
-    config_id: ID,
     reward_resource_amount: u128,
     // weight of fail
     // the higher, the less likely to find a mine
@@ -202,10 +211,7 @@ pub struct MapConfig {
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct SettlementConfig {
-    #[key]
-    config_id: ID,
     center: u32,
     base_distance: u32,
     min_first_layer_distance: u32,
@@ -234,7 +240,9 @@ impl SettlementConfigImpl of SettlementConfigTrait {
             / FixedTrait::new_unscaled(points_on_side.into() + 1, false)
     }
 
-    fn get_side_coords(ref self: SettlementConfig, side: u32, distance_from_center: u32) -> (Fixed, Fixed) {
+    fn get_side_coords(
+        ref self: SettlementConfig, side: u32, distance_from_center: u32,
+    ) -> (Fixed, Fixed) {
         let side_fixed = FixedTrait::new_unscaled(side.into(), false);
         let angle_fixed = side_fixed * fc::PI() / FixedTrait::new_unscaled(3, false);
 
@@ -252,11 +260,15 @@ impl SettlementConfigImpl of SettlementConfigTrait {
     fn get_next_settlement_coord(ref self: SettlementConfig) -> Coord {
         let distance_from_center = Self::get_distance_from_center(ref self);
 
-        let (start_x_fixed, start_y_fixed) = Self::get_side_coords(ref self, self.current_side, distance_from_center);
+        let (start_x_fixed, start_y_fixed) = Self::get_side_coords(
+            ref self, self.current_side, distance_from_center,
+        );
 
         let next_side = (self.current_side + 1) % 6;
 
-        let (end_x_fixed, end_y_fixed) = Self::get_side_coords(ref self, next_side, distance_from_center);
+        let (end_x_fixed, end_y_fixed) = Self::get_side_coords(
+            ref self, next_side, distance_from_center,
+        );
 
         let points_on_side = Self::get_points_on_side(ref self);
 
@@ -288,27 +300,26 @@ impl MapConfigImpl of MapConfigTrait {
     fn random_reward(ref world: WorldStorage) -> Span<(u8, u128)> {
         let (resource_types, resources_probs) = split_resources_and_probs();
 
-        let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+        let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
+            world, selector!("vrf_provider_address"),
+        );
         let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
         let reward_resource_id: u8 = *random::choices(
-            resource_types, resources_probs, array![].span(), 1, true, vrf_seed
+            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
         )
             .at(0);
 
-        let explore_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
+        let explore_config: MapConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("map_config"),
+        );
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
         return array![(reward_resource_id, reward_resource_amount)].span();
     }
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct TickConfig {
-    #[key]
-    config_id: ID,
-    #[key]
-    tick_id: u8,
-    tick_interval_in_seconds: u64
+    armies_tick_in_seconds: u64,
 }
 
 
@@ -319,37 +330,33 @@ pub struct TroopDamageConfig {
     knight_base_damage: u16,
     crossbowman_base_damage: u16,
     paladin_base_damage: u16,
-
-    // Damage bonuses for tiers
-    t2_damage_bonus: u16, // In the contracts, we do Fixed::ONE * t2_damage_bonus
-    t3_damage_bonus: u16, // In the contracts, we do Fixed::ONE * t3_damage_bonus
-
-    // Combat modifiers
-    damage_bonus_num: u16,      // Used for biome damage calculations
-    damage_scaling_factor: u16, // Used in damage calculations for troop scaling
+    // Damage bonuses for tiers In the contracts, we do Fixed::ONE * t2_damage_bonus
+    t2_damage_bonus: u16,
+    // In the contracts, we do Fixed::ONE * t3_damage_bonus
+    t3_damage_bonus: u16,
+    // Combat modifiers. Used for biome damage calculations
+    damage_bonus_num: u16,
+    // Used in damage calculations for troop scaling
+    damage_scaling_factor: u16,
 }
 
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
 pub struct TroopStaminaConfig {
     // Base stamina settings
-    stamina_gain_per_tick: u16,   // Stamina gained per tick
-    stamina_initial: u16,         // Initial stamina for explorers
-    stamina_bonus_value: u16,     // Used for stamina movement bonuses
-
+    stamina_gain_per_tick: u16, // Stamina gained per tick
+    stamina_initial: u16, // Initial stamina for explorers
+    stamina_bonus_value: u16, // Used for stamina movement bonuses
     // Max stamina per troop type
-    stamina_knight_max: u16,      // Maximum stamina for knights
-    stamina_paladin_max: u16,     // Maximum stamina for paladins
+    stamina_knight_max: u16, // Maximum stamina for knights
+    stamina_paladin_max: u16, // Maximum stamina for paladins
     stamina_crossbowman_max: u16, // Maximum stamina for crossbowmen
-
     // Combat stamina requirements
-    stamina_attack_req: u16,      // Minimum stamina required to attack
-    stamina_attack_max: u16,      // Maximum stamina that can be used in attack
-
+    stamina_attack_req: u16, // Minimum stamina required to attack
+    stamina_attack_max: u16, // Maximum stamina that can be used in attack
     // Exploration costs
     stamina_explore_wheat_cost: u16,
     stamina_explore_fish_cost: u16,
     stamina_explore_stamina_cost: u16,
-
     // Travel costs
     stamina_travel_wheat_cost: u16,
     stamina_travel_fish_cost: u16,
@@ -357,73 +364,46 @@ pub struct TroopStaminaConfig {
 }
 
 
-
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
 pub struct TroopLimitConfig {
-    // Troop count limits
-    explorer_max_troop_count: u32, // without precision
-    
+    // Troop count limits without precision
+    explorer_max_troop_count: u32,
     // Guard specific settings
     guard_resurrection_delay: u32,
-
-    // Mercenary bounds
-    mercenaries_troop_lower_bound: u64, // without precision
-    mercenaries_troop_upper_bound: u64, // without precision
+    // Mercenary bounds without precision
+    mercenaries_troop_lower_bound: u64,
+    // without precision
+    mercenaries_troop_upper_bound: u64,
 }
-
-
-// Original CombatConfig can now reference these more focused configs
-#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
-#[dojo::model]
-pub struct CombatConfig {
-    #[key]
-    config_id: ID,
-    troop_damage_config: TroopDamageConfig,
-    troop_stamina_config: TroopStaminaConfig,
-    troop_limit_config: TroopLimitConfig,
-}
-
-
-
 
 
 #[generate_trait]
 impl CombatConfigImpl of CombatConfigTrait {
     fn troop_damage_config(ref world: WorldStorage) -> TroopDamageConfig {
-        return world.read_member(
-            Model::<CombatConfig>::ptr_from_keys(WORLD_CONFIG_ID), 
-            selector!("troop_damage_config")
-        );
+        return WorldConfigUtilImpl::get_member(world, selector!("troop_damage_config"));
     }
 
     fn troop_stamina_config(ref world: WorldStorage) -> TroopStaminaConfig {
-        return world.read_member(
-            Model::<CombatConfig>::ptr_from_keys(WORLD_CONFIG_ID), 
-            selector!("troop_stamina_config")
-        );
+        return WorldConfigUtilImpl::get_member(world, selector!("troop_stamina_config"));
     }
 
     fn troop_limit_config(ref world: WorldStorage) -> TroopLimitConfig {
-        return world.read_member(
-            Model::<CombatConfig>::ptr_from_keys(WORLD_CONFIG_ID), 
-            selector!("troop_limit_config")
-        );
+        return WorldConfigUtilImpl::get_member(world, selector!("troop_limit_config"));
     }
 }
 
 
 #[generate_trait]
 impl TickImpl of TickTrait {
-    fn retrieve(ref world: WorldStorage) -> TickConfig {
-        let tick_config: TickConfig = world.read_model((WORLD_CONFIG_ID, TickIds::ARMIES));
+    fn get_tick_config(ref world: WorldStorage) -> TickConfig {
+        let tick_config: TickConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("tick_config"),
+        );
         return tick_config;
     }
 
     fn interval(self: TickConfig) -> u64 {
-        if self.tick_interval_in_seconds == 0 {
-            return 1;
-        }
-        return self.tick_interval_in_seconds;
+        self.armies_tick_in_seconds
     }
 
     fn current(self: TickConfig) -> u64 {
@@ -436,7 +416,7 @@ impl TickImpl of TickTrait {
     }
 
     fn after(self: TickConfig, time_spent: u64) -> u64 {
-        (starknet::get_block_timestamp() + time_spent) / self.tick_interval_in_seconds
+        (starknet::get_block_timestamp() + time_spent) / self.interval()
     }
 
     fn next_tick_timestamp(self: TickConfig) -> u64 {
@@ -460,7 +440,7 @@ impl TickImpl of TickTrait {
 pub struct W3eightConfig {
     #[key]
     resource_type: ID,
-    weight_gram: u128
+    weight_gram: u128,
 }
 
 
@@ -477,39 +457,20 @@ pub struct WeightConfig {
 }
 
 #[generate_trait]
-impl WeightConfigImpl of WeightConfigTrait {
+pub impl WeightConfigImpl of WeightConfigTrait {
     fn get_weight_grams(ref world: WorldStorage, resource_type: u8, amount: u128) -> u128 {
-        let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, resource_type));
+        let resource_weight_config: WeightConfig = world
+            .read_model((WORLD_CONFIG_ID, resource_type));
         (resource_weight_config.weight_gram * amount) / RESOURCE_PRECISION
     }
 
-    fn get_weight_grams_with_precision(ref world: WorldStorage, resource_type: u8, amount: u128) -> u128 {
-        let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, resource_type));
+    fn get_weight_grams_with_precision(
+        ref world: WorldStorage, resource_type: u8, amount: u128,
+    ) -> u128 {
+        let resource_weight_config: WeightConfig = world
+            .read_model((WORLD_CONFIG_ID, resource_type));
         (resource_weight_config.weight_gram * amount)
     }
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct LevelingConfig {
-    #[key]
-    config_id: ID,
-    decay_interval: u64,
-    max_level: u64,
-    decay_scaled: u128,
-    cost_percentage_scaled: u128,
-    base_multiplier: u128,
-    wheat_base_amount: u128,
-    fish_base_amount: u128,
-    // low tier resources
-    resource_1_cost_id: ID,
-    resource_1_cost_count: u32,
-    // mid tier resources
-    resource_2_cost_id: ID,
-    resource_2_cost_count: u32,
-    // high tier resources
-    resource_3_cost_id: ID,
-    resource_3_cost_count: u32
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -609,40 +570,15 @@ pub struct MultipleResourceBurnPrStrategy {
     required_resources_count: u8,
 }
 
-
-// vrf
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct VRFConfig {
-    #[key]
-    config_id: ID,
-    vrf_provider_address: ContractAddress,
-}
-
-#[generate_trait]
-impl VRFConfigImpl of VRFConfigTrait {
-    fn get_provider_address(ref world: WorldStorage) -> ContractAddress {
-        let vrf_config: VRFConfig = world.read_model(WORLD_CONFIG_ID);
-        return vrf_config.vrf_provider_address;
-    }
-}
-
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct BankConfig {
-    #[key]
-    config_id: ID,
     lords_cost: u128,
     lp_fee_num: u128,
     lp_fee_denom: u128,
 }
 
-#[derive(Copy, Drop, Serde)]
-#[dojo::model]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct BuildingGeneralConfig {
-    #[key]
-    config_id: ID,
     base_cost_percent_increase: u16,
 }
 
@@ -662,14 +598,16 @@ pub struct BuildingConfig {
 
 #[generate_trait]
 impl BuildingConfigImpl of BuildingConfigTrait {
-    fn get(ref world: WorldStorage, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
+    fn get(
+        ref world: WorldStorage, category: BuildingCategory, resource_type: u8,
+    ) -> BuildingConfig {
         return world
             .read_model(
                 (
                     WORLD_CONFIG_ID,
                     Into::<BuildingCategory, felt252>::into(category),
-                    Into::<u8, felt252>::into(resource_type)
-                )
+                    Into::<u8, felt252>::into(resource_type),
+                ),
             );
     }
 }
@@ -709,12 +647,12 @@ pub struct TroopConfig {
     // 1_000. multiply this number by 2 to reduce battle time by 2x,
     // and reduce by 2x to increase battle time by 2x, etc
     battle_time_scale: u16,
-    battle_max_time_seconds: u64
+    battle_max_time_seconds: u64,
 }
 
 
 #[generate_trait]
-impl TroopConfigImpl of TroopConfigTrait {
+pub impl TroopConfigImpl of TroopConfigTrait {
     fn get(world: WorldStorage) -> TroopConfig {
         return world.read_model(WORLD_CONFIG_ID);
     }
@@ -732,29 +670,26 @@ pub struct BattleConfig {
 }
 
 #[generate_trait]
-impl BattleConfigImpl of BattleConfigTrait {
+pub impl BattleConfigImpl of BattleConfigTrait {
     fn get(world: WorldStorage) -> BattleConfig {
         world.read_model(WORLD_CONFIG_ID)
     }
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BuildingCategoryPopConfig {
     #[key]
     config_id: ID,
     #[key]
     building_category: BuildingCategory,
-    population: u32, // adds to population
-    capacity: u32, // increase capacity by this amount
+    population: u32,
+    capacity: u32,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct PopulationConfig {
-    #[key]
-    config_id: ID,
     base_population: u32,
 }
 
@@ -798,24 +733,18 @@ pub struct QuestRewardConfig {
     #[key]
     quest_id: ID,
     detached_resource_id: ID,
-    detached_resource_count: u32
+    detached_resource_count: u32,
 }
 
 
-#[dojo::model]
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 struct ResourceBridgeConfig {
-    #[key]
-    config_id: ID,
     deposit_paused: bool,
     withdraw_paused: bool,
 }
 
-#[dojo::model]
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 struct ResourceBridgeFeeSplitConfig {
-    #[key]
-    config_id: ID,
     // the percentage of the deposit and withdrawal amount that the velords addr will receive
     velords_fee_on_dpt_percent: u16,
     velords_fee_on_wtdr_percent: u16,
@@ -825,13 +754,13 @@ struct ResourceBridgeFeeSplitConfig {
     // the percentage of the deposit and withdrawal amount that the frontend provider will receive
     client_fee_on_dpt_percent: u16,
     client_fee_on_wtdr_percent: u16,
+    // max bank fee amount
+    max_bank_fee_dpt_percent: u16,
+    max_bank_fee_wtdr_percent: u16,
     // the address that will receive the velords fee percentage
     velords_fee_recipient: ContractAddress,
     // the address that will receive the season pool fee
     season_pool_fee_recipient: ContractAddress,
-    // max bank fee amount
-    max_bank_fee_dpt_percent: u16,
-    max_bank_fee_wtdr_percent: u16,
 }
 
 
@@ -840,15 +769,12 @@ struct ResourceBridgeFeeSplitConfig {
 struct ResourceBridgeWhitelistConfig {
     #[key]
     token: ContractAddress,
-    resource_type: u8
+    resource_type: u8,
 }
 
 // speed
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct RealmMaxLevelConfig {
-    #[key]
-    config_id: ID,
     max_level: u8,
 }
 

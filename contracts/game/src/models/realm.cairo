@@ -4,7 +4,7 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::WORLD_CONFIG_ID;
-use s1_eternum::models::config::RealmMaxLevelConfig;
+use s1_eternum::models::config::{RealmMaxLevelConfig, WorldConfigUtilImpl};
 use starknet::ContractAddress;
 use traits::Into;
 
@@ -25,7 +25,9 @@ pub struct Realm {
 #[generate_trait]
 impl RealmImpl of RealmTrait {
     fn max_level(self: Realm, world: WorldStorage) -> u8 {
-        let realm_max_level_config: RealmMaxLevelConfig = world.read_model(WORLD_CONFIG_ID);
+        let realm_max_level_config: RealmMaxLevelConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("realm_max_level_config"),
+        );
         realm_max_level_config.max_level
     }
 
@@ -67,7 +69,7 @@ impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
         loop {
             match attrs_arr.pop_front() {
                 Option::Some(resource) => { resources.append(*resource); },
-                Option::None => { break; }
+                Option::None => { break; },
             }
         };
 
@@ -121,7 +123,7 @@ impl RealmReferenceImpl of RealmReferenceTrait {
             20 => "Sapphire",
             21 => "Ethereal Silica",
             22 => "Dragonhide",
-            _ => panic!("max resource num exceeded")
+            _ => panic!("max resource num exceeded"),
         }
     }
 
@@ -144,7 +146,7 @@ impl RealmReferenceImpl of RealmReferenceTrait {
             14 => "The Order of Vitriol",
             15 => "The Order of Anger",
             16 => "The Order of Enlightenment",
-            _ => panic!("max order num exceeded")
+            _ => panic!("max order num exceeded"),
         }
     }
 
@@ -203,7 +205,7 @@ impl RealmReferenceImpl of RealmReferenceTrait {
             49 => "The Solemn Catacombs",
             50 => "The Devout Summit",
             51 => "Sky Mast",
-            _ => panic!("max wonder num exceeded")
+            _ => panic!("max wonder num exceeded"),
         }
     }
 }
@@ -236,7 +238,7 @@ impl RealmResourcesImpl of RealmResourcesTrait {
 
             // shift left to make space for the new resource
             let masked_produced_resources = BitShift::shl(
-                produced_resources, Self::PACKING_MAX_BITS_PER_RESOURCE().into()
+                produced_resources, Self::PACKING_MAX_BITS_PER_RESOURCE().into(),
             );
 
             // add the new resource
@@ -297,7 +299,7 @@ mod test_realm_name_and_attrs_decode_impl {
     #[test]
     fn test_decode_name_and_attrs_one() {
         let (name, region, cities, harbors, rivers, wonder, order, resources) = RealmNameAndAttrsDecodingImpl::decode(
-            DATA_ONE()
+            DATA_ONE(),
         );
         assert_eq!(name, 'Stolsli');
         assert_eq!(region, 6);
@@ -313,7 +315,7 @@ mod test_realm_name_and_attrs_decode_impl {
     #[test]
     fn test_decode_name_and_attrs_two() {
         let (name, region, cities, harbors, rivers, wonder, order, resources) = RealmNameAndAttrsDecodingImpl::decode(
-            DATA_TWO()
+            DATA_TWO(),
         );
         assert_eq!(name, 'Qeujqeujwouw');
         assert_eq!(region, 6);
@@ -329,10 +331,10 @@ mod test_realm_name_and_attrs_decode_impl {
 #[cfg(test)]
 mod test_realm_resources_impl {
     use starknet::contract_address_const;
-    use super::{RealmResourcesImpl, RealmResourcesTrait, Realm};
+    use super::{Realm, RealmResourcesImpl, RealmResourcesTrait};
 
     fn mock_realm() -> Realm {
-        Realm { entity_id: 1, realm_id: 1, order: 0, level: 0, produced_resources: 0, has_wonder: false, }
+        Realm { entity_id: 1, realm_id: 1, order: 0, level: 0, produced_resources: 0, has_wonder: false }
     }
 
 
@@ -379,7 +381,7 @@ mod test_realm_resources_impl {
         let packed: u128 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF; // max u128 value
         let unpacked = RealmResourcesImpl::unpack_resource_types(packed);
         let expected: Array<u8> = array![
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
         ];
         assert_eq!(unpacked, expected.span(), "Unpacked resources should match maximum packed value");
     }

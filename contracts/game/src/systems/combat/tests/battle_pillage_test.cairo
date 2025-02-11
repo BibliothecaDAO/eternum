@@ -1,35 +1,36 @@
 use core::array::SpanTrait;
 
 
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 use s1_eternum::{
     alias::ID,
     models::{
-        position::{Coord, Position}, weight::Weight, resource::resource::{ResourceTypes, RESOURCE_PRECISION},
-        combat::{Troops}, quantity::Quantity, config::CapacityConfig
+        combat::{Troops}, config::CapacityConfig, position::{Coord, Position}, quantity::Quantity,
+        resource::resource::{RESOURCE_PRECISION, ResourceTypes}, weight::Weight,
     },
     systems::{
-        config::contracts::config_systems,
         combat::contracts::battle_systems::{
-            battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait, IBattlePillageContractDispatcher,
-            IBattlePillageContractDispatcherTrait,
+            IBattleContractDispatcher, IBattleContractDispatcherTrait, IBattlePillageContractDispatcher,
+            IBattlePillageContractDispatcherTrait, battle_systems,
         },
-        combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
+        combat::contracts::troop_systems::{ITroopContractDispatcher, ITroopContractDispatcherTrait, troop_systems},
+        config::contracts::config_systems,
     },
     utils::testing::{
-        world::spawn_eternum, general::{mint, teleport, spawn_realm, create_army_with_troops},
-        systems::{
-            deploy_system, deploy_realm_systems, deploy_battle_systems, deploy_battle_pillage_systems,
-            deploy_troop_systems
-        },
         config::{
-            set_combat_config, setup_globals, set_stamina_config, set_capacity_config, set_speed_config,
-            set_weight_config, set_travel_and_explore_stamina_cost_config, set_battle_config,
-            set_travel_food_cost_config, set_settlement_config
-        }
+            set_battle_config, set_capacity_config, set_combat_config, set_settlement_config, set_speed_config,
+            set_stamina_config, set_travel_and_explore_stamina_cost_config, set_travel_food_cost_config,
+            set_weight_config, setup_globals,
+        },
+        general::{create_army_with_troops, mint, spawn_realm, teleport},
+        systems::{
+            deploy_battle_pillage_systems, deploy_battle_systems, deploy_realm_systems, deploy_system,
+            deploy_troop_systems,
+        },
+        world::spawn_eternum,
     },
 };
 use starknet::contract_address_const;
@@ -68,21 +69,21 @@ fn setup() -> (WorldStorage, IBattlePillageContractDispatcher, ID, ID) {
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
     let attacker_realm_entity_id = spawn_realm(ref world, 1, Coord { x: 1, y: 1 });
 
-    mint(ref world, attacker_realm_entity_id, array![(ResourceTypes::KNIGHT, STARTING_KNIGHT_COUNT),].span());
+    mint(ref world, attacker_realm_entity_id, array![(ResourceTypes::KNIGHT, STARTING_KNIGHT_COUNT)].span());
 
     let attacking_troops = Troops {
         knight_count: STARTING_KNIGHT_COUNT.try_into().unwrap(), paladin_count: 0, crossbowman_count: 0,
     };
 
     let attacker_realm_army_unit_id = create_army_with_troops(
-        ref world, troop_system_dispatcher, attacker_realm_entity_id, attacking_troops, false
+        ref world, troop_system_dispatcher, attacker_realm_entity_id, attacking_troops, false,
     );
 
     // SPAWN DEFENDER REALM & DEFENSIVE ARMY
     starknet::testing::set_contract_address(contract_address_const::<DEFENDER>());
 
     let defender_realm_entity_id = spawn_realm(
-        ref world, 2, Coord { x: DEFENDER_REALM_COORD_X, y: DEFENDER_REALM_COORD_Y }
+        ref world, 2, Coord { x: DEFENDER_REALM_COORD_X, y: DEFENDER_REALM_COORD_Y },
     );
 
     mint(
@@ -113,7 +114,7 @@ fn setup() -> (WorldStorage, IBattlePillageContractDispatcher, ID, ID) {
             (ResourceTypes::DRAGONHIDE, 100_000),
             (ResourceTypes::DEMONHIDE, 100_000),
         ]
-            .span()
+            .span(),
     );
 
     let defender_position: Position = world.read_model(defender_realm_entity_id);

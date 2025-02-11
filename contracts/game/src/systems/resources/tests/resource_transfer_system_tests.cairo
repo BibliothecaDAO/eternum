@@ -2,30 +2,29 @@ mod resource_transfer_system_tests {
     use core::num::traits::Bounded;
 
     use core::traits::Into;
-    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+    use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+    use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DONKEY_ENTITY_TYPE;
 
     use s1_eternum::constants::ResourceTypes;
     use s1_eternum::constants::WORLD_CONFIG_ID;
-    use s1_eternum::models::capacity::CapacityCategory;
     use s1_eternum::models::config::WeightConfig;
-    use s1_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
-    use s1_eternum::models::owner::{Owner, EntityOwner};
+    use s1_eternum::models::config::{CapacityCategory, CapacityConfig};
+    use s1_eternum::models::owner::{EntityOwner, Owner};
     use s1_eternum::models::position::Position;
     use s1_eternum::models::quantity::Quantity;
     use s1_eternum::models::resource::resource::{Resource, ResourceAllowance};
 
-    use s1_eternum::systems::config::contracts::{config_systems, IWeightConfigDispatcher, IWeightConfigDispatcherTrait};
+    use s1_eternum::systems::config::contracts::{IWeightConfigDispatcher, IWeightConfigDispatcherTrait, config_systems};
 
     use s1_eternum::systems::resources::contracts::resource_systems::{
-        resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
+        IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait, resource_systems,
     };
 
-    use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
+    use s1_eternum::utils::testing::{config::set_capacity_config, systems::deploy_system, world::spawn_eternum};
     use starknet::contract_address_const;
 
 
@@ -45,7 +44,7 @@ mod resource_transfer_system_tests {
             .set_weight_config(ResourceTypes::WOOD.into(), 200);
 
         // set donkey config
-        world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000 });
+        world.write_model_test(@CapacityConfig { category: CapacityCategory::Donkey, weight_gram: 1_000_000 });
 
         let resource_systems_address = deploy_system(ref world, "resource_systems");
 
@@ -61,44 +60,44 @@ mod resource_transfer_system_tests {
         world.write_model_test(@sender_entity_position);
         world
             .write_model_test(
-                @Owner { address: contract_address_const::<'owner_entity'>(), entity_id: sender_entity_id.into() }
+                @Owner { address: contract_address_const::<'owner_entity'>(), entity_id: sender_entity_id.into() },
             );
         world
             .write_model_test(
-                @EntityOwner { entity_id: sender_entity_id.into(), entity_owner_id: sender_entity_id.into() }
+                @EntityOwner { entity_id: sender_entity_id.into(), entity_owner_id: sender_entity_id.into() },
             );
         world
             .write_model_test(
-                @Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 }
+                @Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 },
             );
         world
             .write_model_test(
                 @Resource {
-                    entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1_000_000_000
-                }
+                    entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1_000_000_000,
+                },
             );
         world
             .write_model_test(
-                @CapacityCategory { entity_id: sender_entity_id.into(), category: CapacityConfigCategory::Structure }
+                @CapacityCategory { entity_id: sender_entity_id.into(), category: CapacityCategory::Structure },
             );
         world
             .write_model_test(
-                @Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 }
+                @Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 },
             );
 
         let receiver_entity_position: Position = Position {
-            x: 200_000, y: 100_000, entity_id: receiver_entity_id.into()
+            x: 200_000, y: 100_000, entity_id: receiver_entity_id.into(),
         };
         world.write_model_test(@receiver_entity_position);
         world
             .write_model_test(
-                @CapacityCategory { entity_id: receiver_entity_id.into(), category: CapacityConfigCategory::Structure }
+                @CapacityCategory { entity_id: receiver_entity_id.into(), category: CapacityCategory::Structure },
             );
         world
             .write_model_test(
                 @Resource {
-                    entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1_000_000_000
-                }
+                    entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1_000_000_000,
+                },
             );
 
         // call world.dispatcher.uuid() to ensure next id isn't 0
@@ -126,7 +125,7 @@ mod resource_transfer_system_tests {
             .send(
                 sender_entity_id.into(),
                 receiver_entity_id.into(),
-                array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
+                array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700)].span(),
             );
 
         // verify sender's resource balances
@@ -142,8 +141,8 @@ mod resource_transfer_system_tests {
     #[should_panic(
         expected: (
             "not enough resources, Resource (entity id: 11, resource type: DONKEY, balance: 1). deduction: 1000",
-            'ENTRYPOINT_FAILED'
-        )
+            'ENTRYPOINT_FAILED',
+        ),
     )]
     fn resources_test_transfer__not_enough_donkey() {
         let (mut world, resource_systems_dispatcher) = setup();
@@ -155,7 +154,7 @@ mod resource_transfer_system_tests {
         // set sender's donkey balance to 1
         world
             .write_model_test(
-                @Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1 }
+                @Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1 },
             );
 
         // set receiving entity capacity, and weight config
@@ -165,8 +164,8 @@ mod resource_transfer_system_tests {
                     config_id: WORLD_CONFIG_ID,
                     weight_config_id: ResourceTypes::STONE.into(),
                     entity_type: ResourceTypes::STONE.into(),
-                    weight_gram: 10
-                }
+                    weight_gram: 10,
+                },
             );
         world
             .write_model_test(
@@ -174,11 +173,11 @@ mod resource_transfer_system_tests {
                     config_id: WORLD_CONFIG_ID,
                     weight_config_id: ResourceTypes::WOOD.into(),
                     entity_type: ResourceTypes::WOOD.into(),
-                    weight_gram: 10
-                }
+                    weight_gram: 10,
+                },
             );
 
-        world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 11_000 });
+        world.write_model_test(@CapacityConfig { category: CapacityCategory::Donkey, weight_gram: 11_000 });
 
         // transfer resources
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
@@ -188,7 +187,7 @@ mod resource_transfer_system_tests {
             .send(
                 sender_entity_id.into(),
                 receiver_entity_id.into(),
-                array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
+                array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700)].span(),
             );
     }
 
@@ -202,7 +201,7 @@ mod resource_transfer_system_tests {
         // transfer resources
         starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
-        resource_systems_dispatcher.send(1, 2, array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span());
+        resource_systems_dispatcher.send(1, 2, array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700)].span());
     }
 
 
@@ -211,8 +210,8 @@ mod resource_transfer_system_tests {
     #[should_panic(
         expected: (
             "not enough resources, Resource (entity id: 11, resource type: STONE, balance: 1000). deduction: 7700",
-            'ENTRYPOINT_FAILED'
-        )
+            'ENTRYPOINT_FAILED',
+        ),
     )]
     fn resources_test_transfer__insufficient_balance() {
         let (mut world, resource_systems_dispatcher) = setup();
@@ -229,7 +228,7 @@ mod resource_transfer_system_tests {
                 sender_entity_id.into(),
                 receiver_entity_id.into(),
                 array![(ResourceTypes::STONE, 7700), // more than balance
-                 (ResourceTypes::WOOD, 700),].span()
+                (ResourceTypes::WOOD, 700)].span(),
             );
     }
 
@@ -250,11 +249,11 @@ mod resource_transfer_system_tests {
 
         world
             .write_model_test(
-                @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() }
+                @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
             );
         world
             .write_model_test(
-                @EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
+                @EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() },
             );
 
         // owner approves approved
@@ -263,7 +262,7 @@ mod resource_transfer_system_tests {
             .approve(
                 owner_entity_id.into(),
                 approved_entity_id.into(),
-                array![(ResourceTypes::STONE, 600), (ResourceTypes::WOOD, 800),].span()
+                array![(ResourceTypes::STONE, 600), (ResourceTypes::WOOD, 800)].span(),
             );
 
         // approved entity transfers resources
@@ -273,7 +272,7 @@ mod resource_transfer_system_tests {
             .pickup(
                 receiver_entity_id.into(),
                 owner_entity_id.into(),
-                array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
+                array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700)].span(),
             );
 
         // check approval balance
@@ -306,11 +305,11 @@ mod resource_transfer_system_tests {
 
         world
             .write_model_test(
-                @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() }
+                @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
             );
         world
             .write_model_test(
-                @EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
+                @EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() },
             );
         // owner approves approved
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
@@ -318,7 +317,7 @@ mod resource_transfer_system_tests {
             .approve(
                 owner_entity_id.into(),
                 approved_entity_id.into(),
-                array![(ResourceTypes::STONE, Bounded::MAX), (ResourceTypes::WOOD, Bounded::MAX),].span()
+                array![(ResourceTypes::STONE, Bounded::MAX), (ResourceTypes::WOOD, Bounded::MAX)].span(),
             );
 
         // approved entity transfers resources
@@ -328,7 +327,7 @@ mod resource_transfer_system_tests {
             .pickup(
                 receiver_entity_id.into(),
                 owner_entity_id.into(),
-                array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
+                array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700)].span(),
             );
 
         // check approval balance

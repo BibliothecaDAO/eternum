@@ -11,7 +11,7 @@ trait IProductionContract<TContractState> {
         entity_id: ID,
         directions: Span<Direction>,
         building_category: BuildingCategory,
-        produce_resource_type: Option<u8>
+        produce_resource_type: Option<u8>,
     );
     fn destroy_building(ref self: TContractState, entity_id: ID, building_coord: Coord);
 
@@ -20,7 +20,7 @@ trait IProductionContract<TContractState> {
     fn resume_building_production(ref self: TContractState, entity_id: ID, building_coord: Coord);
 
     fn burn_other_resources_for_labor_production(
-        ref self: TContractState, entity_id: ID, resource_types: Span<u8>, resource_amounts: Span<u128>
+        ref self: TContractState, entity_id: ID, resource_types: Span<u8>, resource_amounts: Span<u128>,
     );
 
     fn burn_labor_resources_for_other_production(
@@ -31,7 +31,7 @@ trait IProductionContract<TContractState> {
         ref self: TContractState,
         from_entity_id: ID,
         produced_resource_types: Span<u8>,
-        production_tick_counts: Span<u128>
+        production_tick_counts: Span<u128>,
     );
 }
 
@@ -44,13 +44,13 @@ mod production_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureTrait, StructureImpl, StructureCategory};
+    use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
     use s1_eternum::models::{
-        owner::{EntityOwner, EntityOwnerTrait}, resource::resource::{Resource, ResourceCost},
-        position::{Coord, CoordTrait, Position, PositionTrait, Direction},
-        resource::production::building::{BuildingCategory, Building, BuildingImpl},
-        resource::production::production::{Production, ProductionTrait, ProductionStrategyImpl},
-        realm::{Realm, RealmImpl, RealmResourcesTrait}
+        owner::{EntityOwner, EntityOwnerTrait}, position::{Coord, CoordTrait, Direction, Position, PositionTrait},
+        realm::{Realm, RealmImpl, RealmResourcesTrait},
+        resource::production::building::{Building, BuildingCategory, BuildingImpl},
+        resource::production::production::{Production, ProductionStrategyImpl, ProductionTrait},
+        resource::resource::{Resource, ResourceCost},
     };
 
     #[abi(embed_v0)]
@@ -91,13 +91,13 @@ mod production_systems {
             loop {
                 match directions.pop_front() {
                     Option::Some(direction) => { building_coord = building_coord.neighbor(*direction); },
-                    Option::None => { break; }
+                    Option::None => { break; },
                 }
             };
 
             // todo: check that entity is a realm
             let (building, building_quantity) = BuildingImpl::create(
-                ref world, entity_id, building_category, produce_resource_type, building_coord
+                ref world, entity_id, building_category, produce_resource_type, building_coord,
             );
 
             // pay one time cost of the building
@@ -142,16 +142,14 @@ mod production_systems {
 
             assert!(
                 resource_types.len() == resource_amounts.len(),
-                "resource types and resource amounts must be the same length"
+                "resource types and resource amounts must be the same length",
             );
 
-            for i in 0
-                ..resource_types
-                    .len() {
-                        ProductionStrategyImpl::burn_other_resource_for_labor_production(
-                            ref world, entity_id, *resource_types.at(i), *resource_amounts.at(i)
-                        );
-                    }
+            for i in 0..resource_types.len() {
+                ProductionStrategyImpl::burn_other_resource_for_labor_production(
+                    ref world, entity_id, *resource_types.at(i), *resource_amounts.at(i),
+                );
+            }
         }
 
         // Burn production labor resource and add to production
@@ -169,16 +167,14 @@ mod production_systems {
 
             assert!(
                 labor_amounts.len() == produced_resource_types.len(),
-                "labor and produced resource types must be the same length"
+                "labor and produced resource types must be the same length",
             );
 
-            for i in 0
-                ..labor_amounts
-                    .len() {
-                        ProductionStrategyImpl::burn_labor_resource_for_other_production(
-                            ref world, from_entity_id, *labor_amounts.at(i), *produced_resource_types.at(i)
-                        );
-                    }
+            for i in 0..labor_amounts.len() {
+                ProductionStrategyImpl::burn_labor_resource_for_other_production(
+                    ref world, from_entity_id, *labor_amounts.at(i), *produced_resource_types.at(i),
+                );
+            }
         }
 
 
@@ -188,7 +184,7 @@ mod production_systems {
             ref self: ContractState,
             from_entity_id: ID,
             produced_resource_types: Span<u8>,
-            production_tick_counts: Span<u128>
+            production_tick_counts: Span<u128>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -201,16 +197,14 @@ mod production_systems {
 
             assert!(
                 produced_resource_types.len() == production_tick_counts.len(),
-                "produced resource types and production tick counts must be the same length"
+                "produced resource types and production tick counts must be the same length",
             );
 
-            for i in 0
-                ..produced_resource_types
-                    .len() {
-                        ProductionStrategyImpl::burn_other_predefined_resources_for_resource(
-                            ref world, from_entity_id, *produced_resource_types.at(i), *production_tick_counts.at(i)
-                        );
-                    }
+            for i in 0..produced_resource_types.len() {
+                ProductionStrategyImpl::burn_other_predefined_resources_for_resource(
+                    ref world, from_entity_id, *produced_resource_types.at(i), *production_tick_counts.at(i),
+                );
+            }
         }
     }
 }

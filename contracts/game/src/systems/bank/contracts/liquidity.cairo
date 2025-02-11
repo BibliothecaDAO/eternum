@@ -22,7 +22,7 @@ mod liquidity_systems {
     // Eternum imports
     use s1_eternum::alias::ID;
     use s1_eternum::constants::ResourceTypes;
-    use s1_eternum::constants::{RESOURCE_PRECISION, DEFAULT_NS};
+    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
     use s1_eternum::models::bank::liquidity::{Liquidity};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
     use s1_eternum::models::owner::{Owner, OwnerTrait};
@@ -128,7 +128,7 @@ mod liquidity_systems {
 
             // then entity picks up the resources at the bank
             let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
-                ref world, bank_entity_id, entity_id, resources
+                ref world, bank_entity_id, entity_id, resources,
             );
 
             // update player liquidity
@@ -147,7 +147,12 @@ mod liquidity_systems {
     #[generate_trait]
     pub impl InternalLiquiditySystemsImpl of InternalLiquiditySystemsTrait {
         fn emit_event(
-            ref world: WorldStorage, market: Market, entity_id: ID, lords_amount: u128, resource_amount: u128, add: bool
+            ref world: WorldStorage,
+            market: Market,
+            entity_id: ID,
+            lords_amount: u128,
+            resource_amount: u128,
+            add: bool,
         ) {
             let resource_price = if market.has_liquidity() {
                 market.quote_amount(1 * RESOURCE_PRECISION)
@@ -164,8 +169,8 @@ mod liquidity_systems {
                         resource_amount,
                         resource_price: resource_price,
                         add,
-                        timestamp: starknet::get_block_timestamp()
-                    }
+                        timestamp: starknet::get_block_timestamp(),
+                    },
                 );
         }
     }

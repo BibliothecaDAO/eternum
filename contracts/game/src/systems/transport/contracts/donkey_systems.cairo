@@ -7,19 +7,17 @@ mod donkey_systems {
 
     use s1_eternum::alias::ID;
 
-    use s1_eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION};
-    use s1_eternum::models::capacity::{CapacityCategory};
-    use s1_eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigCategory, CapacityConfigImpl};
-    use s1_eternum::models::movable::{Movable, MovableImpl, ArrivalTime};
-    use s1_eternum::models::order::{Orders, OrdersTrait};
-    use s1_eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
-    use s1_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction, PositionTrait};
+    use s1_eternum::constants::{DONKEY_ENTITY_TYPE, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::models::config::{CapacityCategory, CapacityConfig, CapacityConfigImpl, SpeedConfig};
+    use s1_eternum::models::movable::{ArrivalTime, Movable, MovableImpl};
+    use s1_eternum::models::owner::{EntityOwner, Owner, OwnerTrait};
+    use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, PositionTrait, TravelTrait};
     use s1_eternum::models::realm::Realm;
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s1_eternum::models::weight::Weight;
 
     use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{
-        ResourceSystemsImpl, InternalResourceSystemsImpl
+        InternalResourceSystemsImpl, ResourceSystemsImpl,
     };
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
@@ -55,8 +53,8 @@ mod donkey_systems {
                         entity_id: payer_id,
                         player_address: starknet::get_caller_address(),
                         amount: donkey_amount,
-                        timestamp: time
-                    }
+                        timestamp: time,
+                    },
                 );
 
             // [Achievement] Consume donkeys
@@ -95,7 +93,7 @@ mod donkey_systems {
             donkey_id: ID,
             receiver_id: ID,
             start_coord: Coord,
-            intermediate_coord: Coord
+            intermediate_coord: Coord,
         ) -> ID {
             let arrives_at: u64 = starknet::get_block_timestamp()
                 + Self::get_donkey_travel_time(
@@ -103,20 +101,19 @@ mod donkey_systems {
                     start_coord,
                     intermediate_coord,
                     MovableImpl::sec_per_km(ref world, DONKEY_ENTITY_TYPE),
-                    is_round_trip
+                    is_round_trip,
                 );
 
             let delivery_coord: Coord = intermediate_coord;
-            world.write_model(@EntityOwner { entity_id: donkey_id, entity_owner_id: receiver_id, });
-            world.write_model(@ArrivalTime { entity_id: donkey_id, arrives_at: arrives_at, });
+            world.write_model(@EntityOwner { entity_id: donkey_id, entity_owner_id: receiver_id });
+            world.write_model(@ArrivalTime { entity_id: donkey_id, arrives_at: arrives_at });
             world.write_model(@Position { entity_id: donkey_id, x: delivery_coord.x, y: delivery_coord.y });
-            world.write_model(@CapacityCategory { entity_id: donkey_id, category: CapacityConfigCategory::Donkey });
 
             return donkey_id;
         }
 
-        fn get_donkey_needed(ref world: WorldStorage, resources_weight: u128,) -> u128 {
-            let donkey_capacity = CapacityConfigImpl::get(ref world, CapacityConfigCategory::Donkey);
+        fn get_donkey_needed(ref world: WorldStorage, resources_weight: u128) -> u128 {
+            let donkey_capacity = CapacityConfigImpl::get(ref world, CapacityCategory::Donkey);
             let reminder = resources_weight % donkey_capacity.weight_gram;
             let donkeys = if reminder == 0 {
                 resources_weight / donkey_capacity.weight_gram

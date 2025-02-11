@@ -1,5 +1,5 @@
 use cubit::f128::procgen::simplex3;
-use cubit::f128::types::fixed::{FixedTrait, Fixed};
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use cubit::f128::types::vec3::{Vec3, Vec3Trait};
 
 use s1_eternum::utils::map::constants::fixed_constants as fc;
@@ -67,7 +67,7 @@ fn bdepth(biome: Biome) -> Fixed {
 }
 
 mod LEVEL {
-    use cubit::f128::types::fixed::{FixedTrait, Fixed, ONE_u128};
+    use cubit::f128::types::fixed::{Fixed, FixedTrait, ONE_u128};
     use s1_eternum::utils::map::constants::fixed_constants as fc;
 
     fn DEEP_OCEAN() -> Fixed {
@@ -220,7 +220,7 @@ fn _environment(elevation: Fixed, moisture: Fixed) -> Biome {
 
 #[cfg(test)]
 mod tests {
-    use cubit::f128::types::fixed::{FixedTrait, Fixed};
+    use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use super::get_biome;
 
     #[test]

@@ -1,13 +1,12 @@
 use core::array::{ArrayTrait, SpanTrait};
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 
 use s1_eternum::constants::ResourceTypes;
-use s1_eternum::models::config::LevelingConfig;
-use s1_eternum::models::position::{Position, Coord};
+use s1_eternum::models::position::{Coord, Position};
 use s1_eternum::models::resource::resource::ResourceCost;
 use s1_eternum::systems::config::contracts::config_systems;
 
@@ -16,7 +15,7 @@ use s1_eternum::systems::config::contracts::{
     ILevelingConfigDispatcherTrait,
 };
 
-use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use s1_eternum::utils::testing::{systems::deploy_system, world::spawn_eternum};
 
 use starknet::contract_address::contract_address_const;
 

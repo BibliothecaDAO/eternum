@@ -7,8 +7,8 @@ use s1_eternum::models::resource::production::building::{BuildingCategory};
 pub struct Population {
     #[key]
     entity_id: ID,
-    population: u32, // current population
-    capacity: u32, // total population capacity
+    population: u32,
+    capacity: u32,
 }
 
 #[generate_trait]

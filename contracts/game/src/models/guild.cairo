@@ -7,7 +7,7 @@ pub struct Guild {
     #[key]
     entity_id: ID,
     is_public: bool,
-    member_count: u16
+    member_count: u16,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -15,7 +15,7 @@ pub struct Guild {
 pub struct GuildMember {
     #[key]
     address: ContractAddress,
-    guild_entity_id: ID
+    guild_entity_id: ID,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -25,7 +25,7 @@ pub struct GuildWhitelist {
     address: ContractAddress,
     #[key]
     guild_entity_id: ID,
-    is_whitelisted: bool
+    is_whitelisted: bool,
 }
 
 #[generate_trait]

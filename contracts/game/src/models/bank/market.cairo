@@ -1,9 +1,9 @@
 // External imports
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use dojo::meta::introspect::{Struct, Member};
+use dojo::meta::introspect::{Member, Struct};
 
 // Dojo imports
-use dojo::meta::{Ty, Introspect};
+use dojo::meta::{Introspect, Ty};
 use s1_eternum::alias::ID;
 
 // Starknet imports
@@ -28,10 +28,10 @@ impl IntrospectFixed of Introspect<Fixed> {
                 attrs: array![].span(),
                 children: array![
                     Member { name: 'mag', ty: Ty::Primitive('u128'), attrs: array![].span() },
-                    Member { name: 'sign', ty: Ty::Primitive('bool'), attrs: array![].span() }
+                    Member { name: 'sign', ty: Ty::Primitive('bool'), attrs: array![].span() },
                 ]
-                    .span()
-            }
+                    .span(),
+            },
         )
     }
 }
@@ -51,7 +51,7 @@ pub struct Market {
 #[generate_trait]
 impl MarketImpl of MarketTrait {
     fn get_input_price(
-        fee_rate_num: u128, fee_rate_denom: u128, input_amount: u128, input_reserve: u128, output_reserve: u128
+        fee_rate_num: u128, fee_rate_denom: u128, input_amount: u128, input_reserve: u128, output_reserve: u128,
     ) -> u128 {
         // Ensure reserves are not zero
         assert(input_reserve > 0 && output_reserve > 0, 'Reserves must be > zero');
@@ -73,7 +73,7 @@ impl MarketImpl of MarketTrait {
     // Here the user gets the requested output but pays more in price to
     // account for lp fees. i.e fees are paid in input token
     fn get_output_price(
-        fee_rate_num: u128, fee_rate_denom: u128, output_amount: u128, input_reserve: u128, output_reserve: u128
+        fee_rate_num: u128, fee_rate_denom: u128, output_amount: u128, input_reserve: u128, output_reserve: u128,
     ) -> u128 {
         // Ensure reserves are not zero and output amount is valid
         assert(input_reserve > 0 && output_reserve > 0, 'Reserves must be > zero');
@@ -81,7 +81,7 @@ impl MarketImpl of MarketTrait {
             output_amount < output_reserve,
             "Output amount exceeds reserve, amount: {}, reserve: {}",
             output_amount,
-            output_reserve
+            output_reserve,
         );
 
         // Calculate input amount based on the constant product formula with fee
@@ -98,14 +98,14 @@ impl MarketImpl of MarketTrait {
 
     fn buy(self: @Market, lp_fee_num: u128, lp_fee_denom: u128, desired_resource_amount: u128) -> u128 {
         let lords_cost = Self::get_output_price(
-            lp_fee_num, lp_fee_denom, desired_resource_amount, *self.lords_amount, *self.resource_amount
+            lp_fee_num, lp_fee_denom, desired_resource_amount, *self.lords_amount, *self.resource_amount,
         );
         lords_cost
     }
 
     fn sell(self: @Market, lp_fee_num: u128, lp_fee_denom: u128, sell_resource_amount: u128) -> u128 {
         let lords_received = Self::get_input_price(
-            lp_fee_num, lp_fee_denom, sell_resource_amount, *self.resource_amount, *self.lords_amount
+            lp_fee_num, lp_fee_denom, sell_resource_amount, *self.resource_amount, *self.lords_amount,
         );
         lords_received
     }
@@ -283,7 +283,7 @@ mod tests {
         final_reserve_x: u128,
         final_reserve_y: u128,
         fee_rate_num: u128,
-        fee_rate_denom: u128
+        fee_rate_denom: u128,
     ) {
         let initial_product = initial_reserve_x * initial_reserve_y;
         let final_product = final_reserve_x * final_reserve_y;
@@ -349,7 +349,7 @@ mod tests {
             market.lords_amount + lords_cost,
             market.resource_amount - desired_resource_amount,
             0,
-            1
+            1,
         )
     }
 
@@ -374,7 +374,7 @@ mod tests {
             market.lords_amount + lords_cost,
             market.resource_amount - desired_resource_amount,
             LP_FEE_NUM,
-            LP_FEE_DENOM
+            LP_FEE_DENOM,
         )
     }
 
@@ -399,7 +399,7 @@ mod tests {
             market.lords_amount - lords_payout,
             market.resource_amount + sell_resource_amount,
             0,
-            1
+            1,
         )
     }
 
@@ -423,7 +423,7 @@ mod tests {
             market.lords_amount - lords_payout,
             market.resource_amount + sell_resource_amount,
             LP_FEE_NUM,
-            LP_FEE_DENOM
+            LP_FEE_DENOM,
         )
     }
 

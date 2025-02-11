@@ -1,37 +1,48 @@
-use starknet::ContractAddress;
-use dojo::world::WorldStorage;
 use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::models::troop::{TroopType, TroopTier, GuardSlot, Troops, ExplorerTroops, TroopsImpl, GuardTroops, GuardImpl};
-use s1_eternum::models::config::{TroopConfig, TroopStaminaConfig, TroopLimitConfig, VRFConfigImpl, MapConfig};
-use s1_eternum::models::weight::{W3eight, W3eightImpl};
-use s1_eternum::models::resource::r3esource::{
-    SingleR33esource, SingleR33esourceStoreImpl, SingleR33esourceImpl, 
-    R3esource, R3esourceImpl,
-    WeightStoreImpl, WeightUnitImpl};
-use s1_eternum::models::structure::Structure;
-use s1_eternum::models::stamina::{Stamina, StaminaImpl};
+use s1_eternum::constants::split_resources_and_probs;
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+use s1_eternum::models::config::WorldConfigUtilImpl;
+use s1_eternum::models::config::{MapConfig, TroopConfig, TroopLimitConfig, TroopStaminaConfig};
 
-use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, RESOURCE_PRECISION};
+use s1_eternum::models::position::{Occupier, OccupierImpl};
+use s1_eternum::models::resource::r3esource::{
+    R3esource, R3esourceImpl, SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl, WeightStoreImpl,
+    WeightUnitImpl,
+};
+use s1_eternum::models::stamina::{Stamina, StaminaImpl};
+use s1_eternum::models::structure::Structure;
+use s1_eternum::models::troop::{
+    ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopTier, TroopType, Troops, TroopsImpl,
+};
+use s1_eternum::models::weight::{W3eight, W3eightImpl};
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
-use s1_eternum::constants::split_resources_and_probs;
-
-use s1_eternum::models::position::{Occupier, OccupierImpl};
+use starknet::ContractAddress;
 
 
 #[generate_trait]
 pub impl iExplorerImpl of iExplorerTrait {
-
-    fn burn_stamina_cost(ref world: WorldStorage, ref explorer: ExplorerTroops, troop_stamina_config: TroopStaminaConfig, explore: bool, mut biomes: Array<Biome>, current_tick: u64) {
+    fn burn_stamina_cost(
+        ref world: WorldStorage,
+        ref explorer: ExplorerTroops,
+        troop_stamina_config: TroopStaminaConfig,
+        explore: bool,
+        mut biomes: Array<Biome>,
+        current_tick: u64,
+    ) {
         let stamina_cost = match explore {
             true => {
-                let mut stamina_cost: u128 = troop_stamina_config.stamina_explore_stamina_cost.into() * biomes.len().into();
+                let mut stamina_cost: u128 = troop_stamina_config.stamina_explore_stamina_cost.into()
+                    * biomes.len().into();
                 loop {
                     match biomes.pop_front() {
                         Option::Some(biome) => {
-                            let (add, stamina_bonus) = explorer.troops.stamina_movement_bonus(biome, troop_stamina_config);
+                            let (add, stamina_bonus) = explorer
+                                .troops
+                                .stamina_movement_bonus(biome, troop_stamina_config);
                             if add {
                                 stamina_cost += stamina_bonus.into();
                             } else {
@@ -42,7 +53,7 @@ pub impl iExplorerImpl of iExplorerTrait {
                                 }
                             }
                         },
-                        Option::None => { break; }
+                        Option::None => { break; },
                     }
                 };
 
@@ -51,22 +62,28 @@ pub impl iExplorerImpl of iExplorerTrait {
             false => troop_stamina_config.stamina_travel_stamina_cost.into() * biomes.len().into(),
         };
 
-
-        explorer.troops.stamina.spend(
-            explorer.troops.category, troop_stamina_config, 
-            stamina_cost.try_into().unwrap(), current_tick
-        );
+        explorer
+            .troops
+            .stamina
+            .spend(explorer.troops.category, troop_stamina_config, stamina_cost.try_into().unwrap(), current_tick);
     }
 
-    fn burn_food_cost(ref world: WorldStorage, ref explorer: ExplorerTroops, troop_stamina_config: TroopStaminaConfig, explore: bool) {
-
+    fn burn_food_cost(
+        ref world: WorldStorage, ref explorer: ExplorerTroops, troop_stamina_config: TroopStaminaConfig, explore: bool,
+    ) {
         let (wheat_cost, fish_cost) = match explore {
             true => {
-                (troop_stamina_config.stamina_explore_wheat_cost.into(), troop_stamina_config.stamina_explore_fish_cost.into())
+                (
+                    troop_stamina_config.stamina_explore_wheat_cost.into(),
+                    troop_stamina_config.stamina_explore_fish_cost.into(),
+                )
             },
             false => {
-                (troop_stamina_config.stamina_travel_wheat_cost.into(), troop_stamina_config.stamina_travel_fish_cost.into())
-            }
+                (
+                    troop_stamina_config.stamina_travel_wheat_cost.into(),
+                    troop_stamina_config.stamina_travel_fish_cost.into(),
+                )
+            },
         };
 
         // multiply by troop count
@@ -77,7 +94,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         let mut explorer_weight: W3eight = WeightStoreImpl::retrieve(ref world, explorer.explorer_id);
         let wheat_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::WHEAT);
         let mut wheat_resource = SingleR33esourceStoreImpl::retrieve(
-            ref world, explorer.explorer_id, ResourceTypes::WHEAT, ref explorer_weight, wheat_weight_grams, false
+            ref world, explorer.explorer_id, ResourceTypes::WHEAT, ref explorer_weight, wheat_weight_grams, false,
         );
         wheat_resource.spend(wheat_burn_amount, ref explorer_weight, wheat_weight_grams);
         wheat_resource.store(ref world);
@@ -85,7 +102,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         // spend fish resource
         let fish_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::FISH);
         let mut fish_resource = SingleR33esourceStoreImpl::retrieve(
-            ref world, explorer.explorer_id, ResourceTypes::FISH, ref explorer_weight, fish_weight_grams, false
+            ref world, explorer.explorer_id, ResourceTypes::FISH, ref explorer_weight, fish_weight_grams, false,
         );
         fish_resource.spend(fish_burn_amount, ref explorer_weight, fish_weight_grams);
         fish_resource.store(ref world);
@@ -94,9 +111,12 @@ pub impl iExplorerImpl of iExplorerTrait {
         explorer_weight.store(ref world, explorer.explorer_id);
     }
 
-    fn update_capacity(ref world: WorldStorage, explorer_id: ID, explorer: ExplorerTroops, troop_amount: u128, add: bool) {
+    fn update_capacity(
+        ref world: WorldStorage, explorer_id: ID, explorer: ExplorerTroops, troop_amount: u128, add: bool,
+    ) {
         // let troop_config: TroopConfig = world.read_model(explorer.troops.category);
-        // let weight_grams: u128 = ResourceUnitImpl::grams(ref world, explorer.troops.category, explorer.troops.tier);
+        // let weight_grams: u128 = ResourceUnitImpl::grams(ref world, explorer.troops.category,
+        // explorer.troops.tier);
         let weight_grams: u128 = 200; // todo: remove placeholder
         let mut troop_weight: W3eight = WeightStoreImpl::retrieve(ref world, explorer_id);
         if add {
@@ -108,9 +128,7 @@ pub impl iExplorerImpl of iExplorerTrait {
     }
 
 
-
     fn explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
-
         // ensure army is dead
         assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
 
@@ -121,7 +139,6 @@ pub impl iExplorerImpl of iExplorerTrait {
         world.erase_model(@occupier);
         world.erase_model(@explorer);
         world.erase_model(@resource);
-
         // todo: IMPORTANT: check the cost of erasing the resource model
 
     }
@@ -129,10 +146,10 @@ pub impl iExplorerImpl of iExplorerTrait {
     fn exploration_reward(ref world: WorldStorage, config: MapConfig) -> (u8, u128) {
         let (resource_types, resources_probs) = split_resources_and_probs();
 
-        let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+        let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(world, selector!("vrf_provider_address"));
         let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
         let reward_resource_id: u8 = *random::choices(
-            resource_types, resources_probs, array![].span(), 1, true, vrf_seed
+            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
         )
             .at(0);
 
@@ -142,14 +159,13 @@ pub impl iExplorerImpl of iExplorerTrait {
 
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
-
     fn update_troop_resource(
         ref world: WorldStorage,
         from_structure_id: ID,
-        amount: u128, 
-        category: TroopType, 
-        tier: TroopTier, 
-        current_tick: u64
+        amount: u128,
+        category: TroopType,
+        tier: TroopTier,
+        current_tick: u64,
     ) {
         let resource_type = match tier {
             TroopTier::T1 => {
@@ -159,7 +175,6 @@ pub impl iTroopImpl of iTroopTrait {
                     TroopType::Paladin => ResourceTypes::PALADIN_T1,
                 }
             },
-
             TroopTier::T2 => {
                 match category {
                     TroopType::Knight => ResourceTypes::KNIGHT_T2,
@@ -167,21 +182,20 @@ pub impl iTroopImpl of iTroopTrait {
                     TroopType::Paladin => ResourceTypes::PALADIN_T2,
                 }
             },
-
             TroopTier::T3 => {
                 match category {
                     TroopType::Knight => ResourceTypes::KNIGHT_T3,
                     TroopType::Crossbowman => ResourceTypes::CROSSBOWMAN_T3,
                     TroopType::Paladin => ResourceTypes::PALADIN_T3,
                 }
-            }
+            },
         };
-        
+
         // burn troop resource to pay for troop
         let mut structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_structure_id);
         let troop_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, resource_type);
         let mut structure_troop_resource: SingleR33esource = SingleR33esourceStoreImpl::retrieve(
-            ref world, from_structure_id, resource_type, ref structure_weight, troop_resource_weight_grams, true
+            ref world, from_structure_id, resource_type, ref structure_weight, troop_resource_weight_grams, true,
         );
         structure_troop_resource.spend(amount, ref structure_weight, troop_resource_weight_grams);
         structure_troop_resource.store(ref world);
@@ -189,35 +203,33 @@ pub impl iTroopImpl of iTroopTrait {
 }
 
 
-
-
-
-
 #[generate_trait]
 pub impl iMercenariesImpl of iMercenariesTrait {
-
     fn add(
-        ref world: WorldStorage, 
-        structure_id: ID, 
-        mut seed: u256, 
-        mut slot_tiers: Span<(GuardSlot, TroopTier, TroopType)>, 
-        troop_limit_config: TroopLimitConfig, 
+        ref world: WorldStorage,
+        structure_id: ID,
+        mut seed: u256,
+        mut slot_tiers: Span<(GuardSlot, TroopTier, TroopType)>,
+        troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
-        current_tick: u64
+        current_tick: u64,
     ) {
         let mut structure: Structure = world.read_model(structure_id);
         let mut salt: u128 = 1;
         let mut guards: GuardTroops = structure.guards;
-                        
+
         loop {
             match slot_tiers.pop_front() {
-                Option::Some((slot, tier, category)) => {
-                    let lower_bound: u128 = troop_limit_config.mercenaries_troop_lower_bound.into() * RESOURCE_PRECISION;
-                    let upper_bound: u128 = troop_limit_config.mercenaries_troop_upper_bound.into() * RESOURCE_PRECISION;
+                Option::Some((
+                    slot, tier, category,
+                )) => {
+                    let lower_bound: u128 = troop_limit_config.mercenaries_troop_lower_bound.into()
+                        * RESOURCE_PRECISION;
+                    let upper_bound: u128 = troop_limit_config.mercenaries_troop_upper_bound.into()
+                        * RESOURCE_PRECISION;
                     let max_troops_from_lower_bound: u128 = upper_bound - lower_bound;
                     let mut troop_amount: u128 = random::random(seed, salt, max_troops_from_lower_bound);
                     troop_amount += lower_bound;
-
 
                     // update guard count
                     structure.troop.guard_count += 1;
@@ -232,12 +244,12 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                     // update troop in guard slot
                     guards.to_slot(*slot, troops, current_tick);
                 },
-                Option::None => { break; }
+                Option::None => { break; },
             }
         };
 
         // update related models
         structure.guards = guards;
-        world.write_model(@structure); 
+        world.write_model(@structure);
     }
 }

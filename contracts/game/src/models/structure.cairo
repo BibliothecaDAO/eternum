@@ -1,10 +1,11 @@
 use array::SpanTrait;
 use s1_eternum::alias::ID;
-use s1_eternum::models::config::{BattleConfig, TickConfig, TickTrait};
-use s1_eternum::models::position::Coord;
+use s1_eternum::models::config::{BattleConfig, TickConfig};
 use s1_eternum::models::owner::Owner;
-use s1_eternum::models::troop::{GuardTroops, Troops, TroopType, TroopTier};
+use s1_eternum::models::position::Coord;
 use s1_eternum::models::stamina::Stamina;
+use s1_eternum::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
+use s1_eternum::models::config::{TickTrait};
 use starknet::ContractAddress;
 use traits::Into;
 
@@ -24,7 +25,7 @@ pub struct Structure {
 }
 
 
-// todo hmm getting structure will cost more for 
+// todo hmm getting structure will cost more for
 // players with more explorers
 #[derive(Introspect, Copy, Drop, Serde)]
 struct StructureTroop {
@@ -42,30 +43,17 @@ struct StructureTroop {
 
 #[generate_trait]
 impl StructureImpl of StructureTrait {
-
     fn default() -> Structure {
         let troops: Troops = Troops {
-            category: TroopType::Knight,
-            tier: TroopTier::T1,
-            count: 0,
-            stamina: Stamina {
-                amount: 0,
-                updated_tick: 0,
-            },
+            category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Stamina { amount: 0, updated_tick: 0 },
         };
         Structure {
             entity_id: 0,
             category: StructureCategory::None,
-            owner: Owner {
-                entity_id: 0,
-                address: Zeroable::zero(),
-            },
+            owner: Owner { entity_id: 0, address: Zeroable::zero() },
             coord: Coord { x: 0, y: 0 },
             troop: StructureTroop {
-                max_troops_allowed: 0,
-                max_guards_allowed: 0,
-                guard_count: 0,
-                explorers: array![].span(),
+                max_troops_allowed: 0, max_guards_allowed: 0, guard_count: 0, explorers: array![].span(),
             },
             guards: GuardTroops {
                 delta: troops,
@@ -106,9 +94,7 @@ impl StructureImpl of StructureTrait {
                 structure.troop.max_troops_allowed = 1;
                 structure.troop.max_guards_allowed = 1; // 1 guard, 0 explorers
             },
-            _ => {
-                panic!("invalid structure category");
-            }
+            _ => { panic!("invalid structure category"); },
         }
         structure.created_at = starknet::get_block_timestamp();
         structure
@@ -128,7 +114,7 @@ impl StructureImpl of StructureTrait {
     }
 
     fn no_initial_attack_immunity(
-        self: Structure, battle_config: BattleConfig, tick_config: TickConfig
+        self: Structure, battle_config: BattleConfig, tick_config: TickConfig,
     ) -> (bool, ByteArray) {
         // Fragment mines have no immunity
         if self.category == StructureCategory::FragmentMine {
@@ -138,16 +124,18 @@ impl StructureImpl of StructureTrait {
         let current_tick = tick_config.current();
         let mut allow_attack_tick: u64 = 0;
         if self.category == StructureCategory::Hyperstructure {
-            allow_attack_tick = tick_config.at(self.created_at) + battle_config.hyperstructure_immunity_ticks.into();
+            allow_attack_tick = tick_config.at(self.created_at)
+                + battle_config.hyperstructure_immunity_ticks.into();
         } else {
-            allow_attack_tick = tick_config.at(self.created_at) + battle_config.regular_immunity_ticks.into();
+            allow_attack_tick = tick_config.at(self.created_at)
+                + battle_config.regular_immunity_ticks.into();
         }
 
         if current_tick < allow_attack_tick {
             let remaining_ticks = allow_attack_tick - current_tick;
             return (
                 false,
-                format!("structure and related entities cannot be attacked for another {} ticks", remaining_ticks)
+                format!("structure and related entities cannot be attacked for another {} ticks", remaining_ticks),
             );
         }
 
@@ -163,7 +151,7 @@ enum StructureCategory {
     Realm,
     Hyperstructure,
     Bank,
-    FragmentMine
+    FragmentMine,
 }
 
 impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {

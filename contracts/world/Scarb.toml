@@ -1,5 +1,5 @@
 [package]
-cairo-version = "=2.8.4"
+cairo-version = "=2.9.2"
 name = "s1_eternum"
 version = "1.0.0"
 
@@ -7,11 +7,11 @@ version = "1.0.0"
 sierra-replace-ids = true
 
 [dependencies]
-starknet = "2.8.4"
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.3" }
+starknet = "2.9.2"
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.1.2" }
 
 [dev-dependencies]
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.0.3" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.1.2" }
 
 [tool.fmt]
 sort-module-level-items = true

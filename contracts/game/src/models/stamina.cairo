@@ -10,8 +10,6 @@ pub struct Stamina {
 
 #[generate_trait]
 impl StaminaImpl of StaminaTrait {
-
-
     #[inline(always)]
     fn reset(ref self: Stamina, current_tick: u64) {
         self.amount = 0;
@@ -20,7 +18,9 @@ impl StaminaImpl of StaminaTrait {
 
     #[inline(always)]
     fn refill(ref self: Stamina, troop_type: TroopType, troop_stamina_config: TroopStaminaConfig, current_tick: u64) {
-        if (self.updated_tick == current_tick) {return;}
+        if (self.updated_tick == current_tick) {
+            return;
+        }
 
         if (self.updated_tick.is_zero()) {
             // initialize stamina
@@ -36,7 +36,13 @@ impl StaminaImpl of StaminaTrait {
     }
 
     #[inline(always)]
-    fn spend(ref self: Stamina, troop_type: TroopType, troop_stamina_config: TroopStaminaConfig, amount: u64, current_tick: u64) {
+    fn spend(
+        ref self: Stamina,
+        troop_type: TroopType,
+        troop_stamina_config: TroopStaminaConfig,
+        amount: u64,
+        current_tick: u64,
+    ) {
         self.refill(troop_type, troop_stamina_config, current_tick);
         self.amount -= amount;
     }

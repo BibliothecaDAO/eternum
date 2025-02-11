@@ -2,12 +2,10 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s1_eternum::{
-    alias::ID,
-    constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_contributable_resources_with_rarity, RESOURCE_PRECISION},
+    alias::ID, constants::{RESOURCE_PRECISION, ResourceTypes, get_contributable_resources_with_rarity},
     models::{
-        owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
-        resource::resource::{Resource, ResourceImpl, ResourceCost},
-        structure::{Structure, StructureCategory}, guild::{GuildMember}
+        guild::{GuildMember}, owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
+        resource::resource::{Resource, ResourceCost, ResourceImpl}, structure::{Structure, StructureCategory},
     },
 };
 
@@ -90,7 +88,7 @@ pub impl HyperstructureImpl of HyperstructureTrait {
                 let guild_member: GuildMember = world.read_model(contributor_address);
                 let owner_guild_member: GuildMember = world.read_model(hyperstructure_owner.address);
                 assert!(guild_member.guild_entity_id == owner_guild_member.guild_entity_id, "not in the same guild");
-            }
+            },
         }
     }
 }

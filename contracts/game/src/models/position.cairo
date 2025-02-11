@@ -1,4 +1,4 @@
-use core::fmt::{Display, Formatter, Error};
+use core::fmt::{Display, Error, Formatter};
 use core::zeroable::Zeroable;
 use option::OptionTrait;
 use s1_eternum::alias::ID;
@@ -28,7 +28,7 @@ const HEX_DISTANCE_TO_KM: u128 = 1;
 struct Cube {
     q: i128,
     r: i128,
-    s: i128
+    s: i128,
 }
 
 #[derive(Copy, Drop, Serde, Default, IntrospectPacked)]
@@ -36,13 +36,13 @@ pub struct Travel {
     blocked: bool,
     round_trip: bool,
     start_coord: Coord,
-    next_coord: Coord
+    next_coord: Coord,
 }
 
 #[derive(Copy, Drop, Serde, Default, IntrospectPacked)]
 pub struct Stamina {
     amount: u32,
-    last_refill_tick: u32
+    last_refill_tick: u32,
 }
 
 
@@ -134,7 +134,7 @@ impl DirectionDisplay of Display<Direction> {
 #[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug, Default)]
 struct Coord {
     x: u32,
-    y: u32
+    y: u32,
 }
 
 
@@ -229,7 +229,7 @@ pub enum OccupiedBy {
     #[default]
     None,
     Structure: ID,
-    Explorer: ID
+    Explorer: ID,
 }
 
 #[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
@@ -306,7 +306,7 @@ impl PositionImpl of PositionTrait {
 mod tests {
     use debug::PrintTrait;
     use s1_eternum::alias::ID;
-    use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
+    use super::{Cube, CubeTrait, NumberTrait, Position, PositionTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;
 

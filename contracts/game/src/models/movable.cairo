@@ -1,8 +1,8 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::WORLD_CONFIG_ID;
-use s1_eternum::models::config::{SpeedConfig};
+use s1_eternum::constants::{DONKEY_ENTITY_TYPE, WORLD_CONFIG_ID};
+use s1_eternum::models::config::{SpeedConfig, WorldConfigUtilImpl};
 use s1_eternum::models::position::Coord;
 // speed seconds per km
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -16,14 +16,18 @@ pub struct Movable {
     start_coord_x: u32,
     start_coord_y: u32,
     intermediate_coord_x: u32,
-    intermediate_coord_y: u32
+    intermediate_coord_y: u32,
 }
 
 #[generate_trait]
 impl MovableImpl of MovableTrait {
     fn sec_per_km(ref world: WorldStorage, entity_type: ID) -> u16 {
-        let speed_config: SpeedConfig = world.read_model((WORLD_CONFIG_ID, entity_type));
-        speed_config.sec_per_km
+        let speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, selector!("speed_config"));
+        if (entity_type == DONKEY_ENTITY_TYPE) {
+            speed_config.donkey_sec_per_km
+        } else {
+            speed_config.army_sec_per_km
+        }
     }
     fn assert_moveable(self: Movable) {
         assert!(!self.blocked, "Entity is blocked");

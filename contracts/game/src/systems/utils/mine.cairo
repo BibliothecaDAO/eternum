@@ -1,41 +1,35 @@
-use starknet::ContractAddress;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use s1_eternum::alias::ID;
-use s1_eternum::models::config::{MapConfig, VRFConfig, VRFConfigImpl, CombatConfig, TroopLimitConfig, TroopStaminaConfig};
-use s1_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
-use s1_eternum::models::resource::production::production::{ProductionImpl};
-use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
-use s1_eternum::models::owner::{Owner};
-use s1_eternum::models::position::{Coord, Occupier, OccupiedBy};
-use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-use s1_eternum::models::resource::r3esource::{
-    SingleR33esourceImpl,
-    SingleR33esourceStoreImpl,
-    WeightStoreImpl,
-    WeightUnitImpl,
-    Production
-};
-use s1_eternum::models::weight::W3eight;
-use s1_eternum::constants::{ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID};
-use s1_eternum::utils::random::{VRFImpl};
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::TickImpl;
-use s1_eternum::utils::random;
+use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
+use s1_eternum::models::owner::{Owner};
+use s1_eternum::models::position::{Coord, OccupiedBy, Occupier};
+use s1_eternum::models::resource::production::building::{Building, BuildingCategory, BuildingImpl};
+use s1_eternum::models::resource::production::production::{ProductionImpl};
+use s1_eternum::models::resource::r3esource::{
+    Production, SingleR33esourceImpl, SingleR33esourceStoreImpl, WeightStoreImpl, WeightUnitImpl,
+};
+use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
+use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
+use s1_eternum::models::weight::W3eight;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
+use s1_eternum::utils::random;
+use s1_eternum::utils::random::{VRFImpl};
+use starknet::ContractAddress;
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
-
     fn lottery(
-        ref world: WorldStorage, 
-        owner: starknet::ContractAddress, 
-        coord: Coord, 
+        ref world: WorldStorage,
+        owner: starknet::ContractAddress,
+        coord: Coord,
         map_config: MapConfig,
         troop_limit_config: TroopLimitConfig,
-        troop_stamina_config: TroopStaminaConfig
+        troop_stamina_config: TroopStaminaConfig,
     ) -> bool {
-
-        let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
+        let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(world, selector!("vrf_provider_address"));
         let vrf_seed: u256 = VRFImpl::seed(owner, vrf_provider);
         let success: bool = *random::choices(
             array![true, false].span(),
@@ -43,12 +37,13 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             array![].span(),
             1,
             true,
-            vrf_seed
+            vrf_seed,
         )[0];
-        
-        // return false if lottery fails
-        if !success {return false;}
 
+        // return false if lottery fails
+        if !success {
+            return false;
+        }
 
         // make structure
         let structure_id = Self::_make_structure(ref world, coord, owner);
@@ -56,29 +51,33 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T2, TroopType::Paladin)].span();
-        let tick = TickImpl::retrieve(ref world);
+        let tick_config: TickConfig = TickImpl::get_tick_config(ref world);
         iMercenariesImpl::add(
-            ref world, structure_id, vrf_seed, slot_tiers, 
-            troop_limit_config, troop_stamina_config, tick.current());
+            ref world,
+            structure_id,
+            vrf_seed,
+            slot_tiers,
+            troop_limit_config,
+            troop_stamina_config,
+            tick_config.current(),
+        );
 
         // allow fragment mine to produce limited amount of shards
         let shards_reward_amount = Self::_reward_amount(ref world, vrf_seed);
         let mut structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, structure_id);
         let shards_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
-        let mut shards_resource
-            = SingleR33esourceStoreImpl::retrieve(
-            ref world, structure_id, ResourceTypes::EARTHEN_SHARD, ref structure_weight, shards_weight_grams, true
+        let mut shards_resource = SingleR33esourceStoreImpl::retrieve(
+            ref world, structure_id, ResourceTypes::EARTHEN_SHARD, ref structure_weight, shards_weight_grams, true,
         );
         let mut shards_resource_production: Production = shards_resource.production;
         shards_resource_production.increase_output_amout_left(shards_reward_amount);
         shards_resource.production = shards_resource_production;
         shards_resource.store(ref world);
 
-
-        // grant wheat to structure     
+        // grant wheat to structure
         let wheat_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::WHEAT);
         let mut wheat_resource = SingleR33esourceStoreImpl::retrieve(
-            ref world, structure_id, ResourceTypes::WHEAT, ref structure_weight, wheat_weight_grams, true
+            ref world, structure_id, ResourceTypes::WHEAT, ref structure_weight, wheat_weight_grams, true,
         );
         wheat_resource.add(map_config.mine_wheat_grant_amount.into(), ref structure_weight, wheat_weight_grams);
         wheat_resource.store(ref world);
@@ -86,7 +85,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         // grant fish to structure
         let fish_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::FISH);
         let mut fish_resource = SingleR33esourceStoreImpl::retrieve(
-            ref world, structure_id, ResourceTypes::FISH, ref structure_weight, fish_weight_grams, true
+            ref world, structure_id, ResourceTypes::FISH, ref structure_weight, fish_weight_grams, true,
         );
         fish_resource.add(map_config.mine_fish_grant_amount.into(), ref structure_weight, fish_weight_grams);
         fish_resource.store(ref world);
@@ -107,7 +106,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
     }
 
     fn _make_structure(ref world: WorldStorage, coord: Coord, owner: starknet::ContractAddress) -> ID {
-        // make structure model 
+        // make structure model
         let structure_id: ID = world.dispatcher.uuid();
         let owner: Owner = Owner { entity_id: structure_id, address: owner };
         let structure: Structure = StructureImpl::new(structure_id, StructureCategory::FragmentMine, coord, owner);
@@ -128,7 +127,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             array![].span(),
             1,
             true,
-            randomness
+            randomness,
         )[0];
         let minimum_amount: u128 = 100_000 * RESOURCE_PRECISION;
         let actual_amount: u128 = minimum_amount * random_multiplier;

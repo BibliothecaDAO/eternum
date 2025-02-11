@@ -24,7 +24,7 @@ pub struct QuantityTracker {
     count: u128,
 }
 
-mod QuantityTrackerType {
+pub mod QuantityTrackerType {
     const ARMY_COUNT: felt252 = 'army_quantity';
     const REALM_COUNT: felt252 = 'realm_quantity';
 }

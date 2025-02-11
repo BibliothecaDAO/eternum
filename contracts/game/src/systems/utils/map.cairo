@@ -1,6 +1,6 @@
-use dojo::world::WorldStorage;
 use dojo::model::ModelStorage;
-use s1_eternum::models::map::{Tile, Biome};
+use dojo::world::WorldStorage;
+use s1_eternum::models::map::{Biome, Tile};
 
 #[generate_trait]
 pub impl iMapImpl of iMapTrait {
@@ -11,4 +11,4 @@ pub impl iMapImpl of iMapTrait {
         // todo add event
     }
 }
-             
+

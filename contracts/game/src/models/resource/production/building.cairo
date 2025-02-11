@@ -4,18 +4,18 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID, WORLD_CONFIG_ID};
+use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::{
-    TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigImpl,
-    BuildingCategoryPopConfigTrait, PopulationConfig, BuildingGeneralConfig
+    BuildingCategoryPopConfigTrait, BuildingConfig, BuildingConfigImpl, BuildingGeneralConfig, PopulationConfig,
+    ProductionConfig, TickConfig, TickImpl, TickTrait, WorldConfigUtilImpl,
 };
 use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s1_eternum::models::population::{Population, PopulationTrait};
-use s1_eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
+use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, PositionTrait};
 use s1_eternum::models::realm::Realm;
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
 use s1_eternum::models::resource::resource::ResourceTrait;
-use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceCost};
+use s1_eternum::models::resource::resource::{Resource, ResourceCost, ResourceImpl};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //todo we need to define border of innner hexes
@@ -46,7 +46,7 @@ pub struct BuildingQuantityv2 {
     entity_id: ID,
     #[key]
     category: BuildingCategory,
-    value: u8
+    value: u8,
 }
 
 
@@ -141,7 +141,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         // update produced resource balance before updating production
         let produced_resource_type = self.produced_resource();
         let mut produced_resource: Resource = ResourceImpl::get(
-            ref world, (self.outer_entity_id, produced_resource_type)
+            ref world, (self.outer_entity_id, produced_resource_type),
         );
         produced_resource.save(ref world);
 
@@ -176,7 +176,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
                 // increase production rate
                 production.increase_production_rate(production_amount.try_into().unwrap());
-            }
+            },
         }
         // save production
         produced_resource.production = production;
@@ -280,7 +280,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             // get the resource that the building produces
             let recipient_produced_resource_type = recipient_building.produced_resource();
             let mut recipient_building_resource: Resource = ResourceImpl::get(
-                ref world, (self.outer_entity_id, recipient_produced_resource_type)
+                ref world, (self.outer_entity_id, recipient_produced_resource_type),
             );
 
             // remove the recipient building's contribution from global resource production
@@ -346,7 +346,7 @@ impl BuildingImpl of BuildingTrait {
             Option::None => {
                 assert!(building.category != BuildingCategory::Resource, "resource type must be specified");
                 building.produced_resource_type = building.produced_resource();
-            }
+            },
         }
 
         world.write_model(@building);
@@ -362,7 +362,9 @@ impl BuildingImpl of BuildingTrait {
 
         let mut population: Population = world.read_model(outer_entity_id);
         let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
-        let population_config: PopulationConfig = world.read_model(POPULATION_CONFIG_ID);
+        let population_config: PopulationConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("population_config"),
+        );
 
         // increase population
         population
@@ -467,7 +469,9 @@ impl BuildingImpl of BuildingTrait {
         // You cannot delete a workers hut unless you have capacity
         // Otherwise there is an exploit where you can delete a workers hut and increase capacity
         if (building.category == BuildingCategory::WorkersHut) {
-            let population_config: PopulationConfig = world.read_model(POPULATION_CONFIG_ID);
+            let population_config: PopulationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("population_config"),
+            );
             population.decrease_capacity(building_category_population_config.capacity);
             population.assert_within_capacity(population_config.base_population);
         }
@@ -487,9 +491,11 @@ impl BuildingImpl of BuildingTrait {
     }
 
     fn make_payment(self: Building, building_quantity: BuildingQuantityv2, ref world: WorldStorage) {
-        let building_general_config: BuildingGeneralConfig = world.read_model(WORLD_CONFIG_ID);
+        let building_general_config: BuildingGeneralConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("building_general_config"),
+        );
         let building_config: BuildingConfig = BuildingConfigImpl::get(
-            ref world, self.category, self.produced_resource_type
+            ref world, self.category, self.produced_resource_type,
         );
         let mut index = 0;
         loop {
@@ -506,10 +512,10 @@ impl BuildingImpl of BuildingTrait {
             //
             let resource_cost: ResourceCost = world.read_model((building_config.resource_cost_id, index));
             let mut resource: Resource = ResourceImpl::get(
-                ref world, (self.outer_entity_id, resource_cost.resource_type)
+                ref world, (self.outer_entity_id, resource_cost.resource_type),
             );
             let percentage_additional_cost = PercentageImpl::get(
-                resource_cost.amount, building_general_config.base_cost_percent_increase.into()
+                resource_cost.amount, building_general_config.base_cost_percent_increase.into(),
             );
             let scale_factor = building_quantity.value - 1;
             let total_cost = resource_cost.amount

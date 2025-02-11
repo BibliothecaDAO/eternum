@@ -1,36 +1,35 @@
 use core::array::SpanTrait;
 
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
+use s1_eternum::constants::{ARMY_ENTITY_TYPE, TickIds, WORLD_CONFIG_ID};
 use s1_eternum::models::combat::{
-    Army, Health, HealthTrait, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle
+    Army, Battle, BattleSide, Health, HealthTrait, Protectee, Protector, Troops, TroopsTrait,
 };
 use s1_eternum::models::config::{
-    TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SpeedConfig, SettlementConfig
+    CapacityCategory, CapacityConfig, SettlementConfig, SpeedConfig, TickConfig, TroopConfig,
 };
 use s1_eternum::models::movable::{Movable};
-use s1_eternum::models::owner::{Owner, EntityOwner};
+use s1_eternum::models::owner::{EntityOwner, Owner};
 use s1_eternum::models::position::{Coord, Position};
 
 use s1_eternum::models::resource::resource::{
-    Resource, ResourceImpl, ResourceTrait, ResourceTypes, ResourceTransferLock, ResourceTransferLockTrait,
-    RESOURCE_PRECISION
+    RESOURCE_PRECISION, Resource, ResourceImpl, ResourceTrait, ResourceTransferLock, ResourceTransferLockTrait,
+    ResourceTypes,
 };
 use s1_eternum::models::stamina::Stamina;
 use s1_eternum::systems::config::contracts::config_systems;
 use s1_eternum::systems::{
-    realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
-    combat::contracts::battle_systems::{battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait},
-    combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
+    combat::contracts::battle_systems::{IBattleContractDispatcher, IBattleContractDispatcherTrait, battle_systems},
+    combat::contracts::troop_systems::{ITroopContractDispatcher, ITroopContractDispatcherTrait, troop_systems},
+    realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait, realm_systems},
 };
 use s1_eternum::utils::testing::{
-    config::{get_combat_config, set_capacity_config, set_settlement_config}, world::spawn_eternum,
-    systems::{deploy_realm_systems, deploy_system, deploy_battle_systems, deploy_troop_systems},
-    general::{mint, teleport, spawn_realm}
+    config::{get_combat_config, set_capacity_config, set_settlement_config}, general::{mint, spawn_realm, teleport},
+    systems::{deploy_battle_systems, deploy_realm_systems, deploy_system, deploy_troop_systems}, world::spawn_eternum,
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -70,14 +69,14 @@ const BATTLE_COORD_X: u32 = 8;
 const BATTLE_COORD_Y: u32 = 9;
 
 fn battle_coord() -> Coord {
-    Coord { x: BATTLE_COORD_X, y: BATTLE_COORD_Y, }
+    Coord { x: BATTLE_COORD_X, y: BATTLE_COORD_Y }
 }
 
 fn set_configurations(ref world: WorldStorage) {
     world.write_model_test(@get_combat_config());
     world
         .write_model_test(
-            @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
+            @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
         );
     world
         .write_model_test(
@@ -85,8 +84,8 @@ fn set_configurations(ref world: WorldStorage) {
                 config_id: WORLD_CONFIG_ID,
                 speed_config_id: ARMY_ENTITY_TYPE,
                 entity_type: ARMY_ENTITY_TYPE,
-                sec_per_km: 200
-            }
+                sec_per_km: 200,
+            },
         );
 }
 
@@ -115,11 +114,11 @@ fn setup() -> (WorldStorage, IBattleContractDispatcher, ID, ID, ID, ID, ID, ID) 
             (ResourceTypes::CROSSBOWMAN, PLAYER_1_STARTING_CROSSBOWMAN_COUNT),
             (ResourceTypes::PALADIN, PLAYER_1_STARTING_PALADIN_COUNT),
         ]
-            .span()
+            .span(),
     );
 
     let player_1_army_id = troop_system_dispatcher.army_create(player_1_realm_id, false);
-    mint(ref world, player_1_army_id, array![(ResourceTypes::GOLD, ARMY_GOLD_RESOURCE_AMOUNT),].span());
+    mint(ref world, player_1_army_id, array![(ResourceTypes::GOLD, ARMY_GOLD_RESOURCE_AMOUNT)].span());
 
     let player_1_troops = Troops {
         knight_count: PLAYER_1_STARTING_KNIGHT_COUNT.try_into().unwrap(),
@@ -141,11 +140,11 @@ fn setup() -> (WorldStorage, IBattleContractDispatcher, ID, ID, ID, ID, ID, ID) 
             (ResourceTypes::CROSSBOWMAN, PLAYER_2_STARTING_CROSSBOWMAN_COUNT),
             (ResourceTypes::PALADIN, PLAYER_2_STARTING_PALADIN_COUNT),
         ]
-            .span()
+            .span(),
     );
 
     let player_2_army_id = troop_system_dispatcher.army_create(player_2_realm_id, false);
-    mint(ref world, player_2_army_id, array![(ResourceTypes::GOLD, ARMY_GOLD_RESOURCE_AMOUNT),].span());
+    mint(ref world, player_2_army_id, array![(ResourceTypes::GOLD, ARMY_GOLD_RESOURCE_AMOUNT)].span());
 
     let player_2_troops = Troops {
         knight_count: PLAYER_2_STARTING_KNIGHT_COUNT.try_into().unwrap(),
@@ -167,11 +166,11 @@ fn setup() -> (WorldStorage, IBattleContractDispatcher, ID, ID, ID, ID, ID, ID) 
             (ResourceTypes::CROSSBOWMAN, PLAYER_3_STARTING_CROSSBOWMAN_COUNT),
             (ResourceTypes::PALADIN, PLAYER_3_STARTING_PALADIN_COUNT),
         ]
-            .span()
+            .span(),
     );
 
     let player_3_army_id = troop_system_dispatcher.army_create(player_3_realm_id, false);
-    mint(ref world, player_3_army_id, array![(ResourceTypes::GOLD, ARMY_GOLD_RESOURCE_AMOUNT),].span());
+    mint(ref world, player_3_army_id, array![(ResourceTypes::GOLD, ARMY_GOLD_RESOURCE_AMOUNT)].span());
 
     let player_3_troops = Troops {
         knight_count: PLAYER_3_STARTING_KNIGHT_COUNT.try_into().unwrap(),
@@ -194,7 +193,7 @@ fn setup() -> (WorldStorage, IBattleContractDispatcher, ID, ID, ID, ID, ID, ID) 
         player_3_realm_id,
         player_1_army_id,
         player_2_army_id,
-        player_3_army_id
+        player_3_army_id,
     )
 }
 
@@ -209,7 +208,7 @@ fn combat_test_battle_start() {
         _player_3_realm_id,
         player_1_army_id,
         player_2_army_id,
-        _player_3_army_id
+        _player_3_army_id,
     ) =
         setup();
 

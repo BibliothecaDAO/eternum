@@ -1,32 +1,30 @@
 use core::array::{ArrayTrait, SpanTrait};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo_cairo_test::{
-    spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef, WorldStorageTestTrait
+    ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
 };
 use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR};
 use s1_eternum::models::bank::bank::{m_Bank};
 use s1_eternum::models::bank::liquidity::m_Liquidity;
 use s1_eternum::models::bank::market::m_Market;
-use s1_eternum::models::capacity::{m_CapacityCategory};
 use s1_eternum::models::combat::m_Army;
 use s1_eternum::models::combat::m_Battle;
 use s1_eternum::models::combat::m_Health;
 use s1_eternum::models::combat::m_Protectee;
 use s1_eternum::models::combat::m_Protector;
 use s1_eternum::models::config::{
-    m_WorldConfig, m_SpeedConfig, m_CapacityConfig, m_WeightConfig, m_HyperstructureResourceConfig, m_StaminaConfig,
-    m_StaminaRefillConfig, m_TickConfig, m_MapConfig, m_MercenariesConfig, m_LevelingConfig, m_ProductionConfig,
-    m_BankConfig, m_BuildingConfig, m_TroopConfig, m_BattleConfig, m_BuildingCategoryPopConfig, m_PopulationConfig,
-    m_HyperstructureConfig, m_TravelStaminaCostConfig, m_ResourceBridgeConfig, m_ResourceBridgeFeeSplitConfig,
-    m_ResourceBridgeWhitelistConfig, m_SettlementConfig, m_RealmLevelConfig, m_RealmMaxLevelConfig,
-    m_TravelFoodCostConfig, m_QuestRewardConfig, m_QuestConfig
+    m_BankConfig, m_BattleConfig, m_BuildingCategoryPopConfig, m_BuildingConfig, m_CapacityConfig,
+    m_HyperstructureConfig, m_HyperstructureResourceConfig, m_LevelingConfig, m_MapConfig, m_MercenariesConfig,
+    m_PopulationConfig, m_ProductionConfig, m_QuestConfig, m_QuestRewardConfig, m_RealmLevelConfig,
+    m_RealmMaxLevelConfig, m_ResourceBridgeConfig, m_ResourceBridgeFeeSplitConfig, m_ResourceBridgeWhitelistConfig,
+    m_SettlementConfig, m_SpeedConfig, m_StaminaConfig, m_TickConfig, m_TravelFoodCostConfig, m_TravelStaminaCostConfig,
+    m_TroopConfig, m_WeightConfig, m_WorldConfig,
 };
 use s1_eternum::models::guild::{m_Guild, m_GuildMember, m_GuildWhitelist};
-use s1_eternum::models::hyperstructure::{m_Progress, m_Contribution, m_Hyperstructure, m_Epoch};
+use s1_eternum::models::hyperstructure::{m_Contribution, m_Epoch, m_Hyperstructure, m_Progress};
 use s1_eternum::models::map::m_Tile;
-use s1_eternum::models::movable::{m_Movable, m_ArrivalTime};
+use s1_eternum::models::movable::{m_ArrivalTime, m_Movable};
 use s1_eternum::models::name::{m_AddressName};
-use s1_eternum::models::name::{m_EntityName};
 use s1_eternum::models::order::m_Orders;
 use s1_eternum::models::owner::m_EntityOwner;
 use s1_eternum::models::owner::{m_Owner};
@@ -38,14 +36,14 @@ use s1_eternum::models::realm::{m_Realm};
 use s1_eternum::models::resource::production::building::m_BuildingQuantityv2;
 use s1_eternum::models::resource::production::building::{m_Building};
 use s1_eternum::models::resource::production::production::{
-    m_Production, m_ProductionInput, m_ProductionOutput, m_ProductionDeadline
+    m_Production, m_ProductionDeadline, m_ProductionInput, m_ProductionOutput,
 };
 use s1_eternum::models::resource::resource::m_DetachedResource;
 use s1_eternum::models::resource::resource::m_OwnedResourcesTracker;
 use s1_eternum::models::resource::resource::m_ResourceAllowance;
 use s1_eternum::models::resource::resource::m_ResourceTransferLock;
-use s1_eternum::models::resource::resource::{m_ResourceCost};
 use s1_eternum::models::resource::resource::{m_Resource};
+use s1_eternum::models::resource::resource::{m_ResourceCost};
 use s1_eternum::models::season::m_Leaderboard;
 use s1_eternum::models::season::m_LeaderboardEntry;
 use s1_eternum::models::season::m_LeaderboardRegisterContribution;
@@ -65,7 +63,7 @@ use s1_eternum::systems::bank::contracts::swap::swap_systems;
 
 use s1_eternum::systems::buildings::contracts::production_systems;
 use s1_eternum::systems::combat::contracts::battle_systems::{
-    battle_systems, battle_pillage_systems, battle_utils_systems
+    battle_pillage_systems, battle_systems, battle_utils_systems,
 };
 use s1_eternum::systems::combat::contracts::troop_systems::troop_systems;
 
@@ -81,7 +79,7 @@ use s1_eternum::systems::name::contracts::name_systems;
 use s1_eternum::systems::ownership::contracts::ownership_systems;
 use s1_eternum::systems::realm::contracts::realm_systems;
 use s1_eternum::systems::resources::contracts::{
-    resource_bridge_systems::resource_bridge_systems, resource_systems::resource_systems
+    resource_bridge_systems::resource_bridge_systems, resource_systems::resource_systems,
 };
 use s1_eternum::systems::season::contracts::season_systems;
 use s1_eternum::systems::trade::contracts::trade_systems::trade_systems;
@@ -93,7 +91,8 @@ use starknet::contract_address_const;
 
 fn namespace_def() -> NamespaceDef {
     let ndef = NamespaceDef {
-        namespace: DEFAULT_NS_STR(), resources: [
+        namespace: DEFAULT_NS_STR(),
+        resources: [
             TestResource::Model(m_Bank::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Liquidity::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Market::TEST_CLASS_HASH.try_into().unwrap()),
@@ -111,7 +110,6 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_WeightConfig::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_HyperstructureResourceConfig::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_StaminaConfig::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Model(m_StaminaRefillConfig::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_TickConfig::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_MapConfig::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_MercenariesConfig::TEST_CLASS_HASH.try_into().unwrap()),
@@ -145,7 +143,6 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_Movable::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_ArrivalTime::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_AddressName::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Model(m_EntityName::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Orders::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_EntityOwner::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Owner::TEST_CLASS_HASH.try_into().unwrap()),
@@ -181,10 +178,10 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Event(swap_systems::e_SwapEvent::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(hyperstructure_systems::e_HyperstructureFinished::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(
-                hyperstructure_systems::e_HyperstructureCoOwnersChange::TEST_CLASS_HASH.try_into().unwrap()
+                hyperstructure_systems::e_HyperstructureCoOwnersChange::TEST_CLASS_HASH.try_into().unwrap(),
             ),
             TestResource::Event(
-                hyperstructure_systems::e_HyperstructureContribution::TEST_CLASS_HASH.try_into().unwrap()
+                hyperstructure_systems::e_HyperstructureContribution::TEST_CLASS_HASH.try_into().unwrap(),
             ),
             TestResource::Event(hyperstructure_systems::e_GameEnded::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(map_generation_systems::e_MapExplored::TEST_CLASS_HASH.try_into().unwrap()),
@@ -230,7 +227,8 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Contract(travel_systems::TEST_CLASS_HASH),
             TestResource::Contract(donkey_systems::TEST_CLASS_HASH),
             TestResource::Contract(season_systems::TEST_CLASS_HASH),
-        ].span()
+        ]
+            .span(),
     };
 
     ndef
@@ -286,7 +284,8 @@ fn contract_defs() -> Span<ContractDef> {
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"season_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
-    ].span()
+    ]
+        .span()
 }
 
 

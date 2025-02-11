@@ -1,5 +1,5 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use dojo::meta::introspect::{Struct, Ty, Introspect, Member};
+use dojo::meta::introspect::{Introspect, Member, Struct, Ty};
 use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
@@ -22,10 +22,10 @@ impl IntrospectFixed of Introspect<Fixed> {
                 attrs: array![].span(),
                 children: array![
                     Member { name: 'mag', ty: Ty::Primitive('u128'), attrs: array![].span() },
-                    Member { name: 'sign', ty: Ty::Primitive('bool'), attrs: array![].span() }
+                    Member { name: 'sign', ty: Ty::Primitive('bool'), attrs: array![].span() },
                 ]
-                    .span()
-            }
+                    .span(),
+            },
         )
     }
 }

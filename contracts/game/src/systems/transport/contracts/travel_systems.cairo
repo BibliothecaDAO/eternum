@@ -7,7 +7,7 @@ trait ITravelSystems<T> {
     fn travel_hex(
         ref self: T,
         travelling_entity_id: s1_eternum::alias::ID,
-        directions: Span<s1_eternum::models::position::Direction>
+        directions: Span<s1_eternum::models::position::Direction>,
     );
 }
 
@@ -18,14 +18,13 @@ mod travel_systems {
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
 
-    use s1_eternum::constants::{WORLD_CONFIG_ID, TravelTypes, DEFAULT_NS};
-    use s1_eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig};
+    use s1_eternum::constants::{DEFAULT_NS, TravelTypes, WORLD_CONFIG_ID};
+    use s1_eternum::models::config::{MapConfigImpl};
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::movable::{Movable, ArrivalTime};
-    use s1_eternum::models::order::{Orders, OrdersTrait};
-    use s1_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
-    use s1_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
-    use s1_eternum::models::quantity::{Quantity,};
+    use s1_eternum::models::movable::{ArrivalTime, Movable};
+    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner};
+    use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, TravelTrait};
+    use s1_eternum::models::quantity::{Quantity};
     use s1_eternum::models::realm::Realm;
 
     use s1_eternum::models::season::SeasonImpl;
@@ -52,40 +51,42 @@ mod travel_systems {
 
     #[abi(embed_v0)]
     impl TravelSystemsImpl of super::ITravelSystems<ContractState> {
+        fn travel_hex(
+            ref self: ContractState, travelling_entity_id: ID, directions: Span<Direction>,
+        ) { // let mut world = self.world(DEFAULT_NS());
+        // SeasonImpl::assert_season_is_not_over(world);
 
+        // let travelling_entity_owner: EntityOwner = world.read_model(travelling_entity_id);
+        // travelling_entity_owner.assert_caller_owner(world);
 
-        fn travel_hex(ref self: ContractState, travelling_entity_id: ID, directions: Span<Direction>) {
-            // let mut world = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+        // let travelling_entity_movable: Movable = world.read_model(travelling_entity_id);
+        // assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');
+        // assert(travelling_entity_movable.blocked == false, 'entity is blocked');
 
-            // let travelling_entity_owner: EntityOwner = world.read_model(travelling_entity_id);
-            // travelling_entity_owner.assert_caller_owner(world);
+        // let travelling_entity_arrival_time: ArrivalTime = world.read_model(travelling_entity_id);
+        // let ts = starknet::get_block_timestamp();
+        // assert(travelling_entity_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
 
-            // let travelling_entity_movable: Movable = world.read_model(travelling_entity_id);
-            // assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');
-            // assert(travelling_entity_movable.blocked == false, 'entity is blocked');
+        // let travelling_entity_position: Position = world.read_model(travelling_entity_id);
+        // let travelling_entity_coord: Coord = travelling_entity_position.into();
 
-            // let travelling_entity_arrival_time: ArrivalTime = world.read_model(travelling_entity_id);
-            // let ts = starknet::get_block_timestamp();
-            // assert(travelling_entity_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
+        // let num_moves = directions.len().try_into().unwrap();
+        // let mut stamina_cost: TravelStaminaCostConfig = world.read_model((WORLD_CONFIG_ID,
+        // TravelTypes::TRAVEL));
+        // let mut stamina_cost = stamina_cost.cost;
+        // stamina_cost = stamina_cost * num_moves;
 
-            // let travelling_entity_position: Position = world.read_model(travelling_entity_id);
-            // let travelling_entity_coord: Coord = travelling_entity_position.into();
+        // StaminaImpl::handle_stamina_costs(travelling_entity_id, stamina_cost, ref world);
 
-            // let num_moves = directions.len().try_into().unwrap();
-            // let mut stamina_cost: TravelStaminaCostConfig = world.read_model((WORLD_CONFIG_ID, TravelTypes::TRAVEL));
-            // let mut stamina_cost = stamina_cost.cost;
-            // stamina_cost = stamina_cost * num_moves;
+        // let transport_owner_entity: EntityOwner = world.read_model(travelling_entity_id);
 
-            // StaminaImpl::handle_stamina_costs(travelling_entity_id, stamina_cost, ref world);
+        // let army: Army = world.read_model(travelling_entity_id);
 
-            // let transport_owner_entity: EntityOwner = world.read_model(travelling_entity_id);
+        // // TravelFoodCostConfigImpl::pay_travel_cost(ref world, transport_owner_entity,
+        // army.troops, directions.len());
 
-            // let army: Army = world.read_model(travelling_entity_id);
-
-            // // TravelFoodCostConfigImpl::pay_travel_cost(ref world, transport_owner_entity, army.troops, directions.len());
-
-            // InternalTravelSystemsImpl::travel_hex(ref world, travelling_entity_id, travelling_entity_coord, directions);
+        // InternalTravelSystemsImpl::travel_hex(ref world, travelling_entity_id,
+        // travelling_entity_coord, directions);
         }
     }
 
@@ -96,7 +97,12 @@ mod travel_systems {
             assert(tile.explored_at != 0, 'tile not explored');
         }
 
-        fn travel_hex(ref world: WorldStorage, transport_id: ID, from_coord: Coord, mut directions: Span<Direction>) {
+        fn travel_hex(
+            ref world: WorldStorage,
+            transport_id: ID,
+            from_coord: Coord,
+            mut directions: Span<Direction>,
+        ) {
             // get destination coordinate
             let mut travel_path = array![from_coord];
             let mut to_coord = from_coord;
@@ -124,10 +130,6 @@ mod travel_systems {
             transport_movable.intermediate_coord_y = 0;
 
             world.write_model(@transport_movable);
-            world
-                .write_model(
-                    @ArrivalTime { entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() }
-                );
             world.write_model(@Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y });
 
             // emit travel event
@@ -141,27 +143,33 @@ mod travel_systems {
                         travel_path: travel_path.span(),
                         owner: entityOwner.owner_address(world),
                         entity_id: transport_id,
-                        timestamp: starknet::get_block_timestamp()
-                    }
+                        timestamp: starknet::get_block_timestamp(),
+                    },
                 );
         }
 
 
         fn travel(
-            ref world: WorldStorage, transport_id: ID, transport_movable: Movable, from_coord: Coord, to_coord: Coord
+            ref world: WorldStorage,
+            transport_id: ID,
+            transport_movable: Movable,
+            from_coord: Coord,
+            to_coord: Coord,
         ) {
             // ensure destination tile is explored
             Self::assert_tile_explored(world, to_coord);
 
-            let mut travel_time = from_coord.calculate_travel_time(to_coord, transport_movable.sec_per_km);
+            let mut travel_time = from_coord
+                .calculate_travel_time(to_coord, transport_movable.sec_per_km);
 
             let current_position: Position = world.read_model(transport_id);
 
             world
                 .write_model(
                     @ArrivalTime {
-                        entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() + travel_time
-                    }
+                        entity_id: transport_id,
+                        arrives_at: starknet::get_block_timestamp().into() + travel_time,
+                    },
                 );
             world.write_model(@Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y });
             world
@@ -175,7 +183,7 @@ mod travel_systems {
                         start_coord_y: current_position.y,
                         intermediate_coord_x: 0,
                         intermediate_coord_y: 0,
-                    }
+                    },
                 );
 
             // emit travel event
@@ -189,8 +197,8 @@ mod travel_systems {
                         travel_path: array![from_coord, to_coord].span(),
                         owner: owner.address,
                         entity_id: transport_id,
-                        timestamp: starknet::get_block_timestamp()
-                    }
+                        timestamp: starknet::get_block_timestamp(),
+                    },
                 );
         }
 
@@ -214,7 +222,8 @@ mod travel_systems {
         fn check_arrival_time(world: WorldStorage, transport_id: ID) {
             let transport_arrival_time: ArrivalTime = world.read_model(transport_id);
             assert(
-                transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(), 'transport has not arrived'
+                transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(),
+                'transport has not arrived',
             );
         }
     }

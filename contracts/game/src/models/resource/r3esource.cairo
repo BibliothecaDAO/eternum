@@ -1,7 +1,7 @@
-use core::fmt::{Display, Formatter, Error};
+use core::fmt::{Display, Error, Formatter};
 use core::num::traits::Bounded;
 
-use dojo::model::{ModelStorage, Model};
+use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
@@ -21,10 +21,7 @@ pub struct SingleR33esource {
 impl SingleR33esourceDisplay of Display<SingleR33esource> {
     fn fmt(self: @SingleR33esource, ref f: Formatter) -> Result<(), Error> {
         let str: ByteArray = format!(
-            "{} (id: {}, balance: {})",
-            resource_type_name(*self.resource_type),
-            *self.entity_id,
-            *self.balance,
+            "{} (id: {}, balance: {})", resource_type_name(*self.resource_type), *self.entity_id, *self.balance,
         );
         f.buffer.append(@str);
         Result::Ok(())
@@ -56,25 +53,24 @@ impl WeightUnitImpl of WeightUnitTrait {
 #[generate_trait]
 impl SingleR33esourceStoreImpl of SingleR33esourceStoreTrait {
     fn retrieve(
-        ref world: WorldStorage, 
-        entity_id: ID, 
-        resource_type: u8, 
-        ref entity_weight: W3eight, 
-        unit_weight_grams: u128, 
-        structure: bool)
-         -> SingleR33esource {
+        ref world: WorldStorage,
+        entity_id: ID,
+        resource_type: u8,
+        ref entity_weight: W3eight,
+        unit_weight_grams: u128,
+        structure: bool,
+    ) -> SingleR33esource {
         assert!(entity_id.is_non_zero(), "entity id not found");
         assert!(resource_type.is_non_zero(), "invalid resource specified");
 
-        let balance: u128 
-            = R3esourceImpl::read_balance(ref world, entity_id, resource_type);
+        let balance: u128 = R3esourceImpl::read_balance(ref world, entity_id, resource_type);
         // ensure the balance is updated when entity is a structure
-        let mut resource 
-            = SingleR33esource { entity_id, resource_type, balance, production: Zeroable::zero(), produces: structure};
-        if resource.produces  {
+        let mut resource = SingleR33esource {
+            entity_id, resource_type, balance, production: Zeroable::zero(), produces: structure,
+        };
+        if resource.produces {
             let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
-            resource.production 
-                = R3esourceImpl::read_production(ref world, entity_id, resource_type);        
+            resource.production = R3esourceImpl::read_production(ref world, entity_id, resource_type);
             if resource.production.last_updated_at != now {
                 let mut entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, entity_id);
 
@@ -91,7 +87,6 @@ impl SingleR33esourceStoreImpl of SingleR33esourceStoreTrait {
                 resource.store(ref world);
                 entity_weight.store(ref world, entity_id);
             }
-
         }
 
         return resource;
@@ -106,13 +101,10 @@ impl SingleR33esourceStoreImpl of SingleR33esourceStoreTrait {
 }
 
 
-
 #[generate_trait]
 impl SingleR33esourceImpl of SingleR33esourceTrait {
-
     #[inline(always)]
     fn spend(ref self: SingleR33esource, amount: u128, ref entity_weight: W3eight, unit_weight: u128) {
-
         assert!(self.balance >= amount, "Insufficient Balance: {} < {}", self, amount);
         self.balance -= amount;
         entity_weight.deduct(amount * unit_weight);
@@ -122,11 +114,9 @@ impl SingleR33esourceImpl of SingleR33esourceTrait {
 
     #[inline(always)]
     fn add(ref self: SingleR33esource, amount: u128, ref entity_weight: W3eight, unit_weight: u128) -> u128 {
-
         // todo: increase capacity with storehouse buildings
 
-        let (max_storable, total_weight) 
-            = Self::storable_amount(amount, entity_weight.unused(), unit_weight);
+        let (max_storable, total_weight) = Self::storable_amount(amount, entity_weight.unused(), unit_weight);
 
         self.balance += max_storable;
         entity_weight.add(total_weight);
@@ -139,21 +129,16 @@ impl SingleR33esourceImpl of SingleR33esourceTrait {
     fn storable_amount(amount: u128, storage_left: u128, unit_weight: u128) -> (u128, u128) {
         let mut max_storable: u128 = amount;
         let mut total_weight: u128 = unit_weight * amount;
-        
+
         if storage_left < total_weight {
             max_storable = storage_left / unit_weight;
             total_weight = max_storable * unit_weight; // ensure total weight is an exact multiple
             // todo add event here to show amount burnt storage_left % weight
         }
-        
+
         (max_storable, total_weight)
     }
-
-
 }
-
-
-
 
 
 #[generate_trait]
@@ -164,10 +149,6 @@ impl StructureSingleR33esourceFoodImpl of StructureSingleR33esourceFoodTrait {
 }
 
 
-
-
-
-
 #[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct R3esource {
@@ -176,168 +157,117 @@ pub struct R3esource {
     // Resource Types
     STONE_BALANCE: u128,
     STONE_PRODUCTION: Production,
-
     COAL_BALANCE: u128,
     COAL_PRODUCTION: Production,
-
     WOOD_BALANCE: u128,
     WOOD_PRODUCTION: Production,
-
     COPPER_BALANCE: u128,
     COPPER_PRODUCTION: Production,
-
     IRONWOOD_BALANCE: u128,
     IRONWOOD_PRODUCTION: Production,
-
     OBSIDIAN_BALANCE: u128,
     OBSIDIAN_PRODUCTION: Production,
-
     GOLD_BALANCE: u128,
     GOLD_PRODUCTION: Production,
-
     SILVER_BALANCE: u128,
     SILVER_PRODUCTION: Production,
-
     MITHRAL_BALANCE: u128,
     MITHRAL_PRODUCTION: Production,
-
     ALCHEMICAL_SILVER_BALANCE: u128,
     ALCHEMICAL_SILVER_PRODUCTION: Production,
-
     COLD_IRON_BALANCE: u128,
     COLD_IRON_PRODUCTION: Production,
-
     DEEP_CRYSTAL_BALANCE: u128,
     DEEP_CRYSTAL_PRODUCTION: Production,
-
     RUBY_BALANCE: u128,
     RUBY_PRODUCTION: Production,
-
     DIAMONDS_BALANCE: u128,
     DIAMONDS_PRODUCTION: Production,
-
     HARTWOOD_BALANCE: u128,
     HARTWOOD_PRODUCTION: Production,
-
     IGNIUM_BALANCE: u128,
     IGNIUM_PRODUCTION: Production,
-
     TWILIGHT_QUARTZ_BALANCE: u128,
     TWILIGHT_QUARTZ_PRODUCTION: Production,
-
     TRUE_ICE_BALANCE: u128,
     TRUE_ICE_PRODUCTION: Production,
-
     ADAMANTINE_BALANCE: u128,
     ADAMANTINE_PRODUCTION: Production,
-
     SAPPHIRE_BALANCE: u128,
     SAPPHIRE_PRODUCTION: Production,
-
     ETHEREAL_SILICA_BALANCE: u128,
     ETHEREAL_SILICA_PRODUCTION: Production,
-
     DRAGONHIDE_BALANCE: u128,
     DRAGONHIDE_PRODUCTION: Production,
-
     LABOR_BALANCE: u128,
     LABOR_PRODUCTION: Production,
-
     EARTHEN_SHARD_BALANCE: u128,
     EARTHEN_SHARD_PRODUCTION: Production,
-
     DONKEY_BALANCE: u128,
     DONKEY_PRODUCTION: Production,
-
     KNIGHT_T1_BALANCE: u128,
     KNIGHT_T1_PRODUCTION: Production,
-
     KNIGHT_T2_BALANCE: u128,
     KNIGHT_T2_PRODUCTION: Production,
-
     KNIGHT_T3_BALANCE: u128,
     KNIGHT_T3_PRODUCTION: Production,
-
     CROSSBOWMAN_T1_BALANCE: u128,
     CROSSBOWMAN_T1_PRODUCTION: Production,
-
     CROSSBOWMAN_T2_BALANCE: u128,
     CROSSBOWMAN_T2_PRODUCTION: Production,
-
     CROSSBOWMAN_T3_BALANCE: u128,
     CROSSBOWMAN_T3_PRODUCTION: Production,
-
     PALADIN_T1_BALANCE: u128,
     PALADIN_T1_PRODUCTION: Production,
-
     PALADIN_T2_BALANCE: u128,
     PALADIN_T2_PRODUCTION: Production,
-
     PALADIN_T3_BALANCE: u128,
     PALADIN_T3_PRODUCTION: Production,
-
     WHEAT_BALANCE: u128,
     WHEAT_PRODUCTION: Production,
-
     FISH_BALANCE: u128,
     FISH_PRODUCTION: Production,
-
     LORDS_BALANCE: u128,
     LORDS_PRODUCTION: Production,
-
     weight: W3eight,
 }
 
 
-
-
 #[generate_trait]
 impl R3esourceImpl of R3esourceTrait {
-
     fn read_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> u128 {
-        return world.read_member(
-            Model::<R3esource>::ptr_from_keys(entity_id), 
-            Self::balance_selector(resource_type.into())
-        );
+        return world
+            .read_member(Model::<R3esource>::ptr_from_keys(entity_id), Self::balance_selector(resource_type.into()));
     }
 
     fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
-        return world.read_member(
-            Model::<R3esource>::ptr_from_keys(entity_id), 
-            Self::production_selector(resource_type.into())
-        );
+        return world
+            .read_member(Model::<R3esource>::ptr_from_keys(entity_id), Self::production_selector(resource_type.into()));
     }
 
 
     fn write_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8, balance: u128) {
-        world.write_member(
-            Model::<R3esource>::ptr_from_keys(entity_id), 
-            Self::balance_selector(resource_type.into()), 
-            balance
-        );
+        world
+            .write_member(
+                Model::<R3esource>::ptr_from_keys(entity_id), Self::balance_selector(resource_type.into()), balance,
+            );
     }
 
     fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
-        world.write_member(
-            Model::<R3esource>::ptr_from_keys(entity_id), 
-            Self::production_selector(resource_type.into()), 
-            production
-        );
+        world
+            .write_member(
+                Model::<R3esource>::ptr_from_keys(entity_id),
+                Self::production_selector(resource_type.into()),
+                production,
+            );
     }
 
     fn read_weight(ref world: WorldStorage, entity_id: ID) -> W3eight {
-        return world.read_member(
-            Model::<R3esource>::ptr_from_keys(entity_id), 
-            selector!("weight")
-        );
+        return world.read_member(Model::<R3esource>::ptr_from_keys(entity_id), selector!("weight"));
     }
 
     fn write_weight(ref world: WorldStorage, entity_id: ID, weight: W3eight) {
-        world.write_member(
-            Model::<R3esource>::ptr_from_keys(entity_id), 
-            selector!("weight"), 
-            weight
-        );
+        world.write_member(Model::<R3esource>::ptr_from_keys(entity_id), selector!("weight"), weight);
     }
 
     fn balance_selector(resource_type: felt252) -> felt252 {
@@ -403,7 +333,7 @@ impl R3esourceImpl of R3esourceTrait {
             13 => selector!("RUBY_PRODUCTION"),
             14 => selector!("DIAMONDS_PRODUCTION"),
             15 => selector!("HARTWOOD_PRODUCTION"),
-            16 => selector!("IGNIUM_PRODUCTION"),   
+            16 => selector!("IGNIUM_PRODUCTION"),
             17 => selector!("TWILIGHT_QUARTZ_PRODUCTION"),
             18 => selector!("TRUE_ICE_PRODUCTION"),
             19 => selector!("ADAMANTINE_PRODUCTION"),

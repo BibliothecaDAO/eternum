@@ -20,11 +20,11 @@ mod swap_systems {
     use option::OptionTrait;
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{RESOURCE_PRECISION, DEFAULT_NS};
+    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::config::{BankConfig};
+    use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
     use s1_eternum::models::config::{TickImpl, TickTrait};
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait};
     use s1_eternum::models::season::SeasonImpl;
@@ -59,7 +59,7 @@ mod swap_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             let bank: Bank = world.read_model(bank_entity_id);
-            let bank_config: BankConfig = world.read_model(WORLD_CONFIG_ID);
+            let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
 
             // get lords price of resource expressed to be bought from amm
             let mut market: Market = world.read_model((bank_entity_id, resource_type));
@@ -86,7 +86,7 @@ mod swap_systems {
             // player picks up resources with donkey
             let resources = array![(resource_type, amount)].span();
             let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
-                ref world, bank_entity_id, entity_id, resources
+                ref world, bank_entity_id, entity_id, resources,
             );
 
             // emit event
@@ -99,7 +99,7 @@ mod swap_systems {
                 bank_lords_fee_amount,
                 lps_fee,
                 market.buy(0, 1, RESOURCE_PRECISION),
-                true
+                true,
             );
 
             // return donkey entity id
@@ -112,7 +112,7 @@ mod swap_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             let bank: Bank = world.read_model(bank_entity_id);
-            let bank_config: BankConfig = world.read_model(WORLD_CONFIG_ID);
+            let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
 
             // get lords received from amm after resource amount is sold
             let mut market: Market = world.read_model((bank_entity_id, resource_type));
@@ -140,7 +140,7 @@ mod swap_systems {
             // pickup player lords
             let mut resources = array![(ResourceTypes::LORDS, total_lords_received)].span();
             let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
-                ref world, bank_entity_id, entity_id, resources
+                ref world, bank_entity_id, entity_id, resources,
             );
 
             // emit event
@@ -153,7 +153,7 @@ mod swap_systems {
                 bank_lords_fee_amount,
                 lps_fee,
                 market.buy(0, 1, RESOURCE_PRECISION),
-                false
+                false,
             );
 
             // return donkey_id
@@ -187,8 +187,8 @@ mod swap_systems {
                         lp_fees,
                         resource_price: market.quote_amount(RESOURCE_PRECISION),
                         buy,
-                        timestamp: starknet::get_block_timestamp()
-                    }
+                        timestamp: starknet::get_block_timestamp(),
+                    },
                 );
         }
     }

@@ -9,13 +9,12 @@ pub struct Season {
     config_id: ID,
     start_at: u64,
     is_over: bool,
-    ended_at: u64
+    ended_at: u64,
 }
 
 #[generate_trait]
 pub impl SeasonImpl of SeasonTrait {
     fn end_season(ref world: WorldStorage) {
-        // world.read_model(
         let mut season: Season = world.read_model(WORLD_CONFIG_ID);
         season.is_over = true;
         season.ended_at = starknet::get_block_timestamp();
@@ -23,15 +22,14 @@ pub impl SeasonImpl of SeasonTrait {
     }
 
 
-    fn assert_has_started(world: WorldStorage) {
-        let season: Season = world.read_model(WORLD_CONFIG_ID);
+    fn assert_has_started(self: Season) {
         let now = starknet::get_block_timestamp();
         assert!(
-            season.start_at <= now,
+            self.start_at <= now,
             "Season starts in {} hours {} minutes, {} seconds",
-            (season.start_at - now) / 60 / 60,
-            ((season.start_at - now) / 60) % 60,
-            (season.start_at - now) % 60
+            (self.start_at - now) / 60 / 60,
+            ((self.start_at - now) / 60) % 60,
+            (self.start_at - now) % 60,
         );
     }
 
@@ -50,7 +48,7 @@ pub struct Leaderboard {
     registration_end_timestamp: u64,
     total_points: u128,
     total_price_pool: Option<u256>,
-    distribution_started: bool
+    distribution_started: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -58,7 +56,7 @@ pub struct Leaderboard {
 pub struct LeaderboardRegistered {
     #[key]
     address: starknet::ContractAddress,
-    registered: bool
+    registered: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -68,7 +66,7 @@ pub struct LeaderboardRegisterContribution {
     address: starknet::ContractAddress,
     #[key]
     hyperstructure_entity_id: ID,
-    registered: bool
+    registered: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -80,7 +78,7 @@ pub struct LeaderboardRegisterShare {
     hyperstructure_entity_id: ID,
     #[key]
     epoch: u16,
-    registered: bool
+    registered: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -88,7 +86,7 @@ pub struct LeaderboardRegisterShare {
 pub struct LeaderboardRewardClaimed {
     #[key]
     address: starknet::ContractAddress,
-    claimed: bool
+    claimed: bool,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -96,7 +94,7 @@ pub struct LeaderboardRewardClaimed {
 pub struct LeaderboardEntry {
     #[key]
     address: starknet::ContractAddress,
-    points: u128
+    points: u128,
 }
 
 #[generate_trait]

@@ -31,7 +31,7 @@ pub fn max<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: 
 }
 
 pub fn cap_minus<T, impl TPartialOrd: PartialOrd<T>, impl TSub: Sub<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
-    a: T, b: T
+    a: T, b: T,
 ) -> T {
     return if (a < b) {
         return a - a; // 0 

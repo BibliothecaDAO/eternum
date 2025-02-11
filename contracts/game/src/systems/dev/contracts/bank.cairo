@@ -11,7 +11,7 @@ trait IBankSystems<T> {
         owner_fee_num: u128,
         owner_fee_denom: u128,
         owner_bridge_fee_dpt_percent: u16,
-        owner_bridge_fee_wtdr_percent: u16
+        owner_bridge_fee_wtdr_percent: u16,
     ) -> ID;
 }
 
@@ -23,23 +23,25 @@ mod dev_bank_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
+    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::bank::bank::{Bank};
-    use s1_eternum::models::capacity::{CapacityCategory};
-    use s1_eternum::models::config::{BankConfig, CapacityConfigCategory, TroopLimitConfig, TroopStaminaConfig, CombatConfigImpl};
-    use s1_eternum::models::name::{EntityName};
-    use s1_eternum::models::owner::{Owner, EntityOwner};
-    use s1_eternum::models::position::{Position, Coord, Occupier, OccupiedBy};
+    use s1_eternum::models::weight::Weight;
+    use s1_eternum::models::config::{
+        TickConfig, BankConfig, CombatConfigImpl, TroopLimitConfig, TroopStaminaConfig, TickImpl,
+        CapacityCategory,
+    };
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::name::AddressName;
+    use s1_eternum::models::owner::{EntityOwner, Owner};
+    use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, Position};
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
-    use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
+    use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
+    use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
+    use s1_eternum::systems::utils::map::iMapImpl;
 
     use s1_eternum::systems::utils::troop::iMercenariesImpl;
-    use s1_eternum::systems::utils::map::iMapImpl;
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-    use s1_eternum::models::config::TickImpl;
 
     use traits::Into;
 
@@ -55,7 +57,7 @@ mod dev_bank_systems {
             owner_fee_num: u128,
             owner_fee_denom: u128,
             owner_bridge_fee_dpt_percent: u16,
-            owner_bridge_fee_wtdr_percent: u16
+            owner_bridge_fee_wtdr_percent: u16,
         ) -> ID {
             // explore the tile
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -72,21 +74,35 @@ mod dev_bank_systems {
 
             // save bank structure
             let owner: Owner = Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin };
-            let structure: Structure = StructureImpl::new(ADMIN_BANK_ENTITY_ID, StructureCategory::Bank, coord, owner);
+            let structure: Structure = StructureImpl::new(
+                ADMIN_BANK_ENTITY_ID, StructureCategory::Bank, coord, owner,
+            );
             world.write_model(@structure);
 
             // save occupier
-            world.write_model(@Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(ADMIN_BANK_ENTITY_ID) });
+            world
+                .write_model(
+                    @Occupier {
+                        x: coord.x, y: coord.y, entity: OccupiedBy::Structure(ADMIN_BANK_ENTITY_ID),
+                    },
+                );
 
             // save bank name
-            world.write_model(@EntityName { entity_id: ADMIN_BANK_ENTITY_ID, name, });
+            world
+                .write_model(
+                    @AddressName { address: ADMIN_BANK_ENTITY_ID.try_into().unwrap(), name },
+                );
 
             // save capacity
             world
                 .write_model(
-                    @CapacityCategory { entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure }
+                    @Weight {
+                        entity_id: ADMIN_BANK_ENTITY_ID,
+                        value: 0,
+                        capacity_category: CapacityCategory::Structure,
+                    },
                 );
-            
+
             world
                 .write_model(
                     @Bank {
@@ -95,22 +111,30 @@ mod dev_bank_systems {
                         owner_fee_denom,
                         owner_bridge_fee_dpt_percent,
                         owner_bridge_fee_wtdr_percent,
-                        exists: true
+                        exists: true,
                     },
                 );
 
-
-                
             // add guards to structure
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
+                ref world,
+            );
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
+                ref world,
+            );
             // slot must start from delta, to charlie, to beta, to alpha
             let slot_tiers = array![(GuardSlot::Delta, TroopTier::T3, TroopType::Paladin)].span();
-            let tick = TickImpl::retrieve(ref world);
+            let tick = TickImpl::get_tick_config(ref world);
             let seed = 'JUPITERJUPITER'.into() - starknet::get_block_timestamp().into();
             iMercenariesImpl::add(
-                ref world, ADMIN_BANK_ENTITY_ID, seed, slot_tiers, troop_limit_config, troop_stamina_config, tick.current());
-
+                ref world,
+                ADMIN_BANK_ENTITY_ID,
+                seed,
+                slot_tiers,
+                troop_limit_config,
+                troop_stamina_config,
+                tick.current(),
+            );
 
             ADMIN_BANK_ENTITY_ID
         }

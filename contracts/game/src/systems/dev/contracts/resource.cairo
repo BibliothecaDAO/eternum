@@ -3,7 +3,7 @@ use s1_eternum::alias::ID;
 
 #[starknet::interface]
 trait IResourceSystems<T> {
-    fn mint(ref self: T, entity_id: ID, resources: Span<(u8, u128)>,);
+    fn mint(ref self: T, entity_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[dojo::contract]
@@ -18,7 +18,7 @@ mod dev_resource_systems {
     use s1_eternum::constants::ResourceTypes;
     use s1_eternum::constants::{WORLD_CONFIG_ID};
     use s1_eternum::models::config::{WorldConfig};
-    use s1_eternum::models::resource::resource::{Resource, ResourceTrait, ResourceImpl};
+    use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
 
 
@@ -32,7 +32,7 @@ mod dev_resource_systems {
             loop {
                 match resources.pop_front() {
                     Option::Some((
-                        resource_type, amount
+                        resource_type, amount,
                     )) => {
                         let (resource_type, amount) = (*resource_type, *amount);
                         assert(amount > 0, 'amount must not be 0');
@@ -41,7 +41,7 @@ mod dev_resource_systems {
                         resource.add(amount);
                         resource.save(ref world);
                     },
-                    Option::None => { break; }
+                    Option::None => { break; },
                 };
             };
         }
