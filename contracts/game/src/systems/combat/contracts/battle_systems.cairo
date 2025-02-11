@@ -123,8 +123,8 @@ mod battle_systems {
 
             // get guard troops
             let mut guard_defender: GuardTroops = guarded_structure.guards;
-            let guard_slot: Option<GuardSlot> 
-                = guard_defender.next_attack_slot(guarded_structure.troop.max_guards_allowed.into());
+            let guard_slot: Option<GuardSlot> = guard_defender.next_attack_slot();
+            
             if guard_slot.is_none() {panic!("defender has no troops");}
             let guard_slot: GuardSlot = guard_slot.unwrap();
 

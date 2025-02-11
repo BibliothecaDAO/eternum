@@ -64,53 +64,23 @@ enum GuardSlot {
 #[generate_trait]
 pub impl GuardImpl of GuardTrait {
 
-    fn next_attack_slot(ref self: GuardTroops, max_guards_allowed: felt252 ) -> Option<GuardSlot> {
-        // Check slots from highest to lowest based on max_guards_allowed
-        match max_guards_allowed {
-            0 => panic!("max_guards_allowed must be greater than 0"),
-            1 => {
-                if self.delta.count.is_zero() {
-                    Option::None
-                } else {
-                    Option::Some(GuardSlot::Delta)
-                }
-            },
-            2 => {
-                if self.delta.count.is_zero() {
-                    Option::None
-                } else if self.charlie.count.is_zero() {
-                    Option::Some(GuardSlot::Delta)
-                } else {
-                    Option::Some(GuardSlot::Charlie)
-                }
-            },
-            3 => {
-                if self.delta.count.is_zero() {
-                    Option::None
-                } else if self.charlie.count.is_zero() {
-                    Option::Some(GuardSlot::Delta)
-                } else if self.bravo.count.is_zero() {
-                    Option::Some(GuardSlot::Charlie)
-                } else {
-                    Option::Some(GuardSlot::Bravo)
-                }
-                    
-            },
-            4 => {
-                if self.delta.count.is_zero() {
-                    Option::None
-                } else if self.charlie.count.is_zero() {
-                    Option::Some(GuardSlot::Delta)
-                } else if self.bravo.count.is_zero() {
-                    Option::Some(GuardSlot::Charlie)
-                } else if self.alpha.count.is_zero() {
-                    Option::Some(GuardSlot::Bravo)
-                } else {
-                    Option::Some(GuardSlot::Alpha)
-                }
-            },
-            _ => panic!("max_guards_allowed must be between 1 and 4")
+    fn next_attack_slot(ref self: GuardTroops) -> Option<GuardSlot> {
+        if self.delta.count.is_non_zero() {
+            return Option::Some(GuardSlot::Delta);
         }
+
+        if self.charlie.count.is_non_zero() {
+            return Option::Some(GuardSlot::Charlie);
+        }
+
+        if self.bravo.count.is_non_zero() {
+            return Option::Some(GuardSlot::Bravo);
+        }
+
+        if self.alpha.count.is_non_zero() {
+            return Option::Some(GuardSlot::Alpha);
+        }
+        return Option::None;
     }
 
     fn from_slot(self: GuardTroops, slot: GuardSlot) -> (Troops, u32) {
