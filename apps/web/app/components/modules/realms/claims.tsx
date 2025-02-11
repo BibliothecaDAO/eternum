@@ -4,7 +4,12 @@ import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
-import { formatNumber, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { trpc } from "@/router";
+import {
+  formatNumber,
+  shortenAddress,
+  SUPPORTED_L2_CHAIN_ID,
+} from "@/utils/utils";
 import { useAccount, useReadContract } from "@starknet-react/core";
 import { formatEther } from "viem";
 
@@ -22,7 +27,11 @@ interface ClaimTransaction {
 export const ClaimRewards = () => {
   const { address } = useAccount();
   const lordsPerWeek = 49;
-
+  const pastLordsClaimsQuery = trpc.realmsLordsClaims.useQuery(
+    { address: address as string },
+    { refetchInterval: 10000, enabled: !!address },
+  );
+  const pastLordsClaims = pastLordsClaimsQuery.data;
   const [claimTransactions, setClaimTransactions] = useState<
     ClaimTransaction[]
   >([]);
@@ -149,7 +158,6 @@ export const ClaimRewards = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
-                  <th className="px-4 py-2 text-left">ID</th>
                   <th className="px-4 py-2 text-left">Transaction Hash</th>
                   <th className="px-4 py-2 text-left">Date</th>
                   <th className="px-4 py-2 text-left">Amount (Lords)</th>
@@ -157,13 +165,14 @@ export const ClaimRewards = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {claimTransactions.map((tx) => (
-                  <tr key={tx.id}>
-                    <td className="px-4 py-2">{tx.id}</td>
-                    <td className="px-4 py-2">{tx.transactionHash}</td>
-                    <td className="px-4 py-2">{tx.date}</td>
-                    <td className="px-4 py-2">{tx.amount}</td>
-                    <td className="px-4 py-2">{tx.status}</td>
+                {pastLordsClaims?.map((tx) => (
+                  <tr key={tx.hash}>
+                    <td className="px-4 py-2">{shortenAddress(tx.hash)}</td>
+                    <td className="px-4 py-2">{tx.timestamp}</td>
+                    <td className="px-4 py-2">
+                      {formatNumber(Number(tx.amount))}
+                    </td>
+                    <td className="px-4 py-2">{tx.recipient}</td>
                   </tr>
                 ))}
               </tbody>

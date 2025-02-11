@@ -1,3 +1,4 @@
+import type { RouterOutputs } from "@/router";
 import React from "react";
 import {
   Accordion,
@@ -5,16 +6,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TransactionChains } from "./bridge-tx-chains";
-import type { RouterOutputs } from "@/router";
-import { useExplorer } from "@starknet-react/core";
-import { Link } from "@tanstack/react-router";
-import { cn, shortenAddress } from "@/utils/utils";
-import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useWriteFinalizeWithdrawRealms } from "@/hooks/bridge/useWriteFinalizeWithdrawRealms";
 import { toast } from "@/hooks/use-toast";
+import { cn, shortenAddress } from "@/utils/utils";
+import { useExplorer } from "@starknet-react/core";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
+
+import { TransactionChains } from "./bridge-tx-chains";
 
 const BridgeTransactionHistory: React.FC<{
   transactions: RouterOutputs["bridgeTransactions"];
@@ -24,7 +25,7 @@ const BridgeTransactionHistory: React.FC<{
     useWriteFinalizeWithdrawRealms();
 
   const handleCompleteWithdraw = async (
-    transaction: RouterOutputs["bridgeTransactions"][number]
+    transaction: RouterOutputs["bridgeTransactions"][number],
   ) => {
     const hash = await writeAsync({
       hash: transaction.req_hash,
@@ -45,23 +46,23 @@ const BridgeTransactionHistory: React.FC<{
         const isCompleted = transaction.events.some(
           (event) =>
             event.type === "withdraw_completed_l1" ||
-            event.type === "withdraw_completed_l2"
+            event.type === "withdraw_completed_l2",
         );
 
         return (
           <AccordionItem key={transaction.id} value={transaction.id}>
-            <AccordionTrigger className="flex hover:no-underline w-full justify-between items-center">
+            <AccordionTrigger className="flex w-full items-center justify-between hover:no-underline">
               <div className="flex w-full justify-between px-2">
                 <div className="flex flex-col justify-center">
                   <div className="flex items-center gap-2">
                     <TransactionChains fromChain={transaction.from_chain} />
                   </div>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     {transaction.timestamp.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex flex-col items-end justify-end">
-                  <div className="flex gap-1 ">
+                  <div className="flex gap-1">
                     {transaction.token_ids.slice(0, 3).map((id) => (
                       <Badge variant="outline" className="w-fit" key={id}>
                         #{id}
@@ -76,7 +77,7 @@ const BridgeTransactionHistory: React.FC<{
                   {isCompleted ? (
                     <span className="text-muted-foreground">Completed</span>
                   ) : transaction.events.some(
-                      (event) => event.type === "withdraw_available_l1"
+                      (event) => event.type === "withdraw_available_l1",
                     ) ? (
                     <Button
                       size="sm"
@@ -85,7 +86,7 @@ const BridgeTransactionHistory: React.FC<{
                         e.stopPropagation();
                         handleCompleteWithdraw(transaction);
                       }}
-                      className="rounded border-green-500 mt-2 z-20"
+                      className="z-20 mt-2 rounded border-green-500"
                       disabled={isWithdrawPending}
                     >
                       Complete Withdraw
@@ -100,7 +101,7 @@ const BridgeTransactionHistory: React.FC<{
               <div className="flex flex-col space-y-1 py-2">
                 <span
                   className={cn(
-                    isCompleted ? "text-green-500" : "text-yellow-500"
+                    isCompleted ? "text-green-500" : "text-yellow-500",
                   )}
                 >
                   {isCompleted ? "Completed" : "In Progress"}
@@ -110,7 +111,7 @@ const BridgeTransactionHistory: React.FC<{
                   <ArrowRight />
                   {shortenAddress(transaction.to_address)}
                 </div>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="mt-2 flex items-center gap-2">
                   {transaction.events.map((event, idx) => {
                     const explorerLink = event.type.endsWith("l2")
                       ? explorer.transaction(event.hash)

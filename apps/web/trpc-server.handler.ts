@@ -1,20 +1,24 @@
+import type { PortfolioCollectionApiResponse } from "@/types/ark";
+import type { SQL } from "@realms-world/db";
 import type { paths } from "@reservoir0x/reservoir-sdk";
 import { defineEventHandler, toWebRequest } from "@tanstack/start/server";
 import { initTRPC } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { z, ZodError } from "zod";
 import superjson from "superjson";
-import type { SQL } from "@realms-world/db";
+import { z, ZodError } from "zod";
 
-import { eq, or, desc } from "@realms-world/db";
-import { db } from "@realms-world/db/client";
-import { realmsBridgeRequests } from "@realms-world/db/schema";
 import {
+  ChainId,
   CollectionAddresses,
   Collections,
-  ChainId,
 } from "@realms-world/constants";
-import type { PortfolioCollectionApiResponse } from "@/types/ark";
+import { desc, eq, or } from "@realms-world/db";
+import { db } from "@realms-world/db/client";
+import {
+  realmsBridgeRequests,
+  realmsLordsClaims,
+} from "@realms-world/db/schema";
+
 const SUPPORTED_L1_CHAIN_ID =
   process.env.VITE_PUBLIC_CHAIN == "sepolia"
     ? ChainId.SEPOLIA
@@ -87,6 +91,19 @@ const appRouter = t.router({
     await new Promise((resolve) => setTimeout(resolve, 1000));
     return POSTS;
   }),
+  realmsLordsClaims: t.procedure
+    .input(
+      z.object({
+        address: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return ctx.db.query.realmsLordsClaims.findMany({
+        where: eq(realmsLordsClaims.recipient, input.address),
+        orderBy: desc(realmsLordsClaims.timestamp),
+      });
+    }),
   bridgeTransactions: t.procedure
     .input(
       z
@@ -94,7 +111,7 @@ const appRouter = t.router({
           l1Account: z.string().nullish(),
           l2Account: z.string().nullish(),
         })
-        .optional()
+        .optional(),
     )
     .query(({ ctx, input }) => {
       const { l1Account, l2Account } = input ?? {};
@@ -102,13 +119,13 @@ const appRouter = t.router({
       if (l1Account) {
         whereFilter.push(
           eq(realmsBridgeRequests.from_address, l1Account.toLowerCase()),
-          eq(realmsBridgeRequests.to_address, l1Account.toLowerCase())
+          eq(realmsBridgeRequests.to_address, l1Account.toLowerCase()),
         );
       }
       if (l2Account) {
         whereFilter.push(
           eq(realmsBridgeRequests.from_address, l2Account.toLowerCase()),
-          eq(realmsBridgeRequests.to_address, l2Account.toLowerCase())
+          eq(realmsBridgeRequests.to_address, l2Account.toLowerCase()),
         );
       }
       return ctx.db.query.realmsBridgeRequests.findMany({
@@ -125,7 +142,7 @@ const appRouter = t.router({
         .object({
           address: z.string().optional(),
         })
-        .optional()
+        .optional(),
     )
     .query(async (req) => {
       if (req.input?.address) {
@@ -138,9 +155,10 @@ const appRouter = t.router({
               "x-api-key": process.env.VITE_RESERVOIR_API_KEY ?? "",
               "Access-Control-Allow-Origin": "*",
             },
-          }
+          },
         );
-        const data = await response.json() as paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"];
+        const data =
+          (await response.json()) as paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"];
         return data;
       }
     }),
@@ -153,7 +171,7 @@ const appRouter = t.router({
           itemsPerPage: z.number().optional().default(100),
           page: z.number().optional().default(1),
         })
-        .optional()
+        .optional(),
     )
     .query(async (req) => {
       if (req.input?.address) {
@@ -171,9 +189,9 @@ const appRouter = t.router({
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*",
             },
-          }
+          },
         );
-        const data = await response.json() as PortfolioCollectionApiResponse;
+        const data = (await response.json()) as PortfolioCollectionApiResponse;
         return data;
       }
     }),

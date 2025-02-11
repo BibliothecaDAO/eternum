@@ -87,9 +87,9 @@ export const velords_supply = pgTable("dune_velords_supply", {
 export const realmsLordsClaims = pgTable(
   "realms_lords_claims",
   {
-    hash: text().notNull(),
-    amount: numeric({ precision: 78, scale: 8 }).notNull(),
-    recipient: text().notNull(),
+    hash: text("hash").notNull(),
+    amount: bigint("amount", { mode: "number" }).notNull(),
+    recipient: text("recipient").notNull(),
     timestamp: timestamp({ mode: "string" }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.amount, t.hash] })],

@@ -1,21 +1,22 @@
+import type { ChartConfig } from "@/components/ui/chart";
+import type { Address } from "@starknet-react/core";
+import type { BlockNumber } from "starknet";
+import { useMemo } from "react";
+import { VeLords } from "@/abi/L2/VeLords";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   CardDescription,
   CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import type {
-  ChartConfig} from "@/components/ui/chart";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
-import type {
-  Address} from "@starknet-react/core";
+import { abbreviateNumber, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import {
   useAccount,
   useBalance,
@@ -23,14 +24,13 @@ import {
   useReadContract,
   useSendTransaction,
 } from "@starknet-react/core";
-import { abbreviateNumber, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import { LORDS, StakingAddresses } from "@realms-world/constants";
-import { useMemo } from "react";
-import { StakeDialog } from "./stake-dialog";
-import { VeLords } from "@/abi/L2/VeLords";
-import type { BlockNumber} from "starknet";
+import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
 import { BlockTag } from "starknet";
 import { formatEther } from "viem";
+
+import { LORDS, StakingAddresses } from "@realms-world/constants";
+
+import { StakeDialog } from "./stake-dialog";
 import { UnlockDialog } from "./unlock-dialog";
 
 const chartConfig = {
@@ -85,7 +85,7 @@ export const StakeLords = () => {
         unlocked: Number(data?.formatted),
       },
     ],
-    [ownerLordsLock?.amount, data?.formatted]
+    [ownerLordsLock?.amount, data?.formatted],
   );
   const totalLords = useMemo(() => {
     return (
@@ -105,7 +105,7 @@ export const StakeLords = () => {
       <CardContent className="flex flex-1 items-center pb-0">
         <ChartContainer
           config={chartConfig}
-          className="h-[180px] w-full relative"
+          className="relative h-[180px] w-full"
         >
           <RadialBarChart
             accessibilityLayer
@@ -136,7 +136,7 @@ export const StakeLords = () => {
                         >
                           {ownerLordsLock?.amount
                             ? abbreviateNumber(
-                                formatEther(BigInt(ownerLordsLock.amount))
+                                formatEther(BigInt(ownerLordsLock.amount)),
                               )
                             : "0"}{" "}
                           /{abbreviateNumber(totalLords)}
@@ -172,7 +172,7 @@ export const StakeLords = () => {
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex gap-2 mb-4">
+        <div className="mb-4 flex gap-2">
           <StakeDialog
             ownerLordsLock={ownerLordsLock}
             lordsBalance={Number(data?.formatted)}
@@ -186,9 +186,9 @@ export const StakeLords = () => {
         </div>
         <div className="flex items-center gap-2 font-medium leading-none">
           veLords are entitled to a share of Lords fees from ecosystem games and
-          marketplaces. Claimable at weekly epochs
+          marketplaces. One lock per walllet address.
         </div>
-        <div className="leading-none text-muted-foreground">
+        <div className="text-muted-foreground leading-none">
           Note: max 75% penalty for early withdrawal (if withdrawn immediately
           after locking for 4 years)
         </div>
