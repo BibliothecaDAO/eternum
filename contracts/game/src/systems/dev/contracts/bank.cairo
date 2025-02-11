@@ -104,10 +104,11 @@ mod dev_bank_systems {
                 
             // add guards to structure
             let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
-            let slot_tiers = array![(GuardSlot::Alpha, TroopTier::T3, TroopType::Paladin)].span();
+            // slot must start from delta, to charlie, to beta, to alpha
+            let slot_tiers = array![(GuardSlot::Delta, TroopTier::T3, TroopType::Paladin)].span();
             let tick = TickImpl::retrieve(ref world);
             let seed = 'JUPITERJUPITER'.into() - starknet::get_block_timestamp().into();
-            iMercenariesImpl::guard_add(
+            iMercenariesImpl::add(
                 ref world, ADMIN_BANK_ENTITY_ID, seed, slot_tiers, combat_config, tick.current());
 
 

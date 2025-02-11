@@ -196,7 +196,7 @@ pub impl iTroopImpl of iTroopTrait {
 #[generate_trait]
 pub impl iMercenariesImpl of iMercenariesTrait {
 
-    fn guard_add(
+    fn add(
         ref world: WorldStorage, 
         structure_id: ID, 
         mut seed: u256, 

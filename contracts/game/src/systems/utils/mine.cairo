@@ -48,9 +48,10 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
 
         // add guards to structure
         let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
-        let slot_tiers = array![(GuardSlot::Alpha, TroopTier::T2, TroopType::Paladin)].span();
+        // slot must start from delta, to charlie, to beta, to alpha
+        let slot_tiers = array![(GuardSlot::Delta, TroopTier::T2, TroopType::Paladin)].span();
         let tick = TickImpl::retrieve(ref world);
-        iMercenariesImpl::guard_add(
+        iMercenariesImpl::add(
             ref world, structure_id, vrf_seed, slot_tiers, combat_config, tick.current());
 
         // allow fragment mine to produce limited amount of shards
