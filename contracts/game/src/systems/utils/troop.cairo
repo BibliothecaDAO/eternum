@@ -3,7 +3,7 @@ use dojo::world::WorldStorage;
 use dojo::model::ModelStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::models::troop::{TroopType, TroopTier, GuardSlot, Troops, ExplorerTroops, TroopsImpl, GuardTroops, GuardImpl};
-use s1_eternum::models::config::{TroopConfig, CombatConfig, VRFConfigImpl, MapConfig};
+use s1_eternum::models::config::{TroopConfig, TroopStaminaConfig, TroopLimitConfig, VRFConfigImpl, MapConfig};
 use s1_eternum::models::weight::{W3eight, W3eightImpl};
 use s1_eternum::models::resource::r3esource::{
     SingleR33esource, SingleR33esourceStoreImpl, SingleR33esourceImpl, 
@@ -12,7 +12,7 @@ use s1_eternum::models::resource::r3esource::{
 use s1_eternum::models::structure::Structure;
 use s1_eternum::models::stamina::{Stamina, StaminaImpl};
 
-use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, RESOURCE_PRECISION};
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
@@ -24,14 +24,14 @@ use s1_eternum::models::position::{Occupier, OccupierImpl};
 #[generate_trait]
 pub impl iExplorerImpl of iExplorerTrait {
 
-    fn burn_stamina_cost(ref world: WorldStorage, ref explorer: ExplorerTroops, config: CombatConfig, explore: bool, mut biomes: Array<Biome>, current_tick: u64) {
+    fn burn_stamina_cost(ref world: WorldStorage, ref explorer: ExplorerTroops, troop_stamina_config: TroopStaminaConfig, explore: bool, mut biomes: Array<Biome>, current_tick: u64) {
         let stamina_cost = match explore {
             true => {
-                let mut stamina_cost = config.stamina_explore_stamina_cost * biomes.len().into();
+                let mut stamina_cost: u128 = troop_stamina_config.stamina_explore_stamina_cost.into() * biomes.len().into();
                 loop {
                     match biomes.pop_front() {
                         Option::Some(biome) => {
-                            let (add, stamina_bonus) = explorer.troops.stamina_movement_bonus(biome, config);
+                            let (add, stamina_bonus) = explorer.troops.stamina_movement_bonus(biome, troop_stamina_config);
                             if add {
                                 stamina_cost += stamina_bonus.into();
                             } else {
@@ -48,24 +48,24 @@ pub impl iExplorerImpl of iExplorerTrait {
 
                 stamina_cost
             },
-            false => config.stamina_travel_stamina_cost * biomes.len().into(),
+            false => troop_stamina_config.stamina_travel_stamina_cost.into() * biomes.len().into(),
         };
 
 
         explorer.troops.stamina.spend(
-            explorer.troops.category, config, 
+            explorer.troops.category, troop_stamina_config, 
             stamina_cost.try_into().unwrap(), current_tick
         );
     }
 
-    fn burn_food_cost(ref world: WorldStorage, ref explorer: ExplorerTroops, config: CombatConfig, explore: bool) {
+    fn burn_food_cost(ref world: WorldStorage, ref explorer: ExplorerTroops, troop_stamina_config: TroopStaminaConfig, explore: bool) {
 
         let (wheat_cost, fish_cost) = match explore {
             true => {
-                (config.stamina_explore_wheat_cost, config.stamina_explore_fish_cost)
+                (troop_stamina_config.stamina_explore_wheat_cost.into(), troop_stamina_config.stamina_explore_fish_cost.into())
             },
             false => {
-                (config.stamina_travel_wheat_cost, config.stamina_travel_fish_cost)
+                (troop_stamina_config.stamina_travel_wheat_cost.into(), troop_stamina_config.stamina_travel_fish_cost.into())
             }
         };
 
@@ -201,7 +201,8 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         structure_id: ID, 
         mut seed: u256, 
         mut slot_tiers: Span<(GuardSlot, TroopTier, TroopType)>, 
-        config: CombatConfig, 
+        troop_limit_config: TroopLimitConfig, 
+        troop_stamina_config: TroopStaminaConfig,
         current_tick: u64
     ) {
         let mut structure: Structure = world.read_model(structure_id);
@@ -211,9 +212,11 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         loop {
             match slot_tiers.pop_front() {
                 Option::Some((slot, tier, category)) => {
-                    let max_troops_from_lower_bound: u128 = config.mercenaries_troop_upper_bound.into() - config.mercenaries_troop_lower_bound.into();
+                    let lower_bound: u128 = troop_limit_config.mercenaries_troop_lower_bound.into() * RESOURCE_PRECISION;
+                    let upper_bound: u128 = troop_limit_config.mercenaries_troop_upper_bound.into() * RESOURCE_PRECISION;
+                    let max_troops_from_lower_bound: u128 = upper_bound - lower_bound;
                     let mut troop_amount: u128 = random::random(seed, salt, max_troops_from_lower_bound);
-                    troop_amount += config.mercenaries_troop_lower_bound.into();
+                    troop_amount += lower_bound;
 
 
                     // update guard count
@@ -224,7 +227,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                     troops.category = *category;
                     troops.tier = *tier;
                     troops.count += troop_amount;
-                    troops.stamina.refill(troops.category, config, current_tick);
+                    troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
                     // update troop in guard slot
                     guards.to_slot(*slot, troops, current_tick);

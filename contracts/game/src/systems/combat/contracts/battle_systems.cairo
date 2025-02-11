@@ -26,7 +26,7 @@ mod battle_systems {
         troop::{iExplorerImpl, iTroopImpl}
     };
     use s1_eternum::models::troop::{Troops, TroopsImpl, TroopsTrait, ExplorerTroops, GuardTroops, GuardSlot, GuardImpl};
-    use s1_eternum::models::config::{CombatConfig};
+    use s1_eternum::models::config::{CombatConfig, TroopDamageConfig, TroopStaminaConfig, CombatConfigImpl};
     use s1_eternum::models::position::{Direction, Coord, CoordTrait};
     use s1_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s1_eternum::models::season::SeasonImpl;
@@ -68,7 +68,8 @@ mod battle_systems {
             assert!(explorer_defender.troops.count.is_zero(), "defender has troops");
 
             // aggressor attacks defender
-            let config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let tick = TickImpl::retrieve(ref world);
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
@@ -76,7 +77,8 @@ mod battle_systems {
             explorer_aggressor_troops.attack(
                 ref explorer_defender_troops, 
                 defender_biome, 
-                config, 
+                troop_stamina_config, 
+                troop_damage_config, 
                 tick.current()
             );
             
@@ -140,12 +142,14 @@ mod battle_systems {
             // aggressor attacks defender
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let defender_biome: Biome = get_biome(guarded_structure.coord.x.into(), guarded_structure.coord.y.into());
-            let config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let tick = TickImpl::retrieve(ref world);
             explorer_aggressor_troops.attack(
                 ref guard_troops, 
                 defender_biome, 
-                config, 
+                troop_stamina_config, 
+                troop_damage_config, 
                 tick.current()
             );
 

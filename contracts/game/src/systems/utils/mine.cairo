@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use dojo::model::ModelStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::models::config::{MapConfig, VRFConfig, VRFConfigImpl, CombatConfig};
+use s1_eternum::models::config::{MapConfig, VRFConfig, VRFConfigImpl, CombatConfig, TroopLimitConfig, TroopStaminaConfig};
 use s1_eternum::models::resource::production::building::{BuildingCategory, Building, BuildingImpl};
 use s1_eternum::models::resource::production::production::{ProductionImpl};
 use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
@@ -26,13 +26,20 @@ use s1_eternum::systems::utils::troop::iMercenariesImpl;
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
 
-    fn lottery(ref world: WorldStorage, owner: starknet::ContractAddress, coord: Coord, config: MapConfig) -> bool {
+    fn lottery(
+        ref world: WorldStorage, 
+        owner: starknet::ContractAddress, 
+        coord: Coord, 
+        map_config: MapConfig,
+        troop_limit_config: TroopLimitConfig,
+        troop_stamina_config: TroopStaminaConfig
+    ) -> bool {
 
         let vrf_provider: ContractAddress = VRFConfigImpl::get_provider_address(ref world);
         let vrf_seed: u256 = VRFImpl::seed(owner, vrf_provider);
         let success: bool = *random::choices(
             array![true, false].span(),
-            array![1000, config.shards_mines_fail_probability].span(),
+            array![1000, map_config.shards_mines_fail_probability].span(),
             array![].span(),
             1,
             true,
@@ -47,12 +54,12 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         let structure_id = Self::_make_structure(ref world, coord, owner);
 
         // add guards to structure
-        let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T2, TroopType::Paladin)].span();
         let tick = TickImpl::retrieve(ref world);
         iMercenariesImpl::add(
-            ref world, structure_id, vrf_seed, slot_tiers, combat_config, tick.current());
+            ref world, structure_id, vrf_seed, slot_tiers, 
+            troop_limit_config, troop_stamina_config, tick.current());
 
         // allow fragment mine to produce limited amount of shards
         let shards_reward_amount = Self::_reward_amount(ref world, vrf_seed);
@@ -73,7 +80,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         let mut wheat_resource = SingleR33esourceStoreImpl::retrieve(
             ref world, structure_id, ResourceTypes::WHEAT, ref structure_weight, wheat_weight_grams, true
         );
-        wheat_resource.add(config.mine_wheat_grant_amount, ref structure_weight, wheat_weight_grams);
+        wheat_resource.add(map_config.mine_wheat_grant_amount.into(), ref structure_weight, wheat_weight_grams);
         wheat_resource.store(ref world);
 
         // grant fish to structure
@@ -81,7 +88,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         let mut fish_resource = SingleR33esourceStoreImpl::retrieve(
             ref world, structure_id, ResourceTypes::FISH, ref structure_weight, fish_weight_grams, true
         );
-        fish_resource.add(config.mine_fish_grant_amount, ref structure_weight, fish_weight_grams);
+        fish_resource.add(map_config.mine_fish_grant_amount.into(), ref structure_weight, fish_weight_grams);
         fish_resource.store(ref world);
 
         // update structure weight

@@ -2,7 +2,7 @@ use core::integer::BoundedU128;
 use cubit::f128::math::comp::{max as fixed_max};
 use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use dojo::model::ModelStorage;
+use dojo::model::{ModelStorage, Model};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
@@ -314,65 +314,101 @@ pub struct TickConfig {
 
 // todo: regroup meaningfully to avoid retrieving too many fields
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
-#[dojo::model]
-pub struct CombatConfig {
-    #[key]
-    config_id: ID,
+pub struct TroopDamageConfig {
     // Base damage values for each troop type
     knight_base_damage: u16,
     crossbowman_base_damage: u16,
     paladin_base_damage: u16,
 
     // Damage bonuses for tiers
-    // t1_damage_bonus == Fixed::ONE
     t2_damage_bonus: u16, // In the contracts, we do Fixed::ONE * t2_damage_bonus
     t3_damage_bonus: u16, // In the contracts, we do Fixed::ONE * t3_damage_bonus
 
-    // Biome and stamina related bonuses
+    // Combat modifiers
     damage_bonus_num: u16,      // Used for biome damage calculations
     damage_scaling_factor: u16, // Used in damage calculations for troop scaling
-    stamina_bonus_value: u16,   // Used for stamina movement bonuses
+}
 
-    // Stamina configuration 
-    stamina_gain_per_tick: u32,   // Stamina gained per tick
-    stamina_knight_max: u32,      // Maximum stamina for knights
-    stamina_paladin_max: u32,     // Maximum stamina for paladins
-    stamina_crossbowman_max: u32, // Maximum stamina for crossbowmen
-    stamina_attack_req: u64,      // Minimum stamina required to attack
-    stamina_attack_max: u64,      // Maximum stamina that can be used in attack
-    stamina_initial: u64,  // Initial stamina for explorers
-    stamina_explore_wheat_cost: u128, // stamina burn for exploring
-    stamina_explore_fish_cost: u128, // stamina burn for exploring
-    stamina_travel_wheat_cost: u128, // stamina burn for traveling
-    stamina_travel_fish_cost: u128, // stamina burn for traveling
+#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
+pub struct TroopStaminaConfig {
+    // Base stamina settings
+    stamina_gain_per_tick: u16,   // Stamina gained per tick
+    stamina_initial: u16,         // Initial stamina for explorers
+    stamina_bonus_value: u16,     // Used for stamina movement bonuses
 
-    //todo: move somewhere else
-    stamina_explore_stamina_cost: u128, // stamina burn for exploring
-    stamina_travel_stamina_cost: u128, // stamina burn for traveling
-    //
-    guard_resurrection_delay: u64,
-    guard_max_troop_count: u128,
-    // explorer
-    explorer_max_troop_count: u128,
-    // Mercenaries configuration
-    mercenaries_troop_lower_bound: u64,
-    mercenaries_troop_upper_bound: u64,
+    // Max stamina per troop type
+    stamina_knight_max: u16,      // Maximum stamina for knights
+    stamina_paladin_max: u16,     // Maximum stamina for paladins
+    stamina_crossbowman_max: u16, // Maximum stamina for crossbowmen
+
+    // Combat stamina requirements
+    stamina_attack_req: u16,      // Minimum stamina required to attack
+    stamina_attack_max: u16,      // Maximum stamina that can be used in attack
+
+    // Exploration costs
+    stamina_explore_wheat_cost: u16,
+    stamina_explore_fish_cost: u16,
+    stamina_explore_stamina_cost: u16,
+
+    // Travel costs
+    stamina_travel_wheat_cost: u16,
+    stamina_travel_fish_cost: u16,
+    stamina_travel_stamina_cost: u16,
 }
 
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
+pub struct TroopLimitConfig {
+    // Troop count limits
+    explorer_max_troop_count: u32, // without precision
+    
+    // Guard specific settings
+    guard_resurrection_delay: u32,
+
+    // Mercenary bounds
+    mercenaries_troop_lower_bound: u64, // without precision
+    mercenaries_troop_upper_bound: u64, // without precision
+}
+
+
+// Original CombatConfig can now reference these more focused configs
+#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
 #[dojo::model]
-pub struct MercenariesConfig {
+pub struct CombatConfig {
     #[key]
     config_id: ID,
-    knights_lower_bound: u64,
-    knights_upper_bound: u64,
-    paladins_lower_bound: u64,
-    paladins_upper_bound: u64,
-    crossbowmen_lower_bound: u64,
-    crossbowmen_upper_bound: u64,
-    rewards: Span<(u8, u128)>
+    troop_damage_config: TroopDamageConfig,
+    troop_stamina_config: TroopStaminaConfig,
+    troop_limit_config: TroopLimitConfig,
+}
+
+
+
+
+
+#[generate_trait]
+impl CombatConfigImpl of CombatConfigTrait {
+    fn troop_damage_config(ref world: WorldStorage) -> TroopDamageConfig {
+        return world.read_member(
+            Model::<CombatConfig>::ptr_from_keys(WORLD_CONFIG_ID), 
+            selector!("troop_damage_config")
+        );
+    }
+
+    fn troop_stamina_config(ref world: WorldStorage) -> TroopStaminaConfig {
+        return world.read_member(
+            Model::<CombatConfig>::ptr_from_keys(WORLD_CONFIG_ID), 
+            selector!("troop_stamina_config")
+        );
+    }
+
+    fn troop_limit_config(ref world: WorldStorage) -> TroopLimitConfig {
+        return world.read_member(
+            Model::<CombatConfig>::ptr_from_keys(WORLD_CONFIG_ID), 
+            selector!("troop_limit_config")
+        );
+    }
 }
 
 

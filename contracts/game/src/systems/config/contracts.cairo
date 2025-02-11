@@ -1,7 +1,7 @@
 use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{
-    TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
+    TroopConfig, MapConfig, BattleConfig, CapacityConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig,
     MultipleResourceBurnPrStrategy, LaborBurnPrStrategy
 };
@@ -167,19 +167,6 @@ trait IPopulationConfig<T> {
     fn set_population_config(ref self: T, base_population: u32);
 }
 
-#[starknet::interface]
-trait IMercenariesConfig<T> {
-    fn set_mercenaries_config(
-        ref self: T,
-        knights_lower_bound: u64,
-        knights_upper_bound: u64,
-        paladins_lower_bound: u64,
-        paladins_upper_bound: u64,
-        crossbowmen_lower_bound: u64,
-        crossbowmen_upper_bound: u64,
-        rewards: Span<(u8, u128)>
-    );
-}
 
 #[starknet::interface]
 trait IResourceBridgeConfig<T> {
@@ -229,7 +216,7 @@ mod config_systems {
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
-        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
+        BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
         RealmMaxLevelConfig, SeasonAddressesConfig, VRFConfig, SeasonBridgeConfig,
         MultipleResourceBurnPrStrategy, LaborBurnPrStrategy
     };
@@ -743,48 +730,7 @@ mod config_systems {
         }
     }
 
-    #[abi(embed_v0)]
-    impl IMercenariesConfig of super::IMercenariesConfig<ContractState> {
-        fn set_mercenaries_config(
-            ref self: ContractState,
-            knights_lower_bound: u64,
-            knights_upper_bound: u64,
-            paladins_lower_bound: u64,
-            paladins_upper_bound: u64,
-            crossbowmen_lower_bound: u64,
-            crossbowmen_upper_bound: u64,
-            rewards: Span<(u8, u128)>
-        ) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
 
-            assert!(
-                knights_lower_bound < knights_upper_bound, "knights_lower_bound must be lower than knights_upper_bound"
-            );
-            assert!(
-                paladins_lower_bound < paladins_upper_bound,
-                "paladins_lower_bound must be lower than paladins_upper_bound"
-            );
-            assert!(
-                crossbowmen_lower_bound < crossbowmen_upper_bound,
-                "crossbowmen_lower_bound must be lower than crossbowmen_upper_bound"
-            );
-
-            world
-                .write_model(
-                    @MercenariesConfig {
-                        config_id: WORLD_CONFIG_ID,
-                        knights_lower_bound,
-                        knights_upper_bound,
-                        paladins_lower_bound,
-                        paladins_upper_bound,
-                        crossbowmen_lower_bound,
-                        crossbowmen_upper_bound,
-                        rewards
-                    }
-                );
-        }
-    }
 
     #[abi(embed_v0)]
     impl IResourceBridgeConfig of super::IResourceBridgeConfig<ContractState> {

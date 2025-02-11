@@ -26,7 +26,7 @@ mod dev_bank_systems {
     use s1_eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::capacity::{CapacityCategory};
-    use s1_eternum::models::config::{BankConfig, CapacityConfigCategory, MercenariesConfig};
+    use s1_eternum::models::config::{BankConfig, CapacityConfigCategory, TroopLimitConfig, TroopStaminaConfig, CombatConfigImpl};
     use s1_eternum::models::name::{EntityName};
     use s1_eternum::models::owner::{Owner, EntityOwner};
     use s1_eternum::models::position::{Position, Coord, Occupier, OccupiedBy};
@@ -38,7 +38,6 @@ mod dev_bank_systems {
     use s1_eternum::systems::utils::map::iMapImpl;
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::config::CombatConfig;
     use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
     use s1_eternum::models::config::TickImpl;
 
@@ -103,13 +102,14 @@ mod dev_bank_systems {
 
                 
             // add guards to structure
-            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             // slot must start from delta, to charlie, to beta, to alpha
             let slot_tiers = array![(GuardSlot::Delta, TroopTier::T3, TroopType::Paladin)].span();
             let tick = TickImpl::retrieve(ref world);
             let seed = 'JUPITERJUPITER'.into() - starknet::get_block_timestamp().into();
             iMercenariesImpl::add(
-                ref world, ADMIN_BANK_ENTITY_ID, seed, slot_tiers, combat_config, tick.current());
+                ref world, ADMIN_BANK_ENTITY_ID, seed, slot_tiers, troop_limit_config, troop_stamina_config, tick.current());
 
 
             ADMIN_BANK_ENTITY_ID

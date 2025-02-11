@@ -1,6 +1,6 @@
 use s1_eternum::alias::ID;
 use s1_eternum::models::stamina::{StaminaTrait, StaminaImpl, Stamina};
-use s1_eternum::models::config::CombatConfig;
+use s1_eternum::models::config::{CombatConfig, TroopDamageConfig, TroopStaminaConfig};
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::owner::EntityOwner;
 use s1_eternum::utils::map::biomes::Biome;
@@ -154,7 +154,6 @@ pub struct ExplorerTroops {
     owner: EntityOwner,
     troops: Troops,
     coord: Coord,
-    // travel: Travel
 }
 
 
@@ -165,27 +164,27 @@ pub struct ExplorerTroops {
 #[generate_trait]
 impl TroopsImpl of TroopsTrait {
 
-    fn _base_damage(ref self: Troops, config: CombatConfig) -> u16 {
+    fn _base_damage(ref self: Troops, troop_damage_config: TroopDamageConfig) -> u16 {
         match self.category {
-            TroopType::Knight => config.knight_base_damage,
-            TroopType::Paladin => config.paladin_base_damage,
-            TroopType::Crossbowman => config.crossbowman_base_damage,
+            TroopType::Knight => troop_damage_config.knight_base_damage,
+            TroopType::Paladin => troop_damage_config.paladin_base_damage,
+            TroopType::Crossbowman => troop_damage_config.crossbowman_base_damage,
         }
     }
    
 
-    fn _tier_bonus(ref self: Troops, config: CombatConfig) -> Fixed {
+    fn _tier_bonus(ref self: Troops, troop_damage_config: TroopDamageConfig) -> Fixed {
         match self.tier {
             TroopTier::T1 => 1_u8.into(),
-            TroopTier::T2 => 1_u8.into() * config.t2_damage_bonus.into(),
-            TroopTier::T3 => 1_u8.into() * config.t3_damage_bonus.into(),
+            TroopTier::T2 => 1_u8.into() * troop_damage_config.t2_damage_bonus.into(),
+            TroopTier::T3 => 1_u8.into() * troop_damage_config.t3_damage_bonus.into(),
         }
     }
 
 
-    fn _biome_damage_bonus(ref self: Troops, biome: Biome, config: CombatConfig) -> Fixed {
+    fn _biome_damage_bonus(ref self: Troops, biome: Biome, troop_damage_config: TroopDamageConfig) -> Fixed {
         let ZERO: u16 = 0;
-        let VALUE: u16 = config.damage_bonus_num;
+        let VALUE: u16 = troop_damage_config.damage_bonus_num;
         let ADD: bool = true;
         let SUBTRACT: bool = false;
         let NEUTRAL: bool = false;
@@ -316,9 +315,9 @@ impl TroopsImpl of TroopsTrait {
         }
     }
 
-    fn stamina_movement_bonus(ref self: Troops, biome: Biome, config: CombatConfig) -> (bool, u16) {
+    fn stamina_movement_bonus(ref self: Troops, biome: Biome, troop_stamina_config: TroopStaminaConfig) -> (bool, u16) {
         let ZERO: u16 = 0;
-        let VALUE: u16 = config.stamina_bonus_value;
+        let VALUE: u16 = troop_stamina_config.stamina_bonus_value;
         let ADD: bool = true;
         let SUBTRACT: bool = false;
         let NEUTRAL: bool = false;
@@ -440,48 +439,55 @@ impl TroopsImpl of TroopsTrait {
         }
     }
 
-    fn attack(ref self: Troops, ref bravo: Troops, biome: Biome, config: CombatConfig, current_tick: u64) {
+    fn attack(
+        ref self: Troops, 
+        ref bravo: Troops, 
+        biome: Biome, 
+        troop_stamina_config: TroopStaminaConfig, 
+        troop_damage_config: TroopDamageConfig, 
+        current_tick: u64
+    ) {
 
         let mut alpha = self;
 
         // update alpha and bravo's staminas
-        alpha.stamina.refill(alpha.category, config, current_tick);
-        bravo.stamina.refill(bravo.category, config, current_tick);
+        alpha.stamina.refill(alpha.category, troop_stamina_config, current_tick);
+        bravo.stamina.refill(bravo.category, troop_stamina_config, current_tick);
 
         // ensure alpha has enough stamina to launch attack
-        assert!(alpha.stamina.amount >= config.stamina_attack_req, "stamina is not enough to attack (1)");
+        assert!(alpha.stamina.amount >= troop_stamina_config.stamina_attack_req.into(), "stamina is not enough to attack (1)");
 
         // calculate alpha's stamina based damage boost
-        let max_additional_stamina = config.stamina_attack_max - config.stamina_attack_req;
+        let max_additional_stamina = troop_stamina_config.stamina_attack_max.into() - troop_stamina_config.stamina_attack_req.into();
         let alpha_additional_stamina_for_damage 
-            = core::cmp::min(alpha.stamina.amount - config.stamina_attack_req, max_additional_stamina);
+            = core::cmp::min(alpha.stamina.amount - troop_stamina_config.stamina_attack_req.into(), max_additional_stamina);
         let ALPHA_STAMINA_BONUS_DAMAGE_MULTIPLIER: Fixed = 1_u8.into() + (alpha_additional_stamina_for_damage.into()  / 100_u8.into());
         
         
         // calculate bravo's stamina based damage penalty
         let mut BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER: Fixed = 1_u8.into();
-        let bravo_stamina_for_damage = core::cmp::min(bravo.stamina.amount, config.stamina_attack_req);
-        if bravo_stamina_for_damage < config.stamina_attack_req {
+        let bravo_stamina_for_damage: u128 = core::cmp::min(bravo.stamina.amount.into(), troop_stamina_config.stamina_attack_req.into());
+        if bravo_stamina_for_damage < troop_stamina_config.stamina_attack_req.into() {
             BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER
                 =  HALF_u128.into() + 
                     (HALF_u128.into() 
                         * bravo.stamina.amount.into() 
-                            / config.stamina_attack_req.into());
+                            / troop_stamina_config.stamina_attack_req.into());
         }
 
         // calculate damage dealt from alpha to bravo and vice versa
-        let ALPHA_BASE_DAMAGE: Fixed = self._base_damage(config).into();
+        let ALPHA_BASE_DAMAGE: Fixed = self._base_damage(troop_damage_config).into();
         let ALPHA_NUM_TROOPS: Fixed = self.count.into();
-        let ALPHA_TIER_BONUS: Fixed = self._tier_bonus(config).into();
-        let ALPHA_BIOME_BONUS_DAMAGE_MULTIPLIER: Fixed = alpha._biome_damage_bonus(biome, config);
+        let ALPHA_TIER_BONUS: Fixed = self._tier_bonus(troop_damage_config).into();
+        let ALPHA_BIOME_BONUS_DAMAGE_MULTIPLIER: Fixed = alpha._biome_damage_bonus(biome, troop_damage_config);
 
-        let BRAVO_BASE_DAMAGE: Fixed = bravo._base_damage(config).into();
+        let BRAVO_BASE_DAMAGE: Fixed = bravo._base_damage(troop_damage_config).into();
         let BRAVO_NUM_TROOPS: Fixed = bravo.count.into();
-        let BRAVO_TIER_BONUS: Fixed = bravo._tier_bonus(config).into();
-        let BRAVO_BIOME_BONUS_DAMAGE_MULTIPLIER: Fixed = bravo._biome_damage_bonus(biome, config);
+        let BRAVO_TIER_BONUS: Fixed = bravo._tier_bonus(troop_damage_config).into();
+        let BRAVO_BIOME_BONUS_DAMAGE_MULTIPLIER: Fixed = bravo._biome_damage_bonus(biome, troop_damage_config);
 
         let TOTAL_NUM_TROOPS: Fixed = ALPHA_NUM_TROOPS + BRAVO_NUM_TROOPS;
-        let damage_scaling_factor: Fixed = FixedTrait::new_unscaled(config.damage_scaling_factor.into(), false);
+        let damage_scaling_factor: Fixed = FixedTrait::new_unscaled(troop_damage_config.damage_scaling_factor.into(), false);
 
         let BRAVO_DAMAGE_DEALT: Fixed = (
             BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER 
@@ -515,18 +521,19 @@ impl TroopsImpl of TroopsTrait {
                         * alpha_additional_stamina_for_damage.into() 
                             / ALPHA_DAMAGE_DEALT).try_into().unwrap();
         }
-        alpha.stamina.spend(alpha.category, config, config.stamina_attack_req + alpha_extra_stamina_spent, current_tick);
+        alpha.stamina.spend(alpha.category, troop_stamina_config, 
+            troop_stamina_config.stamina_attack_req.into() + alpha_extra_stamina_spent, current_tick);
         
         // deduct bravo's stamina spent
-        let mut bravo_stamina_spent: u64 = config.stamina_attack_req;
+        let mut bravo_stamina_spent: u64 = troop_stamina_config.stamina_attack_req.into();
         if (ALPHA_DAMAGE_DEALT / BRAVO_DAMAGE_DEALT) <= HALF_u128.into() {
             bravo_stamina_spent = (
                     ALPHA_DAMAGE_DEALT 
-                        * config.stamina_attack_max.into() 
+                        * troop_stamina_config.stamina_attack_max.into() 
                             / BRAVO_DAMAGE_DEALT
                             ).try_into().unwrap();
         }
-        bravo.stamina.spend(bravo.category, config, bravo_stamina_spent, current_tick);
+        bravo.stamina.spend(bravo.category, troop_stamina_config, bravo_stamina_spent, current_tick);
     
     }
   

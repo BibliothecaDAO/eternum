@@ -30,7 +30,7 @@ mod troop_systems {
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
+    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS, RESOURCE_PRECISION};
     use s1_eternum::models::{
         capacity::{CapacityCategory},
         config::{
@@ -39,7 +39,8 @@ mod troop_systems {
             TroopConfig, TroopConfigImpl, TroopConfigTrait, 
             BattleConfigTrait,
             CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, 
-            CombatConfig
+            CombatConfigImpl, 
+            TroopLimitConfig, TroopStaminaConfig
         },
         map::Tile,
         owner::{OwnerTrait, Owner, EntityOwner, EntityOwnerTrait},
@@ -99,10 +100,10 @@ mod troop_systems {
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
             
             // ensure delay from troop defeat is over
-            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             if troops_destroyed_tick.is_non_zero() {
                 let next_troop_update_at = troops_destroyed_tick 
-                    + tick.convert_from_seconds(combat_config.guard_resurrection_delay).try_into().unwrap();
+                    + tick.convert_from_seconds(troop_limit_config.guard_resurrection_delay.into()).try_into().unwrap();
                 assert!(current_tick >= next_troop_update_at.into(), "you need to wait for the delay from troop defeat to be over");
             }
 
@@ -130,7 +131,9 @@ mod troop_systems {
             }
 
             troops.count += amount;
-            troops.stamina.refill(troops.category, combat_config, current_tick);
+            let troop_stamina_config: TroopStaminaConfig 
+                = CombatConfigImpl::troop_stamina_config(ref world);
+            troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
             // update guard slot and structure
             guard.to_slot(slot, troops, current_tick);
@@ -158,10 +161,11 @@ mod troop_systems {
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
             
             // ensure delay from troop defeat is over
-            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let troop_limit_config: TroopLimitConfig 
+                = CombatConfigImpl::troop_limit_config(ref world);
             if troops_destroyed_tick.is_non_zero() {
                 let next_troop_update_at = troops_destroyed_tick 
-                    + tick.convert_from_seconds(combat_config.guard_resurrection_delay).try_into().unwrap();
+                    + tick.convert_from_seconds(troop_limit_config.guard_resurrection_delay.into()).try_into().unwrap();
                 assert!(current_tick >= next_troop_update_at.into(), "you need to wait for the delay from troop defeat to be over");
             }
 
@@ -226,16 +230,19 @@ mod troop_systems {
 
 
             // ensure explorer amount does not exceed max
-            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let troop_limit_config: TroopLimitConfig 
+                = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
-                amount <= combat_config.explorer_max_troop_count, 
+                amount <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION, 
                     "reached limit of explorers amount per armys"
             );
 
             // set troop stamina
             let mut troops
                 = Troops {category, tier, count: amount, stamina: Stamina {amount: 0, updated_tick: 0}};
-            troops.stamina.refill(troops.category, combat_config, current_tick);
+            let troop_stamina_config: TroopStaminaConfig 
+                = CombatConfigImpl::troop_stamina_config(ref world);
+            troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
             // set explorer
             world
@@ -284,9 +291,10 @@ mod troop_systems {
 
 
             // ensure explorer count does not exceed max count
-            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let troop_limit_config: TroopLimitConfig 
+                = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
-                explorer.troops.count <= combat_config.explorer_max_troop_count, 
+                explorer.troops.count <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION, 
                     "reached limit of explorers amount per armys"
             );
 
@@ -334,9 +342,10 @@ mod troop_systems {
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
-            let combat_config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
-            from_explorer.troops.stamina.refill(from_explorer.troops.category, combat_config, current_tick);
-            to_explorer.troops.stamina.refill(to_explorer.troops.category, combat_config, current_tick);
+            let troop_stamina_config: TroopStaminaConfig 
+                = CombatConfigImpl::troop_stamina_config(ref world);
+            from_explorer.troops.stamina.refill(from_explorer.troops.category, troop_stamina_config, current_tick);
+            to_explorer.troops.stamina.refill(to_explorer.troops.category, troop_stamina_config, current_tick);
             if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
             }
@@ -346,8 +355,10 @@ mod troop_systems {
             world.write_model(@to_explorer);
 
             // ensure to_explorer count does not exceed max count
+            let troop_limit_config: TroopLimitConfig 
+                = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
-                to_explorer.troops.count <= combat_config.explorer_max_troop_count, 
+                to_explorer.troops.count <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION, 
                     "reached limit of explorers amount per armys"
             );
         }
@@ -383,7 +394,7 @@ mod troop_movement_systems {
             TroopConfig, TroopConfigImpl, TroopConfigTrait, 
             BattleConfigTrait,
             CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, 
-            CombatConfig
+            CombatConfigImpl, TroopLimitConfig, TroopStaminaConfig
         },
         map::Tile,
         owner::{OwnerTrait, Owner, EntityOwner, EntityOwnerTrait},
@@ -461,7 +472,11 @@ mod troop_movement_systems {
 
                     // perform lottery to discover mine
                     let map_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
-                    iMineDiscoveryImpl::lottery(ref world, starknet::get_caller_address(), next, map_config);
+                    let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+                    let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+                    iMineDiscoveryImpl::lottery(
+                        ref world, starknet::get_caller_address(), next, 
+                        map_config, troop_limit_config, troop_stamina_config);
 
                     // grant resource reward for exploration
                     let (explore_reward_id, explore_reward_amount) = iExplorerImpl::exploration_reward(ref world, map_config);
@@ -490,15 +505,15 @@ mod troop_movement_systems {
                 }
             };
 
-            // retrieve combat config
-            let config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
 
             // burn stamina cost
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             iExplorerImpl::burn_stamina_cost(
-                    ref world, ref explorer, config, explore, biomes, TickImpl::retrieve(ref world).current());
+                    ref world, ref explorer, troop_stamina_config, 
+                    explore, biomes, TickImpl::retrieve(ref world).current());
 
             // burn food cost
-            iExplorerImpl::burn_food_cost(ref world, ref explorer, config, explore);
+            iExplorerImpl::burn_food_cost(ref world, ref explorer, troop_stamina_config, explore);
             
             // update explorer 
             world.write_model(@explorer);
