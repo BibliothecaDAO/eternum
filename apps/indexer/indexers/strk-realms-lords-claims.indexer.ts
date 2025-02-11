@@ -12,16 +12,9 @@ import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 import { uint256 } from "starknet";
 import { numberToHex } from "viem";
 
-import {
-  ChainId,
-  CollectionAddresses,
-  REALMS_BRIDGE_ADDRESS,
-} from "@realms-world/constants";
+import { ChainId, CollectionAddresses } from "@realms-world/constants";
 import { db } from "@realms-world/db/poolClient";
-import {
-  realmsBridgeEvents,
-  realmsBridgeRequests,
-} from "@realms-world/db/schema";
+import { realmsLordsClaims } from "@realms-world/db/schema";
 
 import { env } from "../env";
 
@@ -80,21 +73,18 @@ export function createIndexer<
       for (const event of events) {
         const { args, transactionHash } = decodeEvent({
           abi,
-          eventName: "bridge::interfaces::DepositRequestInitiated",
+          eventName:
+            "strealm::components::strealm::StRealmComponent::RewardClaimed",
           event,
         });
 
         await db
-          .insert(realmsBridgeRequests)
+          .insert(realmsLordsClaims)
           .values({
-            from_chain: l2ChainId,
-            from_address: args.req_content.owner_l2,
-            to_address: numberToHex(args.req_content.owner_l1.address),
-            token_ids: args.req_content.ids,
+            hash: transactionHash,
+            recipient: args.recipient,
+            amount: args.amount,
             timestamp: block.header.timestamp,
-            tx_hash: transactionHash,
-            req_hash: args.req_content.hash,
-            id,
           })
           .onConflictDoNothing();
       }
