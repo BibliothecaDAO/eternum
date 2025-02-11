@@ -244,6 +244,10 @@ pub struct Occupier {
 
 #[generate_trait]
 impl OccupierImpl of OccupierTrait {
+    fn key_only(coord: Coord) -> Occupier {
+        Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::None }
+    }
+
     #[inline(always)]
     fn occupied(self: Occupier) -> bool {
         self.entity != OccupiedBy::None

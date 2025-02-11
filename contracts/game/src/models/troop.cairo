@@ -65,10 +65,10 @@ enum GuardSlot {
 #[generate_trait]
 pub impl GuardImpl of GuardTrait {
 
-    fn next_attack_slot(ref self: GuardTroops, max_allowed_guards: felt252 ) -> Option<GuardSlot> {
-        // Check slots from highest to lowest based on max_allowed_guards
-        match max_allowed_guards {
-            0 => panic!("max_allowed_guards must be greater than 0"),
+    fn next_attack_slot(ref self: GuardTroops, max_guards_allowed: felt252 ) -> Option<GuardSlot> {
+        // Check slots from highest to lowest based on max_guards_allowed
+        match max_guards_allowed {
+            0 => panic!("max_guards_allowed must be greater than 0"),
             1 => {
                 if self.delta.count.is_zero() {
                     Option::None
@@ -110,7 +110,7 @@ pub impl GuardImpl of GuardTrait {
                     Option::Some(GuardSlot::Alpha)
                 }
             },
-            _ => panic!("max_allowed_guards must be between 1 and 4")
+            _ => panic!("max_guards_allowed must be between 1 and 4")
         }
     }
 

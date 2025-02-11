@@ -5,7 +5,10 @@ use s1_eternum::alias::ID;
 use s1_eternum::models::troop::{TroopType, TroopTier, GuardSlot, Troops, ExplorerTroops, TroopsImpl, GuardTroops, GuardImpl};
 use s1_eternum::models::config::{TroopConfig, CombatConfig, VRFConfigImpl, MapConfig};
 use s1_eternum::models::weight::{W3eight, W3eightImpl};
-use s1_eternum::models::resource::r3esource::{SingleR33esource, SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightStoreImpl, WeightUnitImpl};
+use s1_eternum::models::resource::r3esource::{
+    SingleR33esource, SingleR33esourceStoreImpl, SingleR33esourceImpl, 
+    R3esource, R3esourceImpl,
+    WeightStoreImpl, WeightUnitImpl};
 use s1_eternum::models::structure::Structure;
 use s1_eternum::models::stamina::{Stamina, StaminaImpl};
 
@@ -14,6 +17,9 @@ use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
 use s1_eternum::constants::split_resources_and_probs;
+
+use s1_eternum::models::position::{Occupier, OccupierImpl};
+
 
 #[generate_trait]
 pub impl iExplorerImpl of iExplorerTrait {
@@ -101,6 +107,24 @@ pub impl iExplorerImpl of iExplorerTrait {
         troop_weight.store(ref world, explorer_id);
     }
 
+
+
+    fn explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
+
+        // ensure army is dead
+        assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
+
+        let occupier: Occupier = OccupierImpl::key_only(explorer.coord);
+        let resource: R3esource = R3esourceImpl::key_only(explorer.explorer_id);
+
+        // delete explorer
+        world.erase_model(@occupier);
+        world.erase_model(@explorer);
+        world.erase_model(@resource);
+
+        // todo: IMPORTANT: check the cost of erasing the resource model
+
+    }
 
     fn exploration_reward(ref world: WorldStorage, config: MapConfig) -> (u8, u128) {
         let (resource_types, resources_probs) = split_resources_and_probs();

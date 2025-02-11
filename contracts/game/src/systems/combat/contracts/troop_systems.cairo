@@ -360,21 +360,9 @@ mod troop_systems {
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
             explorer.owner.assert_caller_owner(world);
 
-            // ensure army is dead
-            assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
-
-            let occupier: Occupier = world.read_model((explorer.coord.x, explorer.coord.y));
-            let resource: R3esource = R3esourceImpl::key_only(explorer_id);
-
-            // todo: IMPORTANT: check the cost of erasing the resource model
-    
             // delete explorer
-            world.erase_model(@occupier);
-            world.erase_model(@explorer);
-            world.erase_model(@resource);
-
+            iExplorerImpl::explorer_delete(ref world, ref explorer);
         }
-
     }
 }
 

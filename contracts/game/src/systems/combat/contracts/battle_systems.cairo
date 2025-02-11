@@ -1,214 +1,172 @@
-// use achievement::store::{Store, StoreTrait};
-// use dojo::event::EventStorage;
-// use dojo::model::ModelStorage;
-// use dojo::world::WorldStorage;
-// use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-// use s1_eternum::alias::ID;
-// use s1_eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
+use achievement::store::{Store, StoreTrait};
+use dojo::event::EventStorage;
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use s1_eternum::alias::ID;
+use s1_eternum::models::position::{Direction};
 
 
-// use s1_eternum::models::movable::{Movable, MovableTrait};
-// use s1_eternum::models::quantity::{Quantity};
-// use s1_eternum::models::{
-//     combat::{
-//         Army, ArmyTrait, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, BattleImpl, BattleTrait, Protector,
-//         Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
-//     },
-// };
-// use s1_eternum::models::{combat::{Troops, Battle, BattleSide}};
-// use s1_eternum::utils::tasks::index::{Task, TaskTrait};
+#[starknet::interface]
+trait IBattleSystems<T> {
+    fn attack_explorer_vs_explorer(ref self: T, aggressor_id: ID, defender_id: ID, defender_direction: Direction);
+    fn attack_explorer_vs_guard(ref self: T, explorer_id: ID, structure_id: ID, structure_direction: Direction);
+}
 
 
-// #[starknet::interface]
-// trait IBattleSystems<T> {
-//     fn attack_explorer_vs_explorer(ref self: T, aggressor_id: ID, defender_id: ID, defender_direction: Direction);
-//     fn attack_explorer_vs_guard(ref self: T, explorer_id: ID, structure_id: ID, structure_direction: Direction);
-//     fn attack_guard_vs_explorer(ref self: T, structure_id: ID, explorer_id: ID, explorer_direction: Direction);
-// }
+#[dojo::contract]
+mod battle_systems {
+    use achievement::store::{Store, StoreTrait};
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
 
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use s1_eternum::alias::ID;
+    use s1_eternum::systems::utils::{
+        troop::{iExplorerImpl, iTroopImpl}
+    };
+    use s1_eternum::models::troop::{Troops, TroopsImpl, TroopsTrait, ExplorerTroops, GuardTroops, GuardSlot, GuardImpl};
+    use s1_eternum::models::config::{CombatConfig};
+    use s1_eternum::models::position::{Direction, Coord, CoordTrait};
+    use s1_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
+    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use s1_eternum::utils::map::biomes::{Biome, get_biome};
+    use s1_eternum::models::config::TickImpl;
+    use s1_eternum::models::owner::{OwnerTrait, EntityOwnerTrait};
+    
 
-// #[dojo::contract]
-// mod battle_systems {
-//     use achievement::store::{Store, StoreTrait};
-//     use dojo::event::EventStorage;
-//     use dojo::model::ModelStorage;
+    #[abi(embed_v0)]
+    impl BattleSystemsImpl of super::IBattleSystems<ContractState> {
+        fn attack_explorer_vs_explorer(
+            ref self: ContractState, 
+            aggressor_id: ID, 
+            defender_id: ID, 
+            defender_direction: Direction
+        ) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
 
-//     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-//     use s1_eternum::alias::ID;
+            // ensure caller owns aggressor
+            let mut explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
+            explorer_aggressor.owner.assert_caller_owner(world);
 
+            // ensure aggressor has troops
+            assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
 
+            // ensure defender has troops
+            let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
+            assert!(explorer_defender.troops.count.is_non_zero(), "defender has no troops");
 
-//     #[generate_trait]
-//     impl InternalBattleImpl of InternalBattleTrait {
-//         fn attack(ref self: ContractState, A: Troops, B: Troops) {}
-//         fn delete_dead(ref self: ContractState, explorer_id: ID) {}
-//     }
+            // ensure both explorers are adjacent to each other
+            assert!(
+                explorer_aggressor.coord.neighbor(defender_direction) == explorer_defender.coord, 
+                    "explorers are not adjacent"
+            );
 
-//     #[abi(embed_v0)]
-//     impl BattleSystemsImpl of IBattleSystems<ContractState> {
-//         fn attack_explorer_vs_explorer(
-//             ref self: ContractState, 
-//             aggressor_id: ID, 
-//             defender_id: ID, 
-//             defender_direction: Direction
-//         ) {
-//             let mut world = self.world(DEFAULT_NS());
-//             SeasonImpl::assert_season_is_not_over(world);
+            // ensure both explorers have troops
+            assert!(explorer_defender.troops.count.is_zero(), "defender has troops");
 
-//             // ensure caller owns aggressor
-//             let explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
-//             assert!(explorer_aggressor.owner.is_caller_owner(world), "caller does not own aggressor");
-
-//             // ensure aggressor has troops
-//             assert!(explorer_aggressor.troops.health.is_non_zero(), "aggressor has no troops");
-
-//             // ensure defender has troops
-//             let explorer_defender: ExplorerTroops = world.read_model(defender_id);
-//             assert!(explorer_defender.troops.health.is_non_zero(), "defender has no troops");
-
-//             // ensure both explorers are adjacent to each other
-//             assert!(
-//                 explorer_aggressor.coord.neighbour(defender_direction) == explorer_defender.coord, 
-//                     "explorers are not adjacent"
-//             );
-
-//             // ensure both explorers have troops
-//             assert!(explorer_defender.troops.health.is_zero(), "defender has troops");
-
-//             // aggressor attacks defender
-//             let explorer_aggressor_troops: Troops = explorer_aggressor.troops;
-//             let explorer_defender_troops: Troops = explorer_defender.troops;
-//             explorer_aggressor_troops.attack(explorer_defender_troops);
-
-//             // update both explorers
-//             explorer_aggressor.troops = explorer_aggressor_troops;
-//             explorer_defender.troops = explorer_defender_troops;
-//             world.write_model(@explorer_aggressor);
-//             world.write_model(@explorer_defender);
-
-//             // todo: delete explorer if either dies or both die..ie delete troop and occupied
-//         }
-
-
-//         fn attack_explorer_vs_guard(
-//             ref self: ContractState, 
-//             explorer_id: ID, 
-//             structure_id: ID, 
-//             structure_direction: Direction
-//         ) {
-//             let mut world = self.world(DEFAULT_NS());
-//             SeasonImpl::assert_season_is_not_over(world);
-
-//             // ensure caller owns aggressor
-//             let explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
-//             assert!(explorer_aggressor.owner.is_caller_owner(world), "caller does not own aggressor");
-
-//             // ensure aggressor has troops
-//             assert!(explorer_aggressor.troops.health.is_non_zero(), "aggressor has no troops");
-
-//             // ensure structure guard has troops (?? what layer)
-//             let guard_defender: GuardTroops = world.read_model(structure_id);
-//             let guard_troops: Troops = guard_defender.get_current_slot();
-//             assert!(guard_troops.health.is_non_zero(), "defender has no troops");
-
-//             // ensure explorer is adjacent to structure
-//             let guarded_structure: Structure = world.read_model(structure_id);
-//             assert!(
-//                 explorer_aggressor.coord.neighbour(structure_direction) == guarded_structure.coord, 
-//                     "explorer is not adjacent to structure"
-//             );
-
-
-//             // aggressor attacks defender
-//             let explorer_aggressor_troops: Troops = explorer_aggressor.troops;
-//             explorer_aggressor_troops.attack(guard_troops);
-
-//             // update explorer
-//             explorer_aggressor.troops = explorer_aggressor_troops;
-//             world.write_model(@explorer_aggressor);
-
-//             guard_defender.set_current_slot(guard_troops);
-//             // if slot is defeated, update defeated_at and defeated_slot
-
-//             world.write_model(@explorer_defender);
-
-
-//             // todo: emit full event
-//             // todo: claim if defeated
+            // aggressor attacks defender
+            let config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let tick = TickImpl::retrieve(ref world);
+            let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
+            let mut explorer_defender_troops: Troops = explorer_defender.troops;
+            let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+            explorer_aggressor_troops.attack(
+                ref explorer_defender_troops, 
+                defender_biome, 
+                config, 
+                tick.current()
+            );
             
-//             // // [Achievement] Claim either a realm, bank or fragment mine
-//             // match structure.category {
-//             //     StructureCategory::Realm => {
-//             //         let player_id: felt252 = claimer.into();
-//             //         let task_id: felt252 = Task::Conqueror.identifier();
-//             //         let mut store = StoreTrait::new(world);
-//             //         store.progress(player_id, task_id, 1, starknet::get_block_timestamp());
-//             //     },
-//             //     StructureCategory::Bank => {
-//             //         let player_id: felt252 = claimer.into();
-//             //         let task_id: felt252 = Task::Ruler.identifier();
-//             //         let mut store = StoreTrait::new(world);
-//             //         store.progress(player_id, task_id, 1, starknet::get_block_timestamp());
-//             //     },
-//             //     StructureCategory::FragmentMine => {
-//             //         let player_id: felt252 = claimer.into();
-//             //         let task_id: felt252 = Task::Claimer.identifier();
-//             //         let mut store = StoreTrait::new(world);
-//             //         store.progress(player_id, task_id, 1, starknet::get_block_timestamp());
-//             //     },
-//             //     _ => {},
-//             // }
+            // update both explorers
+            explorer_aggressor.troops = explorer_aggressor_troops;
+            explorer_defender.troops = explorer_defender_troops;
+
+            // save or delete explorer
+            if explorer_aggressor_troops.count.is_zero() {
+                iExplorerImpl::explorer_delete(ref world, ref explorer_aggressor);
+            } else {
+                world.write_model(@explorer_aggressor);
+            }
+
+            if explorer_defender_troops.count.is_zero() {
+                iExplorerImpl::explorer_delete(ref world, ref explorer_defender);
+            } else {
+                world.write_model(@explorer_defender);
+            }
+        }
 
 
-//             // todo: delete explorer if either dies or both die..ie delete troop and occupied
+        fn attack_explorer_vs_guard(
+            ref self: ContractState, 
+            explorer_id: ID, 
+            structure_id: ID, 
+            structure_direction: Direction
+        ) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
 
-//         }
+            // ensure caller owns aggressor
+            let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
+            explorer_aggressor.owner.assert_caller_owner(world);
 
+            // ensure aggressor has troops
+            assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
 
-//         fn attack_guard_vs_explorer(
-//             ref self: ContractState, 
-//             structure_id: ID, 
-//             explorer_id: ID, 
-//             explorer_direction: Direction
-//         ) {
-//             let mut world = self.world(DEFAULT_NS());
-//             SeasonImpl::assert_season_is_not_over(world);
+            // ensure structure guard has troops (?? what layer)
+            let mut guarded_structure: Structure = world.read_model(structure_id);
+            assert!(guarded_structure.category != StructureCategory::None, "defender is not a structure");
 
-//             // ensure caller owns aggressor
-//             let guard_aggressor: GuardTroops = world.read_model(structure_id);
-//             assert!(guard_aggressor.owner.is_caller_owner(world), "caller does not own aggressor");
+            // get guard troops
+            let mut guard_defender: GuardTroops = guarded_structure.guards;
+            let guard_slot: Option<GuardSlot> 
+                = guard_defender.next_attack_slot(guarded_structure.troop.max_guards_allowed.into());
+            if guard_slot.is_none() {panic!("defender has no troops");}
+            let guard_slot: GuardSlot = guard_slot.unwrap();
 
-//             // ensure aggressor has troops
-//             assert!(guard_aggressor.troops.health.is_non_zero(), "aggressor has no troops");
+            // get guard troops
+            let (mut guard_troops, mut guard_destroyed_tick): (Troops, u32) = guard_defender.from_slot(guard_slot);
+            assert!(guard_troops.count.is_non_zero(), "defender has no troops");
 
-//             // ensure structure guard has troops (?? what layer)
-//             let explorer_defender: ExplorerTroops = world.read_model(explorer_id);
-//             assert!(explorer_defender.troops.health.is_non_zero(), "defender has no troops");
-
-//             // ensure explorer is adjacent to structure
-//             let guarded_structure: Structure = world.read_model(structure_id);
-//             assert!(
-//                 explorer_defender.coord.neighbour(explorer_direction) == guarded_structure.coord, 
-//                 "explorer is not adjacent to structure"
-//             );
-
-
-//             // aggressor attacks defender
-//             let mut guard_aggressor_troops: Troops = guard_aggressor.get_current_slot();
-//             guard_aggressor_troops.attack(explorer_defender.troops);
-
-//             // update guard
-//             guard_aggressor.set_current_slot(guard_aggressor_troops);
-//             // if slot is defeated, update defeated_at and defeated_slot
-//             world.write_model(@guard_aggressor);
+            // ensure explorer is adjacent to structure
+            assert!(
+                explorer_aggressor.coord.neighbor(structure_direction) == guarded_structure.coord, 
+                    "explorer is not adjacent to structure"
+            );
 
 
-//             // update explorer
-//             explorer_defender.troops = explorer_defender_troops;
-//             world.write_model(@explorer_defender);
+            // aggressor attacks defender
+            let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
+            let defender_biome: Biome = get_biome(guarded_structure.coord.x.into(), guarded_structure.coord.y.into());
+            let config: CombatConfig = world.read_model(WORLD_CONFIG_ID);
+            let tick = TickImpl::retrieve(ref world);
+            explorer_aggressor_troops.attack(
+                ref guard_troops, 
+                defender_biome, 
+                config, 
+                tick.current()
+            );
 
-//             // todo: delete explorer if either dies or both die
+   
+            // if slot is defeated, update defeated_at and defeated_slot
+            if guard_troops.count.is_zero() {
+                guard_destroyed_tick = tick.current().try_into().unwrap();
+            }
 
-//         }
-//     }
-// }
+            // update guard
+            guard_defender.to_slot(guard_slot, guard_troops, guard_destroyed_tick.try_into().unwrap());
+            world.write_model(@guarded_structure);
+
+
+            // update explorer
+            explorer_aggressor.troops = explorer_aggressor_troops;
+            if explorer_aggressor_troops.count.is_zero() {
+                iExplorerImpl::explorer_delete(ref world, ref explorer_aggressor);
+            } else {
+                world.write_model(@explorer_aggressor);
+            }
+        }
+    }
+}
