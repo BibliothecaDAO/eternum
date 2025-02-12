@@ -1,8 +1,8 @@
 import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ChatInput } from "./chat-input";
 
 interface Message {
   id: string;
@@ -85,26 +85,7 @@ export function DMChat({ user, onBack, onMentionClick }: DMChatProps) {
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t flex gap-2 fixed bottom-16 w-full bg-background">
-          <Button variant="outline" size="icon" className="shrink-0" onClick={onMentionClick}>
-            @
-          </Button>
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="Type a message..."
-            className="flex-1"
-          />
-          <Button onClick={handleSend} className="shrink-0">
-            Send
-          </Button>
-        </div>
+        <ChatInput value={inputValue} onChange={setInputValue} onSend={handleSend} onMentionClick={onMentionClick} />
       </div>
     </>
   );
