@@ -165,14 +165,6 @@ export class ArmyMovementManager {
     currentArmiesTick: number,
   ): TravelPaths {
     const troopType = this._getTroopType();
-
-    console.log("[findPaths] Finding paths with:", {
-      troopType,
-      armyStamina,
-      currentDefaultTick,
-      currentArmiesTick,
-    });
-
     const startPos = this._getCurrentPosition();
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
@@ -183,101 +175,78 @@ export class ArmyMovementManager {
       canExplore,
     });
 
-    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexTileInfo[] }> =
-      [
-        {
-          position: startPos,
-          staminaUsed: 0,
-          distance: 0,
-          path: [{ col: startPos.col, row: startPos.row, biomeType: BiomeType.Grassland, staminaCost: 0 }],
-        },
-      ];
+    const startBiome = Biome.getBiome(startPos.col, startPos.row);
+
     const travelPaths = new TravelPaths();
     const lowestStaminaUse = new Map<string, number>();
+    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexTileInfo[] }> =
+      [];
+
+    // Process initial neighbors instead of start position
+    const neighbors = getNeighborHexes(startPos.col, startPos.row);
+    for (const { col, row } of neighbors) {
+      const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+
+      if (hasArmy || hasStructure) continue;
+      if (!isExplored && !canExplore) continue;
+
+      const EXPLORATION_STAMINA_COST = configManager.getExploreStaminaCost();
+      const staminaCost = biome ? ArmyMovementManager.staminaDrain(biome, troopType) : EXPLORATION_STAMINA_COST;
+
+      if (staminaCost > armyStamina) continue;
+
+      priorityQueue.push({
+        position: { col, row },
+        staminaUsed: staminaCost,
+        distance: 1,
+        path: [
+          { col: startPos.col, row: startPos.row, biomeType: startBiome, staminaCost: 0 },
+          { col, row, biomeType: biome, staminaCost },
+        ],
+      });
+    }
 
     while (priorityQueue.length > 0) {
       priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed);
       const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
       const currentKey = TravelPaths.posKey(current);
 
-      console.log("[findPaths] Processing position:", {
-        current,
-        staminaUsed,
-        distance,
-        pathLength: path.length,
-      });
-
       if (!lowestStaminaUse.has(currentKey) || staminaUsed < lowestStaminaUse.get(currentKey)!) {
         lowestStaminaUse.set(currentKey, staminaUsed);
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-        if (path.length >= 2) {
-          travelPaths.set(currentKey, { path, isExplored });
-        }
+        travelPaths.set(currentKey, { path, isExplored });
 
-        // Skip army and explored checks for start position
-        if (path.length > 1) {
-          if (!isExplored) continue;
-
-          const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-          const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-          console.log("[findPaths] Checking position:", {
-            col: current.col,
-            row: current.row,
-            isExplored,
-            hasArmy,
-            hasStructure,
-          });
-
-          if (hasArmy || hasStructure) continue;
-        }
+        if (!isExplored) continue;
 
         const neighbors = getNeighborHexes(current.col, current.row);
         for (const { col, row } of neighbors) {
           const neighborKey = TravelPaths.posKey({ col, row });
           const nextDistance = distance + 1;
 
+          if (nextDistance > maxHex) continue;
+
           const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
 
-          const EXPLORATION_STAMINA_COST = configManager.getExploreStaminaCost();
-          const staminaCost = biome ? ArmyMovementManager.staminaDrain(biome, troopType) : EXPLORATION_STAMINA_COST;
+          if (!isExplored || hasArmy || hasStructure) continue;
+
+          const staminaCost = ArmyMovementManager.staminaDrain(biome!, troopType);
           const nextStaminaUsed = staminaUsed + staminaCost;
-          const nextPath = [...path, { col, row, biomeType: biome, staminaCost: staminaCost }];
 
-          console.log("[findPaths] Evaluating neighbor:", {
-            col,
-            row,
-            hasStructure,
-            hasArmy,
-            isExplored,
-            biome,
-            staminaCost,
-            nextStaminaUsed,
-          });
-
-          // if (!biome) continue;
           if (nextStaminaUsed > armyStamina) continue;
-          if (hasStructure) continue;
-          if (hasArmy) continue;
 
-          if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
-            if (!lowestStaminaUse.has(neighborKey) || nextStaminaUsed < lowestStaminaUse.get(neighborKey)!) {
-              console.log("[findPaths] Adding to priority queue:", {
-                col,
-                row,
-                nextDistance,
-                nextStaminaUsed,
-              });
-
-              priorityQueue.push({
-                position: { col, row },
-                staminaUsed: nextStaminaUsed,
-                distance: nextDistance,
-                path: nextPath,
-              });
-            }
+          if (!lowestStaminaUse.has(neighborKey) || nextStaminaUsed < lowestStaminaUse.get(neighborKey)!) {
+            priorityQueue.push({
+              position: { col, row },
+              staminaUsed: nextStaminaUsed,
+              distance: nextDistance,
+              path: [...path, { col, row, biomeType: biome, staminaCost }],
+            });
           }
         }
       }

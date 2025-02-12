@@ -26,17 +26,11 @@ export const StaminaResourceCost = ({
       return acc + tile.staminaCost;
     }, 0);
 
-    const biomeInfo = path.map((tile) => ({
-      biomeType: tile.biomeType,
-      cost: isExplored ? -tile.staminaCost : -configManager.getExploreStaminaCost() * tile.staminaCost,
-    }));
-
     const balanceColor = stamina.amount < totalCost ? "text-order-giants" : "text-order-brilliance";
 
     return {
       isExplored,
-      totalCost: isExplored ? -totalCost : -configManager.getExploreStaminaCost(),
-      biomeInfo,
+      totalCost,
       balanceColor,
       balance: stamina.amount,
     };
@@ -48,15 +42,19 @@ export const StaminaResourceCost = ({
         <div className="text-lg p-1 pr-3">⚡️</div>
         <div className="flex flex-col">
           <div>
-            {pathInfo.totalCost}{" "}
+            {pathInfo.isExplored ? pathInfo.totalCost : configManager.getExploreStaminaCost()}{" "}
             <span className={clsx(pathInfo.balanceColor, "font-normal")}>({pathInfo.balance})</span>
           </div>
           <div className="text-xs opacity-75">
-            {pathInfo.biomeInfo.map((biome, index) => (
-              <div key={index}>
-                {biome.biomeType}: {biome.cost}
-              </div>
-            ))}
+            {pathInfo.isExplored ? (
+              path.map((tile, index) => (
+                <div key={index}>
+                  {tile.biomeType}: {tile.staminaCost}
+                </div>
+              ))
+            ) : (
+              <div>Exploration</div>
+            )}
           </div>
         </div>
       </div>
