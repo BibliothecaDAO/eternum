@@ -57,9 +57,10 @@ mod hyperstructure_systems {
         },
         models::{
             config::{
-                CapacityCategory, HyperstructureConfig, HyperstructureResourceConfig, HyperstructureResourceConfigTrait,
+                HyperstructureConfig, HyperstructureResourceConfig, HyperstructureResourceConfigTrait,
                 WorldConfigUtilImpl,
             },
+            map::Tile,
             guild::{GuildMember},
             hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
             name::{AddressName}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
@@ -67,7 +68,7 @@ mod hyperstructure_systems {
             resource::resource::{Resource, ResourceCost, ResourceImpl}, season::{Leaderboard},
             structure::{Structure, StructureCategory, StructureImpl}, weight::{Weight},
         },
-        systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
+        
     };
 
     use starknet::{ContractAddress, contract_address_const};
@@ -139,7 +140,8 @@ mod hyperstructure_systems {
             let creator_owner: Owner = world.read_model(creator_entity_id);
             creator_owner.assert_caller_owner();
 
-            InternalTravelSystemsImpl::assert_tile_explored(world, coord);
+            let mut tile: Tile = world.read_model((coord.x, coord.y));
+            assert!(tile.explored_at != 0, "tile not explored");
 
             // assert no structure is already built on the coords
             let occupier: Occupier = world.read_model(coord);
@@ -184,8 +186,6 @@ mod hyperstructure_systems {
                     },
                 );
 
-            world
-                .write_model(@Weight { entity_id: new_uuid, value: 0, capacity_category: CapacityCategory::Structure });
             world
                 .write_model(
                     @Progress {

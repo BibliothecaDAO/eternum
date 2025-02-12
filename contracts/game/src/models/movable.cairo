@@ -21,13 +21,9 @@ pub struct Movable {
 
 #[generate_trait]
 impl MovableImpl of MovableTrait {
-    fn sec_per_km(ref world: WorldStorage, entity_type: ID) -> u16 {
+    fn sec_per_km(ref world: WorldStorage) -> u16 {
         let speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, selector!("speed_config"));
-        if (entity_type == DONKEY_ENTITY_TYPE) {
-            speed_config.donkey_sec_per_km
-        } else {
-            speed_config.army_sec_per_km
-        }
+        speed_config.donkey_sec_per_km
     }
     fn assert_moveable(self: Movable) {
         assert!(!self.blocked, "Entity is blocked");

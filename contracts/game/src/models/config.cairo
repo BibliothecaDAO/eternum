@@ -52,6 +52,7 @@ pub struct WorldConfig {
     troop_damage_config: TroopDamageConfig,
     troop_stamina_config: TroopStaminaConfig,
     troop_limit_config: TroopLimitConfig,
+    capacity_config: CapacityConfig,
 }
 
 #[generate_trait]
@@ -111,72 +112,16 @@ pub struct HyperstructureConfig {
     time_between_shares_change: u64,
 }
 
-// capacity
-#[derive(PartialEq, Copy, Drop, Serde, Default, IntrospectPacked)]
-pub enum CapacityCategory {
-    #[default]
-    None,
-    Structure,
-    Donkey,
-    Army,
-    Storehouse,
-}
 
-pub impl CapacityConfigCategoryIntoFelt252 of Into<CapacityCategory, felt252> {
-    fn into(self: CapacityCategory) -> felt252 {
-        match self {
-            CapacityCategory::None => 0,
-            CapacityCategory::Structure => 1,
-            CapacityCategory::Donkey => 2,
-            CapacityCategory::Army => 3,
-            CapacityCategory::Storehouse => 4,
-        }
-    }
-}
 
-#[derive(Copy, Drop, Serde)]
-#[dojo::model]
+#[derive(Copy, Drop, Serde, IntrospectPacked)]
 pub struct CapacityConfig {
-    #[key]
-    category: CapacityCategory,
-    weight_gram: u128,
+    structure_capacity: u32, // grams
+    troop_capacity: u32, // grams
+    donkey_capacity: u32, // grams
+    storehouse_boost_capacity: u32, // grams
 }
 
-
-#[generate_trait]
-pub impl CapacityConfigImpl of CapacityConfigTrait {
-    fn get(ref world: WorldStorage, category: CapacityCategory) -> CapacityConfig {
-        world.read_model(category)
-    }
-
-    fn get_from_entity(ref world: WorldStorage, entity_id: ID) -> CapacityConfig {
-        let capacity_category = WeightImpl::assert_capacity_exists_and_get(ref world, entity_id);
-        return world.read_model(capacity_category);
-    }
-
-    fn assert_can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) {
-        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id);
-    }
-
-    fn can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) -> bool {
-        let quantity_value = if quantity.value == 0 {
-            1
-        } else {
-            quantity.value
-        };
-        if self.is_capped() {
-            let entity_total_weight_capacity = self.weight_gram * (quantity_value / RESOURCE_PRECISION);
-            if entity_total_weight_capacity < weight.value {
-                return false;
-            };
-        };
-        return true;
-    }
-
-    fn is_capped(self: CapacityConfig) -> bool {
-        self.weight_gram != BoundedU128::max()
-    }
-}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 struct StaminaCostConfig {
@@ -188,7 +133,6 @@ struct StaminaCostConfig {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct SpeedConfig {
     donkey_sec_per_km: u16,
-    army_sec_per_km: u16,
 }
 
 

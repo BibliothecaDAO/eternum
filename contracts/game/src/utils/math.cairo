@@ -1,5 +1,6 @@
 use alexandria_math::U256BitShift;
 use alexandria_math::U32BitShift;
+use alexandria_math::U64BitShift;
 
 // Raise a number to a power.
 /// * `base` - The number to raise.
@@ -66,6 +67,25 @@ pub fn set_u32_bit(number: u32, position: u8, value: bool) -> u32 {
     return (number & ~mask) | ((U32BitShift::shl(value, position.into())) & mask);
 }
 
+///////// U64 Bit Manipulation /////////
+/// Check whether a bit is set in a u64 number
+pub fn is_u64_bit_set(number: u64, position: u8) -> bool {
+    if (number & U64BitShift::shl(1, position.into())) > 0 {
+        return true;
+    }
+    return false;
+}
+
+/// Set a bit to a value in a u64 number
+pub fn set_u64_bit(number: u64, position: u8, value: bool) -> u64 {
+    let value = if (value == true) {
+        1
+    } else {
+        0
+    };
+    let mask = U64BitShift::shl(1, position.into());
+    return (number & ~mask) | ((U64BitShift::shl(value, position.into())) & mask);
+}
 
 ///////// U256 Bit Manipulation /////////
 

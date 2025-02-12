@@ -18,11 +18,7 @@ pub mod resources {
     #[cfg(test)]
     mod tests;
 }
-pub mod transport {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
+
 pub mod name {
     pub mod contracts;
 }
@@ -74,4 +70,5 @@ pub mod utils {
     pub mod map;
     pub mod mine;
     pub mod troop;
+    pub mod donkey;
 }
