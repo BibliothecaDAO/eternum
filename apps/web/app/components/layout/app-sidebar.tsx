@@ -44,16 +44,17 @@ const data = {
     },
     {
       title: "World",
-      url: "#",
+      url: "/coming-soon",
+      isActive: false,
       icon: BookOpen,
       items: [
         {
           title: "Beasts",
-          url: "#",
+          url: "/coming-soon",
         },
         {
           title: "Banners",
-          url: "#",
+          url: "/coming-soon",
         },
       ],
     },
@@ -65,7 +66,7 @@ const data = {
       url: "/velords",
       icon: Banknote,
 
-      items: [
+      /* items: [
         {
           title: "Staking",
           url: "#",
@@ -78,21 +79,21 @@ const data = {
           title: "Statistics",
           url: "#",
         },
-      ],
+      ],*/
     },
     {
       title: "Claims",
-      url: "#",
+      url: "/realms/claims",
       icon: BookOpen,
       items: [
         {
           title: "Realms Emissions",
           url: "/realms/claims",
         },
-        {
+        /*{
           title: "Legacy Claims",
           url: "#",
-        },
+        },*/
       ],
     },
   ],
@@ -100,23 +101,23 @@ const data = {
   governance: [
     {
       title: "Delegation",
-      url: "#",
+      url: "/coming-soon",
       icon: Banknote,
 
       items: [
         {
           title: "Delegates List",
-          url: "#",
+          url: "/coming-soon",
         },
         {
           title: "Your Profile",
-          url: "#",
+          url: "/coming-soon",
         },
       ],
     },
     {
       title: "Proposals",
-      url: "#",
+      url: "/coming-soon",
       icon: BookOpen,
       items: [],
     },

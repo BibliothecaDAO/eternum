@@ -22,7 +22,7 @@ export const Route = createFileRoute("/velords/")({
 function RouteComponent() {
   const veLordsBurnsQuery = trpc.velordsBurns.useQuery({});
   const veLordsBurns = veLordsBurnsQuery.data ?? [];
-  const { data: totalSupply } = useReadContract({
+  const { data: totalSupply, error } = useReadContract({
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as Address,
     abi: VeLords,
     functionName: "total_supply",
@@ -37,6 +37,7 @@ function RouteComponent() {
             <p className="text-muted-foreground text-sm">
               Stake $LORDS in the Lordship Protocol
             </p>
+            {error && <p className="text-red-500">{error.message}</p>}
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-5">

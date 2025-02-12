@@ -4,7 +4,7 @@ import React, { useCallback } from "react";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import ControllerConnector from "@cartridge/connector/controller";
 import { getStarknet } from "@starknet-io/get-starknet-core";
-import { mainnet, sepolia } from "@starknet-react/chains";
+import { Chain, mainnet, sepolia } from "@starknet-react/chains";
 import {
   argent,
   braavos,
@@ -92,15 +92,25 @@ export function StarknetProvider({
     // Randomize the order of the connectors.
     order: "random",
   });
-  const rpc = useCallback(() => {
-    return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
-  }, []);
-  const chain = env.VITE_PUBLIC_CHAIN === "mainnet" ? mainnet : sepolia;
+  // Configure RPC provider
+  const provider = jsonRpcProvider({
+    rpc: (chain: Chain) => {
+      switch (chain) {
+        case mainnet:
+          return { nodeUrl: "https://api.cartridge.gg/x/starknet/mainnet" };
+        case sepolia:
+        default:
+          return { nodeUrl: "https://api.cartridge.gg/x/starknet/sepolia" };
+      }
+    },
+  });
 
+  const chain = env.VITE_PUBLIC_CHAIN === "mainnet" ? mainnet : sepolia;
+  console.log(chain);
   return (
     <StarknetConfig
       chains={[chain]}
-      provider={jsonRpcProvider({ rpc })}
+      provider={provider}
       connectors={[
         cartridgeController,
         ...(onlyCartridge ? [] : [...connectors]),
