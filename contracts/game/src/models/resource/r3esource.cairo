@@ -9,6 +9,7 @@ use s1_eternum::constants::{ResourceTypes, resource_type_name};
 use s1_eternum::models::config::W3eightConfig;
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::weight::{W3eight, W3eightImpl};
+
 #[derive(Copy, Drop, Serde)]
 pub struct SingleR33esource {
     entity_id: ID,

@@ -64,11 +64,7 @@ pub struct W3eight {
 
 impl WeightZeroableImpl of Zeroable<W3eight> {
     fn zero() -> W3eight {
-        W3eight {
-            capacity: 0,
-            weight: 0,
-            category: CapacityCategory::None,
-        }
+        W3eight { capacity: 0, weight: 0, category: CapacityCategory::None }
     }
 
     fn is_non_zero(self: W3eight) -> bool {

@@ -25,10 +25,8 @@ mod dev_bank_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::bank::bank::{Bank};
-    use s1_eternum::models::weight::Weight;
     use s1_eternum::models::config::{
-        TickConfig, BankConfig, CombatConfigImpl, TroopLimitConfig, TroopStaminaConfig, TickImpl,
-        CapacityCategory,
+        BankConfig, CapacityCategory, CombatConfigImpl, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig,
     };
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::name::AddressName;
@@ -37,6 +35,7 @@ mod dev_bank_systems {
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
     use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
+    use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use s1_eternum::systems::utils::map::iMapImpl;
 
@@ -74,32 +73,21 @@ mod dev_bank_systems {
 
             // save bank structure
             let owner: Owner = Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin };
-            let structure: Structure = StructureImpl::new(
-                ADMIN_BANK_ENTITY_ID, StructureCategory::Bank, coord, owner,
-            );
+            let structure: Structure = StructureImpl::new(ADMIN_BANK_ENTITY_ID, StructureCategory::Bank, coord, owner);
             world.write_model(@structure);
 
             // save occupier
             world
-                .write_model(
-                    @Occupier {
-                        x: coord.x, y: coord.y, entity: OccupiedBy::Structure(ADMIN_BANK_ENTITY_ID),
-                    },
-                );
+                .write_model(@Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(ADMIN_BANK_ENTITY_ID) });
 
             // save bank name
-            world
-                .write_model(
-                    @AddressName { address: ADMIN_BANK_ENTITY_ID.try_into().unwrap(), name },
-                );
+            world.write_model(@AddressName { address: ADMIN_BANK_ENTITY_ID.try_into().unwrap(), name });
 
             // save capacity
             world
                 .write_model(
                     @Weight {
-                        entity_id: ADMIN_BANK_ENTITY_ID,
-                        value: 0,
-                        capacity_category: CapacityCategory::Structure,
+                        entity_id: ADMIN_BANK_ENTITY_ID, value: 0, capacity_category: CapacityCategory::Structure,
                     },
                 );
 
@@ -116,12 +104,8 @@ mod dev_bank_systems {
                 );
 
             // add guards to structure
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             // slot must start from delta, to charlie, to beta, to alpha
             let slot_tiers = array![(GuardSlot::Delta, TroopTier::T3, TroopType::Paladin)].span();
             let tick = TickImpl::get_tick_config(ref world);

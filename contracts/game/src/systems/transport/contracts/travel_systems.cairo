@@ -97,12 +97,7 @@ mod travel_systems {
             assert(tile.explored_at != 0, 'tile not explored');
         }
 
-        fn travel_hex(
-            ref world: WorldStorage,
-            transport_id: ID,
-            from_coord: Coord,
-            mut directions: Span<Direction>,
-        ) {
+        fn travel_hex(ref world: WorldStorage, transport_id: ID, from_coord: Coord, mut directions: Span<Direction>) {
             // get destination coordinate
             let mut travel_path = array![from_coord];
             let mut to_coord = from_coord;
@@ -150,25 +145,19 @@ mod travel_systems {
 
 
         fn travel(
-            ref world: WorldStorage,
-            transport_id: ID,
-            transport_movable: Movable,
-            from_coord: Coord,
-            to_coord: Coord,
+            ref world: WorldStorage, transport_id: ID, transport_movable: Movable, from_coord: Coord, to_coord: Coord,
         ) {
             // ensure destination tile is explored
             Self::assert_tile_explored(world, to_coord);
 
-            let mut travel_time = from_coord
-                .calculate_travel_time(to_coord, transport_movable.sec_per_km);
+            let mut travel_time = from_coord.calculate_travel_time(to_coord, transport_movable.sec_per_km);
 
             let current_position: Position = world.read_model(transport_id);
 
             world
                 .write_model(
                     @ArrivalTime {
-                        entity_id: transport_id,
-                        arrives_at: starknet::get_block_timestamp().into() + travel_time,
+                        entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() + travel_time,
                     },
                 );
             world.write_model(@Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y });

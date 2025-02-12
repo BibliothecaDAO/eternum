@@ -36,10 +36,7 @@ const STARTING_CROSSBOWMAN_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 
 fn set_configurations(ref world: WorldStorage) {
     world.write_model_test(@get_combat_config());
-    world
-        .write_model_test(
-            @TickConfig { config_id: WORLD_CONFIG_ID, tick_interval_in_seconds: 1 },
-        );
+    world.write_model_test(@TickConfig { config_id: WORLD_CONFIG_ID, tick_interval_in_seconds: 1 });
     world.write_model_test(@CapacityConfig { category: CapacityCategory::Army, weight_gram: 300_000 });
 }
 

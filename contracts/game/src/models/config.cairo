@@ -6,8 +6,8 @@ use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
-    BUILDING_CATEGORY_POPULATION_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, RESOURCE_PRECISION,
-    ResourceTiers, ResourceTypes, WORLD_CONFIG_ID, split_resources_and_probs,
+    BUILDING_CATEGORY_POPULATION_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, RESOURCE_PRECISION, ResourceTiers, ResourceTypes,
+    WORLD_CONFIG_ID, split_resources_and_probs,
 };
 use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s1_eternum::models::position::{Coord};
@@ -59,9 +59,7 @@ impl WorldConfigUtilImpl of WorldConfigTrait {
     fn get_member<T, impl TSerde: Serde<T>>(world: WorldStorage, selector: felt252) -> T {
         world.read_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector)
     }
-    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
-        ref world: WorldStorage, selector: felt252, value: T,
-    ) {
+    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(ref world: WorldStorage, selector: felt252, value: T) {
         world.write_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)
     }
 }
@@ -157,9 +155,7 @@ pub impl CapacityConfigImpl of CapacityConfigTrait {
     }
 
     fn assert_can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) {
-        assert!(
-            self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id,
-        );
+        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id);
     }
 
     fn can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) -> bool {
@@ -169,8 +165,7 @@ pub impl CapacityConfigImpl of CapacityConfigTrait {
             quantity.value
         };
         if self.is_capped() {
-            let entity_total_weight_capacity = self.weight_gram
-                * (quantity_value / RESOURCE_PRECISION);
+            let entity_total_weight_capacity = self.weight_gram * (quantity_value / RESOURCE_PRECISION);
             if entity_total_weight_capacity < weight.value {
                 return false;
             };
@@ -240,9 +235,7 @@ impl SettlementConfigImpl of SettlementConfigTrait {
             / FixedTrait::new_unscaled(points_on_side.into() + 1, false)
     }
 
-    fn get_side_coords(
-        ref self: SettlementConfig, side: u32, distance_from_center: u32,
-    ) -> (Fixed, Fixed) {
+    fn get_side_coords(ref self: SettlementConfig, side: u32, distance_from_center: u32) -> (Fixed, Fixed) {
         let side_fixed = FixedTrait::new_unscaled(side.into(), false);
         let angle_fixed = side_fixed * fc::PI() / FixedTrait::new_unscaled(3, false);
 
@@ -260,15 +253,11 @@ impl SettlementConfigImpl of SettlementConfigTrait {
     fn get_next_settlement_coord(ref self: SettlementConfig) -> Coord {
         let distance_from_center = Self::get_distance_from_center(ref self);
 
-        let (start_x_fixed, start_y_fixed) = Self::get_side_coords(
-            ref self, self.current_side, distance_from_center,
-        );
+        let (start_x_fixed, start_y_fixed) = Self::get_side_coords(ref self, self.current_side, distance_from_center);
 
         let next_side = (self.current_side + 1) % 6;
 
-        let (end_x_fixed, end_y_fixed) = Self::get_side_coords(
-            ref self, next_side, distance_from_center,
-        );
+        let (end_x_fixed, end_y_fixed) = Self::get_side_coords(ref self, next_side, distance_from_center);
 
         let points_on_side = Self::get_points_on_side(ref self);
 
@@ -300,18 +289,14 @@ impl MapConfigImpl of MapConfigTrait {
     fn random_reward(ref world: WorldStorage) -> Span<(u8, u128)> {
         let (resource_types, resources_probs) = split_resources_and_probs();
 
-        let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
-            world, selector!("vrf_provider_address"),
-        );
+        let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(world, selector!("vrf_provider_address"));
         let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
         let reward_resource_id: u8 = *random::choices(
             resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
         )
             .at(0);
 
-        let explore_config: MapConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("map_config"),
-        );
+        let explore_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
         return array![(reward_resource_id, reward_resource_amount)].span();
     }
@@ -396,9 +381,7 @@ impl CombatConfigImpl of CombatConfigTrait {
 #[generate_trait]
 impl TickImpl of TickTrait {
     fn get_tick_config(ref world: WorldStorage) -> TickConfig {
-        let tick_config: TickConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("tick_config"),
-        );
+        let tick_config: TickConfig = WorldConfigUtilImpl::get_member(world, selector!("tick_config"));
         return tick_config;
     }
 
@@ -459,16 +442,12 @@ pub struct WeightConfig {
 #[generate_trait]
 pub impl WeightConfigImpl of WeightConfigTrait {
     fn get_weight_grams(ref world: WorldStorage, resource_type: u8, amount: u128) -> u128 {
-        let resource_weight_config: WeightConfig = world
-            .read_model((WORLD_CONFIG_ID, resource_type));
+        let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, resource_type));
         (resource_weight_config.weight_gram * amount) / RESOURCE_PRECISION
     }
 
-    fn get_weight_grams_with_precision(
-        ref world: WorldStorage, resource_type: u8, amount: u128,
-    ) -> u128 {
-        let resource_weight_config: WeightConfig = world
-            .read_model((WORLD_CONFIG_ID, resource_type));
+    fn get_weight_grams_with_precision(ref world: WorldStorage, resource_type: u8, amount: u128) -> u128 {
+        let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, resource_type));
         (resource_weight_config.weight_gram * amount)
     }
 }
@@ -598,9 +577,7 @@ pub struct BuildingConfig {
 
 #[generate_trait]
 impl BuildingConfigImpl of BuildingConfigTrait {
-    fn get(
-        ref world: WorldStorage, category: BuildingCategory, resource_type: u8,
-    ) -> BuildingConfig {
+    fn get(ref world: WorldStorage, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
         return world
             .read_model(
                 (

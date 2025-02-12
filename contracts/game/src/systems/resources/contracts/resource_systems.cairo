@@ -4,12 +4,8 @@ use s1_eternum::alias::ID;
 #[starknet::interface]
 trait IResourceSystems<T> {
     fn approve(ref self: T, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
-    fn send(
-        ref self: T, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>,
-    );
-    fn pickup(
-        ref self: T, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>,
-    );
+    fn send(ref self: T, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
+    fn pickup(ref self: T, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[dojo::contract]
@@ -38,8 +34,7 @@ mod resource_systems {
     use s1_eternum::models::realm::Realm;
     use s1_eternum::models::resource::resource::{DetachedResource};
     use s1_eternum::models::resource::resource::{
-        Resource, ResourceAllowance, ResourceImpl, ResourceTrait, ResourceTransferLock,
-        ResourceTransferLockTrait,
+        Resource, ResourceAllowance, ResourceImpl, ResourceTrait, ResourceTransferLock, ResourceTransferLockTrait,
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
@@ -75,12 +70,7 @@ mod resource_systems {
         /// * `recipient_entity_id` - The id of the entity being approved.
         /// * `resources` - The resources to approve.
         ///
-        fn approve(
-            ref self: ContractState,
-            entity_id: ID,
-            recipient_entity_id: ID,
-            resources: Span<(u8, u128)>,
-        ) {
+        fn approve(ref self: ContractState, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
@@ -126,12 +116,7 @@ mod resource_systems {
         /// # Returns
         ///     the resource chest id
         ///
-        fn send(
-            ref self: ContractState,
-            sender_entity_id: ID,
-            recipient_entity_id: ID,
-            resources: Span<(u8, u128)>,
-        ) {
+        fn send(ref self: ContractState, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
@@ -142,13 +127,7 @@ mod resource_systems {
             entity_owner.assert_caller_owner(world);
 
             InternalResourceSystemsImpl::transfer(
-                ref world,
-                sender_entity_id,
-                recipient_entity_id,
-                resources,
-                sender_entity_id,
-                true,
-                true,
+                ref world, sender_entity_id, recipient_entity_id, resources, sender_entity_id, true, true,
             );
         }
 
@@ -165,12 +144,7 @@ mod resource_systems {
         /// # Returns
         ///    the resource chest id
         ///
-        fn pickup(
-            ref self: ContractState,
-            recipient_entity_id: ID,
-            owner_entity_id: ID,
-            resources: Span<(u8, u128)>,
-        ) {
+        fn pickup(ref self: ContractState, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
@@ -192,9 +166,7 @@ mod resource_systems {
                         let mut approved_allowance: ResourceAllowance = world
                             .read_model((owner_entity_id, recipient_entity_id, resource_type));
 
-                        assert(
-                            approved_allowance.amount >= resource_amount, 'insufficient approval',
-                        );
+                        assert(approved_allowance.amount >= resource_amount, 'insufficient approval');
 
                         if (approved_allowance.amount != Bounded::MAX) {
                             // spend allowance if they don't have infinite approval
@@ -207,13 +179,7 @@ mod resource_systems {
             };
 
             InternalResourceSystemsImpl::transfer(
-                ref world,
-                owner_entity_id,
-                recipient_entity_id,
-                resources,
-                recipient_entity_id,
-                true,
-                true,
+                ref world, owner_entity_id, recipient_entity_id, resources, recipient_entity_id, true, true,
             );
         }
     }
@@ -221,9 +187,7 @@ mod resource_systems {
     #[generate_trait]
     pub impl InternalResourceSystemsImpl of InternalResourceSystemsTrait {
         // send resources to a bank's location but retain ownership of the resources
-        fn send_to_bank(
-            ref world: WorldStorage, owner_id: ID, bank_id: ID, resource: (u8, u128),
-        ) -> ID {
+        fn send_to_bank(ref world: WorldStorage, owner_id: ID, bank_id: ID, resource: (u8, u128)) -> ID {
             // ensure owner and bank are stationary
             let arrival_time: ArrivalTime = world.read_model(owner_id);
             arrival_time.assert_not_travelling();
@@ -263,9 +227,7 @@ mod resource_systems {
 
             // add resources to donkey going to bank
             let donkey_to_bank_id = world.dispatcher.uuid();
-            let mut donkey_to_bank_resource = ResourceImpl::get(
-                ref world, (donkey_to_bank_id, resource_type),
-            );
+            let mut donkey_to_bank_resource = ResourceImpl::get(ref world, (donkey_to_bank_id, resource_type));
             donkey_to_bank_resource.add(resource_amount);
             donkey_to_bank_resource.save(ref world);
 
@@ -282,22 +244,16 @@ mod resource_systems {
 
             // decrease owner's weight
             let mut owner_weight: Weight = world.read_model(owner_id);
-            let owner_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(
-                ref world, owner_id,
-            );
+            let owner_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, owner_id);
             owner_weight.deduct(owner_capacity, total_resources_weight);
             world.write_model(@owner_weight);
 
             // create donkey that can carry weight
-            donkey::create_donkey(
-                ref world, false, donkey_to_bank_id, owner_id, owner_coord, bank_coord,
-            );
+            donkey::create_donkey(ref world, false, donkey_to_bank_id, owner_id, owner_coord, bank_coord);
             donkey::burn_donkey(ref world, owner_id, total_resources_weight, true);
 
             // emit transfer event
-            Self::emit_transfer_event(
-                ref world, owner_id, donkey_to_bank_id, array![resource].span(),
-            );
+            Self::emit_transfer_event(ref world, owner_id, donkey_to_bank_id, array![resource].span());
 
             donkey_to_bank_id
         }
@@ -321,8 +277,7 @@ mod resource_systems {
             let recipient_position: Position = world.read_model(recipient_id);
             let recipient_coord: Coord = recipient_position.into();
             let mut actual_recipient_id: ID = recipient_id;
-            let transport_is_needed: bool = owner_coord.is_non_zero()
-                && owner_coord != recipient_coord;
+            let transport_is_needed: bool = owner_coord.is_non_zero() && owner_coord != recipient_coord;
             if transport_is_needed {
                 actual_recipient_id = world.dispatcher.uuid()
             };
@@ -339,8 +294,7 @@ mod resource_systems {
             }
 
             // ensure resource receipt is not locked
-            let recipient_resource_lock: ResourceTransferLock = world
-                .read_model(actual_recipient_id);
+            let recipient_resource_lock: ResourceTransferLock = world.read_model(actual_recipient_id);
             recipient_resource_lock.assert_not_locked();
             loop {
                 match resources_clone.pop_front() {
@@ -351,25 +305,19 @@ mod resource_systems {
 
                         if enforce_owner_payment {
                             // burn resources from sender's balance
-                            let mut owner_resource = ResourceImpl::get(
-                                ref world, (owner_id, resource_type),
-                            );
+                            let mut owner_resource = ResourceImpl::get(ref world, (owner_id, resource_type));
                             owner_resource.burn(resource_amount);
                             owner_resource.save(ref world);
                         }
 
                         // add resources to recipient's balance
-                        let mut recipient_resource = ResourceImpl::get(
-                            ref world, (actual_recipient_id, resource_type),
-                        );
+                        let mut recipient_resource = ResourceImpl::get(ref world, (actual_recipient_id, resource_type));
                         recipient_resource.add(resource_amount);
                         recipient_resource.save(ref world);
 
                         // update total weight
                         total_resources_weight +=
-                            WeightConfigImpl::get_weight_grams(
-                                ref world, resource_type, resource_amount,
-                            );
+                            WeightConfigImpl::get_weight_grams(ref world, resource_type, resource_amount);
 
                         // update resources hash
                         resources_felt_arr.append(resource_type.into());
@@ -388,8 +336,7 @@ mod resource_systems {
             };
             if !transport_is_needed {
                 let recipient_quantity: Quantity = world.read_model(actual_recipient_id);
-                recipient_weight
-                    .add(recipient_capacity, recipient_quantity, total_resources_weight);
+                recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
                 world.write_model(@recipient_weight);
             } else {
                 // TODO(tedison): should this be += ???
@@ -401,9 +348,7 @@ mod resource_systems {
             if enforce_owner_payment {
                 // decrease sender weight
                 let mut owner_weight: Weight = world.read_model(owner_id);
-                let owner_capacity_config: CapacityConfig = CapacityConfigImpl::get_from_entity(
-                    ref world, owner_id,
-                );
+                let owner_capacity_config: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, owner_id);
                 owner_weight.deduct(owner_capacity_config, total_resources_weight);
 
                 world.write_model(@owner_weight);
@@ -413,17 +358,10 @@ mod resource_systems {
                 // create donkey that can carry weight
                 let is_round_trip = transport_provider_id == recipient_id;
                 donkey::create_donkey(
-                    ref world,
-                    is_round_trip,
-                    actual_recipient_id,
-                    recipient_id,
-                    owner_coord,
-                    recipient_coord,
+                    ref world, is_round_trip, actual_recipient_id, recipient_id, owner_coord, recipient_coord,
                 );
                 if transport_resource_burn {
-                    donkey::burn_donkey(
-                        ref world, transport_provider_id, total_resources_weight, true,
-                    );
+                    donkey::burn_donkey(ref world, transport_provider_id, total_resources_weight, true);
                 }
             }
 
@@ -445,33 +383,25 @@ mod resource_systems {
             // only add to balance if receiver can carry weight
             let (resource_type, resource_amount) = resource;
             let mut total_resources_weight = 0;
-            total_resources_weight +=
-                WeightConfigImpl::get_weight_grams(ref world, resource_type, resource_amount);
+            total_resources_weight += WeightConfigImpl::get_weight_grams(ref world, resource_type, resource_amount);
             let mut recipient_weight: Weight = world.read_model(recipient_id);
-            let recipient_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(
-                ref world, recipient_id,
-            );
+            let recipient_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, recipient_id);
             let recipient_quantity: Quantity = world.read_model(recipient_id);
 
             recipient_weight.value += total_resources_weight;
-            if !recipient_capacity.is_capped()
-                || recipient_capacity.can_carry(recipient_quantity, recipient_weight) {
+            if !recipient_capacity.is_capped() || recipient_capacity.can_carry(recipient_quantity, recipient_weight) {
                 recipient_weight.value -= total_resources_weight;
-                recipient_weight
-                    .add(recipient_capacity, recipient_quantity, total_resources_weight);
+                recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
                 world.write_model(@recipient_weight);
 
                 // ensure resource recepient is not locked from receiving
                 if check_lock {
-                    let recipient_resource_lock: ResourceTransferLock = world
-                        .read_model(recipient_id);
+                    let recipient_resource_lock: ResourceTransferLock = world.read_model(recipient_id);
                     recipient_resource_lock.assert_not_locked();
                 }
 
                 // add resource to recipient's balance
-                let mut recipient_resource = ResourceImpl::get(
-                    ref world, (recipient_id, resource_type),
-                );
+                let mut recipient_resource = ResourceImpl::get(ref world, (recipient_id, resource_type));
                 recipient_resource.add(resource_amount);
                 recipient_resource.save(ref world);
 
@@ -485,10 +415,7 @@ mod resource_systems {
         }
 
         fn emit_transfer_event(
-            ref world: WorldStorage,
-            sender_entity_id: ID,
-            recipient_entity_id: ID,
-            resources: Span<(u8, u128)>,
+            ref world: WorldStorage, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>,
         ) {
             let mut sending_realm_id = 0;
 

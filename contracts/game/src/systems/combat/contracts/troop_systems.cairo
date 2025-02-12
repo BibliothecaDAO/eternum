@@ -18,19 +18,9 @@ trait ITroopSystems<TContractState> {
 
     // explorer
     fn explorer_create(
-        ref self: TContractState,
-        for_structure_id: ID,
-        category: TroopType,
-        tier: TroopTier,
-        amount: u128,
+        ref self: TContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128,
     ) -> ID;
-    fn explorer_add(
-        ref self: TContractState,
-        to_explorer_id: ID,
-        category: TroopType,
-        tier: TroopTier,
-        amount: u128,
-    );
+    fn explorer_add(ref self: TContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128);
     fn explorer_swap(
         ref self: TContractState,
         from_explorer_id: ID,
@@ -43,9 +33,7 @@ trait ITroopSystems<TContractState> {
 
 #[starknet::interface]
 trait ITroopMovementSystems<TContractState> {
-    fn explorer_move(
-        ref self: TContractState, explorer_id: ID, directions: Span<Direction>, explore: bool,
-    );
+    fn explorer_move(ref self: TContractState, explorer_id: ID, directions: Span<Direction>, explore: bool);
 }
 
 
@@ -59,28 +47,22 @@ mod troop_systems {
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::{
         config::{
-            BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CombatConfigImpl, SpeedConfig,
-            TickConfig, TickImpl, TickTrait, TroopConfig, TroopConfigImpl, TroopConfigTrait,
-            TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+            BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CombatConfigImpl, SpeedConfig, TickConfig, TickImpl,
+            TickTrait, TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig,
+            WorldConfigUtilImpl,
         },
         map::Tile, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
-        position::{
-            Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position,
-            PositionTrait,
-        },
+        position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
         resource::{
             r3esource::{
-                R3esource, R3esourceImpl, SingleR33esource, SingleR33esourceImpl,
-                SingleR33esourceStoreImpl, StructureSingleR33esourceFoodImpl, WeightStoreImpl,
-                WeightUnitImpl,
+                R3esource, R3esourceImpl, SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl,
+                StructureSingleR33esourceFoodImpl, WeightStoreImpl, WeightUnitImpl,
             },
             resource::{ResourceCost},
         },
-        season::SeasonImpl, stamina::{Stamina, StaminaTrait},
-        structure::{Structure, StructureCategory, StructureTrait},
+        season::SeasonImpl, stamina::{Stamina, StaminaTrait}, structure::{Structure, StructureCategory, StructureTrait},
         troop::{
-            ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType,
-            Troops, TroopsTrait,
+            ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
         },
         weight::{W3eight, W3eightTrait},
     };
@@ -114,24 +96,17 @@ mod troop_systems {
             // deduct resources used to create guard
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            iTroopImpl::update_troop_resource(
-                ref world, for_structure_id, amount, category, tier, current_tick,
-            );
+            iTroopImpl::update_troop_resource(ref world, for_structure_id, amount, category, tier, current_tick);
 
             // ensure guard slot is valid
             let mut guard: GuardTroops = structure.guards;
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
 
             // ensure delay from troop defeat is over
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             if troops_destroyed_tick.is_non_zero() {
                 let next_troop_update_at = troops_destroyed_tick
-                    + tick
-                        .convert_from_seconds(troop_limit_config.guard_resurrection_delay.into())
-                        .try_into()
-                        .unwrap();
+                    + tick.convert_from_seconds(troop_limit_config.guard_resurrection_delay.into()).try_into().unwrap();
                 assert!(
                     current_tick >= next_troop_update_at.into(),
                     "you need to wait for the delay from troop defeat to be over",
@@ -146,11 +121,9 @@ mod troop_systems {
                 );
 
                 // ensure structure has not reached the hard limit of troops
-                let structure_troop_count = structure.troop.explorers.len()
-                    + structure.troop.guard_count;
+                let structure_troop_count = structure.troop.explorers.len() + structure.troop.guard_count;
                 assert!(
-                    structure_troop_count < structure.troop.max_troops_allowed,
-                    "reached limit of troops per structure",
+                    structure_troop_count < structure.troop.max_troops_allowed, "reached limit of troops per structure",
                 );
 
                 // update guard count
@@ -162,9 +135,7 @@ mod troop_systems {
             }
 
             troops.count += amount;
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
             // update guard slot and structure
@@ -191,15 +162,10 @@ mod troop_systems {
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
 
             // ensure delay from troop defeat is over
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             if troops_destroyed_tick.is_non_zero() {
                 let next_troop_update_at = troops_destroyed_tick
-                    + tick
-                        .convert_from_seconds(troop_limit_config.guard_resurrection_delay.into())
-                        .try_into()
-                        .unwrap();
+                    + tick.convert_from_seconds(troop_limit_config.guard_resurrection_delay.into()).try_into().unwrap();
                 assert!(
                     current_tick >= next_troop_update_at.into(),
                     "you need to wait for the delay from troop defeat to be over",
@@ -221,11 +187,7 @@ mod troop_systems {
 
 
         fn explorer_create(
-            ref self: ContractState,
-            for_structure_id: ID,
-            category: TroopType,
-            tier: TroopTier,
-            amount: u128,
+            ref self: ContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128,
         ) -> ID {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
 
@@ -239,16 +201,12 @@ mod troop_systems {
             // deduct resources used to create explorer
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            iTroopImpl::update_troop_resource(
-                ref world, for_structure_id, amount, category, tier, current_tick,
-            );
+            iTroopImpl::update_troop_resource(ref world, for_structure_id, amount, category, tier, current_tick);
 
             // ensure structure has not reached the hard limit of troops
-            let structure_troop_count = structure.troop.explorers.len()
-                + structure.troop.guard_count;
+            let structure_troop_count = structure.troop.explorers.len() + structure.troop.guard_count;
             assert!(
-                structure_troop_count < structure.troop.max_troops_allowed,
-                "reached limit of troops per structure",
+                structure_troop_count < structure.troop.max_troops_allowed, "reached limit of troops per structure",
             );
 
             // create explorer
@@ -272,21 +230,15 @@ mod troop_systems {
             //       troop_config.army_max_per_structure
 
             // ensure explorer amount does not exceed max
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
                 amount <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION,
                 "reached limit of explorers amount per armys",
             );
 
             // set troop stamina
-            let mut troops = Troops {
-                category, tier, count: amount, stamina: Stamina { amount: 0, updated_tick: 0 },
-            };
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
+            let mut troops = Troops { category, tier, count: amount, stamina: Stamina { amount: 0, updated_tick: 0 } };
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
             // set explorer
@@ -296,9 +248,7 @@ mod troop_systems {
                         explorer_id,
                         coord,
                         troops,
-                        owner: EntityOwner {
-                            entity_id: explorer_id, entity_owner_id: structure.entity_id,
-                        },
+                        owner: EntityOwner { entity_id: explorer_id, entity_owner_id: structure.entity_id },
                     },
                 );
 
@@ -306,11 +256,7 @@ mod troop_systems {
         }
 
         fn explorer_add(
-            ref self: ContractState,
-            to_explorer_id: ID,
-            category: TroopType,
-            tier: TroopTier,
-            amount: u128,
+            ref self: ContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128,
         ) {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
 
@@ -324,16 +270,12 @@ mod troop_systems {
             // ensure explorer is at home
             let owner_structure_id: ID = explorer.owner.entity_owner_id;
             let explorer_owner_structure: Structure = world.read_model(owner_structure_id);
-            assert!(
-                explorer_owner_structure.coord == explorer.coord, "explorer not at home structure",
-            );
+            assert!(explorer_owner_structure.coord == explorer.coord, "explorer not at home structure");
 
             // deduct resources used to create explorer
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            iTroopImpl::update_troop_resource(
-                ref world, owner_structure_id, amount, category, tier, current_tick,
-            );
+            iTroopImpl::update_troop_resource(ref world, owner_structure_id, amount, category, tier, current_tick);
 
             // add troops to explorer
             explorer.troops.count += amount;
@@ -343,12 +285,9 @@ mod troop_systems {
             iExplorerImpl::update_capacity(ref world, to_explorer_id, explorer, amount, true);
 
             // ensure explorer count does not exceed max count
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
-                explorer.troops.count <= troop_limit_config.explorer_max_troop_count.into()
-                    * RESOURCE_PRECISION,
+                explorer.troops.count <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION,
                 "reached limit of explorers amount per armys",
             );
         }
@@ -390,9 +329,7 @@ mod troop_systems {
             to_explorer.troops.count += count;
 
             // update troop capacity
-            iExplorerImpl::update_capacity(
-                ref world, from_explorer_id, from_explorer, count, false,
-            );
+            iExplorerImpl::update_capacity(ref world, from_explorer_id, from_explorer, count, false);
             iExplorerImpl::update_capacity(ref world, to_explorer_id, to_explorer, count, true);
 
             // get current tick
@@ -400,17 +337,9 @@ mod troop_systems {
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
-            from_explorer
-                .troops
-                .stamina
-                .refill(from_explorer.troops.category, troop_stamina_config, current_tick);
-            to_explorer
-                .troops
-                .stamina
-                .refill(to_explorer.troops.category, troop_stamina_config, current_tick);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            from_explorer.troops.stamina.refill(from_explorer.troops.category, troop_stamina_config, current_tick);
+            to_explorer.troops.stamina.refill(to_explorer.troops.category, troop_stamina_config, current_tick);
             if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
             }
@@ -420,12 +349,9 @@ mod troop_systems {
             world.write_model(@to_explorer);
 
             // ensure to_explorer count does not exceed max count
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
-                to_explorer.troops.count <= troop_limit_config.explorer_max_troop_count.into()
-                    * RESOURCE_PRECISION,
+                to_explorer.troops.count <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION,
                 "reached limit of explorers amount per armys",
             );
         }
@@ -454,24 +380,18 @@ mod troop_movement_systems {
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::{
         config::{
-            BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CombatConfigImpl, MapConfig,
-            SpeedConfig, TickConfig, TickImpl, TickTrait, TroopConfig, TroopConfigImpl,
-            TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+            BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CombatConfigImpl, MapConfig, SpeedConfig, TickConfig,
+            TickImpl, TickTrait, TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig,
+            WorldConfigUtilImpl,
         },
         map::Tile, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
-        position::{
-            Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position,
-            PositionTrait,
-        },
+        position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
         resource::r3esource::{
-            SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl, WeightStoreImpl,
-            WeightUnitImpl,
+            SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl, WeightStoreImpl, WeightUnitImpl,
         },
-        season::SeasonImpl, stamina::{Stamina, StaminaTrait},
-        structure::{Structure, StructureCategory, StructureTrait},
+        season::SeasonImpl, stamina::{Stamina, StaminaTrait}, structure::{Structure, StructureCategory, StructureTrait},
         troop::{
-            ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType,
-            Troops, TroopsTrait,
+            ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
         },
         weight::{W3eight, W3eightTrait},
     };
@@ -486,12 +406,7 @@ mod troop_movement_systems {
 
     #[abi(embed_v0)]
     impl TroopMovementSystemsImpl of ITroopMovementSystems<ContractState> {
-        fn explorer_move(
-            ref self: ContractState,
-            explorer_id: ID,
-            mut directions: Span<Direction>,
-            explore: bool,
-        ) {
+        fn explorer_move(ref self: ContractState, explorer_id: ID, mut directions: Span<Direction>, explore: bool) {
             // ensure directions are not empty
             assert!(directions.len().is_non_zero(), "directions must be greater than 0");
 
@@ -506,9 +421,7 @@ mod troop_movement_systems {
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
 
             // remove explorer from current occupier
-            let occupier = Occupier {
-                x: explorer.coord.x, y: explorer.coord.y, entity: OccupiedBy::None,
-            };
+            let occupier = Occupier { x: explorer.coord.x, y: explorer.coord.y, entity: OccupiedBy::None };
             world.erase_model(@occupier);
 
             // move explorer to target coordinate
@@ -526,10 +439,7 @@ mod troop_movement_systems {
                 let mut tile: Tile = world.read_model((next.x, next.y));
                 if explore {
                     // ensure only one tile can be explored
-                    assert!(
-                        directions.len().is_zero(),
-                        "explorer can only move one direction when exploring",
-                    );
+                    assert!(directions.len().is_zero(), "explorer can only move one direction when exploring");
 
                     // ensure target tile is not explored
                     assert(tile.explored_at.is_zero(), 'tile is already explored');
@@ -538,16 +448,9 @@ mod troop_movement_systems {
                     iMapImpl::explore(ref world, ref tile, biome);
 
                     // perform lottery to discover mine
-                    let map_config: MapConfig = WorldConfigUtilImpl::get_member(
-                        world, selector!("map_config"),
-                    );
-                    let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                        ref world,
-                    );
-                    let troop_stamina_config: TroopStaminaConfig =
-                        CombatConfigImpl::troop_stamina_config(
-                        ref world,
-                    );
+                    let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
+                    let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+                    let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
                     iMineDiscoveryImpl::lottery(
                         ref world,
                         starknet::get_caller_address(),
@@ -558,23 +461,13 @@ mod troop_movement_systems {
                     );
 
                     // grant resource reward for exploration
-                    let (explore_reward_id, explore_reward_amount) =
-                        iExplorerImpl::exploration_reward(
+                    let (explore_reward_id, explore_reward_amount) = iExplorerImpl::exploration_reward(
                         ref world, map_config,
                     );
-                    let mut explorer_weight: W3eight = WeightStoreImpl::retrieve(
-                        ref world, explorer_id,
-                    );
-                    let resource_weight_grams: u128 = WeightUnitImpl::grams(
-                        ref world, explore_reward_id,
-                    );
+                    let mut explorer_weight: W3eight = WeightStoreImpl::retrieve(ref world, explorer_id);
+                    let resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, explore_reward_id);
                     let mut resource = SingleR33esourceStoreImpl::retrieve(
-                        ref world,
-                        explorer_id,
-                        explore_reward_id,
-                        ref explorer_weight,
-                        resource_weight_grams,
-                        false,
+                        ref world, explorer_id, explore_reward_id, ref explorer_weight, resource_weight_grams, false,
                     );
                     resource.add(explore_reward_amount, ref explorer_weight, resource_weight_grams);
                     resource.store(ref world);
@@ -596,9 +489,7 @@ mod troop_movement_systems {
             };
 
             // burn stamina cost
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             iExplorerImpl::burn_stamina_cost(
                 ref world,
                 ref explorer,

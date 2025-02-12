@@ -1,11 +1,11 @@
 use array::SpanTrait;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{BattleConfig, TickConfig};
+use s1_eternum::models::config::{TickTrait};
 use s1_eternum::models::owner::Owner;
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::stamina::Stamina;
 use s1_eternum::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
-use s1_eternum::models::config::{TickTrait};
 use starknet::ContractAddress;
 use traits::Into;
 
@@ -124,11 +124,9 @@ impl StructureImpl of StructureTrait {
         let current_tick = tick_config.current();
         let mut allow_attack_tick: u64 = 0;
         if self.category == StructureCategory::Hyperstructure {
-            allow_attack_tick = tick_config.at(self.created_at)
-                + battle_config.hyperstructure_immunity_ticks.into();
+            allow_attack_tick = tick_config.at(self.created_at) + battle_config.hyperstructure_immunity_ticks.into();
         } else {
-            allow_attack_tick = tick_config.at(self.created_at)
-                + battle_config.regular_immunity_ticks.into();
+            allow_attack_tick = tick_config.at(self.created_at) + battle_config.regular_immunity_ticks.into();
         }
 
         if current_tick < allow_attack_tick {
