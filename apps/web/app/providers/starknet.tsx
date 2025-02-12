@@ -1,18 +1,25 @@
-import ControllerConnector from "@cartridge/connector/controller";
 import type { ColorMode } from "@cartridge/controller";
+import type { Connector } from "@starknet-react/core";
+import React, { useCallback } from "react";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import ControllerConnector from "@cartridge/connector/controller";
+import { getStarknet } from "@starknet-io/get-starknet-core";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import {
-  StarknetConfig,
   argent,
   braavos,
+  InjectedConnector,
   jsonRpcProvider,
+  StarknetConfig,
   useInjectedConnectors,
   voyager,
 } from "@starknet-react/core";
-import React, { useCallback } from "react";
-import { env } from "../../env";
+import { WebWalletConnector } from "starknetkit/webwallet";
+
 import { ChainId, LORDS } from "@realms-world/constants";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+
+import { env } from "../../env";
+
 /*import { getSeasonAddresses } from "../ui/utils/utils";
 //import { cartridgeController } from "./cartridge-controller";
 
@@ -53,6 +60,23 @@ const cartridgeController = new ControllerConnector({
   slot,
 });
 
+const getConnectors = () => {
+  // For Metamask
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  getStarknet();
+  const connectors = [
+    new InjectedConnector({ options: { id: "okxwallet" } }),
+    new InjectedConnector({ options: { id: "bitkeep" } }),
+    new InjectedConnector({ options: { id: "keplr" } }),
+    new InjectedConnector({ options: { id: "metamask" } }),
+    new WebWalletConnector({
+      url: "https://web.argent.xyz/",
+    }),
+  ];
+
+  return connectors;
+};
+
 export function StarknetProvider({
   children,
   onlyCartridge,
@@ -80,6 +104,7 @@ export function StarknetProvider({
       connectors={[
         cartridgeController,
         ...(onlyCartridge ? [] : [...connectors]),
+        ...getConnectors(),
       ]}
       explorer={voyager}
       autoConnect={true}

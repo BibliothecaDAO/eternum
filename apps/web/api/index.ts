@@ -44,11 +44,11 @@ export default eventHandler(async (event) => {
           const burnsResult = await db
             .insert(velords_burns)
             .values(filteredRows)
+            .onConflictDoNothing()
             .returning({
               source: velords_burns.source,
               amount: velords_burns.amount,
             });
-          console.log(burnsResult);
           return burnsResult;
         } catch (e) {
           console.log("Error inserting burns:", e);
@@ -69,11 +69,11 @@ export default eventHandler(async (event) => {
           const supplyInsertResult = await db
             .insert(velords_supply)
             .values(supplyRows)
+            .onConflictDoNothing()
             .returning({
               new_supply: velords_supply.new_supply,
               transaction_hash: velords_supply.transaction_hash,
             });
-          console.log(supplyInsertResult);
           return supplyInsertResult;
         } catch (e) {
           console.log("Error inserting supply:", e);

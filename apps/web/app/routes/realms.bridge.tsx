@@ -4,11 +4,13 @@ import EthereumIcon from "@/components/icons/ethereum.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
 import BridgeSidebar from "@/components/modules/realms/bridge-sidebar";
 import { BridgeTable, columns } from "@/components/modules/realms/bridge-table";
-import { Alert } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
 import { trpc } from "@/router";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount } from "@starknet-react/core";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -16,7 +18,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, TriangleAlert } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
 import { CollectionAddresses } from "@realms-world/constants";
@@ -94,15 +96,19 @@ function RouteComponent() {
   const swapAssets = () => {
     setSelectedAsset((prev) => (prev === "Ethereum" ? "Starknet" : "Ethereum"));
   };
+  const { openConnectModal } = useConnectModal();
+  const { openStarknetKitModal } = useStarknetWallet();
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
 
   return (
     <SidebarProvider
-      style={{
-        "--sidebar-width": "32rem",
-        "--sidebar-width-mobile": "26rem",
-      }}
+      style={
+        {
+          "--sidebar-width": "32rem",
+          "--sidebar-width-mobile": "26rem",
+        } as React.CSSProperties
+      }
       className="flex flex-1"
     >
       <SidebarInset className="px-6">
@@ -143,13 +149,39 @@ function RouteComponent() {
           </Button>
         </div>
         {selectedAsset === "Ethereum" && !l1Address && (
-          <Alert className="text-muted-foreground mb-2">
-            Connect your Ethereum wallet to bridge realms
+          <Alert className="mb-4 rounded border-yellow-600">
+            <TriangleAlert className="h-5 w-5" />
+            <AlertTitle className="text-lg">
+              Your Ethereum wallet is not connected
+            </AlertTitle>
+            <AlertDescription>
+              <Button
+                className="pl-0 pr-2"
+                variant={"link"}
+                onClick={openConnectModal}
+              >
+                Connect
+              </Button>
+              to view and bridge your Realms
+            </AlertDescription>
           </Alert>
         )}
         {selectedAsset === "Starknet" && !l2Address && (
-          <Alert className="text-muted-foreground mb-2">
-            Connect your Starknet wallet to bridge realms
+          <Alert className="mb-4 rounded border-yellow-600">
+            <TriangleAlert className="h-5 w-5" />
+            <AlertTitle className="text-lg">
+              Your Starknet wallet is not connected
+            </AlertTitle>
+            <AlertDescription>
+              <Button
+                className="pl-0 pr-2"
+                variant={"link"}
+                onClick={() => openStarknetKitModal()}
+              >
+                Connect
+              </Button>
+              to view and bridge your Realms
+            </AlertDescription>
           </Alert>
         )}
         <Suspense fallback={<div>Loading...</div>}>
