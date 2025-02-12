@@ -10,13 +10,14 @@ import {
   computeTravelFoodCosts,
   configManager,
   getBalance,
+  HexTileInfo,
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 
 const TooltipContent = memo(
   ({
@@ -28,7 +29,7 @@ const TooltipContent = memo(
     getBalance,
   }: {
     isExplored: boolean;
-    travelPath: any;
+    travelPath: { path: HexTileInfo[]; isExplored: boolean };
     costs: { travelFoodCosts: any; exploreFoodCosts: any };
     selectedEntityId: number;
     structureEntityId: number;
@@ -66,7 +67,7 @@ const TooltipContent = memo(
       <StaminaResourceCost
         travelingEntityId={Number(selectedEntityId)}
         isExplored={isExplored}
-        travelLength={travelPath.path.length - 1}
+        path={travelPath.path}
       />
       {!isExplored && (
         <div className="flex flex-row text-xs ml-1">
@@ -117,6 +118,10 @@ export const ActionInfo = memo(() => {
       .armyActions.travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
   }, [hoveredHex]);
 
+  useEffect(() => {
+    console.log({ travelPath });
+  }, [travelPath]);
+
   const showTooltip = useMemo(() => {
     return travelPath !== undefined && travelPath.path.length >= 2 && selectedEntityId !== null;
   }, [travelPath, selectedEntityId]);
@@ -131,7 +136,7 @@ export const ActionInfo = memo(() => {
     [selectedEntityTroops],
   );
 
-  if (!showTooltip || !selectedEntityId) return null;
+  if (!showTooltip || !selectedEntityId || !travelPath) return null;
 
   return (
     <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>

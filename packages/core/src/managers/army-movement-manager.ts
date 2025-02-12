@@ -13,7 +13,7 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { ContractAddress, HexPosition, ID, TravelTypes } from "../types";
+import { ContractAddress, HexPosition, HexTileInfo, ID, TravelTypes, TroopType } from "../types";
 import { Biome, multiplyByPrecision } from "../utils";
 import { TravelPaths } from "../utils/travel-path";
 import { configManager } from "./config-manager";
@@ -39,6 +39,21 @@ export class ArmyMovementManager {
     this.wheatManager = new ResourceManager(this.components, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
     this.fishManager = new ResourceManager(this.components, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
     this.staminaManager = new StaminaManager(this.components, entityId);
+  }
+
+  private _getTroopType(): TroopType {
+    const entityArmy = getComponentValue(this.components.Army, this.entity);
+    const knightCount = entityArmy?.troops?.knight_count ?? 0;
+    const crossbowmanCount = entityArmy?.troops?.crossbowman_count ?? 0;
+    const paladinCount = entityArmy?.troops?.paladin_count ?? 0;
+
+    if (knightCount >= crossbowmanCount && knightCount >= paladinCount) {
+      return TroopType.Knight;
+    }
+    if (crossbowmanCount >= knightCount && crossbowmanCount >= paladinCount) {
+      return TroopType.Crossbowman;
+    }
+    return TroopType.Paladin;
   }
 
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
@@ -99,20 +114,46 @@ export class ArmyMovementManager {
     };
   }
 
-  public static staminaDrain(biome: BiomeType) {
-    if (biome === BiomeType.Grassland) {
-      return 1;
+  public static staminaDrain(biome: BiomeType, troopType: TroopType) {
+    const baseStaminaCost = 20; // Base cost to move to adjacent hex
+
+    // Biome-specific modifiers per troop type
+    switch (biome) {
+      case BiomeType.Ocean:
+        return baseStaminaCost - 10; // -10 for all troops
+      case BiomeType.DeepOcean:
+        return baseStaminaCost - 10; // -10 for all troops
+      case BiomeType.Beach:
+        return baseStaminaCost; // No modifier
+      case BiomeType.Grassland:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.Shrubland:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.SubtropicalDesert:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.TemperateDesert:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.TropicalRainForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.TropicalSeasonalForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.TemperateRainForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.TemperateDeciduousForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.Tundra:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.Taiga:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.Snow:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 0 : 10);
+      case BiomeType.Bare:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.Scorched:
+        return baseStaminaCost + 10; // +10 for all troops
+      default:
+        return baseStaminaCost;
     }
-    if (biome === BiomeType.Bare) {
-      return 2;
-    }
-    if (biome === BiomeType.Snow) {
-      return 3;
-    }
-    if (biome === BiomeType.Tundra) {
-      return 4;
-    }
-    return 0;
   }
 
   public findPaths(
@@ -123,7 +164,10 @@ export class ArmyMovementManager {
     currentDefaultTick: number,
     currentArmiesTick: number,
   ): TravelPaths {
+    const troopType = this._getTroopType();
+
     console.log("[findPaths] Finding paths with:", {
+      troopType,
       armyStamina,
       currentDefaultTick,
       currentArmiesTick,
@@ -139,13 +183,20 @@ export class ArmyMovementManager {
       canExplore,
     });
 
-    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexPosition[] }> =
-      [{ position: startPos, staminaUsed: 0, distance: 0, path: [startPos] }];
+    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexTileInfo[] }> =
+      [
+        {
+          position: startPos,
+          staminaUsed: 0,
+          distance: 0,
+          path: [{ col: startPos.col, row: startPos.row, biomeType: BiomeType.Grassland, staminaCost: 0 }],
+        },
+      ];
     const travelPaths = new TravelPaths();
-    const shortestDistances = new Map<string, number>();
+    const lowestStaminaUse = new Map<string, number>();
 
     while (priorityQueue.length > 0) {
-      priorityQueue.sort((a, b) => a.distance - b.distance);
+      priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed);
       const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
       const currentKey = TravelPaths.posKey(current);
 
@@ -156,8 +207,8 @@ export class ArmyMovementManager {
         pathLength: path.length,
       });
 
-      if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
-        shortestDistances.set(currentKey, distance);
+      if (!lowestStaminaUse.has(currentKey) || staminaUsed < lowestStaminaUse.get(currentKey)!) {
+        lowestStaminaUse.set(currentKey, staminaUsed);
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
         if (path.length >= 2) {
           travelPaths.set(currentKey, { path, isExplored });
@@ -184,14 +235,16 @@ export class ArmyMovementManager {
         for (const { col, row } of neighbors) {
           const neighborKey = TravelPaths.posKey({ col, row });
           const nextDistance = distance + 1;
-          const nextPath = [...path, { col, row }];
 
           const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
-          const staminaCost = biome ? ArmyMovementManager.staminaDrain(biome) : 0;
+
+          const EXPLORATION_STAMINA_COST = configManager.getExploreStaminaCost();
+          const staminaCost = biome ? ArmyMovementManager.staminaDrain(biome, troopType) : EXPLORATION_STAMINA_COST;
           const nextStaminaUsed = staminaUsed + staminaCost;
+          const nextPath = [...path, { col, row, biomeType: biome, staminaCost: staminaCost }];
 
           console.log("[findPaths] Evaluating neighbor:", {
             col,
@@ -204,12 +257,13 @@ export class ArmyMovementManager {
             nextStaminaUsed,
           });
 
+          // if (!biome) continue;
           if (nextStaminaUsed > armyStamina) continue;
           if (hasStructure) continue;
           if (hasArmy) continue;
 
           if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
-            if (!shortestDistances.has(neighborKey) || nextDistance < shortestDistances.get(neighborKey)!) {
+            if (!lowestStaminaUse.has(neighborKey) || nextStaminaUsed < lowestStaminaUse.get(neighborKey)!) {
               console.log("[findPaths] Adding to priority queue:", {
                 col,
                 row,

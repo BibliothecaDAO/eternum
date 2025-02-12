@@ -1,14 +1,14 @@
 import { FELT_CENTER } from "../constants";
-import { HexPosition } from "../types";
+import { HexPosition, HexTileInfo } from "../types";
 
 export class TravelPaths {
-  private readonly paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
+  private readonly paths: Map<string, { path: HexTileInfo[]; isExplored: boolean }>;
 
   constructor() {
     this.paths = new Map();
   }
 
-  set(key: string, value: { path: HexPosition[]; isExplored: boolean }): void {
+  set(key: string, value: { path: HexTileInfo[]; isExplored: boolean }): void {
     this.paths.set(key, value);
   }
 
@@ -16,7 +16,7 @@ export class TravelPaths {
     this.paths.clear();
   }
 
-  get(key: string): { path: HexPosition[]; isExplored: boolean } | undefined {
+  get(key: string): { path: HexTileInfo[]; isExplored: boolean } | undefined {
     return this.paths.get(key);
   }
 
@@ -24,7 +24,7 @@ export class TravelPaths {
     return this.paths.has(key);
   }
 
-  values(): IterableIterator<{ path: HexPosition[]; isExplored: boolean }> {
+  values(): IterableIterator<{ path: HexTileInfo[]; isExplored: boolean }> {
     return this.paths.values();
   }
 
@@ -39,7 +39,7 @@ export class TravelPaths {
     return this.paths.has(TravelPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER }));
   }
 
-  getPaths(): Map<string, { path: HexPosition[]; isExplored: boolean }> {
+  getPaths(): Map<string, { path: HexTileInfo[]; isExplored: boolean }> {
     return this.paths;
   }
 

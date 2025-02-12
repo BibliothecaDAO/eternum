@@ -25,6 +25,7 @@ import {
   HexPosition,
   ID,
   SetupResult,
+  StaminaManager,
   TileManager,
   TravelPaths,
   getNeighborOffsets,
@@ -375,15 +376,14 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-    const armyStamina = 10;
 
-    console.log("armies", this.armyHexes);
+    const stamina = new StaminaManager(this.dojo.components, selectedEntityId).getStamina(currentArmiesTick).amount;
 
     const travelPaths = armyMovementManager.findPaths(
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
-      armyStamina,
+      stamina,
       currentDefaultTick,
       currentArmiesTick,
     );
