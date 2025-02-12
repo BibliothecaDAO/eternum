@@ -56,6 +56,7 @@ export default class WorldmapScene extends HexagonScene {
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   private armyHexes: Map<number, Set<number>> = new Map();
   private structureHexes: Map<number, Set<number>> = new Map();
+  // normalized hex positions
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private battles: Map<number, Set<number>> = new Map();
   private tileManager: TileManager;
@@ -426,8 +427,9 @@ export default class WorldmapScene extends HexagonScene {
     const {
       hexCoords: { col, row },
     } = update;
-    const newCol = col - FELT_CENTER;
-    const newRow = row - FELT_CENTER;
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    const newCol = normalized.x;
+    const newRow = normalized.y;
     const oldHexCoords = this.armiesPositions.get(update.entityId);
     const oldCol = oldHexCoords?.col;
     const oldRow = oldHexCoords?.row;
@@ -457,8 +459,10 @@ export default class WorldmapScene extends HexagonScene {
       hexCoords: { col, row },
     } = update;
 
-    const newCol = col - FELT_CENTER;
-    const newRow = row - FELT_CENTER;
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    const newCol = normalized.x;
+    const newRow = normalized.y;
 
     if (!this.structureHexes.has(newCol)) {
       this.structureHexes.set(newCol, new Set());
@@ -469,8 +473,10 @@ export default class WorldmapScene extends HexagonScene {
   public async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
 
-    const col = hexCoords.col - FELT_CENTER;
-    const row = hexCoords.row - FELT_CENTER;
+    const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+
+    const col = normalized.x;
+    const row = normalized.y;
 
     if (removeExplored) {
       const chunkRow = parseInt(this.currentChunk.split(",")[0]);
