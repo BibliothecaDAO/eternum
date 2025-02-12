@@ -118,9 +118,15 @@ export class ArmyMovementManager {
   public static findPath(
     startPos: HexPosition,
     endPos: HexPosition,
+    structureHexes: Map<number, Set<number>>,
     armyHexes: Map<number, Set<number>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
   ): HexPosition[] {
+    console.log("[findPath] Finding path from", startPos, "to", endPos);
+    console.log("[findPath] Structure hexes:", structureHexes);
+    console.log("[findPath] Army hexes:", armyHexes);
+    console.log("[findPath] Explored hexes:", exploredHexes);
+
     const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexPosition[] }> =
       [{ position: startPos, staminaUsed: 0, distance: 0, path: [startPos] }];
     const shortestDistances = new Map<string, { distance: number; staminaUsed: number }>();
@@ -130,7 +136,10 @@ export class ArmyMovementManager {
       const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
       const currentKey = TravelPaths.posKey(current);
 
+      console.log("[findPath] Processing position:", current, "stamina:", staminaUsed, "distance:", distance);
+
       if (current.col === endPos.col && current.row === endPos.row) {
+        console.log("[findPath] Found path:", path);
         return path;
       }
 
@@ -142,21 +151,48 @@ export class ArmyMovementManager {
       ) {
         shortestDistances.set(currentKey, { distance, staminaUsed });
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-        if (!isExplored) continue;
 
-        const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-        if (hasArmy) continue;
+        // Skip army and explored checks for start position
+        if (path.length > 1) {
+          if (!isExplored) {
+            console.log("[findPath] Skipping unexplored hex:", current);
+            continue;
+          }
+
+          const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+          const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+
+          if (hasArmy || hasStructure) {
+            console.log("[findPath] Skipping hex with army/structure:", current);
+            continue;
+          }
+        }
 
         const neighbors = getNeighborHexes(current.col, current.row);
+        console.log("[findPath] Checking neighbors:", neighbors);
+
         for (const { col, row } of neighbors) {
           const neighborKey = TravelPaths.posKey({ col, row });
           const nextDistance = distance + 1;
           const nextPath = [...path, { col, row }];
 
           const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
           const staminaCost = biome ? this.staminaDrain(biome) : 0;
           const nextStaminaUsed = staminaUsed + staminaCost;
+
+          console.log("[findPath] Neighbor:", { col, row }, "explored:", isExplored, "stamina cost:", staminaCost);
+
+          if (hasStructure) {
+            console.log("[findPath] Skipping neighbor with structure:", { col, row });
+            continue;
+          }
+          if (hasArmy) {
+            console.log("[findPath] Skipping neighbor with army:", { col, row });
+            continue;
+          }
 
           if (isExplored) {
             const shortest = shortestDistances.get(neighborKey);
@@ -165,6 +201,7 @@ export class ArmyMovementManager {
               nextStaminaUsed < shortest.staminaUsed ||
               (nextStaminaUsed === shortest.staminaUsed && nextDistance < shortest.distance)
             ) {
+              console.log("[findPath] Adding neighbor to queue:", { col, row });
               priorityQueue.push({
                 position: { col, row },
                 staminaUsed: nextStaminaUsed,
@@ -177,6 +214,7 @@ export class ArmyMovementManager {
       }
     }
 
+    console.log("[findPath] No path found");
     return [];
   }
 
@@ -188,7 +226,7 @@ export class ArmyMovementManager {
     currentDefaultTick: number,
     currentArmiesTick: number,
   ): TravelPaths {
-    console.log("Finding paths with:", {
+    console.log("[findPaths] Finding paths with:", {
       armyStamina,
       currentDefaultTick,
       currentArmiesTick,
@@ -198,7 +236,7 @@ export class ArmyMovementManager {
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
 
-    console.log("Initial conditions:", {
+    console.log("[findPaths] Initial conditions:", {
       startPos,
       maxHex,
       canExplore,
@@ -214,7 +252,7 @@ export class ArmyMovementManager {
       const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
       const currentKey = TravelPaths.posKey(current);
 
-      console.log("Processing position:", {
+      console.log("[findPaths] Processing position:", {
         current,
         staminaUsed,
         distance,
@@ -234,7 +272,7 @@ export class ArmyMovementManager {
 
           const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
           const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-          console.log("Checking position:", {
+          console.log("[findPaths] Checking position:", {
             col: current.col,
             row: current.row,
             isExplored,
@@ -258,7 +296,7 @@ export class ArmyMovementManager {
           const staminaCost = biome ? ArmyMovementManager.staminaDrain(biome) : 0;
           const nextStaminaUsed = staminaUsed + staminaCost;
 
-          console.log("Evaluating neighbor:", {
+          console.log("[findPaths] Evaluating neighbor:", {
             col,
             row,
             hasStructure,
@@ -275,7 +313,7 @@ export class ArmyMovementManager {
 
           if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
             if (!shortestDistances.has(neighborKey) || nextDistance < shortestDistances.get(neighborKey)!) {
-              console.log("Adding to priority queue:", {
+              console.log("[findPaths] Adding to priority queue:", {
                 col,
                 row,
                 nextDistance,

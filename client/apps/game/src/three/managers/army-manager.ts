@@ -4,17 +4,10 @@ import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { LabelManager } from "@/three/managers/label-manager";
 import { Position } from "@/types/position";
-import {
-  ArmyMovementManager,
-  Biome,
-  BiomeType,
-  ContractAddress,
-  FELT_CENTER,
-  ID,
-  orders,
-} from "@bibliothecadao/eternum";
+import { Biome, BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, MovingArmyData, MovingLabelData, RenderChunkSize } from "../types";
 import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 
@@ -128,7 +121,11 @@ export class ArmyManager {
     }
   }
 
-  async onUpdate(update: ArmySystemUpdate, armyHexes: Map<number, Set<number>>) {
+  async onUpdate(
+    update: ArmySystemUpdate,
+    armyHexes: Map<number, Set<number>>,
+    structureHexes: Map<number, Set<number>>,
+  ) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, owner, battleId, currentHealth, order } = update;
 
@@ -150,12 +147,12 @@ export class ArmyManager {
       }
     }
 
-    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, position, armyHexes);
+      this.moveArmy(entityId, newPosition, armyHexes, structureHexes);
     } else {
-      this.addArmy(entityId, position, owner, order);
+      this.addArmy(entityId, newPosition, owner, order);
     }
     return false;
   }
@@ -307,30 +304,29 @@ export class ArmyManager {
     this.renderVisibleArmies(this.currentChunkKey!);
   }
 
-  public moveArmy(entityId: ID, hexCoords: Position, armyHexes: Map<number, Set<number>>) {
+  public moveArmy(
+    entityId: ID,
+    hexCoords: Position,
+    armyHexes: Map<number, Set<number>>,
+    structureHexes: Map<number, Set<number>>,
+  ) {
     const armyData = this.armies.get(entityId);
     if (!armyData) return;
 
-    const { x: startX, y: startY } = armyData.hexCoords.getNormalized();
-    const { x: targetX, y: targetY } = hexCoords.getNormalized();
+    const startPos = armyData.hexCoords.getNormalized();
+    const targetPos = hexCoords.getNormalized();
 
-    if (startX === targetX && startY === targetY) return;
+    if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
 
-    const path = ArmyMovementManager.findPath(
-      { col: armyData.hexCoords.getContract().x, row: armyData.hexCoords.getContract().y },
-      { col: hexCoords.getContract().x, row: hexCoords.getContract().y },
-      armyHexes,
-      this.exploredTiles,
-    );
-
-    // const path = findShortestPath(armyData.hexCoords, hexCoords, this.exploredTiles);
+    // todo: need to check better max distance
+    const path = findShortestPath(armyData.hexCoords, hexCoords, this.exploredTiles, structureHexes, armyHexes, 20);
 
     if (!path || path.length === 0) return;
 
     // Set initial direction before movement starts
     const firstHex = path[0];
     const currentPosition = this.getArmyWorldPosition(entityId, armyData.hexCoords);
-    const newPosition = this.getArmyWorldPosition(entityId, new Position({ x: firstHex.col, y: firstHex.row }));
+    const newPosition = this.getArmyWorldPosition(entityId, firstHex);
 
     const direction = new THREE.Vector3().subVectors(newPosition, currentPosition).normalize();
     const angle = Math.atan2(direction.x, direction.z);
@@ -338,10 +334,7 @@ export class ArmyManager {
 
     // Update army position immediately to avoid starting from a "back" position
     this.armies.set(entityId, { ...armyData, hexCoords });
-    this.armyPaths.set(
-      entityId,
-      path.map((hex) => new Position({ x: hex.col, y: hex.row })),
-    );
+    this.armyPaths.set(entityId, path);
 
     const modelData = this.armyModel.getModelForEntity(entityId);
     if (modelData) {

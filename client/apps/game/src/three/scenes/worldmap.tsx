@@ -120,7 +120,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.armySubscription?.unsubscribe();
     this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
-      this.armyManager.onUpdate(update, this.armyHexes).then((needsUpdate) => {
+      this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes).then((needsUpdate) => {
         if (needsUpdate) {
           this.updateVisibleChunks();
         }
