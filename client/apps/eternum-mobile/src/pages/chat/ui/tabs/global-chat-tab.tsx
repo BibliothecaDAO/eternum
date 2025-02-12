@@ -58,7 +58,7 @@ export function GlobalChatTab({ onMentionClick }: GlobalChatTabProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 pb-16">
         <div className="space-y-4">
           {messages.map((message) => (
             <div key={message.id} className="flex flex-col">
@@ -73,7 +73,7 @@ export function GlobalChatTab({ onMentionClick }: GlobalChatTabProps) {
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t flex gap-2">
+      <div className="p-4 border-t flex gap-2 fixed bottom-16 w-full bg-background">
         <Button variant="outline" size="icon" className="shrink-0" onClick={onMentionClick}>
           @
         </Button>

@@ -35,17 +35,19 @@ export function ChatPage() {
         onValueChange={(value) => setActiveTab(value as TabType)}
         className="w-full"
       >
-        <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="global">Global</TabsTrigger>
-          <TabsTrigger value="events" className="relative">
-            Events
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center z-10">3</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="dm" className="relative">
-            DM
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center z-10">5</Badge>
-          </TabsTrigger>
-        </TabsList>
+        <div className="p-2 bg-background sticky top-0 z-10">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="global">Global</TabsTrigger>
+            <TabsTrigger value="events" className="relative">
+              Events
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center z-10">3</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="dm" className="relative">
+              DM
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center z-10">5</Badge>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <div className="flex-1 overflow-hidden">
           <TabsContent value="global" className="h-full m-0">
