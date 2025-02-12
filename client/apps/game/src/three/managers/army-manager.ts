@@ -28,20 +28,14 @@ export class ArmyManager {
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
   private armyPaths: Map<ID, Position[]> = new Map();
-  private exploredTiles: Map<number, Map<number, BiomeType>>;
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
 
-  constructor(
-    scene: THREE.Scene,
-    renderChunkSize: { width: number; height: number },
-    exploredTiles: Map<number, Map<number, BiomeType>>,
-  ) {
+  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
     this.armyModel = new ArmyModel(scene);
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
     this.renderChunkSize = renderChunkSize;
-    this.exploredTiles = exploredTiles;
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
 
@@ -125,6 +119,7 @@ export class ArmyManager {
     update: ArmySystemUpdate,
     armyHexes: Map<number, Set<number>>,
     structureHexes: Map<number, Set<number>>,
+    exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, owner, battleId, currentHealth, order } = update;
@@ -150,7 +145,7 @@ export class ArmyManager {
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, newPosition, armyHexes, structureHexes);
+      this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
     } else {
       this.addArmy(entityId, newPosition, owner, order);
     }
@@ -309,6 +304,7 @@ export class ArmyManager {
     hexCoords: Position,
     armyHexes: Map<number, Set<number>>,
     structureHexes: Map<number, Set<number>>,
+    exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     const armyData = this.armies.get(entityId);
     if (!armyData) return;
@@ -319,7 +315,7 @@ export class ArmyManager {
     if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
 
     // todo: need to check better max distance
-    const path = findShortestPath(armyData.hexCoords, hexCoords, this.exploredTiles, structureHexes, armyHexes, 20);
+    const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, 20);
 
     if (!path || path.length === 0) return;
 

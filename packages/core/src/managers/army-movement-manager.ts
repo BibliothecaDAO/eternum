@@ -115,108 +115,108 @@ export class ArmyMovementManager {
     return 0;
   }
 
-  public static findPath(
-    startPos: HexPosition,
-    endPos: HexPosition,
-    structureHexes: Map<number, Set<number>>,
-    armyHexes: Map<number, Set<number>>,
-    exploredHexes: Map<number, Map<number, BiomeType>>,
-  ): HexPosition[] {
-    console.log("[findPath] Finding path from", startPos, "to", endPos);
-    console.log("[findPath] Structure hexes:", structureHexes);
-    console.log("[findPath] Army hexes:", armyHexes);
-    console.log("[findPath] Explored hexes:", exploredHexes);
+  // public static findPath(
+  //   startPos: HexPosition,
+  //   endPos: HexPosition,
+  //   structureHexes: Map<number, Set<number>>,
+  //   armyHexes: Map<number, Set<number>>,
+  //   exploredHexes: Map<number, Map<number, BiomeType>>,
+  // ): HexPosition[] {
+  //   console.log("[findPath] Finding path from", startPos, "to", endPos);
+  //   console.log("[findPath] Structure hexes:", structureHexes);
+  //   console.log("[findPath] Army hexes:", armyHexes);
+  //   console.log("[findPath] Explored hexes:", exploredHexes);
 
-    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexPosition[] }> =
-      [{ position: startPos, staminaUsed: 0, distance: 0, path: [startPos] }];
-    const shortestDistances = new Map<string, { distance: number; staminaUsed: number }>();
+  //   const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexPosition[] }> =
+  //     [{ position: startPos, staminaUsed: 0, distance: 0, path: [startPos] }];
+  //   const shortestDistances = new Map<string, { distance: number; staminaUsed: number }>();
 
-    while (priorityQueue.length > 0) {
-      priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed || a.distance - b.distance);
-      const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
-      const currentKey = TravelPaths.posKey(current);
+  //   while (priorityQueue.length > 0) {
+  //     priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed || a.distance - b.distance);
+  //     const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
+  //     const currentKey = TravelPaths.posKey(current);
 
-      console.log("[findPath] Processing position:", current, "stamina:", staminaUsed, "distance:", distance);
+  //     console.log("[findPath] Processing position:", current, "stamina:", staminaUsed, "distance:", distance);
 
-      if (current.col === endPos.col && current.row === endPos.row) {
-        console.log("[findPath] Found path:", path);
-        return path;
-      }
+  //     if (current.col === endPos.col && current.row === endPos.row) {
+  //       console.log("[findPath] Found path:", path);
+  //       return path;
+  //     }
 
-      const shortest = shortestDistances.get(currentKey);
-      if (
-        !shortest ||
-        staminaUsed < shortest.staminaUsed ||
-        (staminaUsed === shortest.staminaUsed && distance < shortest.distance)
-      ) {
-        shortestDistances.set(currentKey, { distance, staminaUsed });
-        const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+  //     const shortest = shortestDistances.get(currentKey);
+  //     if (
+  //       !shortest ||
+  //       staminaUsed < shortest.staminaUsed ||
+  //       (staminaUsed === shortest.staminaUsed && distance < shortest.distance)
+  //     ) {
+  //       shortestDistances.set(currentKey, { distance, staminaUsed });
+  //       const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
 
-        // Skip army and explored checks for start position
-        if (path.length > 1) {
-          if (!isExplored) {
-            console.log("[findPath] Skipping unexplored hex:", current);
-            continue;
-          }
+  //       // Skip army and explored checks for start position
+  //       if (path.length > 1) {
+  //         if (!isExplored) {
+  //           console.log("[findPath] Skipping unexplored hex:", current);
+  //           continue;
+  //         }
 
-          const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-          const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+  //         const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+  //         const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
 
-          if (hasArmy || hasStructure) {
-            console.log("[findPath] Skipping hex with army/structure:", current);
-            continue;
-          }
-        }
+  //         if (hasArmy || hasStructure) {
+  //           console.log("[findPath] Skipping hex with army/structure:", current);
+  //           continue;
+  //         }
+  //       }
 
-        const neighbors = getNeighborHexes(current.col, current.row);
-        console.log("[findPath] Checking neighbors:", neighbors);
+  //       const neighbors = getNeighborHexes(current.col, current.row);
+  //       console.log("[findPath] Checking neighbors:", neighbors);
 
-        for (const { col, row } of neighbors) {
-          const neighborKey = TravelPaths.posKey({ col, row });
-          const nextDistance = distance + 1;
-          const nextPath = [...path, { col, row }];
+  //       for (const { col, row } of neighbors) {
+  //         const neighborKey = TravelPaths.posKey({ col, row });
+  //         const nextDistance = distance + 1;
+  //         const nextPath = [...path, { col, row }];
 
-          const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-          const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-          const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-          const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
-          const staminaCost = biome ? this.staminaDrain(biome) : 0;
-          const nextStaminaUsed = staminaUsed + staminaCost;
+  //         const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+  //         const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+  //         const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+  //         const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+  //         const staminaCost = biome ? this.staminaDrain(biome) : 0;
+  //         const nextStaminaUsed = staminaUsed + staminaCost;
 
-          console.log("[findPath] Neighbor:", { col, row }, "explored:", isExplored, "stamina cost:", staminaCost);
+  //         console.log("[findPath] Neighbor:", { col, row }, "explored:", isExplored, "stamina cost:", staminaCost);
 
-          if (hasStructure) {
-            console.log("[findPath] Skipping neighbor with structure:", { col, row });
-            continue;
-          }
-          if (hasArmy) {
-            console.log("[findPath] Skipping neighbor with army:", { col, row });
-            continue;
-          }
+  //         if (hasStructure) {
+  //           console.log("[findPath] Skipping neighbor with structure:", { col, row });
+  //           continue;
+  //         }
+  //         if (hasArmy) {
+  //           console.log("[findPath] Skipping neighbor with army:", { col, row });
+  //           continue;
+  //         }
 
-          if (isExplored) {
-            const shortest = shortestDistances.get(neighborKey);
-            if (
-              !shortest ||
-              nextStaminaUsed < shortest.staminaUsed ||
-              (nextStaminaUsed === shortest.staminaUsed && nextDistance < shortest.distance)
-            ) {
-              console.log("[findPath] Adding neighbor to queue:", { col, row });
-              priorityQueue.push({
-                position: { col, row },
-                staminaUsed: nextStaminaUsed,
-                distance: nextDistance,
-                path: nextPath,
-              });
-            }
-          }
-        }
-      }
-    }
+  //         if (isExplored) {
+  //           const shortest = shortestDistances.get(neighborKey);
+  //           if (
+  //             !shortest ||
+  //             nextStaminaUsed < shortest.staminaUsed ||
+  //             (nextStaminaUsed === shortest.staminaUsed && nextDistance < shortest.distance)
+  //           ) {
+  //             console.log("[findPath] Adding neighbor to queue:", { col, row });
+  //             priorityQueue.push({
+  //               position: { col, row },
+  //               staminaUsed: nextStaminaUsed,
+  //               distance: nextDistance,
+  //               path: nextPath,
+  //             });
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
 
-    console.log("[findPath] No path found");
-    return [];
-  }
+  //   console.log("[findPath] No path found");
+  //   return [];
+  // }
 
   public findPaths(
     structureHexes: Map<number, Set<number>>,

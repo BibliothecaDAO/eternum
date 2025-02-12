@@ -114,13 +114,13 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.exploredTiles);
+    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize);
     this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
     this.battleManager = new BattleManager(this.scene);
 
     this.armySubscription?.unsubscribe();
     this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
-      this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes).then((needsUpdate) => {
+      this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles).then((needsUpdate) => {
         if (needsUpdate) {
           this.updateVisibleChunks();
         }
@@ -431,6 +431,10 @@ export default class WorldmapScene extends HexagonScene {
     const oldHexCoords = this.armiesPositions.get(update.entityId);
     const oldCol = oldHexCoords?.col;
     const oldRow = oldHexCoords?.row;
+    console.log({ oldCol, oldRow, newCol, newRow });
+
+    // update the position of the army
+    this.armiesPositions.set(update.entityId, { col: newCol, row: newRow });
 
     if (oldCol && oldRow) {
       if (oldCol !== newCol || oldRow !== newRow) {
