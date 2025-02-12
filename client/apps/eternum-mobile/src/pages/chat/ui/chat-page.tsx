@@ -49,7 +49,7 @@ export function ChatPage() {
           </TabsList>
         </div>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1">
           <TabsContent value="global" className="h-full m-0">
             <GlobalChatTab onMentionClick={() => setIsDMDrawerOpen(true)} />
           </TabsContent>

@@ -52,8 +52,8 @@ export function DMChat({ user, onBack, onMentionClick }: DMChatProps) {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 p-4 border-b">
+    <>
+      <div className="flex items-center gap-2 p-2 pt-0 border-b bg-background sticky top-14 z-10">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -69,42 +69,43 @@ export function DMChat({ user, onBack, onMentionClick }: DMChatProps) {
           <span className="font-medium">{user.name}</span>
         </div>
       </div>
-
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div key={message.id} className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{message.sender}</span>
-                <span className="text-sm text-muted-foreground">{message.timestamp}</span>
+      <div className="flex flex-col h-full">
+        <ScrollArea className="flex-1 p-4 pb-16">
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <div key={message.id} className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">{message.sender}</span>
+                  <span className="text-sm text-muted-foreground">{message.timestamp}</span>
+                </div>
+                <p className="text-sm">{message.message}</p>
               </div>
-              <p className="text-sm">{message.message}</p>
-            </div>
-          ))}
-          <div ref={scrollRef} />
-        </div>
-      </ScrollArea>
+            ))}
+            <div ref={scrollRef} />
+          </div>
+        </ScrollArea>
 
-      <div className="p-4 border-t flex gap-2">
-        <Button variant="outline" size="icon" className="shrink-0" onClick={onMentionClick}>
-          @
-        </Button>
-        <Input
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          placeholder="Type a message..."
-          className="flex-1"
-        />
-        <Button onClick={handleSend} className="shrink-0">
-          Send
-        </Button>
+        <div className="p-4 border-t flex gap-2 fixed bottom-16 w-full bg-background">
+          <Button variant="outline" size="icon" className="shrink-0" onClick={onMentionClick}>
+            @
+          </Button>
+          <Input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Type a message..."
+            className="flex-1"
+          />
+          <Button onClick={handleSend} className="shrink-0">
+            Send
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
