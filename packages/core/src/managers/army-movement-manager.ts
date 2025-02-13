@@ -13,9 +13,9 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { ContractAddress, HexPosition, HexTileInfo, ID, TravelTypes, TroopType } from "../types";
+import { ContractAddress, HexPosition, ID, TravelTypes, TroopType } from "../types";
 import { Biome, multiplyByPrecision } from "../utils";
-import { TravelPaths } from "../utils/travel-path";
+import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
@@ -161,9 +161,9 @@ export class ArmyMovementManager {
     exploredHexes: Map<number, Map<number, BiomeType>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
-  ): TravelPaths {
+  ): ActionPaths {
     const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
-    if (armyStamina === 0) return new TravelPaths();
+    if (armyStamina === 0) return new ActionPaths();
 
     const troopType = this._getTroopType();
     const startPos = this._getCurrentPosition();
@@ -171,11 +171,9 @@ export class ArmyMovementManager {
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
 
-    const startBiome = Biome.getBiome(startPos.col, startPos.row);
-
-    const travelPaths = new TravelPaths();
+    const actionPaths = new ActionPaths();
     const lowestStaminaUse = new Map<string, number>();
-    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: HexTileInfo[] }> =
+    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: ActionPath[] }> =
       [];
 
     // Process initial neighbors instead of start position
@@ -199,8 +197,13 @@ export class ArmyMovementManager {
         staminaUsed: staminaCost,
         distance: 1,
         path: [
-          { col: startPos.col, row: startPos.row, biomeType: startBiome, staminaCost: 0 },
-          { col, row, biomeType: biome, staminaCost },
+          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+          {
+            hex: { col, row },
+            actionType: biome ? ActionType.Explore : ActionType.Move,
+            biomeType: biome,
+            staminaCost,
+          },
         ],
       });
     }
@@ -208,18 +211,18 @@ export class ArmyMovementManager {
     while (priorityQueue.length > 0) {
       priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed);
       const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
-      const currentKey = TravelPaths.posKey(current);
+      const currentKey = ActionPaths.posKey(current);
 
       if (!lowestStaminaUse.has(currentKey) || staminaUsed < lowestStaminaUse.get(currentKey)!) {
         lowestStaminaUse.set(currentKey, staminaUsed);
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-        travelPaths.set(currentKey, { path, isExplored });
+        actionPaths.set(currentKey, path);
 
         if (!isExplored) continue;
 
         const neighbors = getNeighborHexes(current.col, current.row);
         for (const { col, row } of neighbors) {
-          const neighborKey = TravelPaths.posKey({ col, row });
+          const neighborKey = ActionPaths.posKey({ col, row });
           const nextDistance = distance + 1;
 
           if (nextDistance > maxHex) continue;
@@ -241,14 +244,22 @@ export class ArmyMovementManager {
               position: { col, row },
               staminaUsed: nextStaminaUsed,
               distance: nextDistance,
-              path: [...path, { col, row, biomeType: biome, staminaCost }],
+              path: [
+                ...path,
+                {
+                  hex: { col, row },
+                  actionType: biome ? ActionType.Explore : ActionType.Move,
+                  biomeType: biome,
+                  staminaCost,
+                },
+              ],
             });
           }
         }
       }
     }
 
-    return travelPaths;
+    return actionPaths;
   }
 
   public isMine = (address: ContractAddress) => {

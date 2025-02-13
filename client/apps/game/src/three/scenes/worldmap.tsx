@@ -18,18 +18,18 @@ import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  ActionPath,
   ActionPaths,
   ActionType,
   ArmyMovementManager,
   Biome,
   BiomeType,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  getNeighborOffsets,
   HexPosition,
   ID,
   SetupResult,
   TileManager,
-  TravelPaths,
-  getNeighborOffsets,
 } from "@bibliothecadao/eternum";
 import { getEntities } from "@dojoengine/state";
 import throttle from "lodash/throttle";
@@ -233,8 +233,8 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
     const { hexCoords } = hex;
-    const { selectedEntityId, travelPaths } = this.state.armyActions;
-    if (selectedEntityId && travelPaths.size > 0) {
+    const { selectedEntityId, actionPaths } = this.state.armyActions;
+    if (selectedEntityId && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
         this.previouslyHoveredHex = hexCoords;
       }
@@ -346,12 +346,12 @@ export default class WorldmapScene extends HexagonScene {
 
     const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
 
-    const { selectedEntityId, travelPaths } = this.state.armyActions;
-    if (selectedEntityId && travelPaths.size > 0 && hexCoords) {
-      const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
-      if (travelPath) {
-        const selectedPath = travelPath.path;
-        const isExplored = travelPath.isExplored ?? false;
+    const { selectedEntityId, actionPaths } = this.state.armyActions;
+    if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
+      const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
+      if (actionPath) {
+        const selectedPath = actionPath.map((path) => path.hex);
+        const isExplored = actionPath[actionPath.length - 1].actionType === ActionType.Explore;
         if (selectedPath.length > 0) {
           const armyMovementManager = new ArmyMovementManager(
             this.dojo.components,
@@ -380,20 +380,20 @@ export default class WorldmapScene extends HexagonScene {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
-    const travelPaths = armyMovementManager.findPaths(
+    const actionPaths = armyMovementManager.findPaths(
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
       currentDefaultTick,
       currentArmiesTick,
     );
-    this.state.updateTravelPaths(travelPaths.getPaths());
-    this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
+    this.state.updateActionPaths(actionPaths.getPaths());
+    this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
 
   private clearSelection() {
     this.highlightHexManager.highlightHexes([]);
-    this.state.updateTravelPaths(new Map());
+    this.state.updateActionPaths(new Map());
     this.structurePreview?.clearPreviewStructure();
     this.state.updateSelectedEntityId(null);
     this.state.setSelectedHex(null);
@@ -923,7 +923,7 @@ export default class WorldmapScene extends HexagonScene {
     return exploredHexes;
   }
 
-  private getBuildableHexesForCurrentChunk(): ActionPaths {
+  private getBuildableHexesForCurrentChunk(): ActionPath[] {
     const exploredHexes = this.getExploredHexesForCurrentChunk();
     const buildableHexes = exploredHexes.filter(
       (hex) => !this.structureManager.structureHexCoords.get(hex.col)?.has(hex.row),

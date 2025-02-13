@@ -6,11 +6,12 @@ import { ResourceCost } from "@/ui/elements/resource-cost";
 import { StaminaResourceCost } from "@/ui/elements/stamina-resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  ActionPath,
+  ActionType,
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
   getBalance,
-  HexTileInfo,
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
@@ -22,14 +23,14 @@ import { memo, useCallback, useMemo } from "react";
 const TooltipContent = memo(
   ({
     isExplored,
-    travelPath,
+    actionPath,
     costs,
     selectedEntityId,
     structureEntityId,
     getBalance,
   }: {
     isExplored: boolean;
-    travelPath: { path: HexTileInfo[]; isExplored: boolean };
+    actionPath: ActionPath[];
     costs: { travelFoodCosts: any; exploreFoodCosts: any };
     selectedEntityId: number;
     structureEntityId: number;
@@ -40,12 +41,12 @@ const TooltipContent = memo(
       {isExplored ? (
         <div>
           <ResourceCost
-            amount={-costs.travelFoodCosts.wheatPayAmount * (travelPath.path.length - 1)}
+            amount={-costs.travelFoodCosts.wheatPayAmount * (actionPath.length - 1)}
             resourceId={ResourcesIds.Wheat}
             balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
           />
           <ResourceCost
-            amount={-costs.travelFoodCosts.fishPayAmount * (travelPath.path.length - 1)}
+            amount={-costs.travelFoodCosts.fishPayAmount * (actionPath.length - 1)}
             resourceId={ResourcesIds.Fish}
             balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
           />
@@ -67,7 +68,7 @@ const TooltipContent = memo(
       <StaminaResourceCost
         travelingEntityId={Number(selectedEntityId)}
         isExplored={isExplored}
-        path={travelPath.path.slice(1)}
+        path={actionPath.slice(1)}
       />
       {!isExplored && (
         <div className="flex flex-row text-xs ml-1">
@@ -111,18 +112,18 @@ export const ActionInfo = memo(() => {
     );
   }, [selectedEntityId]);
 
-  const travelPath = useMemo(() => {
+  const actionPath = useMemo(() => {
     if (!hoveredHex) return undefined;
     return useUIStore
       .getState()
-      .armyActions.travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
+      .armyActions.actionPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
   }, [hoveredHex]);
 
   const showTooltip = useMemo(() => {
-    return travelPath !== undefined && travelPath.path.length >= 2 && selectedEntityId !== null;
-  }, [travelPath, selectedEntityId]);
+    return actionPath !== undefined && actionPath.length >= 2 && selectedEntityId !== null;
+  }, [actionPath, selectedEntityId]);
 
-  const isExplored = travelPath?.isExplored || false;
+  const isExplored = actionPath?.[actionPath.length - 1].actionType === ActionType.Explore;
 
   const costs = useMemo(
     () => ({
@@ -132,13 +133,13 @@ export const ActionInfo = memo(() => {
     [selectedEntityTroops],
   );
 
-  if (!showTooltip || !selectedEntityId || !travelPath) return null;
+  if (!showTooltip || !selectedEntityId || !actionPath) return null;
 
   return (
     <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>
       <TooltipContent
         isExplored={isExplored}
-        travelPath={travelPath}
+        actionPath={actionPath}
         costs={costs}
         selectedEntityId={selectedEntityId}
         structureEntityId={structureEntityId}

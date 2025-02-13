@@ -1,7 +1,7 @@
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { highlightHexMaterial } from "@/three/shaders/highlight-hex-material";
-import { ActionPaths, ActionType } from "@bibliothecadao/eternum";
+import { ActionPath, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { getWorldPositionForHex } from "../utils";
 
@@ -30,7 +30,9 @@ export class HighlightHexManager {
     this.material = highlightHexMaterial;
   }
 
-  highlightHexes(actionPaths: ActionPaths) {
+  highlightHexes(actionPaths: ActionPath[]) {
+    console.log({ actionPaths });
+
     // Remove existing highlights
     this.highlightedHexes.forEach((mesh) => this.scene.remove(mesh));
     this.highlightedHexes = [];
