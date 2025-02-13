@@ -83,11 +83,9 @@ export class ArmyMovementManager {
 
   private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
-    const travelStaminaCost = configManager.getTravelStaminaCost();
-
-    const maxStaminaSteps = travelStaminaCost
-      ? Math.floor((stamina.amount || 0) / configManager.getTravelStaminaCost())
-      : 999;
+    // Calculate minimum stamina cost across all biomes for this troop type
+    const minTravelStaminaCost = configManager.getMinTravelStaminaCost();
+    const maxStaminaSteps = Math.floor(stamina.amount / minTravelStaminaCost);
 
     const entityArmy = getComponentValue(this.components.Army, this.entity);
     const travelFoodCosts = computeTravelFoodCosts(entityArmy?.troops);
@@ -166,14 +164,9 @@ export class ArmyMovementManager {
   ): TravelPaths {
     const troopType = this._getTroopType();
     const startPos = this._getCurrentPosition();
+    // max hex based on food
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
-
-    console.log("[findPaths] Initial conditions:", {
-      startPos,
-      maxHex,
-      canExplore,
-    });
 
     const startBiome = Biome.getBiome(startPos.col, startPos.row);
 
