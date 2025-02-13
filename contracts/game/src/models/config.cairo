@@ -53,6 +53,7 @@ pub struct WorldConfig {
     troop_stamina_config: TroopStaminaConfig,
     troop_limit_config: TroopLimitConfig,
     capacity_config: CapacityConfig,
+    trade_count_config: TradeCountConfig,
 }
 
 #[generate_trait]
@@ -64,6 +65,14 @@ impl WorldConfigUtilImpl of WorldConfigTrait {
         world.write_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)
     }
 }
+
+
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct TradeCountConfig {
+    max_count: u8,
+}
+
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct SeasonAddressesConfig {

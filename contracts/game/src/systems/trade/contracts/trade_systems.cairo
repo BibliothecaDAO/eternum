@@ -36,7 +36,7 @@ mod trade_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{DEFAULT_NS, DONKEY_ENTITY_TYPE, REALM_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{SpeedConfig, WorldConfig, SpeedImpl};
+    use s1_eternum::models::config::{SpeedConfig, WorldConfig, SpeedImpl, TradeCountConfig, WorldConfigUtilImpl};
     use s1_eternum::models::config::{WeightConfig, WeightConfigImpl};
     use s1_eternum::models::owner::{Owner, OwnerTrait};
     use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
@@ -48,7 +48,7 @@ mod trade_systems {
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
 
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::trade::{Trade};
+    use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{W3eight, W3eightTrait};
     use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
     use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{
@@ -118,6 +118,12 @@ mod trade_systems {
             let taker_structure: Structure = world.read_model(taker_id);
             taker_structure.assert_exists();
 
+            // ensure trade count does not exceed max
+            let trade_count_config: TradeCountConfig 
+                = WorldConfigUtilImpl::get_member( world, selector!("trade_count_config"),);
+            let mut trade_count: TradeCount = world.read_model(maker_id);
+            assert!(trade_count.count < trade_count_config.max_count, "trade count exceeds max");
+
             // ensure expires at is in the future
             let now = starknet::get_block_timestamp().try_into().unwrap();
             assert!(expires_at > now, "expires at is in the past");
@@ -170,6 +176,10 @@ mod trade_systems {
                         expires_at,
                     },
                 );
+
+            // increment trade count
+            trade_count.count += 1;
+            world.write_model(@trade_count);
 
             world.emit_event(@CreateOrder { taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp() });
 
@@ -272,11 +282,17 @@ mod trade_systems {
             iDonkeyImpl::burn_finialize(ref world, trade.maker_id, maker_donkey_amount, maker_structure.owner.address);
 
 
-            // update trade model
+            // update trade and trade count
+            trade.maker_gives_max_count -= taker_buys_count;
             if trade.maker_gives_max_count.is_zero() {
+
+                // decrease trade count
+                let mut trade_count: TradeCount = world.read_model(trade.maker_id);
+                trade_count.decrease(ref world);
+
+                // delete trade
                 world.erase_model(@trade);
             } else {
-                trade.maker_gives_max_count -= taker_buys_count;
                 world.write_model(@trade);
             }
 
@@ -333,6 +349,10 @@ mod trade_systems {
 
             // delete trade
             world.erase_model(@trade);
+
+            // decrease trade count
+            let mut trade_count: TradeCount = world.read_model(trade.maker_id);
+            trade_count.decrease(ref world);
 
             // emit event
             world
