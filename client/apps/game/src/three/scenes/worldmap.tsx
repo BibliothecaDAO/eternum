@@ -380,7 +380,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
-    const actionPaths = armyMovementManager.findPaths(
+    const actionPaths = armyMovementManager.findActionPaths(
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,

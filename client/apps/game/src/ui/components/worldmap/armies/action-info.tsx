@@ -35,52 +35,56 @@ const TooltipContent = memo(
     selectedEntityId: number;
     structureEntityId: number;
     getBalance: (entityId: ID, resourceId: ResourcesIds) => { balance: number; resourceId: ResourcesIds };
-  }) => (
-    <>
-      <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
-      {isExplored ? (
-        <div>
-          <ResourceCost
-            amount={-costs.travelFoodCosts.wheatPayAmount * (actionPath.length - 1)}
-            resourceId={ResourcesIds.Wheat}
-            balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
-          />
-          <ResourceCost
-            amount={-costs.travelFoodCosts.fishPayAmount * (actionPath.length - 1)}
-            resourceId={ResourcesIds.Fish}
-            balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
-          />
-        </div>
-      ) : (
-        <div>
-          <ResourceCost
-            amount={-costs.exploreFoodCosts.wheatPayAmount}
-            resourceId={ResourcesIds.Wheat}
-            balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
-          />
-          <ResourceCost
-            amount={-costs.exploreFoodCosts.fishPayAmount}
-            resourceId={ResourcesIds.Fish}
-            balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
-          />
-        </div>
-      )}
-      <StaminaResourceCost
-        travelingEntityId={Number(selectedEntityId)}
-        isExplored={isExplored}
-        path={actionPath.slice(1)}
-      />
-      {!isExplored && (
-        <div className="flex flex-row text-xs ml-1">
-          <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
-          <div className="flex flex-col p-1 text-xs">
-            <div>+{configManager.getExploreReward()} Random resource</div>
+  }) => {
+    const lastAction = actionPath[actionPath.length - 1];
+
+    return (
+      <>
+        <Headline>{lastAction.actionType}</Headline>
+        {lastAction.actionType === ActionType.Explore ? (
+          <div>
+            <ResourceCost
+              amount={-costs.travelFoodCosts.wheatPayAmount * (actionPath.length - 1)}
+              resourceId={ResourcesIds.Wheat}
+              balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
+            />
+            <ResourceCost
+              amount={-costs.travelFoodCosts.fishPayAmount * (actionPath.length - 1)}
+              resourceId={ResourcesIds.Fish}
+              balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
+            />
           </div>
-        </div>
-      )}
-      <div className="text-xs text-center mt-2 text-gray-400 animate-pulse">Right-click to confirm</div>
-    </>
-  ),
+        ) : lastAction.actionType === ActionType.Move ? (
+          <div>
+            <ResourceCost
+              amount={-costs.exploreFoodCosts.wheatPayAmount}
+              resourceId={ResourcesIds.Wheat}
+              balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
+            />
+            <ResourceCost
+              amount={-costs.exploreFoodCosts.fishPayAmount}
+              resourceId={ResourcesIds.Fish}
+              balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
+            />
+          </div>
+        ) : null}
+        <StaminaResourceCost
+          travelingEntityId={Number(selectedEntityId)}
+          isExplored={isExplored}
+          path={actionPath.slice(1)}
+        />
+        {!isExplored && (
+          <div className="flex flex-row text-xs ml-1">
+            <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
+            <div className="flex flex-col p-1 text-xs">
+              <div>+{configManager.getExploreReward()} Random resource</div>
+            </div>
+          </div>
+        )}
+        <div className="text-xs text-center mt-2 text-gray-400 animate-pulse">Right-click to confirm</div>
+      </>
+    );
+  },
 );
 
 TooltipContent.displayName = "TooltipContent";
@@ -123,7 +127,9 @@ export const ActionInfo = memo(() => {
     return actionPath !== undefined && actionPath.length >= 2 && selectedEntityId !== null;
   }, [actionPath, selectedEntityId]);
 
-  const isExplored = actionPath?.[actionPath.length - 1].actionType === ActionType.Explore;
+  const isExplored = useMemo(() => {
+    return actionPath?.[actionPath.length - 1].biomeType !== undefined;
+  }, [actionPath]);
 
   const costs = useMemo(
     () => ({

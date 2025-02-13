@@ -155,7 +155,7 @@ export class ArmyMovementManager {
     }
   }
 
-  public findPaths(
+  public findActionPaths(
     structureHexes: Map<number, Set<number>>,
     armyHexes: Map<number, Set<number>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
@@ -184,8 +184,9 @@ export class ArmyMovementManager {
       const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
       const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
 
-      if (hasArmy || hasStructure) continue;
       if (!isExplored && !canExplore) continue;
+
+      const canAttack = hasArmy || hasStructure;
 
       const EXPLORATION_STAMINA_COST = configManager.getExploreStaminaCost();
       const staminaCost = biome ? ArmyMovementManager.staminaDrain(biome, troopType) : EXPLORATION_STAMINA_COST;
@@ -200,7 +201,7 @@ export class ArmyMovementManager {
           { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
           {
             hex: { col, row },
-            actionType: biome ? ActionType.Explore : ActionType.Move,
+            actionType: canAttack ? ActionType.Attack : biome ? ActionType.Move : ActionType.Explore,
             biomeType: biome,
             staminaCost,
           },
