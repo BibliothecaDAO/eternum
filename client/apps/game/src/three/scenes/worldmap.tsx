@@ -18,6 +18,8 @@ import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  ActionPaths,
+  ActionType,
   ArmyMovementManager,
   Biome,
   BiomeType,
@@ -921,12 +923,15 @@ export default class WorldmapScene extends HexagonScene {
     return exploredHexes;
   }
 
-  private getBuildableHexesForCurrentChunk() {
+  private getBuildableHexesForCurrentChunk(): ActionPaths {
     const exploredHexes = this.getExploredHexesForCurrentChunk();
     const buildableHexes = exploredHexes.filter(
       (hex) => !this.structureManager.structureHexCoords.get(hex.col)?.has(hex.row),
     );
-    return buildableHexes;
+    return buildableHexes.map((hex) => ({
+      hex: { col: hex.col, row: hex.row },
+      actionType: ActionType.Build,
+    }));
   }
 
   private cacheMatricesForChunk(startRow: number, startCol: number) {

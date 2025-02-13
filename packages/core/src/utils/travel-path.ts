@@ -1,6 +1,19 @@
 import { FELT_CENTER } from "../constants";
 import { HexPosition, HexTileInfo } from "../types";
 
+export type ActionPaths = {
+  hex: HexPosition;
+  actionType: ActionType;
+}[];
+
+export enum ActionType {
+  Move = "move",
+  Attack = "attack",
+  Build = "build",
+  Merge = "merge",
+  Explore = "explore",
+}
+
 export class TravelPaths {
   private readonly paths: Map<string, { path: HexTileInfo[]; isExplored: boolean }>;
 
@@ -28,11 +41,16 @@ export class TravelPaths {
     return this.paths.values();
   }
 
-  getHighlightedHexes(): Array<{ col: number; row: number }> {
-    return Array.from(this.paths.values()).map(({ path }) => ({
-      col: path[path.length - 1].col - FELT_CENTER,
-      row: path[path.length - 1].row - FELT_CENTER,
-    }));
+  getHighlightedHexes(): ActionPaths {
+    return Array.from(this.paths.values()).flatMap(({ path, isExplored }) =>
+      path.map((hex) => ({
+        hex: {
+          col: hex.col - FELT_CENTER,
+          row: hex.row - FELT_CENTER,
+        },
+        actionType: isExplored ? ActionType.Explore : ActionType.Move,
+      })),
+    );
   }
 
   isHighlighted(row: number, col: number): boolean {
