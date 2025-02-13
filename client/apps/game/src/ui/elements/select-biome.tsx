@@ -1,21 +1,25 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { Biome, CombatSimulator, resources, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
+import { BiomeType, CombatSimulator, resources, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
 import React, { useState } from "react";
 
 interface SelectBiomeProps {
-  onSelect: (biome: Biome | null) => void;
+  onSelect: (biome: BiomeType | null) => void;
   className?: string;
-  defaultValue?: Biome;
+  defaultValue?: BiomeType;
 }
 
 const TROOP_RESOURCES = [
-  { type: TroopType.KNIGHT, resourceId: ResourcesIds.Knight },
-  { type: TroopType.CROSSBOWMAN, resourceId: ResourcesIds.Crossbowman },
-  { type: TroopType.PALADIN, resourceId: ResourcesIds.Paladin },
+  { type: TroopType.Knight, resourceId: ResourcesIds.Knight },
+  { type: TroopType.Crossbowman, resourceId: ResourcesIds.Crossbowman },
+  { type: TroopType.Paladin, resourceId: ResourcesIds.Paladin },
 ];
 
-export const SelectBiome: React.FC<SelectBiomeProps> = ({ onSelect, className, defaultValue = Biome.GRASSLAND }) => {
+export const SelectBiome: React.FC<SelectBiomeProps> = ({
+  onSelect,
+  className,
+  defaultValue = BiomeType.Grassland,
+}) => {
   const [selectedBiome, setSelectedBiome] = useState<string>(defaultValue?.toString() || "");
 
   const formatBiomeName = (biome: string) => {
@@ -44,7 +48,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({ onSelect, className, d
       value={selectedBiome}
       onValueChange={(value) => {
         setSelectedBiome(value);
-        onSelect(value as Biome);
+        onSelect(value as BiomeType);
       }}
     >
       <SelectTrigger className={className}>
@@ -54,7 +58,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({ onSelect, className, d
               <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(selectedBiome)}</span>
               <div className="flex gap-8">
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
-                  const bonus = CombatSimulator.getBiomeBonus(type, selectedBiome as Biome);
+                  const bonus = CombatSimulator.getBiomeBonus(type, selectedBiome as BiomeType);
                   return (
                     <div key={type} className="flex items-center gap-2 w-16 justify-end">
                       <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />
@@ -78,7 +82,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({ onSelect, className, d
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {Object.values(Biome).map((biome) => (
+        {Object.values(BiomeType).map((biome) => (
           <SelectItem key={biome} value={biome} className="py-3">
             <div className="flex items-center justify-between w-full">
               <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(biome)}</span>

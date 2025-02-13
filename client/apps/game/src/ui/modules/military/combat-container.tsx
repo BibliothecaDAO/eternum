@@ -1,10 +1,12 @@
 import {
-  BattleSimulator,
+  BiomeType,
+  CombatSimulator,
   ContractAddress,
   getArmy,
   getEntityIdFromKeys,
   getStructure,
-  TroopConfig,
+  ID,
+  TroopType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
@@ -16,11 +18,11 @@ enum TargetType {
   Army,
 }
 
-export const BattleContainer = ({
+export const CombatContainer = ({
   attackerEntityId,
   targetHex,
 }: {
-  attackerEntityId: string;
+  attackerEntityId: ID;
   targetHex: { x: number; y: number };
 }) => {
   const {
@@ -63,7 +65,6 @@ export const BattleContainer = ({
     if (!target || target.targetType === TargetType.Structure) return null;
 
     const targetId = target.info?.entity_id;
-
     if (!targetId) return null;
 
     const targetArmyEntity = getComponentValue(Army, getEntityIdFromKeys([BigInt(targetId)]));
@@ -74,30 +75,72 @@ export const BattleContainer = ({
 
     if (!attackerArmyEntity || !targetArmyEntity || !attackerHealth || !targetHealth) return null;
 
-    // Example troop config - should come from game config
-    const config = new TroopConfig(
-      100, // health
-      10, // knight strength
-      12, // paladin strength
-      8, // crossbowman strength
-      2000, // advantage percent (20%)
-      1000, // disadvantage percent (10%)
-      100, // battle time scale
-      300, // max battle time seconds
-    );
+    // Convert game armies to simulator armies
+    const attackerArmy = {
+      stamina: Number(attackerHealth.current),
+      troopCount:
+        Number(attackerArmyEntity.troops.knight_count) +
+        Number(attackerArmyEntity.troops.paladin_count) +
+        Number(attackerArmyEntity.troops.crossbowman_count),
+      troopType: TroopType.Knight, // You may want to determine dominant troop type
+      tier: 1 as 1 | 2 | 3, // You may want to determine tier from game state
+    };
 
-    return new BattleSimulator(
-      attackerArmyEntity.troops,
-      targetArmyEntity.troops,
-      attackerHealth,
-      targetHealth,
-      config,
-    );
+    const defenderArmy = {
+      stamina: Number(targetHealth.current),
+      troopCount:
+        Number(targetArmyEntity.troops.knight_count) +
+        Number(targetArmyEntity.troops.paladin_count) +
+        Number(targetArmyEntity.troops.crossbowman_count),
+      troopType: TroopType.Knight, // You may want to determine dominant troop type
+      tier: 1 as 1 | 2 | 3, // You may want to determine tier from game state
+    };
+
+    // Use default parameters for simulation
+    const params = CombatSimulator.getDefaultParameters();
+
+    // Simulate battle with default biome (Grassland) for now
+    // You may want to get actual biome from game state
+    const result = CombatSimulator.simulateBattleWithParams(attackerArmy, defenderArmy, BiomeType.Grassland, params);
+
+    // Calculate remaining troops based on damage
+    const attackerTroopsLost = Math.min(attackerArmy.troopCount, Math.ceil(result.defenderDamage));
+    const defenderTroopsLost = Math.min(defenderArmy.troopCount, Math.ceil(result.attackerDamage));
+
+    return {
+      attackerTroopsLeft: attackerArmy.troopCount - attackerTroopsLost,
+      defenderTroopsLeft: defenderArmy.troopCount - defenderTroopsLost,
+      winner: attackerTroopsLost < defenderTroopsLost ? attackerArmy : defenderArmy,
+      duration: Math.ceil(result.attackerDamage + result.defenderDamage), // Simple duration estimate
+      getRemainingTroops: () => ({
+        attackerTroops: {
+          knight_count: Math.ceil(
+            Number(attackerArmyEntity.troops.knight_count) * (1 - attackerTroopsLost / attackerArmy.troopCount),
+          ),
+          paladin_count: Math.ceil(
+            Number(attackerArmyEntity.troops.paladin_count) * (1 - attackerTroopsLost / attackerArmy.troopCount),
+          ),
+          crossbowman_count: Math.ceil(
+            Number(attackerArmyEntity.troops.crossbowman_count) * (1 - attackerTroopsLost / attackerArmy.troopCount),
+          ),
+        },
+        defenderTroops: {
+          knight_count: Math.ceil(
+            Number(targetArmyEntity.troops.knight_count) * (1 - defenderTroopsLost / defenderArmy.troopCount),
+          ),
+          paladin_count: Math.ceil(
+            Number(targetArmyEntity.troops.paladin_count) * (1 - defenderTroopsLost / defenderArmy.troopCount),
+          ),
+          crossbowman_count: Math.ceil(
+            Number(targetArmyEntity.troops.crossbowman_count) * (1 - defenderTroopsLost / defenderArmy.troopCount),
+          ),
+        },
+      }),
+    };
   }, [attackerEntityId, target, account, components]);
 
   const remainingTroops = battleSimulation?.getRemainingTroops();
-  const winner = battleSimulation?.getWinner();
-  const duration = battleSimulation?.calculateDuration();
+  const winner = battleSimulation?.winner;
 
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
@@ -139,7 +182,6 @@ export const BattleContainer = ({
           <div className="p-4 bg-gray-700 rounded-lg mt-4">
             <h3 className="text-lg font-semibold mb-2">Battle Prediction</h3>
             <div className="space-y-2">
-              <div>Expected Duration: {duration} turns</div>
               <div>Predicted Winner: {winner === attackerArmyData ? "Attacker" : "Defender"}</div>
 
               <div className="mt-4">

@@ -16,7 +16,7 @@ import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { BattleModal } from "@/ui/modules/military/battle-modal";
+import { CombatModal } from "@/ui/modules/military/combat-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ActionPath,
@@ -384,7 +384,12 @@ export default class WorldmapScene extends HexagonScene {
 
     // Find the army at the target position
 
-    this.state.toggleModal(<BattleModal />);
+    this.state.toggleModal(
+      <CombatModal
+        attackerEntityId={selectedEntityId}
+        targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
+      />,
+    );
   }
 
   private onArmySelection(selectedEntityId: ID | null) {
