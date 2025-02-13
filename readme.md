@@ -11,7 +11,7 @@
 # Realms: Eternum
 
 Eternum has been designed to be a foundational game for Realms World. It will freely evolve and grow as the game and
-world age. Think of it as a living, breathing digital ecosystem, constantly inviting endless exploration. It’s both a
+world age. Think of it as a living, breathing digital ecosystem, constantly inviting endless exploration. It's both a
 game and an open platform.
 
 ### Eternum as a Game
@@ -59,66 +59,150 @@ inhabitants.
 
 ## Project Structure
 
-- [Client](./client) Vite App with threejs interface
-- [Contracts](./contracts) Cairo Based
-- [Eternum Docs](./eternum-docs) Documentation around playing and building on Eternum
-- [Scripts](./scripts) Development
-- [SDK](./sdk) Npm packages
+- [Client](./client) - React apps built with Vite
+  - [Game](./client/apps/game) - Main game client with Three.js interface
+  - [Landing](./client/apps/landing) - Landing page
+  - [Game Docs](./client/apps/game-docs) - Game documentation
+  - [Balancing](./client/apps/balancing) - Game balancing tools
+- [Contracts](./contracts) - Cairo/Dojo smart contracts
+  - Game contracts
+  - Season Pass contracts
+  - Season Resources contracts
+- [Packages](./packages) - Shared libraries
+  - [Core](./packages/core) - Eternum SDK
+  - [React](./packages/react) - React hooks and components
+- [Config](./config) - Configuration and deployment scripts
 
----
+## Prerequisites
+
+- [Dojo](https://book.dojoengine.org) v1.0.4
+- [Node.js](https://nodejs.org/)
+- [pnpm](https://pnpm.io/) v9.12.3
+- [Bun](https://bun.sh/)
+
+## Core Dependencies
+
+- [@dojoengine/react](https://www.npmjs.com/package/@dojoengine/react) - React integration for Dojo
+- [@dojoengine/recs](https://www.npmjs.com/package/@dojoengine/recs) - Entity Component System
+- [@cartridge/controller](https://www.npmjs.com/package/@cartridge/controller) - Game controller integration
+- [Starknet.js](https://www.npmjs.com/package/starknet) v6.23.1 - StarkNet interaction
+- [Vite](https://vitejs.dev/) - Frontend build tool
+
+## Setup
+
+1. Install Dojo:
+
+```bash
+curl -L https://install.dojoengine.org | bash
+```
+
+2. Install pnpm:
+
+```bash
+npm install -g pnpm
+```
+
+3. Install project dependencies:
+
+```bash
+pnpm install
+```
+
+4. Build shared packages:
+
+```bash
+pnpm run build:packages
+```
 
 ## Development of Eternum
 
 Development of Eternum is open-source. If you would like to contribute comment on an open issue.
 
-## Prerequisites
+## Available Scripts
 
-- [Dojo onchain game engine](https://book.dojoengine.org)
-- React
+### Development
 
-# Setup
+- `pnpm dev` - Start game development server
+- `pnpm dev:docs` - Start documentation development server
+- `pnpm dev:landing` - Start landing page development server
 
-Install dojo via
+### Building
 
-`curl -L https://install.dojoengine.org | bash`
+- `pnpm build` - Build game client
+- `pnpm build:docs` - Build documentation
+- `pnpm build:landing` - Build landing page
+- `pnpm build:packages` - Build shared packages
 
-Make sure install the same version within the `Scarb.toml` file.
+### Testing & Linting
 
-Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. So you will need pnpm
-installed also.
+- `pnpm test` - Run all tests
+- `pnpm lint` - Run linting
+- `pnpm format` - Format code
+- `pnpm format:check` - Check code formatting
 
-`npm install -g pnpm`
+### Contract Deployment
 
-## Easy Method (3 commands)
 
-We have bundled up three scripts to run in three different CLI terminals. Run the scripts in order and leave the window
-open.
+Eternum supports multiple deployment environments:
 
-### Terminal 1 - Client setup
+| Environment | Description |
+|-------------|-------------|
+| Local | For development and testing |
+| Slot | Staging environment |
+| Sepolia | Public testnet |
+| Mainnet | Production environment |
 
-This will set the client up, however you **must** run the other scripts otherwise it will not work
+#### Deploying to Local
 
+Before deploying to any environment, confirm that you have a 
+`.env.{environment}` file in the `contracts/common` directory,
+as well as in the `client/apps/game` directory. <br>
+
+To deploy and run the game locally:
+
+```bash
+# Start local game contracts
+pnpm run contract:start:local
 ```
-sh scripts/client.sh
+
+#### Deploying to Sepolia
+
+To deploy the contracts to Sepolia testnet, run these commands in order:
+
+1. Deploy game contracts:
+
+```bash
+pnpm run game:migrate:sepolia
 ```
 
-### Terminal 2 - Build the contracts and run the sequencer
+2. Deploy season pass contracts:
 
+```bash
+pnpm run seasonpass:deploy:sepolia
 ```
-sh scripts/contracts.sh
+
+3. Deploy season resources contracts:
+
+```bash
+pnpm run seasonresources:deploy:sepolia
 ```
 
-### Terminal 3 - Migrate the contracts and start the indexer
+4. Update TOML configuration:
 
+```bash
+pnpm run toml:update:sepolia
 ```
-<!-- to set config & deploy test contracts -->
-sh scripts/indexer.sh --setConfig --external
 
-<!-- to set config -->
-sh scripts/indexer.sh --setConfig
+5. Start the indexer:
 
-<!-- to just build and index -->
-sh scripts/indexer.sh
+```bash
+pnpm run indexer:start:sepolia
+```
+
+6. Deploy game configuration:
+
+```bash
+pnpm run config:deploy:sepolia
 ```
 
 ## License
