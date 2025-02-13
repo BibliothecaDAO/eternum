@@ -10,7 +10,7 @@ use s1_eternum::models::position::Coord;
 pub struct Movable {
     #[key]
     entity_id: ID,
-    sec_per_km: u16,
+    entity_type: u128,
     blocked: bool,
     round_trip: bool,
     start_coord_x: u32,
@@ -21,34 +21,13 @@ pub struct Movable {
 
 #[generate_trait]
 impl MovableImpl of MovableTrait {
-    fn sec_per_km(ref world: WorldStorage) -> u16 {
-        let speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, selector!("speed_config"));
-        speed_config.donkey_sec_per_km
-    }
+
     fn assert_moveable(self: Movable) {
         assert!(!self.blocked, "Entity is blocked");
-        assert!(self.sec_per_km.is_non_zero(), "Entity has no speed");
+        assert!(self.entity_type.is_non_zero(), "Entity has no speed");
     }
 
     fn assert_blocked(self: Movable) {
         assert!(self.blocked, "Entity {} is not blocked", self.entity_id);
-    }
-}
-
-// DISCUSS: separated from the Movable component because
-// we want to attach an ArrivalTime to the trading order
-// without having to attach a Movable component to the order
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct ArrivalTime {
-    #[key]
-    entity_id: ID,
-    arrives_at: u64,
-}
-
-#[generate_trait]
-impl ArrivalTimeImpl of ArrivalTimeTrait {
-    fn assert_not_travelling(self: ArrivalTime) {
-        assert(self.arrives_at <= starknet::get_block_timestamp(), 'entity is in transit')
     }
 }

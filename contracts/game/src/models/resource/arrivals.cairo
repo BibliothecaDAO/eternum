@@ -14,39 +14,71 @@ pub struct ResourceArrival {
     structure_id: ID,
     #[key]
     day: u64,
-    hour_1: Span<(u8, u128)>,
-    hour_2: Span<(u8, u128)>,
-    hour_3: Span<(u8, u128)>,
-    hour_4: Span<(u8, u128)>,
-    hour_5: Span<(u8, u128)>,
-    hour_6: Span<(u8, u128)>,
-    hour_7: Span<(u8, u128)>,
-    hour_8: Span<(u8, u128)>,
-    hour_9: Span<(u8, u128)>,
-    hour_10: Span<(u8, u128)>,
-    hour_11: Span<(u8, u128)>,
-    hour_12: Span<(u8, u128)>,
-    hour_1_tracker: u64,
-    hour_2_tracker: u64,
-    hour_3_tracker: u64,
-    hour_4_tracker: u64,
-    hour_5_tracker: u64,
-    hour_6_tracker: u64,
-    hour_7_tracker: u64,
-    hour_8_tracker: u64,
-    hour_9_tracker: u64,
-    hour_10_tracker: u64,
-    hour_11_tracker: u64,
-    hour_12_tracker: u64,
+    slot_1: Span<(u8, u128)>,
+    slot_2: Span<(u8, u128)>,
+    slot_3: Span<(u8, u128)>,
+    slot_4: Span<(u8, u128)>,
+    slot_5: Span<(u8, u128)>,
+    slot_6: Span<(u8, u128)>,
+    slot_7: Span<(u8, u128)>,
+    slot_8: Span<(u8, u128)>,
+    slot_9: Span<(u8, u128)>,
+    slot_10: Span<(u8, u128)>,
+    slot_11: Span<(u8, u128)>,
+    slot_12: Span<(u8, u128)>,
+    slot_1_tracker: u64,
+    slot_2_tracker: u64,
+    slot_3_tracker: u64,
+    slot_4_tracker: u64,
+    slot_5_tracker: u64,
+    slot_6_tracker: u64,
+    slot_7_tracker: u64,
+    slot_8_tracker: u64,
+    slot_9_tracker: u64,
+    slot_10_tracker: u64,
+    slot_11_tracker: u64,
+    slot_12_tracker: u64,
 }
 
 #[generate_trait]
 impl ResourceArrivalImpl of ResourceArrivalTrait {
+    fn interval_hours() -> u64 {
+        2 // resource arrival gate open every 2 hours
+    }
+
+    fn arrival_slot(
+        ref world: WorldStorage,
+        structure_id: ID,
+        travel_time: u64,
+    ) -> (u64, u8) {
+        let arrival_interval_hours = Self::interval_hours();
+        let arrival_time = starknet::get_block_timestamp() + travel_time;
+        let day = arrival_time / 86400;
+        let hour = (arrival_time % 86400) / 3600;
+
+        // it time is between 00:00:00 and 01:59:59, then slot = 1
+        // if time is between 02:00:00 and 03:59:59, then slot = 2
+        // if time is between 04:00:00 and 05:59:59, then slot = 3
+        // if time is between 06:00:00 and 07:59:59, then slot = 4
+        // if time is between 08:00:00 and 09:59:59, then slot = 5
+        // if time is between 10:00:00 and 11:59:59, then slot = 6
+        // if time is between 12:00:00 and 13:59:59, then slot = 7
+        // if time is between 14:00:00 and 15:59:59, then slot = 8
+        // if time is between 16:00:00 and 17:59:59, then slot = 9
+        // if time is between 18:00:00 and 19:59:59, then slot = 10
+        // if time is between 20:00:00 and 21:59:59, then slot = 11
+        // if time is between 22:00:00 and 23:59:59, then slot = 12
+
+        let time_slot = (hour + arrival_interval_hours) / arrival_interval_hours;
+        return (day, time_slot.try_into().unwrap());
+    }
+ 
+
     fn increase_balance(
         resources: Span<(u8, u128)>,
         resource_index: u8,
-        resource_type: u8,
         resource_tracker: u64,
+        resource_type: u8,
         amount: u128,
     ) -> (Array<(u8, u128)>, u64) {
         let mut balance = 0;
@@ -86,8 +118,8 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
         set_u64_bit(tracker, pos.into(), value)
     }
 
-    fn read_resources(ref world: WorldStorage, structure_id: ID, day: u64, hour: u8) -> (Span<(u8, u128)>, u64) {
-        let (resources_selector, resources_tracker_selector) = Self::hour_selectors(hour.into());
+    fn read_resources(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8) -> (Span<(u8, u128)>, u64) {
+        let (resources_selector, resources_tracker_selector) = Self::slot_selectors(slot.into());
         let resources = world
             .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector);
         let resources_tracker = world
@@ -99,30 +131,30 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
         ref world: WorldStorage,
         structure_id: ID,
         day: u64,
-        hour: u8,
+        slot: u8,
         resources: Span<(u8, u128)>,
         resources_tracker: u64,
     ) {
-        let (resources_selector, resources_tracker_selector) = Self::hour_selectors(hour.into());
+        let (resources_selector, resources_tracker_selector) = Self::slot_selectors(slot.into());
         world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector, resources);
         world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_tracker_selector, resources_tracker);
     }
 
-    fn hour_selectors(hour: felt252) -> (felt252, felt252) {
+    fn slot_selectors(hour: felt252) -> (felt252, felt252) {
         match hour {
             0 => panic!("zero hour"),
-            1 => (selector!("hour_1"), selector!("hour_1_tracker")),
-            2 => (selector!("hour_2"), selector!("hour_2_tracker")),
-            3 => (selector!("hour_3"), selector!("hour_3_tracker")),
-            4 => (selector!("hour_4"), selector!("hour_4_tracker")),
-            5 => (selector!("hour_5"), selector!("hour_5_tracker")),
-            6 => (selector!("hour_6"), selector!("hour_6_tracker")),
-            7 => (selector!("hour_7"), selector!("hour_7_tracker")),
-            8 => (selector!("hour_8"), selector!("hour_8_tracker")),
-            9 => (selector!("hour_9"), selector!("hour_9_tracker")),
-            10 => (selector!("hour_10"), selector!("hour_10_tracker")),
-            11 => (selector!("hour_11"), selector!("hour_11_tracker")),
-            12 => (selector!("hour_12"), selector!("hour_12_tracker")),
+            1 => (selector!("slot_1"), selector!("slot_1_tracker")),
+            2 => (selector!("slot_2"), selector!("slot_2_tracker")),
+            3 => (selector!("slot_3"), selector!("slot_3_tracker")),
+            4 => (selector!("slot_4"), selector!("slot_4_tracker")),
+            5 => (selector!("slot_5"), selector!("slot_5_tracker")),
+            6 => (selector!("slot_6"), selector!("slot_6_tracker")),
+            7 => (selector!("slot_7"), selector!("slot_7_tracker")),
+            8 => (selector!("slot_8"), selector!("slot_8_tracker")),
+            9 => (selector!("slot_9"), selector!("slot_9_tracker")),
+            10 => (selector!("slot_10"), selector!("slot_10_tracker")),
+            11 => (selector!("slot_11"), selector!("slot_11_tracker")),
+            12 => (selector!("slot_12"), selector!("slot_12_tracker")),
             _ => panic!("exceeds max hours"),
         }
     }
@@ -136,6 +168,6 @@ struct ResourceSender {
     hash: felt252, // poseidon hash of structure_id, day, hour
     structure_id: ID,
     day: u64,
-    hour: u8,
+    slot: u8,
     resources: Span<(ID, u8, u128)>, // (sender_structure_id, resource_type, amount)
 }

@@ -135,6 +135,13 @@ pub struct SpeedConfig {
     donkey_sec_per_km: u16,
 }
 
+#[generate_trait]
+impl SpeedImpl of SpeedTrait {
+    fn for_donkey(ref world: WorldStorage) -> u16 {
+        let speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, selector!("speed_config"));
+        speed_config.donkey_sec_per_km
+    }
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct MapConfig {

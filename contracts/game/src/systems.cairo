@@ -71,4 +71,5 @@ pub mod utils {
     pub mod mine;
     pub mod troop;
     pub mod donkey;
+    pub mod distance;
 }

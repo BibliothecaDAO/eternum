@@ -6,27 +6,23 @@ trait ITradeSystems<T> {
     fn create_order(
         ref self: T,
         maker_id: ID,
-        maker_gives_resource: (u8, u128),
         taker_id: ID,
-        taker_gives_resource: (u8, u128),
-        expires_at: u64,
+        maker_gives_resource_type: u8,
+        maker_gives_min_resource_amount: u128,
+        maker_gives_max_count: u128, // maker_gives_resource_amount = maker_gives_min_resource_amount * maker_gives_max_count
+        taker_pays_min_lords_amount: u128,
+        expires_at: u32,
     ) -> ID;
     fn accept_order(
         ref self: T,
         taker_id: ID,
         trade_id: ID,
-        maker_gives_resource: (u8, u128),
-        taker_gives_resource: (u8, u128),
+        taker_lords_index: u8, 
+        maker_resource_index: u8, 
+        taker_buys_count: u128,
     );
-    fn accept_partial_order(
-        ref self: T,
-        taker_id: ID,
-        trade_id: ID,
-        maker_gives_resource: (u8, u128),
-        taker_gives_resource: (u8, u128),
-        taker_gives_actual_amount: u128,
-    );
-    fn cancel_order(ref self: T, trade_id: ID, return_resources: (u8, u128));
+
+    fn cancel_order(ref self: T, trade_id: ID);
 }
 
 #[dojo::contract]
@@ -40,20 +36,19 @@ mod trade_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{DEFAULT_NS, DONKEY_ENTITY_TYPE, REALM_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{CapacityConfig, CapacityConfigImpl, SpeedConfig, WorldConfig};
+    use s1_eternum::models::config::{SpeedConfig, WorldConfig, SpeedImpl};
     use s1_eternum::models::config::{WeightConfig, WeightConfigImpl};
-    use s1_eternum::models::movable::Movable;
     use s1_eternum::models::owner::{Owner, OwnerTrait};
     use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
     use s1_eternum::models::position::{Coord, Position, PositionTrait, TravelTrait};
     use s1_eternum::models::quantity::{Quantity, QuantityTracker};
     use s1_eternum::models::realm::Realm;
     use s1_eternum::models::resource::resource::{DetachedResource};
-
+    use s1_eternum::models::resource::arrivals::{ResourceArrival, ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
 
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::trade::{Trade, TradeStatus};
+    use s1_eternum::models::trade::{Trade};
     use s1_eternum::models::weight::{W3eight, W3eightTrait};
     use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
     use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{
@@ -61,6 +56,7 @@ mod trade_systems {
     };
 
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
+    use s1_eternum::systems::utils::distance::{iDistanceImpl};
 
 
     #[derive(Copy, Drop, Serde)]
@@ -89,17 +85,6 @@ mod trade_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
-    struct AcceptPartialOrder {
-        #[key]
-        taker_id: ID,
-        #[key]
-        maker_id: ID,
-        trade_id: ID,
-        timestamp: u64,
-    }
-
-    #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: false)]
     struct CancelOrder {
         #[key]
         taker_id: ID,
@@ -115,10 +100,12 @@ mod trade_systems {
         fn create_order(
             ref self: ContractState,
             maker_id: ID,
-            mut maker_gives_resource: (u8, u128),
             taker_id: ID,
-            mut taker_gives_resource: (u8, u128),
-            expires_at: u64,
+            maker_gives_resource_type: u8,
+            maker_gives_min_resource_amount: u128,
+            maker_gives_max_count: u128, // maker_gives_resource_amount = maker_gives_min_resource_amount * maker_gives_max_count
+            taker_pays_min_lords_amount: u128,
+            expires_at: u32,
         ) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -131,61 +118,42 @@ mod trade_systems {
             let taker_structure: Structure = world.read_model(taker_id);
             taker_structure.assert_exists();
 
+            // ensure expires at is in the future
+            let now = starknet::get_block_timestamp().try_into().unwrap();
+            assert!(expires_at > now, "expires at is in the past");
+
+            // ensure maker resource is not lords
+            assert!(maker_gives_resource_type != ResourceTypes::LORDS, "maker resource is lords");
+
+            // ensure amounts are valid
+            assert!(maker_gives_resource_type.is_non_zero(), "maker gives resource type is 0");
+            assert!(taker_pays_min_lords_amount.is_non_zero(), "taker pays min lords amount is 0");
+            assert!(maker_gives_max_count.is_non_zero(), "maker gives max count is 0");
 
             // ensure resouce amount being given is greater than 0
-            let (maker_gives_resource_type, maker_gives_resource_amount) = maker_gives_resource;
-            let (taker_gives_resource_type, taker_gives_resource_amount) = taker_gives_resource;
-            assert!(maker_gives_resource_amount.is_non_zero(), "maker resource amount is 0");
-            assert!(taker_gives_resource_amount.is_non_zero(), "taker resource amount is 0");
+            let maker_gives_max_resource_amount = maker_gives_max_count * maker_gives_min_resource_amount;
+            let taker_gives_max_lords_amount = maker_gives_max_count * taker_pays_min_lords_amount;
 
-
+ 
             // burn offered resource from maker balance
             let mut maker_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, maker_id);
             let maker_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, maker_gives_resource_type);
             let mut maker_resource = SingleR33esourceStoreImpl::retrieve(
                 ref world, maker_id, maker_gives_resource_type, ref maker_structure_weight, maker_resource_weight_grams, true,
             );
-            maker_resource.spend(maker_gives_resource_amount, ref maker_structure_weight, maker_resource_weight_grams);
+            maker_resource.spend(maker_gives_max_resource_amount, ref maker_structure_weight, maker_resource_weight_grams);
             maker_resource.store(ref world);
 
     
             // burn enough maker donkeys to carry resources given by taker
-            let taker_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, taker_gives_resource_type);
-            let taker_resource_weight: u128 = taker_gives_resource_amount * taker_resource_weight_grams;
-            iDonkeyImpl::burn(ref world, maker_id, maker_structure.owner, ref maker_structure_weight, taker_resource_weight, false);
+            let taker_lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
+            let taker_lords_weight: u128 = taker_gives_max_lords_amount * taker_lords_weight_grams;
+            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_lords_weight);
+            iDonkeyImpl::burn(ref world, maker_id, ref maker_structure_weight, maker_donkey_amount);
 
 
             // update structure weight
             maker_structure_weight.store(ref world, maker_id);
-
-
-
-            // save maker's traded resources
-            let maker_gives_resource_id: ID = world.dispatcher.uuid();
-            world
-                .write_model(
-                    @DetachedResource {
-                        entity_id: maker_gives_resource_id,
-                        index: 0,
-                        resource_type: maker_gives_resource_type,
-                        resource_amount: maker_gives_resource_amount,
-                    },
-                );
-
-
-            // save taker's traded resources
-            let taker_gives_resource_id: ID = world.dispatcher.uuid();
-            world
-                .write_model(
-                    @DetachedResource {
-                        entity_id: taker_gives_resource_id,
-                        index: 0,
-                        resource_type: taker_gives_resource_type,
-                        resource_amount: taker_gives_resource_amount,
-                    },
-                );
-
-
 
             // create trade entity
             let trade_id = world.dispatcher.uuid();
@@ -194,14 +162,11 @@ mod trade_systems {
                     @Trade {
                         trade_id,
                         maker_id,
-                        maker_gives_resource_id,
-                        maker_gives_resource_origin_id: maker_gives_resource_id,
-                        maker_gives_resource_hash: hash(array![maker_gives_resource_type.into(), maker_gives_resource_amount.into()].span()),
+                        maker_gives_resource_type,
+                        maker_gives_min_resource_amount,
+                        maker_gives_max_count,
                         taker_id,
-                        taker_gives_resource_id,
-                        taker_gives_resource_origin_id: taker_gives_resource_id,
-                        taker_gives_resource_hash: hash(array![taker_gives_resource_type.into(), taker_gives_resource_amount.into()].span()),
-                        status: TradeStatus::OPEN,
+                        taker_pays_min_lords_amount,
                         expires_at,
                     },
                 );
@@ -216,295 +181,164 @@ mod trade_systems {
             ref self: ContractState,
             taker_id: ID,
             trade_id: ID,
-            mut maker_gives_resource: (u8, u128),
-            mut taker_gives_resource: (u8, u128),
-        ) {
+            taker_lords_index: u8, // index of taker's resource id in the ResourceArrival
+            maker_resource_index: u8, // index of maker's resource id in the ResourceArrival
+            taker_buys_count: u128,
+        ) { 
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            // check that caller is taker
-            let caller = starknet::get_caller_address();
-            let taker_owner: Owner = world.read_model(taker_id);
-            assert(taker_owner.address == caller, 'not owned by caller');
-
-            InternalTradeSystemsImpl::accept_order(
-                ref world, taker_id, trade_id, maker_gives_resource, taker_gives_resource,
-            );
-        }
-
-
-        fn accept_partial_order(
-            ref self: ContractState,
-            taker_id: ID,
-            trade_id: ID,
-            mut maker_gives_resource: Span<(u8, u128)>,
-            mut taker_gives_resource: Span<(u8, u128)>,
-            mut taker_gives_actual_amount: u128,
-        ) { // Ensure only one resource type is being traded and input lengths match
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
-
-            assert!(taker_gives_actual_amount.is_non_zero(), "amount taker gives must be greater than 0");
-            assert!(maker_gives_resource.len() == 1, "only one resource type is supported for partial orders");
-            assert!(maker_gives_resource.len() == taker_gives_resource.len(), "resources lengths must be equal");
-
-            // Verify caller is the taker
-            let caller = starknet::get_caller_address();
-            let taker_owner: Owner = world.read_model(taker_id);
-            assert(taker_owner.address == caller, 'not owned by caller');
-            // Get trade details and status
+            // ensure trade exists
             let mut trade: Trade = world.read_model(trade_id);
+            assert!(trade.maker_id.is_non_zero(), "trade does not exist");
+      
+            // ensure caller owns taker structure
+            let taker_structure: Structure = world.read_model(trade.taker_id);
+            taker_structure.owner.assert_caller_owner();
 
-            // Check trade expiration and taker validity
-            let ts = starknet::get_block_timestamp();
-            assert(trade.expires_at > ts, 'trade expired');
-            if trade.taker_id != 0 {
-                assert(trade.taker_id == taker_id, 'not the taker');
+            // ensure trade is not expired
+            let now = starknet::get_block_timestamp().try_into().unwrap();
+            assert!(trade.expires_at > now, "trade expired");
+
+            // ensure caller is the taker if offer is private
+            if trade.taker_id.is_non_zero() {
+                assert!(trade.taker_id == taker_id, "not the taker");
             }
 
-            // Ensure trade is open and update status to accepted
-            assert(trade.status == TradeStatus::OPEN, 'trade is not open');
+            // ensure buy amount is valid
+            assert!(taker_buys_count.is_non_zero(), "taker buys resource amount is 0");
+            assert!(taker_buys_count <= trade.maker_gives_max_count, 
+                "attempting to buy more than available");
 
-            // Extract and verify maker's resource details
-            let (maker_gives_resource_type, maker_gives_resource_amount) = maker_gives_resource.pop_front().unwrap();
-            let maker_gives_resource_type = *maker_gives_resource_type;
-            let maker_gives_resource_amount = *maker_gives_resource_amount;
-            assert!(maker_gives_resource_amount > 0, "trade is closed (1)");
-            let maker_gives_resource_felt_arr: Array<felt252> = array![
-                maker_gives_resource_type.into(), maker_gives_resource_amount.into(),
-            ];
-            let maker_gives_resource_hash = hash(maker_gives_resource_felt_arr.span());
-            assert!(
-                maker_gives_resource_hash == trade.maker_gives_resource_hash, "wrong maker_gives_resource provided",
-            );
+ 
 
-            // Extract and verify taker's resource details
-            let (taker_gives_resource_type, taker_gives_resource_amount) = taker_gives_resource.pop_front().unwrap();
-            let taker_gives_resource_type = *taker_gives_resource_type;
-            let taker_gives_resource_amount = *taker_gives_resource_amount;
-            assert!(taker_gives_resource_amount > 0, "trade is closed (2)");
-            let taker_gives_resource_felt_arr: Array<felt252> = array![
-                taker_gives_resource_type.into(), taker_gives_resource_amount.into(),
-            ];
-            let taker_gives_resource_hash = hash(taker_gives_resource_felt_arr.span());
-            assert!(
-                taker_gives_resource_hash == trade.taker_gives_resource_hash, "wrong taker_gives_resource provided",
-            );
-            // Calculate actual transfer amounts and weights
-            let maker_gives_actual_amount = maker_gives_resource_amount
-                * taker_gives_actual_amount
-                / taker_gives_resource_amount;
-            let maker_gives_resource_actual = array![(maker_gives_resource_type, maker_gives_actual_amount)].span();
-            let maker_gives_resource_actual_weight = WeightConfigImpl::get_weight_grams(
-                ref world, maker_gives_resource_type, maker_gives_actual_amount,
-            );
-            let taker_gives_resource_actual = array![(taker_gives_resource_type, taker_gives_actual_amount)].span();
-            let taker_gives_resource_actual_weight = WeightConfigImpl::get_weight_grams(
-                ref world, taker_gives_resource_type, taker_gives_actual_amount,
-            );
+            // compute resource arrival time 
+            let maker_structure: Structure = world.read_model(trade.maker_id);
+            let donkey_speed = SpeedImpl::for_donkey(ref world);
+            let travel_time 
+                = starknet::get_block_timestamp() 
+                    + iDistanceImpl::time_required(
+                        ref world, maker_structure.coord, taker_structure.coord, donkey_speed, true);
+            let (arrival_day, arrival_slot) 
+                = ResourceArrivalImpl::arrival_slot(ref world, trade.maker_id, travel_time);
 
-            if maker_gives_actual_amount == maker_gives_resource_amount {
-                InternalTradeSystemsImpl::accept_order(
-                    ref world, taker_id, trade_id, maker_gives_resource_actual, taker_gives_resource_actual,
+            // send the taker's resource to the maker
+            let taker_pays_lords_amount = taker_buys_count * trade.taker_pays_min_lords_amount;
+            let (maker_resources_array, maker_resources_tracker) 
+                = ResourceArrivalImpl::read_resources(ref world, trade.maker_id, arrival_day, arrival_slot);
+            let (maker_resources_array, maker_resources_tracker) 
+                = ResourceArrivalImpl::increase_balance(
+                    maker_resources_array, maker_resource_index, 
+                    maker_resources_tracker, ResourceTypes::LORDS, taker_pays_lords_amount,
                 );
+            ResourceArrivalImpl::write_resources(
+                ref world, trade.maker_id, arrival_day, arrival_slot, 
+                maker_resources_array.span(), maker_resources_tracker,
+            );
+
+
+
+            // send the maker's resource to the taker
+            let maker_gives_resource_amount = taker_buys_count * trade.maker_gives_min_resource_amount;
+            let (taker_lords_array, taker_lords_tracker) 
+                = ResourceArrivalImpl::read_resources(ref world, trade.taker_id, arrival_day, arrival_slot);
+            let (taker_lords_array, taker_lords_tracker) 
+                = ResourceArrivalImpl::increase_balance(
+                    taker_lords_array, taker_lords_index, 
+                    taker_lords_tracker, trade.maker_gives_resource_type, maker_gives_resource_amount,
+                );
+            ResourceArrivalImpl::write_resources(
+                ref world, trade.taker_id, arrival_day, arrival_slot, 
+                taker_lords_array.span(), taker_lords_tracker,
+            );
+            
+            
+            // burn enough taker donkeys to carry resources given by maker
+            let mut taker_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, trade.taker_id);
+            let maker_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, trade.maker_gives_resource_type);
+            let maker_resource_weight: u128 = maker_gives_resource_amount * maker_resource_weight_grams;
+            let taker_donkey_amount = iDonkeyImpl::needed_amount(ref world, maker_resource_weight);
+            iDonkeyImpl::burn(ref world, taker_id, ref taker_structure_weight, taker_donkey_amount);
+            iDonkeyImpl::burn_finialize(ref world, trade.taker_id, taker_donkey_amount, taker_structure.owner.address);
+
+            // update taker structure weight
+            taker_structure_weight.store(ref world, trade.taker_id);
+
+
+            // finalize maker donkey burn to pickup lords from taker
+            let taker_lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
+            let taker_lords_weight: u128 = taker_pays_lords_amount * taker_lords_weight_grams;
+            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_lords_weight);
+            iDonkeyImpl::burn_finialize(ref world, trade.maker_id, maker_donkey_amount, maker_structure.owner.address);
+
+
+            // update trade model
+            if trade.maker_gives_max_count.is_zero() {
+                world.erase_model(@trade);
             } else {
-                // create new order
-
-                ///////////////////////////////////////////////////////////////////////
-                ///////////////////////////////////////////////////////////////////////
-                ///////////////////////////////////////////////////////////////////////
-                ///////////////////////////////////////////////////////////////////////
-                ///
-                let new_maker_gives_resource = array![(maker_gives_resource_type, maker_gives_actual_amount)].span();
-                let new_maker_gives_resource_felt_arr = array![
-                    maker_gives_resource_type.into(), maker_gives_actual_amount.into(),
-                ];
-                let new_taker_gives_resource = array![(taker_gives_resource_type, taker_gives_actual_amount)].span();
-                let new_taker_gives_resource_felt_arr = array![
-                    taker_gives_resource_type.into(), taker_gives_actual_amount.into(),
-                ];
-                let new_maker_gives_resource_felt_arr_id: ID = world.dispatcher.uuid();
-                let new_taker_gives_resource_felt_arr_id: ID = world.dispatcher.uuid();
-                world
-                    .write_model(
-                        @DetachedResource {
-                            entity_id: new_maker_gives_resource_felt_arr_id,
-                            index: 0,
-                            resource_type: maker_gives_resource_type,
-                            resource_amount: maker_gives_actual_amount,
-                        },
-                    );
-                world
-                    .write_model(
-                        @DetachedResource {
-                            entity_id: new_taker_gives_resource_felt_arr_id,
-                            index: 0,
-                            resource_type: taker_gives_resource_type,
-                            resource_amount: taker_gives_actual_amount,
-                        },
-                    );
-
-                let new_trade_id = world.dispatcher.uuid();
-                world
-                    .write_model(
-                        @Trade {
-                            trade_id: new_trade_id,
-                            maker_id: trade.maker_id,
-                            maker_gives_resource_origin_id: trade.maker_gives_resource_origin_id,
-                            maker_gives_resource_id: new_maker_gives_resource_felt_arr_id,
-                            maker_gives_resource_hash: hash(new_maker_gives_resource_felt_arr.span()),
-                            maker_gives_resource_weight: maker_gives_resource_actual_weight,
-                            taker_id: trade.taker_id,
-                            taker_gives_resource_origin_id: trade.taker_gives_resource_origin_id,
-                            taker_gives_resource_id: new_taker_gives_resource_felt_arr_id,
-                            taker_gives_resource_hash: hash(new_taker_gives_resource_felt_arr.span()),
-                            taker_gives_resource_weight: taker_gives_resource_actual_weight,
-                            status: TradeStatus::OPEN,
-                            expires_at: trade.expires_at,
-                        },
-                    );
-
-                // accept new order
-                InternalTradeSystemsImpl::accept_order(
-                    ref world, taker_id, new_trade_id, new_maker_gives_resource, new_taker_gives_resource,
-                );
-
-                ///////////////////////////////////////////////////////////////////////
-                ///////////////////////////////////////////////////////////////////////
-                ///////////////////////////////////////////////////////////////////////
-                ///////////////////////////////////////////////////////////////////////
-
-                // Calculate remaining amounts and update trade details
-                let maker_amount_left = maker_gives_resource_amount - maker_gives_actual_amount;
-                let taker_amount_left = taker_gives_resource_amount - taker_gives_actual_amount;
-                trade
-                    .maker_gives_resource_hash =
-                        hash(array![maker_gives_resource_type.into(), maker_amount_left.into()].span());
-                trade
-                    .taker_gives_resource_hash =
-                        hash(array![taker_gives_resource_type.into(), taker_amount_left.into()].span());
-                trade.maker_gives_resource_weight -= maker_gives_resource_actual_weight;
-                trade.taker_gives_resource_weight -= taker_gives_resource_actual_weight;
-                trade.maker_gives_resource_id = world.dispatcher.uuid();
-                trade.taker_gives_resource_id = world.dispatcher.uuid();
-                // Update detached resources for maker and taker
-                world
-                    .write_model(
-                        @DetachedResource {
-                            entity_id: trade.maker_gives_resource_id,
-                            index: 0,
-                            resource_type: maker_gives_resource_type,
-                            resource_amount: maker_amount_left,
-                        },
-                    );
-                world
-                    .write_model(
-                        @DetachedResource {
-                            entity_id: trade.taker_gives_resource_id,
-                            index: 0,
-                            resource_type: taker_gives_resource_type,
-                            resource_amount: taker_amount_left,
-                        },
-                    );
-
-                // Save updated trade
+                trade.maker_gives_max_count -= taker_buys_count;
                 world.write_model(@trade);
             }
-        }
 
-
-        fn cancel_order(ref self: ContractState, trade_id: ID, mut return_resources: Span<(u8, u128)>) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
-
-            let mut trade: Trade = world.read_model(trade_id);
-            let owner: Owner = world.read_model(trade.maker_id);
-
-            assert(owner.address == starknet::get_caller_address(), 'caller must be trade maker');
-            assert(trade.status == TradeStatus::OPEN, 'trade must be open');
-
-            let (_, maker_receives_resources_hash, _) = internal_resources::transfer(
-                ref world, 0, trade.maker_id, return_resources, 0, false, false,
-            );
-
-            assert!(
-                maker_receives_resources_hash == trade.maker_gives_resource_hash, "wrong return resources provided",
-            );
-
-            // return donkeys to maker
-            donkey::return_donkey(ref world, trade.maker_id, trade.taker_gives_resource_weight);
-
-            trade.status = TradeStatus::CANCELLED;
-            world.write_model(@trade);
-
-            world
-                .emit_event(
-                    @CancelOrder {
-                        taker_id: trade.taker_id,
-                        maker_id: trade.maker_id,
-                        trade_id,
-                        timestamp: starknet::get_block_timestamp(),
-                    },
-                );
-        }
-    }
-
-
-    #[generate_trait]
-    impl InternalTradeSystemsImpl of InternalTradeSystemsTrait {
-        fn accept_order(
-            ref world: WorldStorage,
-            taker_id: ID,
-            trade_id: ID,
-            mut maker_gives_resource: (u8, u128),
-            mut taker_gives_resource: (u8, u128),
-        ) {
-            let mut trade: Trade = world.read_model(trade_id);
-
-            // check trade expiration
-            let ts = starknet::get_block_timestamp();
-            assert(trade.expires_at > ts, 'trade expired');
-
-            // verify taker if it's a direct offer
-            if trade.taker_id != 0 {
-                assert(trade.taker_id == taker_id, 'not the taker');
-            }
-
-            // check and update trade status
-            assert(trade.status == TradeStatus::OPEN, 'trade is not open');
-            trade.status = TradeStatus::ACCEPTED;
-
-            // update trade
-            trade.taker_id = taker_id;
-            world.write_model(@trade);
-
-            let (_, taker_receives_resources_hash, _) = internal_resources::transfer(
-                ref world, trade.maker_id, trade.taker_id, maker_gives_resource, trade.taker_id, true, false,
-            );
-            assert!(
-                taker_receives_resources_hash == trade.maker_gives_resource_hash,
-                "wrong maker_gives_resource provided",
-            );
-
-            let (_, maker_receives_resources_hash, _) = internal_resources::transfer(
-                ref world, trade.taker_id, trade.maker_id, taker_gives_resource, trade.maker_id, false, true,
-            );
-
-            assert!(
-                maker_receives_resources_hash == trade.taker_gives_resource_hash,
-                "wrong taker_gives_resource provided",
-            );
-
-            // give donkey burn achievement to trade maker only after successful transfer
-            let donkey_amount = donkey::get_donkey_needed(ref world, trade.taker_gives_resource_weight);
-            let maker_owner: Owner = world.read_model(trade.maker_id);
-            donkey::give_breeder_achievement(ref world, donkey_amount, maker_owner.address);
-
+            // todo: add more data to event
             world
                 .emit_event(
                     @AcceptOrder {
                         id: world.dispatcher.uuid(),
                         taker_id,
+                        maker_id: trade.maker_id,
+                        trade_id: trade.trade_id,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+        }
+        
+
+
+        fn cancel_order(ref self: ContractState, trade_id: ID) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            // ensure trade exists
+            let mut trade: Trade = world.read_model(trade_id);
+            assert!(trade.maker_id.is_non_zero(), "trade does not exist");
+      
+            // ensure caller owns maker structure
+            let maker_structure: Structure = world.read_model(trade.maker_id);
+            maker_structure.owner.assert_caller_owner();
+
+            // return offered resource to maker balance
+            let maker_gives_max_resource_amount = trade.maker_gives_max_count * trade.maker_gives_min_resource_amount;
+            let mut maker_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, trade.maker_id);
+            let maker_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, trade.maker_gives_resource_type);
+            let mut maker_resource = SingleR33esourceStoreImpl::retrieve(
+                ref world, trade.maker_id, trade.maker_gives_resource_type, ref maker_structure_weight, maker_resource_weight_grams, true,
+            );
+            maker_resource.add(maker_gives_max_resource_amount, ref maker_structure_weight, maker_resource_weight_grams);
+            maker_resource.store(ref world);
+           
+
+            // return burned donkeys to maker
+            let taker_gives_max_lords_amount = trade.maker_gives_max_count * trade.taker_pays_min_lords_amount;
+            let taker_lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
+            let taker_lords_weight: u128 = taker_gives_max_lords_amount * taker_lords_weight_grams;
+
+            // todo: ensure this cant be gamed
+
+            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_lords_weight);
+            iDonkeyImpl::create(ref world, trade.maker_id, ref maker_structure_weight, maker_donkey_amount);
+
+            // update maker structure weight
+            maker_structure_weight.store(ref world, trade.maker_id);
+
+            // delete trade
+            world.erase_model(@trade);
+
+            // emit event
+            world
+                .emit_event(
+                    @CancelOrder {
+                        taker_id: trade.taker_id,
                         maker_id: trade.maker_id,
                         trade_id,
                         timestamp: starknet::get_block_timestamp(),

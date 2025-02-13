@@ -764,7 +764,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.Number,
-          sec_per_km: RecsType.Number,
+          entity_type: RecsType.Number,
           blocked: RecsType.Boolean,
           round_trip: RecsType.Boolean,
           start_coord_x: RecsType.Number,
@@ -776,7 +776,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Movable",
-            types: ["u32", "u16", "bool", "bool", "u32", "u32", "u32", "u32"],
+            types: ["u32", "u32", "bool", "bool", "u32", "u32", "u32", "u32"],
             customTypes: [],
           },
         },
