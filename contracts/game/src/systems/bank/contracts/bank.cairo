@@ -21,14 +21,18 @@ mod bank_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::bank::bank::{Bank};
-    use s1_eternum::models::config::{BankConfig, CapacityCategory, WorldConfigUtilImpl};
-    use s1_eternum::models::owner::{EntityOwner, Owner};
+    use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::owner::{EntityOwner, Owner, OwnerTrait};
     use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position};
     use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s1_eternum::models::weight::{W3eight, W3eightTrait};
+    use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
+    use s1_eternum::models::troop::{ExplorerTroops};
+    use s1_eternum::models::structure::{ StructureTrait};
+    use s1_eternum::systems::utils::resource::{iResourceImpl};
+
 
     use traits::Into;
 
@@ -40,10 +44,8 @@ mod bank_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let player = starknet::get_caller_address();
-
-            let owner: Owner = world.read_model(bank_entity_id);
-            assert(owner.address == player, 'Only owner can change fee');
+            let bank_structure: Structure = world.read_model(bank_entity_id);
+            bank_structure.owner.assert_caller_owner();
 
             let mut bank: Bank = world.read_model(bank_entity_id);
             bank.owner_fee_num = new_owner_fee_num;
@@ -61,10 +63,8 @@ mod bank_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let player = starknet::get_caller_address();
-
-            let owner: Owner = world.read_model(bank_entity_id);
-            assert(owner.address == player, 'Only owner can change fee');
+            let bank_structure: Structure = world.read_model(bank_entity_id);
+            bank_structure.owner.assert_caller_owner();
 
             let mut bank: Bank = world.read_model(bank_entity_id);
             bank.owner_bridge_fee_dpt_percent = owner_bridge_fee_dpt_percent;
@@ -96,9 +96,14 @@ mod bank_systems {
 
             // remove the resources from the realm
             let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
-            let mut realm_resource: Resource = world.read_model((realm_entity_id, ResourceTypes::LORDS));
-            realm_resource.burn(bank_config.lords_cost);
-            realm_resource.save(ref world);
+            let mut player_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, realm_entity_id);
+            let lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
+            let mut player_lords_resource = SingleR33esourceStoreImpl::retrieve(
+                ref world, realm_entity_id, ResourceTypes::LORDS, ref player_structure_weight, lords_weight_grams, true,
+            );
+            player_lords_resource.spend(bank_config.lords_cost, ref player_structure_weight, lords_weight_grams);
+            player_lords_resource.store(ref world);
+
 
             let owner: Owner = Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() };
             let structure: Structure = StructureImpl::new(bank_entity_id, StructureCategory::Bank, coord, owner);
@@ -107,10 +112,6 @@ mod bank_systems {
             occupier.entity = OccupiedBy::Structure(bank_entity_id);
             world.write_model(@occupier);
 
-            world
-                .write_model(
-                    @Weight { entity_id: bank_entity_id, value: 0, capacity_category: CapacityCategory::Structure },
-                );
             world
                 .write_model(
                     @Bank {
@@ -124,35 +125,6 @@ mod bank_systems {
                 );
 
             bank_entity_id
-        }
-
-        fn pickup_resources_from_bank(
-            ref world: WorldStorage, bank_entity_id: ID, entity_id: ID, resources: Span<(u8, u128)>,
-        ) -> ID {
-            let mut resources_clone = resources.clone();
-
-            loop {
-                match resources_clone.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount,
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-
-                        // add resources to recipient's balance
-                        let mut recipient_resource = ResourceImpl::get(ref world, (bank_entity_id, resource_type));
-                        recipient_resource.add(resource_amount);
-                        recipient_resource.save(ref world);
-                    },
-                    Option::None => { break; },
-                }
-            };
-
-            // then entity picks up the resources at the bank
-            let (donkey_id, _, _) = InternalResourceSystemsImpl::transfer(
-                ref world, bank_entity_id, entity_id, resources, entity_id, true, true,
-            );
-
-            donkey_id
         }
     }
 }

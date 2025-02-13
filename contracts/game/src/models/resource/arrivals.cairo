@@ -7,7 +7,7 @@ use dojo::{
 };
 
 
-#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct ResourceArrival {
     #[key]
@@ -38,6 +38,7 @@ pub struct ResourceArrival {
     slot_10_tracker: u64,
     slot_11_tracker: u64,
     slot_12_tracker: u64,
+    total_amount: u128,
 }
 
 #[generate_trait]
@@ -48,7 +49,6 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
 
     fn arrival_slot(
         ref world: WorldStorage,
-        structure_id: ID,
         travel_time: u64,
     ) -> (u64, u8) {
         let arrival_interval_hours = Self::interval_hours();
@@ -75,12 +75,13 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
  
 
     fn increase_balance(
-        resources: Span<(u8, u128)>,
+        ref total_amount: u128,
+        ref resources: Span<(u8, u128)>,
         resource_index: u8,
-        resource_tracker: u64,
+        ref resource_tracker: u64,
         resource_type: u8,
         amount: u128,
-    ) -> (Array<(u8, u128)>, u64) {
+    ) {
         let mut balance = 0;
         let mut index: u32 = resources.len();
         if Self::contains_resource(resource_tracker, resource_type) {
@@ -98,13 +99,19 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
             // add resource to array
             let mut new_resources: Array<(u8, u128)> = resources.into();
             new_resources.append(new_resource);
-            (new_resources, new_resource_tracker)
+
+            total_amount += amount;
+            resources = new_resources.span();
+            resource_tracker = new_resource_tracker;
         } else {
             // update resource in array
             let mut new_resources: Array<(u8, u128)> = resources.slice(0, index).into();
             new_resources.append(new_resource);
             new_resources.append_span(resources.slice(index + 1, resources.len() - (index + 1)).into());
-            (new_resources, new_resource_tracker)
+
+            total_amount += amount;
+            resources = new_resources.span();
+            resource_tracker = new_resource_tracker;
         }
     }
 
@@ -118,13 +125,22 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
         set_u64_bit(tracker, pos.into(), value)
     }
 
-    fn read_resources(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8) -> (Span<(u8, u128)>, u64) {
+    fn delete(ref world: WorldStorage, structure_id: ID, day: u64) {
+        let mut model: ResourceArrival = Default::default();
+        model.structure_id = structure_id;
+        model.day = day;
+        world.erase_model(@model);
+    }
+
+    fn read_resources(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8) -> (Span<(u8, u128)>, u64, u128) {
         let (resources_selector, resources_tracker_selector) = Self::slot_selectors(slot.into());
         let resources = world
             .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector);
         let resources_tracker = world
             .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_tracker_selector);
-        return (resources, resources_tracker);
+        let total_amount = world
+            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"));
+        return (resources, resources_tracker, total_amount);
     }
 
     fn write_resources(
@@ -134,10 +150,12 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
         slot: u8,
         resources: Span<(u8, u128)>,
         resources_tracker: u64,
+        total_amount: u128,
     ) {
         let (resources_selector, resources_tracker_selector) = Self::slot_selectors(slot.into());
         world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector, resources);
         world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_tracker_selector, resources_tracker);
+        world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"), total_amount);
     }
 
     fn slot_selectors(hour: felt252) -> (felt252, felt252) {

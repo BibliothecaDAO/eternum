@@ -36,24 +36,16 @@ mod trade_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{DEFAULT_NS, DONKEY_ENTITY_TYPE, REALM_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{SpeedConfig, WorldConfig, SpeedImpl, TradeCountConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use s1_eternum::models::config::{WorldConfig, SpeedImpl, TradeCountConfig, WorldConfigUtilImpl};
     use s1_eternum::models::owner::{Owner, OwnerTrait};
     use s1_eternum::models::structure::{Structure, StructureImpl, StructureCategory};
     use s1_eternum::models::position::{Coord, Position, PositionTrait, TravelTrait};
-    use s1_eternum::models::quantity::{Quantity, QuantityTracker};
     use s1_eternum::models::realm::Realm;
-    use s1_eternum::models::resource::resource::{DetachedResource};
     use s1_eternum::models::resource::arrivals::{ResourceArrival, ResourceArrivalImpl};
-    use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
-
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{W3eight, W3eightTrait};
     use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
-    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{
-        InternalResourceSystemsImpl as internal_resources,
-    };
 
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use s1_eternum::systems::utils::distance::{iDistanceImpl};
@@ -115,8 +107,10 @@ mod trade_systems {
             maker_structure.owner.assert_caller_owner();
 
             // ensure taker structure exists
-            let taker_structure: Structure = world.read_model(taker_id);
-            taker_structure.assert_exists();
+            if taker_id.is_non_zero() {
+                let taker_structure: Structure = world.read_model(taker_id);
+                taker_structure.assert_exists();
+            }
 
             // ensure trade count does not exceed max
             let trade_count_config: TradeCountConfig 
@@ -230,36 +224,38 @@ mod trade_systems {
                     + iDistanceImpl::time_required(
                         ref world, maker_structure.coord, taker_structure.coord, donkey_speed, true);
             let (arrival_day, arrival_slot) 
-                = ResourceArrivalImpl::arrival_slot(ref world, trade.maker_id, travel_time);
+                = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
             // send the taker's resource to the maker
             let taker_pays_lords_amount = taker_buys_count * trade.taker_pays_min_lords_amount;
-            let (maker_resources_array, maker_resources_tracker) 
+            let (mut maker_resources_array, mut maker_resources_tracker, mut maker_resource_arrival_total_amount) 
                 = ResourceArrivalImpl::read_resources(ref world, trade.maker_id, arrival_day, arrival_slot);
-            let (maker_resources_array, maker_resources_tracker) 
-                = ResourceArrivalImpl::increase_balance(
-                    maker_resources_array, maker_resource_index, 
-                    maker_resources_tracker, ResourceTypes::LORDS, taker_pays_lords_amount,
-                );
+            ResourceArrivalImpl::increase_balance(
+                ref maker_resource_arrival_total_amount,
+                ref maker_resources_array, maker_resource_index, 
+                ref maker_resources_tracker, ResourceTypes::LORDS, taker_pays_lords_amount,
+            );
             ResourceArrivalImpl::write_resources(
                 ref world, trade.maker_id, arrival_day, arrival_slot, 
-                maker_resources_array.span(), maker_resources_tracker,
+                maker_resources_array, maker_resources_tracker,
+                maker_resource_arrival_total_amount,
             );
 
 
 
             // send the maker's resource to the taker
             let maker_gives_resource_amount = taker_buys_count * trade.maker_gives_min_resource_amount;
-            let (taker_lords_array, taker_lords_tracker) 
+            let (mut taker_resources_array, mut taker_resources_tracker, mut taker_resource_arrival_total_amount) 
                 = ResourceArrivalImpl::read_resources(ref world, trade.taker_id, arrival_day, arrival_slot);
-            let (taker_lords_array, taker_lords_tracker) 
-                = ResourceArrivalImpl::increase_balance(
-                    taker_lords_array, taker_lords_index, 
-                    taker_lords_tracker, trade.maker_gives_resource_type, maker_gives_resource_amount,
-                );
+            ResourceArrivalImpl::increase_balance(
+                ref taker_resource_arrival_total_amount,
+                ref taker_resources_array, taker_lords_index, 
+                ref taker_resources_tracker, trade.maker_gives_resource_type, maker_gives_resource_amount,
+            );
             ResourceArrivalImpl::write_resources(
                 ref world, trade.taker_id, arrival_day, arrival_slot, 
-                taker_lords_array.span(), taker_lords_tracker,
+                taker_resources_array, taker_resources_tracker,
+                taker_resource_arrival_total_amount,
             );
             
             

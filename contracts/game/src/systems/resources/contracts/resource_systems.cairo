@@ -3,9 +3,16 @@ use s1_eternum::alias::ID;
 
 #[starknet::interface]
 trait IResourceSystems<T> {
-    fn approve(ref self: T, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
-    fn send(ref self: T, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
-    fn pickup(ref self: T, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>);
+    fn approve(ref self: T, caller_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>);
+    fn send(ref self: T, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>, recipient_resource_indexes: Span<u8>);
+    fn pickup(ref self: T, recipient_structure_id: ID, owner_structure_id: ID, resources: Span<(u8, u128)>, recipient_resource_indexes: Span<u8>);
+    fn offload(
+        ref self: T, 
+        from_structure_id: ID, 
+        day: u64,
+        slot: u8,
+        resource_count: u8,
+    );
 }
 
 #[dojo::contract]
@@ -25,9 +32,8 @@ mod resource_systems {
 
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{
-        CapacityCategory, CapacityConfig, CapacityConfigImpl, WeightConfig, WeightConfigImpl,
+         CapacityConfig, WeightConfig, WeightConfigImpl, SpeedImpl
     };
-    use s1_eternum::models::movable::{ArrivalTime, ArrivalTimeTrait};
     use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
     use s1_eternum::models::position::{Coord, Position};
     use s1_eternum::models::quantity::{Quantity};
@@ -40,21 +46,24 @@ mod resource_systems {
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
     use s1_eternum::models::weight::Weight;
     use s1_eternum::models::weight::WeightTrait;
-    use s1_eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
-        InternalDonkeySystemsImpl as donkey,
-    };
-    use s1_eternum::systems::transport::contracts::travel_systems::travel_systems::{
-        InternalTravelSystemsImpl as travel,
-    };
+    use s1_eternum::models::weight::{W3eight, W3eightTrait};
+    use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
+    use s1_eternum::models::resource::arrivals::{ResourceArrival, ResourceArrivalImpl};
+    use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
+    use s1_eternum::systems::utils::resource::{iResourceImpl};
+    use s1_eternum::systems::utils::distance::{iDistanceImpl};
+    use s1_eternum::models::troop::{ExplorerTroops};
+
+
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
     struct Transfer {
         #[key]
-        recipient_entity_id: ID,
+        recipient_structure_id: ID,
         #[key]
         sending_realm_id: ID,
-        sender_entity_id: ID,
+        sender_structure_id: ID,
         resources: Span<(u8, u128)>,
         timestamp: u64,
     }
@@ -67,18 +76,18 @@ mod resource_systems {
         /// # Arguments
         ///
         /// * `entity_id` - The id of the entity approving the resources.
-        /// * `recipient_entity_id` - The id of the entity being approved.
+        /// * `recipient_structure_id` - The id of the entity being approved.
         /// * `resources` - The resources to approve.
         ///
-        fn approve(ref self: ContractState, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
+        fn approve(ref self: ContractState, caller_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
-            assert(entity_id != recipient_entity_id, 'self approval');
+            assert(caller_structure_id != recipient_structure_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
 
-            let entity_owner: EntityOwner = world.read_model(entity_id);
-            entity_owner.assert_caller_owner(world);
+            let mut caller_structure: Structure = world.read_model(caller_structure_id);
+            caller_structure.owner.assert_caller_owner();
 
             let mut resources = resources;
             loop {
@@ -90,8 +99,8 @@ mod resource_systems {
                         world
                             .write_model(
                                 @ResourceAllowance {
-                                    owner_entity_id: entity_id,
-                                    approved_entity_id: recipient_entity_id,
+                                    owner_entity_id: caller_structure_id,
+                                    approved_entity_id: recipient_structure_id,
                                     resource_type: resource_type,
                                     amount: resource_amount,
                                 },
@@ -109,25 +118,38 @@ mod resource_systems {
         ///
         /// # Arguments
         ///
-        /// * `sender_entity_id` - The id of the entity sending the resources.
-        /// * `recipient_entity_id` - The id of the entity receiving the resources.
+        /// * `sender_structure_id` - The id of the entity sending the resources.
+        /// * `recipient_structure_id` - The id of the entity receiving the resources.
         /// * `resources` - The resources to transfer.
         ///
         /// # Returns
         ///     the resource chest id
         ///
-        fn send(ref self: ContractState, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
+        fn send(
+            ref self: ContractState, 
+            sender_structure_id: ID, 
+            recipient_structure_id: ID, 
+            resources: Span<(u8, u128)>, 
+            recipient_resource_indexes: Span<u8>,
+        ) {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
-            assert(sender_entity_id != recipient_entity_id, 'transfer to self');
+            assert(sender_structure_id != recipient_structure_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
 
-            let entity_owner: EntityOwner = world.read_model(sender_entity_id);
-            entity_owner.assert_caller_owner(world);
+            // ensure sender is a structure
+            let mut sender_structure: Structure = world.read_model(sender_structure_id);
+            sender_structure.owner.assert_caller_owner();
 
-            InternalResourceSystemsImpl::transfer(
-                ref world, sender_entity_id, recipient_entity_id, resources, sender_entity_id, true, true,
+            // ensure recipient is a structure
+            let mut recipient_structure: Structure = world.read_model(recipient_structure_id);
+            recipient_structure.assert_exists();
+
+            let mut sender_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, sender_structure_id);
+            iResourceImpl::structure_to_structure_delayed(
+                ref world, ref sender_structure, ref sender_structure_weight, 
+                ref recipient_structure, recipient_resource_indexes, resources, false,
             );
         }
 
@@ -137,22 +159,30 @@ mod resource_systems {
         ///
         /// # Arguments
         ///
-        /// * `owner_entity_id` - The id of the entity resource owner
-        /// * `recipient_entity_id` - The id of the entity receiving resources.
+        /// * `owner_structure_id` - The id of the entity resource owner
+        /// * `recipient_structure_id` - The id of the entity receiving resources.
         /// * `resources` - The resources to transfer.
         ///
         /// # Returns
         ///    the resource chest id
         ///
-        fn pickup(ref self: ContractState, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>) {
+        fn pickup(
+            ref self: ContractState, 
+            recipient_structure_id: ID, 
+            owner_structure_id: ID, 
+            resources: Span<(u8, u128)>, 
+            recipient_resource_indexes: Span<u8>,
+        ) {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
-            assert(owner_entity_id != recipient_entity_id, 'transfer to owner');
+            assert(owner_structure_id != recipient_structure_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');
 
-            let entity_owner: EntityOwner = world.read_model(recipient_entity_id);
-            entity_owner.assert_caller_owner(world);
+            // ensure sender is a structure
+            let mut recipient_structure: Structure = world.read_model(recipient_structure_id);
+            recipient_structure.owner.assert_caller_owner();
+
 
             // check and update allowance
 
@@ -164,7 +194,7 @@ mod resource_systems {
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                         let mut approved_allowance: ResourceAllowance = world
-                            .read_model((owner_entity_id, recipient_entity_id, resource_type));
+                            .read_model((owner_structure_id, recipient_structure_id, resource_type));
 
                         assert(approved_allowance.amount >= resource_amount, 'insufficient approval');
 
@@ -178,223 +208,40 @@ mod resource_systems {
                 };
             };
 
-            InternalResourceSystemsImpl::transfer(
-                ref world, owner_entity_id, recipient_entity_id, resources, recipient_entity_id, true, true,
+            let mut owner_structure: Structure = world.read_model(owner_structure_id);
+            let mut owner_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, owner_structure_id);
+            iResourceImpl::structure_to_structure_delayed(
+                ref world, ref owner_structure, ref owner_structure_weight, 
+                ref recipient_structure, recipient_resource_indexes, resources, false,
             );
         }
-    }
-
-    #[generate_trait]
-    pub impl InternalResourceSystemsImpl of InternalResourceSystemsTrait {
-        // send resources to a bank's location but retain ownership of the resources
-        fn send_to_bank(ref world: WorldStorage, owner_id: ID, bank_id: ID, resource: (u8, u128)) -> ID {
-            // ensure owner and bank are stationary
-            let arrival_time: ArrivalTime = world.read_model(owner_id);
-            arrival_time.assert_not_travelling();
-            let arrival_time: ArrivalTime = world.read_model(bank_id);
-            arrival_time.assert_not_travelling();
-
-            // ensure bank_id is a valid bank
-            let bank_structure: Structure = world.read_model(bank_id);
-            bank_structure.assert_exists();
-            assert!(bank_structure.category == StructureCategory::Bank, "structure is not a bank");
-
-            // ensure owner and bank are not in the same location
-            let owner_position: Position = world.read_model(owner_id);
-            let owner_coord: Coord = owner_position.into();
-            let bank_position: Position = world.read_model(bank_id);
-            let bank_coord: Coord = bank_position.into();
-            assert!(owner_coord != bank_coord, "owner and bank are in the same location");
-
-            // ensure resource spending is not locked
-            let owner_resource_lock: ResourceTransferLock = world.read_model(owner_id);
-            owner_resource_lock.assert_not_locked();
-
-            //
-            // Allow sending resources to the bank even with battle resource lock
-            // This is so as not to block bridge withdrawals at any point
-            //
-
-            // // ensure bank has no resource lock
-            // let bank_resource_lock: ResourceTransferLock = world.read_model(bank_id);
-            // bank_resource_lock.assert_not_locked();
-
-            // burn resources from sender's balance
-            let (resource_type, resource_amount) = resource;
-            let mut owner_resource = ResourceImpl::get(ref world, (owner_id, resource_type));
-            owner_resource.burn(resource_amount);
-            world.write_model(@owner_resource);
-
-            // add resources to donkey going to bank
-            let donkey_to_bank_id = world.dispatcher.uuid();
-            let mut donkey_to_bank_resource = ResourceImpl::get(ref world, (donkey_to_bank_id, resource_type));
-            donkey_to_bank_resource.add(resource_amount);
-            donkey_to_bank_resource.save(ref world);
-
-            // update total weight
-            let mut total_resources_weight = WeightConfigImpl::get_weight_grams(
-                ref world, resource_type, resource_amount,
-            );
-
-            // increase donkey's weight
-            let mut donkey_to_bank_weight: Weight = world.read_model(donkey_to_bank_id);
-            donkey_to_bank_weight.value = total_resources_weight;
-            donkey_to_bank_weight.capacity_category = CapacityCategory::Donkey;
-            world.write_model(@donkey_to_bank_weight);
-
-            // decrease owner's weight
-            let mut owner_weight: Weight = world.read_model(owner_id);
-            let owner_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, owner_id);
-            owner_weight.deduct(owner_capacity, total_resources_weight);
-            world.write_model(@owner_weight);
-
-            // create donkey that can carry weight
-            donkey::create_donkey(ref world, false, donkey_to_bank_id, owner_id, owner_coord, bank_coord);
-            donkey::burn_donkey(ref world, owner_id, total_resources_weight, true);
-
-            // emit transfer event
-            Self::emit_transfer_event(ref world, owner_id, donkey_to_bank_id, array![resource].span());
-
-            donkey_to_bank_id
-        }
-
-        fn transfer(
-            ref world: WorldStorage,
-            owner_id: ID,
-            recipient_id: ID,
-            mut resources: Span<(u8, u128)>,
-            transport_provider_id: ID,
-            transport_resource_burn: bool,
-            enforce_owner_payment: bool,
-        ) -> (ID, felt252, u128) {
-            let arrival_time: ArrivalTime = world.read_model(owner_id);
-            arrival_time.assert_not_travelling();
-            let arrival_time: ArrivalTime = world.read_model(recipient_id);
-            arrival_time.assert_not_travelling();
-
-            let owner_position: Position = world.read_model(owner_id);
-            let owner_coord: Coord = owner_position.into();
-            let recipient_position: Position = world.read_model(recipient_id);
-            let recipient_coord: Coord = recipient_position.into();
-            let mut actual_recipient_id: ID = recipient_id;
-            let transport_is_needed: bool = owner_coord.is_non_zero() && owner_coord != recipient_coord;
-            if transport_is_needed {
-                actual_recipient_id = world.dispatcher.uuid()
-            };
-
-            // transfer resources from sender to recipient
-            let mut total_resources_weight = 0;
-            let mut resources_felt_arr: Array<felt252> = array![];
-            let mut resources_clone = resources.clone();
-
-            // ensure resource spending is not locked
-            if enforce_owner_payment {
-                let owner_resource_lock: ResourceTransferLock = world.read_model(owner_id);
-                owner_resource_lock.assert_not_locked();
-            }
-
-            // ensure resource receipt is not locked
-            let recipient_resource_lock: ResourceTransferLock = world.read_model(actual_recipient_id);
-            recipient_resource_lock.assert_not_locked();
-            loop {
-                match resources_clone.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount,
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-
-                        if enforce_owner_payment {
-                            // burn resources from sender's balance
-                            let mut owner_resource = ResourceImpl::get(ref world, (owner_id, resource_type));
-                            owner_resource.burn(resource_amount);
-                            owner_resource.save(ref world);
-                        }
-
-                        // add resources to recipient's balance
-                        let mut recipient_resource = ResourceImpl::get(ref world, (actual_recipient_id, resource_type));
-                        recipient_resource.add(resource_amount);
-                        recipient_resource.save(ref world);
-
-                        // update total weight
-                        total_resources_weight +=
-                            WeightConfigImpl::get_weight_grams(ref world, resource_type, resource_amount);
-
-                        // update resources hash
-                        resources_felt_arr.append(resource_type.into());
-                        resources_felt_arr.append(resource_amount.into());
-                    },
-                    Option::None => { break; },
-                }
-            };
-
-            // increase recipient weight
-            let mut recipient_weight: Weight = world.read_model(actual_recipient_id);
-            let recipient_capacity: CapacityConfig = if !transport_is_needed {
-                CapacityConfigImpl::get_from_entity(ref world, actual_recipient_id)
-            } else {
-                world.read_model(CapacityCategory::Donkey)
-            };
-            if !transport_is_needed {
-                let recipient_quantity: Quantity = world.read_model(actual_recipient_id);
-                recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
-                world.write_model(@recipient_weight);
-            } else {
-                // TODO(tedison): should this be += ???
-                recipient_weight.value = total_resources_weight;
-                recipient_weight.capacity_category = CapacityCategory::Donkey;
-                world.write_model(@recipient_weight);
-            }
-
-            if enforce_owner_payment {
-                // decrease sender weight
-                let mut owner_weight: Weight = world.read_model(owner_id);
-                let owner_capacity_config: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, owner_id);
-                owner_weight.deduct(owner_capacity_config, total_resources_weight);
-
-                world.write_model(@owner_weight);
-            }
-
-            if transport_is_needed {
-                // create donkey that can carry weight
-                let is_round_trip = transport_provider_id == recipient_id;
-                donkey::create_donkey(
-                    ref world, is_round_trip, actual_recipient_id, recipient_id, owner_coord, recipient_coord,
-                );
-                if transport_resource_burn {
-                    donkey::burn_donkey(ref world, transport_provider_id, total_resources_weight, true);
-                }
-            }
-
-            // emit transfer event
-            Self::emit_transfer_event(ref world, owner_id, actual_recipient_id, resources);
-
-            (actual_recipient_id, hash(resources_felt_arr.span()), total_resources_weight)
-        }
 
 
-        fn emit_transfer_event(
-            ref world: WorldStorage, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>,
+        fn offload(
+            ref self: ContractState, 
+            from_structure_id: ID, 
+            day: u64,
+            slot: u8,
+            resource_count: u8,
         ) {
-            let mut sending_realm_id = 0;
+            let mut world = self.world(DEFAULT_NS());
+            // SeasonImpl::assert_season_is_not_over(world);
 
-            let sending_realm: Realm = world.read_model(sender_entity_id);
-            if sending_realm.realm_id != 0 {
-                sending_realm_id = sending_realm.realm_id;
-            } else {
-                let sending_entity_owner: EntityOwner = world.read_model(sender_entity_id);
-                sending_realm_id = sending_entity_owner.get_realm_id(world);
-            }
+            assert(from_structure_id.is_non_zero(), 'from_structure_id does not exist');
 
-            world
-                .emit_event(
-                    @Transfer {
-                        recipient_entity_id,
-                        sending_realm_id,
-                        sender_entity_id,
-                        resources,
-                        timestamp: starknet::get_block_timestamp(),
-                    },
-                );
+            // ensure from_structure is owned by caller
+            let mut from_structure: Structure = world.read_model(from_structure_id);
+            from_structure.owner.assert_caller_owner();
+            
+
+            // move balance from resource arrivals to structure balance
+            let mut from_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_structure_id);
+            iResourceImpl::deliver_arrivals(
+                ref world, ref from_structure, ref from_structure_weight, 
+                day, slot, resource_count,
+            );
         }
+
     }
+
 }
