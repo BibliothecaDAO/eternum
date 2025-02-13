@@ -44,15 +44,26 @@ export class ActionPaths {
   }
 
   getHighlightedHexes(): ActionPath[] {
-    return Array.from(this.paths.values()).flatMap((path) =>
-      path.map((hex) => ({
-        hex: {
-          col: hex.hex.col - FELT_CENTER,
-          row: hex.hex.row - FELT_CENTER,
-        },
-        actionType: hex.actionType,
-      })),
-    );
+    const seen = new Set<string>();
+    return Array.from(this.paths.values()).flatMap((path) => {
+      // Skip first element of each path
+      const remainingPath = path.slice(1);
+      return remainingPath
+        .map((hex) => {
+          const col = hex.hex.col - FELT_CENTER;
+          const row = hex.hex.row - FELT_CENTER;
+          const key = `${col},${row}`;
+          if (seen.has(key)) {
+            return null;
+          }
+          seen.add(key);
+          return {
+            hex: { col, row },
+            actionType: hex.actionType,
+          };
+        })
+        .filter((hex): hex is ActionPath => hex !== null);
+    });
   }
 
   isHighlighted(row: number, col: number): boolean {

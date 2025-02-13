@@ -31,8 +31,6 @@ export class HighlightHexManager {
   }
 
   highlightHexes(actionPaths: ActionPath[]) {
-    console.log({ actionPaths });
-
     // Remove existing highlights
     this.highlightedHexes.forEach((mesh) => this.scene.remove(mesh));
     this.highlightedHexes = [];
