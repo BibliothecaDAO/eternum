@@ -11,7 +11,6 @@ import { ModalContainer } from "@/ui/components/modal-container";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { currencyFormat } from "@/ui/utils/utils";
 import {
   ArmyInfo,
   BattleManager,
@@ -30,7 +29,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getChancesOfSuccess, getMaxResourceAmountStolen, getTroopLossOnRaid } from "./utils";
+import { getChancesOfSuccess, getMaxResourceAmountStolen } from "./utils";
 
 enum Loading {
   None,
@@ -230,18 +229,17 @@ export const BattleActions = ({
     const raidSuccessPercentage = getChancesOfSuccess(selectedArmy, defenderArmy, troopConfig) * 100;
 
     const maxResourceAmountStolen = getMaxResourceAmountStolen(selectedArmy, defenderArmy, troopConfig);
-    const [attackerTroopsLoss, defenseTroopsLoss] = getTroopLossOnRaid(selectedArmy, defenderArmy, troopConfig);
     let content = [
       <div key="title" className="text-xs font-bold text-center">
         Raid outcome:
       </div>,
       <div key="attacker-loss" className="flex justify-between py-1">
         <span>Your troops loss:</span>
-        <span className="font-medium text-red">{currencyFormat(Number(attackerTroopsLoss), 0)}</span>
+        <span className="font-medium text-red">{0}</span>
       </div>,
       <div key="defender-loss" className="flex justify-between py-1">
         <span>Defender troops loss:</span>
-        <span className="font-medium text-red">{currencyFormat(Number(defenseTroopsLoss), 0)}</span>
+        <span className="font-medium text-red">{0}</span>
       </div>,
       <div key="success-chance" className="flex justify-between py-1">
         <span>Success chance:</span>

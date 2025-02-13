@@ -2,9 +2,9 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { battleSimulation } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
-import { BattleSimulationPanel } from "@/ui/components/worldmap/battles/battle-simulation-panel";
+import { CombatSimulationPanel } from "@/ui/components/worldmap/battles/combat-simulation-panel";
 
-export const BattleSimulation = () => {
+export const CombatSimulation = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
 
   const isOpen = useUIStore((state) => state.isPopupOpen(battleSimulation));
@@ -13,11 +13,11 @@ export const BattleSimulation = () => {
     <OSWindow
       onClick={() => togglePopup(battleSimulation)}
       show={isOpen}
-      title={"Battle simulation"}
+      title={"Combat simulation"}
       hintSection={HintSection.Combat}
-      width="600px"
+      width="800px"
     >
-      <BattleSimulationPanel />
+      <CombatSimulationPanel />
     </OSWindow>
   );
 };
