@@ -25,7 +25,6 @@ import {
   HexPosition,
   ID,
   SetupResult,
-  StaminaManager,
   TileManager,
   TravelPaths,
   getNeighborOffsets,
@@ -55,9 +54,11 @@ export default class WorldmapScene extends HexagonScene {
   private structureManager: StructureManager;
   private battleManager: BattleManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
+  // normalized positions
   private armyHexes: Map<number, Set<number>> = new Map();
+  // normalized positions
   private structureHexes: Map<number, Set<number>> = new Map();
-  // normalized hex positions
+  // store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private battles: Map<number, Set<number>> = new Map();
   private tileManager: TileManager;
@@ -377,13 +378,10 @@ export default class WorldmapScene extends HexagonScene {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
-    const stamina = new StaminaManager(this.dojo.components, selectedEntityId).getStamina(currentArmiesTick).amount;
-
     const travelPaths = armyMovementManager.findPaths(
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
-      stamina,
       currentDefaultTick,
       currentArmiesTick,
     );
@@ -423,6 +421,7 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.removeLabelsFromScene();
   }
 
+  // used to track the position of the armies on the map
   public updateArmyHexes(update: ArmySystemUpdate) {
     const {
       hexCoords: { col, row },
@@ -438,7 +437,7 @@ export default class WorldmapScene extends HexagonScene {
     // update the position of the army
     this.armiesPositions.set(update.entityId, { col: newCol, row: newRow });
 
-    if (oldCol && oldRow) {
+    if (oldCol !== undefined && oldRow !== undefined) {
       if (oldCol !== newCol || oldRow !== newRow) {
         this.armyHexes.get(oldCol)?.delete(oldRow);
         if (!this.armyHexes.has(newCol)) {
@@ -582,7 +581,16 @@ export default class WorldmapScene extends HexagonScene {
     return chunks;
   }
 
-  removeCachedMatricesAroundColRow(col: number, row: number) {}
+  removeCachedMatricesAroundColRow(col: number, row: number) {
+    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
+      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
+        if (i === 0 && j === 0) {
+          continue;
+        }
+        this.removeCachedMatricesForChunk(row + i, col + j);
+      }
+    }
+  }
 
   clearCache() {
     this.cachedMatrices.clear();

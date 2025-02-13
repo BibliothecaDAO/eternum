@@ -112,6 +112,7 @@ export class ArmyMovementManager {
     };
   }
 
+  // todo : refactor to use stamina config
   public static staminaDrain(biome: BiomeType, troopType: TroopType) {
     const baseStaminaCost = 20; // Base cost to move to adjacent hex
 
@@ -158,10 +159,12 @@ export class ArmyMovementManager {
     structureHexes: Map<number, Set<number>>,
     armyHexes: Map<number, Set<number>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
-    armyStamina: number,
     currentDefaultTick: number,
     currentArmiesTick: number,
   ): TravelPaths {
+    const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
+    if (armyStamina === 0) return new TravelPaths();
+
     const troopType = this._getTroopType();
     const startPos = this._getCurrentPosition();
     // max hex based on food

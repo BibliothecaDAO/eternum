@@ -47,8 +47,8 @@ export const StaminaResourceCost = ({
           </div>
           <div className="text-xs opacity-75">
             {pathInfo.isExplored ? (
-              path.map((tile, index) => (
-                <div key={index}>
+              path.map((tile) => (
+                <div key={`${tile.col}-${tile.row}`}>
                   {tile.biomeType}: {tile.staminaCost}
                 </div>
               ))

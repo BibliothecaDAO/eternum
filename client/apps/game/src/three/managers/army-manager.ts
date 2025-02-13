@@ -4,7 +4,16 @@ import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { LabelManager } from "@/three/managers/label-manager";
 import { Position } from "@/types/position";
-import { Biome, BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
+import {
+  Biome,
+  BiomeType,
+  configManager,
+  ContractAddress,
+  FELT_CENTER,
+  ID,
+  orders,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { findShortestPath } from "../helpers/pathfinding";
@@ -314,8 +323,11 @@ export class ArmyManager {
 
     if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
 
-    // todo: need to check better max distance
-    const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, 20);
+    // todo: currently taking max stamina of paladin as max stamina but need to refactor
+    const maxTroopStamina = configManager.getTroopStaminaConfig(ResourcesIds.Paladin);
+    const maxHex = Math.floor(maxTroopStamina / configManager.getMinTravelStaminaCost());
+
+    const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
 
     if (!path || path.length === 0) return;
 

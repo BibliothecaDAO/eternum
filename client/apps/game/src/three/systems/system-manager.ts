@@ -281,8 +281,6 @@ export class SystemManager {
           const newState = update.value[0];
           const prevState = update.value[1];
 
-          console.log("newState", newState);
-
           const { col, row } = prevState || newState;
           return {
             hexCoords: { col, row },
