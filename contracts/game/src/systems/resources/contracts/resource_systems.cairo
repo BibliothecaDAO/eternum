@@ -371,48 +371,6 @@ mod resource_systems {
             (actual_recipient_id, hash(resources_felt_arr.span()), total_resources_weight)
         }
 
-        fn mint_if_adequate_capacity(
-            ref world: WorldStorage, recipient_id: ID, resource: (u8, u128), check_lock: bool,
-        ) -> (u128, bool) {
-            // ensure recipient is not travelling
-            let arrival_time: ArrivalTime = world.read_model(recipient_id);
-            arrival_time.assert_not_travelling();
-
-            let mut success = false;
-
-            // only add to balance if receiver can carry weight
-            let (resource_type, resource_amount) = resource;
-            let mut total_resources_weight = 0;
-            total_resources_weight += WeightConfigImpl::get_weight_grams(ref world, resource_type, resource_amount);
-            let mut recipient_weight: Weight = world.read_model(recipient_id);
-            let recipient_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, recipient_id);
-            let recipient_quantity: Quantity = world.read_model(recipient_id);
-
-            recipient_weight.value += total_resources_weight;
-            if !recipient_capacity.is_capped() || recipient_capacity.can_carry(recipient_quantity, recipient_weight) {
-                recipient_weight.value -= total_resources_weight;
-                recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
-                world.write_model(@recipient_weight);
-
-                // ensure resource recepient is not locked from receiving
-                if check_lock {
-                    let recipient_resource_lock: ResourceTransferLock = world.read_model(recipient_id);
-                    recipient_resource_lock.assert_not_locked();
-                }
-
-                // add resource to recipient's balance
-                let mut recipient_resource = ResourceImpl::get(ref world, (recipient_id, resource_type));
-                recipient_resource.add(resource_amount);
-                recipient_resource.save(ref world);
-
-                // emit transfer event
-                Self::emit_transfer_event(ref world, 0, recipient_id, array![resource].span());
-
-                success = true;
-            }
-
-            (total_resources_weight, success)
-        }
 
         fn emit_transfer_event(
             ref world: WorldStorage, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>,
