@@ -16,6 +16,7 @@ import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { BattleModal } from "@/ui/modules/military/battle-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ActionPath,
@@ -33,6 +34,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { getEntities } from "@dojoengine/state";
 import throttle from "lodash/throttle";
+import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
@@ -344,26 +346,45 @@ export default class WorldmapScene extends HexagonScene {
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
 
-    const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
-
     const { selectedEntityId, actionPaths } = this.state.armyActions;
     if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
       const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
-      if (actionPath) {
-        const selectedPath = actionPath.map((path) => path.hex);
-        const isExplored = actionPath[actionPath.length - 1].actionType === ActionType.Explore;
-        if (selectedPath.length > 0) {
-          const armyMovementManager = new ArmyMovementManager(
-            this.dojo.components,
-            this.dojo.network.provider,
-            selectedEntityId,
-          );
-          playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-          armyMovementManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
-          this.state.updateHoveredHex(null);
+      if (actionPath && account) {
+        const actionType = ActionPaths.getActionType(actionPath);
+        if (actionType === ActionType.Explore || actionType === ActionType.Move) {
+          this.onArmyMovement(account, actionPath, selectedEntityId);
+        } else if (actionType === ActionType.Attack) {
+          this.onArmyAttack(account, actionPath, selectedEntityId);
         }
       }
     }
+  }
+
+  private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
+    const selectedPath = actionPath.map((path) => path.hex);
+    const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Explore;
+    if (selectedPath.length > 0) {
+      const armyMovementManager = new ArmyMovementManager(
+        this.dojo.components,
+        this.dojo.network.provider,
+        selectedEntityId,
+      );
+      playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
+      armyMovementManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
+      this.state.updateHoveredHex(null);
+    }
+  }
+
+  private onArmyAttack(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    const selectedPath = actionPath.map((path) => path.hex);
+
+    // Get the target hex (last hex in the path)
+    const targetHex = selectedPath[selectedPath.length - 1];
+
+    // Find the army at the target position
+
+    this.state.toggleModal(<BattleModal />);
   }
 
   private onArmySelection(selectedEntityId: ID | null) {

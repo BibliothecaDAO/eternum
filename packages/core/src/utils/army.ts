@@ -104,11 +104,12 @@ export const formatArmies = (
 };
 
 export const getArmy = (
-  armyEntityId: ID,
+  armyEntityId: ID | Entity,
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): ArmyInfo | undefined => {
-  return formatArmies([getEntityIdFromKeys([BigInt(armyEntityId)])], playerAddress, components)[0];
+  const entityId = typeof armyEntityId === "string" ? armyEntityId : getEntityIdFromKeys([BigInt(armyEntityId)]);
+  return formatArmies([entityId], playerAddress, components)[0];
 };
 
 export const getArmiesInBattle = (battleEntityId: ID, playerAddress: ContractAddress, components: ClientComponents) => {

@@ -7,6 +7,7 @@ import { StaminaResourceCost } from "@/ui/elements/stamina-resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ActionPath,
+  ActionPaths,
   ActionType,
   computeExploreFoodCosts,
   computeTravelFoodCosts,
@@ -36,12 +37,12 @@ const TooltipContent = memo(
     structureEntityId: number;
     getBalance: (entityId: ID, resourceId: ResourcesIds) => { balance: number; resourceId: ResourcesIds };
   }) => {
-    const lastAction = actionPath[actionPath.length - 1];
+    const actionType = ActionPaths.getActionType(actionPath);
 
     return (
       <>
-        <Headline>{lastAction.actionType}</Headline>
-        {lastAction.actionType === ActionType.Explore ? (
+        <Headline>{actionType}</Headline>
+        {actionType === ActionType.Explore ? (
           <div>
             <ResourceCost
               amount={-costs.travelFoodCosts.wheatPayAmount * (actionPath.length - 1)}
@@ -54,7 +55,7 @@ const TooltipContent = memo(
               balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
             />
           </div>
-        ) : lastAction.actionType === ActionType.Move ? (
+        ) : actionType === ActionType.Move ? (
           <div>
             <ResourceCost
               amount={-costs.exploreFoodCosts.wheatPayAmount}

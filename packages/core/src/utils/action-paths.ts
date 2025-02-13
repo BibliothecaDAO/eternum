@@ -79,4 +79,9 @@ export class ActionPaths {
     const row = normalized ? pos.row + FELT_CENTER : pos.row;
     return `${col},${row}`;
   }
+
+  static getActionType(path: ActionPath[]): ActionType | undefined {
+    if (path.length === 0) return undefined;
+    return path[path.length - 1].actionType;
+  }
 }
