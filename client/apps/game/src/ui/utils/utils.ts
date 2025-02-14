@@ -48,13 +48,14 @@ export function divideByPrecisionFormatted(value: number): string {
   return divideByPrecision(value).toLocaleString("en-US");
 }
 
-export function roundDownToPrecision(value: bigint, precision: number) {
-  return BigInt(Number(value) - (Number(value) % Number(precision)));
-}
+// keep this for later
+// export function roundDownToPrecision(value: bigint, precision: number) {
+//   return BigInt(Number(value) - (Number(value) % Number(precision)));
+// }
 
-export function roundUpToPrecision(value: bigint, precision: number) {
-  return BigInt(Number(value) + (Number(precision) - (Number(value) % Number(precision))));
-}
+// export function roundUpToPrecision(value: bigint, precision: number) {
+//   return BigInt(Number(value) + (Number(precision) - (Number(value) % Number(precision))));
+// }
 
 export function addressToNumber(address: string) {
   // Convert the address to a big integer

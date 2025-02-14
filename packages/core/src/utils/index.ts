@@ -1,6 +1,6 @@
 export * from "./army";
-export * from "./battle-simulator";
 export * from "./biome";
+export * from "./combat-simulator";
 export * from "./entities";
 export * from "./guild";
 export * from "./leaderboard";
