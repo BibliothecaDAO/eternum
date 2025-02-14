@@ -461,7 +461,9 @@ mod troop_movement_systems {
                     );
 
                     // ensure explorer does not occupy fragment mine tile when mines are discovered
-                    if lottery_won {occupy_destination = false;}
+                    if lottery_won {
+                        occupy_destination = false;
+                    }
 
                     // grant resource reward for exploration
                     let (explore_reward_id, explore_reward_amount) = iExplorerImpl::exploration_reward(

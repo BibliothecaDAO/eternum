@@ -316,9 +316,8 @@ mod realm_systems {
             let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
             let entity_id = world.dispatcher.uuid();
 
-            // create structure 
-            iStructureImpl::create(
-                ref world, coord,owner, entity_id, StructureCategory::Realm, false);
+            // create structure
+            iStructureImpl::create(ref world, coord, owner, entity_id, StructureCategory::Realm, false);
 
             // create realm
             world

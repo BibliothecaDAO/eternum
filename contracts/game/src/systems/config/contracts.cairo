@@ -260,13 +260,10 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl WorldConfigImpl of super::IWorldConfig<ContractState> {
-        fn set_world_config(
-            ref self: ContractState,
-            admin_address: starknet::ContractAddress,
-        ) {
+        fn set_world_config(ref self: ContractState, admin_address: starknet::ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert!(admin_address.is_non_zero(), "admin address must be non zero");
-            
+
             let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
             if world_config.admin_address.is_non_zero() {
                 assert_caller_is_admin(world);

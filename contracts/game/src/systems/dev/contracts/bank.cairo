@@ -36,9 +36,9 @@ mod dev_bank_systems {
     use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use s1_eternum::systems::utils::map::iMapImpl;
+    use s1_eternum::systems::utils::structure::iStructureImpl;
 
     use s1_eternum::systems::utils::troop::iMercenariesImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
 
     use traits::Into;
@@ -57,17 +57,14 @@ mod dev_bank_systems {
             owner_bridge_fee_dpt_percent: u16,
             owner_bridge_fee_wtdr_percent: u16,
         ) -> ID {
-
             // ensure caller is admin
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
-            
+
             // create the bank structure
             iStructureImpl::create(
-                ref world, coord, starknet::get_caller_address(), 
-                ADMIN_BANK_ENTITY_ID, StructureCategory::Bank, false,
+                ref world, coord, starknet::get_caller_address(), ADMIN_BANK_ENTITY_ID, StructureCategory::Bank, false,
             );
-
 
             // save bank name
             world.write_model(@AddressName { address: ADMIN_BANK_ENTITY_ID.try_into().unwrap(), name });

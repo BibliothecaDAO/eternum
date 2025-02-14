@@ -51,6 +51,7 @@ mod hyperstructure_systems {
     };
     use s1_eternum::models::season::{Season, SeasonImpl};
     use s1_eternum::models::weight::{Weight, WeightImpl};
+    use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::random::VRFImpl;
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use s1_eternum::{
@@ -72,7 +73,6 @@ mod hyperstructure_systems {
             structure::{Structure, StructureCategory, StructureImpl},
         },
     };
-    use s1_eternum::systems::utils::structure::iStructureImpl;
 
     use starknet::{ContractAddress, contract_address_const};
 
@@ -181,10 +181,8 @@ mod hyperstructure_systems {
 
             // create the hyperstructure structure
             iStructureImpl::create(
-                ref world, coord, starknet::get_caller_address(), 
-                new_uuid, StructureCategory::Hyperstructure, true,
+                ref world, coord, starknet::get_caller_address(), new_uuid, StructureCategory::Hyperstructure, true,
             );
-            
 
             world
                 .write_model(

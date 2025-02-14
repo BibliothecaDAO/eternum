@@ -106,8 +106,7 @@ mod bank_systems {
 
             // create the bank structure
             iStructureImpl::create(
-                ref world, coord, starknet::get_caller_address(), 
-                bank_entity_id, StructureCategory::Bank, false,
+                ref world, coord, starknet::get_caller_address(), bank_entity_id, StructureCategory::Bank, false,
             );
 
             world

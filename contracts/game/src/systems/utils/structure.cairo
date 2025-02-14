@@ -27,7 +27,6 @@ impl iStructureImpl of iStructureTrait {
         if assert_tile_explored {
             // ensure tile is explored
             assert!(tile.discovered(), "tile not explored");
-
         } else {
             // ensure tile is not explored
             assert!(!tile.discovered(), "tile already explored");
@@ -40,7 +39,7 @@ impl iStructureImpl of iStructureTrait {
         // ensure the coord is not occupied
         let occupier: Occupier = Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(structure_id) };
         assert!(occupier.not_occupied(), "something exists on this coords");
-                
+
         // save structure model
         let owner: Owner = Owner { entity_id: structure_id, address: owner };
         let structure: Structure = StructureImpl::new(structure_id, category, coord, owner);

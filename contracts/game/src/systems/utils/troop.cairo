@@ -4,7 +4,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::WorldConfigUtilImpl;
-use s1_eternum::models::config::{MapConfig, TroopConfig, TroopLimitConfig, TroopStaminaConfig, CapacityConfig};
+use s1_eternum::models::config::{CapacityConfig, MapConfig, TroopConfig, TroopLimitConfig, TroopStaminaConfig};
 
 use s1_eternum::models::position::{Occupier, OccupierImpl};
 use s1_eternum::models::resource::resource::{
@@ -117,7 +117,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         // set structure capacity
         let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
         let capacity: u128 = capacity_config.troop_capacity.into() * troop_amount;
-        
+
         let mut troop_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
         if add {
             troop_weight.add_capacity(capacity);

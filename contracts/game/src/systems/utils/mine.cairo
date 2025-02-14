@@ -14,11 +14,11 @@ use s1_eternum::models::resource::resource::{
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::models::weight::Weight;
+use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::{VRFImpl};
 use starknet::ContractAddress;
-use s1_eternum::systems::utils::structure::iStructureImpl;
 
 
 #[generate_trait]
@@ -49,10 +49,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
 
         // make fragment mine structure
         let structure_id = world.dispatcher.uuid();
-        iStructureImpl::create(
-            ref world, coord, owner, 
-            structure_id, StructureCategory::FragmentMine, true,
-        );
+        iStructureImpl::create(ref world, coord, owner, structure_id, StructureCategory::FragmentMine, true);
 
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
