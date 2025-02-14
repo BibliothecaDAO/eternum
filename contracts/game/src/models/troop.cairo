@@ -152,6 +152,7 @@ impl TroopsImpl of TroopsTrait {
         let NEUTRAL: bool = false;
 
         let (sign, numerator): (bool, u16) = match biome {
+            Biome::None => (NEUTRAL, ZERO),
             Biome::DeepOcean => {
                 match self.category {
                     TroopType::Knight => (NEUTRAL, ZERO), // 0
@@ -286,11 +287,12 @@ impl TroopsImpl of TroopsTrait {
         let NEUTRAL: bool = false;
 
         match biome {
+            Biome::None => (NEUTRAL, ZERO),
             Biome::DeepOcean => {
                 match self.category {
-                    TroopType::Knight => (SUBTRACT, VALUE), // 0
-                    TroopType::Crossbowman => (SUBTRACT, VALUE), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // 0
+                    TroopType::Knight => (SUBTRACT, VALUE), // -1
+                    TroopType::Crossbowman => (SUBTRACT, VALUE), // -1
+                    TroopType::Paladin => (SUBTRACT, VALUE) // -1
                 }
             },
             Biome::Ocean => {

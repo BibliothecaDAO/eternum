@@ -33,6 +33,7 @@ mod bank_systems {
     use s1_eternum::models::troop::{ExplorerTroops};
     use s1_eternum::models::weight::{Weight, WeightTrait};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use s1_eternum::systems::utils::structure::{iStructureImpl};
 
 
     use traits::Into;
@@ -89,8 +90,6 @@ mod bank_systems {
 
             let bank_entity_id: ID = world.dispatcher.uuid();
 
-            //todo: check that tile is explored
-
             // ensure that the coord is not occupied by any other structure
             let mut occupier: Occupier = world.read_model(coord);
             assert!(occupier.not_occupied(), "bank location is not empty");
@@ -105,12 +104,11 @@ mod bank_systems {
             player_lords_resource.spend(bank_config.lords_cost, ref player_structure_weight, lords_weight_grams);
             player_lords_resource.store(ref world);
 
-            let owner: Owner = Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() };
-            let structure: Structure = StructureImpl::new(bank_entity_id, StructureCategory::Bank, coord, owner);
-            world.write_model(@structure);
-
-            occupier.entity = OccupiedBy::Structure(bank_entity_id);
-            world.write_model(@occupier);
+            // create the bank structure
+            iStructureImpl::create(
+                ref world, coord, starknet::get_caller_address(), 
+                bank_entity_id, StructureCategory::Bank, false,
+            );
 
             world
                 .write_model(

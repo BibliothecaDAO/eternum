@@ -215,15 +215,3 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
         }
     }
 }
-
-
-#[derive(Copy, Drop, Serde)]
-#[dojo::event(historical: false)]
-struct ResourceSender {
-    #[key]
-    hash: felt252, // poseidon hash of structure_id, day, hour
-    structure_id: ID,
-    day: u64,
-    slot: u8,
-    resources: Span<(ID, u8, u128)> // (sender_structure_id, resource_type, amount)
-}

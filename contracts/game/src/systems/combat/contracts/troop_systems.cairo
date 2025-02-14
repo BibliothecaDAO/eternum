@@ -50,7 +50,7 @@ mod troop_systems {
             BattleConfigTrait, CapacityConfig, CombatConfigImpl, SpeedConfig, TickConfig, TickImpl, TickTrait,
             TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
         },
-        map::Tile, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
+        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
         position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
         resource::{
             resource::{
@@ -383,7 +383,7 @@ mod troop_movement_systems {
             TickTrait, TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig,
             WorldConfigUtilImpl,
         },
-        map::Tile, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
+        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
         position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
         resource::resource::{
             ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -436,12 +436,13 @@ mod troop_movement_systems {
                 biomes.append(biome);
 
                 let mut tile: Tile = world.read_model((next.x, next.y));
+                let mut occupy_destination: bool = true;
                 if explore {
                     // ensure only one tile can be explored
                     assert!(directions.len().is_zero(), "explorer can only move one direction when exploring");
 
                     // ensure target tile is not explored
-                    assert(tile.explored_at.is_zero(), 'tile is already explored');
+                    assert!(!tile.discovered(), "tile is already explored");
 
                     // set tile as explored
                     iMapImpl::explore(ref world, ref tile, biome);
@@ -450,7 +451,7 @@ mod troop_movement_systems {
                     let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
                     let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
                     let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-                    iMineDiscoveryImpl::lottery(
+                    let lottery_won: bool = iMineDiscoveryImpl::lottery(
                         ref world,
                         starknet::get_caller_address(),
                         next,
@@ -458,6 +459,9 @@ mod troop_movement_systems {
                         troop_limit_config,
                         troop_stamina_config,
                     );
+
+                    // ensure explorer does not occupy fragment mine tile when mines are discovered
+                    if lottery_won {occupy_destination = false;}
 
                     // grant resource reward for exploration
                     let (explore_reward_id, explore_reward_amount) = iExplorerImpl::exploration_reward(
@@ -472,8 +476,8 @@ mod troop_movement_systems {
                     resource.store(ref world);
                     explorer_weight.store(ref world, explorer_id);
                 } else {
-                    // ensure all tiles passed through are explored during travel
-                    assert(tile.explored_at.is_non_zero(), 'tile is not explored');
+                    // ensure all tiles passed through during travel are explored
+                    assert!(tile.discovered(), "tile is not explored");
                 }
 
                 // update explorer coordinate
@@ -481,8 +485,10 @@ mod troop_movement_systems {
 
                 // set explorer as occupier of target coordinate
                 if directions.len().is_zero() {
-                    occupier.entity = OccupiedBy::Explorer(explorer_id);
-                    world.write_model(@occupier);
+                    if occupy_destination {
+                        occupier.entity = OccupiedBy::Explorer(explorer_id);
+                        world.write_model(@occupier);
+                    }
                     break;
                 }
             };

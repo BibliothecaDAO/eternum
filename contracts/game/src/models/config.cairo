@@ -31,7 +31,6 @@ pub struct WorldConfig {
     #[key]
     config_id: ID,
     admin_address: ContractAddress,
-    realm_l2_contract: ContractAddress,
     vrf_provider_address: ContractAddress,
     season_addresses_config: SeasonAddressesConfig,
     season_bridge_config: SeasonBridgeConfig,
@@ -119,12 +118,12 @@ pub struct HyperstructureConfig {
 }
 
 
-#[derive(Copy, Drop, Serde, IntrospectPacked)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct CapacityConfig {
-    structure_capacity: u32, // grams
-    troop_capacity: u32, // grams
-    donkey_capacity: u32, // grams
-    storehouse_boost_capacity: u32 // grams
+    structure_capacity: u32,    // grams
+    troop_capacity: u32,        // grams
+    donkey_capacity: u32,       // grams
+    storehouse_boost_capacity: u32, // grams
 }
 
 

@@ -18,6 +18,8 @@ use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::{VRFImpl};
 use starknet::ContractAddress;
+use s1_eternum::systems::utils::structure::iStructureImpl;
+
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
@@ -45,8 +47,12 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             return false;
         }
 
-        // make structure
-        let structure_id = Self::_make_structure(ref world, coord, owner);
+        // make fragment mine structure
+        let structure_id = world.dispatcher.uuid();
+        iStructureImpl::create(
+            ref world, coord, owner, 
+            structure_id, StructureCategory::FragmentMine, true,
+        );
 
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
@@ -104,21 +110,6 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
 
         return true;
     }
-
-    fn _make_structure(ref world: WorldStorage, coord: Coord, owner: starknet::ContractAddress) -> ID {
-        // make structure model
-        let structure_id: ID = world.dispatcher.uuid();
-        let owner: Owner = Owner { entity_id: structure_id, address: owner };
-        let structure: Structure = StructureImpl::new(structure_id, StructureCategory::FragmentMine, coord, owner);
-        world.write_model(@structure);
-
-        // make occupier model
-        let occupier: Occupier = Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(structure_id) };
-        world.write_model(@occupier);
-
-        structure_id
-    }
-
 
     fn _reward_amount(ref world: WorldStorage, randomness: u256) -> u128 {
         let random_multiplier: u128 = *random::choices(

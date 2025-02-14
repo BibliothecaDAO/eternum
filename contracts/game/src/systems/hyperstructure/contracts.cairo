@@ -72,6 +72,7 @@ mod hyperstructure_systems {
             structure::{Structure, StructureCategory, StructureImpl},
         },
     };
+    use s1_eternum::systems::utils::structure::iStructureImpl;
 
     use starknet::{ContractAddress, contract_address_const};
 
@@ -142,13 +143,6 @@ mod hyperstructure_systems {
             let creator_owner: Owner = world.read_model(creator_entity_id);
             creator_owner.assert_caller_owner();
 
-            let mut tile: Tile = world.read_model((coord.x, coord.y));
-            assert!(tile.explored_at != 0, "tile not explored");
-
-            // assert no structure is already built on the coords
-            let occupier: Occupier = world.read_model(coord);
-            assert!(occupier.not_occupied(), "something exists on this coords");
-
             let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
             let shard_resource_tier: u32 = get_resource_tier(ResourceTypes::EARTHEN_SHARD).into();
             let shards_resource_config = hyperstructure_resource_configs.at(shard_resource_tier - 1);
@@ -185,12 +179,12 @@ mod hyperstructure_systems {
             );
             let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
 
-            let owner: Owner = Owner { entity_id: new_uuid, address: starknet::get_caller_address() };
-            let structure: Structure = StructureImpl::new(new_uuid, StructureCategory::Hyperstructure, coord, owner);
-            world.write_model(@structure);
-
-            let occupier: Occupier = Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(new_uuid) };
-            world.write_model(@occupier);
+            // create the hyperstructure structure
+            iStructureImpl::create(
+                ref world, coord, starknet::get_caller_address(), 
+                new_uuid, StructureCategory::Hyperstructure, true,
+            );
+            
 
             world
                 .write_model(

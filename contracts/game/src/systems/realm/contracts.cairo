@@ -44,7 +44,7 @@ mod realm_systems {
         SettlementConfigImpl, WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
-    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::map::{Tile, TileImpl};
     use s1_eternum::models::movable::Movable;
     use s1_eternum::models::name::{AddressName};
     use s1_eternum::models::owner::{Owner, OwnerTrait};
@@ -68,6 +68,7 @@ mod realm_systems {
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
     };
     use s1_eternum::systems::utils::map::iMapImpl;
+    use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use starknet::ContractAddress;
@@ -315,15 +316,11 @@ mod realm_systems {
             let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
             let entity_id = world.dispatcher.uuid();
 
-            let owner: Owner = Owner { entity_id: entity_id.into(), address: owner };
-            let structure: Structure = StructureImpl::new(entity_id.into(), StructureCategory::Realm, coord, owner);
-            world.write_model(@structure);
+            // create structure 
+            iStructureImpl::create(
+                ref world, coord,owner, entity_id, StructureCategory::Realm, false);
 
-            let occupier: Occupier = Occupier {
-                x: coord.x, y: coord.y, entity: OccupiedBy::Structure(entity_id.into()),
-            };
-            world.write_model(@occupier);
-
+            // create realm
             world
                 .write_model(
                     @Realm {
@@ -335,13 +332,6 @@ mod realm_systems {
                         has_wonder,
                     },
                 );
-
-            // explore tile where realm sits if not already explored
-            let mut tile: Tile = world.read_model((coord.x, coord.y));
-            if tile.explored_at.is_zero() {
-                let biome = get_biome(coord.x.into(), coord.y.into());
-                iMapImpl::explore(ref world, ref tile, biome);
-            }
 
             // place castle building
             BuildingImpl::create(ref world, entity_id, BuildingCategory::Castle, Option::None, BuildingImpl::center());
@@ -416,11 +406,12 @@ mod realm_systems {
                 //todo: note: ask if its okay if new realm is not settled at
                 // correct location when a troop is on it
                 coord = settlement_config.get_next_settlement_coord();
-                let occupier: Occupier = world.read_model(coord);
-                if occupier.not_occupied() {
+                let tile: Tile = world.read_model((coord.x, coord.y));
+                if !tile.discovered() {
                     found_coords = true;
                 }
             };
+
             // save the new config so that if there's no already a structure at the coord we can
             // find a new one
             WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);

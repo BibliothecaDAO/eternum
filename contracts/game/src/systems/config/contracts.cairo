@@ -9,9 +9,7 @@ use s1_eternum::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
 trait IWorldConfig<T> {
-    fn set_world_config(
-        ref self: T, admin_address: starknet::ContractAddress, realm_l2_contract: starknet::ContractAddress,
-    );
+    fn set_world_config(ref self: T, admin_address: starknet::ContractAddress);
 }
 
 
@@ -257,9 +255,7 @@ mod config_systems {
     fn assert_caller_is_admin(world: WorldStorage) {
         let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
         let admin_address = world_config.admin_address;
-        if admin_address != Zeroable::zero() {
-            assert(starknet::get_caller_address() == admin_address, 'caller not admin');
-        }
+        assert!(starknet::get_caller_address() == admin_address, "caller not admin");
     }
 
     #[abi(embed_v0)]
@@ -267,14 +263,16 @@ mod config_systems {
         fn set_world_config(
             ref self: ContractState,
             admin_address: starknet::ContractAddress,
-            realm_l2_contract: starknet::ContractAddress,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
+            assert!(admin_address.is_non_zero(), "admin address must be non zero");
+            
             let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
+            if world_config.admin_address.is_non_zero() {
+                assert_caller_is_admin(world);
+            }
+
             world_config.admin_address = admin_address;
-            world_config.realm_l2_contract = realm_l2_contract;
             world.write_model(@world_config);
         }
     }

@@ -9,12 +9,18 @@ pub struct Tile {
     col: u32,
     #[key]
     row: u32,
-    explored_at: u64,
     biome: Biome,
 }
 
 impl TileIntoCoord of Into<Tile, Coord> {
     fn into(self: Tile) -> Coord {
         Coord { x: self.col, y: self.row }
+    }
+}
+
+#[generate_trait]
+impl TileImpl of TileTrait {
+    fn discovered(self: Tile) -> bool {
+        self.biome != Biome::None
     }
 }

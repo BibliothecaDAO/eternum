@@ -3,8 +3,9 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use cubit::f128::types::vec3::{Vec3, Vec3Trait};
 
 use s1_eternum::utils::map::constants::fixed_constants as fc;
-#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
 pub enum Biome {
+    None,
     DeepOcean,
     Ocean,
     Beach,
@@ -26,6 +27,7 @@ pub enum Biome {
 impl BiomeIntoFelt252 of Into<Biome, felt252> {
     fn into(self: Biome) -> felt252 {
         match self {
+            Biome::None => 'None',
             Biome::DeepOcean => 'Deep Ocean',
             Biome::Ocean => 'Ocean',
             Biome::Beach => 'Beach',
@@ -47,6 +49,7 @@ impl BiomeIntoFelt252 of Into<Biome, felt252> {
 }
 fn bdepth(biome: Biome) -> Fixed {
     match biome {
+        Biome::None => FixedTrait::ZERO(),
         Biome::DeepOcean => fc::_0_1(),
         Biome::Ocean => fc::_0_1(),
         Biome::Beach => fc::_0_2(),

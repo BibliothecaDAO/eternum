@@ -72,5 +72,6 @@ pub mod utils {
     pub mod map;
     pub mod mine;
     pub mod resource;
+    pub mod structure;
     pub mod troop;
 }
