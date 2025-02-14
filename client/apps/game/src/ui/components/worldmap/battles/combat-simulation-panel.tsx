@@ -187,7 +187,7 @@ export const CombatSimulationPanel = () => {
           <SelectBiome
             onSelect={(newBiome) => {
               if (newBiome) {
-                setBiome(newBiome);
+                setBiome(newBiome as BiomeType);
               }
             }}
             defaultValue={biome}

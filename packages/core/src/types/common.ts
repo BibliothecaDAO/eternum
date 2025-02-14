@@ -1,6 +1,7 @@
 import { ComponentValue, Entity } from "@dojoengine/recs";
 import { Account, AccountInterface } from "starknet";
 import {
+  BiomeType,
   BuildingType,
   CapacityConfigCategory,
   QuestType,
@@ -161,6 +162,13 @@ export enum ClaimStatus {
 }
 
 export type HexPosition = { col: number; row: number };
+
+export type HexTileInfo = {
+  col: number;
+  row: number;
+  staminaCost: number;
+  biomeType: BiomeType | undefined;
+};
 
 export enum Winner {
   Attacker = "Attacker",

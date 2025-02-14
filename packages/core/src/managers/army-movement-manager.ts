@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { DojoAccount } from "..";
+import { Biome, DojoAccount, multiplyByPrecision } from "..";
 import {
   BiomeType,
   CapacityConfigCategory,
@@ -14,7 +14,6 @@ import {
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
 import { ContractAddress, HexPosition, ID, TravelTypes, TroopType } from "../types";
-import { Biome, multiplyByPrecision } from "../utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
