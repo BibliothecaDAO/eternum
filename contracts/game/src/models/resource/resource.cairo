@@ -6,19 +6,14 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{
     GRAMS_PER_KG, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, get_resource_probabilities, resource_type_name,
 };
-use s1_eternum::models::config::{
-    CapacityConfig, ProductionConfig, TickConfig, TickImpl, TickTrait,
-};
+use s1_eternum::models::config::WeightConfig;
+use s1_eternum::models::config::{CapacityConfig, ProductionConfig, TickConfig, TickImpl, TickTrait};
 use s1_eternum::models::realm::Realm;
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::structure::StructureTrait;
 use s1_eternum::models::structure::{Structure, StructureCategory};
-use s1_eternum::utils::math::{is_u256_bit_set, min, set_u256_bit};
-use s1_eternum::models::config::WeightConfig;
 use s1_eternum::models::weight::{Weight, WeightImpl};
-
-
-
+use s1_eternum::utils::math::{is_u256_bit_set, min, set_u256_bit};
 
 
 #[derive(Copy, Drop, Serde)]

@@ -46,7 +46,11 @@ mod hyperstructure_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use s1_eternum::models::season::{Season, SeasonImpl};
+    use s1_eternum::models::weight::{Weight, WeightImpl};
     use s1_eternum::utils::random::VRFImpl;
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use s1_eternum::{
@@ -60,21 +64,15 @@ mod hyperstructure_systems {
                 HyperstructureConfig, HyperstructureResourceConfig, HyperstructureResourceConfigTrait,
                 WorldConfigUtilImpl,
             },
-            map::Tile,
             guild::{GuildMember},
-            hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
+            hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress}, map::Tile,
             name::{AddressName}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
             position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position, PositionIntoCoord}, realm::{Realm},
             resource::resource::{ResourceList}, season::{Leaderboard},
             structure::{Structure, StructureCategory, StructureImpl},
         },
-        
     };
-    use s1_eternum::models::resource::resource::{
-        SingleResource, SingleResourceImpl, 
-        SingleResourceStoreImpl, WeightStoreImpl, ResourceWeightImpl};
-    use s1_eternum::models::weight::{Weight, WeightImpl};
-    
+
     use starknet::{ContractAddress, contract_address_const};
 
     use super::{LEADERBOARD_REGISTRATION_PERIOD, calculate_total_contributable_amount};
@@ -162,12 +160,17 @@ mod hyperstructure_systems {
             let mut creator_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, creator_entity_id);
             let shards_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
             let mut creator_shard_resource: SingleResource = SingleResourceStoreImpl::retrieve(
-                ref world, creator_entity_id, ResourceTypes::EARTHEN_SHARD, 
-                ref creator_structure_weight, shards_resource_weight_grams, true,
+                ref world,
+                creator_entity_id,
+                ResourceTypes::EARTHEN_SHARD,
+                ref creator_structure_weight,
+                shards_resource_weight_grams,
+                true,
             );
 
             // spend resource
-            creator_shard_resource.spend(required_shards_amount, ref creator_structure_weight, shards_resource_weight_grams);
+            creator_shard_resource
+                .spend(required_shards_amount, ref creator_structure_weight, shards_resource_weight_grams);
             // update resource
             creator_shard_resource.store(ref world);
             // update structure weight
@@ -517,15 +520,18 @@ mod hyperstructure_systems {
         fn burn_player_resource(
             ref world: WorldStorage, resource_type: u8, resource_amount: u128, contributor_entity_id: ID,
         ) {
-
             // obtain structure weight
             let mut creator_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, contributor_entity_id);
-            
+
             // burn resource
             let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
             let mut creator_resource: SingleResource = SingleResourceStoreImpl::retrieve(
-                ref world, contributor_entity_id, resource_type, 
-                ref creator_structure_weight, resource_weight_grams, true,
+                ref world,
+                contributor_entity_id,
+                resource_type,
+                ref creator_structure_weight,
+                resource_weight_grams,
+                true,
             );
 
             creator_resource.spend(resource_amount, ref creator_structure_weight, resource_weight_grams);

@@ -65,7 +65,6 @@ impl WorldConfigUtilImpl of WorldConfigTrait {
 }
 
 
-
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct TradeCountConfig {
     max_count: u8,
@@ -120,13 +119,12 @@ pub struct HyperstructureConfig {
 }
 
 
-
 #[derive(Copy, Drop, Serde, IntrospectPacked)]
 pub struct CapacityConfig {
     structure_capacity: u32, // grams
     troop_capacity: u32, // grams
     donkey_capacity: u32, // grams
-    storehouse_boost_capacity: u32, // grams
+    storehouse_boost_capacity: u32 // grams
 }
 
 

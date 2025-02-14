@@ -8,14 +8,14 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{LaborBurnPrStrategy, MultipleResourceBurnPrStrategy, ProductionConfig};
 use s1_eternum::models::config::{TickImpl, WeightConfig};
+
+use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
-    SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
-    WeightStoreImpl, ResourceWeightImpl,
+    ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
+    WeightStoreImpl,
 };
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
 use s1_eternum::models::weight::{Weight};
-
-use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::utils::math::{min};
 use starknet::get_block_timestamp;
 

@@ -9,7 +9,7 @@ use s1_eternum::models::position::{Coord, OccupiedBy, Occupier};
 use s1_eternum::models::resource::production::building::{Building, BuildingCategory, BuildingImpl};
 use s1_eternum::models::resource::production::production::{ProductionImpl};
 use s1_eternum::models::resource::resource::{
-    Production, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl, ResourceWeightImpl,
+    Production, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};

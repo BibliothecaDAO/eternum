@@ -7,7 +7,9 @@ trait ILiquiditySystems<T> {
     fn add(
         ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, resource_amount: u128, lords_amount: u128,
     );
-    fn remove(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed, player_resource_index: u8);
+    fn remove(
+        ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed, player_resource_index: u8,
+    );
 }
 
 #[dojo::contract]
@@ -23,15 +25,17 @@ mod liquidity_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::ResourceTypes;
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
-    use s1_eternum::models::bank::liquidity::{Liquidity};
     use s1_eternum::models::bank::bank::{Bank};
+    use s1_eternum::models::bank::liquidity::{Liquidity};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
     use s1_eternum::models::owner::{Owner, OwnerTrait};
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
-    use s1_eternum::models::weight::{Weight, WeightTrait};
-    use s1_eternum::models::resource::resource::{SingleResourceStoreImpl, SingleResourceImpl, ResourceWeightImpl, WeightStoreImpl};
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
 
     #[derive(Copy, Drop, Serde)]
@@ -92,7 +96,7 @@ mod liquidity_systems {
             );
             player_resource.spend(cost_resource_amount, ref player_structure_weight, player_resource_weight_grams);
             player_resource.store(ref world);
-            
+
             // burn the lords added to lp
             let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
             let mut player_lords_resource = SingleResourceStoreImpl::retrieve(
@@ -114,20 +118,27 @@ mod liquidity_systems {
         }
 
 
-        fn remove(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed, player_resource_index: u8) {
+        fn remove(
+            ref self: ContractState,
+            bank_entity_id: ID,
+            entity_id: ID,
+            resource_type: u8,
+            shares: Fixed,
+            player_resource_index: u8,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
             let bank: Bank = world.read_model(bank_entity_id);
             assert!(bank.exists, "Bank does not exist");
 
-
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
             let mut player_structure: Structure = world.read_model(entity_id);
             player_structure.owner.assert_caller_owner();
 
-            let player_liquidity: Liquidity = world.read_model((bank_entity_id, starknet::get_caller_address(), resource_type));
+            let player_liquidity: Liquidity = world
+                .read_model((bank_entity_id, starknet::get_caller_address(), resource_type));
             assert(player_liquidity.shares >= shares, 'not enough shares');
 
             let mut market: Market = world.read_model((bank_entity_id, resource_type));
@@ -146,8 +157,14 @@ mod liquidity_systems {
             let mut bank_structure: Structure = world.read_model(bank_entity_id);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
             iResourceTransferImpl::structure_to_structure_delayed(
-                ref world, ref bank_structure, ref bank_structure_weight, 
-                ref player_structure, array![player_resource_index].span(), resources, true, true
+                ref world,
+                ref bank_structure,
+                ref bank_structure_weight,
+                ref player_structure,
+                array![player_resource_index].span(),
+                resources,
+                true,
+                true,
             );
 
             // update bonk strutcure weight
@@ -162,7 +179,6 @@ mod liquidity_systems {
             InternalLiquiditySystemsImpl::emit_event(
                 ref world, market, entity_id, payout_lords, payout_resource_amount, false,
             );
-
         }
     }
 

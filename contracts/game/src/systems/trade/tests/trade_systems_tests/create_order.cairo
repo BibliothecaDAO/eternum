@@ -25,7 +25,7 @@ use s1_eternum::systems::trade::contracts::trade_systems::{
 
 
 use s1_eternum::utils::testing::{
-    config::{set_capacity_config, set_settlement_config, set_resource_weight_config},
+    config::{set_capacity_config, set_resource_weight_config, set_settlement_config},
     general::{get_default_realm_pos, spawn_realm},
     systems::{deploy_dev_resource_systems, deploy_realm_systems, deploy_system}, world::spawn_eternum,
 };

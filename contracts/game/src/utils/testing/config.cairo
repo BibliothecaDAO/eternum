@@ -176,8 +176,10 @@ fn set_capacity_config(config_systems_address: ContractAddress) {
 }
 
 fn set_donkey_speed_config(config_systems_address: ContractAddress) {
-    ITransportConfigDispatcher { contract_address: config_systems_address }.set_donkey_speed_config(ARMY_ENTITY_TYPE, 1);
-    ITransportConfigDispatcher { contract_address: config_systems_address }.set_donkey_speed_config(DONKEY_ENTITY_TYPE, 60);
+    ITransportConfigDispatcher { contract_address: config_systems_address }
+        .set_donkey_speed_config(ARMY_ENTITY_TYPE, 1);
+    ITransportConfigDispatcher { contract_address: config_systems_address }
+        .set_donkey_speed_config(DONKEY_ENTITY_TYPE, 60);
 }
 
 fn set_settlement_config(config_systems_address: ContractAddress) {

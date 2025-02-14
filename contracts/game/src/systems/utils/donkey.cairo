@@ -1,21 +1,17 @@
-
 use achievement::store::{Store, StoreTrait};
-use dojo::world::WorldStorage;
-use dojo::event::EventStorage;
 use core::num::traits::Bounded;
+use dojo::event::EventStorage;
+use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{WorldConfigUtilImpl, CapacityConfig};
-use s1_eternum::models::position::{Coord, CoordTrait};
+use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
 use s1_eternum::models::owner::{Owner};
+use s1_eternum::models::position::{Coord, CoordTrait};
+use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl};
 use s1_eternum::models::weight::{Weight};
-use s1_eternum::models::resource::resource::{
-    SingleResourceImpl,
-    SingleResourceStoreImpl, ResourceWeightImpl
-};
+use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
 use starknet::ContractAddress;
-use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::event(historical: false)]
@@ -27,7 +23,6 @@ struct BurnDonkey {
     amount: u128,
     timestamp: u64,
 }
-
 
 
 #[generate_trait]
@@ -53,10 +48,8 @@ pub impl iDonkeyImpl of iDonkeyTrait {
     }
 
 
-
     fn needed_amount(ref world: WorldStorage, resources_weight: u128) -> u128 {
-        let capacity_config: CapacityConfig 
-            = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
+        let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
 
         let donkey_capacity_grams = capacity_config.donkey_capacity.into();
         let mut donkeys = resources_weight / donkey_capacity_grams;
@@ -68,7 +61,6 @@ pub impl iDonkeyImpl of iDonkeyTrait {
 
 
     fn burn_finialize(ref world: WorldStorage, structure_id: ID, donkey_amount: u128, player_address: ContractAddress) {
-        
         if donkey_amount != 0 {
             // emit burn donkey event
             let time = starknet::get_block_timestamp();
@@ -81,7 +73,7 @@ pub impl iDonkeyImpl of iDonkeyTrait {
                         timestamp: time,
                     },
                 );
-            
+
             // [Achievement] Consume donkeys
             let count: u32 = (donkey_amount / RESOURCE_PRECISION).try_into().unwrap();
             let player_id: felt252 = player_address.into();

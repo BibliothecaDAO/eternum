@@ -205,17 +205,19 @@ mod resource_bridge_systems {
     use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner};
     use s1_eternum::models::position::{Coord, Position};
     use s1_eternum::models::resource::resource::{RESOURCE_PRECISION};
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::systems::dev::contracts::bank::dev_bank_systems::{ADMIN_BANK_ENTITY_ID};
+    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
     use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, pow};
     use starknet::ContractAddress;
     use starknet::{get_caller_address, get_contract_address};
     use super::{
         ERC20ABIDispatcher, ERC20ABIDispatcherTrait, ERC20MintableABIDispatcher, ERC20MintableABIDispatcherTrait,
     };
-    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
-    use s1_eternum::models::resource::resource::{SingleResourceStoreImpl, SingleResourceImpl, ResourceWeightImpl, WeightStoreImpl};
-    use s1_eternum::models::weight::{Weight, WeightTrait};
-    use s1_eternum::systems::dev::contracts::bank::dev_bank_systems::{ADMIN_BANK_ENTITY_ID};
 
 
     #[derive(Copy, Drop, Serde)]
@@ -287,10 +289,15 @@ mod resource_bridge_systems {
             let mut bank_structure: Structure = world.read_model(ADMIN_BANK_ENTITY_ID);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, ADMIN_BANK_ENTITY_ID);
             iResourceTransferImpl::structure_to_structure_delayed(
-                ref world, ref bank_structure, ref bank_structure_weight, 
-                ref recipient_structure, array![recipient_resource_index].span(), resources, true, true
+                ref world,
+                ref bank_structure,
+                ref bank_structure_weight,
+                ref recipient_structure,
+                array![recipient_resource_index].span(),
+                resources,
+                true,
+                true,
             );
-
         }
 
 
@@ -362,15 +369,19 @@ mod resource_bridge_systems {
             let mut bank_structure: Structure = world.read_model(through_bank_id);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, through_bank_id);
             iResourceTransferImpl::structure_to_structure_delayed(
-                ref world, ref bank_structure, ref bank_structure_weight, 
-                ref recipient_structure, array![recipient_resource_index].span(), resources, true, true,
+                ref world,
+                ref bank_structure,
+                ref bank_structure_weight,
+                ref recipient_structure,
+                array![recipient_resource_index].span(),
+                resources,
+                true,
+                true,
             );
         }
 
 
-        fn start_withdraw(
-            ref self: ContractState, from_realm_id: ID, token: ContractAddress, amount: u128,
-        ) {
+        fn start_withdraw(ref self: ContractState, from_realm_id: ID, token: ContractAddress, amount: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let season_bridge_config: SeasonBridgeConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("season_bridge_config"),
@@ -399,18 +410,15 @@ mod resource_bridge_systems {
             // we also want to make sure it is non zero
             let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
             InternalBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
-
-
-            // todo: update this. allow resources to be sent to bank location but cant be picked up by player 
-            // till x time has passed. and bank owner must not be able to steal resources.
+            // todo: update this. allow resources to be sent to bank location but cant be picked up by player
+        // till x time has passed. and bank owner must not be able to steal resources.
 
             // // transport the resource to the bank
-            // let resource_type = resource_bridge_token_whitelist.resource_type;
-            // InternalResourceSystemsImpl::send_to_bank(
-            //     ref world, from_realm_id, through_bank_id, (resource_type, amount),
-            // );
+        // let resource_type = resource_bridge_token_whitelist.resource_type;
+        // InternalResourceSystemsImpl::send_to_bank(
+        //     ref world, from_realm_id, through_bank_id, (resource_type, amount),
+        // );
 
-    
         }
 
         fn finish_withdraw(
@@ -419,65 +427,63 @@ mod resource_bridge_systems {
             token: ContractAddress,
             recipient_address: ContractAddress,
             client_fee_recipient: ContractAddress,
-        ) {
-            // let mut world: WorldStorage = self.world(DEFAULT_NS());
+        ) { // let mut world: WorldStorage = self.world(DEFAULT_NS());
+        // // ensure caller is owner of from_entity_id
+        // let entity_owner: EntityOwner = world.read_model(from_entity_id);
+        // entity_owner.assert_caller_owner(world);
 
-            // // ensure caller is owner of from_entity_id
-            // let entity_owner: EntityOwner = world.read_model(from_entity_id);
-            // entity_owner.assert_caller_owner(world);
+        // // ensure through bank is a bank
+        // let through_bank_id = ADMIN_BANK_ENTITY_ID;
+        // let through_bank: Structure = world.read_model(through_bank_id);
+        // through_bank.assert_exists();
+        // assert!(through_bank.category == StructureCategory::Bank, "through bank is not a bank");
 
-            // // ensure through bank is a bank
-            // let through_bank_id = ADMIN_BANK_ENTITY_ID;
-            // let through_bank: Structure = world.read_model(through_bank_id);
-            // through_bank.assert_exists();
-            // assert!(through_bank.category == StructureCategory::Bank, "through bank is not a bank");
+        // // ensure from_entity is at the bank
+        // let from_entity_position: Position = world.read_model(from_entity_id);
+        // let from_entity_coord: Coord = from_entity_position.into();
+        // let through_bank_position: Position = world.read_model(through_bank_id);
+        // let through_bank_coord: Coord = through_bank_position.into();
+        // assert!(from_entity_coord == through_bank_coord, "from entity and bank are not at the same location");
+        // // ensure from_entity is not travelling
+        // let arrival_time: ArrivalTime = world.read_model(from_entity_id);
+        // arrival_time.assert_not_travelling();
 
-            // // ensure from_entity is at the bank
-            // let from_entity_position: Position = world.read_model(from_entity_id);
-            // let from_entity_coord: Coord = from_entity_position.into();
-            // let through_bank_position: Position = world.read_model(through_bank_id);
-            // let through_bank_coord: Coord = through_bank_position.into();
-            // assert!(from_entity_coord == through_bank_coord, "from entity and bank are not at the same location");
-            // // ensure from_entity is not travelling
-            // let arrival_time: ArrivalTime = world.read_model(from_entity_id);
-            // arrival_time.assert_not_travelling();
+        // world.erase_model(@arrival_time);
 
-            // world.erase_model(@arrival_time);
+        // // ensure bridge withdrawal is not paused
+        // InternalBridgeImpl::assert_withdraw_not_paused(world);
 
-            // // ensure bridge withdrawal is not paused
-            // InternalBridgeImpl::assert_withdraw_not_paused(world);
+        // // ensure token is still whitelisted (incase we want to disable specific resource withdrawals)
+        // // we also want to make sure it is non zero
+        // let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
+        // InternalBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
 
-            // // ensure token is still whitelisted (incase we want to disable specific resource withdrawals)
-            // // we also want to make sure it is non zero
-            // let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
-            // InternalBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
+        // // get resource id associated with token
+        // let resource_type = resource_bridge_token_whitelist.resource_type;
 
-            // // get resource id associated with token
-            // let resource_type = resource_bridge_token_whitelist.resource_type;
+        // // burn resource balance from sender
+        // let mut resource: Resource = ResourceImpl::get(ref world, (from_entity_id, resource_type));
+        // let resource_amount = resource.balance;
+        // resource.burn(resource_amount);
+        // resource.save(ref world);
 
-            // // burn resource balance from sender
-            // let mut resource: Resource = ResourceImpl::get(ref world, (from_entity_id, resource_type));
-            // let resource_amount = resource.balance;
-            // resource.burn(resource_amount);
-            // resource.save(ref world);
+        // let token_amount = InternalBridgeImpl::resource_amount_to_token_amount(token, resource_amount);
+        // let bank_resource_fee_amount = InternalBridgeImpl::send_bank_fees(
+        //     ref world, through_bank_id, resource_type, resource_amount, TxType::Withdrawal,
+        // );
+        // let non_bank_token_fee_amount = InternalBridgeImpl::send_non_bank_fees(
+        //     ref world, token, client_fee_recipient, token_amount, TxType::Withdrawal,
+        // );
+        // let bank_token_fee_amount = InternalBridgeImpl::resource_amount_to_token_amount(
+        //     token, bank_resource_fee_amount,
+        // );
 
-            // let token_amount = InternalBridgeImpl::resource_amount_to_token_amount(token, resource_amount);
-            // let bank_resource_fee_amount = InternalBridgeImpl::send_bank_fees(
-            //     ref world, through_bank_id, resource_type, resource_amount, TxType::Withdrawal,
-            // );
-            // let non_bank_token_fee_amount = InternalBridgeImpl::send_non_bank_fees(
-            //     ref world, token, client_fee_recipient, token_amount, TxType::Withdrawal,
-            // );
-            // let bank_token_fee_amount = InternalBridgeImpl::resource_amount_to_token_amount(
-            //     token, bank_resource_fee_amount,
-            // );
+        // todo: update this. allow resources to be sent to bank location but cant be picked up by player
+        // till x time has passed. and bank owner must not be able to steal resources.
 
-            // todo: update this. allow resources to be sent to bank location but cant be picked up by player 
-            // till x time has passed. and bank owner must not be able to steal resources.
-
-            // transfer withdrawm amount to recipient
-            // let withdrawal_amount_less_all_fees = token_amount - bank_token_fee_amount - non_bank_token_fee_amount;
-            // InternalBridgeImpl::transfer_or_mint(token, recipient_address, withdrawal_amount_less_all_fees);
+        // transfer withdrawm amount to recipient
+        // let withdrawal_amount_less_all_fees = token_amount - bank_token_fee_amount - non_bank_token_fee_amount;
+        // InternalBridgeImpl::transfer_or_mint(token, recipient_address, withdrawal_amount_less_all_fees);
         }
     }
 
@@ -554,13 +560,12 @@ mod resource_bridge_systems {
                         .try_into()
                         .unwrap();
                     assert!(bank_fee_amount.is_non_zero(), "Bridge: amount too small to pay bank fees");
-                    
+
                     // add fees to bank's balance
                     let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_id);
                     let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
                     let mut bank_resource = SingleResourceStoreImpl::retrieve(
-                        ref world, bank_id, resource_type, 
-                        ref bank_structure_weight, resource_weight_grams, true,
+                        ref world, bank_id, resource_type, ref bank_structure_weight, resource_weight_grams, true,
                     );
                     bank_resource.add(bank_fee_amount, ref bank_structure_weight, resource_weight_grams);
                     bank_resource.store(ref world);

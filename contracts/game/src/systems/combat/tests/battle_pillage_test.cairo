@@ -21,9 +21,9 @@ use s1_eternum::{
     },
     utils::testing::{
         config::{
-            set_battle_config, set_capacity_config, set_combat_config, set_settlement_config, set_donkey_speed_config,
-            set_stamina_config, set_travel_and_explore_stamina_cost_config, set_travel_food_cost_config,
-            set_resource_weight_config, setup_globals,
+            set_battle_config, set_capacity_config, set_combat_config, set_donkey_speed_config,
+            set_resource_weight_config, set_settlement_config, set_stamina_config,
+            set_travel_and_explore_stamina_cost_config, set_travel_food_cost_config, setup_globals,
         },
         general::{create_army_with_troops, mint, spawn_realm, teleport},
         systems::{

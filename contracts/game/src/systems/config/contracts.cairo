@@ -198,7 +198,7 @@ mod config_systems {
 
     use s1_eternum::models::position::{Coord, Position, PositionTrait};
     use s1_eternum::models::resource::production::building::{BuildingCategory};
-    use s1_eternum::models::resource::resource::{ ResourceList};
+    use s1_eternum::models::resource::resource::{ResourceList};
     use s1_eternum::models::season::{Season};
     use s1_eternum::utils::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
@@ -352,10 +352,7 @@ mod config_systems {
                         world
                             .write_model(
                                 @ResourceList {
-                                    entity_id: resource_list_id,
-                                    index,
-                                    resource_type,
-                                    amount: resource_amount,
+                                    entity_id: resource_list_id, index, resource_type, amount: resource_amount,
                                 },
                             );
 
@@ -397,10 +394,8 @@ mod config_systems {
         fn set_resource_weight_config(ref self: ContractState, resource_type: u8, weight_gram: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
-            
-            world
-                .write_model(
-                    @WeightConfig {resource_type, weight_gram});
+
+            world.write_model(@WeightConfig { resource_type, weight_gram });
         }
     }
 
@@ -464,7 +459,7 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let mut speed_config: SpeedConfig = SpeedConfig {donkey_sec_per_km: sec_per_km};
+            let mut speed_config: SpeedConfig = SpeedConfig { donkey_sec_per_km: sec_per_km };
             WorldConfigUtilImpl::set_member(ref world, selector!("speed_config"), speed_config);
         }
     }

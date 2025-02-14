@@ -24,12 +24,14 @@ mod bank_systems {
     use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
     use s1_eternum::models::owner::{EntityOwner, Owner, OwnerTrait};
     use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position};
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
-    use s1_eternum::models::weight::{Weight, WeightTrait};
-    use s1_eternum::models::resource::resource::{SingleResourceStoreImpl, SingleResourceImpl, ResourceWeightImpl, WeightStoreImpl};
+    use s1_eternum::models::structure::{StructureTrait};
     use s1_eternum::models::troop::{ExplorerTroops};
-    use s1_eternum::models::structure::{ StructureTrait};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
 
 
@@ -102,7 +104,6 @@ mod bank_systems {
             );
             player_lords_resource.spend(bank_config.lords_cost, ref player_structure_weight, lords_weight_grams);
             player_lords_resource.store(ref world);
-
 
             let owner: Owner = Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() };
             let structure: Structure = StructureImpl::new(bank_entity_id, StructureCategory::Bank, coord, owner);

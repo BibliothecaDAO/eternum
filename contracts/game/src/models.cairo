@@ -25,8 +25,8 @@ mod bank {
 }
 
 mod resource {
-    mod resource;
     mod arrivals;
+    mod resource;
     mod production {
         mod building;
         mod production;

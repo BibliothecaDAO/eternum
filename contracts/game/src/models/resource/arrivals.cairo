@@ -1,10 +1,6 @@
-use s1_eternum::utils::math::{is_u64_bit_set, set_u64_bit};
+use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 use s1_eternum::alias::ID;
-
-use dojo::{
-    model::{ModelStorage, Model},
-    world::WorldStorage,
-};
+use s1_eternum::utils::math::{is_u64_bit_set, set_u64_bit};
 
 
 #[derive(Introspect, PartialEq, Copy, Drop, Serde)]
@@ -25,7 +21,7 @@ pub struct ResourceArrival {
     slot_9: Span<(u8, u128)>,
     slot_10: Span<(u8, u128)>,
     slot_11: Span<(u8, u128)>,
-    slot_12: Span<(u8, u128)>
+    slot_12: Span<(u8, u128)>,
 }
 
 
@@ -59,10 +55,7 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
         2 // resource arrival gate open every 2 hours
     }
 
-    fn arrival_slot(
-        ref world: WorldStorage,
-        travel_time: u64,
-    ) -> (u64, u8) {
+    fn arrival_slot(ref world: WorldStorage, travel_time: u64) -> (u64, u8) {
         let arrival_interval_hours = Self::interval_hours();
         let arrival_time = starknet::get_block_timestamp() + travel_time;
         let day = arrival_time / 86400;
@@ -84,7 +77,7 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
         let time_slot = (hour + arrival_interval_hours) / arrival_interval_hours;
         return (day, time_slot.try_into().unwrap());
     }
- 
+
 
     fn increase_balance(
         ref total_amount: u128,
@@ -168,9 +161,13 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
         let resources = world
             .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector);
         let resources_tracker = world
-            .read_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), resources_tracker_selector);
+            .read_member(
+                Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), resources_tracker_selector,
+            );
         let total_amount = world
-            .read_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), selector!("total_amount"));
+            .read_member(
+                Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), selector!("total_amount"),
+            );
         return (resources, resources_tracker, total_amount);
     }
 
@@ -185,8 +182,18 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
     ) {
         let (resources_selector, resources_tracker_selector) = Self::slot_selectors(slot.into());
         world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector, resources);
-        world.write_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), resources_tracker_selector, resources_tracker);
-        world.write_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), selector!("total_amount"), total_amount);
+        world
+            .write_member(
+                Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)),
+                resources_tracker_selector,
+                resources_tracker,
+            );
+        world
+            .write_member(
+                Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)),
+                selector!("total_amount"),
+                total_amount,
+            );
     }
 
     fn slot_selectors(hour: felt252) -> (felt252, felt252) {
@@ -218,5 +225,5 @@ struct ResourceSender {
     structure_id: ID,
     day: u64,
     slot: u8,
-    resources: Span<(ID, u8, u128)>, // (sender_structure_id, resource_type, amount)
+    resources: Span<(ID, u8, u128)> // (sender_structure_id, resource_type, amount)
 }

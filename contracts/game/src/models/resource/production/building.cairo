@@ -15,9 +15,9 @@ use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, Posit
 use s1_eternum::models::realm::Realm;
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
 use s1_eternum::models::resource::resource::{ResourceList};
-    use s1_eternum::models::resource::resource::{
-    SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
-    WeightStoreImpl, ResourceWeightImpl,
+use s1_eternum::models::resource::resource::{
+    ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
+    WeightStoreImpl,
 };
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
 use s1_eternum::models::weight::{Weight};
@@ -146,12 +146,14 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         // update produced resource balance before updating production
         let produced_resource_type = self.produced_resource();
         let produced_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
-        let mut produced_resource 
-            = SingleResourceStoreImpl::retrieve(
-                ref world, self.outer_entity_id, produced_resource_type, 
-                ref structure_weight, produced_resource_weight_grams, true,
-            );
-
+        let mut produced_resource = SingleResourceStoreImpl::retrieve(
+            ref world,
+            self.outer_entity_id,
+            produced_resource_type,
+            ref structure_weight,
+            produced_resource_weight_grams,
+            true,
+        );
 
         let mut production: Production = produced_resource.production;
 
@@ -189,7 +191,6 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         // save production
         produced_resource.production = production;
         produced_resource.store(ref world);
-
         // todo add event here
     }
 
@@ -282,32 +283,60 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         if self.is_adjacent_building_booster() {
             let self_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
 
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::East), ref structure_weight, ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::NorthEast), ref structure_weight, ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::NorthWest), ref structure_weight, ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::West), ref structure_weight, ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::SouthWest), ref structure_weight, ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::SouthEast), ref structure_weight, ref world, delete);
+            self
+                .update_bonus_supplied_to(
+                    self_coord.neighbor(Direction::East), ref structure_weight, ref world, delete,
+                );
+            self
+                .update_bonus_supplied_to(
+                    self_coord.neighbor(Direction::NorthEast), ref structure_weight, ref world, delete,
+                );
+            self
+                .update_bonus_supplied_to(
+                    self_coord.neighbor(Direction::NorthWest), ref structure_weight, ref world, delete,
+                );
+            self
+                .update_bonus_supplied_to(
+                    self_coord.neighbor(Direction::West), ref structure_weight, ref world, delete,
+                );
+            self
+                .update_bonus_supplied_to(
+                    self_coord.neighbor(Direction::SouthWest), ref structure_weight, ref world, delete,
+                );
+            self
+                .update_bonus_supplied_to(
+                    self_coord.neighbor(Direction::SouthEast), ref structure_weight, ref world, delete,
+                );
         }
     }
 
 
-    fn update_bonus_supplied_to(self: Building, receiver_inner_coord: Coord, ref structure_weight: Weight, ref world: WorldStorage, delete: bool) {
+    fn update_bonus_supplied_to(
+        self: Building,
+        receiver_inner_coord: Coord,
+        ref structure_weight: Weight,
+        ref world: WorldStorage,
+        delete: bool,
+    ) {
         let mut recipient_building: Building = world
             .read_model((self.outer_col, self.outer_row, receiver_inner_coord.x, receiver_inner_coord.y));
         if recipient_building.exists() // only when building exists at the location
             && !recipient_building.paused // only give bonus to active buildings
             && recipient_building.is_resource_producer() { // only give bonus to resource producers
-
             // get the resource that the building produces
             let recipient_produced_resource_type = recipient_building.produced_resource();
-            let recipient_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, recipient_produced_resource_type);
-            let mut recipient_building_resource 
-                = SingleResourceStoreImpl::retrieve(
-                    ref world, self.outer_entity_id, recipient_produced_resource_type, 
-                    ref structure_weight, recipient_resource_weight_grams, true,
-                );
-    
+            let recipient_resource_weight_grams: u128 = ResourceWeightImpl::grams(
+                ref world, recipient_produced_resource_type,
+            );
+            let mut recipient_building_resource = SingleResourceStoreImpl::retrieve(
+                ref world,
+                self.outer_entity_id,
+                recipient_produced_resource_type,
+                ref structure_weight,
+                recipient_resource_weight_grams,
+                true,
+            );
+
             // remove the recipient building's contribution from global resource production
             // first so that we can recalculate and add the new production rate
             let recipient_building_resource_production_amount: u128 = recipient_building.production_amount(ref world);
@@ -528,7 +557,6 @@ impl BuildingImpl of BuildingTrait {
         );
         let mut index = 0;
 
-
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
         loop {
             if index == building_config.resource_cost_count {
@@ -543,14 +571,17 @@ impl BuildingImpl of BuildingTrait {
             //  N = Which number building this is (1st, 2nd, 3rd, etc.)
             //
             let resource_cost: ResourceList = world.read_model((building_config.resource_cost_id, index));
-            
+
             let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_cost.resource_type);
-            let mut resource 
-                = SingleResourceStoreImpl::retrieve(
-                    ref world, self.outer_entity_id, resource_cost.resource_type, 
-                    ref structure_weight, resource_weight_grams, true,
-                );
-    
+            let mut resource = SingleResourceStoreImpl::retrieve(
+                ref world,
+                self.outer_entity_id,
+                resource_cost.resource_type,
+                ref structure_weight,
+                resource_weight_grams,
+                true,
+            );
+
             let percentage_additional_cost = PercentageImpl::get(
                 resource_cost.amount, building_general_config.base_cost_percent_increase.into(),
             );

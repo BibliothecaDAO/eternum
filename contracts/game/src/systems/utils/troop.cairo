@@ -8,8 +8,8 @@ use s1_eternum::models::config::{MapConfig, TroopConfig, TroopLimitConfig, Troop
 
 use s1_eternum::models::position::{Occupier, OccupierImpl};
 use s1_eternum::models::resource::resource::{
-    Resource, ResourceImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
-    ResourceWeightImpl,
+    Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
+    WeightStoreImpl,
 };
 use s1_eternum::models::stamina::{Stamina, StaminaImpl};
 use s1_eternum::models::structure::Structure;

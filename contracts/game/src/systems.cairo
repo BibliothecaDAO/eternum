@@ -67,10 +67,10 @@ pub mod season {
 }
 
 pub mod utils {
+    pub mod distance;
+    pub mod donkey;
     pub mod map;
     pub mod mine;
-    pub mod troop;
-    pub mod donkey;
-    pub mod distance;
     pub mod resource;
+    pub mod troop;
 }

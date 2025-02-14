@@ -47,16 +47,15 @@ mod troop_systems {
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::{
         config::{
-            BattleConfigTrait, CapacityConfig, CombatConfigImpl, SpeedConfig, TickConfig, TickImpl,
-            TickTrait, TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig,
-            WorldConfigUtilImpl,
+            BattleConfigTrait, CapacityConfig, CombatConfigImpl, SpeedConfig, TickConfig, TickImpl, TickTrait,
+            TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
         },
         map::Tile, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
         position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
         resource::{
             resource::{
-                Resource, ResourceImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
-                StructureSingleResourceFoodImpl, WeightStoreImpl, ResourceWeightImpl,
+                Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
+                StructureSingleResourceFoodImpl, WeightStoreImpl,
             },
             resource::{ResourceList},
         },
@@ -380,14 +379,14 @@ mod troop_movement_systems {
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::{
         config::{
-            BattleConfigTrait, CapacityConfig, CombatConfigImpl, MapConfig, SpeedConfig, TickConfig,
-            TickImpl, TickTrait, TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig,
+            BattleConfigTrait, CapacityConfig, CombatConfigImpl, MapConfig, SpeedConfig, TickConfig, TickImpl,
+            TickTrait, TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig,
             WorldConfigUtilImpl,
         },
         map::Tile, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
         position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
         resource::resource::{
-            SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl, ResourceWeightImpl,
+            ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
         },
         season::SeasonImpl, stamina::{Stamina, StaminaTrait}, structure::{Structure, StructureCategory, StructureTrait},
         troop::{

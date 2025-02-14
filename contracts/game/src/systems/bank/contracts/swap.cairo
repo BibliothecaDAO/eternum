@@ -26,12 +26,14 @@ mod swap_systems {
     use s1_eternum::models::bank::market::{Market, MarketTrait};
     use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
     use s1_eternum::models::config::{TickImpl, TickTrait};
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
-    use s1_eternum::models::weight::{Weight, WeightTrait};
-    use s1_eternum::models::resource::resource::{SingleResourceStoreImpl, SingleResourceImpl, ResourceWeightImpl, WeightStoreImpl};
-    use s1_eternum::models::troop::{ExplorerTroops};
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
+    use s1_eternum::models::troop::{ExplorerTroops};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
 
     use traits::{Into, TryInto};
@@ -59,7 +61,14 @@ mod swap_systems {
 
     #[abi(embed_v0)]
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
-        fn buy(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128, player_resource_index: u8) {
+        fn buy(
+            ref self: ContractState,
+            bank_entity_id: ID,
+            entity_id: ID,
+            resource_type: u8,
+            amount: u128,
+            player_resource_index: u8,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -86,7 +95,6 @@ mod swap_systems {
             );
             player_resource.spend(total_lords_cost, ref player_structure_weight, lords_weight_grams);
             player_resource.store(ref world);
-            
 
             // add bank fees to bank
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
@@ -95,7 +103,6 @@ mod swap_systems {
             );
             bank_lords_resource.add(bank_lords_fee_amount, ref bank_structure_weight, lords_weight_grams);
             bank_lords_resource.store(ref world);
-            
 
             // update market liquidity
             market.lords_amount += lords_cost_from_amm;
@@ -106,14 +113,19 @@ mod swap_systems {
             let resources = array![(resource_type, amount)].span();
             let mut bank_structure: Structure = world.read_model(bank_entity_id);
             iResourceTransferImpl::structure_to_structure_delayed(
-                ref world, ref bank_structure, ref bank_structure_weight, 
-                ref player_structure, array![player_resource_index].span(), resources, true, true
+                ref world,
+                ref bank_structure,
+                ref bank_structure_weight,
+                ref player_structure,
+                array![player_resource_index].span(),
+                resources,
+                true,
+                true,
             );
 
             // update player and bank weights
             player_structure_weight.store(ref world, entity_id);
             bank_structure_weight.store(ref world, bank_entity_id);
-
 
             // emit event
             InternalSwapSystemsImpl::emit_event(
@@ -130,7 +142,14 @@ mod swap_systems {
         }
 
 
-        fn sell(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128, player_resource_index: u8)  {
+        fn sell(
+            ref self: ContractState,
+            bank_entity_id: ID,
+            entity_id: ID,
+            resource_type: u8,
+            amount: u128,
+            player_resource_index: u8,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -168,7 +187,6 @@ mod swap_systems {
             bank_lords_resource.add(bank_lords_fee_amount, ref bank_structure_weight, lords_weight_grams);
             bank_lords_resource.store(ref world);
 
-
             // update market liquidity
             market.lords_amount -= lords_received_from_amm;
             market.resource_amount += amount;
@@ -179,14 +197,19 @@ mod swap_systems {
             let mut bank_structure: Structure = world.read_model(bank_entity_id);
 
             iResourceTransferImpl::structure_to_structure_delayed(
-                ref world, ref bank_structure, ref bank_structure_weight, 
-                ref player_structure, array![player_resource_index].span(), resources, true, true
+                ref world,
+                ref bank_structure,
+                ref bank_structure_weight,
+                ref player_structure,
+                array![player_resource_index].span(),
+                resources,
+                true,
+                true,
             );
 
             // update player and bank weights
             player_structure_weight.store(ref world, entity_id);
             bank_structure_weight.store(ref world, bank_entity_id);
-            
 
             // emit event
             InternalSwapSystemsImpl::emit_event(
@@ -200,7 +223,6 @@ mod swap_systems {
                 market.buy(0, 1, RESOURCE_PRECISION),
                 false,
             );
-
         }
     }
 

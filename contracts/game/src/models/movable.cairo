@@ -21,7 +21,6 @@ pub struct Movable {
 
 #[generate_trait]
 impl MovableImpl of MovableTrait {
-
     fn assert_moveable(self: Movable) {
         assert!(!self.blocked, "Entity is blocked");
         assert!(self.entity_type.is_non_zero(), "Entity has no speed");
