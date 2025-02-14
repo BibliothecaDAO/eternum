@@ -95,7 +95,7 @@ mod troop_systems {
             // deduct resources used to create guard
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            iTroopImpl::update_troop_resource(ref world, for_structure_id, amount, category, tier, current_tick);
+            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier, current_tick);
 
             // ensure guard slot is valid
             let mut guard: GuardTroops = structure.guards;
@@ -200,7 +200,7 @@ mod troop_systems {
             // deduct resources used to create explorer
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            iTroopImpl::update_troop_resource(ref world, for_structure_id, amount, category, tier, current_tick);
+            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier, current_tick);
 
             // ensure structure has not reached the hard limit of troops
             let structure_troop_count = structure.troop.explorers.len() + structure.troop.guard_count;
@@ -274,7 +274,7 @@ mod troop_systems {
             // deduct resources used to create explorer
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            iTroopImpl::update_troop_resource(ref world, owner_structure_id, amount, category, tier, current_tick);
+            iTroopImpl::make_payment(ref world, owner_structure_id, amount, category, tier, current_tick);
 
             // add troops to explorer
             explorer.troops.count += amount;

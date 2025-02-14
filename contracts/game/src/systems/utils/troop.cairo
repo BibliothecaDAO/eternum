@@ -4,7 +4,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::WorldConfigUtilImpl;
-use s1_eternum::models::config::{MapConfig, TroopConfig, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{MapConfig, TroopConfig, TroopLimitConfig, TroopStaminaConfig, CapacityConfig};
 
 use s1_eternum::models::position::{Occupier, OccupierImpl};
 use s1_eternum::models::resource::resource::{
@@ -114,15 +114,15 @@ pub impl iExplorerImpl of iExplorerTrait {
     fn update_capacity(
         ref world: WorldStorage, explorer_id: ID, explorer: ExplorerTroops, troop_amount: u128, add: bool,
     ) {
-        // let troop_config: TroopConfig = world.read_model(explorer.troops.category);
-        // let weight_grams: u128 = ResourceUnitImpl::grams(ref world, explorer.troops.category,
-        // explorer.troops.tier);
-        let weight_grams: u128 = 200; // todo: remove placeholder
+        // set structure capacity
+        let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
+        let capacity: u128 = capacity_config.troop_capacity.into() * troop_amount;
+        
         let mut troop_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
         if add {
-            troop_weight.add_capacity(weight_grams * troop_amount);
+            troop_weight.add_capacity(capacity);
         } else {
-            troop_weight.deduct_capacity(weight_grams * troop_amount);
+            troop_weight.deduct_capacity(capacity);
         }
         troop_weight.store(ref world, explorer_id);
     }
@@ -159,7 +159,7 @@ pub impl iExplorerImpl of iExplorerTrait {
 
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
-    fn update_troop_resource(
+    fn make_payment(
         ref world: WorldStorage,
         from_structure_id: ID,
         amount: u128,
