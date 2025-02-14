@@ -10,7 +10,7 @@ use s1_eternum::models::owner::Owner;
 
 use s1_eternum::models::position::{Coord, Position};
 use s1_eternum::models::realm::{Realm, RealmTrait};
-use s1_eternum::models::resource::resource::DetachedResource;
+use s1_eternum::models::resource::resource::ResourceList;
 use s1_eternum::models::resource::resource::Resource;
 
 use s1_eternum::systems::config::contracts::{IQuestConfigDispatcher, IQuestConfigDispatcherTrait, config_systems};

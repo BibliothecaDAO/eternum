@@ -8,10 +8,10 @@ use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{WorldConfigUtilImpl, CapacityConfig};
 use s1_eternum::models::position::{Coord, CoordTrait};
 use s1_eternum::models::owner::{Owner};
-use s1_eternum::models::weight::{W3eight};
-use s1_eternum::models::resource::r3esource::{
-    SingleR33esourceImpl,
-    SingleR33esourceStoreImpl, WeightUnitImpl
+use s1_eternum::models::weight::{Weight};
+use s1_eternum::models::resource::resource::{
+    SingleResourceImpl,
+    SingleResourceStoreImpl, ResourceWeightImpl
 };
 
 use starknet::ContractAddress;
@@ -32,20 +32,20 @@ struct BurnDonkey {
 
 #[generate_trait]
 pub impl iDonkeyImpl of iDonkeyTrait {
-    fn burn(ref world: WorldStorage, structure_id: ID, ref structure_weight: W3eight, donkey_amount: u128) {
+    fn burn(ref world: WorldStorage, structure_id: ID, ref structure_weight: Weight, donkey_amount: u128) {
         // burn amount of donkey needed
-        let donkey_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::DONKEY);
-        let mut donkey_resource = SingleR33esourceStoreImpl::retrieve(
+        let donkey_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::DONKEY);
+        let mut donkey_resource = SingleResourceStoreImpl::retrieve(
             ref world, structure_id, ResourceTypes::DONKEY, ref structure_weight, donkey_weight_grams, true,
         );
         donkey_resource.spend(donkey_amount, ref structure_weight, donkey_weight_grams);
         donkey_resource.store(ref world);
     }
 
-    fn create(ref world: WorldStorage, structure_id: ID, ref structure_weight: W3eight, donkey_amount: u128) {
+    fn create(ref world: WorldStorage, structure_id: ID, ref structure_weight: Weight, donkey_amount: u128) {
         // return amount of donkey needed
-        let donkey_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::DONKEY);
-        let mut donkey_resource = SingleR33esourceStoreImpl::retrieve(
+        let donkey_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::DONKEY);
+        let mut donkey_resource = SingleResourceStoreImpl::retrieve(
             ref world, structure_id, ResourceTypes::DONKEY, ref structure_weight, donkey_weight_grams, true,
         );
         donkey_resource.add(donkey_amount, ref structure_weight, donkey_weight_grams);

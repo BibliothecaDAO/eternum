@@ -44,23 +44,23 @@ fn setup() -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
 
     // set speed configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
+        .set_donkey_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
     // set weight configuration for stone
     IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::STONE.into(), 200);
+        .set_resource_weight_config(ResourceTypes::STONE.into(), 200);
 
     // set weight configuration for gold
     IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::GOLD.into(), 200);
+        .set_resource_weight_config(ResourceTypes::GOLD.into(), 200);
 
     // set weight configuration for wood
     IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::WOOD.into(), 200);
+        .set_resource_weight_config(ResourceTypes::WOOD.into(), 200);
 
     // set weight configuration for silver
     IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::SILVER.into(), 200);
+        .set_resource_weight_config(ResourceTypes::SILVER.into(), 200);
 
     // set donkey capacity weight_gram
     ICapacityConfigDispatcher { contract_address: config_systems_address }

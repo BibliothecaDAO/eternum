@@ -50,7 +50,7 @@ mod production_systems {
         realm::{Realm, RealmImpl, RealmResourcesTrait},
         resource::production::building::{Building, BuildingCategory, BuildingImpl},
         resource::production::production::{Production, ProductionStrategyImpl, ProductionTrait},
-        resource::resource::{Resource, ResourceCost},
+        resource::resource::{ResourceList},
     };
 
     #[abi(embed_v0)]

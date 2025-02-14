@@ -48,7 +48,7 @@ trait IRealmLevelConfig<T> {
 
 #[starknet::interface]
 trait IWeightConfig<T> {
-    fn set_weight_config(ref self: T, entity_type: ID, weight_gram: u128);
+    fn set_resource_weight_config(ref self: T, resource_type: u8, weight_gram: u128);
 }
 
 #[starknet::interface]
@@ -74,7 +74,7 @@ trait IStaminaConfig<T> {
 
 #[starknet::interface]
 trait ITransportConfig<T> {
-    fn set_speed_config(ref self: T, entity_type: ID, sec_per_km: u16);
+    fn set_donkey_speed_config(ref self: T, sec_per_km: u16);
 }
 
 #[starknet::interface]
@@ -198,7 +198,7 @@ mod config_systems {
 
     use s1_eternum::models::position::{Coord, Position, PositionTrait};
     use s1_eternum::models::resource::production::building::{BuildingCategory};
-    use s1_eternum::models::resource::resource::{DetachedResource, ResourceCost};
+    use s1_eternum::models::resource::resource::{ ResourceList};
     use s1_eternum::models::season::{Season};
     use s1_eternum::utils::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
@@ -335,8 +335,8 @@ mod config_systems {
             // ensure quest id is greater than 0
             assert!(quest_id.is_non_zero(), "quest id must be greater than 0");
 
-            let detached_resource_id = world.dispatcher.uuid();
-            let detached_resource_count = resources.len();
+            let resource_list_id = world.dispatcher.uuid();
+            let resource_list_count = resources.len();
             let mut resources = resources;
             let mut index = 0;
             loop {
@@ -351,11 +351,11 @@ mod config_systems {
 
                         world
                             .write_model(
-                                @DetachedResource {
-                                    entity_id: detached_resource_id,
+                                @ResourceList {
+                                    entity_id: resource_list_id,
                                     index,
                                     resource_type,
-                                    resource_amount: resource_amount,
+                                    amount: resource_amount,
                                 },
                             );
 
@@ -365,7 +365,7 @@ mod config_systems {
                 };
             };
 
-            world.write_model(@QuestRewardConfig { quest_id, detached_resource_id, detached_resource_count });
+            world.write_model(@QuestRewardConfig { quest_id, resource_list_id, resource_list_count });
         }
     }
 
@@ -387,38 +387,23 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@capacity_config);
+            WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), capacity_config);
         }
     }
 
 
     #[abi(embed_v0)]
     impl WeightConfigImpl of super::IWeightConfig<ContractState> {
-        fn set_weight_config(ref self: ContractState, entity_type: ID, weight_gram: u128) {
+        fn set_resource_weight_config(ref self: ContractState, resource_type: u8, weight_gram: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
-
-            //note: if you change the weight of a resource e.g wood,
-            //      it wont change the preexisting entities' weights
+            
             world
                 .write_model(
-                    @WeightConfig {
-                        config_id: WORLD_CONFIG_ID, weight_config_id: entity_type, entity_type, weight_gram,
-                    },
-                );
+                    @WeightConfig {resource_type, weight_gram});
         }
     }
 
-    #[abi(embed_v0)]
-    impl BattleConfigImpl of super::IBattleConfig<ContractState> {
-        fn set_battle_config(ref self: ContractState, mut battle_config: BattleConfig) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            battle_config.config_id = WORLD_CONFIG_ID;
-            world.write_model(@battle_config);
-        }
-    }
 
     #[abi(embed_v0)]
     impl TickConfigImpl of super::ITickConfig<ContractState> {
@@ -450,7 +435,7 @@ mod config_systems {
                 let (resource_type, resource_amount) = *predefined_resource_burn_cost.at(i);
                 world
                     .write_model(
-                        @ResourceCost {
+                        @ResourceList {
                             entity_id: predefined_resource_burn_cost_id,
                             index: i,
                             resource_type,
@@ -475,18 +460,11 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl TransportConfigImpl of super::ITransportConfig<ContractState> {
-        fn set_speed_config(ref self: ContractState, entity_type: ID, sec_per_km: u16) {
+        fn set_donkey_speed_config(ref self: ContractState, sec_per_km: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let mut speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, selector!("speed_config"));
-            if entity_type == ARMY_ENTITY_TYPE {
-                speed_config.army_sec_per_km = sec_per_km;
-            } else if entity_type == DONKEY_ENTITY_TYPE {
-                speed_config.donkey_sec_per_km = sec_per_km;
-            } else {
-                panic!("invalid entity type");
-            }
+            let mut speed_config: SpeedConfig = SpeedConfig {donkey_sec_per_km: sec_per_km};
             WorldConfigUtilImpl::set_member(ref world, selector!("speed_config"), speed_config);
         }
     }
@@ -606,7 +584,7 @@ mod config_systems {
                 let (resource_type, resource_amount) = *cost_of_building.at(index);
                 world
                     .write_model(
-                        @ResourceCost { entity_id: resource_cost_id, index, resource_type, amount: resource_amount },
+                        @ResourceList { entity_id: resource_cost_id, index, resource_type, amount: resource_amount },
                     );
 
                 index += 1;
@@ -680,8 +658,8 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let detached_resource_id = world.dispatcher.uuid();
-            let detached_resource_count = resources.len();
+            let resource_list_id = world.dispatcher.uuid();
+            let resource_list_count = resources.len();
             let mut index = 0;
             for (resource_type, resource_amount) in resources {
                 let (resource_type, resource_amount) = (*resource_type, *resource_amount);
@@ -689,7 +667,7 @@ mod config_systems {
 
                 world
                     .write_model(
-                        @DetachedResource { entity_id: detached_resource_id, index, resource_type, resource_amount },
+                        @ResourceList { entity_id: resource_list_id, index, resource_type, amount: resource_amount },
                     );
 
                 index += 1;
@@ -699,8 +677,8 @@ mod config_systems {
                 .write_model(
                     @RealmLevelConfig {
                         level,
-                        required_resources_id: detached_resource_id.into(),
-                        required_resource_count: detached_resource_count.try_into().unwrap(),
+                        required_resources_id: resource_list_id.into(),
+                        required_resource_count: resource_list_count.try_into().unwrap(),
                     },
                 );
         }

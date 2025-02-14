@@ -26,16 +26,14 @@ mod dev_bank_systems {
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::config::{
-        BankConfig, CapacityCategory, CombatConfigImpl, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig,
+        BankConfig, CombatConfigImpl, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig,
     };
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::owner::{EntityOwner, Owner};
     use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, Position};
-    use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
     use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-    use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use s1_eternum::systems::utils::map::iMapImpl;
 
@@ -82,14 +80,6 @@ mod dev_bank_systems {
 
             // save bank name
             world.write_model(@AddressName { address: ADMIN_BANK_ENTITY_ID.try_into().unwrap(), name });
-
-            // save capacity
-            world
-                .write_model(
-                    @Weight {
-                        entity_id: ADMIN_BANK_ENTITY_ID, value: 0, capacity_category: CapacityCategory::Structure,
-                    },
-                );
 
             world
                 .write_model(

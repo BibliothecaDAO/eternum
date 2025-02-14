@@ -1,26 +1,26 @@
 import {
-  ADMIN_BANK_ENTITY_ID,
-  ARMY_ENTITY_TYPE,
-  BRIDGE_FEE_DENOMINATOR,
-  BuildingType,
-  CapacityConfigCategory,
-  DONKEY_ENTITY_TYPE,
-  EternumProvider,
-  FELT_CENTER,
-  QuestType,
-  ResourcesIds,
-  ResourceTier,
-  scaleResourceCostMinMax,
-  scaleResourceInputs,
-  scaleResourceOutputs,
-  scaleResourceProductionByLaborParams,
-  scaleResources,
-  TickIds,
-  TravelTypes,
-  type Config as EternumConfig,
-  type ResourceInputs,
-  type ResourceOutputs,
-  type ResourceWhitelistConfig,
+    ADMIN_BANK_ENTITY_ID,
+    ARMY_ENTITY_TYPE,
+    BRIDGE_FEE_DENOMINATOR,
+    BuildingType,
+    CapacityConfigCategory,
+    DONKEY_ENTITY_TYPE,
+    EternumProvider,
+    FELT_CENTER,
+    QuestType,
+    ResourcesIds,
+    ResourceTier,
+    scaleResourceCostMinMax,
+    scaleResourceInputs,
+    scaleResourceOutputs,
+    scaleResourceProductionByLaborParams,
+    scaleResources,
+    TickIds,
+    TravelTypes,
+    type Config as EternumConfig,
+    type ResourceInputs,
+    type ResourceOutputs,
+    type ResourceWhitelistConfig,
 } from "@bibliothecadao/eternum";
 
 import chalk from "chalk";
@@ -568,7 +568,7 @@ export const setWeightConfig = async (config: Config) => {
   });
   console.log(chalk.cyan(`    └────────────────────────────────`));
 
-  const tx = await config.provider.set_weight_config({
+  const tx = await config.provider.set_resource_weight_config({
     signer: config.account,
     calls: calldataArray,
   });

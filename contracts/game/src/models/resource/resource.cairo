@@ -1,43 +1,380 @@
 use core::fmt::{Display, Error, Formatter};
 use core::num::traits::Bounded;
-use dojo::model::ModelStorage;
-
+use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
     GRAMS_PER_KG, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, get_resource_probabilities, resource_type_name,
 };
 use s1_eternum::models::config::{
-    CapacityCategory, CapacityConfig, CapacityConfigTrait, ProductionConfig, TickConfig, TickImpl, TickTrait,
+    CapacityConfig, ProductionConfig, TickConfig, TickImpl, TickTrait,
 };
-use s1_eternum::models::config::{WeightConfig, WeightConfigImpl};
 use s1_eternum::models::realm::Realm;
-use s1_eternum::models::resource::production::production::{Production};
+use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::structure::StructureTrait;
 use s1_eternum::models::structure::{Structure, StructureCategory};
 use s1_eternum::utils::math::{is_u256_bit_set, min, set_u256_bit};
+use s1_eternum::models::config::WeightConfig;
+use s1_eternum::models::weight::{Weight, WeightImpl};
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+
+
+
+
+#[derive(Copy, Drop, Serde)]
+pub struct SingleResource {
+    entity_id: ID,
+    resource_type: u8,
+    balance: u128,
+    production: Production,
+    produces: bool,
+}
+
+impl SingleResourceDisplay of Display<SingleResource> {
+    fn fmt(self: @SingleResource, ref f: Formatter) -> Result<(), Error> {
+        let str: ByteArray = format!(
+            "{} (id: {}, balance: {})", resource_type_name(*self.resource_type), *self.entity_id, *self.balance,
+        );
+        f.buffer.append(@str);
+        Result::Ok(())
+    }
+}
+
+
+#[generate_trait]
+impl WeightStoreImpl of WeightStoreTrait {
+    fn retrieve(ref world: WorldStorage, entity_id: ID) -> Weight {
+        assert!(entity_id.is_non_zero(), "entity id not found");
+        ResourceImpl::read_weight(ref world, entity_id)
+    }
+
+    fn store(ref self: Weight, ref world: WorldStorage, entity_id: ID) {
+        ResourceImpl::write_weight(ref world, entity_id, self);
+    }
+}
+
+#[generate_trait]
+impl ResourceWeightImpl of ResourceWeightTrait {
+    fn grams(ref world: WorldStorage, resource_type: u8) -> u128 {
+        let unit_weight_config: WeightConfig = world.read_model(resource_type);
+        unit_weight_config.weight_gram
+    }
+}
+
+
+#[generate_trait]
+impl SingleResourceStoreImpl of SingleResourceStoreTrait {
+    fn retrieve(
+        ref world: WorldStorage,
+        entity_id: ID,
+        resource_type: u8,
+        ref entity_weight: Weight,
+        unit_weight_grams: u128,
+        structure: bool,
+    ) -> SingleResource {
+        assert!(entity_id.is_non_zero(), "entity id not found");
+        assert!(resource_type.is_non_zero(), "invalid resource specified");
+
+        let balance: u128 = ResourceImpl::read_balance(ref world, entity_id, resource_type);
+        // ensure the balance is updated when entity is a structure
+        let mut resource = SingleResource {
+            entity_id, resource_type, balance, production: Zeroable::zero(), produces: structure,
+        };
+        if resource.produces {
+            let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
+            resource.production = ResourceImpl::read_production(ref world, entity_id, resource_type);
+            if resource.production.last_updated_at != now {
+                let mut entity_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
+
+                // harvest the resource and get the amount of resources produced
+                let harvest_amount: u128 = ProductionImpl::harvest(ref resource);
+
+                // add the produced amount to the resource balance
+                if harvest_amount.is_non_zero() {
+                    let unit_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+                    resource.add(harvest_amount, ref entity_weight, unit_weight_grams);
+                }
+
+                // commit entity resource and weight
+                resource.store(ref world);
+                entity_weight.store(ref world, entity_id);
+            }
+        }
+
+        return resource;
+    }
+
+    fn store(ref self: SingleResource, ref world: WorldStorage) {
+        ResourceImpl::write_balance(ref world, self.entity_id, self.resource_type, self.balance);
+        if self.produces {
+            ResourceImpl::write_production(ref world, self.entity_id, self.resource_type, self.production);
+        }
+    }
+}
+
+
+#[generate_trait]
+impl SingleResourceImpl of SingleResourceTrait {
+    #[inline(always)]
+    fn spend(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) {
+        assert!(self.balance >= amount, "Insufficient Balance: {} < {}", self, amount);
+        self.balance -= amount;
+        entity_weight.deduct(amount * unit_weight);
+        // todo add event here to show amount burnt
+    }
+
+
+    #[inline(always)]
+    fn add(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) -> u128 {
+        // todo: increase capacity with storehouse buildings
+
+        let (max_storable, total_weight) = Self::storable_amount(amount, entity_weight.unused(), unit_weight);
+
+        self.balance += max_storable;
+        entity_weight.add(total_weight);
+
+        // todo add event here to show amount burnt
+        max_storable
+    }
+
+    #[inline(always)]
+    fn storable_amount(amount: u128, storage_left: u128, unit_weight: u128) -> (u128, u128) {
+        let mut max_storable: u128 = amount;
+        let mut total_weight: u128 = unit_weight * amount;
+
+        if storage_left < total_weight {
+            max_storable = storage_left / unit_weight;
+            total_weight = max_storable * unit_weight; // ensure total weight is an exact multiple
+            // todo add event here to show amount burnt storage_left % weight
+        }
+
+        (max_storable, total_weight)
+    }
+}
+
+
+#[generate_trait]
+impl StructureSingleResourceFoodImpl of StructureSingleResourceFoodTrait {
+    fn is_food(resource_type: u8) -> bool {
+        resource_type == ResourceTypes::WHEAT || resource_type == ResourceTypes::FISH
+    }
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Resource {
     #[key]
     entity_id: ID,
-    #[key]
-    resource_type: u8,
-    balance: u128,
-    production: Production,
+    // Resource Types
+    STONE_BALANCE: u128,
+    STONE_PRODUCTION: Production,
+    COAL_BALANCE: u128,
+    COAL_PRODUCTION: Production,
+    WOOD_BALANCE: u128,
+    WOOD_PRODUCTION: Production,
+    COPPER_BALANCE: u128,
+    COPPER_PRODUCTION: Production,
+    IRONWOOD_BALANCE: u128,
+    IRONWOOD_PRODUCTION: Production,
+    OBSIDIAN_BALANCE: u128,
+    OBSIDIAN_PRODUCTION: Production,
+    GOLD_BALANCE: u128,
+    GOLD_PRODUCTION: Production,
+    SILVER_BALANCE: u128,
+    SILVER_PRODUCTION: Production,
+    MITHRAL_BALANCE: u128,
+    MITHRAL_PRODUCTION: Production,
+    ALCHEMICAL_SILVER_BALANCE: u128,
+    ALCHEMICAL_SILVER_PRODUCTION: Production,
+    COLD_IRON_BALANCE: u128,
+    COLD_IRON_PRODUCTION: Production,
+    DEEP_CRYSTAL_BALANCE: u128,
+    DEEP_CRYSTAL_PRODUCTION: Production,
+    RUBY_BALANCE: u128,
+    RUBY_PRODUCTION: Production,
+    DIAMONDS_BALANCE: u128,
+    DIAMONDS_PRODUCTION: Production,
+    HARTWOOD_BALANCE: u128,
+    HARTWOOD_PRODUCTION: Production,
+    IGNIUM_BALANCE: u128,
+    IGNIUM_PRODUCTION: Production,
+    TWILIGHT_QUARTZ_BALANCE: u128,
+    TWILIGHT_QUARTZ_PRODUCTION: Production,
+    TRUE_ICE_BALANCE: u128,
+    TRUE_ICE_PRODUCTION: Production,
+    ADAMANTINE_BALANCE: u128,
+    ADAMANTINE_PRODUCTION: Production,
+    SAPPHIRE_BALANCE: u128,
+    SAPPHIRE_PRODUCTION: Production,
+    ETHEREAL_SILICA_BALANCE: u128,
+    ETHEREAL_SILICA_PRODUCTION: Production,
+    DRAGONHIDE_BALANCE: u128,
+    DRAGONHIDE_PRODUCTION: Production,
+    LABOR_BALANCE: u128,
+    LABOR_PRODUCTION: Production,
+    EARTHEN_SHARD_BALANCE: u128,
+    EARTHEN_SHARD_PRODUCTION: Production,
+    DONKEY_BALANCE: u128,
+    DONKEY_PRODUCTION: Production,
+    KNIGHT_T1_BALANCE: u128,
+    KNIGHT_T1_PRODUCTION: Production,
+    KNIGHT_T2_BALANCE: u128,
+    KNIGHT_T2_PRODUCTION: Production,
+    KNIGHT_T3_BALANCE: u128,
+    KNIGHT_T3_PRODUCTION: Production,
+    CROSSBOWMAN_T1_BALANCE: u128,
+    CROSSBOWMAN_T1_PRODUCTION: Production,
+    CROSSBOWMAN_T2_BALANCE: u128,
+    CROSSBOWMAN_T2_PRODUCTION: Production,
+    CROSSBOWMAN_T3_BALANCE: u128,
+    CROSSBOWMAN_T3_PRODUCTION: Production,
+    PALADIN_T1_BALANCE: u128,
+    PALADIN_T1_PRODUCTION: Production,
+    PALADIN_T2_BALANCE: u128,
+    PALADIN_T2_PRODUCTION: Production,
+    PALADIN_T3_BALANCE: u128,
+    PALADIN_T3_PRODUCTION: Production,
+    WHEAT_BALANCE: u128,
+    WHEAT_PRODUCTION: Production,
+    FISH_BALANCE: u128,
+    FISH_PRODUCTION: Production,
+    LORDS_BALANCE: u128,
+    LORDS_PRODUCTION: Production,
+    weight: Weight,
 }
 
-impl ResourceDisplay of Display<Resource> {
-    fn fmt(self: @Resource, ref f: Formatter) -> Result<(), Error> {
-        let str: ByteArray = format!(
-            "Resource (entity id: {}, resource type: {}, balance: {})",
-            *self.entity_id,
-            resource_type_name(*self.resource_type),
-            *self.balance,
-        );
-        f.buffer.append(@str);
-        Result::Ok(())
+
+#[generate_trait]
+impl ResourceImpl of ResourceTrait {
+    fn read_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> u128 {
+        return world
+            .read_member(Model::<Resource>::ptr_from_keys(entity_id), Self::balance_selector(resource_type.into()));
+    }
+
+    fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
+        return world
+            .read_member(Model::<Resource>::ptr_from_keys(entity_id), Self::production_selector(resource_type.into()));
+    }
+
+
+    fn write_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8, balance: u128) {
+        world
+            .write_member(
+                Model::<Resource>::ptr_from_keys(entity_id), Self::balance_selector(resource_type.into()), balance,
+            );
+    }
+
+    fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
+        world
+            .write_member(
+                Model::<Resource>::ptr_from_keys(entity_id),
+                Self::production_selector(resource_type.into()),
+                production,
+            );
+    }
+
+    fn read_weight(ref world: WorldStorage, entity_id: ID) -> Weight {
+        return world.read_member(Model::<Resource>::ptr_from_keys(entity_id), selector!("weight"));
+    }
+
+    fn write_weight(ref world: WorldStorage, entity_id: ID, weight: Weight) {
+        world.write_member(Model::<Resource>::ptr_from_keys(entity_id), selector!("weight"), weight);
+    }
+
+    fn balance_selector(resource_type: felt252) -> felt252 {
+        match resource_type {
+            0 => panic!("Invalid resource type"),
+            1 => selector!("STONE_BALANCE"),
+            2 => selector!("COAL_BALANCE"),
+            3 => selector!("WOOD_BALANCE"),
+            4 => selector!("COPPER_BALANCE"),
+            5 => selector!("IRONWOOD_BALANCE"),
+            6 => selector!("OBSIDIAN_BALANCE"),
+            7 => selector!("GOLD_BALANCE"),
+            8 => selector!("SILVER_BALANCE"),
+            9 => selector!("MITHRAL_BALANCE"),
+            10 => selector!("ALCHEMICAL_SILVER_BALANCE"),
+            11 => selector!("COLD_IRON_BALANCE"),
+            12 => selector!("DEEP_CRYSTAL_BALANCE"),
+            13 => selector!("RUBY_BALANCE"),
+            14 => selector!("DIAMONDS_BALANCE"),
+            15 => selector!("HARTWOOD_BALANCE"),
+            16 => selector!("IGNIUM_BALANCE"),
+            17 => selector!("TWILIGHT_QUARTZ_BALANCE"),
+            18 => selector!("TRUE_ICE_BALANCE"),
+            19 => selector!("ADAMANTINE_BALANCE"),
+            20 => selector!("SAPPHIRE_BALANCE"),
+            21 => selector!("ETHEREAL_SILICA_BALANCE"),
+            22 => selector!("DRAGONHIDE_BALANCE"),
+            23 => selector!("LABOR_BALANCE"),
+            24 => selector!("EARTHEN_SHARD_BALANCE"),
+            25 => selector!("DONKEY_BALANCE"),
+            26 => selector!("KNIGHT_T1_BALANCE"),
+            27 => selector!("KNIGHT_T2_BALANCE"),
+            28 => selector!("KNIGHT_T3_BALANCE"),
+            29 => selector!("CROSSBOWMAN_T1_BALANCE"),
+            30 => selector!("CROSSBOWMAN_T2_BALANCE"),
+            31 => selector!("CROSSBOWMAN_T3_BALANCE"),
+            32 => selector!("PALADIN_T1_BALANCE"),
+            33 => selector!("PALADIN_T2_BALANCE"),
+            34 => selector!("PALADIN_T3_BALANCE"),
+            35 => selector!("WHEAT_BALANCE"),
+            36 => selector!("FISH_BALANCE"),
+            37 => selector!("LORDS_BALANCE"),
+            _ => panic!("Invalid resource type"),
+        }
+    }
+
+
+    fn production_selector(resource_type: felt252) -> felt252 {
+        match resource_type {
+            0 => panic!("Invalid resource type"),
+            1 => selector!("STONE_PRODUCTION"),
+            2 => selector!("COAL_PRODUCTION"),
+            3 => selector!("WOOD_PRODUCTION"),
+            4 => selector!("COPPER_PRODUCTION"),
+            5 => selector!("IRONWOOD_PRODUCTION"),
+            6 => selector!("OBSIDIAN_PRODUCTION"),
+            7 => selector!("GOLD_PRODUCTION"),
+            8 => selector!("SILVER_PRODUCTION"),
+            9 => selector!("MITHRAL_PRODUCTION"),
+            10 => selector!("ALCHEMICAL_SILVER_PRODUCTION"),
+            11 => selector!("COLD_IRON_PRODUCTION"),
+            12 => selector!("DEEP_CRYSTAL_PRODUCTION"),
+            13 => selector!("RUBY_PRODUCTION"),
+            14 => selector!("DIAMONDS_PRODUCTION"),
+            15 => selector!("HARTWOOD_PRODUCTION"),
+            16 => selector!("IGNIUM_PRODUCTION"),
+            17 => selector!("TWILIGHT_QUARTZ_PRODUCTION"),
+            18 => selector!("TRUE_ICE_PRODUCTION"),
+            19 => selector!("ADAMANTINE_PRODUCTION"),
+            20 => selector!("SAPPHIRE_PRODUCTION"),
+            21 => selector!("ETHEREAL_SILICA_PRODUCTION"),
+            22 => selector!("DRAGONHIDE_PRODUCTION"),
+            23 => selector!("LABOR_PRODUCTION"),
+            24 => selector!("EARTHEN_SHARD_PRODUCTION"),
+            25 => selector!("DONKEY_PRODUCTION"),
+            26 => selector!("KNIGHT_T1_PRODUCTION"),
+            27 => selector!("KNIGHT_T2_PRODUCTION"),
+            28 => selector!("KNIGHT_T3_PRODUCTION"),
+            29 => selector!("CROSSBOWMAN_T1_PRODUCTION"),
+            30 => selector!("CROSSBOWMAN_T2_PRODUCTION"),
+            31 => selector!("CROSSBOWMAN_T3_PRODUCTION"),
+            32 => selector!("PALADIN_T1_PRODUCTION"),
+            33 => selector!("PALADIN_T2_PRODUCTION"),
+            34 => selector!("PALADIN_T3_PRODUCTION"),
+            35 => selector!("WHEAT_PRODUCTION"),
+            36 => selector!("FISH_PRODUCTION"),
+            37 => selector!("LORDS_PRODUCTION"),
+            _ => panic!("Invalid resource type"),
+        }
+    }
+
+    fn key_only(entity_id: ID) -> Resource {
+        let mut model: Resource = Default::default();
+        model.entity_id = entity_id;
+        return model;
     }
 }
 
@@ -56,159 +393,12 @@ pub struct ResourceAllowance {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct ResourceCost {
+pub struct ResourceList {
     #[key]
     entity_id: ID,
     #[key]
     index: u32,
     resource_type: u8,
     amount: u128,
-}
-
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct DetachedResource {
-    #[key]
-    entity_id: ID,
-    #[key]
-    index: u32,
-    resource_type: u8,
-    resource_amount: u128,
-}
-
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct OwnedResourcesTracker {
-    #[key]
-    entity_id: ID,
-    // todo: use felt252 instead
-    resource_types: u256,
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct ResourceTransferLock {
-    #[key]
-    entity_id: ID,
-    start_at: u64,
-    release_at: u64,
-}
-
-
-#[generate_trait]
-impl ResourceTransferLockImpl of ResourceTransferLockTrait {
-    fn assert_not_locked(self: ResourceTransferLock) {
-        assert!(self.is_open(), "resource locked for entity {}", self.entity_id);
-    }
-
-    fn assert_locked(self: ResourceTransferLock) {
-        assert!(!self.is_open(), "resource NOT locked for entity {}", self.entity_id);
-    }
-
-    fn is_open(self: ResourceTransferLock) -> bool {
-        let now = starknet::get_block_timestamp();
-        if self.start_at.is_non_zero() {
-            if now < self.start_at {
-                return true;
-            }
-        }
-        now >= self.release_at
-    }
-}
-
-
-#[generate_trait]
-impl ResourceFoodImpl of ResourceFoodTrait {
-    fn is_food(resource_type: u8) -> bool {
-        resource_type == ResourceTypes::WHEAT || resource_type == ResourceTypes::FISH
-    }
-
-    fn get(ref world: WorldStorage, entity_id: ID) -> (Resource, Resource) {
-        let wheat = ResourceImpl::get(ref world, (entity_id, ResourceTypes::WHEAT));
-        let fish = ResourceImpl::get(ref world, (entity_id, ResourceTypes::FISH));
-        (wheat, fish)
-    }
-
-    /// Fails if the paid amount is insufficient
-    fn pay(ref world: WorldStorage, entity_id: ID, mut wheat_amount: u128, mut fish_amount: u128) {
-        let (mut wheat, mut fish) = Self::get(ref world, entity_id);
-
-        if wheat_amount > wheat.balance {
-            panic!("Insufficient wheat balance");
-        }
-        wheat.burn(wheat_amount);
-        wheat.save(ref world);
-
-        if fish_amount > fish.balance {
-            panic!("Insufficient fish balance");
-        }
-        fish.burn(fish_amount);
-        fish.save(ref world);
-    }
-
-    /// Does not fail even if amount is insufficient
-    fn burn(ref world: WorldStorage, entity_id: ID, mut wheat_amount: u128, mut fish_amount: u128) {
-        let mut wheat: Resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::WHEAT));
-        let mut fish: Resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::FISH));
-
-        if wheat_amount > wheat.balance {
-            wheat_amount = wheat.balance
-        }
-        wheat.burn(wheat_amount);
-        wheat.save(ref world);
-
-        if fish_amount > fish.balance {
-            fish_amount = fish.balance
-        }
-        fish.burn(fish_amount);
-        fish.save(ref world);
-    }
-}
-
-#[generate_trait]
-impl ResourceImpl of ResourceTrait {
-    fn get(ref world: WorldStorage, key: (ID, u8)) -> Resource {
-        let mut resource: Resource = world.read_model(key);
-        assert!(resource.entity_id.is_non_zero(), "entity id not found");
-        assert!(resource.resource_type.is_non_zero(), "invalid resource specified");
-
-        return resource;
-    }
-
-    fn burn(ref self: Resource, amount: u128) {
-        if self.entity_id == 0 {
-            return;
-        };
-
-        assert!(self.balance >= amount, "not enough resources, {}. deduction: {}", self, amount);
-
-        if amount > self.balance {
-            self.balance = 0;
-        } else {
-            self.balance -= amount;
-        }
-    }
-
-    fn add(ref self: Resource, amount: u128) {
-        if self.entity_id == 0 {
-            return;
-        };
-        self.balance += amount;
-    }
-
-    fn save(ref self: Resource, ref world: WorldStorage) {
-        if self.entity_id == 0 {
-            return;
-        };
-
-        if self.balance == 0 {
-            world.erase_model(@self);
-        } else {
-            // save the updated resource
-            world.write_model(@self);
-        }
-    }
 }
 

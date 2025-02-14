@@ -48,7 +48,7 @@ fn setup(direct_trade: bool) -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatch
 
     // set speed configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
+        .set_donkey_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
     // set donkey capacity weight_gram
     ICapacityConfigDispatcher { contract_address: config_systems_address }
@@ -56,19 +56,19 @@ fn setup(direct_trade: bool) -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatch
 
     // set weight configuration for stone
     IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::STONE.into(), 200);
+        .set_resource_weight_config(ResourceTypes::STONE.into(), 200);
 
     // set weight configuration for gold
     IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::GOLD.into(), 200);
+        .set_resource_weight_config(ResourceTypes::GOLD.into(), 200);
 
     // set weight configuration for wood
     IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::WOOD.into(), 200);
+        .set_resource_weight_config(ResourceTypes::WOOD.into(), 200);
 
     // set weight configuration for silver
     IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::SILVER.into(), 200);
+        .set_resource_weight_config(ResourceTypes::SILVER.into(), 200);
 
     let maker_position = Position { x: 100000, y: 200000, entity_id: 1 };
     let taker_position = Position { x: 200000, y: 1000000, entity_id: 1 };

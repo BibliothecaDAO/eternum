@@ -28,11 +28,11 @@ mod swap_systems {
     use s1_eternum::models::config::{TickImpl, TickTrait};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
-    use s1_eternum::models::weight::{W3eight, W3eightTrait};
-    use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::resource::resource::{SingleResourceStoreImpl, SingleResourceImpl, ResourceWeightImpl, WeightStoreImpl};
     use s1_eternum::models::troop::{ExplorerTroops};
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
-    use s1_eternum::systems::utils::resource::{iResourceImpl};
+    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
 
     use traits::{Into, TryInto};
 
@@ -64,7 +64,7 @@ mod swap_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             let bank: Bank = world.read_model(bank_entity_id);
-            assert(bank.exists, "Bank does not exist");
+            assert!(bank.exists, "Bank does not exist");
 
             // ensure player entity is a structure
             let mut player_structure: Structure = world.read_model(entity_id);
@@ -79,9 +79,9 @@ mod swap_systems {
             let total_lords_cost = lords_cost_from_amm + bank_lords_fee_amount;
 
             // burn the resource the player is exchanging for lords
-            let mut player_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, entity_id);
-            let lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
-            let mut player_resource = SingleR33esourceStoreImpl::retrieve(
+            let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
+            let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
+            let mut player_resource = SingleResourceStoreImpl::retrieve(
                 ref world, entity_id, ResourceTypes::LORDS, ref player_structure_weight, lords_weight_grams, true,
             );
             player_resource.spend(total_lords_cost, ref player_structure_weight, lords_weight_grams);
@@ -89,8 +89,8 @@ mod swap_systems {
             
 
             // add bank fees to bank
-            let mut bank_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
-            let mut bank_lords_resource = SingleR33esourceStoreImpl::retrieve(
+            let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
+            let mut bank_lords_resource = SingleResourceStoreImpl::retrieve(
                 ref world, bank_entity_id, ResourceTypes::LORDS, ref bank_structure_weight, lords_weight_grams, true,
             );
             bank_lords_resource.add(bank_lords_fee_amount, ref bank_structure_weight, lords_weight_grams);
@@ -105,9 +105,9 @@ mod swap_systems {
             // player picks up resources with donkey
             let resources = array![(resource_type, amount)].span();
             let mut bank_structure: Structure = world.read_model(bank_entity_id);
-            iResourceImpl::structure_to_structure_delayed(
+            iResourceTransferImpl::structure_to_structure_delayed(
                 ref world, ref bank_structure, ref bank_structure_weight, 
-                ref player_structure, array![player_resource_index].span(), resources, true,
+                ref player_structure, array![player_resource_index].span(), resources, true, true
             );
 
             // update player and bank weights
@@ -135,7 +135,7 @@ mod swap_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             let bank: Bank = world.read_model(bank_entity_id);
-            assert(bank.exists, "Bank does not exist");
+            assert!(bank.exists, "Bank does not exist");
 
             // get lords received from amm after resource amount is sold
             let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
@@ -151,18 +151,18 @@ mod swap_systems {
             player_structure.assert_exists();
 
             // burn the resource the player is exchanging for lords
-            let mut player_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, entity_id);
-            let player_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, resource_type);
-            let mut player_resource = SingleR33esourceStoreImpl::retrieve(
+            let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
+            let player_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+            let mut player_resource = SingleResourceStoreImpl::retrieve(
                 ref world, entity_id, resource_type, ref player_structure_weight, player_resource_weight_grams, true,
             );
             player_resource.spend(amount, ref player_structure_weight, player_resource_weight_grams);
             player_resource.store(ref world);
 
             // add bank fees to bank
-            let mut bank_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
-            let lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
-            let mut bank_lords_resource = SingleR33esourceStoreImpl::retrieve(
+            let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
+            let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
+            let mut bank_lords_resource = SingleResourceStoreImpl::retrieve(
                 ref world, bank_entity_id, ResourceTypes::LORDS, ref bank_structure_weight, lords_weight_grams, true,
             );
             bank_lords_resource.add(bank_lords_fee_amount, ref bank_structure_weight, lords_weight_grams);
@@ -178,9 +178,9 @@ mod swap_systems {
             let mut resources = array![(ResourceTypes::LORDS, total_lords_received)].span();
             let mut bank_structure: Structure = world.read_model(bank_entity_id);
 
-            iResourceImpl::structure_to_structure_delayed(
+            iResourceTransferImpl::structure_to_structure_delayed(
                 ref world, ref bank_structure, ref bank_structure_weight, 
-                ref player_structure, array![player_resource_index].span(), resources, true,
+                ref player_structure, array![player_resource_index].span(), resources, true, true
             );
 
             // update player and bank weights

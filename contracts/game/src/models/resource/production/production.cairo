@@ -7,14 +7,15 @@ use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{LaborBurnPrStrategy, MultipleResourceBurnPrStrategy, ProductionConfig};
-use s1_eternum::models::config::{TickImpl, W3eightConfig};
-use s1_eternum::models::resource::r3esource::{
-    SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl, StructureSingleR33esourceFoodImpl,
-    WeightStoreImpl, WeightUnitImpl,
+use s1_eternum::models::config::{TickImpl, WeightConfig};
+use s1_eternum::models::resource::resource::{
+    SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
+    WeightStoreImpl, ResourceWeightImpl,
 };
-use s1_eternum::models::resource::resource::{ResourceCost};
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
-use s1_eternum::models::weight::{W3eight};
+use s1_eternum::models::weight::{Weight};
+
+use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::utils::math::{min};
 use starknet::get_block_timestamp;
 
@@ -93,12 +94,12 @@ impl ProductionImpl of ProductionTrait {
 
     #[inline(always)]
     fn is_free_production(resource_type: u8) -> bool {
-        return StructureSingleR33esourceFoodImpl::is_food(resource_type);
+        return StructureSingleResourceFoodImpl::is_food(resource_type);
     }
 
     // function must be called on every resource before querying their balance
     // to ensure that the balance is accurate
-    fn harvest(ref resource: SingleR33esource) -> u128 {
+    fn harvest(ref resource: SingleResource) -> u128 {
         // get start time before updating last updated seconds
         let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
         let start_at = resource.production.last_updated_at;
@@ -153,17 +154,17 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         );
 
         // remove the resource amount from from_resource balance
-        let mut from_entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_entity_id);
-        let resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, from_resource_type);
-        let mut from_resource: SingleR33esource = SingleR33esourceStoreImpl::retrieve(
+        let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
+        let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, from_resource_type);
+        let mut from_resource: SingleResource = SingleResourceStoreImpl::retrieve(
             ref world, from_entity_id, from_resource_type, ref from_entity_weight, resource_weight_grams, true,
         );
         from_resource.spend(from_resource_amount, ref from_entity_weight, resource_weight_grams);
         from_resource.store(ref world);
 
         // increase labor balance of the entity
-        let labor_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LABOR);
-        let mut from_labor_resource: SingleR33esource = SingleR33esourceStoreImpl::retrieve(
+        let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
+        let mut from_labor_resource: SingleResource = SingleResourceStoreImpl::retrieve(
             ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true,
         );
         let mut from_labor_resource_production: Production = from_labor_resource.production;
@@ -186,9 +187,9 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         assert!(from_entity_id.is_non_zero(), "zero entity id");
 
         // burn labor from balance
-        let mut from_entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_entity_id);
-        let labor_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LABOR);
-        let mut labor_resource: SingleR33esource = SingleR33esourceStoreImpl::retrieve(
+        let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
+        let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
+        let mut labor_resource: SingleResource = SingleResourceStoreImpl::retrieve(
             ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true,
         );
         labor_resource.spend(labor_amount, ref from_entity_weight, labor_resource_weight_grams);
@@ -212,16 +213,16 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
             * produced_resource_labor_burn_strategy.fish_burn_per_labor;
 
         // spend wheat resource
-        let wheat_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::WHEAT);
-        let mut wheat_resource = SingleR33esourceStoreImpl::retrieve(
+        let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
+        let mut wheat_resource = SingleResourceStoreImpl::retrieve(
             ref world, from_entity_id, ResourceTypes::WHEAT, ref from_entity_weight, wheat_weight_grams, true,
         );
         wheat_resource.spend(wheat_burn_amount, ref from_entity_weight, wheat_weight_grams);
         wheat_resource.store(ref world);
 
         // spend fish resource
-        let fish_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::FISH);
-        let mut fish_resource = SingleR33esourceStoreImpl::retrieve(
+        let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
+        let mut fish_resource = SingleResourceStoreImpl::retrieve(
             ref world, from_entity_id, ResourceTypes::FISH, ref from_entity_weight, fish_weight_grams, true,
         );
         fish_resource.spend(fish_burn_amount, ref from_entity_weight, fish_weight_grams);
@@ -243,8 +244,8 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
             / produced_resource_depreciation_denom);
 
         // add produced resource amount to factory
-        let resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, produced_resource_type);
-        let mut produced_resource = SingleR33esourceStoreImpl::retrieve(
+        let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
+        let mut produced_resource = SingleResourceStoreImpl::retrieve(
             ref world, from_entity_id, produced_resource_type, ref from_entity_weight, resource_weight_grams, true,
         );
         let mut produced_resource_production: Production = produced_resource.production;
@@ -276,16 +277,16 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         let other_resources_id = produced_resource_multiple_resource_burn_strategy.required_resources_id;
         assert!(other_resources_count.is_non_zero(), "specified resource can't be produced from other resources");
 
-        let mut from_entity_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_entity_id);
+        let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
         for i in 0..other_resources_count {
-            let other_resource_cost: ResourceCost = world.read_model((other_resources_id, i));
+            let other_resource_cost: ResourceList = world.read_model((other_resources_id, i));
             let other_resource_type = other_resource_cost.resource_type;
             let other_resource_amount = other_resource_cost.amount;
             assert!(other_resource_amount.is_non_zero(), "specified resource cost is 0");
 
             // make payment for produced resource
-            let resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, other_resource_type);
-            let mut other_resource = SingleR33esourceStoreImpl::retrieve(
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, other_resource_type);
+            let mut other_resource = SingleResourceStoreImpl::retrieve(
                 ref world, from_entity_id, other_resource_type, ref from_entity_weight, resource_weight_grams, true,
             );
             other_resource
@@ -294,8 +295,8 @@ impl ProductionStrategyImpl of ProductionStrategyTrait {
         };
 
         // add produced resource amount to factory
-        let produced_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, produced_resource_type);
-        let mut produced_resource = SingleR33esourceStoreImpl::retrieve(
+        let produced_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
+        let mut produced_resource = SingleResourceStoreImpl::retrieve(
             ref world,
             from_entity_id,
             produced_resource_type,

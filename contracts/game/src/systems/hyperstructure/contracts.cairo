@@ -65,12 +65,16 @@ mod hyperstructure_systems {
             hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
             name::{AddressName}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
             position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position, PositionIntoCoord}, realm::{Realm},
-            resource::resource::{Resource, ResourceCost, ResourceImpl}, season::{Leaderboard},
-            structure::{Structure, StructureCategory, StructureImpl}, weight::{Weight},
+            resource::resource::{ResourceList}, season::{Leaderboard},
+            structure::{Structure, StructureCategory, StructureImpl},
         },
         
     };
-
+    use s1_eternum::models::resource::resource::{
+        SingleResource, SingleResourceImpl, 
+        SingleResourceStoreImpl, WeightStoreImpl, ResourceWeightImpl};
+    use s1_eternum::models::weight::{Weight, WeightImpl};
+    
     use starknet::{ContractAddress, contract_address_const};
 
     use super::{LEADERBOARD_REGISTRATION_PERIOD, calculate_total_contributable_amount};
@@ -152,10 +156,22 @@ mod hyperstructure_systems {
             let shards_resource_config = hyperstructure_resource_configs.at(shard_resource_tier - 1);
             let required_shards_amount = shards_resource_config.get_required_amount(0);
 
-            let mut creator_resources = ResourceImpl::get(ref world, (creator_entity_id, ResourceTypes::EARTHEN_SHARD));
+            let creator_structure: Structure = world.read_model(creator_entity_id);
+            creator_structure.assert_exists();
 
-            creator_resources.burn(required_shards_amount);
-            creator_resources.save(ref world);
+            let mut creator_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, creator_entity_id);
+            let shards_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
+            let mut creator_shard_resource: SingleResource = SingleResourceStoreImpl::retrieve(
+                ref world, creator_entity_id, ResourceTypes::EARTHEN_SHARD, 
+                ref creator_structure_weight, shards_resource_weight_grams, true,
+            );
+
+            // spend resource
+            creator_shard_resource.spend(required_shards_amount, ref creator_structure_weight, shards_resource_weight_grams);
+            // update resource
+            creator_shard_resource.store(ref world);
+            // update structure weight
+            creator_structure_weight.store(ref world, creator_entity_id);
 
             let new_uuid: ID = world.dispatcher.uuid();
 
@@ -489,21 +505,34 @@ mod hyperstructure_systems {
                 return false;
             }
 
+            // todo: consider sending resources through regular resource system
             Self::add_contribution(ref world, hyperstructure_entity_id, resource_type, max_contributable_amount);
-            Self::burn_player_resources(ref world, resource_type, max_contributable_amount, contributor_entity_id);
+            Self::burn_player_resource(ref world, resource_type, max_contributable_amount, contributor_entity_id);
 
             Self::update_progress(ref world, hyperstructure_entity_id, resource_type, max_contributable_amount);
 
             return will_complete_resource;
         }
 
-        fn burn_player_resources(
+        fn burn_player_resource(
             ref world: WorldStorage, resource_type: u8, resource_amount: u128, contributor_entity_id: ID,
         ) {
-            let mut creator_resources = ResourceImpl::get(ref world, (contributor_entity_id, resource_type));
 
-            creator_resources.burn(resource_amount);
-            creator_resources.save(ref world);
+            // obtain structure weight
+            let mut creator_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, contributor_entity_id);
+            
+            // burn resource
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+            let mut creator_resource: SingleResource = SingleResourceStoreImpl::retrieve(
+                ref world, contributor_entity_id, resource_type, 
+                ref creator_structure_weight, resource_weight_grams, true,
+            );
+
+            creator_resource.spend(resource_amount, ref creator_structure_weight, resource_weight_grams);
+            creator_resource.store(ref world);
+
+            // update structure weight
+            creator_structure_weight.store(ref world, contributor_entity_id);
         }
 
         fn get_max_contribution_size(

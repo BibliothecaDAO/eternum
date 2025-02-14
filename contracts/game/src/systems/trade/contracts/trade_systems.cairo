@@ -44,8 +44,8 @@ mod trade_systems {
     use s1_eternum::models::resource::arrivals::{ResourceArrival, ResourceArrivalImpl};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
-    use s1_eternum::models::weight::{W3eight, W3eightTrait};
-    use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::resource::resource::{SingleResourceStoreImpl, SingleResourceImpl, ResourceWeightImpl, WeightStoreImpl};
 
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use s1_eternum::systems::utils::distance::{iDistanceImpl};
@@ -136,9 +136,9 @@ mod trade_systems {
 
  
             // burn offered resource from maker balance
-            let mut maker_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, maker_id);
-            let maker_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, maker_gives_resource_type);
-            let mut maker_resource = SingleR33esourceStoreImpl::retrieve(
+            let mut maker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, maker_id);
+            let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, maker_gives_resource_type);
+            let mut maker_resource = SingleResourceStoreImpl::retrieve(
                 ref world, maker_id, maker_gives_resource_type, ref maker_structure_weight, maker_resource_weight_grams, true,
             );
             maker_resource.spend(maker_gives_max_resource_amount, ref maker_structure_weight, maker_resource_weight_grams);
@@ -146,11 +146,10 @@ mod trade_systems {
 
     
             // burn enough maker donkeys to carry resources given by taker
-            let taker_lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
+            let taker_lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
             let taker_lords_weight: u128 = taker_gives_max_lords_amount * taker_lords_weight_grams;
             let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_lords_weight);
             iDonkeyImpl::burn(ref world, maker_id, ref maker_structure_weight, maker_donkey_amount);
-
 
             // update structure weight
             maker_structure_weight.store(ref world, maker_id);
@@ -260,8 +259,8 @@ mod trade_systems {
             
             
             // burn enough taker donkeys to carry resources given by maker
-            let mut taker_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, trade.taker_id);
-            let maker_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, trade.maker_gives_resource_type);
+            let mut taker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, trade.taker_id);
+            let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, trade.maker_gives_resource_type);
             let maker_resource_weight: u128 = maker_gives_resource_amount * maker_resource_weight_grams;
             let taker_donkey_amount = iDonkeyImpl::needed_amount(ref world, maker_resource_weight);
             iDonkeyImpl::burn(ref world, taker_id, ref taker_structure_weight, taker_donkey_amount);
@@ -272,7 +271,7 @@ mod trade_systems {
 
 
             // finalize maker donkey burn to pickup lords from taker
-            let taker_lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
+            let taker_lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
             let taker_lords_weight: u128 = taker_pays_lords_amount * taker_lords_weight_grams;
             let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_lords_weight);
             iDonkeyImpl::burn_finialize(ref world, trade.maker_id, maker_donkey_amount, maker_structure.owner.address);
@@ -321,9 +320,9 @@ mod trade_systems {
 
             // return offered resource to maker balance
             let maker_gives_max_resource_amount = trade.maker_gives_max_count * trade.maker_gives_min_resource_amount;
-            let mut maker_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, trade.maker_id);
-            let maker_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, trade.maker_gives_resource_type);
-            let mut maker_resource = SingleR33esourceStoreImpl::retrieve(
+            let mut maker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, trade.maker_id);
+            let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, trade.maker_gives_resource_type);
+            let mut maker_resource = SingleResourceStoreImpl::retrieve(
                 ref world, trade.maker_id, trade.maker_gives_resource_type, ref maker_structure_weight, maker_resource_weight_grams, true,
             );
             maker_resource.add(maker_gives_max_resource_amount, ref maker_structure_weight, maker_resource_weight_grams);
@@ -332,10 +331,10 @@ mod trade_systems {
 
             // return burned donkeys to maker
             let taker_gives_max_lords_amount = trade.maker_gives_max_count * trade.taker_pays_min_lords_amount;
-            let taker_lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
+            let taker_lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
             let taker_lords_weight: u128 = taker_gives_max_lords_amount * taker_lords_weight_grams;
 
-            // todo: ensure this cant be gamed
+            // todo: ensure the donkey amount cant be gamed
 
             let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_lords_weight);
             iDonkeyImpl::create(ref world, trade.maker_id, ref maker_structure_weight, maker_donkey_amount);

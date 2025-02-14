@@ -8,12 +8,12 @@ use s1_eternum::models::owner::{Owner};
 use s1_eternum::models::position::{Coord, OccupiedBy, Occupier};
 use s1_eternum::models::resource::production::building::{Building, BuildingCategory, BuildingImpl};
 use s1_eternum::models::resource::production::production::{ProductionImpl};
-use s1_eternum::models::resource::r3esource::{
-    Production, SingleR33esourceImpl, SingleR33esourceStoreImpl, WeightStoreImpl, WeightUnitImpl,
+use s1_eternum::models::resource::resource::{
+    Production, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl, ResourceWeightImpl,
 };
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-use s1_eternum::models::weight::W3eight;
+use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::{VRFImpl};
@@ -64,9 +64,9 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
 
         // allow fragment mine to produce limited amount of shards
         let shards_reward_amount = Self::_reward_amount(ref world, vrf_seed);
-        let mut structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, structure_id);
-        let shards_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
-        let mut shards_resource = SingleR33esourceStoreImpl::retrieve(
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+        let shards_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
+        let mut shards_resource = SingleResourceStoreImpl::retrieve(
             ref world, structure_id, ResourceTypes::EARTHEN_SHARD, ref structure_weight, shards_weight_grams, true,
         );
         let mut shards_resource_production: Production = shards_resource.production;
@@ -75,16 +75,16 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         shards_resource.store(ref world);
 
         // grant wheat to structure
-        let wheat_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::WHEAT);
-        let mut wheat_resource = SingleR33esourceStoreImpl::retrieve(
+        let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
+        let mut wheat_resource = SingleResourceStoreImpl::retrieve(
             ref world, structure_id, ResourceTypes::WHEAT, ref structure_weight, wheat_weight_grams, true,
         );
         wheat_resource.add(map_config.mine_wheat_grant_amount.into(), ref structure_weight, wheat_weight_grams);
         wheat_resource.store(ref world);
 
         // grant fish to structure
-        let fish_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::FISH);
-        let mut fish_resource = SingleR33esourceStoreImpl::retrieve(
+        let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
+        let mut fish_resource = SingleResourceStoreImpl::retrieve(
             ref world, structure_id, ResourceTypes::FISH, ref structure_weight, fish_weight_grams, true,
         );
         fish_resource.add(map_config.mine_fish_grant_amount.into(), ref structure_weight, fish_weight_grams);

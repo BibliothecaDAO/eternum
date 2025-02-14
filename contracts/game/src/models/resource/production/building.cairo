@@ -14,8 +14,13 @@ use s1_eternum::models::population::{Population, PopulationTrait};
 use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, PositionTrait};
 use s1_eternum::models::realm::Realm;
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
-use s1_eternum::models::resource::resource::ResourceTrait;
-use s1_eternum::models::resource::resource::{Resource, ResourceCost, ResourceImpl};
+use s1_eternum::models::resource::resource::{ResourceList};
+    use s1_eternum::models::resource::resource::{
+    SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
+    WeightStoreImpl, ResourceWeightImpl,
+};
+use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
+use s1_eternum::models::weight::{Weight};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //todo we need to define border of innner hexes
@@ -137,13 +142,16 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Storehouse => 0,
         }
     }
-    fn update_production(ref self: Building, ref world: WorldStorage, stop: bool) {
+    fn update_production(ref self: Building, ref world: WorldStorage, ref structure_weight: Weight, stop: bool) {
         // update produced resource balance before updating production
         let produced_resource_type = self.produced_resource();
-        let mut produced_resource: Resource = ResourceImpl::get(
-            ref world, (self.outer_entity_id, produced_resource_type),
-        );
-        produced_resource.save(ref world);
+        let produced_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
+        let mut produced_resource 
+            = SingleResourceStoreImpl::retrieve(
+                ref world, self.outer_entity_id, produced_resource_type, 
+                ref structure_weight, produced_resource_weight_grams, true,
+            );
+
 
         let mut production: Production = produced_resource.production;
 
@@ -180,33 +188,46 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         }
         // save production
         produced_resource.production = production;
-        world.write_model(@produced_resource);
+        produced_resource.store(ref world);
+
         // todo add event here
     }
 
 
     fn start_production(ref self: Building, ref world: WorldStorage) {
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
+
         if self.is_resource_producer() {
-            self.update_production(ref world, stop: false);
+            self.update_production(ref world, ref structure_weight, stop: false);
         }
 
         if self.is_adjacent_building_booster() {
             // give out bonuses to surrounding buildings
-            self.update_bonuses_supplied(ref world, delete: false);
+            self.update_bonuses_supplied(ref world, ref structure_weight, delete: false);
         }
+        // update structure weight
+        structure_weight.store(ref world, self.outer_entity_id);
+
+        // update building
         world.write_model(@self);
     }
 
 
     fn stop_production(ref self: Building, ref world: WorldStorage) {
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
+
         if self.is_resource_producer() {
-            self.update_production(ref world, stop: true);
+            self.update_production(ref world, ref structure_weight, stop: true);
         }
 
         if self.is_adjacent_building_booster() {
             // remove bonuses it gave to surrounding buildings
-            self.update_bonuses_supplied(ref world, delete: true);
+            self.update_bonuses_supplied(ref world, ref structure_weight, delete: true);
         }
+        // update structure weight
+        structure_weight.store(ref world, self.outer_entity_id);
+
+        // update building
         world.write_model(@self);
     }
 
@@ -255,34 +276,38 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     }
 
 
-    fn update_bonuses_supplied(self: @Building, ref world: WorldStorage, delete: bool) {
+    fn update_bonuses_supplied(self: @Building, ref world: WorldStorage, ref structure_weight: Weight, delete: bool) {
         let self = *self;
 
         if self.is_adjacent_building_booster() {
             let self_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
 
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::East), ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::NorthEast), ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::NorthWest), ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::West), ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::SouthWest), ref world, delete);
-            self.update_bonus_supplied_to(self_coord.neighbor(Direction::SouthEast), ref world, delete);
+            self.update_bonus_supplied_to(self_coord.neighbor(Direction::East), ref structure_weight, ref world, delete);
+            self.update_bonus_supplied_to(self_coord.neighbor(Direction::NorthEast), ref structure_weight, ref world, delete);
+            self.update_bonus_supplied_to(self_coord.neighbor(Direction::NorthWest), ref structure_weight, ref world, delete);
+            self.update_bonus_supplied_to(self_coord.neighbor(Direction::West), ref structure_weight, ref world, delete);
+            self.update_bonus_supplied_to(self_coord.neighbor(Direction::SouthWest), ref structure_weight, ref world, delete);
+            self.update_bonus_supplied_to(self_coord.neighbor(Direction::SouthEast), ref structure_weight, ref world, delete);
         }
     }
 
 
-    fn update_bonus_supplied_to(self: Building, receiver_inner_coord: Coord, ref world: WorldStorage, delete: bool) {
+    fn update_bonus_supplied_to(self: Building, receiver_inner_coord: Coord, ref structure_weight: Weight, ref world: WorldStorage, delete: bool) {
         let mut recipient_building: Building = world
             .read_model((self.outer_col, self.outer_row, receiver_inner_coord.x, receiver_inner_coord.y));
         if recipient_building.exists() // only when building exists at the location
             && !recipient_building.paused // only give bonus to active buildings
             && recipient_building.is_resource_producer() { // only give bonus to resource producers
+
             // get the resource that the building produces
             let recipient_produced_resource_type = recipient_building.produced_resource();
-            let mut recipient_building_resource: Resource = ResourceImpl::get(
-                ref world, (self.outer_entity_id, recipient_produced_resource_type),
-            );
-
+            let recipient_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, recipient_produced_resource_type);
+            let mut recipient_building_resource 
+                = SingleResourceStoreImpl::retrieve(
+                    ref world, self.outer_entity_id, recipient_produced_resource_type, 
+                    ref structure_weight, recipient_resource_weight_grams, true,
+                );
+    
             // remove the recipient building's contribution from global resource production
             // first so that we can recalculate and add the new production rate
             let recipient_building_resource_production_amount: u128 = recipient_building.production_amount(ref world);
@@ -302,7 +327,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             recipient_building_resource_production
                 .increase_production_rate(recipient_building.production_amount(ref world).try_into().unwrap());
             recipient_building_resource.production = recipient_building_resource_production;
-            world.write_model(@recipient_building_resource);
+            recipient_building_resource.store(ref world);
         }
     }
 }
@@ -379,6 +404,8 @@ impl BuildingImpl of BuildingTrait {
 
         // set population
         world.write_model(@population);
+
+        // todo:  increase structure weight when certain buildings are built
 
         (building, building_quantity)
     }
@@ -487,6 +514,8 @@ impl BuildingImpl of BuildingTrait {
         // remove building
         world.erase_model(@building);
 
+        // todo: decrease structure weight when certain buildings are destroyed
+
         destroyed_building_category
     }
 
@@ -498,6 +527,9 @@ impl BuildingImpl of BuildingTrait {
             ref world, self.category, self.produced_resource_type,
         );
         let mut index = 0;
+
+
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
         loop {
             if index == building_config.resource_cost_count {
                 break;
@@ -510,20 +542,33 @@ impl BuildingImpl of BuildingTrait {
             //  Rate = How quickly the cost goes up (a small number like 0.1 or 0.2)
             //  N = Which number building this is (1st, 2nd, 3rd, etc.)
             //
-            let resource_cost: ResourceCost = world.read_model((building_config.resource_cost_id, index));
-            let mut resource: Resource = ResourceImpl::get(
-                ref world, (self.outer_entity_id, resource_cost.resource_type),
-            );
+            let resource_cost: ResourceList = world.read_model((building_config.resource_cost_id, index));
+            
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_cost.resource_type);
+            let mut resource 
+                = SingleResourceStoreImpl::retrieve(
+                    ref world, self.outer_entity_id, resource_cost.resource_type, 
+                    ref structure_weight, resource_weight_grams, true,
+                );
+    
             let percentage_additional_cost = PercentageImpl::get(
                 resource_cost.amount, building_general_config.base_cost_percent_increase.into(),
             );
             let scale_factor = building_quantity.value - 1;
             let total_cost = resource_cost.amount
                 + (scale_factor.into() * scale_factor.into() * percentage_additional_cost);
-            resource.burn(total_cost);
-            resource.save(ref world);
+
+            // spend resource
+            resource.spend(total_cost, ref structure_weight, resource_weight_grams);
+
+            // update resource
+            resource.store(ref world);
+
             index += 1;
         };
+
+        // update structure weight
+        structure_weight.store(ref world, self.outer_entity_id);
     }
 
     fn exists(self: Building) -> bool {

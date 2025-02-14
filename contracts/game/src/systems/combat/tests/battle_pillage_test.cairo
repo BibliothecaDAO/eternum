@@ -21,9 +21,9 @@ use s1_eternum::{
     },
     utils::testing::{
         config::{
-            set_battle_config, set_capacity_config, set_combat_config, set_settlement_config, set_speed_config,
+            set_battle_config, set_capacity_config, set_combat_config, set_settlement_config, set_donkey_speed_config,
             set_stamina_config, set_travel_and_explore_stamina_cost_config, set_travel_food_cost_config,
-            set_weight_config, setup_globals,
+            set_resource_weight_config, setup_globals,
         },
         general::{create_army_with_troops, mint, spawn_realm, teleport},
         systems::{
@@ -54,8 +54,8 @@ fn setup() -> (WorldStorage, IBattlePillageContractDispatcher, ID, ID) {
     setup_globals(config_systems_address);
     set_stamina_config(config_systems_address);
     set_capacity_config(config_systems_address);
-    set_speed_config(config_systems_address);
-    set_weight_config(config_systems_address);
+    set_donkey_speed_config(config_systems_address);
+    set_resource_weight_config(config_systems_address);
     set_travel_and_explore_stamina_cost_config(config_systems_address);
     set_battle_config(config_systems_address);
     set_travel_food_cost_config(config_systems_address);

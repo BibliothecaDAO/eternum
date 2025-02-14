@@ -47,24 +47,24 @@ mod troop_systems {
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::{
         config::{
-            BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CombatConfigImpl, SpeedConfig, TickConfig, TickImpl,
+            BattleConfigTrait, CapacityConfig, CombatConfigImpl, SpeedConfig, TickConfig, TickImpl,
             TickTrait, TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig,
             WorldConfigUtilImpl,
         },
         map::Tile, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
         position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
         resource::{
-            r3esource::{
-                R3esource, R3esourceImpl, SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl,
-                StructureSingleR33esourceFoodImpl, WeightStoreImpl, WeightUnitImpl,
+            resource::{
+                Resource, ResourceImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
+                StructureSingleResourceFoodImpl, WeightStoreImpl, ResourceWeightImpl,
             },
-            resource::{ResourceCost},
+            resource::{ResourceList},
         },
         season::SeasonImpl, stamina::{Stamina, StaminaTrait}, structure::{Structure, StructureCategory, StructureTrait},
         troop::{
             ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
         },
-        weight::{W3eight, W3eightTrait},
+        weight::{Weight, WeightTrait},
     };
     use s1_eternum::systems::utils::map::iMapImpl;
 
@@ -380,20 +380,20 @@ mod troop_movement_systems {
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::{
         config::{
-            BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CombatConfigImpl, MapConfig, SpeedConfig, TickConfig,
+            BattleConfigTrait, CapacityConfig, CombatConfigImpl, MapConfig, SpeedConfig, TickConfig,
             TickImpl, TickTrait, TroopConfig, TroopConfigImpl, TroopConfigTrait, TroopLimitConfig, TroopStaminaConfig,
             WorldConfigUtilImpl,
         },
         map::Tile, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
         position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
-        resource::r3esource::{
-            SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl, WeightStoreImpl, WeightUnitImpl,
+        resource::resource::{
+            SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl, ResourceWeightImpl,
         },
         season::SeasonImpl, stamina::{Stamina, StaminaTrait}, structure::{Structure, StructureCategory, StructureTrait},
         troop::{
             ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
         },
-        weight::{W3eight, W3eightTrait},
+        weight::{Weight, WeightTrait},
     };
     use s1_eternum::systems::utils::map::iMapImpl;
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl}};
@@ -464,9 +464,9 @@ mod troop_movement_systems {
                     let (explore_reward_id, explore_reward_amount) = iExplorerImpl::exploration_reward(
                         ref world, map_config,
                     );
-                    let mut explorer_weight: W3eight = WeightStoreImpl::retrieve(ref world, explorer_id);
-                    let resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, explore_reward_id);
-                    let mut resource = SingleR33esourceStoreImpl::retrieve(
+                    let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_id);
+                    let mut resource = SingleResourceStoreImpl::retrieve(
                         ref world, explorer_id, explore_reward_id, ref explorer_weight, resource_weight_grams, false,
                     );
                     resource.add(explore_reward_amount, ref explorer_weight, resource_weight_grams);

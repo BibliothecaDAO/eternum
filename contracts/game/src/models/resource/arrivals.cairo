@@ -7,7 +7,7 @@ use dojo::{
 };
 
 
-#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
+#[derive(Introspect, PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceArrival {
     #[key]
@@ -25,7 +25,18 @@ pub struct ResourceArrival {
     slot_9: Span<(u8, u128)>,
     slot_10: Span<(u8, u128)>,
     slot_11: Span<(u8, u128)>,
-    slot_12: Span<(u8, u128)>,
+    slot_12: Span<(u8, u128)>
+}
+
+
+// no need to use this in client
+#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
+#[dojo::model]
+pub struct ResourceArrivalTracker {
+    #[key]
+    structure_id: ID,
+    #[key]
+    day: u64,
     slot_1_tracker: u64,
     slot_2_tracker: u64,
     slot_3_tracker: u64,
@@ -40,6 +51,7 @@ pub struct ResourceArrival {
     slot_12_tracker: u64,
     total_amount: u128,
 }
+
 
 #[generate_trait]
 impl ResourceArrivalImpl of ResourceArrivalTrait {
@@ -126,10 +138,29 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
     }
 
     fn delete(ref world: WorldStorage, structure_id: ID, day: u64) {
-        let mut model: ResourceArrival = Default::default();
-        model.structure_id = structure_id;
-        model.day = day;
-        world.erase_model(@model);
+        let empty_resources: Span<(u8, u128)> = array![].span();
+        let mut resource_arrival_model = ResourceArrival {
+            structure_id,
+            day,
+            slot_1: empty_resources,
+            slot_2: empty_resources,
+            slot_3: empty_resources,
+            slot_4: empty_resources,
+            slot_5: empty_resources,
+            slot_6: empty_resources,
+            slot_7: empty_resources,
+            slot_8: empty_resources,
+            slot_9: empty_resources,
+            slot_10: empty_resources,
+            slot_11: empty_resources,
+            slot_12: empty_resources,
+        };
+        world.erase_model(@resource_arrival_model);
+
+        let mut resource_arrival_tracker_model: ResourceArrivalTracker = Default::default();
+        resource_arrival_tracker_model.structure_id = structure_id;
+        resource_arrival_tracker_model.day = day;
+        world.erase_model(@resource_arrival_tracker_model);
     }
 
     fn read_resources(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8) -> (Span<(u8, u128)>, u64, u128) {
@@ -137,9 +168,9 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
         let resources = world
             .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector);
         let resources_tracker = world
-            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_tracker_selector);
+            .read_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), resources_tracker_selector);
         let total_amount = world
-            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"));
+            .read_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), selector!("total_amount"));
         return (resources, resources_tracker, total_amount);
     }
 
@@ -154,8 +185,8 @@ impl ResourceArrivalImpl of ResourceArrivalTrait {
     ) {
         let (resources_selector, resources_tracker_selector) = Self::slot_selectors(slot.into());
         world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector, resources);
-        world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_tracker_selector, resources_tracker);
-        world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"), total_amount);
+        world.write_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), resources_tracker_selector, resources_tracker);
+        world.write_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), selector!("total_amount"), total_amount);
     }
 
     fn slot_selectors(hour: felt252) -> (felt252, felt252) {

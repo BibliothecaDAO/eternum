@@ -17,7 +17,7 @@ trait IERC20<TState> {
 
 #[starknet::interface]
 trait IRealmSystems<T> {
-    fn create(ref self: T, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID;
+    fn create(ref self: T, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress, lords_resource_index: u8) -> ID;
     fn upgrade_level(ref self: T, realm_id: ID);
     fn quest_claim(ref self: T, quest_id: ID, entity_id: ID);
 }
@@ -34,7 +34,7 @@ mod realm_systems {
     use s1_eternum::constants::REALM_ENTITY_TYPE;
     use s1_eternum::constants::{DEFAULT_NS, WONDER_QUEST_REWARD_BOOST, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{
-        CapacityCategory, ProductionConfig, QuestRewardConfig, RealmLevelConfig, SeasonAddressesConfig,
+        ProductionConfig, QuestRewardConfig, RealmLevelConfig, SeasonAddressesConfig,
         SettlementConfig, SettlementConfigImpl, WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
@@ -51,12 +51,11 @@ mod realm_systems {
     };
     use s1_eternum::models::resource::production::building::{Building, BuildingCategory, BuildingImpl};
     use s1_eternum::models::resource::resource::{
-        DetachedResource, Resource, ResourceFoodImpl, ResourceFoodTrait, ResourceImpl, ResourceTrait,
+        ResourceList
     };
     use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
-    use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
     };
@@ -65,6 +64,10 @@ mod realm_systems {
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use starknet::ContractAddress;
     use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
+    use s1_eternum::models::resource::resource::{
+        SingleResource, SingleResourceImpl, 
+        SingleResourceStoreImpl, WeightStoreImpl, ResourceWeightImpl};
+    use s1_eternum::models::weight::{Weight, WeightImpl};
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
@@ -78,7 +81,7 @@ mod realm_systems {
         /// and the season pass owner must approve this contract to
         /// spend their season pass NFT
         ///
-        fn create(ref self: ContractState, owner: ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID {
+        fn create(ref self: ContractState, owner: ContractAddress, realm_id: ID, frontend: ContractAddress, lords_resource_index: u8) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let mut season: Season = world.read_model(WORLD_CONFIG_ID);
@@ -111,7 +114,7 @@ mod realm_systems {
             // bridge attached lords into the realm
             if lords_amount_attached.is_non_zero() {
                 InternalRealmLogicImpl::bridge_lords_into_realm(
-                    ref world, season_addresses_config.lords_address, entity_id, lords_amount_attached, frontend,
+                    ref world, season_addresses_config.lords_address, entity_id, lords_amount_attached, frontend, lords_resource_index
                 );
             }
 
@@ -163,20 +166,30 @@ mod realm_systems {
             let realm_level_config: RealmLevelConfig = world.read_model(next_level);
             let required_resources_id = realm_level_config.required_resources_id;
             let required_resource_count = realm_level_config.required_resource_count;
+
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_id);
             let mut index = 0;
             loop {
                 if index == required_resource_count {
                     break;
                 }
 
-                let mut required_resource: DetachedResource = world.read_model((required_resources_id, index));
+                let mut required_resource: ResourceList = world.read_model((required_resources_id, index));
 
                 // burn resource from realm
-                let mut realm_resource = ResourceImpl::get(ref world, (realm_id, required_resource.resource_type));
-                realm_resource.burn(required_resource.resource_amount);
-                realm_resource.save(ref world);
+                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, required_resource.resource_type);
+                let mut realm_resource = SingleResourceStoreImpl::retrieve(
+                    ref world, realm_id, required_resource.resource_type, 
+                    ref structure_weight, resource_weight_grams, true,
+                );
+                realm_resource.spend(required_resource.amount, ref structure_weight, resource_weight_grams);
+                realm_resource.store(ref world);
+
                 index += 1;
             };
+
+            // update structure weight
+            structure_weight.store(ref world, realm_id);
 
             // set new level
             realm.level = next_level;
@@ -214,31 +227,41 @@ mod realm_systems {
 
             // ensure quest has rewards
             let quest_reward_config: QuestRewardConfig = world.read_model(quest_id);
-            assert(quest_reward_config.detached_resource_count > 0, 'quest has no rewards');
+            assert(quest_reward_config.resource_list_count > 0, 'quest has no rewards');
 
             let mut index = 0;
             let realm: Realm = world.read_model(entity_id);
+
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
             loop {
-                if index == quest_reward_config.detached_resource_count {
+                if index == quest_reward_config.resource_list_count {
                     break;
                 }
 
                 // get reward resource
-                let mut detached_resource: DetachedResource = world
-                    .read_model((quest_reward_config.detached_resource_id, index));
-                let reward_resource_type = detached_resource.resource_type;
-                let mut reward_resource_amount = detached_resource.resource_amount;
+                let mut resource_list: ResourceList = world
+                    .read_model((quest_reward_config.resource_list_id, index));
+                let reward_resource_type = resource_list.resource_type;
+                let mut reward_resource_amount = resource_list.amount;
 
+                //todo: remove?
                 if realm.has_wonder {
                     reward_resource_amount *= WONDER_QUEST_REWARD_BOOST.into();
                 }
 
-                let mut realm_resource = ResourceImpl::get(ref world, (entity_id.into(), reward_resource_type));
-                realm_resource.add(reward_resource_amount);
-                realm_resource.save(ref world);
-
+                // add resource to realm
+                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, reward_resource_type);
+                let mut realm_resource = SingleResourceStoreImpl::retrieve(
+                    ref world, entity_id, reward_resource_type, 
+                    ref structure_weight, resource_weight_grams, true,
+                );
+                realm_resource.add(reward_resource_amount, ref structure_weight, resource_weight_grams);
+                realm_resource.store(ref world);
                 index += 1;
             };
+
+            // update structure weight
+            structure_weight.store(ref world, entity_id);
 
             quest.completed = true;
             world.write_model(@quest);
@@ -247,7 +270,7 @@ mod realm_systems {
             let next_quest_id: ID = (quest_id + 1).into();
             let next_quest_reward_config: QuestRewardConfig = world.read_model(next_quest_id);
             // if the next quest has no rewards, the player has completed all quests
-            if (next_quest_reward_config.detached_resource_count == 0) {
+            if (next_quest_reward_config.resource_list_count == 0) {
                 let player_id: felt252 = starknet::get_caller_address().into();
                 let task_id: felt252 = Task::Squire.identifier();
                 let store = StoreTrait::new(world);
@@ -283,11 +306,6 @@ mod realm_systems {
                 x: coord.x, y: coord.y, entity: OccupiedBy::Structure(entity_id.into()),
             };
             world.write_model(@occupier);
-
-            world
-                .write_model(
-                    @Weight { entity_id: entity_id.into(), capacity_category: CapacityCategory::Structure, value: 0 },
-                );
 
             world
                 .write_model(
@@ -342,6 +360,7 @@ mod realm_systems {
             realm_entity_id: ID,
             amount: u256,
             frontend: ContractAddress,
+            lords_resource_index: u8,
         ) {
             // get bridge systems address
             let (bridge_systems_address, _namespace_hash) =
@@ -357,7 +376,7 @@ mod realm_systems {
 
             // deposit lords
             IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
-                .deposit_initial(lords_address, realm_entity_id, amount, frontend);
+                .deposit_initial(lords_address, realm_entity_id, amount, frontend, lords_resource_index);
         }
 
 

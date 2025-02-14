@@ -37,11 +37,11 @@ mod resource_transfer_system_tests {
 
         // set weight configuration for stone
         IWeightConfigDispatcher { contract_address: config_systems_address }
-            .set_weight_config(ResourceTypes::STONE.into(), 200);
+            .set_resource_weight_config(ResourceTypes::STONE.into(), 200);
 
         // set weight configuration for gold
         IWeightConfigDispatcher { contract_address: config_systems_address }
-            .set_weight_config(ResourceTypes::WOOD.into(), 200);
+            .set_resource_weight_config(ResourceTypes::WOOD.into(), 200);
 
         // set donkey config
         world.write_model_test(@CapacityConfig { category: CapacityCategory::Donkey, weight_gram: 1_000_000 });

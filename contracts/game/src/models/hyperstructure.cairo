@@ -5,7 +5,7 @@ use s1_eternum::{
     alias::ID, constants::{RESOURCE_PRECISION, ResourceTypes, get_contributable_resources_with_rarity},
     models::{
         guild::{GuildMember}, owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
-        resource::resource::{Resource, ResourceCost, ResourceImpl}, structure::{Structure, StructureCategory},
+        resource::resource::{ResourceList}, structure::{Structure, StructureCategory},
     },
 };
 

@@ -173,8 +173,8 @@ export const policies: ContractPolicies = {
         entrypoint: "set_travel_stamina_cost_config",
       },
       {
-        name: "set_weight_config",
-        entrypoint: "set_weight_config",
+        name: "set_resource_weight_config",
+        entrypoint: "set_resource_weight_config",
       },
       {
         name: "set_battle_config",

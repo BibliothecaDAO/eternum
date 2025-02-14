@@ -24,14 +24,13 @@ mod bank_systems {
     use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
     use s1_eternum::models::owner::{EntityOwner, Owner, OwnerTrait};
     use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position};
-    use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
-    use s1_eternum::models::weight::{W3eight, W3eightTrait};
-    use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::resource::resource::{SingleResourceStoreImpl, SingleResourceImpl, ResourceWeightImpl, WeightStoreImpl};
     use s1_eternum::models::troop::{ExplorerTroops};
     use s1_eternum::models::structure::{ StructureTrait};
-    use s1_eternum::systems::utils::resource::{iResourceImpl};
+    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
 
 
     use traits::Into;
@@ -96,9 +95,9 @@ mod bank_systems {
 
             // remove the resources from the realm
             let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
-            let mut player_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, realm_entity_id);
-            let lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
-            let mut player_lords_resource = SingleR33esourceStoreImpl::retrieve(
+            let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_entity_id);
+            let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
+            let mut player_lords_resource = SingleResourceStoreImpl::retrieve(
                 ref world, realm_entity_id, ResourceTypes::LORDS, ref player_structure_weight, lords_weight_grams, true,
             );
             player_lords_resource.spend(bank_config.lords_cost, ref player_structure_weight, lords_weight_grams);

@@ -14,9 +14,7 @@ use s1_eternum::models::position::{Coord};
 use s1_eternum::models::quantity::Quantity;
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
-use s1_eternum::models::resource::resource::{ResourceFoodImpl};
 use s1_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
-use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::utils::map::constants::fixed_constants as fc;
 use s1_eternum::utils::math::{max, min};
 use s1_eternum::utils::random;
@@ -376,41 +374,15 @@ impl TickImpl of TickTrait {
     }
 }
 
-
-// weight
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct W3eightConfig {
-    #[key]
-    resource_type: ID,
-    weight_gram: u128,
-}
-
-
 // weight
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct WeightConfig {
     #[key]
-    config_id: ID,
-    #[key]
-    weight_config_id: ID,
-    entity_type: ID,
+    resource_type: u8,
     weight_gram: u128,
 }
 
-#[generate_trait]
-pub impl WeightConfigImpl of WeightConfigTrait {
-    fn get_weight_grams(ref world: WorldStorage, resource_type: u8, amount: u128) -> u128 {
-        let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, resource_type));
-        (resource_weight_config.weight_gram * amount) / RESOURCE_PRECISION
-    }
-
-    fn get_weight_grams_with_precision(ref world: WorldStorage, resource_type: u8, amount: u128) -> u128 {
-        let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, resource_type));
-        (resource_weight_config.weight_gram * amount)
-    }
-}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -498,7 +470,7 @@ pub struct LaborBurnPrStrategy {
 /// - 1 wood
 /// - 1 coldiron
 /// Then:
-/// - required_resources_id would point to the id of ResourceCost
+/// - required_resources_id would point to the id of ResourceList
 /// - required_resources_count would be 3
 ///
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -669,8 +641,8 @@ impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
 pub struct QuestRewardConfig {
     #[key]
     quest_id: ID,
-    detached_resource_id: ID,
-    detached_resource_count: u32,
+    resource_list_id: ID,
+    resource_list_count: u32,
 }
 
 

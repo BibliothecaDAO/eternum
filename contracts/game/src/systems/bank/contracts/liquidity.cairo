@@ -29,10 +29,10 @@ mod liquidity_systems {
     use s1_eternum::models::owner::{Owner, OwnerTrait};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
-    use s1_eternum::models::weight::{W3eight, W3eightTrait};
-    use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::resource::resource::{SingleResourceStoreImpl, SingleResourceImpl, ResourceWeightImpl, WeightStoreImpl};
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
-    use s1_eternum::systems::utils::resource::{iResourceImpl};
+    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -64,7 +64,7 @@ mod liquidity_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             let bank: Bank = world.read_model(bank_entity_id);
-            assert(bank.exists, "Bank does not exist");
+            assert!(bank.exists, "Bank does not exist");
 
             let mut player_structure: Structure = world.read_model(entity_id);
             player_structure.owner.assert_caller_owner();
@@ -82,18 +82,20 @@ mod liquidity_systems {
             // update market
             world.write_model(@market);
 
+            // todo : tie lp liwquidity to an id instead of just burning it
+
             // burn the resource the player is exchanging lping with lords
-            let mut player_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, entity_id);
-            let player_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, resource_type);
-            let mut player_resource = SingleR33esourceStoreImpl::retrieve(
+            let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
+            let player_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+            let mut player_resource = SingleResourceStoreImpl::retrieve(
                 ref world, entity_id, resource_type, ref player_structure_weight, player_resource_weight_grams, true,
             );
             player_resource.spend(cost_resource_amount, ref player_structure_weight, player_resource_weight_grams);
             player_resource.store(ref world);
             
             // burn the lords added to lp
-            let lords_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::LORDS);
-            let mut player_lords_resource = SingleR33esourceStoreImpl::retrieve(
+            let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
+            let mut player_lords_resource = SingleResourceStoreImpl::retrieve(
                 ref world, entity_id, ResourceTypes::LORDS, ref player_structure_weight, lords_weight_grams, true,
             );
             player_lords_resource.spend(cost_lords, ref player_structure_weight, lords_weight_grams);
@@ -117,7 +119,7 @@ mod liquidity_systems {
             // SeasonImpl::assert_season_is_not_over(world);
 
             let bank: Bank = world.read_model(bank_entity_id);
-            assert(bank.exists, "Bank does not exist");
+            assert!(bank.exists, "Bank does not exist");
 
 
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
@@ -125,7 +127,7 @@ mod liquidity_systems {
             let mut player_structure: Structure = world.read_model(entity_id);
             player_structure.owner.assert_caller_owner();
 
-            let player_liquidity: Liquidity = world.read_model((bank_entity_id, player, resource_type));
+            let player_liquidity: Liquidity = world.read_model((bank_entity_id, starknet::get_caller_address(), resource_type));
             assert(player_liquidity.shares >= shares, 'not enough shares');
 
             let mut market: Market = world.read_model((bank_entity_id, resource_type));
@@ -142,10 +144,10 @@ mod liquidity_systems {
             let resources = array![(ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)]
                 .span();
             let mut bank_structure: Structure = world.read_model(bank_entity_id);
-            let mut bank_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
-            iResourceImpl::structure_to_structure_delayed(
+            let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
+            iResourceTransferImpl::structure_to_structure_delayed(
                 ref world, ref bank_structure, ref bank_structure_weight, 
-                ref player_structure, array![player_resource_index].span(), resources, true,
+                ref player_structure, array![player_resource_index].span(), resources, true, true
             );
 
             // update bonk strutcure weight

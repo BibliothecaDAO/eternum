@@ -32,25 +32,23 @@ mod resource_systems {
 
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{
-         CapacityConfig, WeightConfig, WeightConfigImpl, SpeedImpl
+         CapacityConfig, SpeedImpl
     };
     use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
     use s1_eternum::models::position::{Coord, Position};
     use s1_eternum::models::quantity::{Quantity};
     use s1_eternum::models::realm::Realm;
-    use s1_eternum::models::resource::resource::{DetachedResource};
+    use s1_eternum::models::resource::resource::{ResourceList};
     use s1_eternum::models::resource::resource::{
-        Resource, ResourceAllowance, ResourceImpl, ResourceTrait, ResourceTransferLock, ResourceTransferLockTrait,
+        ResourceAllowance
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::models::weight::WeightTrait;
-    use s1_eternum::models::weight::{W3eight, W3eightTrait};
-    use s1_eternum::models::resource::r3esource::{SingleR33esourceStoreImpl, SingleR33esourceImpl, WeightUnitImpl, WeightStoreImpl};
+    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::resource::resource::{SingleResourceStoreImpl, SingleResourceImpl, ResourceWeightImpl, WeightStoreImpl};
     use s1_eternum::models::resource::arrivals::{ResourceArrival, ResourceArrivalImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
-    use s1_eternum::systems::utils::resource::{iResourceImpl};
+    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
     use s1_eternum::systems::utils::distance::{iDistanceImpl};
     use s1_eternum::models::troop::{ExplorerTroops};
 
@@ -146,10 +144,10 @@ mod resource_systems {
             let mut recipient_structure: Structure = world.read_model(recipient_structure_id);
             recipient_structure.assert_exists();
 
-            let mut sender_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, sender_structure_id);
-            iResourceImpl::structure_to_structure_delayed(
+            let mut sender_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, sender_structure_id);
+            iResourceTransferImpl::structure_to_structure_delayed(
                 ref world, ref sender_structure, ref sender_structure_weight, 
-                ref recipient_structure, recipient_resource_indexes, resources, false,
+                ref recipient_structure, recipient_resource_indexes, resources, false, false
             );
         }
 
@@ -209,10 +207,10 @@ mod resource_systems {
             };
 
             let mut owner_structure: Structure = world.read_model(owner_structure_id);
-            let mut owner_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, owner_structure_id);
-            iResourceImpl::structure_to_structure_delayed(
+            let mut owner_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, owner_structure_id);
+            iResourceTransferImpl::structure_to_structure_delayed(
                 ref world, ref owner_structure, ref owner_structure_weight, 
-                ref recipient_structure, recipient_resource_indexes, resources, false,
+                ref recipient_structure, recipient_resource_indexes, resources, false, true
             );
         }
 
@@ -227,7 +225,7 @@ mod resource_systems {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
-            assert(from_structure_id.is_non_zero(), 'from_structure_id does not exist');
+            assert!(from_structure_id.is_non_zero(), "from_structure_id does not exist");
 
             // ensure from_structure is owned by caller
             let mut from_structure: Structure = world.read_model(from_structure_id);
@@ -235,8 +233,8 @@ mod resource_systems {
             
 
             // move balance from resource arrivals to structure balance
-            let mut from_structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_structure_id);
-            iResourceImpl::deliver_arrivals(
+            let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
+            iResourceTransferImpl::deliver_arrivals(
                 ref world, ref from_structure, ref from_structure_weight, 
                 day, slot, resource_count,
             );

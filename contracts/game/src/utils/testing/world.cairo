@@ -38,12 +38,11 @@ use s1_eternum::models::resource::production::building::{m_Building};
 use s1_eternum::models::resource::production::production::{
     m_Production, m_ProductionDeadline, m_ProductionInput, m_ProductionOutput,
 };
-use s1_eternum::models::resource::resource::m_DetachedResource;
 use s1_eternum::models::resource::resource::m_OwnedResourcesTracker;
 use s1_eternum::models::resource::resource::m_ResourceAllowance;
 use s1_eternum::models::resource::resource::m_ResourceTransferLock;
 use s1_eternum::models::resource::resource::{m_Resource};
-use s1_eternum::models::resource::resource::{m_ResourceCost};
+use s1_eternum::models::resource::resource::{m_ResourceList};
 use s1_eternum::models::season::m_Leaderboard;
 use s1_eternum::models::season::m_LeaderboardEntry;
 use s1_eternum::models::season::m_LeaderboardRegisterContribution;
@@ -156,12 +155,11 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_QuantityTracker::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Quest::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Realm::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Model(m_DetachedResource::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_OwnedResourcesTracker::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_ResourceAllowance::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_ResourceTransferLock::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Resource::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Model(m_ResourceCost::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ResourceList::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Season::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Stamina::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Structure::TEST_CLASS_HASH.try_into().unwrap()),

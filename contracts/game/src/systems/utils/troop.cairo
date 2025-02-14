@@ -7,16 +7,16 @@ use s1_eternum::models::config::WorldConfigUtilImpl;
 use s1_eternum::models::config::{MapConfig, TroopConfig, TroopLimitConfig, TroopStaminaConfig};
 
 use s1_eternum::models::position::{Occupier, OccupierImpl};
-use s1_eternum::models::resource::r3esource::{
-    R3esource, R3esourceImpl, SingleR33esource, SingleR33esourceImpl, SingleR33esourceStoreImpl, WeightStoreImpl,
-    WeightUnitImpl,
+use s1_eternum::models::resource::resource::{
+    Resource, ResourceImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    ResourceWeightImpl,
 };
 use s1_eternum::models::stamina::{Stamina, StaminaImpl};
 use s1_eternum::models::structure::Structure;
 use s1_eternum::models::troop::{
     ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopTier, TroopType, Troops, TroopsImpl,
 };
-use s1_eternum::models::weight::{W3eight, W3eightImpl};
+use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
@@ -91,17 +91,17 @@ pub impl iExplorerImpl of iExplorerTrait {
         let fish_burn_amount: u128 = fish_cost * explorer.troops.count.into();
 
         // spend wheat resource
-        let mut explorer_weight: W3eight = WeightStoreImpl::retrieve(ref world, explorer.explorer_id);
-        let wheat_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::WHEAT);
-        let mut wheat_resource = SingleR33esourceStoreImpl::retrieve(
+        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer.explorer_id);
+        let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
+        let mut wheat_resource = SingleResourceStoreImpl::retrieve(
             ref world, explorer.explorer_id, ResourceTypes::WHEAT, ref explorer_weight, wheat_weight_grams, false,
         );
         wheat_resource.spend(wheat_burn_amount, ref explorer_weight, wheat_weight_grams);
         wheat_resource.store(ref world);
 
         // spend fish resource
-        let fish_weight_grams: u128 = WeightUnitImpl::grams(ref world, ResourceTypes::FISH);
-        let mut fish_resource = SingleR33esourceStoreImpl::retrieve(
+        let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
+        let mut fish_resource = SingleResourceStoreImpl::retrieve(
             ref world, explorer.explorer_id, ResourceTypes::FISH, ref explorer_weight, fish_weight_grams, false,
         );
         fish_resource.spend(fish_burn_amount, ref explorer_weight, fish_weight_grams);
@@ -118,7 +118,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         // let weight_grams: u128 = ResourceUnitImpl::grams(ref world, explorer.troops.category,
         // explorer.troops.tier);
         let weight_grams: u128 = 200; // todo: remove placeholder
-        let mut troop_weight: W3eight = WeightStoreImpl::retrieve(ref world, explorer_id);
+        let mut troop_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
         if add {
             troop_weight.add_capacity(weight_grams * troop_amount);
         } else {
@@ -133,7 +133,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
 
         let occupier: Occupier = OccupierImpl::key_only(explorer.coord);
-        let resource: R3esource = R3esourceImpl::key_only(explorer.explorer_id);
+        let resource: Resource = ResourceImpl::key_only(explorer.explorer_id);
 
         // delete explorer
         world.erase_model(@occupier);
@@ -192,9 +192,9 @@ pub impl iTroopImpl of iTroopTrait {
         };
 
         // burn troop resource to pay for troop
-        let mut structure_weight: W3eight = WeightStoreImpl::retrieve(ref world, from_structure_id);
-        let troop_resource_weight_grams: u128 = WeightUnitImpl::grams(ref world, resource_type);
-        let mut structure_troop_resource: SingleR33esource = SingleR33esourceStoreImpl::retrieve(
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
+        let troop_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+        let mut structure_troop_resource: SingleResource = SingleResourceStoreImpl::retrieve(
             ref world, from_structure_id, resource_type, ref structure_weight, troop_resource_weight_grams, true,
         );
         structure_troop_resource.spend(amount, ref structure_weight, troop_resource_weight_grams);

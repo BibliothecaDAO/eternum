@@ -1885,7 +1885,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_weight_config(props: SystemProps.SetWeightConfigProps) {
+  public async set_resource_weight_config(props: SystemProps.SetWeightConfigProps) {
     const { calls, signer } = props;
 
     return await this.executeAndCheckTransaction(
@@ -1893,7 +1893,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calls.map((call) => {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_weight_config",
+          entrypoint: "set_resource_weight_config",
           calldata: [call.entity_type, call.weight_gram],
         };
       }),
