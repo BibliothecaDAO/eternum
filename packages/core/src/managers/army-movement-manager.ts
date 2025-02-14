@@ -188,8 +188,9 @@ export class ArmyMovementManager {
 
       const canAttack = hasArmy || hasStructure;
 
-      const EXPLORATION_STAMINA_COST = configManager.getExploreStaminaCost();
-      const staminaCost = biome ? ArmyMovementManager.staminaDrain(biome, troopType) : EXPLORATION_STAMINA_COST;
+      const staminaCost = biome
+        ? ArmyMovementManager.staminaDrain(biome, troopType)
+        : configManager.getExploreStaminaCost();
 
       if (staminaCost > armyStamina) continue;
 
@@ -217,9 +218,13 @@ export class ArmyMovementManager {
       if (!lowestStaminaUse.has(currentKey) || staminaUsed < lowestStaminaUse.get(currentKey)!) {
         lowestStaminaUse.set(currentKey, staminaUsed);
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+        const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+        const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+
         actionPaths.set(currentKey, path);
 
-        if (!isExplored) continue;
+        // cannot go through these hexes so need to stop here
+        if (!isExplored || hasArmy || hasStructure) continue;
 
         const neighbors = getNeighborHexes(current.col, current.row);
         for (const { col, row } of neighbors) {
@@ -249,7 +254,7 @@ export class ArmyMovementManager {
                 ...path,
                 {
                   hex: { col, row },
-                  actionType: biome ? ActionType.Explore : ActionType.Move,
+                  actionType: biome ? ActionType.Move : ActionType.Explore,
                   biomeType: biome,
                   staminaCost,
                 },

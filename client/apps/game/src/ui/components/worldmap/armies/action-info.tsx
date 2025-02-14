@@ -41,7 +41,7 @@ const TooltipContent = memo(
 
     return (
       <>
-        <Headline>{actionType}</Headline>
+        <Headline>{actionType?.toUpperCase()}</Headline>
         {actionType === ActionType.Explore ? (
           <div>
             <ResourceCost

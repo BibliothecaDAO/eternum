@@ -8,17 +8,17 @@ import { getWorldPositionForHex } from "../utils";
 export const getHighlightColorForAction = (actionType: ActionType): THREE.Vector3 => {
   switch (actionType) {
     case ActionType.Explore:
-      return new THREE.Vector3(0.0, 0.8, 0.8); // Cyan
+      return new THREE.Vector3(0.0, 1.5, 1.5); // More intense cyan
     case ActionType.Move:
-      return new THREE.Vector3(0.0, 0.8, 0.0); // Green
+      return new THREE.Vector3(0.0, 1.5, 0.0); // More intense green
     case ActionType.Attack:
-      return new THREE.Vector3(0.8, 0.0, 0.0); // Red
+      return new THREE.Vector3(2.0, 0.0, 0.0); // More intense red
     case ActionType.Merge:
-      return new THREE.Vector3(0.8, 0.0, 0.8); // Purple
+      return new THREE.Vector3(1.5, 0.0, 1.5); // More intense purple
     case ActionType.Build:
-      return new THREE.Vector3(0.0, 0.0, 0.8); // Blue
+      return new THREE.Vector3(0.0, 0.0, 1.5); // More intense blue
     default:
-      return new THREE.Vector3(1.0, 1.0, 1.0); // White
+      return new THREE.Vector3(1.5, 1.5, 1.5); // More intense white
   }
 };
 
