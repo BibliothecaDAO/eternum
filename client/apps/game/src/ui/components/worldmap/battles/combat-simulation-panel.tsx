@@ -2,7 +2,14 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { SelectBiome } from "@/ui/elements/select-biome";
 import { SelectTier } from "@/ui/elements/select-tier";
 import { SelectTroop } from "@/ui/elements/select-troop";
-import { Biome, CombatParameters, CombatSimulator, ResourcesIds, TroopType, type Army } from "@bibliothecadao/eternum";
+import {
+  BiomeType,
+  CombatParameters,
+  CombatSimulator,
+  ResourcesIds,
+  TroopType,
+  type Army,
+} from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
 interface ArmyInputProps {
@@ -14,9 +21,9 @@ interface ArmyInputProps {
 const MAX_TROOPS_PER_ARMY = 500_000;
 
 const TROOP_RESOURCES = [
-  { type: TroopType.KNIGHT, resourceId: ResourcesIds.Knight },
-  { type: TroopType.CROSSBOWMAN, resourceId: ResourcesIds.Crossbowman },
-  { type: TroopType.PALADIN, resourceId: ResourcesIds.Paladin },
+  { type: TroopType.Knight, resourceId: ResourcesIds.Knight },
+  { type: TroopType.Crossbowman, resourceId: ResourcesIds.Crossbowman },
+  { type: TroopType.Paladin, resourceId: ResourcesIds.Paladin },
 ];
 
 const getTroopResourceId = (troopType: TroopType): number => {
@@ -123,17 +130,17 @@ const ParametersPanel = ({ parameters, onParametersChange, show }: ParametersPan
 };
 
 export const CombatSimulationPanel = () => {
-  const [biome, setBiome] = useState<Biome>(Biome.GRASSLAND);
+  const [biome, setBiome] = useState<BiomeType>(BiomeType.Grassland);
   const [attacker, setAttacker] = useState<Army>({
     stamina: 100,
     troopCount: 100,
-    troopType: TroopType.KNIGHT,
+    troopType: TroopType.Knight,
     tier: 1,
   });
   const [defender, setDefender] = useState<Army>({
     stamina: 100,
     troopCount: 100,
-    troopType: TroopType.CROSSBOWMAN,
+    troopType: TroopType.Crossbowman,
     tier: 1,
   });
   const [showParameters, setShowParameters] = useState(false);
@@ -180,7 +187,7 @@ export const CombatSimulationPanel = () => {
           <SelectBiome
             onSelect={(newBiome) => {
               if (newBiome) {
-                setBiome(newBiome);
+                setBiome(newBiome as BiomeType);
               }
             }}
             defaultValue={biome}

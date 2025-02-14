@@ -1,11 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { type ArmyManager } from "@/three/managers/army-manager";
 import { type BattleManager } from "@/three/managers/battle-manager";
-import { type Biome, BIOME_COLORS } from "@/three/managers/biome";
+import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { type StructureManager } from "@/three/managers/structure-manager";
 import type WorldmapScene from "@/three/scenes/worldmap";
-import { FELT_CENTER } from "@/ui/config";
-import { StructureType } from "@bibliothecadao/eternum";
+import { BiomeType, StructureType } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { getHexForWorldPosition } from "../utils";
@@ -62,11 +61,10 @@ class Minimap {
   private canvas!: HTMLCanvasElement;
   private context!: CanvasRenderingContext2D;
   private camera!: THREE.PerspectiveCamera;
-  private exploredTiles!: Map<number, Set<number>>;
+  private exploredTiles!: Map<number, Map<number, BiomeType>>;
   private structureManager!: StructureManager;
   private armyManager!: ArmyManager;
   private battleManager!: BattleManager;
-  private biome!: Biome;
   private mapCenter: { col: number; row: number } = { col: 250, row: 150 };
   private mapSize: { width: number; height: number } = {
     width: MINIMAP_CONFIG.MAP_COLS_WIDTH,
@@ -93,18 +91,17 @@ class Minimap {
 
   constructor(
     worldmapScene: WorldmapScene,
-    exploredTiles: Map<number, Set<number>>,
+    exploredTiles: Map<number, Map<number, BiomeType>>,
     camera: THREE.PerspectiveCamera,
     structureManager: StructureManager,
     armyManager: ArmyManager,
     battleManager: BattleManager,
-    biome: Biome,
   ) {
     this.worldmapScene = worldmapScene;
     this.waitForMinimapElement().then((canvas) => {
       this.canvas = canvas;
       this.loadLabelImages();
-      this.initializeCanvas(structureManager, exploredTiles, armyManager, biome, camera, battleManager);
+      this.initializeCanvas(structureManager, exploredTiles, armyManager, camera, battleManager);
       this.canvas.addEventListener("canvasResized", this.handleResize);
     });
   }
@@ -125,9 +122,8 @@ class Minimap {
 
   private initializeCanvas(
     structureManager: StructureManager,
-    exploredTiles: Map<number, Set<number>>,
+    exploredTiles: Map<number, Map<number, BiomeType>>,
     armyManager: ArmyManager,
-    biome: Biome,
     camera: THREE.PerspectiveCamera,
     battleManager: BattleManager,
   ) {
@@ -136,7 +132,6 @@ class Minimap {
     this.exploredTiles = exploredTiles;
     this.armyManager = armyManager;
     this.battleManager = battleManager;
-    this.biome = biome;
     this.camera = camera;
     this.scaleX = this.canvas.width / this.mapSize.width;
     this.scaleY = this.canvas.height / this.mapSize.height;
@@ -218,14 +213,13 @@ class Minimap {
 
   private drawExploredTiles() {
     this.exploredTiles.forEach((rows, col) => {
-      rows.forEach((row) => {
+      rows.forEach((biome, row) => {
         const cacheKey = `${col},${row}`;
         let biomeColor;
 
         if (this.biomeCache.has(cacheKey)) {
           biomeColor = this.biomeCache.get(cacheKey)!;
         } else {
-          const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
           biomeColor = BIOME_COLORS[biome].getStyle();
           this.biomeCache.set(cacheKey, biomeColor);
         }

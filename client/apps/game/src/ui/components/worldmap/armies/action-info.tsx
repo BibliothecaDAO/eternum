@@ -10,6 +10,7 @@ import {
   computeTravelFoodCosts,
   configManager,
   getBalance,
+  HexTileInfo,
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
@@ -28,7 +29,7 @@ const TooltipContent = memo(
     getBalance,
   }: {
     isExplored: boolean;
-    travelPath: any;
+    travelPath: { path: HexTileInfo[]; isExplored: boolean };
     costs: { travelFoodCosts: any; exploreFoodCosts: any };
     selectedEntityId: number;
     structureEntityId: number;
@@ -66,7 +67,7 @@ const TooltipContent = memo(
       <StaminaResourceCost
         travelingEntityId={Number(selectedEntityId)}
         isExplored={isExplored}
-        travelLength={travelPath.path.length - 1}
+        path={travelPath.path.slice(1)}
       />
       {!isExplored && (
         <div className="flex flex-row text-xs ml-1">
@@ -131,7 +132,7 @@ export const ActionInfo = memo(() => {
     [selectedEntityTroops],
   );
 
-  if (!showTooltip || !selectedEntityId) return null;
+  if (!showTooltip || !selectedEntityId || !travelPath) return null;
 
   return (
     <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>

@@ -1,6 +1,6 @@
-import { BiomeType } from "@/three/managers/biome";
 import { IS_FLAT_MODE } from "@/ui/config";
 import {
+  BiomeType,
   BuildingType,
   RealmLevelNames,
   RealmLevels,

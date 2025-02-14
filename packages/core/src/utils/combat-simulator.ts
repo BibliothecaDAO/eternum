@@ -1,3 +1,6 @@
+import { BiomeType } from "../constants";
+import { TroopType } from "../types";
+
 export class Percentage {
   static _100() {
     return 10_000;
@@ -7,32 +10,6 @@ export class Percentage {
     return (value * numerator) / Percentage._100();
   }
 }
-
-export enum TroopType {
-  KNIGHT = "knight",
-  CROSSBOWMAN = "crossbowman",
-  PALADIN = "paladin",
-}
-
-export enum Biome {
-  OCEAN = "ocean",
-  DEEP_OCEAN = "deep_ocean",
-  BEACH = "beach",
-  GRASSLAND = "grassland",
-  SHRUBLAND = "shrubland",
-  SUBTROPICAL_DESERT = "subtropical_desert",
-  TEMPERATE_DESERT = "temperate_desert",
-  TROPICAL_RAINFOREST = "tropical_rainforest",
-  TROPICAL_SEASONAL_FOREST = "tropical_seasonal_forest",
-  TEMPERATE_RAINFOREST = "temperate_rainforest",
-  TEMPERATE_DECIDUOUS_FOREST = "temperate_deciduous_forest",
-  TUNDRA = "tundra",
-  TAIGA = "taiga",
-  SNOW = "snow",
-  BARE = "bare",
-  SCORCHED = "scorched",
-}
-
 export interface Army {
   stamina: number;
   troopCount: number;
@@ -62,32 +39,40 @@ export class CombatSimulator {
   private static readonly C0 = 100_000; // Transition point
   private static readonly DELTA = 50_000; // Transition width
 
-  public static getBiomeBonus(troopType: TroopType, biome: Biome): number {
-    const biomeModifiers: Record<Biome, Record<TroopType, number>> = {
-      [Biome.OCEAN]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: 0.3, [TroopType.PALADIN]: -0.3 },
-      [Biome.DEEP_OCEAN]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: 0.3, [TroopType.PALADIN]: -0.3 },
-      [Biome.BEACH]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0.3, [TroopType.PALADIN]: 0 },
-      [Biome.GRASSLAND]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: -0.3, [TroopType.PALADIN]: 0.3 },
-      [Biome.SHRUBLAND]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: -0.3, [TroopType.PALADIN]: 0.3 },
-      [Biome.SUBTROPICAL_DESERT]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: 0.3 },
-      [Biome.TEMPERATE_DESERT]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: 0.3 },
-      [Biome.TROPICAL_RAINFOREST]: { [TroopType.KNIGHT]: 0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: -0.3 },
-      [Biome.TROPICAL_SEASONAL_FOREST]: {
-        [TroopType.KNIGHT]: 0.3,
-        [TroopType.CROSSBOWMAN]: 0,
-        [TroopType.PALADIN]: -0.3,
+  public static getBiomeBonus(troopType: TroopType, biome: BiomeType): number {
+    const biomeModifiers: Record<BiomeType, Record<TroopType, number>> = {
+      [BiomeType.Ocean]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0.3, [TroopType.Paladin]: -0.3 },
+      [BiomeType.DeepOcean]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0.3, [TroopType.Paladin]: -0.3 },
+      [BiomeType.Beach]: { [TroopType.Knight]: -0.3, [TroopType.Crossbowman]: 0.3, [TroopType.Paladin]: 0 },
+      [BiomeType.Grassland]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: -0.3, [TroopType.Paladin]: 0.3 },
+      [BiomeType.Shrubland]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: -0.3, [TroopType.Paladin]: 0.3 },
+      [BiomeType.SubtropicalDesert]: { [TroopType.Knight]: -0.3, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0.3 },
+      [BiomeType.TemperateDesert]: { [TroopType.Knight]: -0.3, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0.3 },
+      [BiomeType.TropicalRainForest]: {
+        [TroopType.Knight]: 0.3,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -0.3,
       },
-      [Biome.TEMPERATE_RAINFOREST]: { [TroopType.KNIGHT]: 0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: -0.3 },
-      [Biome.TEMPERATE_DECIDUOUS_FOREST]: {
-        [TroopType.KNIGHT]: 0.3,
-        [TroopType.CROSSBOWMAN]: 0,
-        [TroopType.PALADIN]: -0.3,
+      [BiomeType.TropicalSeasonalForest]: {
+        [TroopType.Knight]: 0.3,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -0.3,
       },
-      [Biome.TUNDRA]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: 0.3 },
-      [Biome.TAIGA]: { [TroopType.KNIGHT]: 0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: -0.3 },
-      [Biome.SNOW]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0.3, [TroopType.PALADIN]: 0 },
-      [Biome.BARE]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: -0.3, [TroopType.PALADIN]: 0.3 },
-      [Biome.SCORCHED]: { [TroopType.KNIGHT]: 0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: -0.3 },
+      [BiomeType.TemperateRainForest]: {
+        [TroopType.Knight]: 0.3,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -0.3,
+      },
+      [BiomeType.TemperateDeciduousForest]: {
+        [TroopType.Knight]: 0.3,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -0.3,
+      },
+      [BiomeType.Tundra]: { [TroopType.Knight]: -0.3, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0.3 },
+      [BiomeType.Taiga]: { [TroopType.Knight]: 0.3, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: -0.3 },
+      [BiomeType.Snow]: { [TroopType.Knight]: -0.3, [TroopType.Crossbowman]: 0.3, [TroopType.Paladin]: 0 },
+      [BiomeType.Bare]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: -0.3, [TroopType.Paladin]: 0.3 },
+      [BiomeType.Scorched]: { [TroopType.Knight]: 0.3, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: -0.3 },
     };
 
     return 1 + (biomeModifiers[biome]?.[troopType] ?? 0);
@@ -126,7 +111,7 @@ export class CombatSimulator {
   public static simulateBattle(
     attacker: Army,
     defender: Army,
-    biome: Biome,
+    biome: BiomeType,
   ): { attackerDamage: number; defenderDamage: number } {
     const totalTroops = attacker.troopCount + defender.troopCount;
     const betaEff = this.calculateEffectiveBeta(totalTroops);
@@ -176,7 +161,7 @@ export class CombatSimulator {
   public static simulateBattleWithParams(
     attacker: Army,
     defender: Army,
-    biome: Biome,
+    biome: BiomeType,
     params: CombatParameters,
   ): { attackerDamage: number; defenderDamage: number } {
     const totalTroops = attacker.troopCount + defender.troopCount;

@@ -296,6 +296,11 @@ export class ClientConfigManager {
     }, 0);
   }
 
+  // todo: need to get this from config
+  getMinTravelStaminaCost() {
+    return 10;
+  }
+
   getResourceBridgeFeeSplitConfig() {
     return this.getValueOrDefault(
       () => {

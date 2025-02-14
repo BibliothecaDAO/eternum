@@ -1,5 +1,5 @@
 import { Position } from "@/types/position";
-import { getNeighborOffsets, HexPosition } from "@bibliothecadao/eternum";
+import { BiomeType, getNeighborOffsets, HexPosition } from "@bibliothecadao/eternum";
 
 interface Node {
   col: number;
@@ -10,17 +10,26 @@ interface Node {
 }
 
 export function findShortestPath(
-  startPosition: Position,
-  endPosition: Position,
-  exploredTiles: Map<number, Set<number>>,
+  oldPosition: Position,
+  newPosition: Position,
+  exploredTiles: Map<number, Map<number, BiomeType>>,
+  structureHexes: Map<number, Set<number>>,
+  armyHexes: Map<number, Set<number>>,
+  maxDistance: number,
 ): Position[] {
+  // Check if target is within maximum distance before starting pathfinding
+  const oldPos = oldPosition.getNormalized();
+  const newPos = newPosition.getNormalized();
+  const initialDistance = getHexDistance({ col: oldPos.x, row: oldPos.y }, { col: newPos.x, row: newPos.y });
+  if (initialDistance > maxDistance) {
+    return []; // Return empty path if target is too far
+  }
+
   const openSet: Node[] = [];
   const closedSet = new Set<string>();
-  const start = startPosition.getNormalized();
-  const end = endPosition.getNormalized();
   const startNode: Node = {
-    col: start.x,
-    row: start.y,
+    col: oldPos.x,
+    row: oldPos.y,
     f: 0,
     g: 0,
   };
@@ -32,7 +41,7 @@ export function findShortestPath(
     let current = openSet.reduce((min, node) => (node.f < min.f ? node : min), openSet[0]);
 
     // Reached end
-    if (current.col === end.x && current.row === end.y) {
+    if (current.col === newPos.x && current.row === newPos.y) {
       return reconstructPath(current);
     }
 
@@ -46,13 +55,28 @@ export function findShortestPath(
       const neighborCol = current.col + i;
       const neighborRow = current.row + j;
 
+      // Skip if path is getting too long
+      if (current.g + 1 > maxDistance) {
+        continue;
+      }
+
       // Skip if not explored or already in closed set
       if (!exploredTiles.get(neighborCol)?.has(neighborRow) || closedSet.has(`${neighborCol},${neighborRow}`)) {
         continue;
       }
 
+      // skip if the neighbor is a structure hex
+      if (structureHexes.get(neighborCol)?.has(neighborRow)) {
+        continue;
+      }
+
+      // skip if the neighbor is an army hex and not the end hex (where the unit is going)
+      if (armyHexes.get(neighborCol)?.has(neighborRow) && !(neighborCol === newPos.x && neighborRow === newPos.y)) {
+        continue;
+      }
+
       const g = current.g + 1;
-      const h = getHexDistance({ col: neighborCol, row: neighborRow }, { col: end.x, row: end.y });
+      const h = getHexDistance({ col: neighborCol, row: neighborRow }, { col: newPos.x, row: newPos.y });
       const f = g + h;
 
       const neighborNode: Node = {

@@ -1,5 +1,5 @@
 import { StructureInfo } from "@/three/types";
-import { BuildingType, HexPosition, ID, Position } from "@bibliothecadao/eternum";
+import { BuildingType, HexPosition, HexTileInfo, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
@@ -35,7 +35,7 @@ export interface ThreeStore {
 
 interface ArmyActions {
   hoveredHex: HexPosition | null;
-  travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
+  travelPaths: Map<string, { path: HexTileInfo[]; isExplored: boolean }>;
   selectedEntityId: ID | null;
 }
 

@@ -1,6 +1,6 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { Biome, CombatSimulator, resources, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
+import { Biome, BiomeType, CombatSimulator, resources, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
 import React, { useState } from "react";
 
 interface SelectBiomeProps {
@@ -10,12 +10,16 @@ interface SelectBiomeProps {
 }
 
 const TROOP_RESOURCES = [
-  { type: TroopType.KNIGHT, resourceId: ResourcesIds.Knight },
-  { type: TroopType.CROSSBOWMAN, resourceId: ResourcesIds.Crossbowman },
-  { type: TroopType.PALADIN, resourceId: ResourcesIds.Paladin },
+  { type: TroopType.Knight, resourceId: ResourcesIds.Knight },
+  { type: TroopType.Crossbowman, resourceId: ResourcesIds.Crossbowman },
+  { type: TroopType.Paladin, resourceId: ResourcesIds.Paladin },
 ];
 
-export const SelectBiome: React.FC<SelectBiomeProps> = ({ onSelect, className, defaultValue = Biome.GRASSLAND }) => {
+export const SelectBiome: React.FC<SelectBiomeProps> = ({
+  onSelect,
+  className,
+  defaultValue = BiomeType.Grassland,
+}) => {
   const [selectedBiome, setSelectedBiome] = useState<string>(defaultValue?.toString() || "");
 
   const formatBiomeName = (biome: string) => {
@@ -54,7 +58,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({ onSelect, className, d
               <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(selectedBiome)}</span>
               <div className="flex gap-8">
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
-                  const bonus = CombatSimulator.getBiomeBonus(type, selectedBiome as Biome);
+                  const bonus = CombatSimulator.getBiomeBonus(type, selectedBiome as BiomeType);
                   return (
                     <div key={type} className="flex items-center gap-2 w-16 justify-end">
                       <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />

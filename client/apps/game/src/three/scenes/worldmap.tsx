@@ -4,7 +4,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleManager } from "@/three/managers/battle-manager";
-import { Biome } from "@/three/managers/biome";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
@@ -20,6 +19,7 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyMovementManager,
+  Biome,
   BiomeType,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   HexPosition,
@@ -34,7 +34,7 @@ import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { ArmySystemUpdate, SceneName, TileSystemUpdate } from "../types";
+import { ArmySystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 export default class WorldmapScene extends HexagonScene {
@@ -53,7 +53,13 @@ export default class WorldmapScene extends HexagonScene {
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
   private battleManager: BattleManager;
-  private exploredTiles: Map<number, Set<number>> = new Map();
+  private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
+  // normalized positions
+  private armyHexes: Map<number, Set<number>> = new Map();
+  // normalized positions
+  private structureHexes: Map<number, Set<number>> = new Map();
+  // store armies positions by ID, to remove previous positions when army moves
+  private armiesPositions: Map<ID, HexPosition> = new Map();
   private battles: Map<number, Set<number>> = new Map();
   private tileManager: TileManager;
   private structurePreview: StructurePreview | null = null;
@@ -81,8 +87,6 @@ export default class WorldmapScene extends HexagonScene {
     this.dojo = dojoContext;
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
-
-    this.biome = new Biome();
 
     this.structurePreview = new StructurePreview(this.scene);
     this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
@@ -113,13 +117,13 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.exploredTiles);
+    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize);
     this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
     this.battleManager = new BattleManager(this.scene);
 
     this.armySubscription?.unsubscribe();
     this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
-      this.armyManager.onUpdate(update).then((needsUpdate) => {
+      this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles).then((needsUpdate) => {
         if (needsUpdate) {
           this.updateVisibleChunks();
         }
@@ -128,7 +132,10 @@ export default class WorldmapScene extends HexagonScene {
 
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
+    this.systemManager.Army.onUpdate((value) => this.updateArmyHexes(value));
     this.systemManager.Structure.onUpdate((value) => {
+      this.updateStructureHexes(value);
+
       const optimisticStructure = this.structureManager.structures.removeStructure(
         Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
       );
@@ -180,7 +187,6 @@ export default class WorldmapScene extends HexagonScene {
         this.structureManager,
         this.armyManager,
         this.battleManager,
-        this.biome,
       );
     }
 
@@ -371,7 +377,14 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-    const travelPaths = armyMovementManager.findPaths(this.exploredTiles, currentDefaultTick, currentArmiesTick);
+
+    const travelPaths = armyMovementManager.findPaths(
+      this.structureHexes,
+      this.armyHexes,
+      this.exploredTiles,
+      currentDefaultTick,
+      currentArmiesTick,
+    );
     this.state.updateTravelPaths(travelPaths.getPaths());
     this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
   }
@@ -408,11 +421,61 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.removeLabelsFromScene();
   }
 
-  public async updateExploredHex(update: TileSystemUpdate) {
-    const { hexCoords, removeExplored } = update;
+  // used to track the position of the armies on the map
+  public updateArmyHexes(update: ArmySystemUpdate) {
+    const {
+      hexCoords: { col, row },
+    } = update;
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    const newCol = normalized.x;
+    const newRow = normalized.y;
+    const oldHexCoords = this.armiesPositions.get(update.entityId);
+    const oldCol = oldHexCoords?.col;
+    const oldRow = oldHexCoords?.row;
+    console.log({ oldCol, oldRow, newCol, newRow });
 
-    const col = hexCoords.col - FELT_CENTER;
-    const row = hexCoords.row - FELT_CENTER;
+    // update the position of the army
+    this.armiesPositions.set(update.entityId, { col: newCol, row: newRow });
+
+    if (oldCol !== undefined && oldRow !== undefined) {
+      if (oldCol !== newCol || oldRow !== newRow) {
+        this.armyHexes.get(oldCol)?.delete(oldRow);
+        if (!this.armyHexes.has(newCol)) {
+          this.armyHexes.set(newCol, new Set());
+        }
+        this.armyHexes.get(newCol)?.add(newRow);
+      }
+    } else {
+      if (!this.armyHexes.has(newCol)) {
+        this.armyHexes.set(newCol, new Set());
+      }
+      this.armyHexes.get(newCol)?.add(newRow);
+    }
+  }
+
+  public updateStructureHexes(update: StructureSystemUpdate) {
+    const {
+      hexCoords: { col, row },
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    const newCol = normalized.x;
+    const newRow = normalized.y;
+
+    if (!this.structureHexes.has(newCol)) {
+      this.structureHexes.set(newCol, new Set());
+    }
+    this.structureHexes.get(newCol)?.add(newRow);
+  }
+
+  public async updateExploredHex(update: TileSystemUpdate) {
+    const { hexCoords, removeExplored, biome } = update;
+
+    const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+
+    const col = normalized.x;
+    const row = normalized.y;
 
     if (removeExplored) {
       const chunkRow = parseInt(this.currentChunk.split(",")[0]);
@@ -425,10 +488,10 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     if (!this.exploredTiles.has(col)) {
-      this.exploredTiles.set(col, new Set());
+      this.exploredTiles.set(col, new Map());
     }
     if (!this.exploredTiles.get(col)!.has(row)) {
-      this.exploredTiles.get(col)!.add(row);
+      this.exploredTiles.get(col)!.set(row, biome);
     }
 
     const dummy = new THREE.Object3D();
@@ -453,9 +516,6 @@ export default class WorldmapScene extends HexagonScene {
       dummy.position.y += 0.1;
       dummy.rotation.y = 0;
     }
-
-    const biomePosition = new Position({ x: col, y: row }).getContract();
-    const biome = this.biome.getBiome(biomePosition.x, biomePosition.y);
 
     dummy.updateMatrix();
 
@@ -672,7 +732,7 @@ export default class WorldmapScene extends HexagonScene {
           dummy.rotation.y = 0;
         }
 
-        const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
+        const biome = Biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
 
         dummy.updateMatrix();
 

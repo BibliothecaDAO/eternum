@@ -10,16 +10,16 @@ interface SelectTroopProps {
 }
 
 const TROOP_RESOURCES = [
-  { type: TroopType.KNIGHT, resourceId: ResourcesIds.Knight },
-  { type: TroopType.CROSSBOWMAN, resourceId: ResourcesIds.Crossbowman },
-  { type: TroopType.PALADIN, resourceId: ResourcesIds.Paladin },
+  { type: TroopType.Knight, resourceId: ResourcesIds.Knight },
+  { type: TroopType.Crossbowman, resourceId: ResourcesIds.Crossbowman },
+  { type: TroopType.Paladin, resourceId: ResourcesIds.Paladin },
 ];
 
 const formatTroopName = (type: string) => {
   return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
 };
 
-export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, defaultValue = TroopType.KNIGHT }) => {
+export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, defaultValue = TroopType.Knight }) => {
   const [selectedTroop, setSelectedTroop] = useState<string>(defaultValue?.toString() || "");
 
   // Call onSelect with default value on mount
