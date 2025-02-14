@@ -25,13 +25,11 @@ import {
   getTroopResourceId,
 } from "./combat-utils";
 
-// Enums
 enum TargetType {
   Structure,
   Army,
 }
 
-// Type definitions
 export type Troops = {
   knight_count: number;
   paladin_count: number;
