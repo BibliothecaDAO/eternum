@@ -10,6 +10,7 @@ export class Percentage {
     return (value * numerator) / Percentage._100();
   }
 }
+
 export interface Army {
   stamina: number;
   troopCount: number;

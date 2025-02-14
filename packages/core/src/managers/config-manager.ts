@@ -549,6 +549,13 @@ export class ClientConfigManager {
     );
   }
 
+  getStaminaCombatConfig() {
+    return {
+      staminaCost: 30,
+      staminaBonus: 30,
+    };
+  }
+
   getTroopStaminaConfig(troopId: number) {
     return this.getValueOrDefault(() => {
       const staminaConfig = getComponentValue(

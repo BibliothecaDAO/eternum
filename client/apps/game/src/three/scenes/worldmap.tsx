@@ -16,21 +16,25 @@ import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { CombatModal } from "@/ui/modules/military/combat-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  ActionPath,
+  ActionPaths,
+  ActionType,
   ArmyMovementManager,
   Biome,
   BiomeType,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  getNeighborOffsets,
   HexPosition,
   ID,
   SetupResult,
   TileManager,
-  TravelPaths,
-  getNeighborOffsets,
 } from "@bibliothecadao/eternum";
 import { getEntities } from "@dojoengine/state";
 import throttle from "lodash/throttle";
+import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
@@ -231,8 +235,8 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
     const { hexCoords } = hex;
-    const { selectedEntityId, travelPaths } = this.state.armyActions;
-    if (selectedEntityId && travelPaths.size > 0) {
+    const { selectedEntityId, actionPaths } = this.state.armyActions;
+    if (selectedEntityId && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
         this.previouslyHoveredHex = hexCoords;
       }
@@ -342,26 +346,51 @@ export default class WorldmapScene extends HexagonScene {
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
 
-    const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
-
-    const { selectedEntityId, travelPaths } = this.state.armyActions;
-    if (selectedEntityId && travelPaths.size > 0 && hexCoords) {
-      const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
-      if (travelPath) {
-        const selectedPath = travelPath.path;
-        const isExplored = travelPath.isExplored ?? false;
-        if (selectedPath.length > 0) {
-          const armyMovementManager = new ArmyMovementManager(
-            this.dojo.components,
-            this.dojo.network.provider,
-            selectedEntityId,
-          );
-          playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-          armyMovementManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
-          this.state.updateHoveredHex(null);
+    const { selectedEntityId, actionPaths } = this.state.armyActions;
+    if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
+      const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
+      if (actionPath && account) {
+        const actionType = ActionPaths.getActionType(actionPath);
+        if (actionType === ActionType.Explore || actionType === ActionType.Move) {
+          this.onArmyMovement(account, actionPath, selectedEntityId);
+        } else if (actionType === ActionType.Attack) {
+          this.onArmyAttack(account, actionPath, selectedEntityId);
         }
       }
     }
+  }
+
+  private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
+    const selectedPath = actionPath.map((path) => path.hex);
+    // can only move on explored hexes
+    const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
+    if (selectedPath.length > 0) {
+      const armyMovementManager = new ArmyMovementManager(
+        this.dojo.components,
+        this.dojo.network.provider,
+        selectedEntityId,
+      );
+      playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
+      armyMovementManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
+      this.state.updateHoveredHex(null);
+    }
+  }
+
+  private onArmyAttack(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    const selectedPath = actionPath.map((path) => path.hex);
+
+    // Get the target hex (last hex in the path)
+    const targetHex = selectedPath[selectedPath.length - 1];
+
+    // Find the army at the target position
+
+    this.state.toggleModal(
+      <CombatModal
+        attackerEntityId={selectedEntityId}
+        targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
+      />,
+    );
   }
 
   private onArmySelection(selectedEntityId: ID | null) {
@@ -378,20 +407,20 @@ export default class WorldmapScene extends HexagonScene {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
-    const travelPaths = armyMovementManager.findPaths(
+    const actionPaths = armyMovementManager.findActionPaths(
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
       currentDefaultTick,
       currentArmiesTick,
     );
-    this.state.updateTravelPaths(travelPaths.getPaths());
-    this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
+    this.state.updateActionPaths(actionPaths.getPaths());
+    this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
 
   private clearSelection() {
     this.highlightHexManager.highlightHexes([]);
-    this.state.updateTravelPaths(new Map());
+    this.state.updateActionPaths(new Map());
     this.structurePreview?.clearPreviewStructure();
     this.state.updateSelectedEntityId(null);
     this.state.setSelectedHex(null);
@@ -921,12 +950,15 @@ export default class WorldmapScene extends HexagonScene {
     return exploredHexes;
   }
 
-  private getBuildableHexesForCurrentChunk() {
+  private getBuildableHexesForCurrentChunk(): ActionPath[] {
     const exploredHexes = this.getExploredHexesForCurrentChunk();
     const buildableHexes = exploredHexes.filter(
       (hex) => !this.structureManager.structureHexCoords.get(hex.col)?.has(hex.row),
     );
-    return buildableHexes;
+    return buildableHexes.map((hex) => ({
+      hex: { col: hex.col, row: hex.row },
+      actionType: ActionType.Build,
+    }));
   }
 
   private cacheMatricesForChunk(startRow: number, startCol: number) {

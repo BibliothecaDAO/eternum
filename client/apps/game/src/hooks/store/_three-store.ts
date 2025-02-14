@@ -1,5 +1,5 @@
 import { StructureInfo } from "@/three/types";
-import { BuildingType, HexPosition, HexTileInfo, ID, Position } from "@bibliothecadao/eternum";
+import { ActionPath, BuildingType, HexPosition, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
@@ -7,7 +7,7 @@ export interface ThreeStore {
   armyActions: ArmyActions;
   setArmyActions: (armyActions: ArmyActions) => void;
   updateHoveredHex: (hoveredHex: HexPosition | null) => void;
-  updateTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) => void;
+  updateActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
   updateSelectedEntityId: (selectedEntityId: ID | null) => void;
   selectedHex: HexPosition | null;
   setSelectedHex: (hex: HexPosition | null) => void;
@@ -35,7 +35,7 @@ export interface ThreeStore {
 
 interface ArmyActions {
   hoveredHex: HexPosition | null;
-  travelPaths: Map<string, { path: HexTileInfo[]; isExplored: boolean }>;
+  actionPaths: Map<string, ActionPath[]>;
   selectedEntityId: ID | null;
 }
 
@@ -44,14 +44,14 @@ export const createThreeStoreSlice = (set: any, _get: any) => ({
   setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
   armyActions: {
     hoveredHex: null,
-    travelPaths: new Map(),
+    actionPaths: new Map(),
     selectedEntityId: null,
   },
   setArmyActions: (armyActions: ArmyActions) => set({ armyActions }),
   updateHoveredHex: (hoveredHex: HexPosition | null) =>
     set((state: any) => ({ armyActions: { ...state.armyActions, hoveredHex } })),
-  updateTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) =>
-    set((state: any) => ({ armyActions: { ...state.armyActions, travelPaths } })),
+  updateActionPaths: (actionPaths: Map<string, ActionPath[]>) =>
+    set((state: any) => ({ armyActions: { ...state.armyActions, actionPaths } })),
   updateSelectedEntityId: (selectedEntityId: ID | null) =>
     set((state: any) => ({ armyActions: { ...state.armyActions, selectedEntityId } })),
   selectedHex: { col: 0, row: 0 },

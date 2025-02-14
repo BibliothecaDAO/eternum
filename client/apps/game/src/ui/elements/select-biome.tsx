@@ -1,12 +1,12 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { Biome, BiomeType, CombatSimulator, resources, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
+import { BiomeType, CombatSimulator, resources, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
 import React, { useState } from "react";
 
 interface SelectBiomeProps {
-  onSelect: (biome: Biome | null) => void;
+  onSelect: (biome: BiomeType | null) => void;
   className?: string;
-  defaultValue?: Biome;
+  defaultValue?: BiomeType;
 }
 
 const TROOP_RESOURCES = [
@@ -48,7 +48,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
       value={selectedBiome}
       onValueChange={(value) => {
         setSelectedBiome(value);
-        onSelect(value as Biome);
+        onSelect(value as BiomeType);
       }}
     >
       <SelectTrigger className={className}>
@@ -82,7 +82,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {Object.values(Biome).map((biome) => (
+        {Object.values(BiomeType).map((biome) => (
           <SelectItem key={biome} value={biome} className="py-3">
             <div className="flex items-center justify-between w-full">
               <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(biome)}</span>

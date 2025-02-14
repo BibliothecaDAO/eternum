@@ -13,6 +13,7 @@ import { Position } from "@/types/position";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
+  ActionType,
   BUILDINGS_CENTER,
   Biome,
   BiomeType,
@@ -171,7 +172,12 @@ export default class HexceptionScene extends HexagonScene {
       (building) => {
         if (building) {
           this.buildingPreview?.setPreviewBuilding(building as any);
-          this.highlightHexManager.highlightHexes(this.highlights);
+          this.highlightHexManager.highlightHexes(
+            this.highlights.map((hex) => ({
+              hex: { col: hex.col, row: hex.row },
+              actionType: ActionType.Build,
+            })),
+          );
         } else {
           this.clearBuildingMode();
         }

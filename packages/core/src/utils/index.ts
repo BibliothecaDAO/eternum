@@ -1,3 +1,4 @@
+export * from "./action-paths";
 export * from "./army";
 export * from "./biome";
 export * from "./combat-simulator";
