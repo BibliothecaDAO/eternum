@@ -123,7 +123,7 @@ pub struct CapacityConfig {
     structure_capacity: u32, // grams
     troop_capacity: u32, // grams
     donkey_capacity: u32, // grams
-    storehouse_boost_capacity: u32 // grams
+    storehouse_boost_capacity: u32,
 }
 
 
