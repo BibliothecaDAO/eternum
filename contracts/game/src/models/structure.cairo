@@ -11,6 +11,10 @@ use traits::Into;
 
 
 // todo: obtain each value as needed not all at once
+
+// todo: add hard limit of troop to be something like 20
+// so the stucture explorers array does not get too big
+
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Structure {
@@ -30,9 +34,9 @@ pub struct Structure {
 #[derive(Introspect, Copy, Drop, Serde)]
 struct StructureTroop {
     // maximum total explorer + guards allowed for this structure
-    max_troops_allowed: u32,
+    max_explorer_count: u32,
     // maximum number of guards allowed for this structure
-    max_guards_allowed: u32,
+    max_guard_count: u32,
     // number of guards currently in this structure
     guard_count: u32,
     // list of explorers associated with this structure
@@ -53,7 +57,7 @@ impl StructureImpl of StructureTrait {
             owner: Owner { entity_id: 0, address: Zeroable::zero() },
             coord: Coord { x: 0, y: 0 },
             troop: StructureTroop {
-                max_troops_allowed: 0, max_guards_allowed: 0, guard_count: 0, explorers: array![].span(),
+                max_explorer_count: 0, max_guard_count: 0, guard_count: 0, explorers: array![].span(),
             },
             guards: GuardTroops {
                 delta: troops,
@@ -79,20 +83,20 @@ impl StructureImpl of StructureTrait {
 
         match category {
             StructureCategory::Realm => {
-                structure.troop.max_troops_allowed = 2;
-                structure.troop.max_guards_allowed = 1; // 1 guard, 1 explorer
+                structure.troop.max_explorer_count = 1;
+                structure.troop.max_guard_count = 1; // 1 guard, 1 explorer
             },
             StructureCategory::Hyperstructure => {
-                structure.troop.max_troops_allowed = 4;
-                structure.troop.max_guards_allowed = 4; // 4 guards, 0 explorers
+                structure.troop.max_explorer_count = 0;
+                structure.troop.max_guard_count = 4; // 4 guards, 0 explorers
             },
             StructureCategory::Bank => {
-                structure.troop.max_troops_allowed = 4;
-                structure.troop.max_guards_allowed = 4; // 4 guards, 0 explorers
+                structure.troop.max_explorer_count = 0;
+                structure.troop.max_guard_count = 4; // 4 guards, 0 explorers
             },
             StructureCategory::FragmentMine => {
-                structure.troop.max_troops_allowed = 1;
-                structure.troop.max_guards_allowed = 1; // 1 guard, 0 explorers
+                structure.troop.max_explorer_count = 0;
+                structure.troop.max_guard_count = 1; // 1 guard, 0 explorers
             },
             _ => { panic!("invalid structure category"); },
         }

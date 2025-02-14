@@ -4,10 +4,10 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::{
-    BuildingCategoryPopConfigTrait, BuildingConfig, BuildingConfigImpl, BuildingGeneralConfig, PopulationConfig,
-    ProductionConfig, TickConfig, TickImpl, TickTrait, WorldConfigUtilImpl,
+    BuildingCategoryPopConfigTrait, BuildingConfig, BuildingConfigImpl, BuildingGeneralConfig, CapacityConfig,
+    PopulationConfig, ProductionConfig, TickConfig, TickImpl, TickTrait, WorldConfigUtilImpl,
 };
 use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s1_eternum::models::population::{Population, PopulationTrait};
@@ -20,7 +20,7 @@ use s1_eternum::models::resource::resource::{
     WeightStoreImpl,
 };
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
-use s1_eternum::models::weight::{Weight};
+use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //todo we need to define border of innner hexes
@@ -94,6 +94,63 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
     }
 }
 
+
+#[generate_trait]
+impl BuildingPerksImpl of BuildingPerksTrait {
+    fn grant_capacity_bonus(self: Building, ref world: WorldStorage, add: bool) {
+        if self._is_storage_capacity_booster() {
+            self._boost_storage_capacity(ref world, add);
+        }
+
+        if self._is_explorer_capacity_booster() {
+            self._boost_explorer_capacity(ref world, add);
+        }
+    }
+
+    fn _is_storage_capacity_booster(self: Building) -> bool {
+        match self.category {
+            BuildingCategory::Storehouse => true,
+            _ => false,
+        }
+    }
+
+    fn _is_explorer_capacity_booster(self: Building) -> bool {
+        match self.category {
+            BuildingCategory::Barracks => true,
+            BuildingCategory::Stable => true,
+            BuildingCategory::ArcheryRange => true,
+            _ => false,
+        }
+    }
+
+    fn _boost_storage_capacity(self: Building, ref world: WorldStorage, add: bool) {
+        let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
+        let capacity: u128 = capacity_config.storehouse_boost_capacity.into() * RESOURCE_PRECISION;
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
+        if add {
+            structure_weight.add_capacity(capacity);
+        } else {
+            structure_weight.deduct_capacity(capacity);
+        }
+        structure_weight.store(ref world, self.outer_entity_id);
+    }
+
+    fn _boost_explorer_capacity(self: Building, ref world: WorldStorage, add: bool) {
+        let mut structure: Structure = world.read_model(self.outer_entity_id);
+        if add {
+            structure.troop.max_explorer_count += 1;
+        } else {
+            structure.troop.max_explorer_count -= 1;
+
+            // ensure current troop count does not exceed new troop capacity
+            let total_troops_available = structure.troop.guard_count + structure.troop.explorers.len();
+            assert!(
+                total_troops_available <= structure.troop.max_explorer_count, "cannot reduce troop capacity below 0",
+            );
+        }
+        world.write_model(@structure);
+    }
+}
 
 #[generate_trait]
 impl BuildingProductionImpl of BuildingProductionTrait {
@@ -408,8 +465,10 @@ impl BuildingImpl of BuildingTrait {
         // start production related to building
         building.start_production(ref world);
 
-        // increase building type count for realm
+        // give capacity bonus
+        building.grant_capacity_bonus(ref world, true);
 
+        // increase building type count for realm
         let mut building_quantity: BuildingQuantityv2 = world.read_model((outer_entity_id, building.category));
         building_quantity.value += 1;
         world.write_model(@building_quantity);
@@ -511,6 +570,9 @@ impl BuildingImpl of BuildingTrait {
         if !building.paused {
             building.stop_production(ref world);
         }
+
+        // remove granted capacity bonus
+        building.grant_capacity_bonus(ref world, false);
 
         // decrease building type count for realm
         let mut building_quantity: BuildingQuantityv2 = world.read_model((outer_entity_id, building.category));

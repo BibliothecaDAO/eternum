@@ -115,14 +115,8 @@ mod troop_systems {
             if troops.count.is_zero() {
                 // ensure structure has not reached the hard limit of guards
                 assert!(
-                    structure.troop.guard_count < structure.troop.max_guards_allowed,
+                    structure.troop.guard_count < structure.troop.max_guard_count,
                     "reached limit of guards per structure",
-                );
-
-                // ensure structure has not reached the hard limit of troops
-                let structure_troop_count = structure.troop.explorers.len() + structure.troop.guard_count;
-                assert!(
-                    structure_troop_count < structure.troop.max_troops_allowed, "reached limit of troops per structure",
                 );
 
                 // update guard count
@@ -202,10 +196,17 @@ mod troop_systems {
             let current_tick: u64 = tick.current().try_into().unwrap();
             iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier, current_tick);
 
-            // ensure structure has not reached the hard limit of troops
-            let structure_troop_count = structure.troop.explorers.len() + structure.troop.guard_count;
+            // ensure structure has not reached itslimit of troops
             assert!(
-                structure_troop_count < structure.troop.max_troops_allowed, "reached limit of troops per structure",
+                structure.troop.explorers.len() < structure.troop.max_explorer_count,
+                "reached limit of troops for your structure",
+            );
+
+            // ensure structure has not reached hard limit of explorers for all structures
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            assert!(
+                structure.troop.explorers.len() < troop_limit_config.explorer_max_party_count.into(),
+                "reached limit of troops per structure",
             );
 
             // create explorer
@@ -222,11 +223,6 @@ mod troop_systems {
             let mut occupier: Occupier = world.read_model((coord.x, coord.y));
             occupier.entity = OccupiedBy::Explorer(explorer_id);
             world.write_model(@occupier);
-
-            // todo: ensure max_allowed is updated. ensure it includes
-            //       troop_config.army_free_per_structure,
-            //       troop_config.army_extra_per_building
-            //       troop_config.army_max_per_structure
 
             // ensure explorer amount does not exceed max
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);

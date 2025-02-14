@@ -306,7 +306,9 @@ pub struct TroopStaminaConfig {
 
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
 pub struct TroopLimitConfig {
-    // Troop count limits without precision
+    // Maximum number of explorers allowed per structure
+    explorer_max_party_count: u8,
+    // Troop count per army limits without precision
     explorer_max_troop_count: u32,
     // Guard specific settings
     guard_resurrection_delay: u32,

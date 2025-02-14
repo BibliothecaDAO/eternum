@@ -215,9 +215,8 @@ mod realm_systems {
             realm.level = next_level;
             world.write_model(@realm);
 
-            // allow structure more one more army
-            structure.troop.max_troops_allowed += 1;
-            structure.troop.max_guards_allowed += 1;
+            // allow structure one more guard
+            structure.troop.max_guard_count += 1;
             world.write_model(@structure);
 
             // [Achievement] Upgrade to max level
