@@ -3,13 +3,13 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   Biome,
   CombatSimulator,
+  configManager,
   ContractAddress,
   divideByPrecision,
   getArmy,
   getEntityIdFromKeys,
   getStructure,
   ID,
-  ResourcesIds,
   StaminaManager,
   TroopType,
 } from "@bibliothecadao/eternum";
@@ -17,59 +17,31 @@ import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
+import {
+  calculateRemainingTroops,
+  formatBiomeBonus,
+  getDominantTroopInfo,
+  getStaminaDisplay,
+  getTroopResourceId,
+} from "./combat-utils";
 
+// Enums
 enum TargetType {
   Structure,
   Army,
 }
 
-const getTroopResourceId = (troopType: TroopType): number => {
-  const TROOP_RESOURCES = [
-    { type: TroopType.Knight, resourceId: ResourcesIds.Knight },
-    { type: TroopType.Crossbowman, resourceId: ResourcesIds.Crossbowman },
-    { type: TroopType.Paladin, resourceId: ResourcesIds.Paladin },
-  ];
-  return TROOP_RESOURCES.find((t) => t.type === troopType)?.resourceId || ResourcesIds.Knight;
+// Type definitions
+export type Troops = {
+  knight_count: number;
+  paladin_count: number;
+  crossbowman_count: number;
 };
 
-// Add this helper function to format bonus as percentage
-const formatBiomeBonus = (bonus: number) => {
-  const percentage = ((bonus - 1) * 100).toFixed(0);
-  if (percentage === "0") return "No bonus";
-  return percentage.startsWith("-") ? (
-    <span className="text-order-giants">{percentage}%</span>
-  ) : (
-    <span className="text-order-brilliance">+{percentage}%</span>
-  );
-};
-
-// Add this helper function to format stamina changes
-const getStaminaDisplay = (currentStamina: number, newStamina: number, isWinner: boolean) => {
-  return (
-    <div className="text-gold/80">
-      <div className="text-sm font-medium mb-1">Stamina</div>
-      <div className="text-xl font-bold flex items-baseline">
-        {Math.max(0, newStamina)}
-        <span className="text-xs ml-2 text-gold/50">/ {currentStamina}</span>
-        {isWinner && <span className="text-xs ml-2 text-green-400">(+30)</span>}
-      </div>
-    </div>
-  );
-};
-
-// Determine dominant troop type and count
-const getDominantTroopInfo = (troops: { knight_count: number; paladin_count: number; crossbowman_count: number }) => {
-  const knightCount = troops.knight_count;
-  const crossbowmanCount = troops.crossbowman_count;
-  const paladinCount = troops.paladin_count;
-
-  if (knightCount >= crossbowmanCount && knightCount >= paladinCount) {
-    return { type: TroopType.Knight, count: knightCount, label: "Knights" };
-  }
-  if (crossbowmanCount >= knightCount && crossbowmanCount >= paladinCount) {
-    return { type: TroopType.Crossbowman, count: crossbowmanCount, label: "Crossbowmen" };
-  }
-  return { type: TroopType.Paladin, count: paladinCount, label: "Paladins" };
+export type TroopInfo = {
+  type: TroopType;
+  count: number;
+  label: string;
 };
 
 export const CombatContainer = ({
@@ -87,8 +59,11 @@ export const CombatContainer = ({
     },
   } = useDojo();
 
-  // Get target entity on the hex (army or structure)
   const targetEntities = useEntityQuery([Has(Position), HasValue(Position, { x: targetHex.x, y: targetHex.y })]);
+
+  const staminaCombatConfig = useMemo(() => {
+    return configManager.getStaminaCombatConfig();
+  }, [components]);
 
   const biome = useMemo(() => {
     return Biome.getBiome(targetHex.x, targetHex.y);
@@ -176,53 +151,38 @@ export const CombatContainer = ({
     const attackerArmy = {
       entity_id: attackerEntityId,
       stamina: attackerStamina,
-      troopCount:
-        Number(attackerArmyEntity.troops.knight_count) +
-        Number(attackerArmyEntity.troops.paladin_count) +
-        Number(attackerArmyEntity.troops.crossbowman_count),
-      troopType: getDominantTroopInfo(attackerArmyEntity.troops).type, // You may want to determine dominant troop type
-      tier: 1 as 1 | 2 | 3, // You may want to determine tier from game state
+      troopCount: getDominantTroopInfo(attackerArmyEntity.troops).count,
+      troopType: getDominantTroopInfo(attackerArmyEntity.troops).type,
+      tier: 1 as 1 | 2 | 3,
     };
 
     const defenderArmy = {
       entity_id: targetId,
       stamina: defenderStamina,
-      troopCount:
-        Number(targetArmyEntity.troops.knight_count) +
-        Number(targetArmyEntity.troops.paladin_count) +
-        Number(targetArmyEntity.troops.crossbowman_count),
-      troopType: getDominantTroopInfo(targetArmyEntity.troops).type, // You may want to determine dominant troop type
-      tier: 1 as 1 | 2 | 3, // You may want to determine tier from game state
+      troopCount: getDominantTroopInfo(targetArmyEntity.troops).count,
+      troopType: getDominantTroopInfo(targetArmyEntity.troops).type,
+      tier: 1 as 1 | 2 | 3,
     };
 
-    // Use default parameters for simulation
     const params = CombatSimulator.getDefaultParameters();
-
-    // Simulate battle with default biome (Grassland) for now
-    // You may want to get actual biome from game state
     const result = CombatSimulator.simulateBattleWithParams(attackerArmy, defenderArmy, biome, params);
 
-    // Calculate remaining troops based on damage
     const attackerTroopsLost = Math.min(attackerArmy.troopCount, Math.ceil(result.defenderDamage));
     const defenderTroopsLost = Math.min(defenderArmy.troopCount, Math.ceil(result.attackerDamage));
 
     const attackerTroopsLeft = attackerArmy.troopCount - attackerTroopsLost;
     const defenderTroopsLeft = defenderArmy.troopCount - defenderTroopsLost;
 
-    // Only set winner if one side is completely eliminated
     const winner =
       attackerTroopsLeft === 0 ? defenderArmy.entity_id : defenderTroopsLeft === 0 ? attackerArmy.entity_id : null;
 
-    // Calculate stamina changes
-    const staminaCost = 30;
-    let newAttackerStamina = attackerStamina - staminaCost;
-    let newDefenderStamina = defenderStamina - Math.min(staminaCost, defenderStamina);
+    let newAttackerStamina = attackerStamina - staminaCombatConfig.staminaCost;
+    let newDefenderStamina = defenderStamina - Math.min(staminaCombatConfig.staminaCost, defenderStamina);
 
-    // Add bonus stamina to winner if one side is eliminated
     if (attackerTroopsLeft <= 0 && defenderTroopsLeft > 0) {
-      newDefenderStamina += 30;
+      newDefenderStamina += staminaCombatConfig.staminaBonus;
     } else if (defenderTroopsLeft <= 0 && attackerTroopsLeft > 0) {
-      newAttackerStamina += 30;
+      newAttackerStamina += staminaCombatConfig.staminaBonus;
     }
 
     return {
@@ -234,28 +194,12 @@ export const CombatContainer = ({
       attackerDamage: result.attackerDamage,
       defenderDamage: result.defenderDamage,
       getRemainingTroops: () => ({
-        attackerTroops: {
-          knight_count: Math.ceil(
-            Number(attackerArmyEntity.troops.knight_count) * (1 - attackerTroopsLost / attackerArmy.troopCount),
-          ),
-          paladin_count: Math.ceil(
-            Number(attackerArmyEntity.troops.paladin_count) * (1 - attackerTroopsLost / attackerArmy.troopCount),
-          ),
-          crossbowman_count: Math.ceil(
-            Number(attackerArmyEntity.troops.crossbowman_count) * (1 - attackerTroopsLost / attackerArmy.troopCount),
-          ),
-        },
-        defenderTroops: {
-          knight_count: Math.ceil(
-            Number(targetArmyEntity.troops.knight_count) * (1 - defenderTroopsLost / defenderArmy.troopCount),
-          ),
-          paladin_count: Math.ceil(
-            Number(targetArmyEntity.troops.paladin_count) * (1 - defenderTroopsLost / defenderArmy.troopCount),
-          ),
-          crossbowman_count: Math.ceil(
-            Number(targetArmyEntity.troops.crossbowman_count) * (1 - defenderTroopsLost / defenderArmy.troopCount),
-          ),
-        },
+        attackerTroops: calculateRemainingTroops(
+          attackerArmyEntity.troops,
+          attackerTroopsLost,
+          attackerArmy.troopCount,
+        ),
+        defenderTroops: calculateRemainingTroops(targetArmyEntity.troops, defenderTroopsLost, defenderArmy.troopCount),
       }),
     };
   }, [attackerEntityId, target, account, components, attackerStamina, defenderStamina]);
@@ -437,7 +381,7 @@ export const CombatContainer = ({
                       </div>
                     </div>
 
-                    {getStaminaDisplay(currentStamina, newStamina, isWinner)}
+                    {getStaminaDisplay(currentStamina, newStamina, isWinner, staminaCombatConfig.staminaBonus)}
                   </div>
 
                   <div className="text-gold/80">
@@ -460,10 +404,12 @@ export const CombatContainer = ({
         <Button
           variant="primary"
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
-          disabled={attackerStamina < 30}
+          disabled={attackerStamina < staminaCombatConfig.staminaCost}
           onClick={() => console.log("ATTACKKKKKK")}
         >
-          {attackerStamina >= 30 ? "Attack!" : "Not Enough Stamina (30 Required)"}
+          {attackerStamina >= staminaCombatConfig.staminaCost
+            ? "Attack!"
+            : `Not Enough Stamina (${staminaCombatConfig.staminaCost} Required)`}
         </Button>
       </div>
     </div>
