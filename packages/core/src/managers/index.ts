@@ -1,6 +1,5 @@
 export * from "./army-manager";
 export * from "./army-movement-manager";
-export * from "./battle-manager";
 export * from "./config-manager";
 export * from "./leaderboard-manager";
 export * from "./market-manager";

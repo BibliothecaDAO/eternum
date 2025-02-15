@@ -147,7 +147,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       </div>
 
       {structureArmies.map((army) => (
-        <ArmyChip key={army.entity_id} className="my-2" army={army} showButtons />
+        <ArmyChip key={army.entityId} className="my-2" army={army} showButtons />
       ))}
     </div>
   );

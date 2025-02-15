@@ -1,5 +1,5 @@
 import { ResourcesIds, TroopType } from "@bibliothecadao/eternum";
-import { TroopInfo, Troops } from "./combat-container";
+import { Troops } from "./combat-container";
 
 // Helper functions
 export const getTroopResourceId = (troopType: TroopType): number => {
@@ -37,18 +37,6 @@ export const getStaminaDisplay = (
       </div>
     </div>
   );
-};
-
-export const getDominantTroopInfo = (troops: Troops): TroopInfo => {
-  const { knight_count, crossbowman_count, paladin_count } = troops;
-
-  if (knight_count >= crossbowman_count && knight_count >= paladin_count) {
-    return { type: TroopType.Knight, count: knight_count, label: "Knights" };
-  }
-  if (crossbowman_count >= knight_count && crossbowman_count >= paladin_count) {
-    return { type: TroopType.Crossbowman, count: crossbowman_count, label: "Crossbowmen" };
-  }
-  return { type: TroopType.Paladin, count: paladin_count, label: "Paladins" };
 };
 
 export const calculateRemainingTroops = (originalTroops: Troops, troopsLost: number, totalTroops: number) => {

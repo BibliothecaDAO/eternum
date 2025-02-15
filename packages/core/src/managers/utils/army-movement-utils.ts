@@ -2,7 +2,8 @@ import { type ComponentValue } from "@dojoengine/recs";
 import { configManager } from "..";
 import { RESOURCE_PRECISION, ResourcesIds } from "../../constants";
 import { ClientComponents } from "../../dojo/create-client-components";
-import { divideByPrecision, gramToKg } from "../../utils";
+import { Troops, TroopType } from "../../types";
+import { gramToKg } from "../../utils";
 
 export const getRemainingCapacityInKg = (
   army: ComponentValue<ClientComponents["Army"]["schema"]>,
@@ -34,27 +35,26 @@ export const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Arm
   return (knights + crossbowmen + paladins) / BigInt(RESOURCE_PRECISION);
 };
 
-export const computeTravelFoodCosts = (
-  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
-) => {
-  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
-  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
-  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
+export const computeTravelFoodCosts = (troops: Troops) => {
+  let foodConsumption;
+  const troopCount = Number(troops.count);
 
-  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
-  const knightCount = divideByPrecision(Number(troops?.knight_count));
-  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
+  switch (troops.type) {
+    case TroopType.Paladin:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
+      break;
+    case TroopType.Knight:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
+      break;
+    case TroopType.Crossbowman:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
+      break;
+    default:
+      throw new Error("Invalid troop type");
+  }
 
-  const paladinWheatConsumption = paladinFoodConsumption.travelWheatBurnAmount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.travelWheatBurnAmount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.travelWheatBurnAmount * crossbowmanCount;
-
-  const paladinFishConsumption = paladinFoodConsumption.travelFishBurnAmount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.travelFishBurnAmount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.travelFishBurnAmount * crossbowmanCount;
-
-  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
-  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
+  const wheatPayAmount = foodConsumption.travelWheatBurnAmount * troopCount;
+  const fishPayAmount = foodConsumption.travelFishBurnAmount * troopCount;
 
   return {
     wheatPayAmount,
@@ -62,27 +62,26 @@ export const computeTravelFoodCosts = (
   };
 };
 
-export const computeExploreFoodCosts = (
-  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
-) => {
-  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
-  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
-  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
+export const computeExploreFoodCosts = (troops: Troops) => {
+  let foodConsumption;
+  const troopCount = Number(troops.count);
 
-  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
-  const knightCount = divideByPrecision(Number(troops?.knight_count));
-  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
+  switch (troops.type) {
+    case TroopType.Paladin:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
+      break;
+    case TroopType.Knight:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
+      break;
+    case TroopType.Crossbowman:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
+      break;
+    default:
+      throw new Error("Invalid troop type");
+  }
 
-  const paladinWheatConsumption = paladinFoodConsumption.exploreWheatBurnAmount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.exploreWheatBurnAmount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.exploreWheatBurnAmount * crossbowmanCount;
-
-  const paladinFishConsumption = paladinFoodConsumption.exploreFishBurnAmount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.exploreFishBurnAmount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.exploreFishBurnAmount * crossbowmanCount;
-
-  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
-  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
+  const wheatPayAmount = foodConsumption.exploreWheatBurnAmount * troopCount;
+  const fishPayAmount = foodConsumption.exploreFishBurnAmount * troopCount;
 
   return {
     wheatPayAmount,

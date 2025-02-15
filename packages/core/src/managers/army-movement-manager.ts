@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, DojoAccount, multiplyByPrecision } from "..";
+import { Biome, DojoAccount, getArmyTroops, multiplyByPrecision } from "..";
 import {
   BiomeType,
   CapacityConfigCategory,
@@ -63,7 +63,12 @@ export class ArmyMovementManager {
     }
 
     const entityArmy = getComponentValue(this.components.Army, this.entity);
-    const exploreFoodCosts = computeExploreFoodCosts(entityArmy?.troops);
+    const exploreFoodCosts = entityArmy
+      ? computeExploreFoodCosts(getArmyTroops(entityArmy?.troops))
+      : {
+          wheatPayAmount: 0,
+          fishPayAmount: 0,
+        };
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
     if (fish < multiplyByPrecision(exploreFoodCosts.fishPayAmount)) {
@@ -87,7 +92,12 @@ export class ArmyMovementManager {
     const maxStaminaSteps = Math.floor(stamina.amount / minTravelStaminaCost);
 
     const entityArmy = getComponentValue(this.components.Army, this.entity);
-    const travelFoodCosts = computeTravelFoodCosts(entityArmy?.troops);
+    const travelFoodCosts = entityArmy
+      ? computeTravelFoodCosts(getArmyTroops(entityArmy.troops))
+      : {
+          wheatPayAmount: 0,
+          fishPayAmount: 0,
+        };
 
     const { wheat, fish } = this.getFood(currentDefaultTick);
     const maxTravelWheatSteps = Math.floor(wheat / multiplyByPrecision(travelFoodCosts.wheatPayAmount));
@@ -436,11 +446,12 @@ export class ArmyMovementManager {
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
     const entityArmy = getComponentValue(this.components.Army, this.entity);
+    if (!entityArmy) return;
     let costs = { wheatPayAmount: 0, fishPayAmount: 0 };
     if (travelType === TravelTypes.Explore) {
-      costs = computeExploreFoodCosts(entityArmy?.troops);
+      costs = computeExploreFoodCosts(getArmyTroops(entityArmy.troops));
     } else {
-      costs = computeTravelFoodCosts(entityArmy?.troops);
+      costs = computeTravelFoodCosts(getArmyTroops(entityArmy.troops));
     }
 
     this.wheatManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.wheatPayAmount)));

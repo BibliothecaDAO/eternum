@@ -310,7 +310,7 @@ export interface RemoveLiquidityProps extends SystemSigner {
   shares: num.BigNumberish;
 }
 
-export interface Troops {
+export interface TroopsLegacy {
   knight_count: num.BigNumberish;
   paladin_count: num.BigNumberish;
   crossbowman_count: num.BigNumberish;
@@ -328,13 +328,13 @@ export interface ArmyDeleteProps extends SystemSigner {
 export interface ArmyBuyTroopsProps extends SystemSigner {
   army_id: num.BigNumberish;
   payer_id: num.BigNumberish;
-  troops: Troops;
+  troops: TroopsLegacy;
 }
 
 export interface ArmyMergeTroopsProps extends SystemSigner {
   from_army_id: num.BigNumberish;
   to_army_id: num.BigNumberish;
-  troops: Troops;
+  troops: TroopsLegacy;
 }
 
 export interface BattleStartProps extends SystemSigner {

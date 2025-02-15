@@ -19,7 +19,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   const dojo = useDojo();
   const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
   const armyManager = useMemo(() => {
-    return new ArmyMovementManager(dojo.setup.components, dojo.network.provider, army.entity_id);
+    return new ArmyMovementManager(dojo.setup.components, dojo.network.provider, army.entityId);
   }, [army]);
   const food = useMemo(() => armyManager.getFood(getBlockTimestamp().currentDefaultTick), [armyManager]);
 
@@ -33,7 +33,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
 
   const stamina = useMemo(() => {
-    const staminaManager = new StaminaManager(dojo.setup.components, army.entity_id);
+    const staminaManager = new StaminaManager(dojo.setup.components, army.entityId);
     return staminaManager.getStamina(getBlockTimestamp().currentArmiesTick);
   }, [army]);
 

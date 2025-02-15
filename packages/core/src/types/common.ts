@@ -46,7 +46,9 @@ export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & 
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
 };
 
-export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
+export type ArmyInfo = {
+  entityId: ID;
+  troops: Troops;
   name: string;
   isMine: boolean;
   isMercenary: boolean;
@@ -68,6 +70,7 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
 };
 
 export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+  entityId: ID;
   isMine: boolean;
   isMercenary: boolean;
   name: string;
@@ -215,11 +218,23 @@ export interface Health {
   lifetime: bigint;
 }
 
+export interface Troops {
+  count: number;
+  type: TroopType;
+  tier: 1 | 2 | 3;
+}
+
 export enum TroopType {
   Knight = "Knight",
   Crossbowman = "Crossbowman",
   Paladin = "Paladin",
 }
+
+export type TroopInfo = {
+  type: TroopType;
+  count: number;
+  label: string;
+};
 
 export interface CombatResultInterface {
   attackerRealmEntityId: ID;

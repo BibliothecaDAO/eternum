@@ -12,6 +12,7 @@ import {
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
+  getArmyTroops,
   getBalance,
   ID,
   ResourcesIds,
@@ -134,8 +135,8 @@ export const ActionInfo = memo(() => {
 
   const costs = useMemo(
     () => ({
-      travelFoodCosts: computeTravelFoodCosts(selectedEntityTroops),
-      exploreFoodCosts: computeExploreFoodCosts(selectedEntityTroops),
+      travelFoodCosts: computeTravelFoodCosts(getArmyTroops(selectedEntityTroops)),
+      exploreFoodCosts: computeExploreFoodCosts(getArmyTroops(selectedEntityTroops)),
     }),
     [selectedEntityTroops],
   );

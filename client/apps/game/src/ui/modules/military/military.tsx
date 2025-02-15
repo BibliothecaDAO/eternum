@@ -1,6 +1,5 @@
 import { EntityArmyList } from "@/ui/components/military/army-list";
 import { EntitiesArmyTable } from "@/ui/components/military/entities-army-table";
-import { UserBattles } from "@/ui/components/military/user-battles";
 import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, getStructure, ID } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -31,7 +30,6 @@ export const Military = ({ entityId, className }: { entityId: ID | undefined; cl
         selectedStructure && <EntityArmyList structure={selectedStructure} />
       ),
     },
-    { label: "Battles", component: <UserBattles /> },
   ];
 
   return (
