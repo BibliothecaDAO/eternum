@@ -3,7 +3,7 @@ import { configManager } from "..";
 import { RESOURCE_PRECISION, ResourcesIds } from "../../constants";
 import { ClientComponents } from "../../dojo/create-client-components";
 import { Troops, TroopType } from "../../types";
-import { gramToKg } from "../../utils";
+import { divideByPrecision, gramToKg } from "../../utils";
 
 export const getRemainingCapacityInKg = (
   army: ComponentValue<ClientComponents["Army"]["schema"]>,
@@ -37,7 +37,7 @@ export const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Arm
 
 export const computeTravelFoodCosts = (troops: Troops) => {
   let foodConsumption;
-  const troopCount = Number(troops.count);
+  const troopCount = divideByPrecision(troops.count);
 
   switch (troops.type) {
     case TroopType.Paladin:
@@ -64,7 +64,7 @@ export const computeTravelFoodCosts = (troops: Troops) => {
 
 export const computeExploreFoodCosts = (troops: Troops) => {
   let foodConsumption;
-  const troopCount = Number(troops.count);
+  const troopCount = divideByPrecision(troops.count);
 
   switch (troops.type) {
     case TroopType.Paladin:

@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, DojoAccount, getArmyTroops, multiplyByPrecision } from "..";
+import { Biome, divideByPrecision, DojoAccount, getArmyTroops, multiplyByPrecision } from "..";
 import {
   BiomeType,
   CapacityConfigCategory,
@@ -71,10 +71,10 @@ export class ArmyMovementManager {
         };
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    if (fish < multiplyByPrecision(exploreFoodCosts.fishPayAmount)) {
+    if (fish < exploreFoodCosts.fishPayAmount) {
       return false;
     }
-    if (wheat < multiplyByPrecision(exploreFoodCosts.wheatPayAmount)) {
+    if (wheat < exploreFoodCosts.wheatPayAmount) {
       return false;
     }
 
@@ -100,8 +100,8 @@ export class ArmyMovementManager {
         };
 
     const { wheat, fish } = this.getFood(currentDefaultTick);
-    const maxTravelWheatSteps = Math.floor(wheat / multiplyByPrecision(travelFoodCosts.wheatPayAmount));
-    const maxTravelFishSteps = Math.floor(fish / multiplyByPrecision(travelFoodCosts.fishPayAmount));
+    const maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
+    const maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
     return Math.min(maxStaminaSteps, maxTravelSteps);
   };
@@ -116,8 +116,8 @@ export class ArmyMovementManager {
     const fishBalance = this.fishManager.balance(currentDefaultTick);
 
     return {
-      wheat: wheatBalance,
-      fish: fishBalance,
+      wheat: divideByPrecision(wheatBalance),
+      fish: divideByPrecision(fishBalance),
     };
   }
 
@@ -454,6 +454,7 @@ export class ArmyMovementManager {
       costs = computeTravelFoodCosts(getArmyTroops(entityArmy.troops));
     }
 
+    // need to add back precision for optimistic resource update
     this.wheatManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.wheatPayAmount)));
     this.fishManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.fishPayAmount)));
   };
