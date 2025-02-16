@@ -12,6 +12,11 @@ export default createApp({
     experimental: {
       asyncContext: true,
     },
+    esbuild: {
+      options: {
+        target: "es2022",
+      },
+    },
   },
   routers: [
     {
