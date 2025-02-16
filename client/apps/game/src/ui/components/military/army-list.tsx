@@ -10,12 +10,6 @@ import { useMemo, useState } from "react";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
 
-enum Loading {
-  None,
-  CreateDefensive,
-  CreateAttacking,
-}
-
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
   const dojo = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -39,9 +33,9 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
 
   const troopConfig = configManager.getTroopConfig();
 
-  const [loading, setLoading] = useState<Loading>(Loading.None);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const maxAmountOfAttackingArmies = useMemo(() => {
+  const maxAmountOfArmies = useMemo(() => {
     const maxWithBuildings =
       troopConfig.baseArmyNumberForStructure +
       existingBuildings.filter(
@@ -64,55 +58,46 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     return structureArmies.filter((army) => army.protectee).length;
   }, [structureArmies]);
 
-  const canCreateProtector = useMemo(
-    () => numberDefensiveArmies < MAX_AMOUNT_OF_DEFENSIVE_ARMIES,
-    [numberDefensiveArmies],
-  );
-
   const isRealm = structure.category === StructureType[StructureType.Realm];
 
   const handleCreateArmy = (is_defensive_army: boolean) => {
     if (!structure.entity_id) throw new Error("Structure's entity id is undefined");
-    setLoading(is_defensive_army ? Loading.CreateDefensive : Loading.CreateAttacking);
+    setLoading(true);
     create_army({
       signer: account,
       army_owner_id: structure.entity_id,
       is_defensive_army,
     }).finally(() => {
-      setLoading(Loading.None);
+      setLoading(false);
     });
   };
   return (
-    <div className="military-panel-selector p-2">
+    <div className="military-panel-selector p-4 bg-brown/90 rounded-lg">
       <Headline>
-        <div className="flex gap-2">
-          <div className="self-center text-lg">{structure.name}</div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="text-xl font-bold text-gold">{structure.name}</div>
           <HintModalButton section={HintSection.Combat} />
         </div>
       </Headline>
 
-      {/* <div className="px-3 py-2 bg-redish/20 font-bold">
-        Build military buildings to increase your current max number of attacking armies. Realms can support up to{" "}
-        {troopConfig.maxArmiesPerStructure - 1} attacking armies.
-      </div> */}
-
-      <div className="flex justify-between">
-        <div
-          className={`mt-2 font-bold ${numberAttackingArmies < maxAmountOfAttackingArmies ? "text-green" : "text-red"}`}
-        >
-          {numberAttackingArmies} / {maxAmountOfAttackingArmies} attacking armies
+      <div className="grid grid-cols-3 gap-4 p-3 bg-brown/90 rounded-md">
+        <div className="text-center">
+          <div className="text-sm text-gold">Attacking</div>
+          <div className="text-lg font-bold text-gold/90">{numberAttackingArmies}</div>
         </div>
-
-        <div
-          className={`mt-2 font-bold ${
-            numberDefensiveArmies < MAX_AMOUNT_OF_DEFENSIVE_ARMIES ? "text-green" : "text-red"
-          }`}
-        >
-          {numberDefensiveArmies} / {MAX_AMOUNT_OF_DEFENSIVE_ARMIES} defending army
+        <div className="text-center">
+          <div className="text-sm text-gold">Defending</div>
+          <div className="text-lg font-bold text-gold/90">{numberDefensiveArmies}</div>
+        </div>
+        <div className="text-center">
+          <div className="text-sm text-gold">Total</div>
+          <div className="text-lg font-bold text-gold/90">
+            {numberAttackingArmies + numberDefensiveArmies} / {maxAmountOfArmies}
+          </div>
         </div>
       </div>
 
-      <div className="flex justify-between my-4">
+      <div className="flex justify-center my-6">
         <div
           onMouseEnter={() => {
             if (!isRealm) {
@@ -125,30 +110,22 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
           onMouseLeave={() => setTooltip(null)}
         >
           <Button
-            isLoading={loading === Loading.CreateAttacking}
+            isLoading={loading}
             variant="primary"
             onClick={() => handleCreateArmy(false)}
-            disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
-            className="attack-army-selector"
+            disabled={loading || numberAttackingArmies + numberDefensiveArmies >= maxAmountOfArmies || !isRealm}
+            className="attack-army-selector px-6 py-2 text-lg"
           >
-            Create attacking Army
+            Create Army
           </Button>
         </div>
-
-        <Button
-          className="defense-army-selector"
-          isLoading={loading === Loading.CreateDefensive}
-          variant="primary"
-          onClick={() => handleCreateArmy(true)}
-          disabled={loading !== Loading.None || !canCreateProtector}
-        >
-          Create Defense Army
-        </Button>
       </div>
 
-      {structureArmies.map((army) => (
-        <ArmyChip key={army.entityId} className="my-2" army={army} showButtons />
-      ))}
+      <div className="space-y-3">
+        {structureArmies.map((army) => (
+          <ArmyChip key={army.entityId} className="w-full" army={army} showButtons />
+        ))}
+      </div>
     </div>
   );
 };
