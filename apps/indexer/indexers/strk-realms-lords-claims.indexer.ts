@@ -72,7 +72,7 @@ export function createIndexer<
 
       for (const event of events) {
         const { args, transactionHash } = decodeEvent({
-          abi,
+          abi: REALMS_ABI,
           eventName:
             "strealm::components::strealm::StRealmComponent::RewardClaimed",
           event,
@@ -92,7 +92,7 @@ export function createIndexer<
   });
 }
 
-const abi = [
+export const REALMS_ABI = [
   {
     name: "ERC721Metadata",
     type: "impl",

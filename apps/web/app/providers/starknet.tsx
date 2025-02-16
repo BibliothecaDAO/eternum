@@ -106,7 +106,7 @@ export function StarknetProvider({
   });
 
   const chain = env.VITE_PUBLIC_CHAIN === "mainnet" ? mainnet : sepolia;
-  console.log(chain);
+
   return (
     <StarknetConfig
       chains={[chain]}

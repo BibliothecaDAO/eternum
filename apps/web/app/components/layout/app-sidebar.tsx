@@ -106,8 +106,8 @@ const data = {
 
       items: [
         {
-          title: "Delegates List",
-          url: "/coming-soon",
+          title: "Delegate List",
+          url: "/delegate/list",
         },
         {
           title: "Your Profile",

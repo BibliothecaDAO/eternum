@@ -1,40 +1,51 @@
-import { Separator } from "@radix-ui/react-separator";
-import { SidebarTrigger, useSidebar } from "../ui/sidebar";
-import { Breadcrumbs } from "./breadcrumbs";
-import { StarknetWalletButton } from "./starknet-wallet-button";
-import { useAccount, useDisconnect, useExplorer } from "@starknet-react/core";
-import { Button } from "../ui/button";
-import { cn, shortenAddress } from "@/utils/utils";
-import { ModeToggle } from "./mode-toggle";
-import { Link } from "@tanstack/react-router";
-
 import RWLogo from "@/components/icons/rw-logo.svg?react";
+import { toast } from "@/hooks/use-toast";
+import useIsWrongNetwork from "@/hooks/use-wrong-network";
+import { cn, shortenAddress } from "@/utils/utils";
+import { Separator } from "@radix-ui/react-separator";
+import { useAccount, useDisconnect, useExplorer } from "@starknet-react/core";
+import { Link } from "@tanstack/react-router";
+import { env } from "env";
+import { Check, Copy, ExternalLink, Unplug } from "lucide-react";
+
+import { Avatar, AvatarImage } from "../ui/avatar";
+import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Avatar, AvatarImage } from "../ui/avatar";
-import { Check, Copy, ExternalLink, Unplug } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { SidebarTrigger, useSidebar } from "../ui/sidebar";
+import { Breadcrumbs } from "./breadcrumbs";
+import { ModeToggle } from "./mode-toggle";
+import { StarknetWalletButton } from "./starknet-wallet-button";
 
 export function Header() {
   const { address } = useAccount();
   const { open } = useSidebar();
   const { disconnect } = useDisconnect();
   const explorer = useExplorer();
+  const { isWrongNetwork, setIsWrongNetwork } = useIsWrongNetwork();
+
   return (
     <header
       className={cn(
-        "flex sticky  z-50 top-0 shrink-0 items-center transition-[width,height] ease-linear  border-b bg-sidebar"
+        "bg-sidebar sticky top-0 z-50 flex shrink-0 items-center border-b transition-[width,height] ease-linear",
       )}
     >
-      <div className="flex w-full gap-2 h-(--header-height)">
+      <div className="h-(--header-height) flex w-full gap-2">
         <div
           className={
             `${open ? "w-(--sidebar-width)" : "w-(--sidebar-width-icon)"}` +
-            " border-r flex items-center justify-center"
+            " flex items-center justify-center border-r"
           }
         >
           <Link to="/">
@@ -46,8 +57,8 @@ export function Header() {
             />
           </Link>
         </div>
-        <div className="flex justify-between items-center flex-1 px-4">
-          <div className="flex justify-between items-center gap-2">
+        <div className="flex flex-1 items-center justify-between px-4">
+          <div className="flex items-center justify-between gap-2">
             <SidebarTrigger className="-ml-1" />
             <ModeToggle />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -61,7 +72,7 @@ export function Header() {
                   size="lg"
                   className="flex items-center gap-2 rounded px-3"
                 >
-                  <Avatar className="size-6 mr-1">
+                  <Avatar className="mr-1 size-6">
                     <AvatarImage
                       src={`https://api.dicebear.com/6.x/bottts-neutral/svg?seed=${address}`}
                     />
@@ -72,7 +83,7 @@ export function Header() {
               <DropdownMenuContent>
                 <DropdownMenuLabel className="flex flex-col gap-6 p-4">
                   <div className="flex items-center gap-2">
-                    <Avatar className="size-8 mr-1">
+                    <Avatar className="mr-1 size-8">
                       <AvatarImage
                         src={`https://api.dicebear.com/6.x/bottts-neutral/svg?seed=${address}`}
                       />
@@ -125,6 +136,17 @@ export function Header() {
           ) : (
             <StarknetWalletButton />
           )}
+          <Dialog open={isWrongNetwork}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Wrong Network</DialogTitle>
+              </DialogHeader>
+              <DialogDescription>
+                You are on the wrong network. Please switch to{" "}
+                {env.VITE_PUBLIC_CHAIN}
+              </DialogDescription>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </header>

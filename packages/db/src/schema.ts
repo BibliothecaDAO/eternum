@@ -12,6 +12,10 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+import { int8range } from "./int8range";
 
 export const bridgeEventTypeEnum = pgEnum("BridgeEventType", [
   "deposit_initiated_l1",
@@ -141,7 +145,7 @@ export const delegates = pgTable(
   {
     uid: uuid("uid").defaultRandom().primaryKey().notNull(),
     // TODO: failed to parse database type 'int8range'
-    //block_range: int8range("block_range").notNull(),
+    block_range: int8range("block_range").notNull(),
     id: varchar("id", { length: 256 }).notNull(),
     governance: varchar("governance", { length: 256 }),
     user: varchar("user", { length: 256 }).notNull(),
@@ -206,3 +210,34 @@ export const delegateProfiles = pgTable(
     };
   },
 );
+
+export const delegatesRelations = relations(delegates, ({ one }) => ({
+  delegateProfile: one(delegateProfiles),
+  governance: one(governances),
+}));
+
+export const delegateProfilesRelations = relations(
+  delegateProfiles,
+  ({ one }) => ({
+    delegate: one(delegates, {
+      fields: [delegateProfiles.delegateId],
+      references: [delegates.user],
+    }),
+  }),
+);
+
+export const CreateDelegateProfileSchema = createInsertSchema(
+  delegateProfiles,
+  {
+    statement: z.string(),
+    interests: z.string().array().optional(),
+    twitter: z.string().optional(),
+    github: z.string().optional(),
+    telegram: z.string().optional(),
+    discord: z.string().optional(),
+  },
+).omit({
+  delegateId: true,
+  createdAt: true,
+  updatedAt: true,
+});

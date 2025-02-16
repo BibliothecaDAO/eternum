@@ -12,13 +12,16 @@ import {
   CollectionAddresses,
   Collections,
 } from "@realms-world/constants";
-import { and, desc, eq, or } from "@realms-world/db";
+import { and, desc, eq, like, or, sql } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 import {
+  delegates,
   realmsBridgeRequests,
   realmsLordsClaims,
   velords_burns,
 } from "@realms-world/db/schema";
+
+import { withCursorPagination } from "./api/cursorPagination";
 
 const SUPPORTED_L1_CHAIN_ID =
   process.env.VITE_PUBLIC_CHAIN == "sepolia"
@@ -212,6 +215,50 @@ const appRouter = t.router({
         const data = (await response.json()) as PortfolioCollectionApiResponse;
         return data;
       }
+    }),
+  delegates: t.procedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(300).nullish(),
+          cursor: z.number().nullish(),
+          orderBy: z.string().nullish(),
+          search: z.string().nullish(),
+        })
+        .partial(),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input.limit ?? 100;
+
+      const { cursor, orderBy, search } = input;
+      const whereFilter: SQL[] = [];
+      whereFilter.push(sql`upper_inf(block_range)`);
+
+      if (search) {
+        whereFilter.push(like(delegates.id, "%" + search + "%"));
+      }
+
+      const items = await ctx.db.query.delegates.findMany({
+        limit: limit + 1,
+        where: and(...whereFilter),
+        orderBy:
+          orderBy == "desc" ? desc(delegates.delegatedVotes) : sql`RANDOM()`,
+        with: {
+          delegateProfile: true,
+        },
+      });
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (items.length > limit) {
+        const nextItem = items.pop();
+        nextCursor =
+          orderBy == "tokenHoldersRepresentedAmount"
+            ? nextItem?.tokenHoldersRepresentedAmount
+            : parseInt(nextItem?.delegatedVotes ?? "0");
+      }
+      return {
+        items,
+        nextCursor,
+      };
     }),
 });
 

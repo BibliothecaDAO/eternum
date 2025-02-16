@@ -1,9 +1,10 @@
-import { clsx  } from "clsx"
-import type {ClassValue} from "clsx";
-import { twMerge } from "tailwind-merge"
-import { validateAndParseAddress } from "starknet";
-import { ChainId } from "@realms-world/constants";
+import type { ClassValue } from "clsx";
+import { clsx } from "clsx";
 import { env } from "env";
+import { validateAndParseAddress } from "starknet";
+import { twMerge } from "tailwind-merge";
+
+import { ChainId } from "@realms-world/constants";
 
 export const SUPPORTED_L1_CHAIN_ID =
   env.VITE_PUBLIC_CHAIN == "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
@@ -13,9 +14,8 @@ export const SUPPORTED_L2_CHAIN_ID =
     ? ChainId.SN_SEPOLIA
     : ChainId.SN_MAIN;
 
-
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function shortenAddress(str = "") {
@@ -54,8 +54,20 @@ export function abbreviateNumber(value: number | string): string {
   const num = typeof value === "number" ? value : parseFloat(value);
   if (isNaN(num)) return "0";
   if (Math.abs(num) < 1e3) return num.toString();
-  if (Math.abs(num) >= 1e9) return (num / 1e9).toFixed(1).replace(/\.0$/, "") + "b";
-  if (Math.abs(num) >= 1e6) return (num / 1e6).toFixed(1).replace(/\.0$/, "") + "m";
-  if (Math.abs(num) >= 1e3) return (num / 1e3).toFixed(1).replace(/\.0$/, "") + "k";
+  if (Math.abs(num) >= 1e9)
+    return (num / 1e9).toFixed(1).replace(/\.0$/, "") + "b";
+  if (Math.abs(num) >= 1e6)
+    return (num / 1e6).toFixed(1).replace(/\.0$/, "") + "m";
+  if (Math.abs(num) >= 1e3)
+    return (num / 1e3).toFixed(1).replace(/\.0$/, "") + "k";
   return num.toString();
+}
+
+export function shortenName(name: string, charLength?: number): string {
+  if (name.length > (charLength ?? 18)) {
+    const firstPart = name.substring(0, 22);
+    return (firstPart + "...").toLowerCase();
+  } else {
+    return name.toLowerCase();
+  }
 }
