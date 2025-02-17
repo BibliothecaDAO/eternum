@@ -17,6 +17,7 @@ import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { CombatModal } from "@/ui/modules/military/combat-modal";
+import { HelpModal } from "@/ui/modules/military/help-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ActionPath,
@@ -356,6 +357,8 @@ export default class WorldmapScene extends HexagonScene {
           this.onArmyMovement(account, actionPath, selectedEntityId);
         } else if (actionType === ActionType.Attack) {
           this.onArmyAttack(account, actionPath, selectedEntityId);
+        } else if (actionType === ActionType.Help) {
+          this.onArmyHelp(account, actionPath, selectedEntityId);
         }
       }
     }
@@ -389,6 +392,18 @@ export default class WorldmapScene extends HexagonScene {
     this.state.toggleModal(
       <CombatModal
         attackerEntityId={selectedEntityId}
+        targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
+      />,
+    );
+  }
+
+  private onArmyHelp(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const targetHex = selectedPath[selectedPath.length - 1];
+
+    this.state.toggleModal(
+      <HelpModal
+        selectedEntityId={selectedEntityId}
         targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
       />,
     );
