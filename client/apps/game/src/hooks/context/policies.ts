@@ -197,10 +197,6 @@ export const policies: ContractPolicies = {
         entrypoint: "set_stamina_refill_config",
       },
       {
-        name: "set_leveling_config",
-        entrypoint: "set_leveling_config",
-      },
-      {
         name: "set_production_config",
         entrypoint: "set_production_config",
       },
@@ -467,10 +463,6 @@ export const policies: ContractPolicies = {
       {
         name: "set_address_name",
         entrypoint: "set_address_name",
-      },
-      {
-        name: "set_entity_name",
-        entrypoint: "set_entity_name",
       },
       {
         name: "world_dispatcher",

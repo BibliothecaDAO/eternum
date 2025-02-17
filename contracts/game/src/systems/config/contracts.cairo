@@ -50,11 +50,6 @@ trait IWeightConfig<T> {
 }
 
 #[starknet::interface]
-trait IBattleConfig<T> {
-    fn set_battle_config(ref self: T, battle_config: BattleConfig);
-}
-
-#[starknet::interface]
 trait ICapacityConfig<T> {
     fn set_capacity_config(ref self: T, capacity_config: CapacityConfig);
 }
@@ -110,11 +105,6 @@ trait IProductionConfig<T> {
     );
 }
 
-
-#[starknet::interface]
-trait ITravelStaminaCostConfig<T> {
-    fn set_travel_stamina_cost_config(ref self: T, travel_type: u8, cost: u16);
-}
 
 #[starknet::interface]
 trait ITroopConfig<T> {

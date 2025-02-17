@@ -4,7 +4,7 @@ import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
 import { DojoAccount } from "..";
 import {
-  CapacityConfigCategory,
+  CapacityConfig,
   FELT_CENTER,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
@@ -428,7 +428,7 @@ export class ArmyMovementManager {
   private readonly _getArmyRemainingCapacity = () => {
     const armyCapacity = getComponentValue(
       this.components.CapacityConfig,
-      getEntityIdFromKeys([BigInt(CapacityConfigCategory.Army)]),
+      getEntityIdFromKeys([BigInt(CapacityConfig.Army)]),
     );
     const armyWeight = getComponentValue(this.components.Weight, this.entity);
 

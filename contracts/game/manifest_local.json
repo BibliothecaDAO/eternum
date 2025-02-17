@@ -1252,8 +1252,8 @@
   },
   "contracts": [
     {
-      "address": "0x57b06dc40bee1bbcc9f44761303b96418becc193b5cc498b62cdaafc7f1f1bf",
-      "class_hash": "0x6ccfd72916f54ff8ad876ff6e263a9bc57fb4e803618f570c5d26f467fc22fa",
+      "address": "0x57381d9ddefd1472552527555fc84a6e53f1c10a361090e30dc5711a732bc30",
+      "class_hash": "0x268cd4e37a2bd63579f5a3715f51b6bec021f41731847f169e839c9e4580047",
       "abi": [
         {
           "type": "impl",
@@ -1481,212 +1481,8 @@
       ]
     },
     {
-      "address": "0x37755fdbaf7fee736d12791c717373a1c2e833042a7cbb38a11a1d34e166763",
-      "class_hash": "0x7bc99f046af6fb086f7317c23003e14970c72a1c52fae63b43e90b83aca1590",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "battle_pillage_systems__ContractImpl",
-          "interface_name": "dojo::contract::interface::IContract"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::interface::IContract",
-          "items": []
-        },
-        {
-          "type": "impl",
-          "name": "battle_pillage_systems__DeployedContractImpl",
-          "interface_name": "dojo::meta::interface::IDeployedResource"
-        },
-        {
-          "type": "struct",
-          "name": "core::byte_array::ByteArray",
-          "members": [
-            {
-              "name": "data",
-              "type": "core::array::Array::<core::bytes_31::bytes31>"
-            },
-            {
-              "name": "pending_word",
-              "type": "core::felt252"
-            },
-            {
-              "name": "pending_word_len",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::meta::interface::IDeployedResource",
-          "items": [
-            {
-              "type": "function",
-              "name": "dojo_name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "BattlePillageContractImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::battle_systems::IBattlePillageContract"
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::battle_systems::IBattlePillageContract",
-          "items": [
-            {
-              "type": "function",
-              "name": "battle_pillage",
-              "inputs": [
-                {
-                  "name": "army_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "structure_id",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
-        },
-        {
-          "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::iworld::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::world_provider::IWorldProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "world_dispatcher",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::world::iworld::IWorldDispatcher"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "UpgradeableImpl",
-          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::upgradeable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "constructor",
-          "name": "constructor",
-          "inputs": []
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "Upgraded",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::battle_systems::battle_pillage_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "WorldProviderEvent",
-              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "nested"
-            }
-          ]
-        }
-      ],
-      "init_calldata": [],
-      "tag": "s1_eternum-battle_pillage_systems",
-      "selector": "0x6e8963ce01de14fbf50434fd001ac86e45313c4d43e7a255192eb26dcb5d63d",
-      "systems": [
-        "battle_pillage",
-        "upgrade"
-      ]
-    },
-    {
-      "address": "0x354c8f9c5a95207c3779f99e6bc8741b09ed0e7fa099d04b11740b5e9000ebe",
-      "class_hash": "0x4c2114986dce4336d283d53a0dbbb6005b916c4d2fff68273d3ea7e2905a491",
+      "address": "0x46bad8b09ea2e1b51f026475a51b4e46c9654c8604243c0d2c85daf007a9742",
+      "class_hash": "0x13192fedfcd9232a25b675d6c3abff2087f8944430b3c42b9e9b961f761f479",
       "abi": [
         {
           "type": "impl",
@@ -1740,62 +1536,58 @@
         },
         {
           "type": "impl",
-          "name": "BattleContractImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::battle_systems::IBattleContract"
+          "name": "BattleSystemsImpl",
+          "interface_name": "s1_eternum::systems::combat::contracts::battle_systems::IBattleSystems"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::combat::BattleSide",
+          "name": "s1_eternum::models::position::Direction",
           "variants": [
             {
-              "name": "None",
+              "name": "East",
               "type": "()"
             },
             {
-              "name": "Attack",
+              "name": "NorthEast",
               "type": "()"
             },
             {
-              "name": "Defence",
+              "name": "NorthWest",
+              "type": "()"
+            },
+            {
+              "name": "West",
+              "type": "()"
+            },
+            {
+              "name": "SouthWest",
+              "type": "()"
+            },
+            {
+              "name": "SouthEast",
               "type": "()"
             }
           ]
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::battle_systems::IBattleContract",
+          "name": "s1_eternum::systems::combat::contracts::battle_systems::IBattleSystems",
           "items": [
             {
               "type": "function",
-              "name": "battle_start",
+              "name": "attack_explorer_vs_explorer",
               "inputs": [
                 {
-                  "name": "attacking_army_id",
+                  "name": "aggressor_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "defending_army_id",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "battle_force_start",
-              "inputs": [
-                {
-                  "name": "battle_id",
+                  "name": "defender_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "defending_army_id",
-                  "type": "core::integer::u32"
+                  "name": "defender_direction",
+                  "type": "s1_eternum::models::position::Direction"
                 }
               ],
               "outputs": [],
@@ -1803,67 +1595,19 @@
             },
             {
               "type": "function",
-              "name": "battle_join",
+              "name": "attack_explorer_vs_guard",
               "inputs": [
                 {
-                  "name": "battle_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "battle_side",
-                  "type": "s1_eternum::models::combat::BattleSide"
-                },
-                {
-                  "name": "army_id",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "battle_leave",
-              "inputs": [
-                {
-                  "name": "battle_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "army_id",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "battle_claim",
-              "inputs": [
-                {
-                  "name": "army_id",
+                  "name": "explorer_id",
                   "type": "core::integer::u32"
                 },
                 {
                   "name": "structure_id",
                   "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "battle_resolve",
-              "inputs": [
-                {
-                  "name": "battle_id",
-                  "type": "core::integer::u32"
                 },
                 {
-                  "name": "army_id",
-                  "type": "core::integer::u32"
+                  "name": "structure_direction",
+                  "type": "s1_eternum::models::position::Direction"
                 }
               ],
               "outputs": [],
@@ -1990,399 +1734,14 @@
       "tag": "s1_eternum-battle_systems",
       "selector": "0x7bb97d7199b14973d6f05b84579bda637cef5714be078064da3cb80d273c79b",
       "systems": [
-        "battle_start",
-        "battle_force_start",
-        "battle_join",
-        "battle_leave",
-        "battle_claim",
-        "battle_resolve",
+        "attack_explorer_vs_explorer",
+        "attack_explorer_vs_guard",
         "upgrade"
       ]
     },
     {
-      "address": "0x1bd2783d92395809c161df3eb5539504c563aff0fce74a86f7589b3e44ca349",
-      "class_hash": "0x13b0961ae49e43f0135675568514ef1b0567486595da81cd7ec7b41458bb29a",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "battle_utils_systems__ContractImpl",
-          "interface_name": "dojo::contract::interface::IContract"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::interface::IContract",
-          "items": []
-        },
-        {
-          "type": "impl",
-          "name": "battle_utils_systems__DeployedContractImpl",
-          "interface_name": "dojo::meta::interface::IDeployedResource"
-        },
-        {
-          "type": "struct",
-          "name": "core::byte_array::ByteArray",
-          "members": [
-            {
-              "name": "data",
-              "type": "core::array::Array::<core::bytes_31::bytes31>"
-            },
-            {
-              "name": "pending_word",
-              "type": "core::felt252"
-            },
-            {
-              "name": "pending_word_len",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::meta::interface::IDeployedResource",
-          "items": [
-            {
-              "type": "function",
-              "name": "dojo_name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "BattleUtilsContractImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::battle_systems::IBattleUtilsContract"
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::combat::Troops",
-          "members": [
-            {
-              "name": "knight_count",
-              "type": "core::integer::u64"
-            },
-            {
-              "name": "paladin_count",
-              "type": "core::integer::u64"
-            },
-            {
-              "name": "crossbowman_count",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "s1_eternum::models::combat::BattleSide",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Attack",
-              "type": "()"
-            },
-            {
-              "name": "Defence",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::combat::BattleArmy",
-          "members": [
-            {
-              "name": "troops",
-              "type": "s1_eternum::models::combat::Troops"
-            },
-            {
-              "name": "battle_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "battle_side",
-              "type": "s1_eternum::models::combat::BattleSide"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::combat::BattleHealth",
-          "members": [
-            {
-              "name": "current",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "lifetime",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::combat::Battle",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "attack_army",
-              "type": "s1_eternum::models::combat::BattleArmy"
-            },
-            {
-              "name": "attack_army_lifetime",
-              "type": "s1_eternum::models::combat::BattleArmy"
-            },
-            {
-              "name": "defence_army",
-              "type": "s1_eternum::models::combat::BattleArmy"
-            },
-            {
-              "name": "defence_army_lifetime",
-              "type": "s1_eternum::models::combat::BattleArmy"
-            },
-            {
-              "name": "attackers_resources_escrow_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "defenders_resources_escrow_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "attack_army_health",
-              "type": "s1_eternum::models::combat::BattleHealth"
-            },
-            {
-              "name": "defence_army_health",
-              "type": "s1_eternum::models::combat::BattleHealth"
-            },
-            {
-              "name": "attack_delta",
-              "type": "core::integer::u64"
-            },
-            {
-              "name": "defence_delta",
-              "type": "core::integer::u64"
-            },
-            {
-              "name": "last_updated",
-              "type": "core::integer::u64"
-            },
-            {
-              "name": "duration_left",
-              "type": "core::integer::u64"
-            },
-            {
-              "name": "start_at",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::combat::Army",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "troops",
-              "type": "s1_eternum::models::combat::Troops"
-            },
-            {
-              "name": "battle_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "battle_side",
-              "type": "s1_eternum::models::combat::BattleSide"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::battle_systems::IBattleUtilsContract",
-          "items": [
-            {
-              "type": "function",
-              "name": "leave_battle",
-              "inputs": [
-                {
-                  "name": "battle",
-                  "type": "s1_eternum::models::combat::Battle"
-                },
-                {
-                  "name": "army",
-                  "type": "s1_eternum::models::combat::Army"
-                }
-              ],
-              "outputs": [
-                {
-                  "type": "(s1_eternum::models::combat::Battle, s1_eternum::models::combat::Army)"
-                }
-              ],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "leave_battle_if_ended",
-              "inputs": [
-                {
-                  "name": "battle",
-                  "type": "s1_eternum::models::combat::Battle"
-                },
-                {
-                  "name": "army",
-                  "type": "s1_eternum::models::combat::Army"
-                }
-              ],
-              "outputs": [
-                {
-                  "type": "(s1_eternum::models::combat::Battle, s1_eternum::models::combat::Army)"
-                }
-              ],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
-        },
-        {
-          "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::iworld::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::world_provider::IWorldProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "world_dispatcher",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::world::iworld::IWorldDispatcher"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "UpgradeableImpl",
-          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::upgradeable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "constructor",
-          "name": "constructor",
-          "inputs": []
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "Upgraded",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::battle_systems::battle_utils_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "WorldProviderEvent",
-              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "nested"
-            }
-          ]
-        }
-      ],
-      "init_calldata": [],
-      "tag": "s1_eternum-battle_utils_systems",
-      "selector": "0x2b94e5432b691bad81584af7e9e97102aa0070f13aa91c6ff8c980e54d5ca33",
-      "systems": [
-        "leave_battle",
-        "leave_battle_if_ended",
-        "upgrade"
-      ]
-    },
-    {
-      "address": "0x26657e5b76a91799209cb38377bb5926546b6001656b37f1b24513d78bbacf6",
-      "class_hash": "0x6864aedc80bb6225552748031be796e908784337cba34a5a9e5f7b03a9751b3",
+      "address": "0x236381470fd1354eb5e404cec00c0d83c3713004b878903cb564ac6d1819251",
+      "class_hash": "0x28556e103dffdb6c3c4e1304e6f6a78cfb8258dbed1edde721ff89cff64728a",
       "abi": [
         {
           "type": "impl",
@@ -2456,10 +1815,6 @@
               "inputs": [
                 {
                   "name": "admin_address",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                },
-                {
-                  "name": "realm_l2_contract",
                   "type": "core::starknet::contract_address::ContractAddress"
                 }
               ],
@@ -2591,6 +1946,14 @@
             {
               "name": "shards_mines_fail_probability",
               "type": "core::integer::u128"
+            },
+            {
+              "name": "mine_wheat_grant_amount",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "mine_fish_grant_amount",
+              "type": "core::integer::u128"
             }
           ]
         },
@@ -2618,42 +1981,24 @@
           "interface_name": "s1_eternum::systems::config::contracts::ICapacityConfig"
         },
         {
-          "type": "enum",
-          "name": "s1_eternum::models::config::CapacityCategory",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Structure",
-              "type": "()"
-            },
-            {
-              "name": "Donkey",
-              "type": "()"
-            },
-            {
-              "name": "Army",
-              "type": "()"
-            },
-            {
-              "name": "Storehouse",
-              "type": "()"
-            }
-          ]
-        },
-        {
           "type": "struct",
           "name": "s1_eternum::models::config::CapacityConfig",
           "members": [
             {
-              "name": "category",
-              "type": "s1_eternum::models::config::CapacityCategory"
+              "name": "structure_capacity",
+              "type": "core::integer::u32"
             },
             {
-              "name": "weight_gram",
-              "type": "core::integer::u128"
+              "name": "troop_capacity",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "donkey_capacity",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "storehouse_boost_capacity",
+              "type": "core::integer::u32"
             }
           ]
         },
@@ -2677,33 +2022,6 @@
         },
         {
           "type": "impl",
-          "name": "TravelStaminaCostConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::ITravelStaminaCostConfig"
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ITravelStaminaCostConfig",
-          "items": [
-            {
-              "type": "function",
-              "name": "set_travel_stamina_cost_config",
-              "inputs": [
-                {
-                  "name": "travel_type",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "cost",
-                  "type": "core::integer::u16"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
           "name": "WeightConfigImpl",
           "interface_name": "s1_eternum::systems::config::contracts::IWeightConfig"
         },
@@ -2713,60 +2031,15 @@
           "items": [
             {
               "type": "function",
-              "name": "set_weight_config",
+              "name": "set_resource_weight_config",
               "inputs": [
                 {
-                  "name": "entity_type",
-                  "type": "core::integer::u32"
+                  "name": "resource_type",
+                  "type": "core::integer::u8"
                 },
                 {
                   "name": "weight_gram",
                   "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "BattleConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IBattleConfig"
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::config::BattleConfig",
-          "members": [
-            {
-              "name": "config_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "regular_immunity_ticks",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "hyperstructure_immunity_ticks",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "battle_delay_seconds",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IBattleConfig",
-          "items": [
-            {
-              "type": "function",
-              "name": "set_battle_config",
-              "inputs": [
-                {
-                  "name": "battle_config",
-                  "type": "s1_eternum::models::config::BattleConfig"
                 }
               ],
               "outputs": [],
@@ -2788,119 +2061,8 @@
               "name": "set_tick_config",
               "inputs": [
                 {
-                  "name": "tick_id",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "tick_interval_in_seconds",
+                  "name": "armies_tick_in_seconds",
                   "type": "core::integer::u64"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "StaminaConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IStaminaConfig"
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IStaminaConfig",
-          "items": [
-            {
-              "type": "function",
-              "name": "set_stamina_config",
-              "inputs": [
-                {
-                  "name": "unit_type",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "max_stamina",
-                  "type": "core::integer::u16"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "TravelFoodCostConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::ITravelFoodCostConfig"
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::config::TravelFoodCostConfig",
-          "members": [
-            {
-              "name": "config_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "unit_type",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "explore_wheat_burn_amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "explore_fish_burn_amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "travel_wheat_burn_amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "travel_fish_burn_amount",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ITravelFoodCostConfig",
-          "items": [
-            {
-              "type": "function",
-              "name": "set_travel_food_cost_config",
-              "inputs": [
-                {
-                  "name": "travel_food_cost_config",
-                  "type": "s1_eternum::models::config::TravelFoodCostConfig"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "StaminaRefillConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IStaminaRefillConfig"
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IStaminaRefillConfig",
-          "items": [
-            {
-              "type": "function",
-              "name": "set_stamina_refill_config",
-              "inputs": [
-                {
-                  "name": "amount_per_tick",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "start_boost_tick_count",
-                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -2922,20 +2084,20 @@
               "type": "core::integer::u128"
             },
             {
-              "name": "depreciation_percent_num",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "depreciation_percent_denom",
-              "type": "core::integer::u16"
-            },
-            {
               "name": "wheat_burn_per_labor",
               "type": "core::integer::u128"
             },
             {
               "name": "fish_burn_per_labor",
               "type": "core::integer::u128"
+            },
+            {
+              "name": "depreciation_percent_num",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "depreciation_percent_denom",
+              "type": "core::integer::u16"
             }
           ]
         },
@@ -2980,12 +2142,8 @@
           "items": [
             {
               "type": "function",
-              "name": "set_speed_config",
+              "name": "set_donkey_speed_config",
               "inputs": [
-                {
-                  "name": "entity_type",
-                  "type": "core::integer::u32"
-                },
                 {
                   "name": "sec_per_km",
                   "type": "core::integer::u16"
@@ -3320,53 +2478,6 @@
                 },
                 {
                   "name": "cost_of_building",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "IMercenariesConfig",
-          "interface_name": "s1_eternum::systems::config::contracts::IMercenariesConfig"
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IMercenariesConfig",
-          "items": [
-            {
-              "type": "function",
-              "name": "set_mercenaries_config",
-              "inputs": [
-                {
-                  "name": "knights_lower_bound",
-                  "type": "core::integer::u64"
-                },
-                {
-                  "name": "knights_upper_bound",
-                  "type": "core::integer::u64"
-                },
-                {
-                  "name": "paladins_lower_bound",
-                  "type": "core::integer::u64"
-                },
-                {
-                  "name": "paladins_upper_bound",
-                  "type": "core::integer::u64"
-                },
-                {
-                  "name": "crossbowmen_lower_bound",
-                  "type": "core::integer::u64"
-                },
-                {
-                  "name": "crossbowmen_upper_bound",
-                  "type": "core::integer::u64"
-                },
-                {
-                  "name": "rewards",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
@@ -3726,15 +2837,10 @@
         "set_quest_reward_config",
         "set_map_config",
         "set_capacity_config",
-        "set_travel_stamina_cost_config",
-        "set_weight_config",
-        "set_battle_config",
+        "set_resource_weight_config",
         "set_tick_config",
-        "set_stamina_config",
-        "set_travel_food_cost_config",
-        "set_stamina_refill_config",
         "set_production_config",
-        "set_speed_config",
+        "set_donkey_speed_config",
         "set_hyperstructure_config",
         "set_bank_config",
         "set_troop_config",
@@ -3742,7 +2848,6 @@
         "set_population_config",
         "set_building_general_config",
         "set_building_config",
-        "set_mercenaries_config",
         "set_resource_bridge_config",
         "set_resource_bridge_fee_split_config",
         "set_resource_bridge_whitelist_config",
@@ -3753,8 +2858,8 @@
       ]
     },
     {
-      "address": "0x20c3f0a5536adbb30f41e216b7591c4daa93a855f3907d243d3d6263e339bd8",
-      "class_hash": "0x78637d522d31981ebb84c9f50c9c0d28292ce3c999d7ba18087d45a3cdda4e1",
+      "address": "0xb67902266941de88a0bd3ebc4d33f26226f86d0bced88bb28d470b3d0a39b7",
+      "class_hash": "0x6d48ac4cab83a684990ef95659e2a869ad3ca38c75875534279ad28244b6fcb",
       "abi": [
         {
           "type": "impl",
@@ -3991,8 +3096,8 @@
       ]
     },
     {
-      "address": "0x5df70b74005c3bf8018845a32f3ac20ff5cc002453ce3a09757dd43fcc3c4fa",
-      "class_hash": "0x3f3f2fb4c575259b3dad58d182f9441659ebe64a8e24e83628eb7aa6146fd97",
+      "address": "0xfd4197d96d48154a8ebbb4c34e1c22050f03c5ed4ce14622056222a1663874",
+      "class_hash": "0x21a70174c8406c026ee234d1b9643dc17b0e398578e1414d28f20167730ddd5",
       "abi": [
         {
           "type": "impl",
@@ -4201,182 +3306,6 @@
       "selector": "0x4d5cfcb90997c42faaec636a440b73118f54d7e5321a8e6e134bdb0ac946333",
       "systems": [
         "mint",
-        "upgrade"
-      ]
-    },
-    {
-      "address": "0x7949a82277a5db643cc66c206fc6be29fc81c62276c5c0591aa29f57b52142a",
-      "class_hash": "0x385452da5329e9a87a60ec01375c8f2f3fc0cc1613d206c40553619fe9d0aa",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "donkey_systems__ContractImpl",
-          "interface_name": "dojo::contract::interface::IContract"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::interface::IContract",
-          "items": []
-        },
-        {
-          "type": "impl",
-          "name": "donkey_systems__DeployedContractImpl",
-          "interface_name": "dojo::meta::interface::IDeployedResource"
-        },
-        {
-          "type": "struct",
-          "name": "core::byte_array::ByteArray",
-          "members": [
-            {
-              "name": "data",
-              "type": "core::array::Array::<core::bytes_31::bytes31>"
-            },
-            {
-              "name": "pending_word",
-              "type": "core::felt252"
-            },
-            {
-              "name": "pending_word_len",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::meta::interface::IDeployedResource",
-          "items": [
-            {
-              "type": "function",
-              "name": "dojo_name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
-        },
-        {
-          "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::iworld::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::world_provider::IWorldProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "world_dispatcher",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::world::iworld::IWorldDispatcher"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "UpgradeableImpl",
-          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::upgradeable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "constructor",
-          "name": "constructor",
-          "inputs": []
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "Upgraded",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "s1_eternum::systems::transport::contracts::donkey_systems::donkey_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "WorldProviderEvent",
-              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "nested"
-            }
-          ]
-        }
-      ],
-      "init_calldata": [],
-      "tag": "s1_eternum-donkey_systems",
-      "selector": "0x3d69880d4cc048ff9cbc100f9667649cb239b66e1245bf3cccb47119ea29a95",
-      "systems": [
         "upgrade"
       ]
     },
@@ -4680,8 +3609,8 @@
       ]
     },
     {
-      "address": "0x374474aa22c4b717fd112e2ff7c57eb47378b548558bcbdc116406e4a173c61",
-      "class_hash": "0x7c004fc9879439d8bda39aa03c3966ecc7a8635164061c27cf08e0230c371af",
+      "address": "0xca9be3b91e540e3cdf26e925e3e951f38504a472559e6fe33b6cc7404227c7",
+      "class_hash": "0x823d9ac91606b877e4aef8dd45b5fdad8dc9815746ed4acb63247e565cb4a4",
       "abi": [
         {
           "type": "impl",
@@ -5057,8 +3986,8 @@
       ]
     },
     {
-      "address": "0x3508d386f946b77f313914eee2cf430613f4d4c1ed801aabfe4ec432e6cd1ab",
-      "class_hash": "0xd170dd9ec113d1b3e6191200b6e539c908d0a371579651ed36819e75cd837f",
+      "address": "0x164c6fef02152f4d6dcf2d946c62cbf811a57c134eeae862d3f92d50eac47c7",
+      "class_hash": "0x50c1e027f6858824e7261283132deddf40f1c9d06268dd0f52380f4ac818db5",
       "abi": [
         {
           "type": "impl",
@@ -5194,13 +4123,13 @@
                 {
                   "name": "shares",
                   "type": "cubit::f128::types::fixed::Fixed"
-                }
-              ],
-              "outputs": [
+                },
                 {
-                  "type": "core::integer::u32"
+                  "name": "player_resource_index",
+                  "type": "core::integer::u8"
                 }
               ],
+              "outputs": [],
               "state_mutability": "external"
             }
           ]
@@ -5326,525 +4255,6 @@
       "systems": [
         "add",
         "remove",
-        "upgrade"
-      ]
-    },
-    {
-      "address": "0x3c07b3b21ea2778a57d78114c1982a43e22e108cdfc5bdf4292e083817b5508",
-      "class_hash": "0x5f25ffbf0d583234c8e903a56fbafadf871158cb0d6f2b569883a31b02873ac",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "map_generation_systems__ContractImpl",
-          "interface_name": "dojo::contract::interface::IContract"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::interface::IContract",
-          "items": []
-        },
-        {
-          "type": "impl",
-          "name": "map_generation_systems__DeployedContractImpl",
-          "interface_name": "dojo::meta::interface::IDeployedResource"
-        },
-        {
-          "type": "struct",
-          "name": "core::byte_array::ByteArray",
-          "members": [
-            {
-              "name": "data",
-              "type": "core::array::Array::<core::bytes_31::bytes31>"
-            },
-            {
-              "name": "pending_word",
-              "type": "core::felt252"
-            },
-            {
-              "name": "pending_word_len",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::meta::interface::IDeployedResource",
-          "items": [
-            {
-              "type": "function",
-              "name": "dojo_name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "MapGenerationSystemsImpl",
-          "interface_name": "s1_eternum::systems::map::map_generation::IMapGenerationSystems"
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::owner::EntityOwner",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "entity_owner_id",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::position::Coord",
-          "members": [
-            {
-              "name": "x",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "y",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "core::bool",
-          "variants": [
-            {
-              "name": "False",
-              "type": "()"
-            },
-            {
-              "name": "True",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::integer::u256",
-          "members": [
-            {
-              "name": "low",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "high",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::map::map_generation::IMapGenerationSystems",
-          "items": [
-            {
-              "type": "function",
-              "name": "discover_shards_mine",
-              "inputs": [
-                {
-                  "name": "unit_entity_owner",
-                  "type": "s1_eternum::models::owner::EntityOwner"
-                },
-                {
-                  "name": "coord",
-                  "type": "s1_eternum::models::position::Coord"
-                }
-              ],
-              "outputs": [
-                {
-                  "type": "core::bool"
-                }
-              ],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "add_mercenaries_to_structure",
-              "inputs": [
-                {
-                  "name": "randomness",
-                  "type": "core::integer::u256"
-                },
-                {
-                  "name": "structure_entity_id",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
-        },
-        {
-          "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::iworld::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::world_provider::IWorldProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "world_dispatcher",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::world::iworld::IWorldDispatcher"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "UpgradeableImpl",
-          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::upgradeable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "constructor",
-          "name": "constructor",
-          "inputs": []
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "Upgraded",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "s1_eternum::systems::map::map_generation::map_generation_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "WorldProviderEvent",
-              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "nested"
-            }
-          ]
-        }
-      ],
-      "init_calldata": [],
-      "tag": "s1_eternum-map_generation_systems",
-      "selector": "0x6dbd060aee5437a68789ce311c098ad9e39dddab8447b335c10007afae949c6",
-      "systems": [
-        "discover_shards_mine",
-        "add_mercenaries_to_structure",
-        "upgrade"
-      ]
-    },
-    {
-      "address": "0x3e39ad7443b34ad412abb0d61b16e9f3962be3a6ab738cd63cb3624b51868d3",
-      "class_hash": "0x11bfd712b2ef0e4c5d5c2ba5e2be96f2277d2902a03c92d7e9c875182565df0",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "map_systems__ContractImpl",
-          "interface_name": "dojo::contract::interface::IContract"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::interface::IContract",
-          "items": []
-        },
-        {
-          "type": "impl",
-          "name": "map_systems__DeployedContractImpl",
-          "interface_name": "dojo::meta::interface::IDeployedResource"
-        },
-        {
-          "type": "struct",
-          "name": "core::byte_array::ByteArray",
-          "members": [
-            {
-              "name": "data",
-              "type": "core::array::Array::<core::bytes_31::bytes31>"
-            },
-            {
-              "name": "pending_word",
-              "type": "core::felt252"
-            },
-            {
-              "name": "pending_word_len",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::meta::interface::IDeployedResource",
-          "items": [
-            {
-              "type": "function",
-              "name": "dojo_name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "MapSystemsImpl",
-          "interface_name": "s1_eternum::systems::map::contracts::IMapSystems"
-        },
-        {
-          "type": "enum",
-          "name": "s1_eternum::models::position::Direction",
-          "variants": [
-            {
-              "name": "East",
-              "type": "()"
-            },
-            {
-              "name": "NorthEast",
-              "type": "()"
-            },
-            {
-              "name": "NorthWest",
-              "type": "()"
-            },
-            {
-              "name": "West",
-              "type": "()"
-            },
-            {
-              "name": "SouthWest",
-              "type": "()"
-            },
-            {
-              "name": "SouthEast",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::map::contracts::IMapSystems",
-          "items": [
-            {
-              "type": "function",
-              "name": "explore",
-              "inputs": [
-                {
-                  "name": "unit_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "direction",
-                  "type": "s1_eternum::models::position::Direction"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
-        },
-        {
-          "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::iworld::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::world_provider::IWorldProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "world_dispatcher",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::world::iworld::IWorldDispatcher"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "UpgradeableImpl",
-          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::upgradeable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "constructor",
-          "name": "constructor",
-          "inputs": []
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "Upgraded",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "s1_eternum::systems::map::contracts::map_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "WorldProviderEvent",
-              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "nested"
-            }
-          ]
-        }
-      ],
-      "init_calldata": [],
-      "tag": "s1_eternum-map_systems",
-      "selector": "0x6ed75404dd23a9d2825f9459d23848133ae3e81050e63b85c0d37264695d998",
-      "systems": [
-        "explore",
         "upgrade"
       ]
     },
@@ -6253,8 +4663,8 @@
       ]
     },
     {
-      "address": "0xeca0b9810056ce5caa3ef123bfd9eea3aff638975d02f2d0346fc255bca529",
-      "class_hash": "0x43e35e6f86612265c3c51d87eb2b153fe5ef1bd7fb02f11c84ba956e766fb55",
+      "address": "0x78d69cb7a8e8da041abc025376405263bfb5d2032275c43e09dfc8751c0f184",
+      "class_hash": "0x52779897e2dcae8d17fc2b754293e765775c62d20abd6b848a2ede909d7b6d6",
       "abi": [
         {
           "type": "impl",
@@ -6729,8 +5139,8 @@
       ]
     },
     {
-      "address": "0xf0c053321c4cc45ae3420de6cff7d70d8f1c583747b44caecdf64903e18588",
-      "class_hash": "0x2cd08e20894aab80dbe01a8b62e2371a0c01a08f21ed824d3d91cdd53be7c85",
+      "address": "0x582b71b1ffeefd8e22b126d998e70e8dd7c5dae78824934782a5adee53bf215",
+      "class_hash": "0x63bd432d07d8a7b04a3853633b664da6f4f6f6d6e6551f62e83a46cbca727dc",
       "abi": [
         {
           "type": "impl",
@@ -6806,6 +5216,10 @@
                 {
                   "name": "frontend",
                   "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "lords_resource_index",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [
@@ -6971,8 +5385,8 @@
       ]
     },
     {
-      "address": "0x53ade5974cfaf6ad7fc12002827499b488b56b557b12ad59e821799fa0aeff3",
-      "class_hash": "0x94209294a27fb3d702040444c1c45846e2f47385ef8e466f1c9df5155e2436",
+      "address": "0x44d85bdda461ce0fb7907f4f15e8f446e00eee24f4038d8050c2f46a58d4d2",
+      "class_hash": "0x75d8044a9e05d875f863454c92642faa12a2dee3fe368021d118b389e4f2010",
       "abi": [
         {
           "type": "impl",
@@ -7066,6 +5480,10 @@
                 {
                   "name": "client_fee_recipient",
                   "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "recipient_resource_index",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -7080,10 +5498,6 @@
                   "type": "core::starknet::contract_address::ContractAddress"
                 },
                 {
-                  "name": "through_bank_id",
-                  "type": "core::integer::u32"
-                },
-                {
                   "name": "recipient_realm_id",
                   "type": "core::integer::u32"
                 },
@@ -7094,6 +5508,10 @@
                 {
                   "name": "client_fee_recipient",
                   "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "recipient_resource_index",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -7103,10 +5521,6 @@
               "type": "function",
               "name": "start_withdraw",
               "inputs": [
-                {
-                  "name": "through_bank_id",
-                  "type": "core::integer::u32"
-                },
                 {
                   "name": "from_realm_id",
                   "type": "core::integer::u32"
@@ -7127,10 +5541,6 @@
               "type": "function",
               "name": "finish_withdraw",
               "inputs": [
-                {
-                  "name": "through_bank_id",
-                  "type": "core::integer::u32"
-                },
                 {
                   "name": "from_entity_id",
                   "type": "core::integer::u32"
@@ -7280,8 +5690,8 @@
       ]
     },
     {
-      "address": "0x282a7efce5c8cad3384d5fa290325afb9100993ab22154843f860197f072551",
-      "class_hash": "0x2f140e62a931d7682992d3a6e710fd0f32843d0bb1943613d557b6ead001341",
+      "address": "0x4ac41dc91963ab47c6922af0e7cf27fbc0b5f45af1f2bd49fd06c20fe63eea8",
+      "class_hash": "0x1d7a9309fe96664cf4509f7bd128cf1a7af7c0aec8e87ab577867112c89df0a",
       "abi": [
         {
           "type": "impl",
@@ -7349,6 +5759,16 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "s1_eternum::systems::resources::contracts::resource_systems::IResourceSystems",
           "items": [
@@ -7357,11 +5777,11 @@
               "name": "approve",
               "inputs": [
                 {
-                  "name": "entity_id",
+                  "name": "caller_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "recipient_entity_id",
+                  "name": "recipient_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -7377,16 +5797,20 @@
               "name": "send",
               "inputs": [
                 {
-                  "name": "sender_entity_id",
+                  "name": "sender_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "recipient_entity_id",
+                  "name": "recipient_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
                   "name": "resources",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "recipient_resource_indexes",
+                  "type": "core::array::Span::<core::integer::u8>"
                 }
               ],
               "outputs": [],
@@ -7397,16 +5821,44 @@
               "name": "pickup",
               "inputs": [
                 {
-                  "name": "recipient_entity_id",
+                  "name": "recipient_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "owner_entity_id",
+                  "name": "owner_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
                   "name": "resources",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "recipient_resource_indexes",
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "offload",
+              "inputs": [
+                {
+                  "name": "from_structure_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "day",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "slot",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "resource_count",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -7536,12 +5988,13 @@
         "approve",
         "send",
         "pickup",
+        "offload",
         "upgrade"
       ]
     },
     {
-      "address": "0x32f1f96d2daba53c6bc9e048f905fdf3a5094531c6de616e47e1491db78e64a",
-      "class_hash": "0x3fe1a065b0e2402d5040ae9872054efa537f8313868124c8578595364e1d33",
+      "address": "0x5c9ab6770aab100bdca66a8b0797d201e4b1b631c45d24e8cb52b64bb1314c0",
+      "class_hash": "0x73f1cdd833a7b00d5e4ccc843d4ac77901761fdcb256446f77d0fbca82d0b6c",
       "abi": [
         {
           "type": "impl",
@@ -7777,8 +6230,8 @@
       ]
     },
     {
-      "address": "0x3bae594a92d5f29d98282f73a62cb281d090c9f348f6e1e1a23d24cea0ad195",
-      "class_hash": "0x123693b2e829b20252d066b9d320dd27c2aa31c815153be150af094b6655423",
+      "address": "0x1c72b3b531bb4dbe34281b29999f50f462b3ab07ba468b3fe46019d634218b",
+      "class_hash": "0x4f88d131f20a4b1bd48a1f774372fee7748daa521e866f0ac28eca310390846",
       "abi": [
         {
           "type": "impl",
@@ -7858,13 +6311,13 @@
                 {
                   "name": "amount",
                   "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [
+                },
                 {
-                  "type": "core::integer::u32"
+                  "name": "player_resource_index",
+                  "type": "core::integer::u8"
                 }
               ],
+              "outputs": [],
               "state_mutability": "external"
             },
             {
@@ -7886,13 +6339,13 @@
                 {
                   "name": "amount",
                   "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [
+                },
                 {
-                  "type": "core::integer::u32"
+                  "name": "player_resource_index",
+                  "type": "core::integer::u8"
                 }
               ],
+              "outputs": [],
               "state_mutability": "external"
             }
           ]
@@ -8022,8 +6475,8 @@
       ]
     },
     {
-      "address": "0x1cd0e57737b7e2997bf2831bf3f91ac3099bc43020507e34f3b79d82bdd9dae",
-      "class_hash": "0x61fc385a307cebed0220b8ec9888f840457e45dbbf2aa1a121f70111c7e5f3c",
+      "address": "0x42a6226a94c3a6af1279a991a3266d20241fcc63985feb594194fc3db32a1db",
+      "class_hash": "0x7cff85c590d5ad5d9e51fd03699d215e3949bd598fe8a3326ab8200d0cde81b",
       "abi": [
         {
           "type": "impl",
@@ -8081,16 +6534,6 @@
           "interface_name": "s1_eternum::systems::trade::contracts::trade_systems::ITradeSystems"
         },
         {
-          "type": "struct",
-          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
-            }
-          ]
-        },
-        {
           "type": "interface",
           "name": "s1_eternum::systems::trade::contracts::trade_systems::ITradeSystems",
           "items": [
@@ -8103,20 +6546,28 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "maker_gives_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                },
-                {
                   "name": "taker_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "taker_gives_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                  "name": "maker_gives_resource_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "maker_gives_min_resource_amount",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "maker_gives_max_count",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "taker_pays_min_lords_amount",
+                  "type": "core::integer::u128"
                 },
                 {
                   "name": "expires_at",
-                  "type": "core::integer::u64"
+                  "type": "core::integer::u32"
                 }
               ],
               "outputs": [
@@ -8139,39 +6590,15 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "maker_gives_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                  "name": "taker_lords_index",
+                  "type": "core::integer::u8"
                 },
                 {
-                  "name": "taker_gives_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "accept_partial_order",
-              "inputs": [
-                {
-                  "name": "taker_id",
-                  "type": "core::integer::u32"
+                  "name": "maker_resource_index",
+                  "type": "core::integer::u8"
                 },
                 {
-                  "name": "trade_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "maker_gives_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                },
-                {
-                  "name": "taker_gives_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                },
-                {
-                  "name": "taker_gives_actual_amount",
+                  "name": "taker_buys_count",
                   "type": "core::integer::u128"
                 }
               ],
@@ -8185,10 +6612,6 @@
                 {
                   "name": "trade_id",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "return_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
               "outputs": [],
@@ -8317,18 +6740,17 @@
       "systems": [
         "create_order",
         "accept_order",
-        "accept_partial_order",
         "cancel_order",
         "upgrade"
       ]
     },
     {
-      "address": "0x48bd99976af44ac78f7a07d5b4bbfcb8adb17b86212944383c816b348392e1f",
-      "class_hash": "0x47efbf7c94fc94ab4b1d50880eba75c0e4ad50cf3c5d50cbba51cf837511c4",
+      "address": "0x7e5653f796cc8bc3d6a74ae8fa5b14849ea6099cc2b45c82fa8c1aa14a1c04c",
+      "class_hash": "0x2e399ef8514b2657ddfbef8fee0763b4cabab4f8cbd91ad57100d53c297d66e",
       "abi": [
         {
           "type": "impl",
-          "name": "travel_systems__ContractImpl",
+          "name": "troop_movement_systems__ContractImpl",
           "interface_name": "dojo::contract::interface::IContract"
         },
         {
@@ -8338,7 +6760,7 @@
         },
         {
           "type": "impl",
-          "name": "travel_systems__DeployedContractImpl",
+          "name": "troop_movement_systems__DeployedContractImpl",
           "interface_name": "dojo::meta::interface::IDeployedResource"
         },
         {
@@ -8378,8 +6800,8 @@
         },
         {
           "type": "impl",
-          "name": "TravelSystemsImpl",
-          "interface_name": "s1_eternum::systems::transport::contracts::travel_systems::ITravelSystems"
+          "name": "TroopMovementSystemsImpl",
+          "interface_name": "s1_eternum::systems::combat::contracts::troop_systems::ITroopMovementSystems"
         },
         {
           "type": "enum",
@@ -8422,20 +6844,38 @@
           ]
         },
         {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "interface",
-          "name": "s1_eternum::systems::transport::contracts::travel_systems::ITravelSystems",
+          "name": "s1_eternum::systems::combat::contracts::troop_systems::ITroopMovementSystems",
           "items": [
             {
               "type": "function",
-              "name": "travel_hex",
+              "name": "explorer_move",
               "inputs": [
                 {
-                  "name": "travelling_entity_id",
+                  "name": "explorer_id",
                   "type": "core::integer::u32"
                 },
                 {
                   "name": "directions",
                   "type": "core::array::Span::<s1_eternum::models::position::Direction>"
+                },
+                {
+                  "name": "explore",
+                  "type": "core::bool"
                 }
               ],
               "outputs": [],
@@ -8542,7 +6982,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::transport::contracts::travel_systems::travel_systems::Event",
+          "name": "s1_eternum::systems::combat::contracts::troop_systems::troop_movement_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -8559,16 +6999,16 @@
         }
       ],
       "init_calldata": [],
-      "tag": "s1_eternum-travel_systems",
-      "selector": "0x309ed1eaf532082015ddf768dfea6a2d7b6c78f61892005f9af6efe505f3317",
+      "tag": "s1_eternum-troop_movement_systems",
+      "selector": "0x522c38540c126c2f193f496d4eb1882a63cdc02997f64c298d41622b26ded2b",
       "systems": [
-        "travel_hex",
+        "explorer_move",
         "upgrade"
       ]
     },
     {
-      "address": "0x5f1f9d63967328567cca065fbc35974f65211ba2284325ac24f78930bd3ff15",
-      "class_hash": "0x7d7fc82d5700402f68a3fc5fcf75c4f01a97b0cdc1ec4733c8dc47d5543b2a",
+      "address": "0x5aad1e2414d1621fc7b7f5eb173799284222ade9d252ba21afc4623aff77b5d",
+      "class_hash": "0x58f51d36296876ef0a48f1b49343c33c841b3c6c2be4c2537b77cc8ca84114",
       "abi": [
         {
           "type": "impl",
@@ -8622,56 +7062,164 @@
         },
         {
           "type": "impl",
-          "name": "TroopContractImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_systems::ITroopContract"
+          "name": "TroopSystemsImpl",
+          "interface_name": "s1_eternum::systems::combat::contracts::troop_systems::ITroopSystems"
         },
         {
           "type": "enum",
-          "name": "core::bool",
+          "name": "s1_eternum::models::troop::GuardSlot",
           "variants": [
             {
-              "name": "False",
+              "name": "Delta",
               "type": "()"
             },
             {
-              "name": "True",
+              "name": "Charlie",
+              "type": "()"
+            },
+            {
+              "name": "Bravo",
+              "type": "()"
+            },
+            {
+              "name": "Alpha",
               "type": "()"
             }
           ]
         },
         {
-          "type": "struct",
-          "name": "s1_eternum::models::combat::Troops",
-          "members": [
+          "type": "enum",
+          "name": "s1_eternum::models::troop::TroopType",
+          "variants": [
             {
-              "name": "knight_count",
-              "type": "core::integer::u64"
+              "name": "Knight",
+              "type": "()"
             },
             {
-              "name": "paladin_count",
-              "type": "core::integer::u64"
+              "name": "Paladin",
+              "type": "()"
             },
             {
-              "name": "crossbowman_count",
-              "type": "core::integer::u64"
+              "name": "Crossbowman",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::troop::TroopTier",
+          "variants": [
+            {
+              "name": "T1",
+              "type": "()"
+            },
+            {
+              "name": "T2",
+              "type": "()"
+            },
+            {
+              "name": "T3",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::position::Direction",
+          "variants": [
+            {
+              "name": "East",
+              "type": "()"
+            },
+            {
+              "name": "NorthEast",
+              "type": "()"
+            },
+            {
+              "name": "NorthWest",
+              "type": "()"
+            },
+            {
+              "name": "West",
+              "type": "()"
+            },
+            {
+              "name": "SouthWest",
+              "type": "()"
+            },
+            {
+              "name": "SouthEast",
+              "type": "()"
             }
           ]
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_systems::ITroopContract",
+          "name": "s1_eternum::systems::combat::contracts::troop_systems::ITroopSystems",
           "items": [
             {
               "type": "function",
-              "name": "army_create",
+              "name": "guard_add",
               "inputs": [
                 {
-                  "name": "army_owner_id",
+                  "name": "for_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "is_defensive_army",
-                  "type": "core::bool"
+                  "name": "slot",
+                  "type": "s1_eternum::models::troop::GuardSlot"
+                },
+                {
+                  "name": "category",
+                  "type": "s1_eternum::models::troop::TroopType"
+                },
+                {
+                  "name": "tier",
+                  "type": "s1_eternum::models::troop::TroopTier"
+                },
+                {
+                  "name": "amount",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "guard_delete",
+              "inputs": [
+                {
+                  "name": "for_structure_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "slot",
+                  "type": "s1_eternum::models::troop::GuardSlot"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "explorer_create",
+              "inputs": [
+                {
+                  "name": "for_structure_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "category",
+                  "type": "s1_eternum::models::troop::TroopType"
+                },
+                {
+                  "name": "tier",
+                  "type": "s1_eternum::models::troop::TroopTier"
+                },
+                {
+                  "name": "amount",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [
@@ -8683,11 +7231,23 @@
             },
             {
               "type": "function",
-              "name": "army_delete",
+              "name": "explorer_add",
               "inputs": [
                 {
-                  "name": "army_id",
+                  "name": "to_explorer_id",
                   "type": "core::integer::u32"
+                },
+                {
+                  "name": "category",
+                  "type": "s1_eternum::models::troop::TroopType"
+                },
+                {
+                  "name": "tier",
+                  "type": "s1_eternum::models::troop::TroopTier"
+                },
+                {
+                  "name": "amount",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -8695,19 +7255,23 @@
             },
             {
               "type": "function",
-              "name": "army_buy_troops",
+              "name": "explorer_swap",
               "inputs": [
                 {
-                  "name": "army_id",
+                  "name": "from_explorer_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "payer_id",
+                  "name": "to_explorer_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "troops",
-                  "type": "s1_eternum::models::combat::Troops"
+                  "name": "to_explorer_direction",
+                  "type": "s1_eternum::models::position::Direction"
+                },
+                {
+                  "name": "count",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -8715,19 +7279,11 @@
             },
             {
               "type": "function",
-              "name": "army_merge_troops",
+              "name": "explorer_delete",
               "inputs": [
                 {
-                  "name": "from_army_id",
+                  "name": "explorer_id",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "to_army_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "troops",
-                  "type": "s1_eternum::models::combat::Troops"
                 }
               ],
               "outputs": [],
@@ -8854,10 +7410,12 @@
       "tag": "s1_eternum-troop_systems",
       "selector": "0x36dc6a7aac90e16df98cc6cef8b971d3432a436339f92352921ab2d542363b0",
       "systems": [
-        "army_create",
-        "army_delete",
-        "army_buy_troops",
-        "army_merge_troops",
+        "guard_add",
+        "guard_delete",
+        "explorer_create",
+        "explorer_add",
+        "explorer_swap",
+        "explorer_delete",
         "upgrade"
       ]
     }
@@ -8871,27 +7429,9 @@
     },
     {
       "members": [],
-      "class_hash": "0xba5daefa08a1445d4e6785e5ffcdccade878875833b2cbf5cd444109f76a76",
-      "tag": "s1_eternum-Army",
-      "selector": "0x16cd0112383678968a6dcc0476cc193ce544a0f2cb27bbf911b519cc66cb2e1"
-    },
-    {
-      "members": [],
-      "class_hash": "0x68601287e44b1613f73564b6a7a6370ecb292ac50c7330cf9fa95a44dc48628",
-      "tag": "s1_eternum-ArrivalTime",
-      "selector": "0x15839d06bf0dd2c3ae1fef464555f3016e153bd6bac0cf62c5c1de9926eadd"
-    },
-    {
-      "members": [],
       "class_hash": "0x1fab75a540f95d81f25832e8b4407c828d9b5197e4df3773d276c5e250685b7",
       "tag": "s1_eternum-Bank",
       "selector": "0x46318cd2cff6337f8934ee9e3cbe3ecf1ccb5b1b57dd1711f3b1eb7d7327aab"
-    },
-    {
-      "members": [],
-      "class_hash": "0x62695f2ef5a7dabe6e0acc3bc29508c50c59d0c94bc1a2de3828f3d8ca5753a",
-      "tag": "s1_eternum-Battle",
-      "selector": "0x169c07a291ef2ba4cfb31ba5b81d45fc49f6a02169c766ac950f823879152fc"
     },
     {
       "members": [],
@@ -8925,21 +7465,9 @@
     },
     {
       "members": [],
-      "class_hash": "0x21ff694216dcb5a14fa8486eadde6f1168ecf5f6d5bc3fd4535f825f576d9bb",
-      "tag": "s1_eternum-CapacityConfig",
-      "selector": "0x329d78ba810d64a65e56dc6d9648681b25cf5077b2b2a1b006b4280b4a46941"
-    },
-    {
-      "members": [],
       "class_hash": "0x2238b178e87807c6d6a6d642d0558eacff4e5ae9d30c72d5e9c97393c13f9f3",
       "tag": "s1_eternum-Contribution",
       "selector": "0x5610d7fde56cbda8d6714af14cb51989d77e24ffd867561e6f6ce36a5c8cda0"
-    },
-    {
-      "members": [],
-      "class_hash": "0x74b39813dfd59a2ef5a19e20c2eb6794feb63addeb6ef6c71ea9ca661f2d860",
-      "tag": "s1_eternum-DetachedResource",
-      "selector": "0x5fbe88f3b3abf51a9a1e58a0423a555786a2e557f480a7f804a6a89afee5b2c"
     },
     {
       "members": [],
@@ -8952,6 +7480,12 @@
       "class_hash": "0x4930d4164035886b82ffe1dc0ea0d6c4d7f688772078912e4c49b1837bdf58d",
       "tag": "s1_eternum-Epoch",
       "selector": "0x7538402a46c4b333f00ed41744e67a26bb14f26753fdbe032f0ff218f83ff6a"
+    },
+    {
+      "members": [],
+      "class_hash": "0x18be72c101e3dea91feb61a891737780ba0b28345b479935519c0dce766de15",
+      "tag": "s1_eternum-ExplorerTroops",
+      "selector": "0x15b04275000fff7a4726d78e8083bfc8818a1b44138f368441ca8dd6fb0465f"
     },
     {
       "members": [],
@@ -8973,13 +7507,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x6fbe10195e46e58d99bdef8d5e1dccabc86a5d1c96c3cf0cea9dc9b639ff06c",
-      "tag": "s1_eternum-Health",
-      "selector": "0x2f45d2395ab511a8e093bc7830fe25b18b387f360e515107021e75eaea474b5"
-    },
-    {
-      "members": [],
-      "class_hash": "0x2bdf1a82cec86b53187262186429ce83110b626abe6b6eede1164fde8626403",
+      "class_hash": "0x57e47e0a92cd21080d1909e4df491b7717b48f58cb389a3482067ea7b01704c",
       "tag": "s1_eternum-Hyperstructure",
       "selector": "0x5894102a0f9c53bf2298d3bdaf4b0f8a0f92777d57ff0d585ca3b5c5b25b7bc"
     },
@@ -9045,15 +7573,15 @@
     },
     {
       "members": [],
-      "class_hash": "0x129c3d72030a8d20b2eeb63ff3d27e0202914a75978cdb0498eedfdbda0ee46",
+      "class_hash": "0x6e367bc91705940620964cc7d0ce1763282a3149d80de3d5bc9a6e3622c7cba",
       "tag": "s1_eternum-Movable",
       "selector": "0x2f6cc9ab06c7e016297339e078c3755e568fce8048462de2033e8d42e5d94e0"
     },
     {
       "members": [],
-      "class_hash": "0x534a939e0156b81bab8c334f1449e8331c5e15153fe63ba7776a5c3ebdda90d",
-      "tag": "s1_eternum-OwnedResourcesTracker",
-      "selector": "0x1a8f5317e84356a084dbf2555cdf3c429e285e6f161654a678eaf73c137e52b"
+      "class_hash": "0x355ab143b0674339477ec5841bff7c56d12e7293d878c5d18923dd4a83d6959",
+      "tag": "s1_eternum-Occupier",
+      "selector": "0xa6a69db66eb8c1a061934f831ae3d3d56b2cf1e87c7b4c6bb2a4952a46638e"
     },
     {
       "members": [],
@@ -9075,7 +7603,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x77bfeab8aaca18a4de53539ba362a8b593e6161259e78fd50746ec0d9873b8f",
+      "class_hash": "0x52c2360361f3d0f1c656cf5d508007626edde8bdf05dd0e36eb1c86d3fde55e",
       "tag": "s1_eternum-ProductionConfig",
       "selector": "0x38bacafc2ceed54f95033f7529efa9559f877aea41db072b797235cee383a06"
     },
@@ -9084,18 +7612,6 @@
       "class_hash": "0x7702a9475dce2ccca23022565d543a88e3ec30c1a7be38f2eef4cadf479bd27",
       "tag": "s1_eternum-Progress",
       "selector": "0x510024ae0ff452228a083d9fb3aba5e3521c107ab7a84246efcac7bcdfddcb5"
-    },
-    {
-      "members": [],
-      "class_hash": "0x3e5241919a78dd3c3f3496b67bbe2adc62aaf9ef5b421710f70d350e8e4f829",
-      "tag": "s1_eternum-Protectee",
-      "selector": "0x60fac544ae19c3bdb391a986108823d052d2d65891459589b6f3c698f206ce1"
-    },
-    {
-      "members": [],
-      "class_hash": "0x8fe16a145c6c92bfb6cc85563f1eee6ad68fe9d387288347e743d5ab9aff37",
-      "tag": "s1_eternum-Protector",
-      "selector": "0x7c858e96804191100397f8a4683ca93d81d7d341dc68d163c7cea59dc974ec4"
     },
     {
       "members": [],
@@ -9117,7 +7633,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x23188eccd492bc11d4edff7935690f6d9fda4e58b5f10c8ae2c1eb558725622",
+      "class_hash": "0x4d1b41982980d82b173170a7c49d6fac03e564d26b6b15ebc23c2ad5fd0bc61",
       "tag": "s1_eternum-QuestRewardConfig",
       "selector": "0x2f5fb5139fc5144da42495b348183b95708defe554ca9d6768498cccecb0066"
     },
@@ -9135,7 +7651,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x39ce62e9768759b140a45eaae1c3f11a64ac9230e82e2c3ee4ac65237472211",
+      "class_hash": "0x798646f9a77991d9683063c7f8724dbe32d0c481e707be77cccfc47cb6949e3",
       "tag": "s1_eternum-Resource",
       "selector": "0x6bd14dc16a7f05252fcf2fb66630b8f05d39d75b36f55013334a4b3bb8fec57"
     },
@@ -9147,21 +7663,27 @@
     },
     {
       "members": [],
+      "class_hash": "0x3d259eafc38daff0c150193bc9ddf167299cc434be47d42675e839b17a8e0e",
+      "tag": "s1_eternum-ResourceArrival",
+      "selector": "0x5c2225e33b8ee991f140721b0830360ed3103263c191e6880edd86011faf3e8"
+    },
+    {
+      "members": [],
+      "class_hash": "0x77d2502f3283496b476eed1e9dab36504e0875cdfd25b5e79733c06101e6427",
+      "tag": "s1_eternum-ResourceArrivalTracker",
+      "selector": "0x257b45c5e82538067dc8eb3f6197bedbf2866960d66247daff68feea69af3f1"
+    },
+    {
+      "members": [],
       "class_hash": "0x407caede95ac5f504fcaab4ce69d9363581f40af91d89de8899fc3367b9f961",
       "tag": "s1_eternum-ResourceBridgeWhitelistConfig",
       "selector": "0x3af6fef221ed38a459a75bf2c20c5534745e6e9fa3d6c9df899c43a6aee1eee"
     },
     {
       "members": [],
-      "class_hash": "0x2c20f2d449c5195af0782d96d59f5e805fa7dbc92dc53466d14d28e95ad51f6",
-      "tag": "s1_eternum-ResourceCost",
-      "selector": "0x5e5b5b182766e23d14ca1bde33304c8b6c2e348d037073fa87cb23adb3acd2d"
-    },
-    {
-      "members": [],
-      "class_hash": "0x617de45c9d5b478a1c7e265342e0ddc745e725507853def916d8871b6bc4c33",
-      "tag": "s1_eternum-ResourceTransferLock",
-      "selector": "0xfb5fa4535e4bca521abeb02621675a6550ea74c791f4342f7e5a3a2d6c19b0"
+      "class_hash": "0x2b7b2dc8adab9b63176bec21a5dd55da857ea2bc6b6a391a44f23fb68fb7a57",
+      "tag": "s1_eternum-ResourceList",
+      "selector": "0x644963f1cd303a578dcf600e9f63b2149323097a827d0db46378260fc12fd44"
     },
     {
       "members": [],
@@ -9171,45 +7693,27 @@
     },
     {
       "members": [],
-      "class_hash": "0x5106377a316b54df2723e269828175ec19f83b835f96324101039c24a65995f",
-      "tag": "s1_eternum-Stamina",
-      "selector": "0x1b2f9a5ab3ea1bc2565fc5cc30f432b41848f7909b64fd3d97d76dcddacbd3d"
-    },
-    {
-      "members": [],
-      "class_hash": "0x7879bafe78581ad52fc2d2f59e8181cfd55ddd250a0ab28726162c2acbeaf2f",
-      "tag": "s1_eternum-StaminaConfig",
-      "selector": "0x1049adf44800338362f91c904678f82fa47fd0ea0828711bee3e36bee63b97e"
-    },
-    {
-      "members": [],
-      "class_hash": "0x665e9aafe232860c1e930ad3553622b0172a76f822d4b1daf0a3637e74859",
+      "class_hash": "0x3b866c7287ee2cdb6cf653d06cd04032097d8718ca5ad180d89cd2e8a1a4580",
       "tag": "s1_eternum-Structure",
       "selector": "0x3b407b0e3490f7044ce3870614a93f2a0fcbec02710f0975bfdb6c28fdfbecc"
     },
     {
       "members": [],
-      "class_hash": "0x1ba0f7e6bc9a945cbf56a234f90b1347075730e9293f95546b05f277ef1de54",
-      "tag": "s1_eternum-StructureCount",
-      "selector": "0x23b5a2b877c85f0d71bc36b420ec53e12e5ef8369cf1aedffa0bc838eea2dc4"
-    },
-    {
-      "members": [],
-      "class_hash": "0x772f1c5c5edbde0000a27867c96019434dbe437c382337fcbbcb9a9da8625b1",
+      "class_hash": "0x1bed6349421bbff947a13894ba13da0d497f3bd8f1a9b9a05e9f840b73ff8ea",
       "tag": "s1_eternum-Tile",
       "selector": "0x66c306156fe0c5b2785192d61977ac8475e3cb3dbc5d68f5547ade25fe1f4f2"
     },
     {
       "members": [],
-      "class_hash": "0x18fd19462633115152bea45792093217f4f6c715f177ced679d55302c2c0c2f",
+      "class_hash": "0x86400da5b2f8fbc35ad7b85295d953370910ff723a6f19112e7867a28e9c92",
       "tag": "s1_eternum-Trade",
       "selector": "0x6ddb8e334e9c33541fce1e72774d6c43c1057a1057a570f2eb12426f51291"
     },
     {
       "members": [],
-      "class_hash": "0xcff785f41f703fecc10a61975f1e3d0572f7d9dbb17891cba0ad6a430e38a4",
-      "tag": "s1_eternum-TravelFoodCostConfig",
-      "selector": "0x4201d15b950f8e080217e23d7ef911390c3eddb573f7dc857e56c5ddfc606ab"
+      "class_hash": "0x640983d18f429e6186d0e72f20c1460baacc0f618d29614b05e2076c1d92ce0",
+      "tag": "s1_eternum-TradeCount",
+      "selector": "0x454de0d29f67030d03a3ce195f437e388cda3f6b9a894e2aab9a5a81d06636"
     },
     {
       "members": [],
@@ -9219,19 +7723,13 @@
     },
     {
       "members": [],
-      "class_hash": "0x1825de528c2018655ed6e1bd35aab7c1d93068bfff5566751691f9c6eed5599",
-      "tag": "s1_eternum-Weight",
-      "selector": "0x6a857f799cd0abc86c75a666d024ee52f6e81e856f74bb2137bf2f1a534e0e1"
-    },
-    {
-      "members": [],
-      "class_hash": "0x58866998dc2c00e2fc122ea8f1af2631b221ac4492fb0d456cfe6d659bd6c8d",
+      "class_hash": "0x52c5577d3f0197bc5bec3373f41833d17eda0a34d2dda146552cec690544077",
       "tag": "s1_eternum-WeightConfig",
       "selector": "0x1198553c941fe946e251e66c8f4f3177f44e59e56ac455dbc269557b7ae4d81"
     },
     {
       "members": [],
-      "class_hash": "0x77796adf024fbd137173c81e41c2169871760af199cef4f333cb1c15c8eb275",
+      "class_hash": "0x996765c0aaf8c46a7506bd5b0f9528c8a1cef4e5fc44ebb328ade56f744cb7",
       "tag": "s1_eternum-WorldConfig",
       "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
     }
@@ -9245,43 +7743,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x4f8542401350461d675bcb357700ab4bc27590dd9e0d95615f502926c2ee933",
-      "tag": "s1_eternum-AcceptPartialOrder",
-      "selector": "0x10466b8a291c68b1392b0c839dff152f5884e63efecc6616ae39eaaa8dddb16"
-    },
-    {
-      "members": [],
-      "class_hash": "0x6375232edcbda249582554bca45a26911ef8a1f956e85406374e54e3e6370f2",
-      "tag": "s1_eternum-BattleClaimData",
-      "selector": "0x41680e7ebc53d924909df6da64cb9bf2f93e4c52c773a46c2d98d26130e4b04"
-    },
-    {
-      "members": [],
-      "class_hash": "0x35f6e8d75b8c68db6505da62051b0f722fe3a8a8a20cd411655603da62cb6db",
-      "tag": "s1_eternum-BattleJoinData",
-      "selector": "0x52d813cd875f5ab136509292d799f8e50454d7a216d4b0f82011537da338e45"
-    },
-    {
-      "members": [],
-      "class_hash": "0x78def823299e21811686399abd5ed8fb8c3214f8c52291d844369bf850e389f",
-      "tag": "s1_eternum-BattleLeaveData",
-      "selector": "0x2e2634c5a528ebe93bfdd4760906943ab27acda1780d8a0fe6e047daf59e3bb"
-    },
-    {
-      "members": [],
-      "class_hash": "0x69bab5af2b0efabe28b7c3e84ee48d63c8f675cea8173aa6498fbcea586a635",
-      "tag": "s1_eternum-BattlePillageData",
-      "selector": "0x20e12ccd908df9671ef87e056aeb9225412ed7710b218cf196c2069a36509ca"
-    },
-    {
-      "members": [],
-      "class_hash": "0x5d7c083bea24a638702f8785279053db93493186a25df14f6f272bbd30c7ae8",
-      "tag": "s1_eternum-BattleStartData",
-      "selector": "0x29d565ff98451bd6ac59f3a8d0b4d2ef14031a4a39ce4b4e8ee5dab0e02e1c9"
-    },
-    {
-      "members": [],
-      "class_hash": "0x1d81099cb718c869d99c8f544abf071cd1bd945ce60e0320627ecd4afcf290",
+      "class_hash": "0x6370a137b82b45da1dd6682ed617eedc5f72335ea09573a150f37814576119a",
       "tag": "s1_eternum-BurnDonkey",
       "selector": "0x4a1aac57c8cb6ec732bd40283fd1a892987d708a6b8a7d3a4dd65da6f0e7700"
     },
@@ -9302,12 +7764,6 @@
       "class_hash": "0x33de225fdde51454f22ec0f0d92accdafd4b275020b00e4e89cdfebab36f82f",
       "tag": "s1_eternum-CreateOrder",
       "selector": "0x10edec58284a982448a15b0f37a3abc65944a16091efed6a39389b5064a6319"
-    },
-    {
-      "members": [],
-      "class_hash": "0x5b135488977b48af0ab8a698e9429eaa0906eb1de56df79c28d227afe807333",
-      "tag": "s1_eternum-FragmentMineDiscovered",
-      "selector": "0x6dd702d62f987ca281572763a9ebb8ed1937b7016d874f3c979ecb2b698012a"
     },
     {
       "members": [],
@@ -9353,13 +7809,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x67758e05d0d3fc6af894a8b9092ab88670de394768642999c1414025dd73f32",
-      "tag": "s1_eternum-MapExplored",
-      "selector": "0x22543e5f3bd15c01417b0fff116311e6e742ce8f43072e1391fc366b3dc05ad"
-    },
-    {
-      "members": [],
-      "class_hash": "0x49d91156ca1cac9c697c2d3f03da1973c15398c4a8d1218729eee28a7ee8ec2",
+      "class_hash": "0x659680841abdaa6d52ded093440d03a34ca3835f8b871b8038862272244090a",
       "tag": "s1_eternum-SettleRealmData",
       "selector": "0x7eff418a618f1ecd46303c1e0560094940d883e7ec2edde98bcb002a6e1ccca"
     },
@@ -9371,15 +7821,9 @@
     },
     {
       "members": [],
-      "class_hash": "0x5a6b35df0c57ad350d7bdd0590b548d69a1aa63fcd5d6a2f07f24312a637355",
+      "class_hash": "0x4e8df9d9ad015b0f94fbb9f1a489fcc24abbca83c22f99607f5e912dd314a3f",
       "tag": "s1_eternum-Transfer",
       "selector": "0x51c9cda93a0b9735874f08742333f5d601bee76457f1565f608075666678ee3"
-    },
-    {
-      "members": [],
-      "class_hash": "0x7712ccb3bfe55a9fe51c42c4e897753aa2bf1a1d3c6ffb8d486efcf06f25a3f",
-      "tag": "s1_eternum-Travel",
-      "selector": "0x30e8e79033762c0f9e6738ae07398a015b0ffd2969f6d2c1fb09d5475902ae6"
     },
     {
       "members": [],

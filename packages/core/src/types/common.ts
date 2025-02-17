@@ -2,7 +2,7 @@ import { ComponentValue, Entity } from "@dojoengine/recs";
 import { Account, AccountInterface } from "starknet";
 import {
   BuildingType,
-  CapacityConfigCategory,
+  CapacityConfig,
   QuestType,
   RealmLevels,
   ResourcesIds,
@@ -464,7 +464,7 @@ export interface Config {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number; // 1 hour
   };
-  carryCapacityGram: Record<CapacityConfigCategory, bigint | number | string>;
+  carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {
     donkey: number;
     army: number;

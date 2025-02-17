@@ -97,9 +97,9 @@ export class StaminaManager {
 
   private getRefillPerTick() {
     const staminaRefillConfig = getComponentValue(
-      this.components.StaminaRefillConfig,
+      this.components.WorldConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID]),
-    );
+    )?.stamina_refill_config;
     return staminaRefillConfig?.amount_per_tick || 0;
   }
 }

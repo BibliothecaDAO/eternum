@@ -427,14 +427,10 @@ export interface SetQuestRewardConfigProps extends SystemSigner {
 }
 
 export interface SetMapConfigProps extends SystemSigner {
-  config_id: num.BigNumberish;
   reward_amount: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
-}
-
-export interface SetTravelStaminaCostConfigProps extends SystemSigner {
-  travel_type: num.BigNumberish;
-  cost: num.BigNumberish;
+  mine_wheat_grant_amount: num.BigNumberish;
+  mine_fish_grant_amount: num.BigNumberish;
 }
 
 export interface SetTravelFoodCostConfigProps extends SystemSigner {
@@ -459,8 +455,7 @@ export interface SetWeightConfigProps extends SystemSigner {
 }
 
 export interface SetTickConfigProps extends SystemSigner {
-  tick_id: num.BigNumberish;
-  tick_interval_in_seconds: num.BigNumberish;
+  armies_tick_in_seconds: num.BigNumberish;
 }
 
 export interface SetProductionConfigProps extends SystemSigner {
@@ -486,12 +481,6 @@ export interface SetBankConfigProps extends SystemSigner {
   lp_fee_denom: num.BigNumberish;
 }
 
-export interface SetBattleConfigProps extends SystemSigner {
-  config_id: num.BigNumberish;
-  regular_immunity_ticks: num.BigNumberish;
-  hyperstructure_immunity_ticks: num.BigNumberish;
-  battle_delay_seconds: num.BigNumberish;
-}
 export interface SetTroopConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
   health: num.BigNumberish;
@@ -544,7 +533,6 @@ export interface SetRealmMaxLevelConfigProps extends SystemSigner {
 
 export interface SetWorldConfigProps extends SystemSigner {
   admin_address: num.BigNumberish;
-  realm_l2_contract: num.BigNumberish;
 }
 
 export interface SetSpeedConfigProps extends SystemSigner {

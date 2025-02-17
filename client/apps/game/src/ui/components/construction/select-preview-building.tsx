@@ -12,7 +12,7 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BuildingEnumToString,
   BuildingType,
-  CapacityConfigCategory,
+  CapacityConfig,
   ClientComponents,
   configManager,
   divideByPrecision,
@@ -27,7 +27,6 @@ import {
   ResourceMiningTypes,
   ResourcesIds,
   unpackResources,
-  WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoResult, useDojo } from "@bibliothecadao/react";
 import { Component, getComponentValue } from "@dojoengine/recs";
@@ -535,7 +534,7 @@ export const BuildingInfo = ({
   const capacity = buildingPopCapacityConfig.capacity;
 
   const carryCapacity =
-    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfigCategory.Storehouse) : 0;
+    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfig.Storehouse) : 0;
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
@@ -682,11 +681,7 @@ const getConsumedBy = (resourceProduced: ResourcesIds) => {
 };
 
 const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceId: ResourcesIds) => {
-  const buildingGeneralConfig = getComponentValue(
-    dojo.setup.components.BuildingGeneralConfig,
-    getEntityIdFromKeys([WORLD_CONFIG_ID]),
-  );
-
+  const buildingGeneralConfig = configManager.getBuildingGeneralConfig();
   if (!buildingGeneralConfig) {
     return;
   }

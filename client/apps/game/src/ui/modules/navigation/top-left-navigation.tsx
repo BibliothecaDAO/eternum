@@ -14,7 +14,7 @@ import { gramToKg, kgToGram } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BuildingType,
-  CapacityConfigCategory,
+  CapacityConfig,
   configManager,
   ContractAddress,
   formatTime,
@@ -186,7 +186,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
-    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
+    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfig.Storehouse);
     return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
   }, [structureEntityId, currentBlockTimestamp]);
 

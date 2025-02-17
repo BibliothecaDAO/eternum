@@ -1,11 +1,11 @@
 import { divideByPrecision } from ".";
 import { ClientConfigManager } from "..";
-import { CapacityConfigCategory } from "../constants";
+import { CapacityConfig } from "../constants";
 import { Resource } from "../types";
 
 export const calculateDonkeysNeeded = (orderWeight: number): number => {
   const configManager = ClientConfigManager.instance();
-  const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfigCategory.Donkey);
+  const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfig.Donkey);
 
   return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacityGrams);
 };

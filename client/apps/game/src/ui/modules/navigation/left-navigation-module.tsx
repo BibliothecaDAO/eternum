@@ -13,7 +13,7 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { ContractAddress, getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerArrivalsNotifications, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
-import { Suspense, lazy, memo, useEffect, useMemo } from "react";
+import { lazy, memo, Suspense, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
 
 const EntityDetails = lazy(() =>
@@ -73,7 +73,6 @@ export const LeftNavigationModule = memo(() => {
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
   const disableButtons = !structureIsMine && account.address !== "0x0";
-  console.log({ account, structureIsMine, disableButtons });
 
   const isRealm = useMemo(
     () => Boolean(structureInfo) && String(structureInfo?.structureCategory) === "Realm",

@@ -1,30 +1,32 @@
 import {
-    ADMIN_BANK_ENTITY_ID,
-    ARMY_ENTITY_TYPE,
-    BRIDGE_FEE_DENOMINATOR,
-    BuildingType,
-    CapacityConfigCategory,
-    DONKEY_ENTITY_TYPE,
-    EternumProvider,
-    FELT_CENTER,
-    QuestType,
-    ResourcesIds,
-    ResourceTier,
-    scaleResourceCostMinMax,
-    scaleResourceInputs,
-    scaleResourceOutputs,
-    scaleResourceProductionByLaborParams,
-    scaleResources,
-    TickIds,
-    TravelTypes,
-    type Config as EternumConfig,
-    type ResourceInputs,
-    type ResourceOutputs,
-    type ResourceWhitelistConfig,
+  ADMIN_BANK_ENTITY_ID,
+  ARMY_ENTITY_TYPE,
+  BRIDGE_FEE_DENOMINATOR,
+  BuildingType,
+  CapacityConfig,
+  DONKEY_ENTITY_TYPE,
+  EternumProvider,
+  FELT_CENTER,
+  QuestType,
+  ResourcesIds,
+  ResourceTier,
+  scaleResourceCostMinMax,
+  scaleResourceInputs,
+  scaleResourceOutputs,
+  scaleResourceProductionByLaborParams,
+  scaleResources,
+  type Config as EternumConfig,
+  type ResourceInputs,
+  type ResourceOutputs,
+  type ResourceWhitelistConfig,
 } from "@bibliothecadao/eternum";
 
 import chalk from "chalk";
+
+import fs from "fs";
+import { env } from "process";
 import { Account } from "starknet";
+import type { Chain } from "utils/utils";
 import { SHARDS_MINES_WIN_PROBABILITY } from "../environments/_shared_";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
@@ -48,6 +50,7 @@ export class GameConfigDeployer {
 
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
+    await setWorldConfig(config);
     await setProductionConfig(config);
     await setResourceBridgeWhitelistConfig(config);
     await setQuestRewardConfig(config);
@@ -58,7 +61,6 @@ export class GameConfigDeployer {
     await setPopulationConfig(config);
     await setBuildingConfig(config);
     await setWeightConfig(config);
-    await setBattleConfig(config);
     await setCombatConfig(config);
     await setRealmUpgradeConfig(config);
     await setRealmMaxLevelConfig(config);
@@ -174,6 +176,40 @@ export const setQuestRewardConfig = async (config: Config) => {
   console.log(chalk.gray(`\n    ⚡ Transaction: ${tx.statusReceipt}\n`));
 };
 
+export const setWorldConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+   🌎 WORLD CONFIGURATION ⚡
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`),
+  );
+
+  if (!env.VITE_PUBLIC_MASTER_ADDRESS) {
+    throw new Error("VITE_PUBLIC_MASTER_ADDRESS is not set");
+  }
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow(`Realm Address`)}
+    │  ${chalk.gray(`${config.config.setup!.addresses.realms}`)}
+    │  ${chalk.gray(`Admin Address`)}
+    │     ${chalk.gray(`${env.VITE_PUBLIC_MASTER_ADDRESS}`)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_world_config({
+    signer: config.account,
+    admin_address: env.VITE_PUBLIC_MASTER_ADDRESS!,
+  });
+
+  console.log(
+    chalk.cyan(`
+    ${chalk.green("✨ Configuration successfully deployed")}
+    ${chalk.gray("Transaction:")} ${chalk.white(tx.statusReceipt)}
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `),
+  );
+};
+
 export const setProductionConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
@@ -215,23 +251,28 @@ export const setProductionConfig = async (config: Config) => {
     │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building:`)} ${chalk.white(`${inGameAmount(calldata.amount_per_building_per_tick, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
     │  ${chalk.gray(``)}
     │  ${chalk.gray(`Using Labor Burn Production Strategy:`)}
-    │     ${chalk.gray(``)} ${calldata.labor_burn_strategy.resource_rarity === 0 ? 
-           chalk.red("Cannot be produced with labor") : `
+    │     ${chalk.gray(``)} ${
+      calldata.labor_burn_strategy.resource_rarity === 0
+        ? chalk.red("Cannot be produced with labor")
+        : `
     │     ${chalk.gray(`Resource Rarity:`)} ${chalk.white(` ${calldata.labor_burn_strategy.resource_rarity}`)}
-    │     ${chalk.gray(`Depreciation Rate:`)} ${chalk.white(` ${calldata.labor_burn_strategy.depreciation_percent_num / calldata.labor_burn_strategy.depreciation_percent_denom * 100}%`)}
+    │     ${chalk.gray(`Depreciation Rate:`)} ${chalk.white(` ${(calldata.labor_burn_strategy.depreciation_percent_num / calldata.labor_burn_strategy.depreciation_percent_denom) * 100}%`)}
     │     ${chalk.gray(`Wheat Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.wheat_burn_per_labor, config.config))}
-    │     ${chalk.gray(`Fish Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.fish_burn_per_labor, config.config))}`}
+    │     ${chalk.gray(`Fish Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.fish_burn_per_labor, config.config))}`
+    }
     │  ${chalk.gray(``)}
     │  ${chalk.gray(`Using Multiple Resource Burn Production Strategy:`)}
-    │  ${calldata.predefined_resource_burn_cost.length > 0 
-        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) + 
+    │  ${
+      calldata.predefined_resource_burn_cost.length > 0
+        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
           calldata.predefined_resource_burn_cost
             .map(
               (c) => `
     │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
             )
             .join("")
-        : `    ${chalk.blue("Can't be produced with multiple resources")}`}
+        : `    ${chalk.blue("Can't be produced with multiple resources")}`
+    }
     └────────────────────────────────`),
     );
   }
@@ -576,41 +617,6 @@ export const setWeightConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const setBattleConfig = async (config: Config) => {
-  console.log(
-    chalk.cyan(`
-  ⚔️  Battle System Configuration
-  ═══════════════════════════════`),
-  );
-
-  const {
-    graceTickCount: regular_immunity_ticks,
-    graceTickCountHyp: hyperstructure_immunity_ticks,
-    delaySeconds: battle_delay_seconds,
-  } = config.config.battle;
-
-  const calldata = {
-    signer: config.account,
-    config_id: 0,
-    regular_immunity_ticks,
-    hyperstructure_immunity_ticks,
-    battle_delay_seconds,
-  };
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Battle Parameters")}
-    │  ${chalk.gray("Regular Immunity:")}      ${chalk.white(calldata.regular_immunity_ticks + " ticks")}
-    │  ${chalk.gray("Structure Immunity:")}    ${chalk.white(calldata.hyperstructure_immunity_ticks + " ticks")}
-    │  ${chalk.gray("Battle Seige Delay:")}    ${chalk.white(hourMinutesSeconds(calldata.battle_delay_seconds))}
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_battle_config(calldata);
-
-  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
-};
-
 export const setCombatConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
@@ -713,39 +719,26 @@ export const setupGlobals = async (config: Config) => {
   console.log(chalk.green(`    ✔ Bank configured `) + chalk.gray(txBank.statusReceipt));
 
   // Tick Configs
-
-  const defaultTickCalldata = {
-    signer: config.account,
-    tick_id: TickIds.Default,
-    tick_interval_in_seconds: config.config.tick.defaultTickIntervalInSeconds,
-  };
-
-  const armiesTickCalldata = {
-    signer: config.account,
-    tick_id: TickIds.Armies,
-    tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
-  };
-
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Tick Intervals")}
-    │  ${chalk.gray("Default:")}           ${chalk.white(hourMinutesSeconds(defaultTickCalldata.tick_interval_in_seconds))}
-    │  ${chalk.gray("Armies:")}            ${chalk.white(hourMinutesSeconds(armiesTickCalldata.tick_interval_in_seconds))}
+    ┌─ ${chalk.yellow("Tick Interval")}
+    │  ${chalk.gray("Armies:")}            ${chalk.white(hourMinutesSeconds(config.config.tick.armiesTickIntervalInSeconds))}
     └────────────────────────────────`),
   );
 
-  const txDefaultTick = await config.provider.set_tick_config(defaultTickCalldata);
-  console.log(chalk.green(`    ✔ Default tick configured `) + chalk.gray(txDefaultTick.statusReceipt));
-
-  const txArmiesTick = await config.provider.set_tick_config(armiesTickCalldata);
+  const txArmiesTick = await config.provider.set_tick_config({
+    signer: config.account,
+    armies_tick_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
+  });
   console.log(chalk.green(`    ✔ Armies tick configured `) + chalk.gray(txArmiesTick.statusReceipt));
 
   // Map Config
   const mapCalldata = {
     signer: config.account,
-    config_id: 0,
     reward_amount: config.config.exploration.reward * config.config.resources.resourcePrecision,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
+    mine_wheat_grant_amount: 0,
+    mine_fish_grant_amount: 0,
   };
   console.log(
     chalk.cyan(`
@@ -757,33 +750,6 @@ export const setupGlobals = async (config: Config) => {
 
   const txMap = await config.provider.set_map_config(mapCalldata);
   console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
-
-  // Stamina Costs
-  const explorationStaminaCalldata = {
-    signer: config.account,
-    travel_type: TravelTypes.Explore,
-    cost: config.config.stamina.exploreCost,
-  };
-
-  const travelStaminaCalldata = {
-    signer: config.account,
-    travel_type: TravelTypes.Travel,
-    cost: config.config.stamina.travelCost,
-  };
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Stamina Costs")}
-    │  ${chalk.gray("For Exploration:")}   ${chalk.white(explorationStaminaCalldata.cost)} stamina
-    │  ${chalk.gray("For Travel:")}    ${chalk.white(travelStaminaCalldata.cost)} stamina
-    └────────────────────────────────`),
-  );
-
-  const txExploreStaminaCost = await config.provider.set_travel_stamina_cost_config(explorationStaminaCalldata);
-  console.log(chalk.green(`    ✔ Explore Stamina costs configured `) + chalk.gray(txExploreStaminaCost.statusReceipt));
-
-  const txTravelStaminaCost = await config.provider.set_travel_stamina_cost_config(travelStaminaCalldata);
-  console.log(chalk.green(`    ✔ Travel Stamina costs configured `) + chalk.gray(txTravelStaminaCost.statusReceipt));
 
   // Food Consumption
   const foodConsumptionCalldata = Object.entries(config.config.troop.troopFoodConsumption).map(([unit_type, costs]) => {
@@ -837,7 +803,7 @@ export const setCapacityConfig = async (config: Config) => {
     ┌─ ${chalk.yellow("Max Weight Per Category")}${calldata
       .map(
         ({ category, weight_gram }) => `
-    │  ${chalk.gray(String(CapacityConfigCategory[category as keyof typeof CapacityConfigCategory]).padEnd(12))} ${chalk.white(addCommas(BigInt(weight_gram)))} ${chalk.gray("grams")} 
+    │  ${chalk.gray(String(CapacityConfig[category as keyof typeof CapacityConfig]).padEnd(12))} ${chalk.white(addCommas(BigInt(weight_gram)))} ${chalk.gray("grams")} 
     │  ${chalk.gray("").padEnd(12)} ${chalk.gray("i.e (")} ${chalk.white(addCommas(BigInt(weight_gram) / BigInt(1000)))} ${chalk.gray("kg")} ${chalk.gray(")")})`,
       )
       .join("")}
@@ -847,9 +813,8 @@ export const setCapacityConfig = async (config: Config) => {
   for (const data of calldata) {
     const tx = await config.provider.set_capacity_config(data);
     console.log(
-      chalk.green(
-        `    ✔ ${CapacityConfigCategory[data.category as keyof typeof CapacityConfigCategory]} weight configured `,
-      ) + chalk.gray(tx.statusReceipt),
+      chalk.green(`    ✔ ${CapacityConfig[data.category as keyof typeof CapacityConfig]} weight configured `) +
+        chalk.gray(tx.statusReceipt),
     );
   }
   console.log();
@@ -1377,5 +1342,32 @@ export const addLiquidity = async (config: Config) => {
     console.log(chalk.green(`\n    ✔ Liquidity added successfully `) + chalk.gray(tx.statusReceipt) + "\n");
   } catch (e) {
     console.log(chalk.red(`\n    ✖ Failed to add liquidity: `) + chalk.gray(e) + "\n");
+  }
+};
+
+export const nodeReadConfig = async (chain: Chain) => {
+  try {
+    let path = "./environments/data";
+    switch (chain) {
+      case "sepolia":
+        path += "/sepolia.json"; // as any to avoid type errors
+        break;
+      case "mainnet":
+        path += "/mainnet.json";
+        break;
+      case "slot":
+        path += "/slot.json";
+        break;
+      case "local":
+        path += "/local.json";
+        break;
+      default:
+        throw new Error(`Invalid chain: ${chain}`);
+    }
+
+    const config = JSON.parse(fs.readFileSync(path, "utf8"));
+    return config.configuration as any; // as any to avoid type errors
+  } catch (error) {
+    throw new Error(`Failed to load configuration for chain ${chain}: ${error}`);
   }
 };

@@ -314,7 +314,7 @@ export default class HexceptionScene extends HexagonScene {
         try {
           await this.tileManager.placeBuilding(
             account!,
-            this.state.structureEntityId,
+            useUIStore.getState().structureEntityId,
             buildingType.type,
             normalizedCoords,
             buildingType.resource,

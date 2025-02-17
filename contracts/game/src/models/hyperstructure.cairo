@@ -17,10 +17,10 @@ use starknet::ContractAddress;
 pub struct Hyperstructure {
     #[key]
     entity_id: ID,
-    current_epoch: u16,
-    completed: bool,
     last_updated_by: ContractAddress,
     last_updated_timestamp: u64,
+    current_epoch: u16,
+    completed: bool,
     access: Access,
     randomness: felt252,
 }

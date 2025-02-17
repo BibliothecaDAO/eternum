@@ -155,7 +155,7 @@ const DojoContextProvider = ({
 
   useEffect(() => {
     const setUserName = async () => {
-      const username = await (connector as ControllerConnector)?.username();
+      const username = await (connector as unknown as ControllerConnector)?.username();
       if (!username) return;
 
       const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));

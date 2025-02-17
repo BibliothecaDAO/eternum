@@ -15,7 +15,7 @@ use traits::Into;
 // todo: add hard limit of troop to be something like 20
 // so the stucture explorers array does not get too big
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Structure {
     #[key]
@@ -146,7 +146,7 @@ impl StructureImpl of StructureTrait {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, Introspect, Default)]
+#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked, Default)]
 enum StructureCategory {
     #[default]
     None,

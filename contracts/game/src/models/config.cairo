@@ -35,7 +35,6 @@ pub struct WorldConfig {
     season_addresses_config: SeasonAddressesConfig,
     season_bridge_config: SeasonBridgeConfig,
     hyperstructure_config: HyperstructureConfig,
-    stamina_cost_config: StaminaCostConfig,
     speed_config: SpeedConfig,
     map_config: MapConfig,
     settlement_config: SettlementConfig,
@@ -124,13 +123,6 @@ pub struct CapacityConfig {
     troop_capacity: u32, // grams
     donkey_capacity: u32, // grams
     storehouse_boost_capacity: u32,
-}
-
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-struct StaminaCostConfig {
-    travel_cost: u16,
-    explore_cost: u16,
 }
 
 // speed
@@ -447,14 +439,14 @@ pub struct LaborBurnPrStrategy {
     /// Represents the resource's rarity and determines labor conversion rate.
     /// Higher values indicate rarer resources that yield more labor when converted.
     resource_rarity: u128,
-    /// Numerator of the depreciation percentage fraction.
-    depreciation_percent_num: u16,
-    /// Denominator of the depreciation percentage fraction.
-    depreciation_percent_denom: u16,
     /// Amount of wheat to burn per labor
     wheat_burn_per_labor: u128,
     /// Amount of fish to burn per labor
     fish_burn_per_labor: u128,
+    /// Numerator of the depreciation percentage fraction.
+    depreciation_percent_num: u16,
+    /// Denominator of the depreciation percentage fraction.
+    depreciation_percent_denom: u16,
 }
 
 /// A simple production strategy that requires burning multiple resources to produce output.

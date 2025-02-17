@@ -1,5 +1,5 @@
 import {
-  CapacityConfigCategory,
+  CapacityConfig,
   getContractByName,
   NAMESPACE,
   RESOURCE_PRECISION,
@@ -186,12 +186,12 @@ export const EternumGlobalConfig: Config = {
     armiesTickIntervalInSeconds: ARMIES_TICK_INTERVAL_SECONDS,
   },
   carryCapacityGram: {
-    [CapacityConfigCategory.None]: 0,
-    [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
-    [CapacityConfigCategory.Donkey]: 500_000,
+    [CapacityConfig.None]: 0,
+    [CapacityConfig.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
+    [CapacityConfig.Donkey]: 500_000,
     // 10_000 gr per army
-    [CapacityConfigCategory.Army]: 10_000,
-    [CapacityConfigCategory.Storehouse]: 300_000_000,
+    [CapacityConfig.Army]: 10_000,
+    [CapacityConfig.Storehouse]: 300_000_000,
   },
   speed: {
     donkey: DONKEY_SPEED,
