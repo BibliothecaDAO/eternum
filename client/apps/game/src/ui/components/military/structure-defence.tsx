@@ -11,7 +11,7 @@ const DEFENSE_NAMES = {
   3: "Watchtower",
 };
 
-interface DefenseTroop {
+export interface DefenseTroop {
   id: ID;
   troops: Troops;
 }
@@ -65,6 +65,10 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [] }: St
   const [defenseTroops, setDefenseTroops] = useState(troops);
   const [originalOrder, setOriginalOrder] = useState<DefenseTroop[]>([]);
   const [isReordering, setIsReordering] = useState(false);
+
+  useEffect(() => {
+    setDefenseTroops(troops);
+  }, [troops]);
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
