@@ -165,8 +165,8 @@ export class ArmyMovementManager {
   }
 
   public findActionPaths(
-    structureHexes: Map<number, Set<number>>,
-    armyHexes: Map<number, Set<number>>,
+    structureHexes: Map<number, Map<number, boolean>>,
+    armyHexes: Map<number, Map<number, boolean>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
@@ -190,18 +190,34 @@ export class ArmyMovementManager {
     for (const { col, row } of neighbors) {
       const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
       const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
       const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const isStructureMine = structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
       const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+
+      console.log({ isArmyMine, isStructureMine, hasArmy, hasStructure });
 
       if (!isExplored && !canExplore) continue;
 
-      const canAttack = hasArmy || hasStructure;
+      const isMine = isArmyMine || isStructureMine;
+      const canAttack = (hasArmy || hasStructure) && !isMine;
 
       const staminaCost = biome
         ? ArmyMovementManager.staminaDrain(biome, troopType)
         : configManager.getExploreStaminaCost();
 
       if (staminaCost > armyStamina) continue;
+
+      let actionType;
+      if (isMine) {
+        actionType = ActionType.Help;
+      } else if (canAttack) {
+        actionType = ActionType.Attack;
+      } else if (biome) {
+        actionType = ActionType.Move;
+      } else {
+        actionType = ActionType.Explore;
+      }
 
       priorityQueue.push({
         position: { col, row },
@@ -211,7 +227,7 @@ export class ArmyMovementManager {
           { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
           {
             hex: { col, row },
-            actionType: canAttack ? ActionType.Attack : biome ? ActionType.Move : ActionType.Explore,
+            actionType,
             biomeType: biome,
             staminaCost,
           },

@@ -97,7 +97,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         </div>
       </div>
 
-      <div className="flex justify-center my-6">
+      <div className="flex justify-center gap-4 my-6">
         <div
           onMouseEnter={() => {
             if (!isRealm) {
@@ -117,6 +117,28 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
             className="attack-army-selector px-6 py-2 text-lg"
           >
             Create Army
+          </Button>
+        </div>
+
+        <div
+          onMouseEnter={() => {
+            if (!isRealm) {
+              setTooltip({
+                content: "Can only create defensive armies on realms",
+                position: "top",
+              });
+            }
+          }}
+          onMouseLeave={() => setTooltip(null)}
+        >
+          <Button
+            isLoading={loading}
+            variant="primary"
+            onClick={() => handleCreateArmy(true)}
+            disabled={loading || numberAttackingArmies + numberDefensiveArmies >= maxAmountOfArmies || !isRealm}
+            className="defense-army-selector px-6 py-2 text-lg"
+          >
+            Create Defense Army
           </Button>
         </div>
       </div>

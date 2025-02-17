@@ -126,8 +126,8 @@ export class ArmyManager {
 
   async onUpdate(
     update: ArmySystemUpdate,
-    armyHexes: Map<number, Set<number>>,
-    structureHexes: Map<number, Set<number>>,
+    armyHexes: Map<number, Map<number, boolean>>,
+    structureHexes: Map<number, Map<number, boolean>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     await this.armyModel.loadPromise;
@@ -311,8 +311,8 @@ export class ArmyManager {
   public moveArmy(
     entityId: ID,
     hexCoords: Position,
-    armyHexes: Map<number, Set<number>>,
-    structureHexes: Map<number, Set<number>>,
+    armyHexes: Map<number, Map<number, boolean>>,
+    structureHexes: Map<number, Map<number, boolean>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     const armyData = this.armies.get(entityId);

@@ -13,8 +13,8 @@ export function findShortestPath(
   oldPosition: Position,
   newPosition: Position,
   exploredTiles: Map<number, Map<number, BiomeType>>,
-  structureHexes: Map<number, Set<number>>,
-  armyHexes: Map<number, Set<number>>,
+  structureHexes: Map<number, Map<number, boolean>>,
+  armyHexes: Map<number, Map<number, boolean>>,
   maxDistance: number,
 ): Position[] {
   // Check if target is within maximum distance before starting pathfinding
