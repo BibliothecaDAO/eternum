@@ -85,7 +85,12 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
         </div>
 
         {/* Middle section - Amount input */}
-        <NumericInput value={amount} onChange={onAmountChange} description={`${selectedResource?.trait}`} />
+        <NumericInput
+          inputClassName="text-2xl h-16 text-center"
+          value={amount}
+          onChange={onAmountChange}
+          description={`${selectedResource?.trait}`}
+        />
 
         {/* Bottom section */}
         <div className="flex justify-between items-center">

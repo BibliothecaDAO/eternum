@@ -61,7 +61,7 @@ export function NumericInput({
           setShowKeyboard(true);
         }}
         onClick={() => setShowKeyboard(true)}
-        className={cn("text-2xl h-16 text-center", inputClassName)}
+        className={cn(inputClassName)}
         {...props}
       />
 

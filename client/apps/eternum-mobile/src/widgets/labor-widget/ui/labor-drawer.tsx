@@ -1,7 +1,7 @@
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
-import { Input } from "@/shared/ui/input";
+import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { ResourcesIds, resources } from "@bibliothecadao/eternum";
@@ -45,12 +45,11 @@ export const LaborDrawer = ({
     return `${hours}h ${minutes}m`;
   };
 
-  const handleInputChange = (resourceId: ResourcesIds, value: string, isLabor: boolean = false) => {
-    const numValue = parseInt(value) || 0;
+  const handleInputChange = (resourceId: ResourcesIds, value: number, isLabor: boolean = false) => {
     if (isLabor) {
-      setLaborInputAmounts((prev) => ({ ...prev, [resourceId]: numValue }));
+      setLaborInputAmounts((prev) => ({ ...prev, [resourceId]: value }));
     } else {
-      setInputAmounts((prev) => ({ ...prev, [resourceId]: numValue }));
+      setInputAmounts((prev) => ({ ...prev, [resourceId]: value }));
     }
   };
 
@@ -63,12 +62,11 @@ export const LaborDrawer = ({
     }
   };
 
-  const handleOutputChange = (value: string) => {
-    const numValue = parseInt(value) || 0;
-    setOutputAmount(numValue);
+  const handleOutputChange = (value: number) => {
+    setOutputAmount(value);
     // Here you would typically recalculate input amounts based on the new output
     // For now, we'll just scale them proportionally
-    const scale = numValue / building.outputAmount;
+    const scale = value / building.outputAmount;
     if (activeTab === "raw") {
       setInputAmounts(
         (prev) =>
@@ -98,12 +96,12 @@ export const LaborDrawer = ({
           <ResourceIcon resourceId={resource.id} size={24} showTooltip />
           <span>{resource.trait}</span>
         </div>
-        <Input
-          type="number"
+        <NumericInput
           value={isLabor ? (laborInputAmounts[resourceId] ?? amount) : (inputAmounts[resourceId] ?? amount)}
-          onChange={(e) => handleInputChange(resourceId, e.target.value, isLabor)}
+          onChange={(value) => handleInputChange(resourceId, value, isLabor)}
           className="w-24"
-          min={0}
+          label={`Enter Amount`}
+          description={resource.trait}
         />
         <Button variant="outline" size="sm" onClick={() => handleMaxInput(resourceId, isLabor)} className="px-2 h-8">
           Max
@@ -157,12 +155,12 @@ export const LaborDrawer = ({
                   </div>
                   <span className="text-sm text-muted-foreground">Population: {building.population}</span>
                 </div>
-                <Input
-                  type="number"
+                <NumericInput
                   value={outputAmount}
-                  onChange={(e) => handleOutputChange(e.target.value)}
+                  onChange={handleOutputChange}
                   className="w-24"
-                  min={0}
+                  label={`Enter Amount`}
+                  description={outputResource.trait}
                 />
               </div>
 
