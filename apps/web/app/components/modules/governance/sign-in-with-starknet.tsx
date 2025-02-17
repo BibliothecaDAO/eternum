@@ -1,168 +1,103 @@
-import React, { useState } from "react";
+import type { ISiwsDomain, ISiwsMessage } from "@realms-world/siws";
+import { useEffect, useState } from "react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
-import { StarknetWalletButton } from "@/components/layout/starknet-wallet-button";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
+import { useMutation } from "@/hooks/use-mutation";
+import { loginFn } from "@/routes/_authed";
+import { formatAddress } from "@/utils/utils";
 import { useAccount, useSignTypedData } from "@starknet-react/core";
-import { Payload as SIWPayload, SIWWeb3 } from "@web3auth/sign-in-with-web3";
+import { useRouter } from "@tanstack/react-router";
 import { env } from "env";
-import { hash, TypedData } from "starknet";
 
-const Starkware: React.FC = () => {
-  const { isConnected, address } = useAccount();
-  //const [provider, setProvider] = useState<any>();
-  const [siwsMessage, setSiwsMessage] = useState<SIWWeb3 | null>();
-  const [sign, setSignature] = useState("");
+import { SiwsTypedData } from "@realms-world/siws";
 
-  let typedMessage;
+function createSiwsData(statement: string, address: string) {
   const domain = window.location.host;
   const origin = window.location.origin;
-  let statement = "Sign in to Realm";
-
-  const { isError, isPending, data, error, signTypedDataAsync } =
-    useSignTypedData({});
-
-  const signMessage = async (message: TypedData) => {
-    console.log("signMessage", message);
-    //message = hash.starknetKeccak(message).toString().substring(0, 31);
-
-    typedMessage = {
-      domain: {
-        name: "Realms.World Account Portal",
-        chainId: env.VITE_PUBLIC_CHAIN == "mainnet" ? "SN_MAIN" : "SN_GOERLI",
-        version: "0.0.1",
-        revision: "1",
-      },
-      types: {
-        StarkNetDomain: [
-          { name: "name", type: "felt" },
-          { name: "chainId", type: "felt" },
-          { name: "version", type: "felt" },
-          { name: "revision", type: "string" },
-        ],
-        Message: [
-          { name: "address", type: "felt" },
-          { name: "statement", type: "string" },
-          { name: "uri", type: "string" },
-          { name: "nonce", type: "string" },
-          { name: "issuedAt", type: "string" },
-          { name: "version", type: "felt" },
-        ],
-      },
-      primaryType: "Message",
-      message: {
-        message,
-      },
-    };
-
-    console.log("typedMessage", typedMessage);
-
-    return signTypedDataAsync(typedMessage);
+  /*const res = await fetch(`/api/auth/nonce`, {
+      credentials: "include",
+    });
+    console.log(res);
+    const responseNonce = (await res.json()) as { nonce: string };
+    console.log(responseNonce);*/
+  const siwsDomain: ISiwsDomain = {
+    version: "0.0.1",
+    chainId: env.VITE_PUBLIC_CHAIN == "sepolia" ? `SN_SEPOLIA` : `SN_MAIN`,
+    name: domain,
+    revision: "1",
+  };
+  const siwsMessage: ISiwsMessage = {
+    address,
+    statement,
+    uri: origin,
+    version: "0.0.5", //message version and not the starknetdomain version
+    nonce: "0x0x9e9eew", //TODO add csrf token
+    issuedAt: new Date().toISOString(),
   };
 
-  async function createStarkwareMessage() {
-    const payload = new SIWPayload();
-    payload.domain = domain;
-    payload.address = address as string;
-    payload.uri = origin;
-    payload.statement = statement;
-    payload.version = "1";
-    payload.chainId = 1;
-    const header = {
-      t: "eip191",
+  const signindata = new SiwsTypedData(siwsDomain, siwsMessage);
+  return signindata;
+}
+
+export function Login() {
+  const router = useRouter();
+  const { address } = useAccount();
+  const [signInData, setSignInData] = useState<SiwsTypedData>();
+  //  const { data: session } = useSession();
+
+  useEffect(() => {
+    const createSignInData = async () => {
+      if (address) {
+        const loginString = "Login to Realms.World with your Starknet Wallet";
+        const siwsData = createSiwsData(loginString, formatAddress(address));
+        setSignInData(siwsData);
+        return siwsData;
+      }
     };
-    const network = "starkware";
-    let message = new SIWWeb3({ header, payload, network });
-    setSiwsMessage(message);
-    const messageText = message.prepareMessage();
-    const result = await signMessage(messageText);
-    setSignature(result.join(","));
-  }
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    createSignInData();
+  }, [address]);
+
+  const { signTypedDataAsync, error, isPending } = useSignTypedData({
+    params: signInData,
+  });
+
+  const loginMutation = useMutation({
+    fn: loginFn,
+    onSuccess: async (ctx) => {
+      /*if (!ctx.data?.error) {
+        await router.invalidate();
+        await router.navigate({ to: "/" });
+        return;
+      }*/
+    },
+  });
 
   return (
-    <>
-      {isConnected && sign == "" && (
-        <span>
-          <p className="text-center">Sign Transaction</p>
-          <Input type="text" id="publicKey" value={address} readOnly />
-        </span>
+    <form
+      //actionText="Login"
+      //status={loginMutation.status}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const signature = await signTypedDataAsync(signInData);
+        await loginFn({
+          data: {
+            credentials: {
+              message: JSON.stringify(signInData),
+              redirect: false,
+              signature: signature,
+            },
+          },
+        });
+      }}
+    >
+      {loginMutation.status == "error" && (
+        <div className="text-red-400">{loginMutation.error?.message}</div>
       )}
-      {isConnected != true && sign == "" && (
-        <div className="flex items-center gap-2">
-          <StarknetIcon className="h-10 w-10" />
-          <p className={"text-2xl"}>Sign in With Starkware</p>
-        </div>
-      )}
-
-      {isConnected && sign == "" && (
-        <div>
-          <Button id="w3aBtn" onClick={createStarkwareMessage}>
-            Sign-in with Starkware
-          </Button>
-        </div>
-      )}
-      {isConnected != true && sign == "" && <StarknetWalletButton />}
-
-      {sign && (
-        <>
-          <p className="text-center">Verify Signature</p>
-          <input
-            type="text"
-            id="signature"
-            value={sign}
-            onChange={(e) => setSignature(e.target.value)}
-          />
-          <Button
-            id="verify"
-            onClick={(e) => {
-              const signature = {
-                t: "eip191",
-                s: sign.split(","),
-              };
-              const payload = siwsMessage!.payload;
-              siwsMessage!
-                .verify(payload, signature, provider)
-                .then((resp) => {
-                  if (resp.success == true) {
-                    toast({
-                      title: "Success",
-                      description: "Signature Verified",
-                      variant: "default", // adjust the variant if you have specific success styling
-                    });
-                  } else {
-                    toast({
-                      title: "Error",
-                      description: resp.error.type,
-                      variant: "destructive", // for errors
-                    });
-                  }
-                })
-                .catch((err) => {
-                  console.log(err);
-                  toast({
-                    title: "Error",
-                    description: err.error.toString(),
-                    variant: "destructive",
-                  });
-                });
-            }}
-          >
-            Verify
-          </Button>
-          <Button
-            id="verify"
-            onClick={(e) => {
-              setSiwsMessage(null);
-              setSignature("");
-            }}
-          >
-            Back to Wallet
-          </Button>
-        </>
-      )}
-    </>
+      <Button /* disabled={isPending}*/>
+        <StarknetIcon className="mr-2 h-6 w-6" />
+        Sign in with Starknet
+      </Button>
+    </form>
   );
-};
-
-export default Starkware;
+}

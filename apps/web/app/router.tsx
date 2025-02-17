@@ -1,4 +1,6 @@
 import type { inferRouterOutputs } from "@trpc/server";
+import { DefaultCatchBoundary } from "@/components/layout/default-catch-boundary";
+import { NotFound } from "@/components/layout/not-found";
 import {
   defaultShouldDehydrateQuery,
   QueryClient,
@@ -56,6 +58,8 @@ export function createRouter() {
   const router = createTanStackRouter({
     routeTree,
     defaultPreload: "intent",
+    defaultErrorComponent: DefaultCatchBoundary,
+    defaultNotFoundComponent: () => <NotFound />,
     context: {
       trpcQueryUtils,
     },

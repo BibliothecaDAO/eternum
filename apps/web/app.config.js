@@ -1,12 +1,13 @@
 import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import { defineConfig } from "@tanstack/start/config";
 import reactRefresh from "@vitejs/plugin-react";
 import { createApp } from "vinxi";
 //import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 
-export default createApp({
+export default defineConfig({
   server: {
     preset: "vercel", // change to 'node' or 'bun' or anyof the supported presets for nitro (nitro.unjs.io)
     experimental: {
@@ -18,39 +19,20 @@ export default createApp({
       },
     },
   },
-  routers: [
-    {
-      type: "static",
-      name: "public",
-      dir: "./public",
-    },
-    {
-      type: "http",
-      name: "trpc",
-      base: "/trpc",
-      handler: "./trpc-server.handler.ts",
-      target: "server",
-      plugins: () => [],
-    },
-    {
-      type: "http",
-      name: "api",
-      base: "/api",
-      handler: "./api/index.ts",
-      target: "server",
-      plugins: () => [],
-    },
-    {
-      type: "spa",
-      name: "client",
-      handler: "./index.html",
-      target: "browser",
+  vite: {
+    plugins: [
+      viteTsConfigPaths({
+        projects: ["./tsconfig.json"],
+      }),
+      svgr({
+        // svgr options: https://react-svgr.com/docs/options/
+      }),
+    ],
+  },
+
+  routers: {
+    client: {
       plugins: () => [
-        TanStackRouterVite({
-          routesDirectory: "./app/routes",
-          generatedRouteTree: "./app/routeTree.gen.ts",
-          autoCodeSplitting: true,
-        }),
         reactRefresh(),
         viteTsConfigPaths({
           projects: ["./tsconfig.json"],
@@ -58,8 +40,7 @@ export default createApp({
         svgr({
           // svgr options: https://react-svgr.com/docs/options/
         }),
-        tailwindcss(),
       ],
     },
-  ],
+  },
 });
