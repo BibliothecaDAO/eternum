@@ -3,7 +3,6 @@
 import { configManager, setup } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
-import React from "react";
 import ReactDOM from "react-dom/client";
 import { ShepherdJourneyProvider } from "react-shepherd";
 import "shepherd.js/dist/css/shepherd.css";
@@ -100,15 +99,15 @@ async function init() {
 
   inject();
   root.render(
-    <React.StrictMode>
-      <ShepherdJourneyProvider>
-        <StarknetProvider>
-          <DojoProvider value={setupResult} backgroundImage={backgroundImage}>
-            <App backgroundImage={backgroundImage} />
-          </DojoProvider>
-        </StarknetProvider>
-      </ShepherdJourneyProvider>
-    </React.StrictMode>,
+    // <React.StrictMode>
+    <ShepherdJourneyProvider>
+      <StarknetProvider>
+        <DojoProvider value={setupResult} backgroundImage={backgroundImage}>
+          <App backgroundImage={backgroundImage} />
+        </DojoProvider>
+      </StarknetProvider>
+    </ShepherdJourneyProvider>,
+    // </React.StrictMode>,
   );
 }
 

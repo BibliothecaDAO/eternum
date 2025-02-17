@@ -4,11 +4,17 @@ import { ArmyChip } from "@/ui/components/military/army-chip";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { BuildingType, configManager, PlayerStructure, StructureType, TileManager } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  configManager,
+  PlayerStructure,
+  StructureType,
+  TileManager,
+  TroopType,
+} from "@bibliothecadao/eternum";
 import { useArmiesByStructure, useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
-
-const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
+import { StructureDefence } from "./structure-defence";
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
   const dojo = useDojo();
@@ -147,6 +153,32 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         {structureArmies.map((army) => (
           <ArmyChip key={army.entityId} className="w-full" army={army} showButtons />
         ))}
+      </div>
+
+      <div className="mt-6">
+        <StructureDefence
+          maxDefenses={4}
+          troops={[
+            {
+              id: 1,
+              troops: { type: TroopType.Crossbowman, count: 100, tier: 1 },
+            },
+            {
+              id: 2,
+              troops: { type: TroopType.Paladin, count: 50, tier: 2 },
+            },
+            {
+              id: 3,
+              troops: { type: TroopType.Knight, count: 75, tier: 1 },
+            },
+            {
+              id: 4,
+              troops: { type: TroopType.Knight, count: 100, tier: 1 },
+            },
+          ]}
+          // index to cooldown
+          cooldownSlots={[3]}
+        />
       </div>
     </div>
   );
