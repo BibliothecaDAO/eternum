@@ -54,6 +54,15 @@ export const LaborDrawer = ({
     }
   };
 
+  const handleMaxInput = (resourceId: ResourcesIds, isLabor: boolean = false) => {
+    const balance = resourceBalances.find((b) => b.resourceId === resourceId)?.balance || 0;
+    if (isLabor) {
+      setLaborInputAmounts((prev) => ({ ...prev, [resourceId]: balance }));
+    } else {
+      setInputAmounts((prev) => ({ ...prev, [resourceId]: balance }));
+    }
+  };
+
   const handleOutputChange = (value: string) => {
     const numValue = parseInt(value) || 0;
     setOutputAmount(numValue);
@@ -84,7 +93,7 @@ export const LaborDrawer = ({
     if (!resource) return null;
 
     return (
-      <div key={resourceId} className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 items-center">
+      <div key={resourceId} className="grid grid-cols-[1fr_auto_auto_auto] gap-4 py-2 items-center">
         <div className="flex items-center gap-2">
           <ResourceIcon resourceId={resource.id} size={24} showTooltip />
           <span>{resource.trait}</span>
@@ -96,8 +105,36 @@ export const LaborDrawer = ({
           className="w-24"
           min={0}
         />
+        <Button variant="outline" size="sm" onClick={() => handleMaxInput(resourceId, isLabor)} className="px-2 h-8">
+          Max
+        </Button>
         <span className="text-sm text-muted-foreground whitespace-nowrap">Balance: {balance}</span>
       </div>
+    );
+  };
+
+  const renderContent = () => {
+    if (!building.hasLaborMode) {
+      return (
+        <div className="mt-4 space-y-4">
+          {building.inputs.map((input) => renderResourceRow(input.resourceId, input.amount))}
+        </div>
+      );
+    }
+
+    return (
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "raw" | "labor")}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="raw">Raw Mode</TabsTrigger>
+          <TabsTrigger value="labor">Labor Mode</TabsTrigger>
+        </TabsList>
+        <TabsContent value="raw" className="mt-4 space-y-4">
+          {building.inputs.map((input) => renderResourceRow(input.resourceId, input.amount))}
+        </TabsContent>
+        <TabsContent value="labor" className="mt-4 space-y-4">
+          {building.laborInputs.map((input) => renderResourceRow(input.resourceId, input.amount, true))}
+        </TabsContent>
+      </Tabs>
     );
   };
 
@@ -108,25 +145,17 @@ export const LaborDrawer = ({
           <DrawerTitle className="text-3xl font-bokor">Manage Production</DrawerTitle>
         </DrawerHeader>
         <div className="p-4">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "raw" | "labor")}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="raw">Raw Mode</TabsTrigger>
-              <TabsTrigger value="labor">Labor Mode</TabsTrigger>
-            </TabsList>
-            <TabsContent value="raw" className="mt-4 space-y-4">
-              {building.inputs.map((input) => renderResourceRow(input.resourceId, input.amount))}
-            </TabsContent>
-            <TabsContent value="labor" className="mt-4 space-y-4">
-              {building.laborInputs.map((input) => renderResourceRow(input.resourceId, input.amount, true))}
-            </TabsContent>
-          </Tabs>
+          {renderContent()}
 
           <Card className="mt-6">
             <CardContent className="p-4 space-y-4">
               <div className="grid grid-cols-[1fr_auto] gap-4 items-center">
-                <div className="flex items-center gap-2">
-                  <ResourceIcon resourceId={outputResource.id} size={24} showTooltip />
-                  <span>{outputResource.trait}</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <ResourceIcon resourceId={outputResource.id} size={24} showTooltip />
+                    <span>{outputResource.trait}</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">Population: {building.population}</span>
                 </div>
                 <Input
                   type="number"
@@ -140,22 +169,22 @@ export const LaborDrawer = ({
               <div className="text-sm">
                 <div>Consumed per second:</div>
                 <div className="flex gap-2 mt-1">
-                  {activeTab === "raw"
-                    ? building.inputs.map((input) => {
-                        const resource = resources.find((r) => r.id === input.resourceId);
+                  {activeTab === "raw" || !building.hasLaborMode
+                    ? building.consumptionRates.map((rate) => {
+                        const resource = resources.find((r) => r.id === rate.resourceId);
                         return resource ? (
-                          <div key={input.resourceId} className="flex items-center gap-1">
+                          <div key={rate.resourceId} className="flex items-center gap-1">
                             <ResourceIcon resourceId={resource.id} size={16} />
-                            <span>{inputAmounts[input.resourceId] ?? input.amount}</span>
+                            <span>{rate.amount}</span>
                           </div>
                         ) : null;
                       })
-                    : building.laborInputs.map((input) => {
-                        const resource = resources.find((r) => r.id === input.resourceId);
+                    : building.laborConsumptionRates.map((rate) => {
+                        const resource = resources.find((r) => r.id === rate.resourceId);
                         return resource ? (
-                          <div key={input.resourceId} className="flex items-center gap-1">
+                          <div key={rate.resourceId} className="flex items-center gap-1">
                             <ResourceIcon resourceId={resource.id} size={16} />
-                            <span>{laborInputAmounts[input.resourceId] ?? input.amount}</span>
+                            <span>{rate.amount}</span>
                           </div>
                         ) : null;
                       })}

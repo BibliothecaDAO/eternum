@@ -15,6 +15,9 @@ const dummyLaborBuildings = [
     productionTimeLeft: 3600, // 1 hour
     isActive: true,
     outputAmount: 100,
+    population: 2,
+    hasLaborMode: true,
+    // Current input amounts
     inputs: [
       { resourceId: ResourcesIds.Wood, amount: 10 },
       { resourceId: ResourcesIds.Coal, amount: 5 },
@@ -24,6 +27,16 @@ const dummyLaborBuildings = [
       { resourceId: ResourcesIds.Wheat, amount: 5 },
       { resourceId: ResourcesIds.Fish, amount: 3 },
     ],
+    // Fixed consumption rates per second
+    consumptionRates: [
+      { resourceId: ResourcesIds.Wood, amount: 0.5 },
+      { resourceId: ResourcesIds.Coal, amount: 0.2 },
+    ],
+    laborConsumptionRates: [
+      { resourceId: ResourcesIds.Lords, amount: 0.1 },
+      { resourceId: ResourcesIds.Wheat, amount: 0.3 },
+      { resourceId: ResourcesIds.Fish, amount: 0.2 },
+    ],
   },
   {
     id: "2",
@@ -31,15 +44,20 @@ const dummyLaborBuildings = [
     productionTimeLeft: 7200, // 2 hours
     isActive: true,
     outputAmount: 50,
+    population: 3,
+    hasLaborMode: false,
+    // Current input amounts
     inputs: [
       { resourceId: ResourcesIds.Coal, amount: 15 },
       { resourceId: ResourcesIds.Stone, amount: 8 },
     ],
-    laborInputs: [
-      { resourceId: ResourcesIds.Lords, amount: 3 },
-      { resourceId: ResourcesIds.Wheat, amount: 8 },
-      { resourceId: ResourcesIds.Fish, amount: 5 },
+    laborInputs: [],
+    // Fixed consumption rates per second
+    consumptionRates: [
+      { resourceId: ResourcesIds.Coal, amount: 0.8 },
+      { resourceId: ResourcesIds.Stone, amount: 0.4 },
     ],
+    laborConsumptionRates: [],
   },
 ];
 

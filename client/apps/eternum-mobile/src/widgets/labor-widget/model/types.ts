@@ -1,19 +1,24 @@
 import { ResourcesIds } from "@bibliothecadao/eternum";
 
+export interface ResourceAmount {
+  resourceId: ResourcesIds;
+  amount: number;
+}
+
 export interface LaborBuilding {
   id: string;
   resourceId: ResourcesIds;
   productionTimeLeft: number; // in seconds
   isActive: boolean;
   outputAmount: number;
-  inputs: {
-    resourceId: ResourcesIds;
-    amount: number;
-  }[];
-  laborInputs: {
-    resourceId: ResourcesIds;
-    amount: number;
-  }[];
+  population: number;
+  hasLaborMode: boolean;
+  // Current input amounts
+  inputs: ResourceAmount[];
+  laborInputs: ResourceAmount[];
+  // Fixed consumption rates per second
+  consumptionRates: ResourceAmount[];
+  laborConsumptionRates: ResourceAmount[];
 }
 
 export interface ResourceBalance {
