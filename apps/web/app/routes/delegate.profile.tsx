@@ -1,4 +1,5 @@
 import { DelegateProfileForm } from "@/components/modules/governance/delegate-profile-form";
+import SignInWithStarknet from "@/components/modules/governance/sign-in-with-starknet";
 import { trpc } from "@/router";
 import { useAccount } from "@starknet-react/core";
 import { createFileRoute } from "@tanstack/react-router";
@@ -20,6 +21,7 @@ function RouteComponent() {
   return (
     <div className="container p-6">
       <h1 className="text-2xl font-semibold">Your Profile</h1>
+      <SignInWithStarknet />
       {delegate?.user}
       {delegate && (
         <DelegateProfileForm delegate={delegate} onSubmit={() => {}} />

@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { and, desc, eq, like, sql } from "@realms-world/db";
-import { delegates } from "@realms-world/db/schema";
+import {
+  CreateDelegateProfileSchema,
+  delegateProfiles,
+  delegates,
+} from "@realms-world/db/schema";
 
 import { t } from "../trpc";
 
@@ -56,5 +60,18 @@ export const delegatesRouter = t.router({
         ),
         with: { delegateProfile: true },
       });
+    }),
+  createProfile: t.procedure //TODO replace with protectedProcedure
+    .input(CreateDelegateProfileSchema)
+    .mutation(({ ctx, input }) => {
+      // if (!ctx.session.user.name) return;
+      const delegateId = padAddress(ctx.session.user.name);
+      return ctx.db
+        .insert(delegateProfiles)
+        .values({ ...input, delegateId })
+        .onConflictDoUpdate({
+          target: delegateProfiles.delegateId,
+          set: { ...input },
+        });
     }),
 });
