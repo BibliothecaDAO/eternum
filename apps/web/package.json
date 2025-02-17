@@ -64,7 +64,7 @@
     "cmdk": "1.0.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.18.2",
-    "lucide-react": "^0.474.0",
+    "lucide-react": "0.469.0",
     "react": "^19.0.0",
     "react-day-picker": "8.10.1",
     "react-dom": "^19.0.0",
