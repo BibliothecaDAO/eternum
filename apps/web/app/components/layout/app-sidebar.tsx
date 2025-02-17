@@ -12,8 +12,12 @@ import {
 import {
   Banknote,
   BookOpen,
+  Castle,
+  ClipboardPen,
+  Earth,
   ExternalLink,
   Frame,
+  HandCoins,
   Map,
   Newspaper,
   PieChart,
@@ -24,7 +28,7 @@ const data = {
     {
       title: "Realms",
       url: "/realms",
-      icon: Banknote,
+      icon: Castle,
 
       items: [
         {
@@ -46,7 +50,7 @@ const data = {
       title: "World",
       url: "/coming-soon",
       isActive: false,
-      icon: BookOpen,
+      icon: Earth,
       items: [
         {
           title: "Beasts",
@@ -84,7 +88,7 @@ const data = {
     {
       title: "Claims",
       url: "/realms/claims",
-      icon: BookOpen,
+      icon: HandCoins,
       items: [
         {
           title: "Realms Emissions",
@@ -101,8 +105,8 @@ const data = {
   governance: [
     {
       title: "Delegation",
-      url: "/coming-soon",
-      icon: Banknote,
+      url: "/delegate/list",
+      icon: ClipboardPen,
 
       items: [
         {
@@ -111,7 +115,7 @@ const data = {
         },
         {
           title: "Your Profile",
-          url: "/coming-soon",
+          url: "/delegate/profile",
         },
       ],
     },
@@ -172,25 +176,8 @@ const data = {
     },
     {
       title: "Blog",
-      url: "#",
+      url: "https://realms.world/blog",
       icon: Newspaper,
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
     },
   ],
 };

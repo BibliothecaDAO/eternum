@@ -144,7 +144,6 @@ export const delegates = pgTable(
   "delegates",
   {
     uid: uuid("uid").defaultRandom().primaryKey().notNull(),
-    // TODO: failed to parse database type 'int8range'
     block_range: int8range("block_range").notNull(),
     id: varchar("id", { length: 256 }).notNull(),
     governance: varchar("governance", { length: 256 }),

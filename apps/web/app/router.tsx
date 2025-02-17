@@ -1,19 +1,18 @@
-import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import type { inferRouterOutputs } from "@trpc/server";
 import {
   defaultShouldDehydrateQuery,
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
+import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { httpBatchLink } from "@trpc/client";
 import { createTRPCQueryUtils, createTRPCReact } from "@trpc/react-query";
+import SuperJSON from "superjson";
 
+import type { AppRouter } from "../trpc";
+import { Spinner } from "./routes/-components/spinner";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
-
-import { Spinner } from "./routes/-components/spinner";
-import type { AppRouter } from "../trpc-server.handler";
-import SuperJSON from "superjson";
-import type { inferRouterOutputs } from "@trpc/server";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,7 +51,6 @@ export const trpcQueryUtils = createTRPCQueryUtils({
   queryClient,
   client: trpcClient,
 });
-
 
 export function createRouter() {
   const router = createTanStackRouter({

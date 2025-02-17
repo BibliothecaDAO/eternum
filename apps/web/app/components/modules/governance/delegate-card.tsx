@@ -26,7 +26,7 @@ import { num } from "starknet";
 export function DelegateCard({
   delegate,
 }: {
-  delegate: RouterOutputs["delegates"]["items"][number];
+  delegate: RouterOutputs["delegates"]["all"]["items"][number];
 }) {
   const { data: currentDelegate } = useCurrentDelegate();
   const isCurrentDelegate =
@@ -73,7 +73,7 @@ export function DelegateCard({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar>
+            <Avatar className="h-12 w-12">
               <AvatarImage
                 alt={name}
                 src={`https://cdn.stamp.fyi/avatar/${delegate.user}?s=64`}

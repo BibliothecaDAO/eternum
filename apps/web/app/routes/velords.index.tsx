@@ -13,10 +13,10 @@ import { StakingAddresses } from "@realms-world/constants";
 
 export const Route = createFileRoute("/velords/")({
   component: RouteComponent,
-  loader: async ({ context: { trpcQueryUtils } }) => {
+  /*loader: async ({ context: { trpcQueryUtils } }) => {
     await trpcQueryUtils.posts.ensureData();
     return;
-  },
+  },*/
 });
 
 function RouteComponent() {

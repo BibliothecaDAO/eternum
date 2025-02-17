@@ -8,9 +8,9 @@ import { DelegateListActions } from "./delegate-list-actions";
 function DelegateList() {
   // Local state for the search string.
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortMethod, setSortMethod] = useState<"desc" | "random">("desc");
+  const [sortMethod, setSortMethod] = useState<"desc" | "random">("random");
 
-  const delegatesQuery = trpc.delegates.useQuery({
+  const delegatesQuery = trpc.delegates.all.useQuery({
     search: searchQuery,
     orderBy: sortMethod,
   });

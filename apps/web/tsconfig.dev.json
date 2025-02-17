@@ -2,9 +2,10 @@
   "composite": true,
   "extends": "./tsconfig.base.json",
 
-  "files": ["/client/main.tsx"],
+  "files": ["/app/main.tsx"],
   "include": [
-    "src"
+    "app/**/*",
+    "trpc/**/*",
     // "__tests__/**/*.test.*"
   ]
 }
