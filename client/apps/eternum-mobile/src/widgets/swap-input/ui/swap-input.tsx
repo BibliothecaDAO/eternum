@@ -1,17 +1,8 @@
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/shared/ui/drawer";
+import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/shared/ui/drawer";
 import { Input } from "@/shared/ui/input";
-import { NumericKeyboard } from "@/shared/ui/numeric-keyboard";
+import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { resources } from "@bibliothecadao/eternum";
@@ -28,25 +19,11 @@ interface SwapInputProps {
 
 export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onResourceChange }: SwapInputProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [showKeyboard, setShowKeyboard] = useState(false);
   // Dummy balance for demonstration
   const balance = Math.floor(Math.random() * 1000);
 
   const handlePercentageClick = (percentage: number) => {
     onAmountChange?.(Math.floor((balance * percentage) / 100));
-  };
-
-  const handleKeyPress = (key: string) => {
-    if (key === "⌫") {
-      // Handle backspace
-      onAmountChange?.(Math.floor(amount / 10));
-    } else {
-      // Handle number or decimal point
-      const newValue = amount.toString() + key;
-      if (!isNaN(parseFloat(newValue))) {
-        onAmountChange?.(parseFloat(newValue));
-      }
-    }
   };
 
   const selectedResource = resources.find((r) => r.id === resourceId);
@@ -108,20 +85,7 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
         </div>
 
         {/* Middle section - Amount input */}
-        <Input
-          type="number"
-          value={amount}
-          readOnly
-          inputMode="none"
-          onFocus={(e) => {
-            e.preventDefault();
-            e.target.blur();
-            setShowKeyboard(true);
-          }}
-          onClick={() => setShowKeyboard(true)}
-          className="text-2xl h-16 text-center"
-          placeholder="0.0"
-        />
+        <NumericInput value={amount} onChange={onAmountChange} description={`${selectedResource?.trait}`} />
 
         {/* Bottom section */}
         <div className="flex justify-between items-center">
@@ -136,28 +100,6 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
             ))}
           </div>
         </div>
-
-        {/* Numeric Keyboard */}
-        <Drawer open={showKeyboard} onOpenChange={setShowKeyboard}>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle className="text-3xl font-bokor text-center">Enter Amount</DrawerTitle>
-              <DrawerDescription className="text-xl">
-                {amount} {selectedResource?.trait}
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="p-4">
-              <NumericKeyboard onKeyPress={handleKeyPress} />
-            </div>
-            <DrawerFooter>
-              <DrawerClose asChild>
-                <Button className="w-full" size="lg">
-                  Confirm
-                </Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
       </CardContent>
     </Card>
   );
