@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm with-env vinxi dev",
-    "build": "vinxi build",
+    "build": "pnpm with-env vinxi build --preset node-server",
     "lint": "eslint",
-    "start": "vinxi start",
+    "start": "pnpm with-env vinxi start --preset node-server",
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
@@ -42,7 +42,7 @@
     "@realms-world/db": "workspace:*",
     "@realms-world/siws": "^0.0.2",
     "@reservoir0x/reservoir-sdk": "^2.5.6",
-    "@starknet-io/get-starknet-core": "^4.0.0",
+    "@starknet-io/get-starknet-core": "^4.0.6",
     "@starknet-react/chains": "^3.1.2",
     "@starknet-react/core": "^3.7.2",
     "@tailwindcss/postcss": "^4.0.6",
@@ -57,7 +57,6 @@
     "@trpc/client": "11.0.0-rc.730",
     "@trpc/react-query": "11.0.0-rc.730",
     "@trpc/server": "11.0.0-rc.730",
-    "@web3auth/sign-in-with-web3": "^4.1.0",
     "add": "^2.0.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -72,14 +71,14 @@
     "recharts": "^2.15.1",
     "redaxios": "^0.5.1",
     "starknet": "catalog:",
-    "starknetkit": "^2.6.1",
+    "starknetkit": "^2.6.5",
+    "starknet-types-07": "npm:@starknet-io/types-js@^0.7.10",
     "superjson": "2.2.2",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "viem": "catalog:",
     "vinxi": "0.5.3",
     "wagmi": "^2.14.11",
-    "web3": "^4.16.0",
     "zod": "catalog:"
   },
   "devDependencies": {

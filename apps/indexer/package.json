@@ -39,7 +39,7 @@
     "apibara": "2.0.0-beta.38",
     "drizzle-orm": "catalog:",
     "pg": "^8.13.1",
-    "starknet": "^6.11.0",
+    "starknet": "^6.23.1",
     "viem": "catalog:",
     "zod": "catalog:"
   }

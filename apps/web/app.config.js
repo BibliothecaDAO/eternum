@@ -40,6 +40,8 @@ export default defineConfig({
         svgr({
           // svgr options: https://react-svgr.com/docs/options/
         }),
+        tailwindcss(),
+
       ],
     },
   },
