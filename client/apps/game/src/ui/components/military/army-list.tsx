@@ -142,20 +142,33 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {structureArmies.map((army) => (
-          <ArmyChip key={army.entityId} className="w-full" army={army} showButtons />
-        ))}
+      <div className="space-y-4">
+        <Headline>
+          <div className="flex items-center gap-3">
+            <div className="text-lg font-bold text-gold">Armies</div>
+          </div>
+        </Headline>
+
+        <div className="space-y-3">
+          {structureArmies.map((army) => (
+            <ArmyChip key={army.entityId} className="w-full" army={army} showButtons />
+          ))}
+        </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 space-y-4">
+        <Headline>
+          <div className="flex items-center gap-3">
+            <div className="text-lg font-bold text-gold">Structure Defenses</div>
+          </div>
+        </Headline>
+
         <StructureDefence
           maxDefenses={4}
           troops={structureArmies.map((army) => ({
             id: army.entityId,
             troops: army.troops,
           }))}
-          // index to cooldown
           cooldownSlots={[3]}
         />
       </div>

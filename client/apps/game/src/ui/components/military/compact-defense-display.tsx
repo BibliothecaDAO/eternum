@@ -9,7 +9,7 @@ interface CompactDefenseDisplayProps {
 
 export const CompactDefenseDisplay = ({ troops, className = "" }: CompactDefenseDisplayProps) => {
   return (
-    <div className={`flex gap-1 items-center ${className}`}>
+    <div className={`flex gap-1 items-center flex-wrap ${className}`}>
       {troops.map((defense) => (
         <div
           key={defense.id}

@@ -97,8 +97,7 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [] }: St
 
   return (
     <div className="p-3 bg-brown-900/80 rounded-lg border border-gold/10">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-gold text-base font-semibold">Structure Defenses</h3>
+      <div className="flex justify-end">
         {isReordering && (
           <div className="flex gap-1.5">
             <Button variant="primary" onClick={handleConfirm} className="px-3 py-0.5 text-xs">
