@@ -37,8 +37,6 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
   const { currentDefaultTick: tick } = useBlockTimestamp();
 
-  console.log("realm transfer");
-
   const selectedStructureEntityId = useUIStore((state) => state.structureEntityId);
 
   const resourceManager = useResourceManager(selectedStructureEntityId, resource);

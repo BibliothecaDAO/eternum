@@ -195,8 +195,6 @@ export class ArmyMovementManager {
       const isStructureMine = structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
       const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
 
-      console.log({ isArmyMine, isStructureMine, hasArmy, hasStructure });
-
       if (!isExplored && !canExplore) continue;
 
       const isMine = isArmyMine || isStructureMine;

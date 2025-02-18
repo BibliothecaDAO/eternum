@@ -391,6 +391,7 @@ export const CombatContainer = ({
           variant="primary"
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
           disabled={attackerStamina < staminaCombatConfig.staminaCost}
+          // todo: add attack tx
           onClick={() => console.log("ATTACKKKKKK")}
         >
           {attackerStamina >= staminaCombatConfig.staminaCost

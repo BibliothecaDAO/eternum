@@ -832,7 +832,6 @@ export default class WorldmapScene extends HexagonScene {
 
     // Add to fetched chunks before the query to prevent concurrent duplicate requests
     this.fetchedChunks.add(chunkKey);
-    console.log(startCol, startRow, range);
 
     try {
       this.state.setLoading(LoadingStateKey.Map, true);
