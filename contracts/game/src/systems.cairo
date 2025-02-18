@@ -40,8 +40,9 @@ pub mod combat {
     #[cfg(test)]
     mod tests;
     pub mod contracts {
-        pub mod battle_systems;
-        pub mod troop_systems;
+        pub mod troop_battle_systems;
+        pub mod troop_management_systems;
+        pub mod troop_movement_systems;
     }
 }
 pub mod bank {

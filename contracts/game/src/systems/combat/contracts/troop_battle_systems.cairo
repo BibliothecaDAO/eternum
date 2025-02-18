@@ -8,14 +8,14 @@ use s1_eternum::models::position::{Direction};
 
 
 #[starknet::interface]
-trait IBattleSystems<T> {
+trait ITroopBattleSystems<T> {
     fn attack_explorer_vs_explorer(ref self: T, aggressor_id: ID, defender_id: ID, defender_direction: Direction);
     fn attack_explorer_vs_guard(ref self: T, explorer_id: ID, structure_id: ID, structure_direction: Direction);
 }
 
 
 #[dojo::contract]
-mod battle_systems {
+mod troop_battle_systems {
     use achievement::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
@@ -34,7 +34,7 @@ mod battle_systems {
 
 
     #[abi(embed_v0)]
-    impl BattleSystemsImpl of super::IBattleSystems<ContractState> {
+    impl TroopBattleSystemsImpl of super::ITroopBattleSystems<ContractState> {
         fn attack_explorer_vs_explorer(
             ref self: ContractState, aggressor_id: ID, defender_id: ID, defender_direction: Direction,
         ) {
