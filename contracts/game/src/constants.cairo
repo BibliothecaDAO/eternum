@@ -86,6 +86,7 @@ mod ResourceTypes {
     // THE RESOURCE IDS ABOVE MUST MATCH THE
     // RESOURCE IDS IN THE SEASON PASS
 
+    //todo: should labor be bridgeable?
     const LABOR: u8 = 23;
     const EARTHEN_SHARD: u8 = 24;
     const DONKEY: u8 = 25;
