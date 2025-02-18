@@ -126,7 +126,7 @@ export function getProducedResource(name: BuildingType): number {
   }
 }
 
-export enum CapacityConfigCategory {
+export enum CapacityConfig {
   None = 0,
   Structure = 1,
   Donkey = 2,

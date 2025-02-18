@@ -429,14 +429,8 @@ export interface SetQuestRewardConfigProps extends SystemSigner {
 export interface SetMapConfigProps extends SystemSigner {
   reward_amount: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
-  // initial mine food balance
   mine_wheat_grant_amount: num.BigNumberish;
   mine_fish_grant_amount: num.BigNumberish;
-}
-
-export interface SetTravelStaminaCostConfigProps extends SystemSigner {
-  travel_type: num.BigNumberish;
-  cost: num.BigNumberish;
 }
 
 export interface SetTravelFoodCostConfigProps extends SystemSigner {
@@ -493,12 +487,12 @@ export interface SetBattleConfigProps extends SystemSigner {
   regular_immunity_ticks: num.BigNumberish;
   hyperstructure_immunity_ticks: num.BigNumberish;
 }
+
 export interface SetTroopConfigProps extends SystemSigner {
   stamina_config: TroopStaminaConfigProps;
   limit_config: TroopLimitConfigProps;
   damage_config: TroopDamageConfigProps;
 }
-
 
 export interface TroopStaminaConfigProps {
   stamina_gain_per_tick: num.BigNumberish;

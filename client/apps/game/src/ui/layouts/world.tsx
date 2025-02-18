@@ -167,7 +167,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     fetch();
-  }, [structureEntityId]);
+  }, [structureEntityId, subscriptions]);
 
   useEffect(() => {
     const fetch = async () => {

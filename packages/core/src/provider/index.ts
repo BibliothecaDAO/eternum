@@ -76,7 +76,7 @@ class PromiseQueue {
   }> = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
-  private readonly BATCH_DELAY = 2000; // ms to wait for batching
+  //   private readonly BATCH_DELAY = 2000; // ms to wait for batching
   private readonly MAX_BATCH_SIZE = 3; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
@@ -91,9 +91,9 @@ class PromiseQueue {
           clearTimeout(this.batchTimeout);
         }
 
-        this.batchTimeout = setTimeout(() => {
-          this.processQueue();
-        }, this.BATCH_DELAY);
+        // this.batchTimeout = setTimeout(() => {
+        this.processQueue();
+        // }, this.BATCH_DELAY);
       }
     });
   }
@@ -235,7 +235,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
-    const tx = await this.execute(signer, transactionDetails, NAMESPACE);
+    const tx = await this.execute(signer, transactionDetails, NAMESPACE, { version: 3 });
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
 
     // Get the transaction type based on the entrypoint name
@@ -952,17 +952,23 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
-    const requestTwoCall: Call = {
-      contractAddress: this.VRF_PROVIDER_ADDRESS!,
-      entrypoint: "request_random",
-      calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_systems`), 0, signer.address],
-    };
+    let callData: Call[] = [];
 
-    const requestRandomCall: Call = {
-      contractAddress: this.VRF_PROVIDER_ADDRESS!,
-      entrypoint: "request_random",
-      calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_generation_systems`), 0, signer.address],
-    };
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestTwoCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_systems`), 0, signer.address],
+      };
+
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_generation_systems`), 0, signer.address],
+      };
+
+      callData = [requestTwoCall, requestRandomCall];
+    }
 
     const exploreCall: Call = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
@@ -970,7 +976,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [unit_id, direction],
     };
 
-    const call = this.createProviderCall(signer, [requestTwoCall, requestRandomCall, exploreCall]);
+    const call = this.createProviderCall(signer, [...callData, exploreCall]);
 
     return await this.promiseQueue.enqueue(call);
   }
@@ -1003,7 +1009,6 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, directions, building_category, produce_resource_type, signer } = props;
-    ["62", "1", "0", "4", "1"];
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
@@ -1759,22 +1764,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
-    const { reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount, signer } = props;
+    const { reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount, signer } =
+      props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_map_config",
       calldata: [reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount],
-    });
-  }
-
-  public async set_travel_stamina_cost_config(props: SystemProps.SetTravelStaminaCostConfigProps) {
-    const { travel_type, cost, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_travel_stamina_cost_config",
-      calldata: [travel_type, cost],
     });
   }
 
@@ -1840,10 +1836,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       season_pool_fee_on_wtdr_percent,
       client_fee_on_dpt_percent,
       client_fee_on_wtdr_percent,
-      velords_fee_recipient,
-      season_pool_fee_recipient,
       max_bank_fee_dpt_percent,
       max_bank_fee_wtdr_percent,
+      velords_fee_recipient,
+      season_pool_fee_recipient,
       signer,
     } = props;
 
@@ -1920,7 +1916,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-
   public async set_production_config(props: SystemProps.SetProductionConfigProps) {
     const { signer, calls } = props;
 
@@ -1929,13 +1924,13 @@ export class EternumProvider extends EnhancedDojoProvider {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
         entrypoint: "set_production_config",
         calldata: [
-          call.resource_type, 
-          call.amount_per_building_per_tick, 
+          call.resource_type,
+          call.amount_per_building_per_tick,
           call.labor_burn_strategy.resource_rarity,
-          call.labor_burn_strategy.depreciation_percent_num,
-          call.labor_burn_strategy.depreciation_percent_denom,
           call.labor_burn_strategy.wheat_burn_per_labor,
           call.labor_burn_strategy.fish_burn_per_labor,
+          call.labor_burn_strategy.depreciation_percent_num,
+          call.labor_burn_strategy.depreciation_percent_denom,
           call.predefined_resource_burn_cost.length,
           ...call.predefined_resource_burn_cost.flatMap(({ resource, amount }) => [resource, amount]),
         ],
@@ -1968,12 +1963,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_troop_config(props: SystemProps.SetTroopConfigProps) {
-    const {
-      signer,
-      stamina_config,
-      limit_config,
-      damage_config,
-    } = props;
+    const { signer, stamina_config, limit_config, damage_config } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
@@ -2015,7 +2005,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_battle_config(props: SystemProps.SetBattleConfigProps) {
-    const { signer, regular_immunity_ticks, hyperstructure_immunity_ticks} = props;
+    const { signer, regular_immunity_ticks, hyperstructure_immunity_ticks } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
@@ -2076,6 +2066,16 @@ export class EternumProvider extends EnhancedDojoProvider {
         };
       }),
     );
+  }
+
+  public async set_world_config(props: SystemProps.SetWorldConfigProps) {
+    const { admin_address, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_world_config",
+      calldata: [admin_address],
+    });
   }
 
   public async set_realm_max_level_config(props: SystemProps.SetRealmMaxLevelConfigProps) {
@@ -2244,7 +2244,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [amount_per_tick, start_boost_tick_count],
     });
   }
-
 
   public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
     const {

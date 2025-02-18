@@ -14,15 +14,14 @@ export const getEntityInfo = (
   currentDefaultTick: number,
   components: ClientComponents,
 ) => {
-  const { ArrivalTime, Movable, CapacityCategory, CapacityConfig, EntityOwner, Owner, Structure, Army, Position } =
+  const { ArrivalTime, Movable, CapacityConfig, EntityOwner, Owner, Structure, Army, Position, Weight } =
     components;
   const entityIdBigInt = BigInt(entityId);
   const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityIdBigInt]));
   const movable = getComponentValue(Movable, getEntityIdFromKeys([entityIdBigInt]));
 
-  const entityCapacityCategory = getComponentValue(CapacityCategory, getEntityIdFromKeys([entityIdBigInt]))
-    ?.category as unknown as string;
-  const capacityCategoryId = CAPACITY_CONFIG_CATEGORY_STRING_MAP[entityCapacityCategory] || 0n;
+  const entityCapacityCategory = getComponentValue(Weight, getEntityIdFromKeys([entityIdBigInt]))?.capacity_category;
+  const capacityCategoryId = entityCapacityCategory ? CAPACITY_CONFIG_CATEGORY_STRING_MAP[entityCapacityCategory] : 0;
   const capacity = getComponentValue(CapacityConfig, getEntityIdFromKeys([BigInt(capacityCategoryId)]));
 
   const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityIdBigInt]));

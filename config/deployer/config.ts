@@ -2,7 +2,6 @@ import {
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
   BuildingType,
-  CapacityConfigCategory,
   EternumProvider,
   FELT_CENTER,
   QuestType,
@@ -16,11 +15,15 @@ import {
   type Config as EternumConfig,
   type ResourceInputs,
   type ResourceOutputs,
-  type ResourceWhitelistConfig
+  type ResourceWhitelistConfig,
 } from "@bibliothecadao/eternum";
 
 import chalk from "chalk";
+
+import fs from "fs";
+import { env } from "process";
 import { Account } from "starknet";
+import type { Chain } from "utils/utils";
 import { SHARDS_MINES_WIN_PROBABILITY } from "../environments/_shared_";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
@@ -157,7 +160,6 @@ export const setWorldConfig = async (config: Config) => {
   console.log(chalk.green(`    ✔ World configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-
 export const setQuestRewardConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
@@ -202,6 +204,40 @@ export const setQuestRewardConfig = async (config: Config) => {
   console.log(chalk.gray(`\n    ⚡ Transaction: ${tx.statusReceipt}\n`));
 };
 
+export const setWorldConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+   🌎 WORLD CONFIGURATION ⚡
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`),
+  );
+
+  if (!env.VITE_PUBLIC_MASTER_ADDRESS) {
+    throw new Error("VITE_PUBLIC_MASTER_ADDRESS is not set");
+  }
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow(`Realm Address`)}
+    │  ${chalk.gray(`${config.config.setup!.addresses.realms}`)}
+    │  ${chalk.gray(`Admin Address`)}
+    │     ${chalk.gray(`${env.VITE_PUBLIC_MASTER_ADDRESS}`)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_world_config({
+    signer: config.account,
+    admin_address: env.VITE_PUBLIC_MASTER_ADDRESS!,
+  });
+
+  console.log(
+    chalk.cyan(`
+    ${chalk.green("✨ Configuration successfully deployed")}
+    ${chalk.gray("Transaction:")} ${chalk.white(tx.statusReceipt)}
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `),
+  );
+};
+
 export const setProductionConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
@@ -243,23 +279,28 @@ export const setProductionConfig = async (config: Config) => {
     │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building:`)} ${chalk.white(`${inGameAmount(calldata.amount_per_building_per_tick, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
     │  ${chalk.gray(``)}
     │  ${chalk.gray(`Using Labor Burn Production Strategy:`)}
-    │     ${chalk.gray(``)} ${calldata.labor_burn_strategy.resource_rarity === 0 ? 
-           chalk.red("Cannot be produced with labor") : `
+    │     ${chalk.gray(``)} ${
+      calldata.labor_burn_strategy.resource_rarity === 0
+        ? chalk.red("Cannot be produced with labor")
+        : `
     │     ${chalk.gray(`Resource Rarity:`)} ${chalk.white(` ${calldata.labor_burn_strategy.resource_rarity}`)}
-    │     ${chalk.gray(`Depreciation Rate:`)} ${chalk.white(` ${calldata.labor_burn_strategy.depreciation_percent_num / calldata.labor_burn_strategy.depreciation_percent_denom * 100}%`)}
+    │     ${chalk.gray(`Depreciation Rate:`)} ${chalk.white(` ${(calldata.labor_burn_strategy.depreciation_percent_num / calldata.labor_burn_strategy.depreciation_percent_denom) * 100}%`)}
     │     ${chalk.gray(`Wheat Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.wheat_burn_per_labor, config.config))}
-    │     ${chalk.gray(`Fish Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.fish_burn_per_labor, config.config))}`}
+    │     ${chalk.gray(`Fish Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.fish_burn_per_labor, config.config))}`
+    }
     │  ${chalk.gray(``)}
     │  ${chalk.gray(`Using Multiple Resource Burn Production Strategy:`)}
-    │  ${calldata.predefined_resource_burn_cost.length > 0 
-        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) + 
+    │  ${
+      calldata.predefined_resource_burn_cost.length > 0
+        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
           calldata.predefined_resource_burn_cost
             .map(
               (c) => `
     │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
             )
             .join("")
-        : `    ${chalk.blue("Can't be produced with multiple resources")}`}
+        : `    ${chalk.blue("Can't be produced with multiple resources")}`
+    }
     └────────────────────────────────`),
     );
   }
@@ -611,10 +652,8 @@ export const setBattleConfig = async (config: Config) => {
   ═══════════════════════════════`),
   );
 
-  const {
-    graceTickCount: regular_immunity_ticks,
-    graceTickCountHyp: hyperstructure_immunity_ticks,
-  } = config.config.battle;
+  const { graceTickCount: regular_immunity_ticks, graceTickCountHyp: hyperstructure_immunity_ticks } =
+    config.config.battle;
 
   const calldata = {
     signer: config.account,
@@ -801,8 +840,10 @@ export const setupGlobals = async (config: Config) => {
     signer: config.account,
     reward_amount: config.config.exploration.reward * config.config.resources.resourcePrecision,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
-    mine_wheat_grant_amount: config.config.exploration.shardsMineInitialWheatBalance * config.config.resources.resourcePrecision,
-    mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance * config.config.resources.resourcePrecision,
+    mine_wheat_grant_amount:
+      config.config.exploration.shardsMineInitialWheatBalance * config.config.resources.resourcePrecision,
+    mine_fish_grant_amount:
+      config.config.exploration.shardsMineInitialFishBalance * config.config.resources.resourcePrecision,
   };
   console.log(
     chalk.cyan(`
@@ -816,9 +857,6 @@ export const setupGlobals = async (config: Config) => {
 
   const txMap = await config.provider.set_map_config(mapCalldata);
   console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
-
-
-
 };
 
 export const setCapacityConfig = async (config: Config) => {
@@ -840,7 +878,7 @@ export const setCapacityConfig = async (config: Config) => {
     { name: "Structure", value: calldata.structure_capacity },
     { name: "Troops", value: calldata.troop_capacity },
     { name: "Donkeys", value: calldata.donkey_capacity },
-    { name: "Storehouse Added Capacity Per Building", value: calldata.storehouse_boost_capacity }
+    { name: "Storehouse Added Capacity Per Building", value: calldata.storehouse_boost_capacity },
   ];
 
   console.log(
@@ -849,7 +887,7 @@ export const setCapacityConfig = async (config: Config) => {
       .map(
         ({ name, value }) => `
     │  ${chalk.gray(name.padEnd(12))} ${chalk.white(addCommas(BigInt(value)))} ${chalk.gray("grams")} 
-    │  ${chalk.gray("").padEnd(12)} ${chalk.gray("i.e (")} ${chalk.white(addCommas(BigInt(value) / BigInt(1000)))} ${chalk.gray("kg")} ${chalk.gray(")")}`
+    │  ${chalk.gray("").padEnd(12)} ${chalk.gray("i.e (")} ${chalk.white(addCommas(BigInt(value) / BigInt(1000)))} ${chalk.gray("kg")} ${chalk.gray(")")}`,
       )
       .join("")}
     └────────────────────────────────`),
@@ -1075,8 +1113,6 @@ export const setHyperstructureConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-
-
 export const setSettlementConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
@@ -1254,5 +1290,32 @@ export const addLiquidity = async (config: Config) => {
     console.log(chalk.green(`\n    ✔ Liquidity added successfully `) + chalk.gray(tx.statusReceipt) + "\n");
   } catch (e) {
     console.log(chalk.red(`\n    ✖ Failed to add liquidity: `) + chalk.gray(e) + "\n");
+  }
+};
+
+export const nodeReadConfig = async (chain: Chain) => {
+  try {
+    let path = "./environments/data";
+    switch (chain) {
+      case "sepolia":
+        path += "/sepolia.json"; // as any to avoid type errors
+        break;
+      case "mainnet":
+        path += "/mainnet.json";
+        break;
+      case "slot":
+        path += "/slot.json";
+        break;
+      case "local":
+        path += "/local.json";
+        break;
+      default:
+        throw new Error(`Invalid chain: ${chain}`);
+    }
+
+    const config = JSON.parse(fs.readFileSync(path, "utf8"));
+    return config.configuration as any; // as any to avoid type errors
+  } catch (error) {
+    throw new Error(`Failed to load configuration for chain ${chain}: ${error}`);
   }
 };

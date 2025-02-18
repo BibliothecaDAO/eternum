@@ -1,4 +1,3 @@
-import { ETERNUM_CONFIG } from "@/utils/config";
 import { Chain, getGameManifest } from "@contracts";
 import { createDojoConfig } from "@dojoengine/core";
 import { env } from "./env";
@@ -27,7 +26,3 @@ export const dojoConfig = createDojoConfig({
   feeTokenAddress: VITE_PUBLIC_FEE_TOKEN_ADDRESS || "0x0",
   manifest,
 });
-
-const config = ETERNUM_CONFIG();
-console.log("logging eternum configuration json from file");
-console.log({ config });

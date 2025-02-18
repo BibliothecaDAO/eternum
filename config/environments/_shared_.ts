@@ -1,5 +1,5 @@
 import {
-  CapacityConfigCategory,
+  CapacityConfig,
   getContractByName,
   NAMESPACE,
   RESOURCE_PRECISION,
@@ -29,7 +29,30 @@ import {
   RESOURCE_PRODUCTION_THROUGH_LABOR,
   RESOURCES_WEIGHTS_GRAM,
 } from "./utils/resource";
-import { TROOP_BASE_DAMAGE, TROOP_DAMAGE_BIOME_BONUS_NUM, TROOP_DAMAGE_SCALING_FACTOR, TROOP_EXPLORE_FISH_COST, TROOP_EXPLORE_STAMINA_COST, TROOP_EXPLORE_WHEAT_COST, TROOP_EXPLORER_MAX_PARTY_COUNT, TROOP_EXPLORER_MAX_TROOP_COUNT, TROOP_GUARD_RESURRECTION_DELAY, TROOP_MERCENARIES_TROOP_LOWER_BOUND, TROOP_MERCENARIES_TROOP_UPPER_BOUND, TROOP_STAMINA_ATTACK_MAX, TROOP_STAMINA_ATTACK_REQ, TROOP_STAMINA_BIOME_BONUS_VALUE, TROOP_STAMINA_GAIN_PER_TICK, TROOP_STAMINA_INITIAL, TROOP_STAMINA_MAX, TROOP_T2_DAMAGE_BONUS, TROOP_T3_DAMAGE_BONUS, TROOP_TRAVEL_FISH_COST, TROOP_TRAVEL_STAMINA_COST, TROOP_TRAVEL_WHEAT_COST } from "./utils/troop";
+import {
+  TROOP_BASE_DAMAGE,
+  TROOP_DAMAGE_BIOME_BONUS_NUM,
+  TROOP_DAMAGE_SCALING_FACTOR,
+  TROOP_EXPLORE_FISH_COST,
+  TROOP_EXPLORE_STAMINA_COST,
+  TROOP_EXPLORE_WHEAT_COST,
+  TROOP_EXPLORER_MAX_PARTY_COUNT,
+  TROOP_EXPLORER_MAX_TROOP_COUNT,
+  TROOP_GUARD_RESURRECTION_DELAY,
+  TROOP_MERCENARIES_TROOP_LOWER_BOUND,
+  TROOP_MERCENARIES_TROOP_UPPER_BOUND,
+  TROOP_STAMINA_ATTACK_MAX,
+  TROOP_STAMINA_ATTACK_REQ,
+  TROOP_STAMINA_BIOME_BONUS_VALUE,
+  TROOP_STAMINA_GAIN_PER_TICK,
+  TROOP_STAMINA_INITIAL,
+  TROOP_STAMINA_MAX,
+  TROOP_T2_DAMAGE_BONUS,
+  TROOP_T3_DAMAGE_BONUS,
+  TROOP_TRAVEL_FISH_COST,
+  TROOP_TRAVEL_STAMINA_COST,
+  TROOP_TRAVEL_WHEAT_COST,
+} from "./utils/troop";
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 
@@ -107,7 +130,6 @@ export const TROOP_BATTLE_LEAVE_SLASH_DENOM = 100;
 export const TROOP_BATTLE_TIME_REDUCTION_SCALE = 1_000;
 export const TROOP_BATTLE_MAX_TIME_SECONDS = 2 * 86400; // 2 days
 
-
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
 export const SETTLEMENT_BASE_DISTANCE = 10;
@@ -181,12 +203,12 @@ export const EternumGlobalConfig: Config = {
     armiesTickIntervalInSeconds: ARMIES_TICK_INTERVAL_SECONDS,
   },
   carryCapacityGram: {
-    [CapacityConfigCategory.None]: 0,
-    [CapacityConfigCategory.Structure]: 900_000_000_000, // 900m kg
-    [CapacityConfigCategory.Donkey]: 500_000, // 500 kg
-    [CapacityConfigCategory.Army]: 10_000, // 10 kg per army
-    //todo. ensure enough capacity to prevent realm upgrade bug
-    [CapacityConfigCategory.Storehouse]: 300_000_000, // 300,000 kg extra capacity per building
+    [CapacityConfig.None]: 0,
+    [CapacityConfig.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
+    [CapacityConfig.Donkey]: 500_000,
+    // 10_000 gr per army
+    [CapacityConfig.Army]: 10_000,
+    [CapacityConfig.Storehouse]: 300_000_000,
   },
   speed: {
     donkey: DONKEY_SPEED,

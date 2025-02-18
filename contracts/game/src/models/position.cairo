@@ -39,13 +39,6 @@ pub struct Travel {
     next_coord: Coord,
 }
 
-#[derive(Copy, Drop, Serde, Default, IntrospectPacked)]
-pub struct Stamina {
-    amount: u32,
-    last_refill_tick: u32,
-}
-
-
 impl CubeZeroable of Zeroable<Cube> {
     fn zero() -> Cube {
         Cube { q: 0, r: 0, s: 0 }
@@ -131,7 +124,7 @@ impl DirectionDisplay of Display<Direction> {
 }
 
 
-#[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug, Default)]
+#[derive(Copy, Drop, PartialEq, Serde, IntrospectPacked, Debug, Default)]
 struct Coord {
     x: u32,
     y: u32,

@@ -1,10 +1,4 @@
-import {
-  ArrivalInfo,
-  ContractAddress,
-  DONKEY_RESOURCE_TRACKER,
-  LORDS_AND_DONKEY_RESOURCE_TRACKER,
-  LORDS_RESOURCE_TRACKER,
-} from "@bibliothecadao/eternum";
+import { ArrivalInfo, ContractAddress, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, NotValue, defineQuery, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -56,13 +50,14 @@ const usePlayerArrivals = () => {
       const entityOwner = getComponentValue(EntityOwner, id);
 
       // Return early if missing required components
-      if (!position || !arrivalTime) return undefined;
+      if (!position || !arrivalTime || !ownedResourceTracker) return undefined;
 
       // Check if entity has special resource types that don't need weight check
       const hasSpecialResources =
-        ownedResourceTracker?.resource_types === DONKEY_RESOURCE_TRACKER ||
-        ownedResourceTracker?.resource_types === LORDS_RESOURCE_TRACKER ||
-        ownedResourceTracker?.resource_types === LORDS_AND_DONKEY_RESOURCE_TRACKER;
+        ownedResourceTracker.resource_types === 1n << (BigInt(ResourcesIds.Donkey) - 1n) ||
+        ownedResourceTracker.resource_types === 1n << (BigInt(ResourcesIds.Lords) - 1n) ||
+        ownedResourceTracker.resource_types ===
+          ((1n << (BigInt(ResourcesIds.Lords) - 1n)) | (1n << (BigInt(ResourcesIds.Donkey) - 1n)));
 
       // Determine if entity meets weight requirements
       const meetsWeightRequirement = hasSpecialResources || hasMinWeight(id);
@@ -73,8 +68,7 @@ const usePlayerArrivals = () => {
       const isOwner = owner?.address === ContractAddress(account.address);
 
       // Check if entity has resources
-      const hasResources =
-        meetsWeightRequirement && !!ownedResourceTracker && ownedResourceTracker.resource_types !== 0n;
+      const hasResources = meetsWeightRequirement && !!ownedResourceTracker;
       // Find matching player structure at position
       const playerStructurePosition = playerStructurePositions.find(
         (structurePosition) => structurePosition.x === position.x && structurePosition.y === position.y,
@@ -109,6 +103,7 @@ const usePlayerArrivals = () => {
         Has(Weight),
         Has(ArrivalTime),
         Has(EntityOwner),
+        HasValue(Weight, { capacity_category: "Donkey" }),
         NotValue(OwnedResourcesTracker, { resource_types: 0n }),
       ],
       { runOnInit: false },

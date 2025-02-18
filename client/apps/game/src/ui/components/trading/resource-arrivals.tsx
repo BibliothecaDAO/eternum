@@ -50,7 +50,6 @@ export const AllResourceArrivals = memo(
       getEntitiesFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, unsubscribedIds, [
         "s1_eternum-DetachedResource",
       ]).catch((error) => console.error("Fetch failed", error));
-      console.log("AddToSubscriptionStart - 5");
     }, [arrivals, subscribedIds, addSubscribedIds]);
 
     const filteredArrivals = showOnlyArrived

@@ -3,8 +3,8 @@ import { getGameManifest } from "@contracts";
 import { Account } from "starknet";
 import { confirmNonLocalDeployment } from "../utils/confirmation";
 import { logNetwork, saveConfigJsonFromConfigTsFile, type NetworkType } from "../utils/environment";
-import { getConfigFromNetwork, type Chain } from "../utils/utils";
-import { GameConfigDeployer } from "./config";
+import { type Chain } from "../utils/utils";
+import { GameConfigDeployer, nodeReadConfig } from "./config";
 
 const {
   VITE_PUBLIC_MASTER_ADDRESS,
@@ -23,7 +23,7 @@ const manifest = await getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
 const provider = new EternumProvider(manifest, VITE_PUBLIC_NODE_URL, VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS!, VITE_PUBLIC_MASTER_PRIVATE_KEY!);
 await saveConfigJsonFromConfigTsFile(VITE_PUBLIC_CHAIN! as NetworkType);
-const configuration = await getConfigFromNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
+const configuration = await nodeReadConfig(VITE_PUBLIC_CHAIN! as Chain);
 export const config = new GameConfigDeployer(configuration);
 
 // Deploy configurations

@@ -11,7 +11,7 @@ import {
   configManager,
   ContractAddress,
   divideByPrecision,
-  DONKEY_ENTITY_TYPE,
+  EntityType,
   getBalance,
   getStructure,
   ID,
@@ -270,7 +270,7 @@ export const ResourceSwap = ({
                 travelTime={computeTravelTime(
                   bankEntityId,
                   entityId,
-                  configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+                  configManager.getSpeedConfig(EntityType.DONKEY),
                   true,
                 )}
                 setCanCarry={setCanCarry}

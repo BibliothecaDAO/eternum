@@ -1,6 +1,5 @@
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { ToriiClient } from "@dojoengine/torii-client";
-import debounce from "lodash/debounce";
 import {
   addDonkeysAndArmiesSubscription,
   getEntitiesFromTorii,
@@ -52,58 +51,48 @@ class RequestQueue {
 const subscriptionQueue = new RequestQueue();
 const marketQueue = new RequestQueue();
 
-export const debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii = debounce(
-  async <S extends Schema>(
-    client: ToriiClient,
-    components: Component<S, Metadata, undefined>[],
-    entityID: string[],
-    onComplete?: () => void,
-  ) => {
-    await subscriptionQueue.add(() => getOneKeyModelbyRealmEntityIdFromTorii(client, components, entityID), onComplete);
-  },
-  250,
-  { leading: true },
-);
+export const debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityID: string[],
+  onComplete?: () => void,
+) => {
+  await subscriptionQueue.add(() => getOneKeyModelbyRealmEntityIdFromTorii(client, components, entityID), onComplete);
+};
 
-export const debouncedGetDonkeysAndArmiesFromTorii = debounce(
-  async <S extends Schema>(
-    client: ToriiClient,
-    components: Component<S, Metadata, undefined>[],
-    entityID: number[],
-    onComplete?: () => void,
-  ) => {
-    await subscriptionQueue.add(() => addDonkeysAndArmiesSubscription(client, components, entityID), onComplete);
-  },
-  250,
-  { leading: true },
-);
+export const debouncedGetDonkeysAndArmiesFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityID: number[],
+  onComplete?: () => void,
+) => {
+  await subscriptionQueue.add(() => addDonkeysAndArmiesSubscription(client, components, entityID), onComplete);
+};
 
-export const debouncedGetEntitiesFromTorii = debounce(
-  async <S extends Schema>(
-    client: ToriiClient,
-    components: Component<S, Metadata, undefined>[],
-    entityID: string[],
-    entityModels: string[],
-    positions?: { x: number; y: number }[],
-    onComplete?: () => void,
-  ) => {
+export const debouncedGetEntitiesFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  entityID: string[],
+  entityModels: string[],
+  positions?: { x: number; y: number }[],
+  onComplete?: () => void,
+) => {
+  try {
     await subscriptionQueue.add(
       () => getEntitiesFromTorii(client, components, entityID, entityModels, positions),
       onComplete,
     );
-  },
-  250,
-  { leading: true },
-);
+  } catch (error) {
+    console.error("Error in debouncedGetEntitiesFromTorii:", error);
+    // Make sure onComplete is called even if there's an error
+    onComplete?.();
+  }
+};
 
-export const debouncedGetMarketFromTorii = debounce(
-  async <S extends Schema>(
-    client: ToriiClient,
-    components: Component<S, Metadata, undefined>[],
-    onComplete?: () => void,
-  ) => {
-    await marketQueue.add(() => getMarketFromTorii(client, components), onComplete);
-  },
-  500,
-  { leading: true },
-);
+export const debouncedGetMarketFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  onComplete?: () => void,
+) => {
+  await marketQueue.add(() => getMarketFromTorii(client, components), onComplete);
+};

@@ -74,25 +74,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    BankConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          lords_cost: RecsType.BigInt,
-          lp_fee_num: RecsType.BigInt,
-          lp_fee_denom: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "BankConfig",
-            types: ["u32", "u128", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Battle: (() => {
       return defineComponent(
         world,
@@ -285,23 +266,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    BuildingGeneralConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          base_cost_percent_increase: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "BuildingGeneralConfig",
-            types: ["u32", "u16"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     BuildingQuantityv2: (() => {
       return defineComponent(
         world,
@@ -312,20 +276,6 @@ export function defineContractComponents(world: World) {
             name: "BuildingQuantityv2",
             types: ["u32", "enum", "u8"],
             customTypes: ["BuildingCategory"],
-          },
-        },
-      );
-    })(),
-    CapacityCategory: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, category: RecsType.String },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "CapacityCategory",
-            types: ["u32", "enum"],
-            customTypes: ["CapacityConfigCategory"],
           },
         },
       );
@@ -342,7 +292,7 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "CapacityConfig",
             types: ["enum", "u128"],
-            customTypes: ["CapacityConfigCategory"],
+            customTypes: ["CapacityConfig"],
           },
         },
       );
@@ -510,26 +460,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    HyperstructureConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          time_between_shares_change: RecsType.Number,
-          points_per_cycle: RecsType.BigInt,
-          points_for_win: RecsType.BigInt,
-          points_on_completion: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "HyperstructureConfig",
-            types: ["u32", "u64", "u128", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     HyperstructureResourceConfig: (() => {
       return defineComponent(
         world,
@@ -682,25 +612,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-
-    MapConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          reward_resource_amount: RecsType.BigInt,
-          shards_mines_fail_probability: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "MapConfig",
-            types: ["u32", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Market: (() => {
       return defineComponent(
         world,
@@ -717,24 +628,6 @@ export function defineContractComponents(world: World) {
             name: "Market",
             types: ["u32", "u8", "u128", "u128", "u128", "bool"],
             customTypes: ["Fixed"],
-          },
-        },
-      );
-    })(),
-    MercenariesConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          troops: { knight_count: RecsType.BigInt, paladin_count: RecsType.BigInt, crossbowman_count: RecsType.BigInt },
-          rewards: RecsType.StringArray,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "MercenariesConfig",
-            types: ["u32", "u64", "u64", "u64"],
-            customTypes: ["Troops"],
           },
         },
       );
@@ -838,20 +731,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    PopulationConfig: (() => {
-      return defineComponent(
-        world,
-        { config_id: RecsType.Number, base_population: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "PopulationConfig",
-            types: ["u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Position: (() => {
       return defineComponent(
         world,
@@ -865,7 +744,7 @@ export function defineContractComponents(world: World) {
           },
         },
       );
-    })(),  
+    })(),
     ProductionConfig: (() => {
       return defineComponent(
         world,
@@ -1027,20 +906,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    RealmMaxLevelConfig: (() => {
-      return defineComponent(
-        world,
-        { config_id: RecsType.Number, max_level: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "RealmMaxLevelConfig",
-            types: ["u32", "u8"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Resource: (() => {
       return defineComponent(
         world,
@@ -1079,44 +944,6 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "ResourceAllowance",
             types: ["u32", "u32", "u8", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    ResourceBridgeFeeSplitConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          velords_fee_on_dpt_percent: RecsType.Number,
-          velords_fee_on_wtdr_percent: RecsType.Number,
-          season_pool_fee_on_dpt_percent: RecsType.Number,
-          season_pool_fee_on_wtdr_percent: RecsType.Number,
-          client_fee_on_dpt_percent: RecsType.Number,
-          client_fee_on_wtdr_percent: RecsType.Number,
-          velords_fee_recipient: RecsType.BigInt,
-          season_pool_fee_recipient: RecsType.BigInt,
-          max_bank_fee_dpt_percent: RecsType.Number,
-          max_bank_fee_wtdr_percent: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "ResourceBridgeFeeSplitConfig",
-            types: [
-              "u32",
-              "u16",
-              "u16",
-              "u16",
-              "u16",
-              "u16",
-              "u16",
-              "ContractAddress",
-              "ContractAddress",
-              "u16",
-              "u16",
-            ],
             customTypes: [],
           },
         },
@@ -1186,86 +1013,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    SeasonAddressesConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          season_pass_address: RecsType.BigInt,
-          realms_address: RecsType.BigInt,
-          lords_address: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "SeasonAddressesConfig",
-            types: ["u32", "ContractAddress", "ContractAddress", "ContractAddress"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    SeasonBridgeConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          close_after_end_seconds: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "SeasonBridgeConfig",
-            types: ["u32", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-
-    SettlementConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          angle_scaled: RecsType.BigInt,
-          center: RecsType.Number,
-          min_scaling_factor_scaled: RecsType.BigInt,
-          radius: RecsType.Number,
-          min_distance: RecsType.Number,
-          max_distance: RecsType.Number,
-          min_angle_increase: RecsType.BigInt,
-          max_angle_increase: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "SettlementConfig",
-            types: ["u32", "u128", "u32", "u128", "u32", "u32", "u32", "u64", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    SpeedConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          speed_config_id: RecsType.Number,
-          entity_type: RecsType.Number,
-          sec_per_km: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "SpeedConfig",
-            types: ["u32", "u32", "u32", "u16"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Stamina: (() => {
       return defineComponent(
         world,
@@ -1289,20 +1036,6 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "StaminaConfig",
             types: ["u32", "u8", "u16"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    StaminaRefillConfig: (() => {
-      return defineComponent(
-        world,
-        { config_id: RecsType.Number, amount_per_tick: RecsType.Number, start_boost_tick_count: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "StaminaRefillConfig",
-            types: ["u32", "u16", "u8"],
             customTypes: [],
           },
         },
@@ -1346,20 +1079,6 @@ export function defineContractComponents(world: World) {
             name: "StructureCount",
             types: ["u32", "u32", "u8"],
             customTypes: ["Coord"],
-          },
-        },
-      );
-    })(),
-    TickConfig: (() => {
-      return defineComponent(
-        world,
-        { config_id: RecsType.Number, tick_id: RecsType.Number, tick_interval_in_seconds: RecsType.BigInt },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "TickConfig",
-            types: ["u32", "u8", "u64"],
-            customTypes: [],
           },
         },
       );
@@ -1500,13 +1219,13 @@ export function defineContractComponents(world: World) {
     Weight: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, value: RecsType.BigInt },
+        { entity_id: RecsType.Number, value: RecsType.BigInt, capacity_category: RecsType.String },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Weight",
-            types: ["u32", "u128"],
-            customTypes: [],
+            types: ["u32", "u128", "enum"],
+            customTypes: ["CapacityCategory"],
           },
         },
       );
@@ -1533,12 +1252,173 @@ export function defineContractComponents(world: World) {
     WorldConfig: (() => {
       return defineComponent(
         world,
-        { admin_address: RecsType.BigInt, },
+        {
+          config_id: RecsType.Number,
+          admin_address: RecsType.BigInt,
+          realm_l2_contract: RecsType.BigInt,
+          vrf_provider_address: RecsType.BigInt,
+          season_addresses_config: {
+            season_pass_address: RecsType.BigInt,
+            realms_address: RecsType.BigInt,
+            lords_address: RecsType.BigInt,
+          },
+          season_bridge_config: {
+            close_after_end_seconds: RecsType.Number,
+          },
+          hyperstructure_config: {
+            points_per_cycle: RecsType.Number,
+            points_for_win: RecsType.Number,
+            points_on_completion: RecsType.Number,
+            time_between_shares_change: RecsType.Number,
+          },
+          stamina_cost_config: {
+            travel_cost: RecsType.Number,
+            explore_cost: RecsType.Number,
+          },
+          speed_config: {
+            donkey_sec_per_km: RecsType.Number,
+            army_sec_per_km: RecsType.Number,
+          },
+          map_config: {
+            reward_resource_amount: RecsType.Number,
+            shards_mines_fail_probability: RecsType.Number,
+          },
+          settlement_config: {
+            center: RecsType.Number,
+            base_distance: RecsType.Number,
+            min_first_layer_distance: RecsType.Number,
+            points_placed: RecsType.Number,
+            current_layer: RecsType.Number,
+            current_side: RecsType.Number,
+            current_point_on_side: RecsType.Number,
+          },
+          tick_config: {
+            default_tick_in_seconds: RecsType.Number,
+            armies_tick_in_seconds: RecsType.Number,
+          },
+          mercenaries_config: {
+            knights_lower_bound: RecsType.Number,
+            knights_upper_bound: RecsType.Number,
+            paladins_lower_bound: RecsType.Number,
+            paladins_upper_bound: RecsType.Number,
+            crossbowmen_lower_bound: RecsType.Number,
+            crossbowmen_upper_bound: RecsType.Number,
+            rewards: RecsType.StringArray,
+          },
+          bank_config: {
+            lords_cost: RecsType.Number,
+            lp_fee_num: RecsType.Number,
+            lp_fee_denom: RecsType.Number,
+          },
+          population_config: {
+            base_population: RecsType.Number,
+          },
+          resource_bridge_config: {
+            deposit_paused: RecsType.Number,
+            withdraw_paused: RecsType.Number,
+          },
+          res_bridge_fee_split_config: {
+            velords_fee_on_dpt_percent: RecsType.Number,
+            velords_fee_on_wtdr_percent: RecsType.Number,
+            season_pool_fee_on_dpt_percent: RecsType.Number,
+            season_pool_fee_on_wtdr_percent: RecsType.Number,
+            client_fee_on_dpt_percent: RecsType.Number,
+            client_fee_on_wtdr_percent: RecsType.Number,
+            max_bank_fee_dpt_percent: RecsType.Number,
+            max_bank_fee_wtdr_percent: RecsType.Number,
+            velords_fee_recipient: RecsType.BigInt,
+            season_pool_fee_recipient: RecsType.BigInt,
+          },
+          realm_max_level_config: {
+            max_level: RecsType.Number,
+          },
+          stamina_refill_config: {
+            amount_per_tick: RecsType.Number,
+            start_boost_tick_count: RecsType.Number,
+          },
+          building_general_config: {
+            base_cost_percent_increase: RecsType.Number,
+          },
+        },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "WorldConfig",
-            types: ["u32", "contractaddress", ],
+            types: [
+              "u32", // config_id
+              "ContractAddress", // admin_address
+              "ContractAddress", // vrf_provider_address
+              "ContractAddress", // season_pass_address
+              "ContractAddress", // realms_address
+              "ContractAddress", // lords_address
+              "u64", // SeasonBridgeConfig close_after_end_seconds
+              "u128", // HyperstructureConfig points_per_cycle
+              "u128", // HyperstructureConfig points_for_win
+              "u128", // HyperstructureConfig points_on_completion
+              "u64", // HyperstructureConfig time_between_shares_change
+              "u16", // SpeedConfig donkey_sec_per_km
+              "u128", // MapConfig reward_resource_amount
+              "u128", // MapConfig shards_mines_fail_probability
+              "u128", // MapConfig mine_wheat_grant_amount
+              "u128", // MapConfig mine_fish_grant_amount
+              "u32", // SettlementConfig center
+              "u32", // SettlementConfig base_distance
+              "u32", // SettlementConfig min_first_layer_distance
+              "u32", // SettlementConfig points_placed
+              "u32", // SettlementConfig current_layer
+              "u32", // SettlementConfig current_side
+              "u32", // SettlementConfig current_point_on_side
+              "u64", // TickConfig armies_tick_in_seconds
+              "u128", // BankConfig lords_cost
+              "u128", // BankConfig lp_fee_num
+              "u128", // BankConfig lp_fee_denom
+              "u32", // PopulationConfig base_population
+              "bool", // ResourceBridgeConfig deposit_paused
+              "bool", // ResourceBridgeConfig withdraw_paused
+              "u16", // ResourceBridgeFeeSplitConfig velords_fee_on_dpt_percent
+              "u16", // ResourceBridgeFeeSplitConfig velords_fee_on_wtdr_percent
+              "u16", // ResourceBridgeFeeSplitConfig season_pool_fee_on_dpt_percent
+              "u16", // ResourceBridgeFeeSplitConfig season_pool_fee_on_wtdr_percent
+              "u16", // ResourceBridgeFeeSplitConfig client_fee_on_dpt_percent
+              "u16", // ResourceBridgeFeeSplitConfig client_fee_on_wtdr_percent
+              "u16", // ResourceBridgeFeeSplitConfig max_bank_fee_dpt_percent
+              "u16", // ResourceBridgeFeeSplitConfig max_bank_fee_wtdr_percent
+              "ContractAddress", // ResourceBridgeFeeSplitConfig velords_fee_recipient
+              "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
+              "u8", // RealmMaxLevelConfig max_level
+              "u16", // BuildingGeneralConfig base_cost_percent_increase
+              "u16", // TroopDamageConfig knight_base_damage
+              "u16", // TroopDamageConfig crossbowman_base_damage
+              "u16", // TroopDamageConfig paladin_base_damage
+              "u16", // TroopDamageConfig t2_damage_bonus
+              "u16", // TroopDamageConfig t3_damage_bonus
+              "u16", // TroopDamageConfig damage_bonus_num
+              "u16", // TroopDamageConfig damage_scaling_factor
+              "u16", // TroopStaminaConfig stamina_gain_per_tick
+              "u16", // TroopStaminaConfig stamina_initial
+              "u16", // TroopStaminaConfig stamina_bonus_value
+              "u16", // TroopStaminaConfig stamina_knight_max
+              "u16", // TroopStaminaConfig stamina_paladin_max
+              "u16", // TroopStaminaConfig stamina_crossbowman_max
+              "u16", // TroopStaminaConfig stamina_attack_req
+              "u16", // TroopStaminaConfig stamina_attack_max
+              "u16", // TroopStaminaConfig stamina_explore_wheat_cost
+              "u16", // TroopStaminaConfig stamina_explore_fish_cost
+              "u16", // TroopStaminaConfig stamina_explore_stamina_cost
+              "u16", // TroopStaminaConfig stamina_travel_wheat_cost
+              "u16", // TroopStaminaConfig stamina_travel_fish_cost
+              "u16", // TroopStaminaConfig stamina_travel_stamina_cost
+              "u8", // TroopLimitConfig explorer_max_party_count
+              "u32", // TroopLimitConfig explorer_max_troop_count
+              "u32", // TroopLimitConfig guard_resurrection_delay
+              "u64", // TroopLimitConfig mercenaries_troop_lower_bound
+              "u64", // TroopLimitConfig mercenaries_troop_upper_bound
+              "u32", // CapacityConfig structure_capacity
+              "u32", // CapacityConfig troop_capacity
+              "u32", // CapacityConfig donkey_capacity
+              "u32", // CapacityConfig storehouse_boost_capacity
+              "u8", // TradeCountConfig max_count
+            ],
             customTypes: [],
           },
         },

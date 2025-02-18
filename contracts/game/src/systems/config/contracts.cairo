@@ -51,11 +51,6 @@ trait IWeightConfig<T> {
 }
 
 #[starknet::interface]
-trait IBattleConfig<T> {
-    fn set_battle_config(ref self: T, battle_config: BattleConfig);
-}
-
-#[starknet::interface]
 trait ICapacityConfig<T> {
     fn set_capacity_config(ref self: T, capacity_config: CapacityConfig);
 }

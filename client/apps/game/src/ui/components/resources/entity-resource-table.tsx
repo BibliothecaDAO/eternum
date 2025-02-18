@@ -3,7 +3,7 @@ import { ResourceChip } from "@/ui/components/resources/resource-chip";
 import { getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
 import {
   BuildingType,
-  CapacityConfigCategory,
+  CapacityConfig,
   configManager,
   ID,
   multiplyByPrecision,
@@ -30,7 +30,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
 
   const maxStorehouseCapacityKg = useMemo(() => {
     if (structure?.category !== StructureType[StructureType.Realm]) return Infinity;
-    const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse));
+    const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
     return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
   }, [quantity, entityId]);
 

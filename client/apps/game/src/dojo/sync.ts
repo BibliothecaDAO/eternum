@@ -87,28 +87,6 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
         40_000,
         false,
       ),
-      await getEntities(
-        setup.network.toriiClient,
-        {
-          Keys: {
-            keys: [undefined, undefined],
-            pattern_matching: "VariableLen",
-            models: [],
-          },
-        },
-        setup.network.contractComponents as any,
-        [],
-        [
-          "s1_eternum-CapacityConfig",
-          "s1_eternum-ResourceCost",
-          "s1_eternum-LeaderboardRegisterContribution",
-          "s1_eternum-LeaderboardRegisterShare",
-          "s1_eternum-CapacityConfigCategory",
-          "s1_eternum-ResourceCost",
-        ],
-        40_000,
-        false,
-      ),
     ]);
     let end = performance.now();
     console.log("[composite] big config query", end - start);
@@ -221,21 +199,7 @@ const configClauses: Clause[] = [
   {
     Keys: {
       keys: [WORLD_CONFIG_ID.toString()],
-      pattern_matching: "FixedLen",
-      models: [],
-    },
-  },
-  {
-    Keys: {
-      keys: [WORLD_CONFIG_ID.toString(), undefined],
-      pattern_matching: "FixedLen",
-      models: [],
-    },
-  },
-  {
-    Keys: {
-      keys: [WORLD_CONFIG_ID.toString(), undefined, undefined],
-      pattern_matching: "FixedLen",
+      pattern_matching: "VariableLen",
       models: [],
     },
   },
@@ -253,42 +217,40 @@ const configClauses: Clause[] = [
       models: [],
     },
   },
+  {
+    Keys: {
+      keys: [undefined],
+      pattern_matching: "FixedLen",
+      models: [],
+    },
+  },
+  {
+    Keys: {
+      keys: [undefined, undefined],
+      pattern_matching: "VariableLen",
+      models: [],
+    },
+  },
 ];
 
 const configModels = [
   "s1_eternum-WorldConfig",
-  "s1_eternum-SeasonAddressesConfig",
-  "s1_eternum-SeasonBridgeConfig",
   "s1_eternum-HyperstructureResourceConfig",
-  "s1_eternum-HyperstructureConfig",
   "s1_eternum-CapacityConfig",
-  "s1_eternum-TravelStaminaCostConfig",
-  "s1_eternum-SpeedConfig",
-  "s1_eternum-MapConfig",
-  "s1_eternum-SettlementConfig",
-  "s1_eternum-TickConfig",
-  "s1_eternum-StaminaRefillConfig",
   "s1_eternum-StaminaConfig",
-  "s1_eternum-TravelFoodCostConfig",
-  "s1_eternum-MercenariesConfig",
   "s1_eternum-WeightConfig",
-  "s1_eternum-LevelingConfig",
   "s1_eternum-ProductionConfig",
-  "s1_eternum-VRFConfig",
-  "s1_eternum-BankConfig",
-  "s1_eternum-BuildingGeneralConfig",
   "s1_eternum-BuildingConfig",
   "s1_eternum-TroopConfig",
   "s1_eternum-BattleConfig",
   "s1_eternum-BuildingCategoryPopConfig",
-  "s1_eternum-PopulationConfig",
-  "s1_eternum-QuestConfig",
   "s1_eternum-QuestRewardConfig",
-  "s1_eternum-ResourceBridgeConfig",
-  "s1_eternum-ResourceBridgeFeeSplitConfig",
   "s1_eternum-ResourceBridgeWhitelistConfig",
-  "s1_eternum-RealmMaxLevelConfig",
   "s1_eternum-RealmLevelConfig",
+  "s1_eternum-ResourceCost",
+  "s1_eternum-LeaderboardRegisterContribution",
+  "s1_eternum-LeaderboardRegisterShare",
+  "s1_eternum-TravelFoodCostConfig",
 ];
 
 const singleKeyModels = [
@@ -296,7 +258,6 @@ const singleKeyModels = [
   "s1_eternum-Realm",
   "s1_eternum-Bank",
   "s1_eternum-Trade",
-  "s1_eternum-Status",
   "s1_eternum-Structure",
   "s1_eternum-Battle",
   "s1_eternum-Owner",
@@ -305,7 +266,6 @@ const singleKeyModels = [
   "s1_eternum-Hyperstructure",
   "s1_eternum-Guild",
   "s1_eternum-GuildMember",
-  "s1_eternum-EntityName",
   "s1_eternum-Season",
   "s1_eternum-Leaderboard",
   "s1_eternum-LeaderboardRegistered",
