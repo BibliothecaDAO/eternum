@@ -35,11 +35,9 @@ const ActionInstructions = lazy(() =>
 );
 
 const ArmyInfoLabel = lazy(() =>
-  import("../components/worldmap/armies/army-info-label").then((module) => ({ default: module.ArmyInfoLabel })),
-);
-
-const BattleInfoLabel = lazy(() =>
-  import("../components/worldmap/battles/battle-label").then((module) => ({ default: module.BattleInfoLabel })),
+  import("../components/worldmap/armies/army-info-label").then((module) => ({
+    default: module.ArmyInfoLabelContainer,
+  })),
 );
 
 const BlankOverlayContainer = lazy(() =>
@@ -50,9 +48,6 @@ const StructureInfoLabel = lazy(() =>
     default: module.StructureInfoLabel,
   })),
 );
-const BattleContainer = lazy(() =>
-  import("../containers/battle-container").then((module) => ({ default: module.BattleContainer })),
-);
 const TopCenterContainer = lazy(() => import("../containers/top-center-container"));
 const BottomRightContainer = lazy(() =>
   import("../containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
@@ -61,9 +56,6 @@ const LeftMiddleContainer = lazy(() => import("../containers/left-middle-contain
 const RightMiddleContainer = lazy(() => import("../containers/right-middle-container"));
 const TopLeftContainer = lazy(() => import("../containers/top-left-container"));
 const Tooltip = lazy(() => import("../elements/tooltip").then((module) => ({ default: module.Tooltip })));
-const BattleView = lazy(() =>
-  import("../modules/military/battle-view/battle-view").then((module) => ({ default: module.BattleView })),
-);
 const TopMiddleNavigation = lazy(() =>
   import("../modules/navigation/top-navigation").then((module) => ({ default: module.TopMiddleNavigation })),
 );
@@ -103,7 +95,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
-  const battleView = useUIStore((state) => state.battleView);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   // Setup hooks
@@ -264,21 +255,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     fetch();
   }, []);
 
-  const battleViewContent = useMemo(
-    () => (
-      <div>
-        <Suspense fallback={<LoadingOroborus loading={true} />}>
-          {battleView && (
-            <BattleContainer>
-              <BattleView />
-            </BattleContainer>
-          )}
-        </Suspense>
-      </div>
-    ),
-    [battleView],
-  );
-
   return (
     <>
       <NotLoggedInMessage />
@@ -315,13 +291,10 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
               <ActionInfo />
               <ArmyInfoLabel />
               <StructureInfoLabel />
-              <BattleInfoLabel />
             </>
           )}
 
-          {battleViewContent}
-
-          <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
+          <div>
             <LeftMiddleContainer>
               <LeftNavigationModule />
             </LeftMiddleContainer>

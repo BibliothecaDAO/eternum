@@ -12,7 +12,7 @@ export enum ActionType {
   Move = "move",
   Attack = "attack",
   Build = "build",
-  Merge = "merge",
+  Help = "help",
   Explore = "explore",
 }
 

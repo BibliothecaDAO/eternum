@@ -59,7 +59,7 @@ export const ResourceExchange = ({
     [loading],
   );
   const takerArmyResources = useMemo(
-    () => getResourcesFromBalance(takerArmy?.entity_id!, currentDefaultTick, components),
+    () => getResourcesFromBalance(takerArmy?.entityId!, currentDefaultTick, components),
     [loading],
   );
 
@@ -76,8 +76,8 @@ export const ResourceExchange = ({
 
   const transferResources = async () => {
     setLoading(true);
-    const fromArmyId = transferDirection === "to" ? giverArmyEntityId : takerArmy?.entity_id || structureEntityId;
-    const toArmyId = transferDirection === "to" ? takerArmy?.entity_id || structureEntityId : giverArmyEntityId;
+    const fromArmyId = transferDirection === "to" ? giverArmyEntityId : takerArmy?.entityId || structureEntityId;
+    const toArmyId = transferDirection === "to" ? takerArmy?.entityId || structureEntityId : giverArmyEntityId;
 
     await send_resources({
       signer: account,

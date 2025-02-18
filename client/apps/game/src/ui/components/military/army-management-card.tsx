@@ -8,7 +8,7 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import TextInput from "@/ui/elements/text-input";
-import { currencyFormat, formatNumber, formatStringNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyInfo,
@@ -19,11 +19,17 @@ import {
   ID,
   multiplyByPrecision,
   ResourcesIds,
+  TroopType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
+
+const troopTypeToResourcesId = {
+  [TroopType.Crossbowman]: ResourcesIds.Crossbowman,
+  [TroopType.Knight]: ResourcesIds.Knight,
+  [TroopType.Paladin]: ResourcesIds.Paladin,
+};
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -46,7 +52,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 
-  const armyManager = new ArmyManager(dojo.setup.network.provider, dojo.setup.components, army?.entity_id || 0);
+  const armyManager = new ArmyManager(dojo.setup.network.provider, dojo.setup.components, army?.entityId || 0);
 
   const isDefendingArmy = Boolean(army?.protectee);
 
@@ -58,33 +64,30 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   // TODO: Clean this up
   const armyPosition = { x: Number(army?.position.x || 0), y: Number(army?.position.y || 0) };
 
-  const rawEntityOwnerPosition = useComponentValue(
-    Position,
-    getEntityIdFromKeys([BigInt(army?.entityOwner.entity_owner_id || 0)]),
-  ) || {
-    x: 0n,
-    y: 0n,
-  };
-  const entityOwnerPosition = { x: Number(rawEntityOwnerPosition.x), y: Number(rawEntityOwnerPosition.y) };
-
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
 
-  const [troopCounts, setTroopCounts] = useState<{ [key: number]: number }>({
-    [ResourcesIds.Knight]: 0,
-    [ResourcesIds.Crossbowman]: 0,
-    [ResourcesIds.Paladin]: 0,
-  });
+  const [troopCount, setTroopCount] = useState<number>(0);
+  const [selectedTroopType, setSelectedTroopType] = useState<TroopType | null>(
+    army?.troops.count === 0 ? TroopType.Crossbowman : (army?.troops.type ?? null),
+  );
+  const [selectedTier, setSelectedTier] = useState<number>(1);
 
-  const handleTroopCountChange = (troopName: number, count: number) => {
-    setTroopCounts((prev) => ({ ...prev, [troopName]: count }));
+  const handleTroopCountChange = (count: number) => {
+    setTroopCount(count);
+  };
+
+  const handleTierChange = (tier: number) => {
+    if (army?.troops.count === 0) {
+      setSelectedTier(tier);
+    }
   };
 
   const handleDeleteArmy = async () => {
     setIsLoading(true);
 
     try {
-      await armyManager.deleteArmy(account, army?.entity_id || 0);
+      await armyManager.deleteArmy(account, army?.entityId || 0);
       setSelectedEntity && setSelectedEntity(null);
     } catch (e) {
       console.error(e);
@@ -93,37 +96,38 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   };
 
   const handleBuyArmy = async () => {
-    setIsLoading(true);
-    armyManager.addTroops(account, {
-      [ResourcesIds.Knight]: multiplyByPrecision(troopCounts[ResourcesIds.Knight]),
-      [ResourcesIds.Crossbowman]: multiplyByPrecision(troopCounts[ResourcesIds.Crossbowman]),
-      [ResourcesIds.Paladin]: multiplyByPrecision(troopCounts[ResourcesIds.Paladin]),
-    });
+    if (!selectedTroopType) return;
 
-    setTroopCounts({
+    setIsLoading(true);
+    const troops = {
       [ResourcesIds.Knight]: 0,
       [ResourcesIds.Crossbowman]: 0,
       [ResourcesIds.Paladin]: 0,
-    });
+      [troopTypeToResourcesId[selectedTroopType]]: multiplyByPrecision(troopCount),
+    };
 
+    armyManager.addTroops(account, troops);
+
+    setTroopCount(0);
     setIsLoading(false);
   };
 
   useEffect(() => {
     let canCreate = true;
-    Object.keys(troopCounts).forEach((troopId) => {
-      const count = troopCounts[Number(troopId)];
-      const balance = getBalance(owner_entity, Number(troopId), currentDefaultTick, dojo.setup.components).balance;
-      if (count > balance) {
+
+    if (selectedTroopType) {
+      const balance = getBalance(
+        owner_entity,
+        troopTypeToResourcesId[selectedTroopType],
+        currentDefaultTick,
+        dojo.setup.components,
+      ).balance;
+      if (troopCount > balance) {
         canCreate = false;
       }
-    });
+    }
 
-    if (
-      troopCounts[ResourcesIds.Knight] === 0 &&
-      troopCounts[ResourcesIds.Crossbowman] === 0 &&
-      troopCounts[ResourcesIds.Paladin] === 0
-    ) {
+    if (troopCount === 0 || !selectedTroopType) {
       canCreate = false;
     }
 
@@ -132,22 +136,27 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     }
 
     setCanCreate(canCreate);
-  }, [troopCounts]);
+  }, [troopCount, selectedTroopType, army?.isHome]);
 
   const troops = [
     {
       name: ResourcesIds.Crossbowman,
-      current: currencyFormat(Number(army?.troops.crossbowman_count || 0), 0),
+      current: army?.troops.type === TroopType.Crossbowman ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
     },
     {
       name: ResourcesIds.Knight,
-      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
+      current: army?.troops.type === TroopType.Knight ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
     },
     {
       name: ResourcesIds.Paladin,
-      current: currencyFormat(Number(army?.troops.paladin_count || 0), 0),
+      current: army?.troops.type === TroopType.Paladin ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
     },
-  ];
+  ].filter((troop) => {
+    // If army has no troops, show all troop types
+    if (army?.troops.count === 0) return true;
+    // If army has troops, only show the current troop type
+    return troopTypeToResourcesId[army?.troops.type ?? TroopType.Crossbowman] === troop.name;
+  });
 
   return (
     army && (
@@ -170,7 +179,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                     setIsLoading(true);
 
                     try {
-                      await provider.set_entity_name({ signer: account, entity_id: army.entity_id, name: naming });
+                      await provider.set_entity_name({ signer: account, entity_id: army.entityId, name: naming });
                       army.name = naming;
                     } catch (e) {
                       console.error(e);
@@ -224,12 +233,45 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-3 my-4">
+          {army.troops.count === 0 && (
+            <div className="flex justify-center gap-2 mb-4">
+              {[1, 2, 3].map((tier) => (
+                <Button
+                  key={tier}
+                  variant={selectedTier === tier ? "primarySelected" : "primary"}
+                  onClick={() => handleTierChange(tier)}
+                >
+                  Tier {tier}
+                </Button>
+              ))}
+            </div>
+          )}
+
+          <div className={clsx("grid gap-3 my-4", troops.length === 1 ? "grid-cols-1" : "grid-cols-3")}>
             {troops.map((troop) => {
               const balance = getBalance(owner_entity, troop.name, currentDefaultTick, dojo.setup.components).balance;
+              const isCurrentTroopType =
+                army.troops.count === 0
+                  ? selectedTroopType ===
+                    Object.entries(troopTypeToResourcesId).find(([_, id]) => id === troop.name)?.[0]
+                  : troopTypeToResourcesId[army.troops.type] === troop.name;
 
               return (
-                <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>
+                <div
+                  className={clsx(
+                    "p-2 bg-gold/10 flex flex-col cursor-pointer",
+                    isCurrentTroopType ? "ring-2 ring-gold" : "opacity-50",
+                  )}
+                  key={troop.name}
+                  onClick={() => {
+                    if (army.troops.count === 0) {
+                      const troopType = Object.entries(troopTypeToResourcesId).find(
+                        ([_, id]) => id === troop.name,
+                      )?.[0] as TroopType;
+                      setSelectedTroopType(troopType);
+                    }
+                  }}
+                >
                   <div className="font-bold mb-4">
                     <div className="flex justify-between">
                       <div className="text-md">{ResourcesIds[troop.name]}</div>
@@ -240,18 +282,20 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                     </div>
                   </div>
 
-                  <div className="flex items-center mt-auto flex-col">
-                    <div className="px-2 text-xs  font-bold mb-3">
-                      Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+                  {isCurrentTroopType && (
+                    <div className="flex items-center mt-auto flex-col">
+                      <div className="px-2 text-xs font-bold mb-3">
+                        Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+                      </div>
+                      <NumberInput
+                        max={divideByPrecision(balance)}
+                        min={0}
+                        step={100}
+                        value={troopCount}
+                        onChange={handleTroopCountChange}
+                      />
                     </div>
-                    <NumberInput
-                      max={divideByPrecision(balance)}
-                      min={0}
-                      step={100}
-                      value={troopCounts[troop.name]}
-                      onChange={(amount) => handleTroopCountChange(troop.name, amount)}
-                    />
-                  </div>
+                  )}
                 </div>
               );
             })}

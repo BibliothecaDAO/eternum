@@ -32,7 +32,7 @@ const SelectedArmyContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
   });
 
   // player armies that are not in battle
-  const playerArmies = useMemo(() => armies.filter((army) => army.isMine && army.battle_id === 0), [armies]);
+  const playerArmies = useMemo(() => armies.filter((army) => army.isMine), [armies]);
 
   useEffect(() => {
     setSelectedArmyIndex(0);
@@ -40,12 +40,12 @@ const SelectedArmyContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
 
   useEffect(() => {
     if (selectedHex) {
-      updateSelectedEntityId(playerArmies[selectedArmyIndex]?.entity_id || 0);
+      updateSelectedEntityId(playerArmies[selectedArmyIndex]?.entityId || 0);
     }
   }, [selectedArmyIndex, playerArmies, updateSelectedEntityId, selectedHex]);
 
   const ownArmy = useMemo(
-    () => playerArmies.find((army) => army.entity_id === selectedEntityId),
+    () => playerArmies.find((army) => army.entityId === selectedEntityId),
     [playerArmies, selectedEntityId],
   );
 
@@ -76,7 +76,7 @@ const SelectedArmyContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
         bottom-0 opacity-100
       `}
     >
-      <div>
+      <div className="flex flex-col gap-2 w-[27rem]">
         {playerArmies.length > 1 && (
           <div className="flex flex-row justify-between mt-2">
             <div className="px-2 py-1 text-sm rounded-tl animate-pulse">Press Tab to cycle through armies</div>
@@ -86,9 +86,9 @@ const SelectedArmyContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
           </div>
         )}
         <ArmyWarning army={ownArmy!} />
-        <ArmyChip className="w-[27rem] bg-black/90" army={ownArmy} showButtons={false} />
+        <ArmyChip className="bg-black/90" army={ownArmy} showButtons={false} />
         <InventoryResources
-          entityId={ownArmy!.entity_id}
+          entityId={ownArmy!.entityId}
           className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
           resourcesIconSize="xs"
         />

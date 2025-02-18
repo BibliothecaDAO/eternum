@@ -2,17 +2,16 @@ import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
 import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
 import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ArmyManagementCard, ViewOnMapIcon } from "@/ui/components/military/army-management-card";
-import { TroopDisplay } from "@/ui/components/military/troop-chip";
+import { TroopChip } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { Exchange } from "@/ui/components/structures/worldmap/structure-card";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
-import { armyHasTroops, ArmyInfo, BattleManager } from "@bibliothecadao/eternum";
+import { armyHasTroops, ArmyInfo } from "@bibliothecadao/eternum";
 import { useArmiesAtPosition, useDojo } from "@bibliothecadao/react";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
@@ -68,22 +67,9 @@ export const ArmyChip = ({
   const [showInventory, setShowInventory] = useState(false);
   const [showTroopSwap, setShowTroopSwap] = useState(false);
 
-  const { currentBlockTimestamp } = useBlockTimestamp();
-
   const [editMode, setEditMode] = useState(false);
 
-  const battleManager = useMemo(
-    () => new BattleManager(dojo.setup.components, dojo.network.provider, army.battle_id),
-    [army.battle_id],
-  );
-
   const isHome = army.isHome;
-
-  const updatedArmy = useMemo(() => {
-    const updatedBattle = battleManager.getUpdatedBattle(currentBlockTimestamp!);
-    const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
-    return updatedArmy;
-  }, [currentBlockTimestamp, army]);
 
   const [location] = useLocation();
   const isOnMap = useMemo(() => location.includes("map"), [location]);
@@ -102,24 +88,24 @@ export const ArmyChip = ({
               <span> Exit</span>
             </div>
           </Button>
-          <ArmyManagementCard army={updatedArmy!} owner_entity={updatedArmy!.entityOwner.entity_owner_id} />
+          <ArmyManagementCard army={army} owner_entity={army.entityOwner.entity_owner_id} />
         </>
       ) : showTroopSwap ? (
-        <ArmyMergeTroopsPanel giverArmy={updatedArmy!} setShowMergeTroopsPopup={setShowTroopSwap} />
+        <ArmyMergeTroopsPanel giverArmy={army} setShowMergeTroopsPopup={setShowTroopSwap} />
       ) : (
         <>
           <div className="flex w-full h-full justify-between">
             <div className="flex w-full justify-between py-2">
               <div className="flex flex-col w-[45%]">
                 <div className="h4 items-center justify-between text-xl mb-2 flex flex-row">
-                  <div className="mr-2 text-base">{updatedArmy!.name}</div>
+                  <div className="mr-2 text-base">{army.name}</div>
                   {showButtons !== undefined && showButtons === true && (
                     <div className="flex flex-row mt-1 h-6 gap-1 mr-2">
-                      {updatedArmy?.isMine && (
+                      {army.isMine && (
                         <React.Fragment>
                           <Plus
                             className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
-                              updatedArmy.quantity.value === 0n ? "animate-pulse" : ""
+                              army.quantity.value === 0n ? "animate-pulse" : ""
                             } ${army.protectee ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
                             onClick={() => {
                               setTooltip(null);
@@ -135,18 +121,18 @@ export const ArmyChip = ({
                               setTooltip(null);
                             }}
                           />
-                          {updatedArmy.quantity.value > 0 && (
+                          {army.quantity.value > 0 && (
                             <>
                               <ViewOnMapIcon
                                 className="w-5 h-5 hover:scale-110 transition-all duration-300"
                                 position={
                                   new Position({
-                                    x: Number(updatedArmy!.position.x),
-                                    y: Number(updatedArmy!.position.y),
+                                    x: Number(army.position.x),
+                                    y: Number(army.position.y),
                                   })
                                 }
                               />
-                              {isOnMap && <NavigateToPositionIcon position={new Position(updatedArmy!.position)} />}
+                              {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
                               <Swap
                                 className={`w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
                                   army.protectee ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
@@ -169,7 +155,7 @@ export const ArmyChip = ({
                           )}
                         </React.Fragment>
                       )}
-                      {updatedArmy && updatedArmy.quantity.value > 0 && (
+                      {army.quantity.value > 0 && (
                         <Inventory
                           className="w-4 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300"
                           onClick={() => {
@@ -190,23 +176,23 @@ export const ArmyChip = ({
                     </div>
                   )}
                 </div>
-                {!army.protectee && armyHasTroops([updatedArmy]) && (
+                {!army.protectee && armyHasTroops([army]) && (
                   <div className="flex flex-row justify-between font-bold text-xs mr-2">
                     <div className="h-full flex items-end">
                       {isHome && <div className="text-xs px-2 text-green">At Base</div>}
                     </div>
                     <div className="flex flex-col items-end">
-                      <StaminaResource entityId={updatedArmy!.entity_id} />
-                      <ArmyCapacity army={updatedArmy} />
+                      <StaminaResource entityId={army.entityId} />
+                      <ArmyCapacity army={army} />
                     </div>
                   </div>
                 )}
               </div>
               <div className="flex flex-col content-center w-[55%]">
-                <TroopDisplay troops={updatedArmy!.troops} />
+                <TroopChip troops={army.troops} className="h-full" iconSize="lg" />
                 {showInventory && (
                   <InventoryResources
-                    entityId={updatedArmy!.entity_id}
+                    entityId={army.entityId}
                     className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
                     resourcesIconSize="xs"
                   />
@@ -232,7 +218,7 @@ const ArmyMergeTroopsPanel = ({
   const armiesAtPosition = useArmiesAtPosition({ position: giverArmy.position });
 
   const armies = useMemo(() => {
-    return armiesAtPosition.filter((army) => army.entity_id !== giverArmy.entity_id);
+    return armiesAtPosition.filter((army) => army.entityId !== giverArmy.entityId);
   }, [giverArmy, armiesAtPosition]);
 
   return (
@@ -245,7 +231,7 @@ const ArmyMergeTroopsPanel = ({
       {selectedReceiverArmy ? (
         <Exchange
           giverArmyName={giverArmy.name}
-          giverArmyEntityId={giverArmy.entity_id}
+          giverArmyEntityId={giverArmy.entityId}
           takerArmy={selectedReceiverArmy}
           allowReverse={selectedReceiverArmy.isMine}
         />
@@ -261,7 +247,7 @@ const ArmySelector = ({ armies, onSelect }: { armies: ArmyInfo[]; onSelect: (arm
   const [selectedArmy, setSelectedArmy] = useState<ArmyInfo | null>(null);
 
   const handleArmyClick = (army: ArmyInfo) => {
-    if (selectedArmy?.entity_id === army.entity_id) {
+    if (selectedArmy?.entityId === army.entityId) {
       setSelectedArmy(null);
     } else {
       setSelectedArmy(army);
@@ -273,9 +259,9 @@ const ArmySelector = ({ armies, onSelect }: { armies: ArmyInfo[]; onSelect: (arm
       <div className="text-sm self-center">Choose destination army</div>
       {armies.map((army) => (
         <div
-          key={army.entity_id}
+          key={army.entityId}
           className={`rounded cursor-pointer transition-all duration-300 ${
-            selectedArmy?.entity_id === army.entity_id ? "bg-gray-300" : "bg-brown"
+            selectedArmy?.entityId === army.entityId ? "bg-gray-300" : "bg-brown"
           }`}
           onClick={() => handleArmyClick(army)}
         >

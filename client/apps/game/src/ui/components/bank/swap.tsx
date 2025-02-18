@@ -118,28 +118,12 @@ export const ResourceSwap = ({
       });
     };
 
-    if (bankProtector?.battle_id) {
-      // If there's a bank protector in battle, resolve battle first then perform swap
-      setup.systemCalls
-        .battle_resolve({
-          signer: account,
-          battle_id: bankProtector.battle_id,
-          army_id: bankProtector.entity_id,
-        })
-        .then(performSwap)
-        .finally(() => {
-          playLordsSound();
-          setIsLoading(false);
-          setOpenConfirmation(false);
-        });
-    } else {
-      // If no bank protector, just perform swap
-      performSwap().finally(() => {
-        playLordsSound();
-        setIsLoading(false);
-        setOpenConfirmation(false);
-      });
-    }
+    // If no bank protector, just perform swap
+    performSwap().finally(() => {
+      playLordsSound();
+      setIsLoading(false);
+      setOpenConfirmation(false);
+    });
   }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, bankProtector]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;

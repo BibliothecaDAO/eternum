@@ -17,6 +17,7 @@ import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { CombatModal } from "@/ui/modules/military/combat-modal";
+import { HelpModal } from "@/ui/modules/military/help-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ActionPath,
@@ -25,6 +26,7 @@ import {
   ArmyMovementManager,
   Biome,
   BiomeType,
+  ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   getNeighborOffsets,
   HexPosition,
@@ -58,10 +60,10 @@ export default class WorldmapScene extends HexagonScene {
   private structureManager: StructureManager;
   private battleManager: BattleManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
-  // normalized positions
-  private armyHexes: Map<number, Set<number>> = new Map();
-  // normalized positions
-  private structureHexes: Map<number, Set<number>> = new Map();
+  // normalized positions and if they are allied or not
+  private armyHexes: Map<number, Map<number, boolean>> = new Map();
+  // normalized positions and if they are allied or not
+  private structureHexes: Map<number, Map<number, boolean>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private battles: Map<number, Set<number>> = new Map();
@@ -355,6 +357,8 @@ export default class WorldmapScene extends HexagonScene {
           this.onArmyMovement(account, actionPath, selectedEntityId);
         } else if (actionType === ActionType.Attack) {
           this.onArmyAttack(account, actionPath, selectedEntityId);
+        } else if (actionType === ActionType.Help) {
+          this.onArmyHelp(account, actionPath, selectedEntityId);
         }
       }
     }
@@ -388,6 +392,18 @@ export default class WorldmapScene extends HexagonScene {
     this.state.toggleModal(
       <CombatModal
         attackerEntityId={selectedEntityId}
+        targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
+      />,
+    );
+  }
+
+  private onArmyHelp(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const targetHex = selectedPath[selectedPath.length - 1];
+
+    this.state.toggleModal(
+      <HelpModal
+        selectedEntityId={selectedEntityId}
         targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
       />,
     );
@@ -454,48 +470,52 @@ export default class WorldmapScene extends HexagonScene {
   public updateArmyHexes(update: ArmySystemUpdate) {
     const {
       hexCoords: { col, row },
+      owner: { address },
+      entityId,
     } = update;
+
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    const newCol = normalized.x;
-    const newRow = normalized.y;
-    const oldHexCoords = this.armiesPositions.get(update.entityId);
-    const oldCol = oldHexCoords?.col;
-    const oldRow = oldHexCoords?.row;
-    console.log({ oldCol, oldRow, newCol, newRow });
+    const newPos = { col: normalized.x, row: normalized.y };
+    const oldPos = this.armiesPositions.get(entityId);
+    const isMine = address === ContractAddress(useAccountStore.getState().account?.address || "");
 
-    // update the position of the army
-    this.armiesPositions.set(update.entityId, { col: newCol, row: newRow });
+    // Update army position
+    this.armiesPositions.set(entityId, newPos);
 
-    if (oldCol !== undefined && oldRow !== undefined) {
-      if (oldCol !== newCol || oldRow !== newRow) {
-        this.armyHexes.get(oldCol)?.delete(oldRow);
-        if (!this.armyHexes.has(newCol)) {
-          this.armyHexes.set(newCol, new Set());
-        }
-        this.armyHexes.get(newCol)?.add(newRow);
-      }
-    } else {
-      if (!this.armyHexes.has(newCol)) {
-        this.armyHexes.set(newCol, new Set());
-      }
-      this.armyHexes.get(newCol)?.add(newRow);
+    // Remove from old position if it changed
+    if (
+      oldPos &&
+      (oldPos.col !== newPos.col ||
+        oldPos.row !== newPos.row ||
+        this.armyHexes.get(oldPos.col)?.get(oldPos.row) !== isMine)
+    ) {
+      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
     }
+
+    // Add to new position
+    if (!this.armyHexes.has(newPos.col)) {
+      this.armyHexes.set(newPos.col, new Map());
+    }
+    this.armyHexes.get(newPos.col)?.set(newPos.row, isMine);
   }
 
   public updateStructureHexes(update: StructureSystemUpdate) {
     const {
       hexCoords: { col, row },
+      owner: { address },
     } = update;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    const isMine = address === ContractAddress(useAccountStore.getState().account?.address || "");
 
     const newCol = normalized.x;
     const newRow = normalized.y;
 
     if (!this.structureHexes.has(newCol)) {
-      this.structureHexes.set(newCol, new Set());
+      this.structureHexes.set(newCol, new Map());
     }
-    this.structureHexes.get(newCol)?.add(newRow);
+    this.structureHexes.get(newCol)?.set(newRow, isMine);
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -812,7 +832,6 @@ export default class WorldmapScene extends HexagonScene {
 
     // Add to fetched chunks before the query to prevent concurrent duplicate requests
     this.fetchedChunks.add(chunkKey);
-    console.log(startCol, startRow, range);
 
     try {
       this.state.setLoading(LoadingStateKey.Map, true);

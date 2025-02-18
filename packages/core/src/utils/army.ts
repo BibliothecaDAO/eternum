@@ -4,7 +4,18 @@ import { shortString } from "starknet";
 import { ArmyInfo, getArmyTotalCapacityInKg } from "..";
 import { CapacityConfigCategory, RESOURCE_PRECISION } from "../constants";
 import { ClientComponents } from "../dojo";
-import { ContractAddress, ID } from "../types";
+import { ContractAddress, ID, TroopInfo, TroopsLegacy, TroopType } from "../types";
+
+export const getArmyTroops = (troops: TroopsLegacy) => {
+  const troopInfo = getDominantTroopInfo(troops);
+
+  return {
+    count: troopInfo.count,
+    type: troopInfo.type,
+    // todo: get tier from troopInfo
+    tier: 1 as 1 | 2 | 3,
+  };
+};
 
 export const formatArmies = (
   armies: Entity[],
@@ -78,7 +89,8 @@ export const formatArmies = (
       const isHome = structurePosition && position.x === structurePosition.x && position.y === structurePosition.y;
 
       return {
-        ...army,
+        entityId: army.entity_id,
+        troops: getArmyTroops(army.troops),
         protectee,
         health,
         movable,
@@ -126,17 +138,23 @@ export const getArmiesInBattle = (battleEntityId: ID, playerAddress: ContractAdd
 };
 
 export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
-  return entityArmies.some(
-    (army) =>
-      army &&
-      (Number(army.troops.knight_count) !== 0 ||
-        Number(army.troops.crossbowman_count) !== 0 ||
-        Number(army.troops.paladin_count) !== 0),
-  );
+  return entityArmies.some((army) => army && army.troops.count !== 0);
 };
 
 export const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: number; y: number }) => {
   return entityArmies.some(
     (army) => army && realmPosition && (army.position.x !== realmPosition.x || army.position.y !== realmPosition.y),
   );
+};
+
+export const getDominantTroopInfo = (troops: TroopsLegacy): TroopInfo => {
+  const { knight_count, crossbowman_count, paladin_count } = troops;
+
+  if (knight_count >= crossbowman_count && knight_count >= paladin_count) {
+    return { type: TroopType.Knight, count: Number(knight_count), label: "Knights" };
+  }
+  if (crossbowman_count >= knight_count && crossbowman_count >= paladin_count) {
+    return { type: TroopType.Crossbowman, count: Number(crossbowman_count), label: "Crossbowmen" };
+  }
+  return { type: TroopType.Paladin, count: Number(paladin_count), label: "Paladins" };
 };

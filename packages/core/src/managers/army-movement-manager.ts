@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, DojoAccount, multiplyByPrecision } from "..";
+import { Biome, divideByPrecision, DojoAccount, getArmyTroops, multiplyByPrecision } from "..";
 import {
   BiomeType,
   CapacityConfigCategory,
@@ -63,13 +63,18 @@ export class ArmyMovementManager {
     }
 
     const entityArmy = getComponentValue(this.components.Army, this.entity);
-    const exploreFoodCosts = computeExploreFoodCosts(entityArmy?.troops);
+    const exploreFoodCosts = entityArmy
+      ? computeExploreFoodCosts(getArmyTroops(entityArmy?.troops))
+      : {
+          wheatPayAmount: 0,
+          fishPayAmount: 0,
+        };
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    if (fish < multiplyByPrecision(exploreFoodCosts.fishPayAmount)) {
+    if (fish < exploreFoodCosts.fishPayAmount) {
       return false;
     }
-    if (wheat < multiplyByPrecision(exploreFoodCosts.wheatPayAmount)) {
+    if (wheat < exploreFoodCosts.wheatPayAmount) {
       return false;
     }
 
@@ -87,11 +92,16 @@ export class ArmyMovementManager {
     const maxStaminaSteps = Math.floor(stamina.amount / minTravelStaminaCost);
 
     const entityArmy = getComponentValue(this.components.Army, this.entity);
-    const travelFoodCosts = computeTravelFoodCosts(entityArmy?.troops);
+    const travelFoodCosts = entityArmy
+      ? computeTravelFoodCosts(getArmyTroops(entityArmy.troops))
+      : {
+          wheatPayAmount: 0,
+          fishPayAmount: 0,
+        };
 
     const { wheat, fish } = this.getFood(currentDefaultTick);
-    const maxTravelWheatSteps = Math.floor(wheat / multiplyByPrecision(travelFoodCosts.wheatPayAmount));
-    const maxTravelFishSteps = Math.floor(fish / multiplyByPrecision(travelFoodCosts.fishPayAmount));
+    const maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
+    const maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
     return Math.min(maxStaminaSteps, maxTravelSteps);
   };
@@ -106,8 +116,8 @@ export class ArmyMovementManager {
     const fishBalance = this.fishManager.balance(currentDefaultTick);
 
     return {
-      wheat: wheatBalance,
-      fish: fishBalance,
+      wheat: divideByPrecision(wheatBalance),
+      fish: divideByPrecision(fishBalance),
     };
   }
 
@@ -155,8 +165,8 @@ export class ArmyMovementManager {
   }
 
   public findActionPaths(
-    structureHexes: Map<number, Set<number>>,
-    armyHexes: Map<number, Set<number>>,
+    structureHexes: Map<number, Map<number, boolean>>,
+    armyHexes: Map<number, Map<number, boolean>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
@@ -180,18 +190,32 @@ export class ArmyMovementManager {
     for (const { col, row } of neighbors) {
       const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
       const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
       const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const isStructureMine = structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
       const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
 
       if (!isExplored && !canExplore) continue;
 
-      const canAttack = hasArmy || hasStructure;
+      const isMine = isArmyMine || isStructureMine;
+      const canAttack = (hasArmy || hasStructure) && !isMine;
 
       const staminaCost = biome
         ? ArmyMovementManager.staminaDrain(biome, troopType)
         : configManager.getExploreStaminaCost();
 
       if (staminaCost > armyStamina) continue;
+
+      let actionType;
+      if (isMine) {
+        actionType = ActionType.Help;
+      } else if (canAttack) {
+        actionType = ActionType.Attack;
+      } else if (biome) {
+        actionType = ActionType.Move;
+      } else {
+        actionType = ActionType.Explore;
+      }
 
       priorityQueue.push({
         position: { col, row },
@@ -201,7 +225,7 @@ export class ArmyMovementManager {
           { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
           {
             hex: { col, row },
-            actionType: canAttack ? ActionType.Attack : biome ? ActionType.Move : ActionType.Explore,
+            actionType,
             biomeType: biome,
             staminaCost,
           },
@@ -436,13 +460,15 @@ export class ArmyMovementManager {
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
     const entityArmy = getComponentValue(this.components.Army, this.entity);
+    if (!entityArmy) return;
     let costs = { wheatPayAmount: 0, fishPayAmount: 0 };
     if (travelType === TravelTypes.Explore) {
-      costs = computeExploreFoodCosts(entityArmy?.troops);
+      costs = computeExploreFoodCosts(getArmyTroops(entityArmy.troops));
     } else {
-      costs = computeTravelFoodCosts(entityArmy?.troops);
+      costs = computeTravelFoodCosts(getArmyTroops(entityArmy.troops));
     }
 
+    // need to add back precision for optimistic resource update
     this.wheatManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.wheatPayAmount)));
     this.fishManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.fishPayAmount)));
   };

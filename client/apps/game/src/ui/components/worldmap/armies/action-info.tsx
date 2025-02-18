@@ -12,6 +12,7 @@ import {
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
+  getArmyTroops,
   getBalance,
   ID,
   ResourcesIds,
@@ -25,14 +26,14 @@ const TooltipContent = memo(
   ({
     isExplored,
     actionPath,
-    costs,
+    costsPerStep,
     selectedEntityId,
     structureEntityId,
     getBalance,
   }: {
     isExplored: boolean;
     actionPath: ActionPath[];
-    costs: { travelFoodCosts: any; exploreFoodCosts: any };
+    costsPerStep: { travelFoodCosts: any; exploreFoodCosts: any };
     selectedEntityId: number;
     structureEntityId: number;
     getBalance: (entityId: ID, resourceId: ResourcesIds) => { balance: number; resourceId: ResourcesIds };
@@ -45,12 +46,12 @@ const TooltipContent = memo(
         {actionType === ActionType.Explore ? (
           <div>
             <ResourceCost
-              amount={-costs.travelFoodCosts.wheatPayAmount * (actionPath.length - 1)}
+              amount={-costsPerStep.exploreFoodCosts.wheatPayAmount}
               resourceId={ResourcesIds.Wheat}
               balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
             />
             <ResourceCost
-              amount={-costs.travelFoodCosts.fishPayAmount * (actionPath.length - 1)}
+              amount={-costsPerStep.exploreFoodCosts.fishPayAmount}
               resourceId={ResourcesIds.Fish}
               balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
             />
@@ -58,12 +59,12 @@ const TooltipContent = memo(
         ) : actionType === ActionType.Move ? (
           <div>
             <ResourceCost
-              amount={-costs.exploreFoodCosts.wheatPayAmount}
+              amount={-costsPerStep.travelFoodCosts.wheatPayAmount * (actionPath.length - 1)}
               resourceId={ResourcesIds.Wheat}
               balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
             />
             <ResourceCost
-              amount={-costs.exploreFoodCosts.fishPayAmount}
+              amount={-costsPerStep.travelFoodCosts.fishPayAmount * (actionPath.length - 1)}
               resourceId={ResourcesIds.Fish}
               balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
             />
@@ -134,8 +135,8 @@ export const ActionInfo = memo(() => {
 
   const costs = useMemo(
     () => ({
-      travelFoodCosts: computeTravelFoodCosts(selectedEntityTroops),
-      exploreFoodCosts: computeExploreFoodCosts(selectedEntityTroops),
+      travelFoodCosts: computeTravelFoodCosts(getArmyTroops(selectedEntityTroops)),
+      exploreFoodCosts: computeExploreFoodCosts(getArmyTroops(selectedEntityTroops)),
     }),
     [selectedEntityTroops],
   );
@@ -147,7 +148,7 @@ export const ActionInfo = memo(() => {
       <TooltipContent
         isExplored={isExplored}
         actionPath={actionPath}
-        costs={costs}
+        costsPerStep={costs}
         selectedEntityId={selectedEntityId}
         structureEntityId={structureEntityId}
         getBalance={(entityId: ID, resourceId: ResourcesIds) =>

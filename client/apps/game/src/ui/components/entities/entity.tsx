@@ -112,7 +112,7 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
           {renderEntityStatus}
         </div>
         <div className="flex justify-between items-center self-center">
-          <DepositResources resources={entityResources} arrival={arrival} armyInBattle={Boolean(army?.battle_id)} />
+          <DepositResources resources={entityResources} arrival={arrival} />
         </div>
       </div>
 

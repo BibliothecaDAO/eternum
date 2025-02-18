@@ -7,6 +7,7 @@ import {
   ContractAddress,
   divideByPrecision,
   getArmy,
+  getDominantTroopInfo,
   getEntityIdFromKeys,
   getStructure,
   ID,
@@ -17,13 +18,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import {
-  calculateRemainingTroops,
-  formatBiomeBonus,
-  getDominantTroopInfo,
-  getStaminaDisplay,
-  getTroopResourceId,
-} from "./combat-utils";
+import { calculateRemainingTroops, formatBiomeBonus, getStaminaDisplay, getTroopResourceId } from "./combat-utils";
 
 enum TargetType {
   Structure,
@@ -34,12 +29,6 @@ export type Troops = {
   knight_count: number;
   paladin_count: number;
   crossbowman_count: number;
-};
-
-export type TroopInfo = {
-  type: TroopType;
-  count: number;
-  label: string;
 };
 
 export const CombatContainer = ({
@@ -96,9 +85,8 @@ export const CombatContainer = ({
   }, [targetEntities, account, components]);
 
   const defenderStamina = useMemo(() => {
-    return new StaminaManager(components, target?.info?.entity_id || 0).getStamina(
-      getBlockTimestamp().currentArmiesTick,
-    ).amount;
+    return new StaminaManager(components, target?.info?.entityId || 0).getStamina(getBlockTimestamp().currentArmiesTick)
+      .amount;
   }, [target]);
 
   // If target is a structure, show WIP message
@@ -117,7 +105,7 @@ export const CombatContainer = ({
   const battleSimulation = useMemo(() => {
     if (!target || target.targetType === TargetType.Structure) return null;
 
-    const targetId = target.info?.entity_id;
+    const targetId = target.info?.entityId;
     if (!targetId) return null;
 
     const targetArmy = getComponentValue(Army, getEntityIdFromKeys([BigInt(targetId)]));
@@ -220,8 +208,8 @@ export const CombatContainer = ({
   }, [attackerEntityId]);
 
   const targetArmyData = useMemo(() => {
-    if (!target?.info?.entity_id) return null;
-    const army = getComponentValue(Army, getEntityIdFromKeys([BigInt(target.info.entity_id)]));
+    if (!target?.info?.entityId) return null;
+    const army = getComponentValue(Army, getEntityIdFromKeys([BigInt(target.info.entityId)]));
 
     return {
       ...army,
@@ -338,7 +326,7 @@ export const CombatContainer = ({
                 isWinner: winner !== null && winner !== attackerEntityId,
                 originalTroops: targetArmyData.troops,
                 currentStamina: Number(
-                  new StaminaManager(components, target?.info?.entity_id || 0).getStamina(
+                  new StaminaManager(components, target?.info?.entityId || 0).getStamina(
                     getBlockTimestamp().currentArmiesTick,
                   ).amount,
                 ),
@@ -403,6 +391,7 @@ export const CombatContainer = ({
           variant="primary"
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
           disabled={attackerStamina < staminaCombatConfig.staminaCost}
+          // todo: add attack tx
           onClick={() => console.log("ATTACKKKKKK")}
         >
           {attackerStamina >= staminaCombatConfig.staminaCost

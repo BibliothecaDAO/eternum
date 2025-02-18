@@ -7,7 +7,7 @@ import { useMarketStore } from "@/hooks/store/use-market-store";
 import { useModalStore } from "@/hooks/store/use-modal-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintModal } from "@/ui/components/hints/hint-modal";
-import { TroopDisplay } from "@/ui/components/military/troop-chip";
+import { TroopChip } from "@/ui/components/military/troop-chip";
 import { ModalContainer } from "@/ui/components/modal-container";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
@@ -15,11 +15,9 @@ import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { Tabs } from "@/ui/elements/tab";
-import { formatTimeDifference } from "@/ui/modules/military/battle-view/battle-progress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  BattleManager,
   ContractAddress,
   ID,
   ResourcesIds,
@@ -27,7 +25,7 @@ import {
   getArmy,
   getStructureAtPosition,
 } from "@bibliothecadao/eternum";
-import { useBank, useBattlesAtPosition, useDojo, useMarket, usePlayerStructures } from "@bibliothecadao/react";
+import { useBank, useDojo, useMarket, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 
@@ -65,8 +63,6 @@ export const MarketModal = () => {
   const { toggleModal } = useModalStore();
   const bank = useBank();
 
-  const battles = useBattlesAtPosition(bank?.position || { x: 0, y: 0 });
-
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
   const { bidOffers, askOffers } = useMarket(currentBlockTimestamp);
@@ -81,28 +77,12 @@ export const MarketModal = () => {
     [bank?.position, dojo.account.account.address, dojo.setup.components],
   );
 
-  const battleEntityId = useMemo(() => {
-    if (battles.length === 0) return null;
-    return battles[0];
-  }, [battles]);
-
-  const battleManager = useMemo(
-    () => new BattleManager(dojo.setup.components, dojo.network.provider, battleEntityId || 0),
-    [battleEntityId],
-  );
-
   // initial entity id
   const selectedEntityId = useUIStore((state) => state.structureEntityId);
   const [structureEntityId, setStructureEntityId] = useState<ID>(selectedEntityId);
 
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
-
-  const [isSiegeOngoing, isBattleOngoing] = useMemo(() => {
-    const isSiegeOngoing = battleManager.isSiege(currentBlockTimestamp);
-    const isBattleOngoing = battleManager.isBattleOngoing(currentBlockTimestamp);
-    return [isSiegeOngoing, isBattleOngoing];
-  }, [battleManager, currentBlockTimestamp]);
 
   const lordsBalance =
     useComponentValue(
@@ -119,18 +99,12 @@ export const MarketModal = () => {
   const bankArmy = useMemo(
     () =>
       getArmy(
-        bankStructure?.protector?.entity_id || 0,
+        bankStructure?.protector?.entityId || 0,
         ContractAddress(dojo.account.account.address),
         dojo.setup.components,
       ),
-    [bankStructure?.protector?.entity_id, dojo.account.account.address, dojo.setup.components],
+    [bankStructure?.protector?.entityId, dojo.account.account.address, dojo.setup.components],
   );
-
-  // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
-  const armyInfo = useMemo(() => {
-    const updatedBattle = battleManager.getUpdatedBattle(currentBlockTimestamp);
-    return battleManager.getUpdatedArmy(bankArmy, updatedBattle);
-  }, [currentBlockTimestamp, battleManager, bankArmy]);
 
   const tabs = useMemo(
     () => [
@@ -312,37 +286,16 @@ export const MarketModal = () => {
             <div className="bank-combat-selector bg-brown border border-gold/30 p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
               <div>
                 <h3 className="text-xl font-bold">AMM Status</h3>
-                {!isBattleOngoing && !isSiegeOngoing && (
-                  <div className="space-y-3 flex-grow">
-                    <div className="flex items-center text-green mb-2 font-medium">
-                      <span className="mr-2">✓</span> No combat on Bank, AMM available
-                    </div>
-                  </div>
-                )}
-                {isSiegeOngoing && (
-                  <div className="flex items-center text-yellow mb-2">
-                    <span className="mr-2">⚠</span> Bank siege has started,{" "}
-                    {formatTimeDifference(battleManager.getSiegeTimeLeft(currentBlockTimestamp))} remaining to swap in
-                    AMM
-                  </div>
-                )}
-                {!isSiegeOngoing && isBattleOngoing && (
-                  <div className="flex items-center text-red">
-                    <span className="mr-2">⚠</span> Bank combat has started, AMM blocked for{" "}
-                    {formatTimeDifference(battleManager.getTimeLeft(currentBlockTimestamp) || new Date(0))} remaining
-                  </div>
-                )}
-              </div>
-              {armyInfo && (
-                <div>
-                  <h3 className="text-xl font-bold mt-2">Bank Defence</h3>
-                  <div className="flex-grow">
-                    <div className="flex items-center text-green">
-                      <TroopDisplay troops={armyInfo.troops} />
-                    </div>
+                <div className="space-y-3 flex-grow">
+                  <div className="flex items-center text-green mb-2 font-medium">
+                    <span className="mr-2">✓</span> No combat on Bank, AMM available
                   </div>
                 </div>
-              )}
+              </div>
+            </div>
+            <h3 className="text-xl font-bold mt-2">Bank Defence</h3>
+            <div className="flex-grow">
+              <div className="flex items-center text-green">{bankArmy && <TroopChip troops={bankArmy.troops} />}</div>
             </div>
           </div>
           <Tabs size="large" selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)}>
