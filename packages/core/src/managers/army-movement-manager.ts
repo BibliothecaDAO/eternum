@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, divideByPrecision, DojoAccount, getArmyTroops, multiplyByPrecision } from "..";
+import { Biome, BiomeType, divideByPrecision, DojoAccount, getArmyTroops, multiplyByPrecision } from "..";
 import {
   CapacityConfig,
   FELT_CENTER,

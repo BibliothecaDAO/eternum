@@ -2,7 +2,7 @@ import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager, gramToKg } from "..";
-import { BuildingType, CapacityConfigCategory, findResourceIdByTrait, orders } from "../constants";
+import { BuildingType, CapacityConfig, findResourceIdByTrait, orders } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
@@ -73,7 +73,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
         components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(realm?.entity_id || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
-    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
+    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfig.Storehouse);
     return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
   })();
 

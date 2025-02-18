@@ -1871,16 +1871,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_world_config(props: SystemProps.SetWorldConfigProps) {
-    const { admin_address, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_world_config",
-      calldata: [admin_address],
-    });
-  }
-
   public async set_donkey_speed_config(props: SystemProps.SetDonkeySpeedConfigProps) {
     const { sec_per_km, signer } = props;
 

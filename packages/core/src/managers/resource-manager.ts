@@ -62,7 +62,7 @@ export class ResourceManager {
     if (!production || production.building_count === 0) return 0;
 
     // Get production details
-    const lastUpdatedTick = production.last_updated_tick;
+    const lastUpdatedTick = production.last_updated_at;
     const productionRate = production.production_rate;
     const outputAmountLeft = production.output_amount_left;
 
@@ -84,7 +84,7 @@ export class ResourceManager {
     if (!production || production.building_count === 0) return 0;
 
     // If no production rate or no output left, return current tick
-    if (production.production_rate === 0n || production.output_amount_left === 0n) return production.last_updated_tick;
+    if (production.production_rate === 0n || production.output_amount_left === 0n) return production.last_updated_at;
 
     // For food resources, production never ends
     if (this.isFood()) {
@@ -93,7 +93,7 @@ export class ResourceManager {
 
     // Calculate when production will end based on remaining output and rate
     const remainingTicks = Number(production.output_amount_left) / Number(production.production_rate);
-    return production.last_updated_tick + Math.ceil(remainingTicks);
+    return production.last_updated_at + Math.ceil(remainingTicks);
   }
 
   public getStoreCapacity(): number {
