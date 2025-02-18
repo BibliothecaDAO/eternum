@@ -1,17 +1,26 @@
-import tailwindcss from "@tailwindcss/vite";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import { createRequire } from "module";
+import path from "path";
+import { fileURLToPath } from "url";
 import { defineConfig } from "@tanstack/start/config";
-import reactRefresh from "@vitejs/plugin-react";
-import { createApp } from "vinxi";
-//import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
 import viteTsConfigPaths from "vite-tsconfig-paths";
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
 
-// Define __dirname for ES modules
+// Create a require function compatible with ESM
+const require = createRequire(import.meta.url);
+
+// Compute __filename and __dirname in ESM.
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
+
+// Resolve the directory of the aliased package using its package.json.
+const starknetAlias = path.dirname(
+  require.resolve("@starknet-io/types-js/package.json"),
+);
+
+console.log(
+  "Aliasing 'starknet-types-07' to",
+  path.resolve(__dirname, "starknet-types-07/index.mjs"),
+);
 
 export default defineConfig({
   server: {
@@ -26,28 +35,23 @@ export default defineConfig({
     },
   },
   vite: {
+    ssr: { noExternal: ["starknet-types-07"] },
+    optimizeDeps: {
+      include: ["starknet-types-07"],
+    },
+    resolve: {
+      alias: {
+        // Optionally you can keep this alias for your own source, but now it may not be needed:
+        // "starknet-types-07": path.resolve(__dirname, "starknet-types-07/index.mjs"),
+      },
+    },
     plugins: [
       viteTsConfigPaths({
         projects: ["./tsconfig.json"],
       }),
+      svgr({
+        // Additional svgr options if needed
+      }),
     ],
-  },
-
-  routers: {
-    client: {
-      vite: {
-        plugins: [
-          reactRefresh(),
-          viteTsConfigPaths({
-          projects: ["./tsconfig.json"],
-        }),
-        svgr({
-          // svgr options: https://react-svgr.com/docs/options/
-        }),
-        tailwindcss(),
-
-        ],
-      },
-    },
   },
 });

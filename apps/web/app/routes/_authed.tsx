@@ -3,7 +3,6 @@ import { useAppSession } from "@/utils/session";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/start";
 import { getHeader } from "@tanstack/start/server";
-import { RpcMessage } from "starknet-types-07";
 
 import { SiwsTypedData } from "@realms-world/siws";
 
@@ -16,7 +15,7 @@ export const loginFn = createServerFn()
   .handler(async ({ data }) => {
     // Generate a CSRF token for this transaction.
     console.log(getHeader("host"));
-    const csrf = "0x0x9e9eew" as RpcMessage;
+    const csrf = "0x0x9e9eew";
 
     // Optionally, you might want to store the CSRF token in the session
     // to validate it later. For example:
