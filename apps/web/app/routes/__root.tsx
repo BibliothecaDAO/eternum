@@ -88,7 +88,6 @@ function RootComponent() {
         <div className={`[--header-height:calc(--spacing(14))]`}>
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <WagmiProvider config={config}>
-              <StarknetProvider>
                 <SidebarProvider className="flex flex-col">
                   <Header />
                   <div className="flex flex-1">
@@ -101,7 +100,6 @@ function RootComponent() {
                   </div>
                   <Toaster />
                 </SidebarProvider>
-              </StarknetProvider>
             </WagmiProvider>
           </ThemeProvider>
         </div>

@@ -6,6 +6,12 @@ import { createApp } from "vinxi";
 //import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
 import viteTsConfigPaths from "vite-tsconfig-paths";
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+// Define __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default defineConfig({
   server: {
@@ -24,17 +30,15 @@ export default defineConfig({
       viteTsConfigPaths({
         projects: ["./tsconfig.json"],
       }),
-      svgr({
-        // svgr options: https://react-svgr.com/docs/options/
-      }),
     ],
   },
 
   routers: {
     client: {
-      plugins: () => [
-        reactRefresh(),
-        viteTsConfigPaths({
+      vite: {
+        plugins: [
+          reactRefresh(),
+          viteTsConfigPaths({
           projects: ["./tsconfig.json"],
         }),
         svgr({
@@ -42,7 +46,8 @@ export default defineConfig({
         }),
         tailwindcss(),
 
-      ],
+        ],
+      },
     },
   },
 });
