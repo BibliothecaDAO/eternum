@@ -6,8 +6,7 @@ import {
   QuestType,
   RealmLevels,
   ResourcesIds,
-  ResourceTier,
-  TroopFoodConsumption,
+  ResourceTier
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
@@ -459,6 +458,8 @@ export interface Config {
   exploration: {
     reward: number;
     shardsMinesFailProbability: number;
+    shardsMineInitialWheatBalance: number;
+    shardsMineInitialFishBalance: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;
@@ -475,48 +476,39 @@ export interface Config {
     delaySeconds: number;
   };
   troop: {
-    // The 7,200 health value makes battles last up to 20 hours at a maximum.
-    // This max will be reached if both armies are very similar in strength and health
-    // To reduce max battle time by 4x for example, change the health to (7,200 / 4)
-    // which will make the max battle time = 5 hours.
-    health: number;
-    knightStrength: number;
-    paladinStrength: number;
-    crossbowmanStrength: number;
-    advantagePercent: number;
-    disadvantagePercent: number;
-    maxTroopCount: number;
-    baseArmyNumberForStructure: number;
-    armyExtraPerMilitaryBuilding: number;
-    // Max attacking armies per structure = 6 + 1 defensive army
-    maxArmiesPerStructure: number; // 3 + (3 * 1) = 7 // benefits from at most 3 military buildings
-    // By setting the divisor to 8, the max health that can be taken from the weaker army
-    // during pillage is 100 / 8 = 12.5%. Adjust this value to change that.
-    //
-    // The closer the armies are in strength and health, the closer they both
-    // get to losing 12.5% each. If an army is far stronger than the order,
-    // they lose a small percentage (closer to 0% health loss) while the
-    // weak army's loss is closer to 12.5%.
-    pillageHealthDivisor: number;
-
-    // 25%
-    battleLeaveSlashNum: number;
-    battleLeaveSlashDenom: number;
-    // 1_000. multiply this number by 2 to reduce battle time by 2x, etc.
-    battleTimeReductionScale: number;
-    battleMaxTimeSeconds: number;
-    troopStaminas: { [key: number]: number };
-    troopFoodConsumption: Record<number, TroopFoodConsumption>;
-  };
-  mercenaries: {
-    knights_lower_bound: number;
-    knights_upper_bound: number;
-    paladins_lower_bound: number;
-    paladins_upper_bound: number;
-    crossbowmen_lower_bound: number;
-    crossbowmen_upper_bound: number;
-    rewards: Array<ResourceCost>;
-  };
+    damage: {
+      knightBaseDamage: number;
+      crossbowmanBaseDamage: number;
+      paladinBaseDamage: number;
+      t2DamageBonus: number;
+      t3DamageBonus: number;
+      damageBiomeBonusNum: number;
+      damageScalingFactor: number;
+    };
+    stamina: {
+      staminaGainPerTick: number;
+      staminaInitial: number;
+      staminaBonusValue: number;
+      staminaKnightMax: number;
+      staminaPaladinMax: number;
+      staminaCrossbowmanMax: number;
+      staminaAttackReq: number;
+      staminaAttackMax: number;
+      staminaExploreWheatCost: number;
+      staminaExploreFishCost: number;
+      staminaExploreStaminaCost: number;
+      staminaTravelWheatCost: number;
+      staminaTravelFishCost: number;
+      staminaTravelStaminaCost: number;
+    },
+    limit: {
+      explorerMaxPartyCount: number;
+      explorerMaxTroopCount: number;
+      guardResurrectionDelay: number;
+      mercenariesTroopLowerBound: number;
+      mercenariesTroopUpperBound: number;
+    },
+  },
   settlement: {
     center: number;
     base_distance: number;

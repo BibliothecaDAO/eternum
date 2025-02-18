@@ -37,11 +37,10 @@ impl iStructureImpl of iStructureTrait {
         }
 
         // ensure the coord is not occupied
-        let occupier: Occupier = Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(structure_id) };
+        let occupier: Occupier = world.read_model((coord.x, coord.y));
         assert!(occupier.not_occupied(), "something exists on this coords");
 
         // save structure model
-        let owner: Owner = Owner { entity_id: structure_id, address: owner };
         let structure: Structure = StructureImpl::new(structure_id, category, coord, owner);
         world.write_model(@structure);
 

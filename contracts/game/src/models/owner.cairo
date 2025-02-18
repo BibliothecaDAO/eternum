@@ -5,8 +5,16 @@ use s1_eternum::constants::ErrorMessages;
 use s1_eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
+#[generate_trait]
+impl OwnerAddressImpl of OwnerAddressTrait {
+    fn assert_caller_owner(self: ContractAddress) {
+        assert(self == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
+    }
+}
+
+
 // contract address owning an entity
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Owner {
     #[key]
@@ -14,8 +22,9 @@ pub struct Owner {
     address: ContractAddress,
 }
 
+
 // entity owning an entity
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[derive(Introspect, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct EntityOwner {
     #[key]

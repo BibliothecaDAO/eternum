@@ -1533,12 +1533,12 @@ export function defineContractComponents(world: World) {
     WorldConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, admin_address: RecsType.BigInt, realm_l2_contract: RecsType.BigInt },
+        { admin_address: RecsType.BigInt, },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "WorldConfig",
-            types: ["u32", "contractaddress", "contractaddress"],
+            types: ["u32", "contractaddress", ],
             customTypes: [],
           },
         },

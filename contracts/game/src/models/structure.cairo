@@ -15,32 +15,35 @@ use traits::Into;
 // todo: add hard limit of troop to be something like 20
 // so the stucture explorers array does not get too big
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Structure {
     #[key]
     entity_id: ID,
     category: StructureCategory,
-    owner: Owner,
+    owner: ContractAddress,
     coord: Coord,
     guards: GuardTroops,
-    troop: StructureTroop,
+    limits: Limits,
     created_at: u64,
+    // number of guards currently in this structure
+    guard_count: u32,
+    // list of explorers associated with this structure
+    explorers: Span<ID>,
 }
 
 
 // todo hmm getting structure will cost more for
 // players with more explorers
+
+// todo: add the explorers as a separate field so
+// other params can be IntrospectPacked
 #[derive(Introspect, Copy, Drop, Serde)]
-struct StructureTroop {
+struct Limits {
     // maximum total explorer + guards allowed for this structure
     max_explorer_count: u32,
     // maximum number of guards allowed for this structure
     max_guard_count: u32,
-    // number of guards currently in this structure
-    guard_count: u32,
-    // list of explorers associated with this structure
-    explorers: Span<ID>,
 }
 
 // implement Default trait
@@ -54,11 +57,11 @@ impl StructureImpl of StructureTrait {
         Structure {
             entity_id: 0,
             category: StructureCategory::None,
-            owner: Owner { entity_id: 0, address: Zeroable::zero() },
+            owner: Zeroable::zero(),
             coord: Coord { x: 0, y: 0 },
-            troop: StructureTroop {
-                max_explorer_count: 0, max_guard_count: 0, guard_count: 0, explorers: array![].span(),
-            },
+            limits: Limits { max_explorer_count: 0, max_guard_count: 0 },
+            guard_count: 0,
+            explorers: array![].span(),
             guards: GuardTroops {
                 delta: troops,
                 charlie: troops,
@@ -73,7 +76,7 @@ impl StructureImpl of StructureTrait {
         }
     }
 
-    fn new(entity_id: ID, category: StructureCategory, coord: Coord, owner: Owner) -> Structure {
+    fn new(entity_id: ID, category: StructureCategory, coord: Coord, owner: ContractAddress) -> Structure {
         assert!(category != StructureCategory::None, "category cannot be none");
         let mut structure: Structure = Self::default();
         structure.entity_id = entity_id;
@@ -83,20 +86,20 @@ impl StructureImpl of StructureTrait {
 
         match category {
             StructureCategory::Realm => {
-                structure.troop.max_explorer_count = 1;
-                structure.troop.max_guard_count = 1; // 1 guard, 1 explorer
+                structure.limits.max_explorer_count = 1;
+                structure.limits.max_guard_count = 1; // 1 guard, 1 explorer
             },
             StructureCategory::Hyperstructure => {
-                structure.troop.max_explorer_count = 0;
-                structure.troop.max_guard_count = 4; // 4 guards, 0 explorers
+                structure.limits.max_explorer_count = 0;
+                structure.limits.max_guard_count = 4; // 4 guards, 0 explorers
             },
             StructureCategory::Bank => {
-                structure.troop.max_explorer_count = 0;
-                structure.troop.max_guard_count = 4; // 4 guards, 0 explorers
+                structure.limits.max_explorer_count = 0;
+                structure.limits.max_guard_count = 4; // 4 guards, 0 explorers
             },
             StructureCategory::FragmentMine => {
-                structure.troop.max_explorer_count = 0;
-                structure.troop.max_guard_count = 1; // 1 guard, 0 explorers
+                structure.limits.max_explorer_count = 0;
+                structure.limits.max_guard_count = 1; // 1 guard, 0 explorers
             },
             _ => { panic!("invalid structure category"); },
         }

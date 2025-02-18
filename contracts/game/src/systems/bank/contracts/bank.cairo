@@ -22,7 +22,7 @@ mod bank_systems {
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::owner::{EntityOwner, Owner, OwnerTrait};
+    use s1_eternum::models::owner::{EntityOwner, Owner, OwnerAddressTrait};
     use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,

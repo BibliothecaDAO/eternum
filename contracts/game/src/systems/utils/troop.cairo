@@ -232,7 +232,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                     troop_amount += lower_bound;
 
                     // update guard count
-                    structure.troop.guard_count += 1;
+                    structure.guard_count += 1;
 
                     // set category and tier
                     let (mut troops, _): (Troops, u32) = guards.from_slot(*slot);

@@ -22,18 +22,19 @@ mod ownership_systems {
 
     #[abi(embed_v0)]
     impl OwnershipSystemsImpl of super::IOwnershipSystems<ContractState> {
-        fn transfer_ownership(ref self: ContractState, entity_id: ID, new_owner: ContractAddress) {
-            // ensure season is not over
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+        fn transfer_ownership(
+            ref self: ContractState, entity_id: ID, new_owner: ContractAddress,
+        ) { // // ensure season is not over
+        // let mut world: WorldStorage = self.world(DEFAULT_NS());
+        // SeasonImpl::assert_season_is_not_over(world);
 
-            // ensure caller is the current owner
-            let mut owner: Owner = world.read_model(entity_id);
-            owner.assert_caller_owner();
+        // // ensure caller is the current owner
+        // let mut owner: Owner = world.read_model(entity_id);
+        // owner.assert_caller_owner();
 
-            // transfer ownership
-            owner.transfer(new_owner);
-            world.write_model(@owner);
+        // // transfer ownership
+        // owner.transfer(new_owner);
+        // world.write_model(@owner);
         }
     }
 }

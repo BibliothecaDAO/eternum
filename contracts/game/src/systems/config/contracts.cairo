@@ -470,6 +470,15 @@ mod config_systems {
         }
     }
 
+    #[abi(embed_v0)]
+    impl BattleConfigImpl of super::IBattleConfig<ContractState> {
+        fn set_battle_config(ref self: ContractState, battle_config: BattleConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            WorldConfigUtilImpl::set_member(ref world, selector!("battle_config"), battle_config);
+        }
+    }
 
     #[abi(embed_v0)]
     impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {

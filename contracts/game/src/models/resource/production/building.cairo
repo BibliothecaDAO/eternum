@@ -138,14 +138,14 @@ impl BuildingPerksImpl of BuildingPerksTrait {
     fn _boost_explorer_capacity(self: Building, ref world: WorldStorage, add: bool) {
         let mut structure: Structure = world.read_model(self.outer_entity_id);
         if add {
-            structure.troop.max_explorer_count += 1;
+            structure.limits.max_explorer_count += 1;
         } else {
-            structure.troop.max_explorer_count -= 1;
+            structure.limits.max_explorer_count -= 1;
 
             // ensure current troop count does not exceed new troop capacity
-            let total_troops_available = structure.troop.guard_count + structure.troop.explorers.len();
+            let total_troops_available = structure.guard_count + structure.explorers.len();
             assert!(
-                total_troops_available <= structure.troop.max_explorer_count, "cannot reduce troop capacity below 0",
+                total_troops_available <= structure.limits.max_explorer_count, "cannot reduce troop capacity below 0",
             );
         }
         world.write_model(@structure);

@@ -28,7 +28,7 @@ mod liquidity_systems {
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::bank::liquidity::{Liquidity};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::owner::{Owner, OwnerTrait};
+    use s1_eternum::models::owner::{Owner, OwnerAddressTrait};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };

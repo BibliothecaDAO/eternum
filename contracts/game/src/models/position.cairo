@@ -232,7 +232,7 @@ pub enum OccupiedBy {
     Explorer: ID,
 }
 
-#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
+#[derive(Introspect, PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Occupier {
     #[key]

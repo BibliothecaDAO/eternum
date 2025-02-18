@@ -9,7 +9,7 @@ use s1_eternum::models::config::{CapacityConfig};
 use s1_eternum::models::quantity::{Quantity};
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[derive(Introspect, Copy, Drop, Serde, Default)]
 pub struct Weight {
     capacity: u128,
     weight: u128,

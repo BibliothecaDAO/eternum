@@ -427,9 +427,11 @@ export interface SetQuestRewardConfigProps extends SystemSigner {
 }
 
 export interface SetMapConfigProps extends SystemSigner {
-  config_id: num.BigNumberish;
   reward_amount: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
+  // initial mine food balance
+  mine_wheat_grant_amount: num.BigNumberish;
+  mine_fish_grant_amount: num.BigNumberish;
 }
 
 export interface SetTravelStaminaCostConfigProps extends SystemSigner {
@@ -447,8 +449,10 @@ export interface SetTravelFoodCostConfigProps extends SystemSigner {
 }
 
 export interface SetCapacityConfigProps extends SystemSigner {
-  category: num.BigNumberish;
-  weight_gram: num.BigNumberish;
+  structure_capacity: num.BigNumberish; // grams
+  troop_capacity: num.BigNumberish; // grams
+  donkey_capacity: num.BigNumberish; // grams
+  storehouse_boost_capacity: num.BigNumberish; // grams
 }
 
 export interface SetWeightConfigProps extends SystemSigner {
@@ -459,7 +463,6 @@ export interface SetWeightConfigProps extends SystemSigner {
 }
 
 export interface SetTickConfigProps extends SystemSigner {
-  tick_id: num.BigNumberish;
   tick_interval_in_seconds: num.BigNumberish;
 }
 
@@ -487,28 +490,49 @@ export interface SetBankConfigProps extends SystemSigner {
 }
 
 export interface SetBattleConfigProps extends SystemSigner {
-  config_id: num.BigNumberish;
   regular_immunity_ticks: num.BigNumberish;
   hyperstructure_immunity_ticks: num.BigNumberish;
-  battle_delay_seconds: num.BigNumberish;
 }
 export interface SetTroopConfigProps extends SystemSigner {
-  config_id: num.BigNumberish;
-  health: num.BigNumberish;
-  knight_strength: num.BigNumberish;
-  paladin_strength: num.BigNumberish;
-  crossbowman_strength: num.BigNumberish;
-  advantage_percent: num.BigNumberish;
-  disadvantage_percent: num.BigNumberish;
-  max_troop_count: num.BigNumberish;
-  pillage_health_divisor: num.BigNumberish;
-  army_free_per_structure: num.BigNumberish;
-  army_extra_per_military_building: num.BigNumberish;
-  army_max_per_structure: num.BigNumberish;
-  battle_leave_slash_num: num.BigNumberish;
-  battle_leave_slash_denom: num.BigNumberish;
-  battle_time_scale: num.BigNumberish;
-  battle_max_time_seconds: num.BigNumberish;
+  stamina_config: TroopStaminaConfigProps;
+  limit_config: TroopLimitConfigProps;
+  damage_config: TroopDamageConfigProps;
+}
+
+
+export interface TroopStaminaConfigProps {
+  stamina_gain_per_tick: num.BigNumberish;
+  stamina_initial: num.BigNumberish;
+  stamina_bonus_value: num.BigNumberish;
+  stamina_knight_max: num.BigNumberish;
+  stamina_paladin_max: num.BigNumberish;
+  stamina_crossbowman_max: num.BigNumberish;
+  stamina_attack_req: num.BigNumberish;
+  stamina_attack_max: num.BigNumberish;
+  stamina_explore_wheat_cost: num.BigNumberish;
+  stamina_explore_fish_cost: num.BigNumberish;
+  stamina_explore_stamina_cost: num.BigNumberish;
+  stamina_travel_wheat_cost: num.BigNumberish;
+  stamina_travel_fish_cost: num.BigNumberish;
+  stamina_travel_stamina_cost: num.BigNumberish;
+}
+
+export interface TroopLimitConfigProps {
+  explorer_max_party_count: num.BigNumberish;
+  explorer_max_troop_count: num.BigNumberish;
+  guard_resurrection_delay: num.BigNumberish;
+  mercenaries_troop_lower_bound: num.BigNumberish;
+  mercenaries_troop_upper_bound: num.BigNumberish;
+}
+
+export interface TroopDamageConfigProps {
+  knight_base_damage: num.BigNumberish;
+  crossbowman_base_damage: num.BigNumberish;
+  paladin_base_damage: num.BigNumberish;
+  t2_damage_bonus: num.BigNumberish;
+  t3_damage_bonus: num.BigNumberish;
+  damage_biome_bonus_num: num.BigNumberish;
+  damage_scaling_factor: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
@@ -544,11 +568,9 @@ export interface SetRealmMaxLevelConfigProps extends SystemSigner {
 
 export interface SetWorldConfigProps extends SystemSigner {
   admin_address: num.BigNumberish;
-  realm_l2_contract: num.BigNumberish;
 }
 
-export interface SetSpeedConfigProps extends SystemSigner {
-  entity_type: num.BigNumberish;
+export interface SetDonkeySpeedConfigProps extends SystemSigner {
   sec_per_km: num.BigNumberish;
 }
 
@@ -651,16 +673,6 @@ export interface SetStaminaRefillConfigProps extends SystemSigner {
 }
 
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
-
-export interface SetMercenariesConfigProps extends SystemSigner {
-  knights_lower_bound: num.BigNumberish;
-  knights_upper_bound: num.BigNumberish;
-  paladins_lower_bound: num.BigNumberish;
-  paladins_upper_bound: num.BigNumberish;
-  crossbowmen_lower_bound: num.BigNumberish;
-  crossbowmen_upper_bound: num.BigNumberish;
-  rewards: { resource: number; amount: number }[];
-}
 
 export interface SetSettlementConfigProps extends SystemSigner {
   center: num.BigNumberish;

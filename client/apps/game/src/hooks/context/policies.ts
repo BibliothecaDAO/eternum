@@ -205,8 +205,8 @@ export const policies: ContractPolicies = {
         entrypoint: "set_production_config",
       },
       {
-        name: "set_speed_config",
-        entrypoint: "set_speed_config",
+        name: "set_donkey_speed_config",
+        entrypoint: "set_donkey_speed_config",
       },
       {
         name: "set_hyperstructure_config",

@@ -29,7 +29,7 @@ import {
   RESOURCE_PRODUCTION_THROUGH_LABOR,
   RESOURCES_WEIGHTS_GRAM,
 } from "./utils/resource";
-import { TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS } from "./utils/troop";
+import { TROOP_BASE_DAMAGE, TROOP_DAMAGE_BIOME_BONUS_NUM, TROOP_DAMAGE_SCALING_FACTOR, TROOP_EXPLORE_FISH_COST, TROOP_EXPLORE_STAMINA_COST, TROOP_EXPLORE_WHEAT_COST, TROOP_EXPLORER_MAX_PARTY_COUNT, TROOP_EXPLORER_MAX_TROOP_COUNT, TROOP_GUARD_RESURRECTION_DELAY, TROOP_MERCENARIES_TROOP_LOWER_BOUND, TROOP_MERCENARIES_TROOP_UPPER_BOUND, TROOP_STAMINA_ATTACK_MAX, TROOP_STAMINA_ATTACK_REQ, TROOP_STAMINA_BIOME_BONUS_VALUE, TROOP_STAMINA_GAIN_PER_TICK, TROOP_STAMINA_INITIAL, TROOP_STAMINA_MAX, TROOP_T2_DAMAGE_BONUS, TROOP_T3_DAMAGE_BONUS, TROOP_TRAVEL_FISH_COST, TROOP_TRAVEL_STAMINA_COST, TROOP_TRAVEL_WHEAT_COST } from "./utils/troop";
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 
@@ -71,6 +71,8 @@ export const BASE_POPULATION_CAPACITY = 5;
 export const EXPLORATION_REWARD = 750;
 export const SHARDS_MINES_FAIL_PROBABILITY = 99000;
 export const SHARDS_MINES_WIN_PROBABILITY = 1000;
+export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
+export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
 // ----- Tick ----- //
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
@@ -105,15 +107,6 @@ export const TROOP_BATTLE_LEAVE_SLASH_DENOM = 100;
 export const TROOP_BATTLE_TIME_REDUCTION_SCALE = 1_000;
 export const TROOP_BATTLE_MAX_TIME_SECONDS = 2 * 86400; // 2 days
 
-// ----- Mercenaries ----- //
-export const MERCENARIES_KNIGHTS_LOWER_BOUND = 1_000;
-export const MERCENARIES_KNIGHTS_UPPER_BOUND = 4_000;
-export const MERCENARIES_PALADINS_LOWER_BOUND = 1_000;
-export const MERCENARIES_PALADINS_UPPER_BOUND = 4_000;
-export const MERCENARIES_CROSSBOWMEN_LOWER_BOUND = 1_000;
-export const MERCENARIES_CROSSBOWMEN_UPPER_BOUND = 4_000;
-export const MERCENARIES_WHEAT_REWARD = 0;
-export const MERCENARIES_FISH_REWARD = 0;
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
@@ -180,6 +173,8 @@ export const EternumGlobalConfig: Config = {
   exploration: {
     reward: EXPLORATION_REWARD,
     shardsMinesFailProbability: SHARDS_MINES_FAIL_PROBABILITY,
+    shardsMineInitialWheatBalance: SHARDS_MINE_INITIAL_WHEAT_BALANCE,
+    shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
   },
   tick: {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
@@ -187,11 +182,11 @@ export const EternumGlobalConfig: Config = {
   },
   carryCapacityGram: {
     [CapacityConfigCategory.None]: 0,
-    [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
-    [CapacityConfigCategory.Donkey]: 500_000,
-    // 10_000 gr per army
-    [CapacityConfigCategory.Army]: 10_000,
-    [CapacityConfigCategory.Storehouse]: 300_000_000,
+    [CapacityConfigCategory.Structure]: 900_000_000_000, // 900m kg
+    [CapacityConfigCategory.Donkey]: 500_000, // 500 kg
+    [CapacityConfigCategory.Army]: 10_000, // 10 kg per army
+    //todo. ensure enough capacity to prevent realm upgrade bug
+    [CapacityConfigCategory.Storehouse]: 300_000_000, // 300,000 kg extra capacity per building
   },
   speed: {
     donkey: DONKEY_SPEED,
@@ -203,35 +198,38 @@ export const EternumGlobalConfig: Config = {
     delaySeconds: BATTLE_DELAY_SECONDS,
   },
   troop: {
-    health: TROOP_HEALTH,
-    knightStrength: TROOP_KNIGHT_STRENGTH,
-    paladinStrength: TROOP_PALADIN_STRENGTH,
-    crossbowmanStrength: TROOP_CROSSBOWMAN_STRENGTH,
-    advantagePercent: TROOP_ADVANTAGE_PERCENT,
-    disadvantagePercent: TROOP_DISADVANTAGE_PERCENT,
-    maxTroopCount: TROOP_MAX_COUNT,
-    baseArmyNumberForStructure: TROOP_BASE_ARMY_NUMBER_FOR_STRUCTURE,
-    armyExtraPerMilitaryBuilding: TROOP_ARMY_EXTRA_PER_MILITARY_BUILDING,
-    maxArmiesPerStructure: TROOP_MAX_ARMIES_PER_STRUCTURE,
-    pillageHealthDivisor: TROOP_PILLAGE_HEALTH_DIVISOR,
-    battleLeaveSlashNum: TROOP_BATTLE_LEAVE_SLASH_NUM,
-    battleLeaveSlashDenom: TROOP_BATTLE_LEAVE_SLASH_DENOM,
-    battleTimeReductionScale: TROOP_BATTLE_TIME_REDUCTION_SCALE,
-    battleMaxTimeSeconds: TROOP_BATTLE_MAX_TIME_SECONDS,
-    troopStaminas: TROOPS_STAMINAS,
-    troopFoodConsumption: TROOPS_FOOD_CONSUMPTION,
-  },
-  mercenaries: {
-    knights_lower_bound: MERCENARIES_KNIGHTS_LOWER_BOUND,
-    knights_upper_bound: MERCENARIES_KNIGHTS_UPPER_BOUND,
-    paladins_lower_bound: MERCENARIES_PALADINS_LOWER_BOUND,
-    paladins_upper_bound: MERCENARIES_PALADINS_UPPER_BOUND,
-    crossbowmen_lower_bound: MERCENARIES_CROSSBOWMEN_LOWER_BOUND,
-    crossbowmen_upper_bound: MERCENARIES_CROSSBOWMEN_UPPER_BOUND,
-    rewards: [
-      { resource: ResourcesIds.Wheat, amount: MERCENARIES_WHEAT_REWARD },
-      { resource: ResourcesIds.Fish, amount: MERCENARIES_FISH_REWARD },
-    ],
+    damage: {
+      knightBaseDamage: TROOP_BASE_DAMAGE[ResourcesIds.Knight],
+      crossbowmanBaseDamage: TROOP_BASE_DAMAGE[ResourcesIds.Crossbowman],
+      paladinBaseDamage: TROOP_BASE_DAMAGE[ResourcesIds.Paladin],
+      t2DamageBonus: TROOP_T2_DAMAGE_BONUS,
+      t3DamageBonus: TROOP_T3_DAMAGE_BONUS,
+      damageBiomeBonusNum: TROOP_DAMAGE_BIOME_BONUS_NUM,
+      damageScalingFactor: TROOP_DAMAGE_SCALING_FACTOR,
+    },
+    stamina: {
+      staminaGainPerTick: TROOP_STAMINA_GAIN_PER_TICK,
+      staminaInitial: TROOP_STAMINA_INITIAL,
+      staminaBonusValue: TROOP_STAMINA_BIOME_BONUS_VALUE,
+      staminaKnightMax: TROOP_STAMINA_MAX[ResourcesIds.Knight],
+      staminaPaladinMax: TROOP_STAMINA_MAX[ResourcesIds.Paladin],
+      staminaCrossbowmanMax: TROOP_STAMINA_MAX[ResourcesIds.Crossbowman],
+      staminaAttackReq: TROOP_STAMINA_ATTACK_REQ,
+      staminaAttackMax: TROOP_STAMINA_ATTACK_MAX,
+      staminaExploreWheatCost: TROOP_EXPLORE_WHEAT_COST,
+      staminaExploreFishCost: TROOP_EXPLORE_FISH_COST,
+      staminaExploreStaminaCost: TROOP_EXPLORE_STAMINA_COST,
+      staminaTravelWheatCost: TROOP_TRAVEL_WHEAT_COST,
+      staminaTravelFishCost: TROOP_TRAVEL_FISH_COST,
+      staminaTravelStaminaCost: TROOP_TRAVEL_STAMINA_COST,
+    },
+    limit: {
+      explorerMaxPartyCount: TROOP_EXPLORER_MAX_PARTY_COUNT,
+      explorerMaxTroopCount: TROOP_EXPLORER_MAX_TROOP_COUNT,
+      guardResurrectionDelay: TROOP_GUARD_RESURRECTION_DELAY,
+      mercenariesTroopLowerBound: TROOP_MERCENARIES_TROOP_LOWER_BOUND,
+      mercenariesTroopUpperBound: TROOP_MERCENARIES_TROOP_UPPER_BOUND,
+    },
   },
   settlement: {
     center: SETTLEMENT_CENTER,

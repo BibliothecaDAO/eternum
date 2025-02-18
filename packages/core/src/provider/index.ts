@@ -1759,12 +1759,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
-    const { config_id, reward_amount, shards_mines_fail_probability, signer } = props;
+    const { reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_map_config",
-      calldata: [config_id, reward_amount, shards_mines_fail_probability],
+      calldata: [reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount],
     });
   }
 
@@ -1851,37 +1851,47 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_resource_bridge_fee_split_config",
       calldata: [
-        0, // config id
         velords_fee_on_dpt_percent,
         velords_fee_on_wtdr_percent,
         season_pool_fee_on_dpt_percent,
         season_pool_fee_on_wtdr_percent,
         client_fee_on_dpt_percent,
         client_fee_on_wtdr_percent,
-        velords_fee_recipient,
-        season_pool_fee_recipient,
         max_bank_fee_dpt_percent,
         max_bank_fee_wtdr_percent,
+        velords_fee_recipient,
+        season_pool_fee_recipient,
       ],
     });
   }
+
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
-    const { category, weight_gram, signer } = props;
+    const { structure_capacity, troop_capacity, donkey_capacity, storehouse_boost_capacity, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_capacity_config",
-      calldata: [category, weight_gram],
+      calldata: [structure_capacity, troop_capacity, donkey_capacity, storehouse_boost_capacity],
     });
   }
 
-  public async set_speed_config(props: SystemProps.SetSpeedConfigProps) {
-    const { entity_type, sec_per_km, signer } = props;
+  public async set_world_config(props: SystemProps.SetWorldConfigProps) {
+    const { admin_address, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_speed_config",
-      calldata: [entity_type, sec_per_km],
+      entrypoint: "set_world_config",
+      calldata: [admin_address],
+    });
+  }
+
+  public async set_donkey_speed_config(props: SystemProps.SetDonkeySpeedConfigProps) {
+    const { sec_per_km, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_donkey_speed_config",
+      calldata: [sec_per_km],
     });
   }
 
@@ -1901,12 +1911,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_tick_config(props: SystemProps.SetTickConfigProps) {
-    const { tick_id, tick_interval_in_seconds, signer } = props;
+    const { tick_interval_in_seconds, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_tick_config",
-      calldata: [tick_id, tick_interval_in_seconds],
+      calldata: [tick_interval_in_seconds],
     });
   }
 
@@ -1960,55 +1970,57 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_troop_config(props: SystemProps.SetTroopConfigProps) {
     const {
       signer,
-      config_id,
-      health,
-      knight_strength,
-      paladin_strength,
-      crossbowman_strength,
-      advantage_percent,
-      disadvantage_percent,
-      max_troop_count,
-      pillage_health_divisor,
-      army_free_per_structure,
-      army_extra_per_military_building,
-      army_max_per_structure,
-      battle_leave_slash_num,
-      battle_leave_slash_denom,
-      battle_time_scale,
-      battle_max_time_seconds,
+      stamina_config,
+      limit_config,
+      damage_config,
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_troop_config",
       calldata: [
-        config_id,
-        health,
-        knight_strength,
-        paladin_strength,
-        crossbowman_strength,
-        advantage_percent,
-        disadvantage_percent,
-        max_troop_count,
-        pillage_health_divisor,
-        army_free_per_structure,
-        army_extra_per_military_building,
-        army_max_per_structure,
-        battle_leave_slash_num,
-        battle_leave_slash_denom,
-        battle_time_scale,
-        battle_max_time_seconds,
+        // damage config
+        damage_config.knight_base_damage,
+        damage_config.crossbowman_base_damage,
+        damage_config.paladin_base_damage,
+        damage_config.t2_damage_bonus,
+        damage_config.t3_damage_bonus,
+        damage_config.damage_biome_bonus_num,
+        damage_config.damage_scaling_factor,
+
+        // stamina config
+        stamina_config.stamina_gain_per_tick,
+        stamina_config.stamina_initial,
+        stamina_config.stamina_bonus_value,
+        stamina_config.stamina_knight_max,
+        stamina_config.stamina_paladin_max,
+        stamina_config.stamina_crossbowman_max,
+        stamina_config.stamina_attack_req,
+        stamina_config.stamina_attack_max,
+        stamina_config.stamina_explore_wheat_cost,
+        stamina_config.stamina_explore_fish_cost,
+        stamina_config.stamina_explore_stamina_cost,
+        stamina_config.stamina_travel_wheat_cost,
+        stamina_config.stamina_travel_fish_cost,
+        stamina_config.stamina_travel_stamina_cost,
+
+        // limit config
+        limit_config.explorer_max_party_count,
+        limit_config.explorer_max_troop_count,
+        limit_config.guard_resurrection_delay,
+        limit_config.mercenaries_troop_lower_bound,
+        limit_config.mercenaries_troop_upper_bound,
       ],
     });
   }
 
   public async set_battle_config(props: SystemProps.SetBattleConfigProps) {
-    const { signer, config_id, regular_immunity_ticks, hyperstructure_immunity_ticks, battle_delay_seconds } = props;
+    const { signer, regular_immunity_ticks, hyperstructure_immunity_ticks} = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_battle_config",
-      calldata: [config_id, regular_immunity_ticks, hyperstructure_immunity_ticks, battle_delay_seconds],
+      calldata: [regular_immunity_ticks, hyperstructure_immunity_ticks],
     });
   }
 
@@ -2233,31 +2245,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_mercenaries_config(props: SystemProps.SetMercenariesConfigProps) {
-    const {
-      knights_lower_bound,
-      knights_upper_bound,
-      paladins_lower_bound,
-      paladins_upper_bound,
-      crossbowmen_lower_bound,
-      crossbowmen_upper_bound,
-      rewards,
-      signer,
-    } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_mercenaries_config",
-      calldata: [
-        knights_lower_bound,
-        knights_upper_bound,
-        paladins_lower_bound,
-        paladins_upper_bound,
-        crossbowmen_lower_bound,
-        crossbowmen_upper_bound,
-        rewards,
-      ],
-    });
-  }
 
   public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
     const {

@@ -102,7 +102,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     fn troop_to_structure_delayed(
         ref world: WorldStorage,
         ref from_troop: ExplorerTroops,
-        ref from_troop_owner: Owner,
+        ref from_troop_owner: starknet::ContractAddress,
         ref from_troop_weight: Weight,
         ref to_structure: Structure,
         mut to_structure_resource_indexes: Span<u8>,
@@ -177,7 +177,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref world: WorldStorage,
         from_structure: bool,
         ref from_id: ID,
-        ref from_owner: Owner,
+        ref from_owner: starknet::ContractAddress,
         ref from_coord: Coord,
         ref from_weight: Weight,
         ref to_structure: Structure,
@@ -259,7 +259,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             // burn enough donkeys to carry resources from from_structure to to_structure
             let from_entity_donkey_amount = iDonkeyImpl::needed_amount(ref world, total_resources_weight);
             iDonkeyImpl::burn(ref world, from_id, ref from_weight, from_entity_donkey_amount);
-            iDonkeyImpl::burn_finialize(ref world, from_id, from_entity_donkey_amount, from_owner.address);
+            iDonkeyImpl::burn_finialize(ref world, from_id, from_entity_donkey_amount, from_owner);
 
             // update from_structure weight
             from_weight.store(ref world, from_id);

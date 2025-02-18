@@ -38,7 +38,7 @@ mod resource_systems {
 
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{CapacityConfig, SpeedImpl};
-    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
+    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait};
     use s1_eternum::models::position::{Coord, Position};
     use s1_eternum::models::quantity::{Quantity};
     use s1_eternum::models::realm::Realm;

@@ -18,7 +18,7 @@ mod troop_movement_systems {
             BattleConfigTrait, CapacityConfig, CombatConfigImpl, MapConfig, SpeedConfig, TickConfig, TickImpl,
             TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
         },
-        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
+        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait},
         position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
         resource::resource::{
             ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,

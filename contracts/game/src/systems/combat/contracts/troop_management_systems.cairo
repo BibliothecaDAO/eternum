@@ -45,7 +45,7 @@ mod troop_management_systems {
             BattleConfigTrait, CapacityConfig, CombatConfigImpl, SpeedConfig, TickConfig, TickImpl, TickTrait,
             TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
         },
-        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
+        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait},
         position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
         resource::{
             resource::{
@@ -110,12 +110,11 @@ mod troop_management_systems {
             if troops.count.is_zero() {
                 // ensure structure has not reached the hard limit of guards
                 assert!(
-                    structure.troop.guard_count < structure.troop.max_guard_count,
-                    "reached limit of guards per structure",
+                    structure.guard_count < structure.limits.max_guard_count, "reached limit of guards per structure",
                 );
 
                 // update guard count
-                structure.troop.guard_count += 1;
+                structure.guard_count += 1;
 
                 // set category and tier
                 troops.category = category;
@@ -167,7 +166,7 @@ mod troop_management_systems {
             structure.guards = guard;
 
             // reduce structure guard count
-            structure.troop.guard_count -= 1;
+            structure.guard_count -= 1;
 
             // update structure
             world.write_model(@structure);
@@ -193,14 +192,14 @@ mod troop_management_systems {
 
             // ensure structure has not reached itslimit of troops
             assert!(
-                structure.troop.explorers.len() < structure.troop.max_explorer_count,
+                structure.explorers.len() < structure.limits.max_explorer_count,
                 "reached limit of troops for your structure",
             );
 
             // ensure structure has not reached hard limit of explorers for all structures
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
-                structure.troop.explorers.len() < troop_limit_config.explorer_max_party_count.into(),
+                structure.explorers.len() < troop_limit_config.explorer_max_party_count.into(),
                 "reached limit of troops per structure",
             );
 
@@ -208,9 +207,9 @@ mod troop_management_systems {
             let mut explorer_id: ID = world.dispatcher.uuid();
 
             // add explorer count to structure
-            let mut explorers: Array<ID> = structure.troop.explorers.into();
+            let mut explorers: Array<ID> = structure.explorers.into();
             explorers.append(explorer_id);
-            structure.troop.explorers = explorers.span();
+            structure.explorers = explorers.span();
             world.write_model(@structure);
 
             // add explorer to location occupier

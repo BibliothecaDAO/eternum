@@ -47,7 +47,7 @@ mod realm_systems {
     use s1_eternum::models::map::{Tile, TileImpl};
     use s1_eternum::models::movable::Movable;
     use s1_eternum::models::name::{AddressName};
-    use s1_eternum::models::owner::{Owner, OwnerTrait};
+    use s1_eternum::models::owner::{Owner, OwnerAddressTrait};
     use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position};
     use s1_eternum::models::quantity::QuantityTracker;
     use s1_eternum::models::quest::{Quest};
@@ -216,7 +216,7 @@ mod realm_systems {
             world.write_model(@realm);
 
             // allow structure one more guard
-            structure.troop.max_guard_count += 1;
+            structure.limits.max_guard_count += 1;
             world.write_model(@structure);
 
             // [Achievement] Upgrade to max level

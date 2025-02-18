@@ -37,7 +37,7 @@ mod trade_systems {
 
     use s1_eternum::constants::{DEFAULT_NS, DONKEY_ENTITY_TYPE, REALM_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{SpeedImpl, TradeConfig, WorldConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::owner::{Owner, OwnerTrait};
+    use s1_eternum::models::owner::{Owner, OwnerAddressTrait};
     use s1_eternum::models::position::{Coord, Position, PositionTrait, TravelTrait};
     use s1_eternum::models::realm::Realm;
     use s1_eternum::models::resource::arrivals::{ResourceArrival, ResourceArrivalImpl};
@@ -284,7 +284,7 @@ mod trade_systems {
             let maker_resource_weight: u128 = maker_gives_resource_amount * maker_resource_weight_grams;
             let taker_donkey_amount = iDonkeyImpl::needed_amount(ref world, maker_resource_weight);
             iDonkeyImpl::burn(ref world, taker_id, ref taker_structure_weight, taker_donkey_amount);
-            iDonkeyImpl::burn_finialize(ref world, trade.taker_id, taker_donkey_amount, taker_structure.owner.address);
+            iDonkeyImpl::burn_finialize(ref world, trade.taker_id, taker_donkey_amount, taker_structure.owner);
 
             // update taker structure weight
             taker_structure_weight.store(ref world, trade.taker_id);
@@ -293,7 +293,7 @@ mod trade_systems {
             let taker_lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
             let taker_lords_weight: u128 = taker_pays_lords_amount * taker_lords_weight_grams;
             let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_lords_weight);
-            iDonkeyImpl::burn_finialize(ref world, trade.maker_id, maker_donkey_amount, maker_structure.owner.address);
+            iDonkeyImpl::burn_finialize(ref world, trade.maker_id, maker_donkey_amount, maker_structure.owner);
 
             // update trade and trade count
             trade.maker_gives_max_count -= taker_buys_count;

@@ -18,11 +18,31 @@ enum TroopType {
     Crossbowman,
 }
 
+impl TroopTypeIntoFelt252 of Into<TroopType, felt252> {
+    fn into(self: TroopType) -> felt252 {
+        match self {
+            TroopType::Knight => 0,
+            TroopType::Paladin => 1,
+            TroopType::Crossbowman => 2,
+        }
+    }
+}
+
 #[derive(Copy, Drop, Serde, Introspect)]
 enum TroopTier {
     T1,
     T2,
     T3,
+}
+
+impl TroopTierIntoFelt252 of Into<TroopTier, felt252> {
+    fn into(self: TroopTier) -> felt252 {
+        match self {
+            TroopTier::T1 => 0,
+            TroopTier::T2 => 1,
+            TroopTier::T3 => 2,
+        }
+    }
 }
 
 
@@ -35,7 +55,7 @@ struct Troops {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 pub struct GuardTroops {
     // slot 4
     delta: Troops,
@@ -146,7 +166,7 @@ impl TroopsImpl of TroopsTrait {
 
     fn _biome_damage_bonus(ref self: Troops, biome: Biome, troop_damage_config: TroopDamageConfig) -> Fixed {
         let ZERO: u16 = 0;
-        let VALUE: u16 = troop_damage_config.damage_bonus_num;
+        let VALUE: u16 = troop_damage_config.damage_biome_bonus_num;
         let ADD: bool = true;
         let SUBTRACT: bool = false;
         let NEUTRAL: bool = false;

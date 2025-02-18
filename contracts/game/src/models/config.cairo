@@ -49,6 +49,7 @@ pub struct WorldConfig {
     troop_limit_config: TroopLimitConfig,
     capacity_config: CapacityConfig,
     trade_config: TradeConfig,
+    battle_config: BattleConfig,
 }
 
 #[generate_trait]
@@ -116,7 +117,7 @@ pub struct HyperstructureConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct CapacityConfig {
-    structure_capacity: u32, // grams
+    structure_capacity: u128, // grams
     troop_capacity: u32, // grams
     donkey_capacity: u32, // grams
     storehouse_boost_capacity: u32,
@@ -265,7 +266,7 @@ pub struct TroopDamageConfig {
     // In the contracts, we do Fixed::ONE * t3_damage_bonus
     t3_damage_bonus: u16,
     // Combat modifiers. Used for biome damage calculations
-    damage_bonus_num: u16,
+    damage_biome_bonus_num: u16,
     // Used in damage calculations for troop scaling
     damage_scaling_factor: u16,
 }
@@ -512,19 +513,15 @@ impl BuildingConfigImpl of BuildingConfigTrait {
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct BattleConfig {
-    #[key]
-    config_id: ID,
     regular_immunity_ticks: u8,
-    hyperstructure_immunity_ticks: u8, // hyperstucture immunity
-    battle_delay_seconds: u64,
+    hyperstructure_immunity_ticks: u8 // hyperstucture immunity
 }
 
 #[generate_trait]
 pub impl BattleConfigImpl of BattleConfigTrait {
-    fn get(world: WorldStorage) -> BattleConfig {
-        world.read_model(WORLD_CONFIG_ID)
+    fn get(ref world: WorldStorage) -> BattleConfig {
+        WorldConfigUtilImpl::get_member(world, selector!("battle_config"))
     }
 }
 
