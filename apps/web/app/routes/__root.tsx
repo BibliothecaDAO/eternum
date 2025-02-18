@@ -9,6 +9,7 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Outlet,
+  Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
@@ -19,7 +20,6 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { Toaster } from "@/components/ui/toaster";
 import { seo } from "@/utils/seo";
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
-import { Scripts } from "@tanstack/start";
 import { env } from "env";
 import { WagmiProvider } from "wagmi";
 import { mainnet, sepolia } from "wagmi/chains";
