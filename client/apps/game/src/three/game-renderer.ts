@@ -1,12 +1,9 @@
-import { AppStore, useUIStore } from "@/hooks/store/use-ui-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
-import { LocationManager } from "@/three/helpers/location-manager";
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
-import { SystemManager } from "@/three/systems/system-manager";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
@@ -37,22 +34,14 @@ export default class GameRenderer {
   private composer!: EffectComposer;
   private renderPass!: RenderPass;
 
-  private locationManager!: LocationManager;
-
-  // Store
-  private state: AppStore;
-  private unsubscribe: () => void;
-
   // Stats
   private stats!: Stats;
-  private lerpFactor = 0.9;
 
   // Camera settings
   private cameraDistance = Math.sqrt(2 * 7 * 7); // Maintain the same distance
   private cameraAngle = 60 * (Math.PI / 180); // 75 degrees in radians
 
   // Components
-
   private transitionManager!: TransitionManager;
 
   // Scenes
@@ -60,32 +49,19 @@ export default class GameRenderer {
   private hexceptionScene!: HexceptionScene;
   private hudScene!: HUDScene;
 
-  // private currentScene: "worldmap" | "hexception" = "worldmap";
-
   private lastTime: number = 0;
-
   private dojo: SetupResult;
-
   private sceneManager!: SceneManager;
-  private systemManager!: SystemManager;
-
   private graphicsSetting: GraphicsSettings;
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
     this.initializeRenderer();
     this.dojo = dojoContext;
-    this.locationManager = new LocationManager();
 
     // Ensure we keep the raycaster and mouse
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
-
-    // Store
-    this.state = useUIStore.getState();
-    this.unsubscribe = useUIStore.subscribe((state) => {
-      this.state = state;
-    });
 
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, IS_FLAT_MODE ? 50 : 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
@@ -276,8 +252,6 @@ export default class GameRenderer {
     this.transitionManager = new TransitionManager(this.renderer);
 
     this.sceneManager = new SceneManager(this.transitionManager);
-
-    this.systemManager = new SystemManager(this.dojo);
 
     this.hexceptionScene = new HexceptionScene(this.controls, this.dojo, this.mouse, this.raycaster, this.sceneManager);
     this.sceneManager.addScene(SceneName.Hexception, this.hexceptionScene);
