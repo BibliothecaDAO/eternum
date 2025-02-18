@@ -246,13 +246,13 @@ echo -e "${GREEN}- Network: ${BOLD}${BLUE}$NETWORK${NC}"
 echo -e ""
 
 if [ "$RPC_URL" != "http://localhost:8080" ] && [ "$RPC_URL" != "http://127.0.0.1:8080" ]; then
-    ~/code/dojo/target/release/torii --world $WORLD_ADDRESS \
+    torii --world $WORLD_ADDRESS \
         --rpc $RPC_URL \
         --http.cors_origins "*" \
         --db-dir $DB_DIR \
         --config $TORII_CONFIG > >(setup_log_handling) 2>&1 &
 else
-    ~/code/dojo/target/release/torii --world $WORLD_ADDRESS \
+    torii --world $WORLD_ADDRESS \
         --http.cors_origins "*" \
         --db-dir $DB_DIR \
         --config $TORII_CONFIG > >(setup_log_handling) 2>&1 &
