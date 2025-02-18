@@ -3,7 +3,7 @@ import type { Connector } from "@starknet-react/core";
 import React, { useCallback } from "react";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import ControllerConnector from "@cartridge/connector/controller";
-import { getStarknet } from "@starknet-io/get-starknet-core";
+//import { getStarknet } from "@starknet-io/get-starknet-core";
 import { Chain, mainnet, sepolia } from "@starknet-react/chains";
 import {
   argent,
@@ -63,7 +63,7 @@ const cartridgeController = new ControllerConnector({
 const getConnectors = () => {
   // For Metamask
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  getStarknet();
+  //getStarknet();
   const connectors = [
     new InjectedConnector({ options: { id: "okxwallet" } }),
     new InjectedConnector({ options: { id: "bitkeep" } }),

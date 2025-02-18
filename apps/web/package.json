@@ -10,8 +10,8 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
-    "@cartridge/connector": "^0.6.0",
-    "@cartridge/controller": "^0.6.0",
+    "@cartridge/connector": "^0.5.5",
+    "@cartridge/controller": "^0.5.5",
     "@duneanalytics/client-sdk": "^0.2.5",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.3",
@@ -42,7 +42,6 @@
     "@realms-world/db": "workspace:*",
     "@realms-world/siws": "^0.0.2",
     "@reservoir0x/reservoir-sdk": "^2.5.6",
-    "@starknet-io/get-starknet-core": "^4.0.6",
     "@starknet-react/chains": "^3.1.2",
     "@starknet-react/core": "^3.7.2",
     "@tailwindcss/postcss": "^4.0.6",
@@ -71,8 +70,8 @@
     "recharts": "^2.15.1",
     "redaxios": "^0.5.1",
     "starknet": "catalog:",
-    "starknetkit": "^2.6.5",
-    "starknet-types-07": "npm:@starknet-io/types-js@0.7.10",
+    "starknetkit": "2.6.1",
+    "starknet-types-07": "npm:@starknet-io/types-js@^0.7.10",
     "superjson": "2.2.2",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
@@ -95,7 +94,6 @@
     "vite-tsconfig-paths": "^5.1.4"
   },
   "overrides": {
-    "react-is": "^19.0.0",
-    "starknet-types-07": "npm:@starknet-io/types-js@0.7.10"
+    "react-is": "^19.0.0"
   }
 }

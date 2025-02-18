@@ -6,6 +6,7 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "moduleDetection": "force",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "isolatedModules": true,
     "resolveJsonModule": true,
@@ -14,6 +15,8 @@
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
+    "allowImportingTsExtensions": true,
+    "allowSyntheticDefaultImports": true,
     "paths": {
       "@/*": ["./app/*"]
     },
