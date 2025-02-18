@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm with-env vinxi dev",
-    "build": "pnpm with-env vinxi build --preset node-server",
+    "build": "pnpm with-env vinxi build",
     "lint": "eslint",
-    "start": "pnpm with-env vinxi start --preset node-server",
+    "start": "pnpm with-env vinxi start",
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
@@ -72,7 +72,7 @@
     "redaxios": "^0.5.1",
     "starknet": "catalog:",
     "starknetkit": "^2.6.5",
-    "starknet-types-07": "@starknet-io/types-js@0.7.10",
+    "starknet-types-07": "npm:@starknet-io/types-js@0.7.10",
     "superjson": "2.2.2",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
@@ -95,6 +95,7 @@
     "vite-tsconfig-paths": "^5.1.4"
   },
   "overrides": {
-    "react-is": "^19.0.0"
+    "react-is": "^19.0.0",
+    "starknet-types-07": "npm:@starknet-io/types-js@0.7.10"
   }
 }
