@@ -2,8 +2,8 @@ use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{
     BattleConfig, CapacityConfig, LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, TradeConfig,
-    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, TradeConfig, TroopDamageConfig,
+    TroopLimitConfig, TroopStaminaConfig,
 };
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::resource::production::building::BuildingCategory;
@@ -186,8 +186,7 @@ mod config_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{
-        ARMY_ENTITY_TYPE, DEFAULT_NS, DONKEY_ENTITY_TYPE,
-        ResourceTypes, TravelTypes, WORLD_CONFIG_ID,
+        ARMY_ENTITY_TYPE, DEFAULT_NS, DONKEY_ENTITY_TYPE, ResourceTypes, TravelTypes, WORLD_CONFIG_ID,
     };
     use s1_eternum::models::bank::bank::{Bank};
 
@@ -196,9 +195,8 @@ mod config_systems {
         HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
         MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, QuestRewardConfig, RealmLevelConfig,
         RealmMaxLevelConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig,
-        SeasonAddressesConfig, SeasonBridgeConfig, SettlementConfig, SpeedConfig, TickConfig, WeightConfig,
-        WorldConfig, WorldConfigUtilImpl, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        TradeConfig,
+        SeasonAddressesConfig, SeasonBridgeConfig, SettlementConfig, SpeedConfig, TickConfig, TradeConfig,
+        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
 
     use s1_eternum::models::position::{Coord, Position, PositionTrait};
@@ -262,7 +260,7 @@ mod config_systems {
     fn assert_caller_is_admin(world: WorldStorage) {
         let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
 
-        // ENSURE 
+        // ENSURE
         // 1. ADMIN ADDRESS IS SET (IT MUST NEVER BE THE ZERO ADDRESS)
         // 2. CALLER IS ADMIN
         let admin_address = world_config.admin_address;
@@ -495,14 +493,7 @@ mod config_systems {
             // save resources needed for completion
             for resource in resources_for_completion {
                 let (resource_tier, min_amount, max_amount) = (*resource);
-                world
-                    .write_model(
-                        @HyperstructureResourceConfig {
-                            resource_tier, 
-                            min_amount, 
-                            max_amount,
-                        },
-                    );
+                world.write_model(@HyperstructureResourceConfig { resource_tier, min_amount, max_amount });
             }
         }
     }
@@ -528,33 +519,26 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world
-                .write_model(
-                    @BuildingCategoryPopConfig {
-                        building_category, population, capacity,
-                    },
-                )
+            world.write_model(@BuildingCategoryPopConfig { building_category, population, capacity })
         }
     }
 
     #[abi(embed_v0)]
     impl TroopConfigImpl of super::ITroopConfig<ContractState> {
-        fn set_troop_config(ref self: ContractState, mut troop_damage_config: TroopDamageConfig, mut troop_stamina_config: TroopStaminaConfig, mut troop_limit_config: TroopLimitConfig) {
+        fn set_troop_config(
+            ref self: ContractState,
+            mut troop_damage_config: TroopDamageConfig,
+            mut troop_stamina_config: TroopStaminaConfig,
+            mut troop_limit_config: TroopLimitConfig,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("troop_limit_config"), troop_limit_config,
-            );
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("troop_stamina_config"), troop_stamina_config,
-            );
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("troop_damage_config"), troop_damage_config,
-            );
+            WorldConfigUtilImpl::set_member(ref world, selector!("troop_limit_config"), troop_limit_config);
+            WorldConfigUtilImpl::set_member(ref world, selector!("troop_stamina_config"), troop_stamina_config);
+            WorldConfigUtilImpl::set_member(ref world, selector!("troop_damage_config"), troop_damage_config);
         }
     }
-
 
 
     #[abi(embed_v0)]

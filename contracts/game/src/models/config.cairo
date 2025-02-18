@@ -6,8 +6,7 @@ use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
-    RESOURCE_PRECISION, ResourceTiers, ResourceTypes,
-    WORLD_CONFIG_ID, split_resources_and_probs,
+    RESOURCE_PRECISION, ResourceTiers, ResourceTypes, WORLD_CONFIG_ID, split_resources_and_probs,
 };
 use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 use s1_eternum::models::position::{Coord};
@@ -557,8 +556,7 @@ impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
         let mut all_tier_configs: Array<HyperstructureResourceConfig> = array![];
         let mut tier = ResourceTiers::LORDS; // lords is the first tier == 1
         while (tier <= ResourceTiers::MYTHIC) { // mythic is the last tier == 9
-            let hyperstructure_resource_config: HyperstructureResourceConfig = world
-                .read_model(tier);
+            let hyperstructure_resource_config: HyperstructureResourceConfig = world.read_model(tier);
             all_tier_configs.append(hyperstructure_resource_config);
             tier += 1;
         };

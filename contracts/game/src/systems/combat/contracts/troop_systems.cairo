@@ -376,8 +376,7 @@ mod troop_movement_systems {
     use s1_eternum::models::{
         config::{
             BattleConfigTrait, CapacityConfig, CombatConfigImpl, MapConfig, SpeedConfig, TickConfig, TickImpl,
-            TickTrait, TroopLimitConfig, TroopStaminaConfig,
-            WorldConfigUtilImpl,
+            TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
         },
         map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
         position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
