@@ -36,7 +36,7 @@ mod trade_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{DEFAULT_NS, DONKEY_ENTITY_TYPE, REALM_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{SpeedImpl, TradeCountConfig, WorldConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{SpeedImpl, TradeConfig, WorldConfig, WorldConfigUtilImpl};
     use s1_eternum::models::owner::{Owner, OwnerTrait};
     use s1_eternum::models::position::{Coord, Position, PositionTrait, TravelTrait};
     use s1_eternum::models::realm::Realm;
@@ -115,7 +115,7 @@ mod trade_systems {
             }
 
             // ensure trade count does not exceed max
-            let trade_count_config: TradeCountConfig = WorldConfigUtilImpl::get_member(
+            let trade_count_config: TradeConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("trade_count_config"),
             );
             let mut trade_count: TradeCount = world.read_model(maker_id);

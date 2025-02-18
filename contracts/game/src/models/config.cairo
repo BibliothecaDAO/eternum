@@ -6,7 +6,7 @@ use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
-    BUILDING_CATEGORY_POPULATION_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, RESOURCE_PRECISION, ResourceTiers, ResourceTypes,
+    RESOURCE_PRECISION, ResourceTiers, ResourceTypes,
     WORLD_CONFIG_ID, split_resources_and_probs,
 };
 use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
@@ -35,7 +35,6 @@ pub struct WorldConfig {
     season_addresses_config: SeasonAddressesConfig,
     season_bridge_config: SeasonBridgeConfig,
     hyperstructure_config: HyperstructureConfig,
-    stamina_cost_config: StaminaCostConfig,
     speed_config: SpeedConfig,
     map_config: MapConfig,
     settlement_config: SettlementConfig,
@@ -50,7 +49,7 @@ pub struct WorldConfig {
     troop_stamina_config: TroopStaminaConfig,
     troop_limit_config: TroopLimitConfig,
     capacity_config: CapacityConfig,
-    trade_count_config: TradeCountConfig,
+    trade_config: TradeConfig,
 }
 
 #[generate_trait]
@@ -65,7 +64,7 @@ impl WorldConfigUtilImpl of WorldConfigTrait {
 
 
 #[derive(Introspect, Copy, Drop, Serde)]
-pub struct TradeCountConfig {
+pub struct TradeConfig {
     max_count: u8,
 }
 
@@ -102,8 +101,6 @@ impl SeasonBridgeConfigImpl of SeasonBridgeConfigTrait {
 #[dojo::model]
 pub struct HyperstructureResourceConfig {
     #[key]
-    config_id: ID,
-    #[key]
     resource_tier: u8,
     min_amount: u128,
     max_amount: u128,
@@ -126,12 +123,6 @@ pub struct CapacityConfig {
     storehouse_boost_capacity: u32,
 }
 
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-struct StaminaCostConfig {
-    travel_cost: u16,
-    explore_cost: u16,
-}
 
 // speed
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -520,52 +511,6 @@ impl BuildingConfigImpl of BuildingConfigTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct TroopConfig {
-    #[key]
-    config_id: ID,
-    health: u32,
-    knight_strength: u8,
-    paladin_strength: u8,
-    crossbowman_strength: u16,
-    advantage_percent: u16,
-    disadvantage_percent: u16,
-    max_troop_count: u64,
-    // By setting the divisor to 8, the max health that can be taken from the weaker army
-    // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
-    //
-    // The closer the armies are in strength and health, the closer they both
-    // get to losing 12.5% each. If an army is far stronger than the order,
-    // they lose a small precentage (it goes closer to 0% health loss) while the
-    // weak army's loss is closer to 12.5%
-    pillage_health_divisor: u8,
-    // the number of armies that can be created per structure
-    // before military buildings are required to create more
-    army_free_per_structure: u8,
-    // the number of additional  armies that can be create with
-    // each new military building
-    army_extra_per_building: u8,
-    // hard limit of armies per structure
-    army_max_per_structure: u8,
-    // percentage to slash army by if they leave early
-    // e.g num = 25, denom = 100 // represents 25%
-    battle_leave_slash_num: u8,
-    battle_leave_slash_denom: u8,
-    // 1_000. multiply this number by 2 to reduce battle time by 2x,
-    // and reduce by 2x to increase battle time by 2x, etc
-    battle_time_scale: u16,
-    battle_max_time_seconds: u64,
-}
-
-
-#[generate_trait]
-pub impl TroopConfigImpl of TroopConfigTrait {
-    fn get(world: WorldStorage) -> TroopConfig {
-        return world.read_model(WORLD_CONFIG_ID);
-    }
-}
-
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -589,8 +534,6 @@ pub impl BattleConfigImpl of BattleConfigTrait {
 #[dojo::model]
 pub struct BuildingCategoryPopConfig {
     #[key]
-    config_id: ID,
-    #[key]
     building_category: BuildingCategory,
     population: u32,
     capacity: u32,
@@ -604,7 +547,7 @@ pub struct PopulationConfig {
 #[generate_trait]
 impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
     fn get(ref world: WorldStorage, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        world.read_model((BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id))
+        world.read_model(building_id)
     }
 }
 
@@ -615,7 +558,7 @@ impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
         let mut tier = ResourceTiers::LORDS; // lords is the first tier == 1
         while (tier <= ResourceTiers::MYTHIC) { // mythic is the last tier == 9
             let hyperstructure_resource_config: HyperstructureResourceConfig = world
-                .read_model((HYPERSTRUCTURE_CONFIG_ID, tier));
+                .read_model(tier);
             all_tier_configs.append(hyperstructure_resource_config);
             tier += 1;
         };

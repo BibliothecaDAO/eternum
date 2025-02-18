@@ -2,7 +2,8 @@ use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{
     BattleConfig, CapacityConfig, LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, TroopConfig,
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, TradeConfig,
+    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
 };
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::resource::production::building::BuildingCategory;
@@ -60,6 +61,12 @@ trait ICapacityConfig<T> {
 }
 
 #[starknet::interface]
+trait ITradeConfig<T> {
+    fn set_trade_config(ref self: T, trade_config: TradeConfig);
+}
+
+
+#[starknet::interface]
 trait ITickConfig<T> {
     fn set_tick_config(ref self: T, armies_tick_in_seconds: u64);
 }
@@ -112,16 +119,6 @@ trait IProductionConfig<T> {
 
 
 #[starknet::interface]
-trait ITravelStaminaCostConfig<T> {
-    fn set_travel_stamina_cost_config(ref self: T, travel_type: u8, cost: u16);
-}
-
-#[starknet::interface]
-trait ITroopConfig<T> {
-    fn set_troop_config(ref self: T, troop_config: TroopConfig);
-}
-
-#[starknet::interface]
 trait IBuildingConfig<T> {
     fn set_building_general_config(ref self: T, base_cost_percent_increase: u16);
     fn set_building_config(
@@ -168,6 +165,15 @@ trait ISettlementConfig<T> {
     );
 }
 
+#[starknet::interface]
+trait ITroopConfig<T> {
+    fn set_troop_config(
+        ref self: T,
+        troop_damage_config: TroopDamageConfig,
+        troop_stamina_config: TroopStaminaConfig,
+        troop_limit_config: TroopLimitConfig,
+    );
+}
 
 #[dojo::contract]
 mod config_systems {
@@ -180,8 +186,8 @@ mod config_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{
-        ARMY_ENTITY_TYPE, BUILDING_CATEGORY_POPULATION_CONFIG_ID, DEFAULT_NS, DONKEY_ENTITY_TYPE,
-        HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, TravelTypes, WORLD_CONFIG_ID,
+        ARMY_ENTITY_TYPE, DEFAULT_NS, DONKEY_ENTITY_TYPE,
+        ResourceTypes, TravelTypes, WORLD_CONFIG_ID,
     };
     use s1_eternum::models::bank::bank::{Bank};
 
@@ -190,8 +196,9 @@ mod config_systems {
         HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
         MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, QuestRewardConfig, RealmLevelConfig,
         RealmMaxLevelConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig,
-        SeasonAddressesConfig, SeasonBridgeConfig, SettlementConfig, SpeedConfig, TickConfig, TroopConfig, WeightConfig,
-        WorldConfig, WorldConfigUtilImpl,
+        SeasonAddressesConfig, SeasonBridgeConfig, SettlementConfig, SpeedConfig, TickConfig, WeightConfig,
+        WorldConfig, WorldConfigUtilImpl, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+        TradeConfig,
     };
 
     use s1_eternum::models::position::{Coord, Position, PositionTrait};
@@ -254,6 +261,10 @@ mod config_systems {
 
     fn assert_caller_is_admin(world: WorldStorage) {
         let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
+
+        // ENSURE 
+        // 1. ADMIN ADDRESS IS SET (IT MUST NEVER BE THE ZERO ADDRESS)
+        // 2. CALLER IS ADMIN
         let admin_address = world_config.admin_address;
         assert!(starknet::get_caller_address() == admin_address, "caller not admin");
     }
@@ -262,8 +273,10 @@ mod config_systems {
     impl WorldConfigImpl of super::IWorldConfig<ContractState> {
         fn set_world_config(ref self: ContractState, admin_address: starknet::ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            // ensure admin address can't be set to zero
             assert!(admin_address.is_non_zero(), "admin address must be non zero");
 
+            // ensure admin address is not already set
             let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
             if world_config.admin_address.is_non_zero() {
                 assert_caller_is_admin(world);
@@ -464,7 +477,7 @@ mod config_systems {
     impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
             ref self: ContractState,
-            resources_for_completion: Span<(u8, u128, u128)>,
+            mut resources_for_completion: Span<(u8, u128, u128)>,
             time_between_shares_change: u64,
             points_per_cycle: u128,
             points_for_win: u128,
@@ -473,22 +486,24 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let mut i = 0;
-            while (i < resources_for_completion.len()) {
-                let (tier, min_amount, max_amount) = *resources_for_completion.at(i);
-
-                world
-                    .write_model(
-                        @HyperstructureResourceConfig {
-                            config_id: HYPERSTRUCTURE_CONFIG_ID, resource_tier: tier, min_amount, max_amount,
-                        },
-                    );
-                i += 1;
-            };
+            // save general hyperstructure config
             let hyperstructure_config = HyperstructureConfig {
                 time_between_shares_change, points_per_cycle, points_for_win, points_on_completion,
             };
             WorldConfigUtilImpl::set_member(ref world, selector!("hyperstructure_config"), hyperstructure_config);
+
+            // save resources needed for completion
+            for resource in resources_for_completion {
+                let (resource_tier, min_amount, max_amount) = (*resource);
+                world
+                    .write_model(
+                        @HyperstructureResourceConfig {
+                            resource_tier, 
+                            min_amount, 
+                            max_amount,
+                        },
+                    );
+            }
         }
     }
 
@@ -506,17 +521,6 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TroopConfigImpl of super::ITroopConfig<ContractState> {
-        fn set_troop_config(ref self: ContractState, mut troop_config: TroopConfig) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            troop_config.config_id = WORLD_CONFIG_ID;
-            world.write_model(@troop_config);
-        }
-    }
-
-    #[abi(embed_v0)]
     impl BuildingCategoryPopulationConfigImpl of super::IBuildingCategoryPopConfig<ContractState> {
         fn set_building_category_pop_config(
             ref self: ContractState, building_category: BuildingCategory, population: u32, capacity: u32,
@@ -527,11 +531,31 @@ mod config_systems {
             world
                 .write_model(
                     @BuildingCategoryPopConfig {
-                        config_id: BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_category, population, capacity,
+                        building_category, population, capacity,
                     },
                 )
         }
     }
+
+    #[abi(embed_v0)]
+    impl TroopConfigImpl of super::ITroopConfig<ContractState> {
+        fn set_troop_config(ref self: ContractState, mut troop_damage_config: TroopDamageConfig, mut troop_stamina_config: TroopStaminaConfig, mut troop_limit_config: TroopLimitConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("troop_limit_config"), troop_limit_config,
+            );
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("troop_stamina_config"), troop_stamina_config,
+            );
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("troop_damage_config"), troop_damage_config,
+            );
+        }
+    }
+
+
 
     #[abi(embed_v0)]
     impl PopulationConfigImpl of super::IPopulationConfig<ContractState> {
@@ -702,6 +726,16 @@ mod config_systems {
                     current_point_on_side,
                 },
             );
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl ITradeConfig of super::ITradeConfig<ContractState> {
+        fn set_trade_config(ref self: ContractState, trade_config: TradeConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            WorldConfigUtilImpl::set_member(ref world, selector!("trade_config"), trade_config);
         }
     }
 }

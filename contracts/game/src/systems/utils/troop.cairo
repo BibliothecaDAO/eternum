@@ -4,7 +4,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::WorldConfigUtilImpl;
-use s1_eternum::models::config::{CapacityConfig, MapConfig, TroopConfig, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{CapacityConfig, MapConfig, TroopLimitConfig, TroopStaminaConfig};
 
 use s1_eternum::models::position::{Occupier, OccupierImpl};
 use s1_eternum::models::resource::resource::{
