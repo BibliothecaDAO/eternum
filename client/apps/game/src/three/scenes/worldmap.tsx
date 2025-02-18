@@ -89,10 +89,48 @@ export default class WorldmapScene extends HexagonScene {
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
-    useUIStore.subscribe((state) => {
-      this.state = state;
-    });
-
+    useUIStore.subscribe(
+      (state) => state.hoveredArmyEntityId,
+      (hoveredArmyEntityId) => {
+        this.state.hoveredArmyEntityId = hoveredArmyEntityId;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.hoveredStructure,
+      (hoveredStructure) => {
+        this.state.hoveredStructure = hoveredStructure;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.armyActions,
+      (armyActions) => {
+        this.state.armyActions = armyActions;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.hoveredBattle,
+      (hoveredBattle) => {
+        this.state.hoveredBattle = hoveredBattle;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.selectedHex,
+      (selectedHex) => {
+        this.state.selectedHex = selectedHex;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.isSoundOn,
+      (isSoundOn) => {
+        this.state.isSoundOn = isSoundOn;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.effectsLevel,
+      (effectsLevel) => {
+        this.state.effectsLevel = effectsLevel;
+      },
+    );
     useUIStore.subscribe(
       (state) => state.previewBuilding,
       (structure) => {
@@ -105,11 +143,17 @@ export default class WorldmapScene extends HexagonScene {
         }
       },
     );
-
     useUIStore.subscribe(
       (state) => state.structureEntityId,
       (structureEntityId) => {
         this.structureEntityId = structureEntityId;
+      },
+    );
+    // subscribe to changes in the selected army coming from React
+    useUIStore.subscribe(
+      (state) => state.armyActions.selectedEntityId,
+      (selectedEntityId) => {
+        this.onArmySelection(selectedEntityId);
       },
     );
 
@@ -163,14 +207,6 @@ export default class WorldmapScene extends HexagonScene {
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
-
-    // subscribe to changes in the selected army coming from React
-    useUIStore.subscribe(
-      (state) => state.armyActions.selectedEntityId,
-      (selectedEntityId) => {
-        this.onArmySelection(selectedEntityId);
-      },
-    );
 
     if (!IS_MOBILE) {
       this.minimap = new Minimap(
