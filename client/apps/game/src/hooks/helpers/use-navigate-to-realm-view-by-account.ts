@@ -16,7 +16,7 @@ export const useNavigateToRealmViewByAccount = (components: ClientComponents) =>
     if (!account) {
       const randomRealmEntity = getRandomRealmEntity(components);
       const position = randomRealmEntity ? getComponentValue(components.Position, randomRealmEntity) : undefined;
-      navigateToHexView(new Position(position || { x: 0, y: 0 }));
+      position && navigateToHexView(new Position(position));
     } else {
       const playerRealm = getPlayerFirstRealm(components, ContractAddress(account?.address || NULL_ACCOUNT.address));
       const position = playerRealm ? getComponentValue(components.Position, playerRealm) : undefined;

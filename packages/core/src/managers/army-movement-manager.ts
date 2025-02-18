@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { DojoAccount } from "..";
+import { Biome, divideByPrecision, DojoAccount, getArmyTroops, multiplyByPrecision } from "..";
 import {
   CapacityConfig,
   FELT_CENTER,
@@ -12,61 +12,12 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { ContractAddress, HexPosition, ID, TravelTypes } from "../types";
-import { multiplyByPrecision } from "../utils";
+import { ContractAddress, HexPosition, ID, TravelTypes, TroopType } from "../types";
+import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacityInKg } from "./utils";
-
-export class TravelPaths {
-  private readonly paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
-
-  constructor() {
-    this.paths = new Map();
-  }
-
-  set(key: string, value: { path: HexPosition[]; isExplored: boolean }): void {
-    this.paths.set(key, value);
-  }
-
-  deleteAll(): void {
-    this.paths.clear();
-  }
-
-  get(key: string): { path: HexPosition[]; isExplored: boolean } | undefined {
-    return this.paths.get(key);
-  }
-
-  has(key: string): boolean {
-    return this.paths.has(key);
-  }
-
-  values(): IterableIterator<{ path: HexPosition[]; isExplored: boolean }> {
-    return this.paths.values();
-  }
-
-  getHighlightedHexes(): Array<{ col: number; row: number }> {
-    return Array.from(this.paths.values()).map(({ path }) => ({
-      col: path[path.length - 1].col - FELT_CENTER,
-      row: path[path.length - 1].row - FELT_CENTER,
-    }));
-  }
-
-  isHighlighted(row: number, col: number): boolean {
-    return this.paths.has(TravelPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER }));
-  }
-
-  getPaths(): Map<string, { path: HexPosition[]; isExplored: boolean }> {
-    return this.paths;
-  }
-
-  static posKey(pos: HexPosition, normalized = false): string {
-    const col = normalized ? pos.col + FELT_CENTER : pos.col;
-    const row = normalized ? pos.row + FELT_CENTER : pos.row;
-    return `${col},${row}`;
-  }
-}
 
 export class ArmyMovementManager {
   private readonly entity: Entity;
@@ -88,6 +39,21 @@ export class ArmyMovementManager {
     this.staminaManager = new StaminaManager(this.components, entityId);
   }
 
+  private _getTroopType(): TroopType {
+    const entityArmy = getComponentValue(this.components.Army, this.entity);
+    const knightCount = entityArmy?.troops?.knight_count ?? 0;
+    const crossbowmanCount = entityArmy?.troops?.crossbowman_count ?? 0;
+    const paladinCount = entityArmy?.troops?.paladin_count ?? 0;
+
+    if (knightCount >= crossbowmanCount && knightCount >= paladinCount) {
+      return TroopType.Knight;
+    }
+    if (crossbowmanCount >= knightCount && crossbowmanCount >= paladinCount) {
+      return TroopType.Crossbowman;
+    }
+    return TroopType.Paladin;
+  }
+
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
@@ -96,13 +62,18 @@ export class ArmyMovementManager {
     }
 
     const entityArmy = getComponentValue(this.components.Army, this.entity);
-    const exploreFoodCosts = computeExploreFoodCosts(entityArmy?.troops);
+    const exploreFoodCosts = entityArmy
+      ? computeExploreFoodCosts(getArmyTroops(entityArmy?.troops))
+      : {
+          wheatPayAmount: 0,
+          fishPayAmount: 0,
+        };
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    if (fish < multiplyByPrecision(exploreFoodCosts.fishPayAmount)) {
+    if (fish < exploreFoodCosts.fishPayAmount) {
       return false;
     }
-    if (wheat < multiplyByPrecision(exploreFoodCosts.wheatPayAmount)) {
+    if (wheat < exploreFoodCosts.wheatPayAmount) {
       return false;
     }
 
@@ -115,18 +86,21 @@ export class ArmyMovementManager {
 
   private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
-    const travelStaminaCost = configManager.getTravelStaminaCost();
-
-    const maxStaminaSteps = travelStaminaCost
-      ? Math.floor((stamina.amount || 0) / configManager.getTravelStaminaCost())
-      : 999;
+    // Calculate minimum stamina cost across all biomes for this troop type
+    const minTravelStaminaCost = configManager.getMinTravelStaminaCost();
+    const maxStaminaSteps = Math.floor(stamina.amount / minTravelStaminaCost);
 
     const entityArmy = getComponentValue(this.components.Army, this.entity);
-    const travelFoodCosts = computeTravelFoodCosts(entityArmy?.troops);
+    const travelFoodCosts = entityArmy
+      ? computeTravelFoodCosts(getArmyTroops(entityArmy.troops))
+      : {
+          wheatPayAmount: 0,
+          fishPayAmount: 0,
+        };
 
     const { wheat, fish } = this.getFood(currentDefaultTick);
-    const maxTravelWheatSteps = Math.floor(wheat / multiplyByPrecision(travelFoodCosts.wheatPayAmount));
-    const maxTravelFishSteps = Math.floor(fish / multiplyByPrecision(travelFoodCosts.fishPayAmount));
+    const maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
+    const maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
     return Math.min(maxStaminaSteps, maxTravelSteps);
   };
@@ -141,56 +115,179 @@ export class ArmyMovementManager {
     const fishBalance = this.fishManager.balance(currentDefaultTick);
 
     return {
-      wheat: wheatBalance,
-      fish: fishBalance,
+      wheat: divideByPrecision(wheatBalance),
+      fish: divideByPrecision(fishBalance),
     };
   }
 
-  public findPaths(
-    exploredHexes: Map<number, Set<number>>,
+  // todo : refactor to use stamina config
+  public static staminaDrain(biome: BiomeType, troopType: TroopType) {
+    const baseStaminaCost = 20; // Base cost to move to adjacent hex
+
+    // Biome-specific modifiers per troop type
+    switch (biome) {
+      case BiomeType.Ocean:
+        return baseStaminaCost - 10; // -10 for all troops
+      case BiomeType.DeepOcean:
+        return baseStaminaCost - 10; // -10 for all troops
+      case BiomeType.Beach:
+        return baseStaminaCost; // No modifier
+      case BiomeType.Grassland:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.Shrubland:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.SubtropicalDesert:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.TemperateDesert:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.TropicalRainForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.TropicalSeasonalForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.TemperateRainForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.TemperateDeciduousForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.Tundra:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.Taiga:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.Snow:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 0 : 10);
+      case BiomeType.Bare:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.Scorched:
+        return baseStaminaCost + 10; // +10 for all troops
+      default:
+        return baseStaminaCost;
+    }
+  }
+
+  public findActionPaths(
+    structureHexes: Map<number, Map<number, boolean>>,
+    armyHexes: Map<number, Map<number, boolean>>,
+    exploredHexes: Map<number, Map<number, BiomeType>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
-  ): TravelPaths {
+  ): ActionPaths {
+    const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
+    if (armyStamina === 0) return new ActionPaths();
+
+    const troopType = this._getTroopType();
     const startPos = this._getCurrentPosition();
+    // max hex based on food
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
 
-    const priorityQueue: Array<{ position: HexPosition; distance: number; path: HexPosition[] }> = [
-      { position: startPos, distance: 0, path: [startPos] },
-    ];
-    const travelPaths = new TravelPaths();
-    const shortestDistances = new Map<string, number>();
+    const actionPaths = new ActionPaths();
+    const lowestStaminaUse = new Map<string, number>();
+    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: ActionPath[] }> =
+      [];
+
+    // Process initial neighbors instead of start position
+    const neighbors = getNeighborHexes(startPos.col, startPos.row);
+    for (const { col, row } of neighbors) {
+      const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const isStructureMine = structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+
+      if (!isExplored && !canExplore) continue;
+
+      const isMine = isArmyMine || isStructureMine;
+      const canAttack = (hasArmy || hasStructure) && !isMine;
+
+      const staminaCost = biome
+        ? ArmyMovementManager.staminaDrain(biome, troopType)
+        : configManager.getExploreStaminaCost();
+
+      if (staminaCost > armyStamina) continue;
+
+      let actionType;
+      if (isMine) {
+        actionType = ActionType.Help;
+      } else if (canAttack) {
+        actionType = ActionType.Attack;
+      } else if (biome) {
+        actionType = ActionType.Move;
+      } else {
+        actionType = ActionType.Explore;
+      }
+
+      priorityQueue.push({
+        position: { col, row },
+        staminaUsed: staminaCost,
+        distance: 1,
+        path: [
+          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+          {
+            hex: { col, row },
+            actionType,
+            biomeType: biome,
+            staminaCost,
+          },
+        ],
+      });
+    }
 
     while (priorityQueue.length > 0) {
-      priorityQueue.sort((a, b) => a.distance - b.distance); // This makes the queue work as a priority queue
-      const { position: current, distance, path } = priorityQueue.shift()!;
-      const currentKey = TravelPaths.posKey(current);
+      priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed);
+      const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
+      const currentKey = ActionPaths.posKey(current);
 
-      if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
-        shortestDistances.set(currentKey, distance);
+      if (!lowestStaminaUse.has(currentKey) || staminaUsed < lowestStaminaUse.get(currentKey)!) {
+        lowestStaminaUse.set(currentKey, staminaUsed);
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-        if (path.length >= 2) {
-          travelPaths.set(currentKey, { path, isExplored });
-        }
-        if (!isExplored) continue;
+        const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+        const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
 
-        const neighbors = getNeighborHexes(current.col, current.row); // This function needs to be defined
+        actionPaths.set(currentKey, path);
+
+        // cannot go through these hexes so need to stop here
+        if (!isExplored || hasArmy || hasStructure) continue;
+
+        const neighbors = getNeighborHexes(current.col, current.row);
         for (const { col, row } of neighbors) {
-          const neighborKey = TravelPaths.posKey({ col, row });
+          const neighborKey = ActionPaths.posKey({ col, row });
           const nextDistance = distance + 1;
-          const nextPath = [...path, { col, row }];
+
+          if (nextDistance > maxHex) continue;
 
           const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-          if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
-            if (!shortestDistances.has(neighborKey) || nextDistance < shortestDistances.get(neighborKey)!) {
-              priorityQueue.push({ position: { col, row }, distance: nextDistance, path: nextPath });
-            }
+          const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+
+          if (!isExplored || hasArmy || hasStructure) continue;
+
+          const staminaCost = ArmyMovementManager.staminaDrain(biome!, troopType);
+          const nextStaminaUsed = staminaUsed + staminaCost;
+
+          if (nextStaminaUsed > armyStamina) continue;
+
+          if (!lowestStaminaUse.has(neighborKey) || nextStaminaUsed < lowestStaminaUse.get(neighborKey)!) {
+            priorityQueue.push({
+              position: { col, row },
+              staminaUsed: nextStaminaUsed,
+              distance: nextDistance,
+              path: [
+                ...path,
+                {
+                  hex: { col, row },
+                  actionType: biome ? ActionType.Move : ActionType.Explore,
+                  biomeType: biome,
+                  staminaCost,
+                },
+              ],
+            });
           }
         }
       }
     }
 
-    return travelPaths;
+    return actionPaths;
   }
 
   public isMine = (address: ContractAddress) => {
@@ -237,7 +334,7 @@ export class ArmyMovementManager {
         col,
         row,
         explored_at: BigInt(Math.floor(Date.now() / 1000)),
-        biome: "None",
+        biome: Biome.getBiome(col, row),
       },
     });
   };
@@ -361,13 +458,15 @@ export class ArmyMovementManager {
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
     const entityArmy = getComponentValue(this.components.Army, this.entity);
+    if (!entityArmy) return;
     let costs = { wheatPayAmount: 0, fishPayAmount: 0 };
     if (travelType === TravelTypes.Explore) {
-      costs = computeExploreFoodCosts(entityArmy?.troops);
+      costs = computeExploreFoodCosts(getArmyTroops(entityArmy.troops));
     } else {
-      costs = computeTravelFoodCosts(entityArmy?.troops);
+      costs = computeTravelFoodCosts(getArmyTroops(entityArmy.troops));
     }
 
+    // need to add back precision for optimistic resource update
     this.wheatManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.wheatPayAmount)));
     this.fishManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.fishPayAmount)));
   };

@@ -3,6 +3,7 @@ import { ID } from "@bibliothecadao/eternum";
 export enum RightView {
   None,
   ResourceTable,
+  Production,
 }
 
 export enum LeftView {

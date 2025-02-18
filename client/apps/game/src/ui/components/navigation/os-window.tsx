@@ -11,18 +11,24 @@ export const OSWindow = ({
   height = "h-72",
   width = "400px",
   hintSection,
+  className,
 }: OSInterface) => {
   return (
     <>
       {show && (
-        <SecondaryPopup className={IS_MOBILE ? "h-screen w-screen" : ""} name={title}>
-          <SecondaryPopup.Head onClose={() => onClick()} hintSection={hintSection}>
-            {title}
-          </SecondaryPopup.Head>
-          <SecondaryPopup.Body height={IS_MOBILE ? "h-screen" : height} width={IS_MOBILE ? "100%" : width}>
-            {children}
-          </SecondaryPopup.Body>
-        </SecondaryPopup>
+        <div className="fixed inset-0 z-[100]">
+          <SecondaryPopup
+            className={`${IS_MOBILE ? "h-screen w-screen" : ""} pointer-events-auto ${className || ""}`}
+            name={title}
+          >
+            <SecondaryPopup.Head onClose={() => onClick()} hintSection={hintSection}>
+              {title}
+            </SecondaryPopup.Head>
+            <SecondaryPopup.Body height={IS_MOBILE ? "h-screen" : height} width={IS_MOBILE ? "100%" : width}>
+              {children}
+            </SecondaryPopup.Body>
+          </SecondaryPopup>
+        </div>
       )}
     </>
   );

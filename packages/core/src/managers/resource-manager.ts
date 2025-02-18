@@ -34,7 +34,11 @@ export class ResourceManager {
 
   public isActive(): boolean {
     const production = this.getProduction();
-    return production !== undefined && production.building_count > 0;
+    if (!production) return false;
+    if (this.isFood()) {
+      return production.production_rate !== 0n;
+    }
+    return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
   }
 
   public balance(currentTick: number): number {
@@ -53,19 +57,43 @@ export class ResourceManager {
     });
   };
 
-  public timeUntilValueReached(currentTick: number, value: number): number {
+  public timeUntilValueReached(currentTick: number): number {
     const production = this.getProduction();
-    if (!production || production.production_rate === 0n) return 0;
+    if (!production || production.building_count === 0) return 0;
 
-    const balance = this.balance(currentTick);
-    if (value <= Number(balance)) return 0;
+    // Get production details
+    const lastUpdatedTick = production.last_updated_tick;
+    const productionRate = production.production_rate;
+    const outputAmountLeft = production.output_amount_left;
 
-    return (value - Number(balance)) / Number(production.production_rate);
+    // If no production rate or no output left, return 0
+    if (productionRate === 0n || outputAmountLeft === 0n) return 0;
+
+    // Calculate ticks since last update
+    const ticksSinceLastUpdate = currentTick - lastUpdatedTick;
+
+    // Calculate remaining ticks based on output amount left and production rate
+    const remainingTicks = Number(outputAmountLeft) / Number(productionRate);
+
+    // Return remaining ticks, accounting for ticks that have already passed
+    return Math.max(0, remainingTicks - ticksSinceLastUpdate);
   }
 
   public getProductionEndsAt(): number {
-    const productionEndsAt = this._productionEndsAt();
-    return Number(productionEndsAt);
+    const production = this.getProduction();
+    if (!production || production.building_count === 0) return 0;
+
+    // If no production rate or no output left, return current tick
+    if (production.production_rate === 0n || production.output_amount_left === 0n) return production.last_updated_tick;
+
+    // For food resources, production never ends
+    if (this.isFood()) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    // Calculate when production will end based on remaining output and rate
+    const remainingTicks = Number(production.output_amount_left) / Number(production.production_rate);
+    return production.last_updated_tick + Math.ceil(remainingTicks);
   }
 
   public getStoreCapacity(): number {
@@ -96,28 +124,17 @@ export class ResourceManager {
     if (!resource) return 0n;
     const production = resource.production!;
 
-    if (!production || production.building_count == 0) return 0n;
-    
-    let totalAmountProduced = BigInt(currentTick - production.last_updated_at) * BigInt(production.production_rate);
+    if (!production || production.building_count === 0) return 0n;
+    if (production.production_rate === 0n || production.output_amount_left === 0n) return 0n;
+
+    const ticksSinceLastUpdate = currentTick - production.last_updated_tick;
+    let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
+
     if (!this.isFood() && totalAmountProduced > production.output_amount_left) {
       totalAmountProduced = production.output_amount_left;
     }
 
     return totalAmountProduced;
-  }
-
-  private _productionEndsAt(): number {
-    const resource = this._getResource();
-    const production = resource?.production;
-    if (!production) return 0;
-    if (production.building_count === 0) return 0;
-
-    let productionTicksLeft = BigInt(production.output_amount_left) / BigInt(production.production_rate);
-    if (this.isFood()) {
-      productionTicksLeft = BigInt(1) << BigInt(64);
-    }
-
-    return production.last_updated_at + Number(productionTicksLeft);
   }
 
   private _balance(currentTick: number): bigint {

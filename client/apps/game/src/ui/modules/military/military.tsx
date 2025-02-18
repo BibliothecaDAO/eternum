@@ -1,10 +1,8 @@
 import { EntityArmyList } from "@/ui/components/military/army-list";
 import { EntitiesArmyTable } from "@/ui/components/military/entities-army-table";
-import { UserBattles } from "@/ui/components/military/user-battles";
-import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, getStructure, ID } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 export const Military = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const {
@@ -20,41 +18,9 @@ export const Military = ({ entityId, className }: { entityId: ID | undefined; cl
     [entityId, address, components],
   );
 
-  const [selectedTab, setSelectedTab] = useState(0);
-
-  const tabs = [
-    {
-      label: "Army",
-      component: isMapView ? (
-        <EntitiesArmyTable />
-      ) : (
-        selectedStructure && <EntityArmyList structure={selectedStructure} />
-      ),
-    },
-    { label: "Battles", component: <UserBattles /> },
-  ];
-
   return (
     <div className={`relative ${className}`}>
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: any) => {
-          setSelectedTab(index);
-        }}
-        className="h-full"
-      >
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
+      {isMapView ? <EntitiesArmyTable /> : selectedStructure && <EntityArmyList structure={selectedStructure} />}
     </div>
   );
 };

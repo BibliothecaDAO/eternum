@@ -1,6 +1,7 @@
 import { ComponentValue, Entity } from "@dojoengine/recs";
 import { Account, AccountInterface } from "starknet";
 import {
+  BiomeType,
   BuildingType,
   CapacityConfig,
   QuestType,
@@ -44,7 +45,9 @@ export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & 
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
 };
 
-export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
+export type ArmyInfo = {
+  entityId: ID;
+  troops: Troops;
   name: string;
   isMine: boolean;
   isMercenary: boolean;
@@ -66,6 +69,7 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
 };
 
 export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+  entityId: ID;
   isMine: boolean;
   isMercenary: boolean;
   name: string;
@@ -87,6 +91,7 @@ export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+  resources: ResourcesIds[];
 };
 export interface Prize {
   id: QuestType;
@@ -160,6 +165,13 @@ export enum ClaimStatus {
 
 export type HexPosition = { col: number; row: number };
 
+export type HexTileInfo = {
+  col: number;
+  row: number;
+  staminaCost: number;
+  biomeType: BiomeType | undefined;
+};
+
 export enum Winner {
   Attacker = "Attacker",
   Target = "Target",
@@ -204,6 +216,24 @@ export interface Health {
   current: bigint;
   lifetime: bigint;
 }
+
+export interface Troops {
+  count: number;
+  type: TroopType;
+  tier: 1 | 2 | 3;
+}
+
+export enum TroopType {
+  Knight = "Knight",
+  Crossbowman = "Crossbowman",
+  Paladin = "Paladin",
+}
+
+export type TroopInfo = {
+  type: TroopType;
+  count: number;
+  label: string;
+};
 
 export interface CombatResultInterface {
   attackerRealmEntityId: ID;
@@ -571,7 +601,7 @@ export interface RealmInfo {
   realmId: ID;
   entityId: ID;
   name: string;
-  resourceTypesPacked: bigint;
+  resources: ResourcesIds[];
   order: number;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   population?: number | undefined;
@@ -581,6 +611,10 @@ export interface RealmInfo {
   ownerName: string;
   hasWonder: boolean;
   level: number;
+  storehouses: {
+    capacityKg: number;
+    quantity: number;
+  };
 }
 
 export interface PlayerInfo {

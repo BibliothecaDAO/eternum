@@ -2,7 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { createPausedLabel, gltfLoader } from "@/three/helpers/utils";
-import { BIOME_COLORS, Biome, BiomeType } from "@/three/managers/biome";
+import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
@@ -13,11 +13,15 @@ import { Position } from "@/types/position";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
+  ActionType,
   BUILDINGS_CENTER,
+  Biome,
+  BiomeType,
   BuildingType,
   HexPosition,
   RealmLevels,
   ResourceIdToMiningType,
+  ResourceManager,
   ResourceMiningTypes,
   ResourcesIds,
   SetupResult,
@@ -101,7 +105,6 @@ export default class HexceptionScene extends HexagonScene {
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = [];
   centerColRow: number[] = [0, 0];
-  private biome!: Biome;
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
   private tileManager: TileManager;
@@ -124,7 +127,6 @@ export default class HexceptionScene extends HexagonScene {
   ) {
     super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
 
-    this.biome = new Biome();
     this.buildingPreview = new BuildingPreview(this.scene);
 
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
@@ -170,7 +172,12 @@ export default class HexceptionScene extends HexagonScene {
       (building) => {
         if (building) {
           this.buildingPreview?.setPreviewBuilding(building as any);
-          this.highlightHexManager.highlightHexes(this.highlights);
+          this.highlightHexManager.highlightHexes(
+            this.highlights.map((hex) => ({
+              hex: { col: hex.col, row: hex.row },
+              actionType: ActionType.Build,
+            })),
+          );
         } else {
           this.clearBuildingMode();
         }
@@ -383,6 +390,13 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
     const building = this.tileManager.getBuilding(normalizedCoords);
+
+    const productionManager = building
+      ? new ResourceManager(this.dojo.components, this.state.structureEntityId, building?.produced_resource_type)
+      : undefined;
+
+    const isActive = productionManager?.isActive();
+
     if (building && building.produced_resource_type) {
       this.state.setTooltip({
         content: (
@@ -393,8 +407,8 @@ export default class HexceptionScene extends HexagonScene {
             />
             <div>Producing {findResourceById(building.produced_resource_type as ResourcesIds)?.trait}</div>
             <div>—</div>
-            <div className={clsx(building.paused ? "text-order-giants" : "text-order-brilliance")}>
-              {building.paused ? "Paused" : "Active"}
+            <div className={clsx(!isActive ? "text-order-giants" : "text-order-brilliance")}>
+              {!isActive ? "Paused" : "Active"}
             </div>
           </div>
         ),
@@ -477,7 +491,7 @@ export default class HexceptionScene extends HexagonScene {
           let buildingGroup: BUILDINGS_GROUPS;
           let buildingType: BUILDINGS_CATEGORIES_TYPES;
 
-          if (building.resource && (building.resource < 24 || building.resource === ResourcesIds.AncientFragment)) {
+          if (building.resource && (building.resource < 23 || building.resource === ResourcesIds.AncientFragment)) {
             buildingGroup = BUILDINGS_GROUPS.RESOURCES_MINING;
             buildingType = ResourceIdToMiningType[building.resource as ResourcesIds] as ResourceMiningTypes;
           } else {
@@ -608,7 +622,7 @@ export default class HexceptionScene extends HexagonScene {
     existingBuildings: any[],
     biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
   ) => {
-    const biome = this.biome.getBiome(targetHex.col, targetHex.row);
+    const biome = Biome.getBiome(targetHex.col, targetHex.row);
     const buildableAreaBiome = "Grassland";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
 
@@ -646,6 +660,7 @@ export default class HexceptionScene extends HexagonScene {
 
         let withBuilding = false;
         const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
+
         if (building) {
           withBuilding = true;
           const buildingObj = dummy.clone();
@@ -717,7 +732,8 @@ export default class HexceptionScene extends HexagonScene {
   ) => {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
-    if (structureType) {
+
+    if (structureType && structureType !== StructureType.Realm) {
       existingBuildings.push({
         col: BUILDINGS_CENTER[0],
         row: BUILDINGS_CENTER[1],

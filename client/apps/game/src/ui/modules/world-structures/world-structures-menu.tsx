@@ -11,7 +11,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  BattleSide,
+  ArmyInfo,
   ContractAddress,
   divideByPrecision,
   findResourceById,
@@ -201,9 +201,7 @@ const BaseStructureExtraContent = ({
 
   const { defensiveArmy, attackingArmy } = useMemo(() => {
     const defensive = armies.find((army) => army.protectee?.protectee_id);
-    const attacking = armies.find(
-      (army) => army.battle_side === BattleSide[BattleSide.Attack] && army.battle_id === defensive?.battle_id,
-    );
+    const attacking: ArmyInfo[] = [];
 
     const getArmyInfo = (army?: any) => {
       if (!army) return;
@@ -295,7 +293,7 @@ const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; en
             notation: "compact",
             maximumFractionDigits: 1,
           }).format(divideByPrecision(balance || 0))}
-          <ResourceIcon className="ml-1" isLabor={false} withTooltip={false} resource={trait || ""} size="xs" />
+          <ResourceIcon className="ml-1" withTooltip={false} resource={trait || ""} size="xs" />
         </span>
       </div>
     </BaseStructureExtraContent>

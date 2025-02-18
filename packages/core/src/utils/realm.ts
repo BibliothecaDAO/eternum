@@ -1,16 +1,15 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { configManager } from "..";
-import { findResourceIdByTrait, orders } from "../constants";
+import { configManager, gramToKg } from "..";
+import { BuildingType, CapacityConfigCategory, findResourceIdByTrait, orders } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
-import { packResources } from "./packed-data";
+import { packResources, unpackResources } from "./packed-data";
 
-export const getRealmWithPosition = (entityId: ID, components: ClientComponents) => {
+export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
   const { Realm, Owner, Position } = components;
-  const entity = getEntityIdFromKeys([BigInt(entityId)]);
   const realm = getComponentValue(Realm, entity);
   if (!realm) return undefined;
 
@@ -19,6 +18,7 @@ export const getRealmWithPosition = (entityId: ID, components: ClientComponents)
 
   return {
     ...realm,
+    resources: unpackResources(BigInt(realm.produced_resources)),
     position,
     name: getRealmNameById(realm.realm_id),
     owner,
@@ -67,19 +67,32 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   const position = getComponentValue(components.Position, entity);
   const population = getComponentValue(components.Population, entity);
 
+  const storehouses = (() => {
+    const quantity =
+      getComponentValue(
+        components.BuildingQuantityv2,
+        getEntityIdFromKeys([BigInt(realm?.entity_id || 0), BigInt(BuildingType.Storehouse)]),
+      )?.value || 0;
+    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
+    return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
+  })();
+
   if (realm && owner && position) {
     const { realm_id, entity_id, produced_resources, order, level } = realm;
 
     const name = getRealmNameById(realm_id);
+
+    const resources = unpackResources(BigInt(produced_resources));
 
     const { address } = owner;
 
     return {
       realmId: realm_id,
       entityId: entity_id,
+      storehouses,
       name,
       level,
-      resourceTypesPacked: produced_resources,
+      resources,
       order,
       position,
       ...population,

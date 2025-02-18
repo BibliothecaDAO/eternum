@@ -310,7 +310,7 @@ export interface RemoveLiquidityProps extends SystemSigner {
   shares: num.BigNumberish;
 }
 
-export interface Troops {
+export interface TroopsLegacy {
   knight_count: num.BigNumberish;
   paladin_count: num.BigNumberish;
   crossbowman_count: num.BigNumberish;
@@ -328,13 +328,13 @@ export interface ArmyDeleteProps extends SystemSigner {
 export interface ArmyBuyTroopsProps extends SystemSigner {
   army_id: num.BigNumberish;
   payer_id: num.BigNumberish;
-  troops: Troops;
+  troops: TroopsLegacy;
 }
 
 export interface ArmyMergeTroopsProps extends SystemSigner {
   from_army_id: num.BigNumberish;
   to_army_id: num.BigNumberish;
-  troops: Troops;
+  troops: TroopsLegacy;
 }
 
 export interface BattleStartProps extends SystemSigner {
@@ -703,4 +703,46 @@ export interface DetachLordsProps extends SystemSigner {
 
 export interface MintTestLordsProps extends SystemSigner {
   lords_address: num.BigNumberish;
+}
+
+/**
+ * Props for burning resources to produce labor
+ */
+export interface BurnOtherResourcesForLaborProductionProps {
+  /** ID of the realm entity */
+  entity_id: number;
+  /** Array of resource types to burn */
+  resource_types: number[];
+  /** Array of resource amounts to burn */
+  resource_amounts: number[];
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
+}
+
+/**
+ * Props for burning labor to produce other resources
+ */
+export interface BurnLaborResourcesForOtherProductionProps {
+  /** ID of the realm entity */
+  from_entity_id: number;
+  /** Array of labor amounts to burn */
+  labor_amounts: number[];
+  /** Array of resource types to produce */
+  produced_resource_types: number[];
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
+}
+
+/**
+ * Props for burning predefined resources to produce other resources
+ */
+export interface BurnOtherPredefinedResourcesForResourcesProps {
+  /** ID of the realm entity */
+  from_entity_id: number;
+  /** Array of resource types to produce */
+  produced_resource_types: number[];
+  /** Array of production tick counts */
+  production_tick_counts: number[];
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
 }

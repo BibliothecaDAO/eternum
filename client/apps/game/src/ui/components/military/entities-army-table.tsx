@@ -1,15 +1,14 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
-import { battleSimulation, pillageSimulation } from "@/ui/components/navigation/config";
+import { battleSimulation } from "@/ui/components/navigation/config";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { BattleSimulation } from "@/ui/modules/simulation/battle-simulation";
-import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
+import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
-import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ArmyInfo, ID, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
 import { useArmiesByStructure, usePlayerStructures } from "@bibliothecadao/react";
 
 export const EntitiesArmyTable = () => {
@@ -22,12 +21,8 @@ export const EntitiesArmyTable = () => {
         <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(battleSimulation)}>
           Simulate a battle
         </Button>
-        <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(pillageSimulation)}>
-          Simulate a pillage
-        </Button>
       </div>
-      <BattleSimulation />
-      <PillageSimulation />
+      <CombatSimulation />
       {playerStructures.map((entity: any, index: number) => {
         return (
           <div key={entity.entity_id} className="p-2">
@@ -56,9 +51,9 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
   const totalTroops = entityArmies.reduce(
     (acc, army: ArmyInfo) => {
       return {
-        crossbowmen: Number(acc.crossbowmen) + Number(army.troops.crossbowman_count),
-        paladins: Number(acc.paladins) + Number(army.troops.paladin_count),
-        knights: Number(acc.knights) + Number(army.troops.knight_count),
+        crossbowmen: Number(acc.crossbowmen) + (army.troops.type === TroopType.Crossbowman ? army.troops.count : 0),
+        paladins: Number(acc.paladins) + (army.troops.type === TroopType.Paladin ? army.troops.count : 0),
+        knights: Number(acc.knights) + (army.troops.type === TroopType.Knight ? army.troops.count : 0),
       };
     },
     { crossbowmen: 0, paladins: 0, knights: 0 },
@@ -70,7 +65,7 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
 
   const armyElements = () => {
     return entityArmies.map((army: ArmyInfo) => {
-      return <ArmyChip key={army.entity_id} army={army} showButtons />;
+      return <ArmyChip key={army.entityId} army={army} showButtons />;
     });
   };
 

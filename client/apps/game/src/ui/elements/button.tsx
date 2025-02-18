@@ -7,7 +7,16 @@ type ButtonProps = {
   className?: string;
   isPulsing?: boolean;
   disabled?: boolean;
-  variant?: "primary" | "secondary" | "success" | "red" | "danger" | "default" | "outline" | "opaque";
+  variant?:
+    | "primary"
+    | "primarySelected"
+    | "secondary"
+    | "success"
+    | "red"
+    | "danger"
+    | "default"
+    | "outline"
+    | "opaque";
   isLoading?: boolean;
   withoutSound?: boolean;
   size?: "xs" | "md";
@@ -18,6 +27,8 @@ const STYLES = {
     "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 text-xs font-medium text-gold uppercase rounded",
   primary:
     "px-6 py-2 bg-brown from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2  outline-gold hover:bg-gold hover:text-brown  border-y hover:border-gold ",
+  primarySelected:
+    "px-6 py-2 bg-gold from-yellow-600 to-yellow-700 font-semibold text-lg uppercase tracking-wider shadow-md focus:outline-none border-2 outline-gold !text-brown border-y border-gold",
   default: "bg-brown px-6 py-2 text-gold",
   enabledStyle: "bg-brown/10 hover:bg-brown/30 focus:outline-none",
   disabledStyle: "!bg-gray-300 cursor-not-allowed !border-gray-gold !text-gray-gold",

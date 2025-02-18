@@ -61,6 +61,7 @@ const getStructureInfo = (
 
   return {
     ...structure,
+    entityId: structure.entity_id,
     entityOwner,
     owner,
     name,

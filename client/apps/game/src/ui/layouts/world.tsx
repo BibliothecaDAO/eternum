@@ -35,11 +35,9 @@ const ActionInstructions = lazy(() =>
 );
 
 const ArmyInfoLabel = lazy(() =>
-  import("../components/worldmap/armies/army-info-label").then((module) => ({ default: module.ArmyInfoLabel })),
-);
-
-const BattleInfoLabel = lazy(() =>
-  import("../components/worldmap/battles/battle-label").then((module) => ({ default: module.BattleInfoLabel })),
+  import("../components/worldmap/armies/army-info-label").then((module) => ({
+    default: module.ArmyInfoLabelContainer,
+  })),
 );
 
 const BlankOverlayContainer = lazy(() =>
@@ -50,9 +48,6 @@ const StructureInfoLabel = lazy(() =>
     default: module.StructureInfoLabel,
   })),
 );
-const BattleContainer = lazy(() =>
-  import("../containers/battle-container").then((module) => ({ default: module.BattleContainer })),
-);
 const TopCenterContainer = lazy(() => import("../containers/top-center-container"));
 const BottomRightContainer = lazy(() =>
   import("../containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
@@ -61,9 +56,6 @@ const LeftMiddleContainer = lazy(() => import("../containers/left-middle-contain
 const RightMiddleContainer = lazy(() => import("../containers/right-middle-container"));
 const TopLeftContainer = lazy(() => import("../containers/top-left-container"));
 const Tooltip = lazy(() => import("../elements/tooltip").then((module) => ({ default: module.Tooltip })));
-const BattleView = lazy(() =>
-  import("../modules/military/battle-view/battle-view").then((module) => ({ default: module.BattleView })),
-);
 const TopMiddleNavigation = lazy(() =>
   import("../modules/navigation/top-navigation").then((module) => ({ default: module.TopMiddleNavigation })),
 );
@@ -93,13 +85,16 @@ const MiniMapNavigation = lazy(() =>
   import("../modules/navigation/mini-map-navigation").then((module) => ({ default: module.MiniMapNavigation })),
 );
 
+const RealmTransferManager = lazy(() =>
+  import("../components/resources/realm-transfer-manager").then((module) => ({ default: module.RealmTransferManager })),
+);
+
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
-  const battleView = useUIStore((state) => state.battleView);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   // Setup hooks
@@ -260,24 +255,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     fetch();
   }, []);
 
-  const battleViewContent = useMemo(
-    () => (
-      <div>
-        <Suspense fallback={<LoadingOroborus loading={true} />}>
-          {battleView && (
-            <BattleContainer>
-              <BattleView />
-            </BattleContainer>
-          )}
-        </Suspense>
-      </div>
-    ),
-    [battleView],
-  );
-
   return (
     <>
       <NotLoggedInMessage />
+
+      {/* Main world layer */}
       <div
         onClick={(e) => {
           e.stopPropagation();
@@ -296,24 +278,23 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
           {IS_MOBILE && <OrientationOverlay />}
           <LoadingOroborus loading={isLoadingScreenEnabled} />
-          <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
-          <BlankOverlayContainer open={showBlankOverlay}>
+          <RealmTransferManager zIndex={100} />
+          <BlankOverlayContainer zIndex={90} open={showModal}>
+            {modalContent}
+          </BlankOverlayContainer>
+          <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
             <Onboarding backgroundImage={backgroundImage} />
           </BlankOverlayContainer>
-          {/* <Onboarding backgroundImage={backgroundImage} /> */}
           <ActionInstructions />
           {!IS_MOBILE && (
             <>
               <ActionInfo />
               <ArmyInfoLabel />
               <StructureInfoLabel />
-              <BattleInfoLabel />
             </>
           )}
 
-          {battleViewContent}
-
-          <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
+          <div>
             <LeftMiddleContainer>
               <LeftNavigationModule />
             </LeftMiddleContainer>

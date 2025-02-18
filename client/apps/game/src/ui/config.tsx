@@ -55,7 +55,7 @@ export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Ope
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 
 export const BUILDING_IMAGES_PATH = {
-  [BuildingType.Castle]: "",
+  [BuildingType.Castle]: `${BUILD_IMAGES_PREFIX}castleZero.png`,
   [BuildingType.Bank]: "",
   [BuildingType.FragmentMine]: "",
   [BuildingType.Resource]: `${BUILD_IMAGES_PREFIX}mine.png`,
@@ -94,6 +94,7 @@ export const BuildingThumbs = {
   trophy: "/images/buildings/thumb/trophy.png",
   discord: "/images/buildings/thumb/discord.png",
   rewards: "/images/buildings/thumb/rewards.png",
+  production: "/images/buildings/thumb/anvil.png",
 };
 
 export enum MenuEnum {
@@ -104,4 +105,5 @@ export enum MenuEnum {
   resourceArrivals = "resourceArrivals",
   trade = "trade",
   resourceTable = "resourceTable",
+  production = "production",
 }

@@ -25,9 +25,13 @@
 
     "client/apps/game-docs/env.ts",
 
+
+    "client/apps/torii-launcher/**",
+
     "config/**",
     "contracts/**",
 
     "**/global.d.ts"
+
   ]
 }

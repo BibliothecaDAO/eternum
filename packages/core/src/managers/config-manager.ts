@@ -22,6 +22,16 @@ export class ClientConfigManager {
   private config!: Config;
   resourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
+  resourceLaborOutput: Record<
+    number,
+    {
+      resource_rarity: number;
+      depreciation_percent_num: number;
+      depreciation_percent_denom: number;
+      wheat_burn_per_labor: number;
+      fish_burn_per_labor: number;
+    }
+  > = {};
   hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   buildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
@@ -34,6 +44,7 @@ export class ClientConfigManager {
 
     this.initializeResourceInputs();
     this.initializeResourceOutput();
+    this.initializeResourceLaborOutput();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
     this.initializeResourceBuildingCosts();
@@ -99,20 +110,26 @@ export class ClientConfigManager {
     );
   }
 
+  // todo: need to get directly from chain
   private initializeResourceOutput() {
     if (!this.components) return;
 
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
-      const productionConfig = getComponentValue(
-        this.components.ProductionConfig,
-        getEntityIdFromKeys([BigInt(resourceType)]),
-      );
+      const resourceOutput = this.config.resources.resourceOutputs[Number(resourceType)];
 
       this.resourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
-        amount: this.divideByPrecision(Number(productionConfig?.amount_per_building_per_tick)),
+        amount: resourceOutput,
       };
     }
+  }
+
+  private initializeResourceLaborOutput() {
+    this.resourceLaborOutput = Object.fromEntries(
+      Object.entries(this.config.resources.resourceProductionByLaborParams)
+        .filter(([key, value]) => value.resource_rarity > 0)
+        .map(([key, value]) => [Number(key), value]),
+    );
   }
 
   private initializeHyperstructureTotalCosts() {
@@ -279,6 +296,11 @@ export class ClientConfigManager {
 
       return Number(battleConfig?.battle_delay_seconds ?? 0);
     }, 0);
+  }
+
+  // todo: need to get this from config
+  getMinTravelStaminaCost() {
+    return 10;
   }
 
   getResourceBridgeFeeSplitConfig() {
@@ -549,6 +571,13 @@ export class ClientConfigManager {
         travelFishBurnAmount: 0,
       },
     );
+  }
+
+  getStaminaCombatConfig() {
+    return {
+      staminaCost: 30,
+      staminaBonus: 30,
+    };
   }
 
   getTroopStaminaConfig(troopId: number) {

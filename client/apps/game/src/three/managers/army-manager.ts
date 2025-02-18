@@ -1,14 +1,22 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
-import { findShortestPath } from "@/three/helpers/pathfinding";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
-import { Biome } from "@/three/managers/biome";
 import { LabelManager } from "@/three/managers/label-manager";
 import { Position } from "@/types/position";
-import { BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
+import {
+  Biome,
+  BiomeType,
+  configManager,
+  ContractAddress,
+  FELT_CENTER,
+  ID,
+  orders,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, MovingArmyData, MovingLabelData, RenderChunkSize } from "../types";
 import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 
@@ -28,23 +36,15 @@ export class ArmyManager {
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
-  private biome: Biome;
   private armyPaths: Map<ID, Position[]> = new Map();
-  private exploredTiles: Map<number, Set<number>>;
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
 
-  constructor(
-    scene: THREE.Scene,
-    renderChunkSize: { width: number; height: number },
-    exploredTiles: Map<number, Set<number>>,
-  ) {
+  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
     this.armyModel = new ArmyModel(scene);
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
     this.renderChunkSize = renderChunkSize;
-    this.biome = new Biome();
-    this.exploredTiles = exploredTiles;
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
 
@@ -124,7 +124,12 @@ export class ArmyManager {
     }
   }
 
-  async onUpdate(update: ArmySystemUpdate) {
+  async onUpdate(
+    update: ArmySystemUpdate,
+    armyHexes: Map<number, Map<number, boolean>>,
+    structureHexes: Map<number, Map<number, boolean>>,
+    exploredTiles: Map<number, Map<number, BiomeType>>,
+  ) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, owner, battleId, currentHealth, order } = update;
 
@@ -146,12 +151,12 @@ export class ArmyManager {
       }
     }
 
-    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, position);
+      this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
     } else {
-      this.addArmy(entityId, position, owner, order);
+      this.addArmy(entityId, newPosition, owner, order);
     }
     return false;
   }
@@ -182,7 +187,7 @@ export class ArmyManager {
       // this.armyModel.dummyObject.updateMatrix();
       // Determine model type based on order or other criteria
       const { x, y } = army.hexCoords.getContract();
-      const biome = this.biome.getBiome(x, y);
+      const biome = Biome.getBiome(x, y);
       if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
         this.armyModel.assignModelToEntity(army.entityId, "boat");
       } else {
@@ -283,7 +288,7 @@ export class ArmyManager {
 
     // Determine model type based on order or other criteria
     const { x, y } = hexCoords.getContract();
-    const biome = this.biome.getBiome(x, y);
+    const biome = Biome.getBiome(x, y);
     if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
       this.armyModel.assignModelToEntity(entityId, "boat");
     } else {
@@ -303,16 +308,26 @@ export class ArmyManager {
     this.renderVisibleArmies(this.currentChunkKey!);
   }
 
-  public moveArmy(entityId: ID, hexCoords: Position) {
+  public moveArmy(
+    entityId: ID,
+    hexCoords: Position,
+    armyHexes: Map<number, Map<number, boolean>>,
+    structureHexes: Map<number, Map<number, boolean>>,
+    exploredTiles: Map<number, Map<number, BiomeType>>,
+  ) {
     const armyData = this.armies.get(entityId);
     if (!armyData) return;
 
-    const { x: startX, y: startY } = armyData.hexCoords.getNormalized();
-    const { x: targetX, y: targetY } = hexCoords.getNormalized();
+    const startPos = armyData.hexCoords.getNormalized();
+    const targetPos = hexCoords.getNormalized();
 
-    if (startX === targetX && startY === targetY) return;
+    if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
 
-    const path = findShortestPath(armyData.hexCoords, hexCoords, this.exploredTiles);
+    // todo: currently taking max stamina of paladin as max stamina but need to refactor
+    const maxTroopStamina = configManager.getTroopStaminaConfig(ResourcesIds.Paladin);
+    const maxHex = Math.floor(maxTroopStamina / configManager.getMinTravelStaminaCost());
+
+    const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
 
     if (!path || path.length === 0) return;
 
@@ -414,7 +429,7 @@ export class ArmyManager {
       }
 
       const { col, row } = getHexForWorldPosition({ x: position.x, y: position.y, z: position.z });
-      const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+      const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
       if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
         this.armyModel.assignModelToEntity(entityId, "boat");
       } else {

@@ -1,5 +1,6 @@
 import { Position } from "@/types/position";
 import {
+  BiomeType,
   ClientComponents,
   configManager,
   divideByPrecision,
@@ -284,6 +285,7 @@ export class SystemManager {
           return {
             hexCoords: { col, row },
             removeExplored: !newState,
+            biome: newState?.biome === "None" ? BiomeType.Grassland : newState?.biome || BiomeType.Grassland,
           };
         });
       },
