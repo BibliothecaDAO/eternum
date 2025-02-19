@@ -215,7 +215,7 @@ mod troop_management_systems {
             // add explorer to location occupier
             let coord: Coord = structure.coord;
             let mut occupier: Occupier = world.read_model((coord.x, coord.y));
-            occupier.entity = OccupiedBy::Explorer(explorer_id);
+            occupier.occupier = OccupiedBy::Explorer(explorer_id);
             world.write_model(@occupier);
 
             // ensure explorer amount does not exceed max
@@ -305,7 +305,7 @@ mod troop_management_systems {
             let to_explorer_coord = to_explorer.coord.neighbor(to_explorer_direction);
             let to_explorer_occupier: Occupier = world.read_model(to_explorer_coord);
             assert!(
-                to_explorer_occupier.entity == OccupiedBy::Explorer(to_explorer_id),
+                to_explorer_occupier.occupier == OccupiedBy::Explorer(to_explorer_id),
                 "to explorer is not at the target coordinate",
             );
 

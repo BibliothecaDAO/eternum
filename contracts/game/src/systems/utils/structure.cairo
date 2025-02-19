@@ -45,7 +45,7 @@ impl iStructureImpl of iStructureTrait {
         world.write_model(@structure);
 
         // save occupier model
-        world.write_model(@Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::Structure(structure_id) });
+        world.write_model(@Occupier { x: coord.x, y: coord.y, occupier: OccupiedBy::Structure(structure_id) });
 
         // set structure capacity
         let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));

@@ -170,6 +170,11 @@ trait ITroopConfig<T> {
     );
 }
 
+#[starknet::interface]
+trait IBattleConfig<T> {
+    fn set_battle_config(ref self: T, battle_config: BattleConfig);
+}
+
 #[dojo::contract]
 mod config_systems {
     use achievement::components::achievable::AchievableComponent;

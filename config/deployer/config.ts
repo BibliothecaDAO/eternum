@@ -127,38 +127,6 @@ export class GameConfigDeployer {
   }
 }
 
-export const setWorldConfig = async (config: Config) => {
-  console.log(
-    chalk.cyan(`
-  🎲 World Configuration
-  ═══════════════════════`),
-  );
-
-  if (BigInt(config.account.address) === BigInt(0)) {
-    console.log(
-      chalk.cyan(`
-    ┌─ ${chalk.yellow("World")}
-    │  ${chalk.gray("Admin Address:")}          ${chalk.red("Not configured")}
-    └────────────────────────────────`),
-    );
-    return;
-  }
-
-  const worldCalldata = {
-    signer: config.account,
-    admin_address: config.account.address,
-  };
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("World")}
-    │  ${chalk.gray("Admin Address:")}           ${chalk.white(shortHexAddress(worldCalldata.admin_address))}
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_world_config(worldCalldata);
-  console.log(chalk.green(`    ✔ World configured `) + chalk.gray(tx.statusReceipt) + "\n");
-};
 
 export const setQuestRewardConfig = async (config: Config) => {
   console.log(

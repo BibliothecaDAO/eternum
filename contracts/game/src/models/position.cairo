@@ -232,23 +232,23 @@ pub struct Occupier {
     x: u32,
     #[key]
     y: u32,
-    entity: OccupiedBy,
+    occupier: OccupiedBy,
 }
 
 #[generate_trait]
 impl OccupierImpl of OccupierTrait {
     fn key_only(coord: Coord) -> Occupier {
-        Occupier { x: coord.x, y: coord.y, entity: OccupiedBy::None }
+        Occupier { x: coord.x, y: coord.y, occupier: OccupiedBy::None }
     }
 
     #[inline(always)]
     fn occupied(self: Occupier) -> bool {
-        self.entity != OccupiedBy::None
+        self.occupier != OccupiedBy::None
     }
 
     #[inline(always)]
     fn not_occupied(self: Occupier) -> bool {
-        self.entity == OccupiedBy::None
+        self.occupier == OccupiedBy::None
     }
 }
 

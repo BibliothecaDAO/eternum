@@ -55,7 +55,7 @@ mod troop_movement_systems {
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
 
             // remove explorer from current occupier
-            let occupier = Occupier { x: explorer.coord.x, y: explorer.coord.y, entity: OccupiedBy::None };
+            let occupier = Occupier { x: explorer.coord.x, y: explorer.coord.y, occupier: OccupiedBy::None };
             world.erase_model(@occupier);
 
             // move explorer to target coordinate
@@ -64,7 +64,7 @@ mod troop_movement_systems {
                 // ensure next coordinate is not occupied
                 let next = explorer.coord.neighbor(*(directions.pop_front().unwrap()));
                 let mut occupier: Occupier = world.read_model((next.x, next.y));
-                assert!(occupier.entity == OccupiedBy::None, "next coordinate is occupied");
+                assert!(occupier.occupier == OccupiedBy::None, "next coordinate is occupied");
 
                 // add biome to biomes
                 let biome = get_biome(next.x.into(), next.y.into());
@@ -123,7 +123,7 @@ mod troop_movement_systems {
                 // set explorer as occupier of target coordinate
                 if directions.len().is_zero() {
                     if occupy_destination {
-                        occupier.entity = OccupiedBy::Explorer(explorer_id);
+                        occupier.occupier = OccupiedBy::Explorer(explorer_id);
                         world.write_model(@occupier);
                     }
                     break;
