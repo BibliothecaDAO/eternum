@@ -1058,27 +1058,111 @@ export function defineContractComponents(world: World) {
     Structure: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, category: RecsType.String, created_at: RecsType.BigInt },
+        {
+          entity_id: RecsType.Number,
+          category: RecsType.String,
+          owner: RecsType.BigInt,
+          coord: { x: RecsType.Number, y: RecsType.Number },
+          guards: {
+            delta: {
+              category: RecsType.String,
+              tier: RecsType.String,
+              count: RecsType.BigInt,
+              stamina: {
+                amount: RecsType.BigInt,
+                updated_tick: RecsType.BigInt,
+              },
+            },
+            charlie: {
+              category: RecsType.String,
+              tier: RecsType.String,
+              count: RecsType.BigInt,
+              stamina: {
+                amount: RecsType.BigInt,
+                updated_tick: RecsType.BigInt,
+              },
+            },
+            bravo: {
+              category: RecsType.String,
+              tier: RecsType.String,
+              count: RecsType.BigInt,
+              stamina: {
+                amount: RecsType.BigInt,
+                updated_tick: RecsType.BigInt,
+              },
+            },
+            alpha: {
+              category: RecsType.String,
+              tier: RecsType.String,
+              count: RecsType.BigInt,
+              stamina: {
+                amount: RecsType.BigInt,
+                updated_tick: RecsType.BigInt,
+              },
+            },
+            delta_destroyed_tick: RecsType.Number,
+            charlie_destroyed_tick: RecsType.Number,
+            bravo_destroyed_tick: RecsType.Number,
+            alpha_destroyed_tick: RecsType.Number,
+          },
+          limits: {
+            max_explorer_count: RecsType.Number,
+            max_guard_count: RecsType.Number,
+          },
+          created_at: RecsType.BigInt,
+          guard_count: RecsType.Number,
+          explorers: RecsType.NumberArray,
+        },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Structure",
-            types: ["u32", "enum", "u64"],
-            customTypes: ["StructureCategory"],
-          },
-        },
-      );
-    })(),
-    StructureCount: (() => {
-      return defineComponent(
-        world,
-        { coord: { x: RecsType.Number, y: RecsType.Number }, count: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "StructureCount",
-            types: ["u32", "u32", "u8"],
-            customTypes: ["Coord"],
+            types: [
+              "u32",
+              "enum",
+              "ContractAddress",
+              "u32",
+              "u32",
+              //delta
+              "enum",
+              "enum",
+              "u128",
+              "u64",
+              "u64",
+              //charlie
+              "enum",
+              "enum",
+              "u128",
+              "u64",
+              "u64",
+              //bravo
+              "enum",
+              "enum",
+              "u128",
+              "u64",
+              "u64",
+              //alpha
+              "enum",
+              "enum",
+              "u128",
+              "u64",
+              "u64",
+              //destroyed_ticks
+              "u32",
+              "u32",
+              "u32",
+              "u32",
+              //limits
+              "u32",
+              "u32",
+              //created_at
+              "u64",
+              //guard_count
+              "u32",
+              //explorers
+              "Span<u32>",
+            ],
+            customTypes: ["StructureCategory", "Coord", "GuardTroops","Troops",  "TroopType","TroopTier", "Stamina", "Limits"],
           },
         },
       );
@@ -1089,14 +1173,13 @@ export function defineContractComponents(world: World) {
         {
           col: RecsType.Number,
           row: RecsType.Number,
-          explored_at: RecsType.BigInt,
           biome: RecsType.String,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Tile",
-            types: ["u32", "u32", "u64", "enum"],
+            types: ["u32", "u32", "enum"],
             customTypes: ["Biome"],
           },
         },
