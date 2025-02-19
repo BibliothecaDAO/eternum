@@ -60,17 +60,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cartridge_vrf"
-version = "0.1.0"
-source = "git+https://github.com/cartridge-gg/vrf?rev=09020fe#09020fe32820cf451b1d50d248ccb620354f064b"
-dependencies = [
- "openzeppelin_access",
- "openzeppelin_upgrades",
- "snforge_std",
- "stark_vrf",
-]
-
-[[package]]
 name = "cubit"
 version = "1.3.0"
 source = "git+https://github.com/edisontim/cubit.git?branch=feat%2Fcairo-2.9.2#34aabf1b9a1f97702c6eeab97383b401c44f360f"
@@ -97,59 +86,13 @@ version = "2.9.2"
 source = "git+https://github.com/dojoengine/dojo?tag=v1.1.2#4f3373ed4f98e1778022ed6f6502ce89f9d29b58"
 
 [[package]]
-name = "openzeppelin_access"
-version = "0.18.0"
-source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.18.0#2f37306b490e63c0afa9e33ad192ba428141b487"
-dependencies = [
- "openzeppelin_introspection",
- "openzeppelin_utils",
-]
-
-[[package]]
-name = "openzeppelin_introspection"
-version = "0.18.0"
-source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.18.0#2f37306b490e63c0afa9e33ad192ba428141b487"
-
-[[package]]
-name = "openzeppelin_upgrades"
-version = "0.18.0"
-source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.18.0#2f37306b490e63c0afa9e33ad192ba428141b487"
-
-[[package]]
-name = "openzeppelin_utils"
-version = "0.18.0"
-source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.18.0#2f37306b490e63c0afa9e33ad192ba428141b487"
-
-[[package]]
 name = "s1_eternum"
 version = "1.0.0"
 dependencies = [
  "achievement",
  "alexandria_data_structures",
  "alexandria_math",
- "cartridge_vrf",
  "cubit",
  "dojo",
  "dojo_cairo_test",
- "snforge_std",
 ]
-
-[[package]]
-name = "snforge_scarb_plugin"
-version = "0.31.0"
-source = "registry+https://scarbs.xyz/"
-checksum = "sha256:1fce075fcbf7fce1b0935f6f9a034549704837fb221da212d3b6e9134cebfdaa"
-
-[[package]]
-name = "snforge_std"
-version = "0.31.0"
-source = "registry+https://scarbs.xyz/"
-checksum = "sha256:60ac980b297281f9a59a5f1668cb56bdea1b28fd2f8008008270f9a3c91ad3ba"
-dependencies = [
- "snforge_scarb_plugin",
-]
-
-[[package]]
-name = "stark_vrf"
-version = "0.1.0"
-source = "git+https://github.com/dojoengine/stark-vrf.git#96d6d2a88b1ef46c4a285d0ccc334237205edae3"
