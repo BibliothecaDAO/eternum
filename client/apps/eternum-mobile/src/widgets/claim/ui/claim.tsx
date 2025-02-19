@@ -1,6 +1,8 @@
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
+import { ResourceIcon } from "@/shared/ui/resource-icon";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 
 interface Resource {
   id: number;
@@ -21,7 +23,8 @@ export function Claim({ resources, entityId, entityType }: ClaimProps) {
 
   return (
     <Card className="p-4 space-y-4">
-      <h3 className="text-lg">
+      <h3 className="text-lg flex items-center gap-2">
+        <ResourceIcon resourceId={entityType === "donkey" ? ResourcesIds.Donkey : ResourcesIds.Knight} size={24} />
         <span className="font-bokor">{entityType === "donkey" ? "Donkeys" : "Army"} arrived!</span>{" "}
         <span className="text-muted-foreground text-md">#{entityId}</span>
       </h3>
