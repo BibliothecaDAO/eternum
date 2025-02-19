@@ -13,6 +13,7 @@ export default defineConfig({
         target: "esnext",
       },
     },
+    externals: { inline: ["starknet-types-07"] },
   },
   vite: {
     ssr: { noExternal: ["starknet-types-07"] },

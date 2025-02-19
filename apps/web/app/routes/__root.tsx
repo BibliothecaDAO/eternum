@@ -50,7 +50,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      {
+      /*{
         rel: "apple-touch-icon",
         sizes: "180x180",
         href: "/apple-touch-icon.png",
@@ -67,7 +67,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         sizes: "16x16",
         href: "/favicon-16x16.png",
       },
-      { rel: "icon", href: "/favicon.ico" },
+      { rel: "icon", href: "/favicon.ico" },*/
     ],
   }),
   component: RootComponent,
