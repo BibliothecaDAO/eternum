@@ -1,7 +1,7 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { StarknetProvider } from "@/providers/starknet";
+//import { StarknetProvider } from "@/providers/starknet";
 import { ThemeProvider } from "@/providers/theme";
 import appCss from "@/styles/app.css?url";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -88,20 +88,18 @@ function RootComponent() {
         <div className={`[--header-height:calc(--spacing(14))]`}>
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <WagmiProvider config={config}>
-              <StarknetProvider>
-                <SidebarProvider className="flex flex-col">
-                  <Header />
-                  <div className="flex flex-1">
-                    <AppSidebar />
-                    <SidebarInset>
-                      <RainbowKitProvider>
-                        <Outlet />
-                      </RainbowKitProvider>
-                    </SidebarInset>
-                  </div>
-                  <Toaster />
-                </SidebarProvider>
-              </StarknetProvider>
+              <SidebarProvider className="flex flex-col">
+                <Header />
+                <div className="flex flex-1">
+                  <AppSidebar />
+                  <SidebarInset>
+                    <RainbowKitProvider>
+                      <Outlet />
+                    </RainbowKitProvider>
+                  </SidebarInset>
+                </div>
+                <Toaster />
+              </SidebarProvider>
             </WagmiProvider>
           </ThemeProvider>
         </div>
