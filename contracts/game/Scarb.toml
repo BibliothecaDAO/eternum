@@ -18,6 +18,7 @@ cubit = { git = "https://github.com/edisontim/cubit.git", branch = "feat/cairo-2
 
 [dev-dependencies]
 dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.1.2" }
+snforge_std = "0.31.0"
 
 [[target.starknet-contract]]
 casm = true

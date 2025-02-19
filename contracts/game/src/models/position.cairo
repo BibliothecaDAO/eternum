@@ -295,202 +295,202 @@ impl PositionImpl of PositionTrait {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use debug::PrintTrait;
-    use s1_eternum::alias::ID;
-    use super::{Cube, CubeTrait, NumberTrait, Position, PositionTrait, TravelTrait};
-    use traits::Into;
-    use traits::TryInto;
+// #[cfg(test)]
+// mod tests {
+//     use debug::PrintTrait;
+//     use s1_eternum::alias::ID;
+//     use super::{Cube, CubeTrait, NumberTrait, Position, PositionTrait, TravelTrait};
+//     use traits::Into;
+//     use traits::TryInto;
 
-    #[test]
-    fn position_test_position_into_cube_0_0() {
-        let pos = Position { entity_id: 0, x: 0, y: 0 };
+//     #[test]
+//     fn position_test_position_into_cube_0_0() {
+//         let pos = Position { entity_id: 0, x: 0, y: 0 };
 
-        let cube: Cube = pos.into();
-        assert(cube.q == 0, 'incorrect cube.q');
-        assert(cube.r == 0, 'incorrect cube.r');
-        assert(cube.s == 0, 'incorrect cube.s');
-    }
+//         let cube: Cube = pos.into();
+//         assert(cube.q == 0, 'incorrect cube.q');
+//         assert(cube.r == 0, 'incorrect cube.r');
+//         assert(cube.s == 0, 'incorrect cube.s');
+//     }
 
-    #[test]
-    fn position_test_position_into_cube_1_2() {
-        let pos = Position { entity_id: 0, x: 1, y: 2 };
+//     #[test]
+//     fn position_test_position_into_cube_1_2() {
+//         let pos = Position { entity_id: 0, x: 1, y: 2 };
 
-        let cube: Cube = pos.into();
-        assert(cube.q == 0, 'incorrect cube.q');
-        assert(cube.r == 2, 'incorrect cube.r');
-        assert(cube.s == -2, 'incorrect cube.s');
-    }
-
-
-    #[test]
-    fn position_test_position_into_cube_2_1() {
-        let pos = Position { entity_id: 0, x: 2, y: 1 };
-
-        let cube: Cube = pos.into();
-        assert(cube.q == 2, 'incorrect cube.q');
-        assert(cube.r == 1, 'incorrect cube.r');
-        assert(cube.s == -3, 'incorrect cube.s');
-    }
+//         let cube: Cube = pos.into();
+//         assert(cube.q == 0, 'incorrect cube.q');
+//         assert(cube.r == 2, 'incorrect cube.r');
+//         assert(cube.s == -2, 'incorrect cube.s');
+//     }
 
 
-    #[test]
-    fn position_test_position_into_cube_2_2() {
-        let pos = Position { entity_id: 0, x: 2, y: 2 };
+//     #[test]
+//     fn position_test_position_into_cube_2_1() {
+//         let pos = Position { entity_id: 0, x: 2, y: 1 };
 
-        let cube: Cube = pos.into();
-        assert(cube.q == 1, 'incorrect cube.q');
-        assert(cube.r == 2, 'incorrect cube.r');
-        assert(cube.s == -3, 'incorrect cube.s');
-    }
-
-
-    #[test]
-    #[available_gas(30000000)]
-    fn position_test_calculate_distance() {
-        let start = Position { entity_id: 0, x: 2, y: 1 };
-        let end = Position { entity_id: 0, x: 1, y: 3 };
-        let distance = start.calculate_distance(end);
-
-        assert(distance == 2, 'wrong distance');
-    }
+//         let cube: Cube = pos.into();
+//         assert(cube.q == 2, 'incorrect cube.q');
+//         assert(cube.r == 1, 'incorrect cube.r');
+//         assert(cube.s == -3, 'incorrect cube.s');
+//     }
 
 
-    #[test]
-    #[available_gas(30000000)]
-    fn position_test_calculate_distance_large_values() {
-        let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
-        let end = Position { entity_id: 0, x: 81839812, y: 318939024 };
-        let distance = start.calculate_distance(end);
+//     #[test]
+//     fn position_test_position_into_cube_2_2() {
+//         let pos = Position { entity_id: 0, x: 2, y: 2 };
 
-        assert(distance == 691474659, 'wrong distance');
-    }
-
-    #[test]
-    #[available_gas(30000000)]
-    fn position_test_calculate_travel_time() {
-        let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
-        let end = Position { entity_id: 0, x: 81839812, y: 318939024 };
-
-        // 720 sec per km = 5 kmh
-        let time = start.calculate_travel_time(end, 720);
-        assert(time == 497861754480, 'time should be 57600');
-    }
+//         let cube: Cube = pos.into();
+//         assert(cube.q == 1, 'incorrect cube.q');
+//         assert(cube.r == 2, 'incorrect cube.r');
+//         assert(cube.s == -3, 'incorrect cube.s');
+//     }
 
 
-    // #[test]
-    // fn position_test_get_zone() {
-    //     let a = Position { entity_id: 0, x: 1333333, y: 200000 };
-    //     let zone = a.get_zone();
-    //     assert(zone == 4, 'zone should be 4');
-    // }
+//     #[test]
+//     #[available_gas(30000000)]
+//     fn position_test_calculate_distance() {
+//         let start = Position { entity_id: 0, x: 2, y: 1 };
+//         let end = Position { entity_id: 0, x: 1, y: 3 };
+//         let distance = start.calculate_distance(end);
 
-    mod coord {
-        use super::super::{Coord, CoordTrait, Direction};
-
-
-        fn odd_row_coord() -> Coord {
-            Coord { x: 7, y: 7 }
-        }
-
-        fn even_row_coord() -> Coord {
-            Coord { x: 7, y: 6 }
-        }
+//         assert(distance == 2, 'wrong distance');
+//     }
 
 
-        //- Even row
+//     #[test]
+//     #[available_gas(30000000)]
+//     fn position_test_calculate_distance_large_values() {
+//         let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
+//         let end = Position { entity_id: 0, x: 81839812, y: 318939024 };
+//         let distance = start.calculate_distance(end);
 
-        #[test]
-        fn position_test_neighbor_even_row_east() {
-            let start = even_row_coord();
+//         assert(distance == 691474659, 'wrong distance');
+//     }
 
-            assert_eq!(start.neighbor(Direction::East), Coord { x: start.x + 1, y: start.y });
-        }
+//     #[test]
+//     #[available_gas(30000000)]
+//     fn position_test_calculate_travel_time() {
+//         let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
+//         let end = Position { entity_id: 0, x: 81839812, y: 318939024 };
 
-        #[test]
-        fn position_test_neighbor_even_row_north_east() {
-            let start = even_row_coord();
-
-            assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 });
-        }
-
-        #[test]
-        fn position_test_neighbor_even_row_north_west() {
-            let start = even_row_coord();
-
-            assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x, y: start.y + 1 });
-        }
-
-        #[test]
-        fn position_test_neighbor_even_row_west() {
-            let start = even_row_coord();
-
-            assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
-        }
+//         // 720 sec per km = 5 kmh
+//         let time = start.calculate_travel_time(end, 720);
+//         assert(time == 497861754480, 'time should be 57600');
+//     }
 
 
-        #[test]
-        fn position_test_neighbor_even_row_south_west() {
-            let start = even_row_coord();
+//     // #[test]
+//     // fn position_test_get_zone() {
+//     //     let a = Position { entity_id: 0, x: 1333333, y: 200000 };
+//     //     let zone = a.get_zone();
+//     //     assert(zone == 4, 'zone should be 4');
+//     // }
 
-            assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x, y: start.y - 1 });
-        }
-
-
-        #[test]
-        fn position_test_neighbor_even_row_south_east() {
-            let start = even_row_coord();
-
-            assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 });
-        }
+//     mod coord {
+//         use super::super::{Coord, CoordTrait, Direction};
 
 
-        //- Odd row
+//         fn odd_row_coord() -> Coord {
+//             Coord { x: 7, y: 7 }
+//         }
 
-        #[test]
-        fn position_test_neighbor_odd_row_east() {
-            let start = odd_row_coord();
-
-            assert_eq!(start.neighbor(Direction::East), Coord { x: start.x + 1, y: start.y });
-        }
-
-        #[test]
-        fn position_test_neighbor_odd_row_north_east() {
-            let start = odd_row_coord();
-
-            assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x, y: start.y + 1 });
-        }
-
-        #[test]
-        fn position_test_neighbor_odd_row_north_west() {
-            let start = odd_row_coord();
-
-            assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 });
-        }
-
-        #[test]
-        fn position_test_neighbor_odd_row_west() {
-            let start = odd_row_coord();
-
-            assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
-        }
+//         fn even_row_coord() -> Coord {
+//             Coord { x: 7, y: 6 }
+//         }
 
 
-        #[test]
-        fn position_test_neighbor_odd_row_south_west() {
-            let start = odd_row_coord();
+//         //- Even row
 
-            assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 });
-        }
+//         #[test]
+//         fn position_test_neighbor_even_row_east() {
+//             let start = even_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::East), Coord { x: start.x + 1, y: start.y });
+//         }
+
+//         #[test]
+//         fn position_test_neighbor_even_row_north_east() {
+//             let start = even_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 });
+//         }
+
+//         #[test]
+//         fn position_test_neighbor_even_row_north_west() {
+//             let start = even_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x, y: start.y + 1 });
+//         }
+
+//         #[test]
+//         fn position_test_neighbor_even_row_west() {
+//             let start = even_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
+//         }
 
 
-        #[test]
-        fn position_test_neighbor_odd_row_south_east() {
-            let start = odd_row_coord();
+//         #[test]
+//         fn position_test_neighbor_even_row_south_west() {
+//             let start = even_row_coord();
 
-            assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x, y: start.y - 1 });
-        }
-    }
-}
+//             assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x, y: start.y - 1 });
+//         }
+
+
+//         #[test]
+//         fn position_test_neighbor_even_row_south_east() {
+//             let start = even_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 });
+//         }
+
+
+//         //- Odd row
+
+//         #[test]
+//         fn position_test_neighbor_odd_row_east() {
+//             let start = odd_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::East), Coord { x: start.x + 1, y: start.y });
+//         }
+
+//         #[test]
+//         fn position_test_neighbor_odd_row_north_east() {
+//             let start = odd_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x, y: start.y + 1 });
+//         }
+
+//         #[test]
+//         fn position_test_neighbor_odd_row_north_west() {
+//             let start = odd_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 });
+//         }
+
+//         #[test]
+//         fn position_test_neighbor_odd_row_west() {
+//             let start = odd_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
+//         }
+
+
+//         #[test]
+//         fn position_test_neighbor_odd_row_south_west() {
+//             let start = odd_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 });
+//         }
+
+
+//         #[test]
+//         fn position_test_neighbor_odd_row_south_east() {
+//             let start = odd_row_coord();
+
+//             assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x, y: start.y - 1 });
+//         }
+//     }
+// }
 

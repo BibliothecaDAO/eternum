@@ -131,6 +131,7 @@ dependencies = [
  "cubit",
  "dojo",
  "dojo_cairo_test",
+ "snforge_std",
 ]
 
 [[package]]
