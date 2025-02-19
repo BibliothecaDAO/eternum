@@ -1,4 +1,5 @@
-import { RouterProvider } from "./providers/router-provider";
+import { RouterProvider } from "@tanstack/react-router";
+import { router } from "./config/router";
 
 function App() {
   const showBgImage = localStorage.getItem("showBackgroundImage") === "true";
@@ -13,7 +14,7 @@ function App() {
           style={{ backgroundImage: `url(${bgImage})` }}
         />
       )}
-      <RouterProvider />
+      <RouterProvider router={router} />
     </div>
   );
 }

@@ -2,22 +2,16 @@ import { ROUTES } from "@/shared/consts/routes";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
-import { Navigate } from "@/shared/ui/navigate";
-import { useLocation } from "wouter";
+import { useNavigate } from "@tanstack/react-router";
 
 export function LoginPage() {
-  const [, setLocation] = useLocation();
-  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleConnect = () => {
     login();
-    setLocation(ROUTES.REALM);
+    navigate({ to: ROUTES.REALM });
   };
-
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    return <Navigate to={ROUTES.REALM} />;
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
