@@ -13,6 +13,8 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
+import "starknet-types-07";
+
 import type { trpcQueryUtils } from "../router";
 
 import "@rainbow-me/rainbowkit/styles.css";
