@@ -7,7 +7,7 @@ import {
   QuestType,
   RealmLevels,
   ResourcesIds,
-  ResourceTier
+  ResourceTier,
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
@@ -68,8 +68,9 @@ export type ArmyInfo = {
   homePosition: ComponentValue<ClientComponents["Position"]["schema"]> | undefined;
 };
 
-export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+export type Structure = {
   entityId: ID;
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
   isMine: boolean;
   isMercenary: boolean;
   name: string;
@@ -80,7 +81,8 @@ export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> 
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
 };
 
-export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+export type PlayerStructure = {
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string;
   category?: string | undefined;
@@ -530,15 +532,15 @@ export interface Config {
       staminaTravelWheatCost: number;
       staminaTravelFishCost: number;
       staminaTravelStaminaCost: number;
-    },
+    };
     limit: {
       explorerMaxPartyCount: number;
       explorerMaxTroopCount: number;
       guardResurrectionDelay: number;
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
-    },
-  },
+    };
+  };
   settlement: {
     center: number;
     base_distance: number;

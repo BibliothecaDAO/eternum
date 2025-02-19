@@ -79,7 +79,7 @@ export const BuildingEntityDetails = () => {
         ownerEntityId: building.outer_entity_id,
       });
       setIsPaused(building.paused);
-      setIsOwnedByPlayer(playerStructures.some((structure) => structure.entity_id === building.outer_entity_id));
+      setIsOwnedByPlayer(playerStructures.some((structure) => structure.entityId === building.outer_entity_id));
     } else {
       setBuildingState({
         buildingType: undefined,

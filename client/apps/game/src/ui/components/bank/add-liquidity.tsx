@@ -35,7 +35,7 @@ const AddLiquidity = ({
 
   const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
-  const playerStructureIds = playerStructures.map((structure) => structure.entity_id);
+  const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<ResourcesIds>(ResourcesIds.Wood);

@@ -33,7 +33,7 @@ export const RealmDetails = () => {
   );
 
   const isRealm = useMemo(() => {
-    return structure?.category === StructureType[StructureType.Realm];
+    return structure?.structure.category === StructureType[StructureType.Realm];
   }, [structure]);
 
   const address = useMemo(() => {
@@ -58,7 +58,7 @@ export const RealmDetails = () => {
   );
 
   const isImmune = useMemo(
-    () => isStructureImmune(structure, currentBlockTimestamp || 0),
+    () => isStructureImmune(structure?.structure, currentBlockTimestamp || 0),
     [structure, currentBlockTimestamp],
   );
   const timer = useMemo(

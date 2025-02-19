@@ -118,7 +118,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
         {playerStructures.map((structure) => (
           <RealmTransferBalance
-            key={structure.entity_id}
+            key={structure.structure.entity_id}
             structure={structure}
             selectedStructureEntityId={selectedStructureEntityId}
             resource={resource}
@@ -187,8 +187,8 @@ const RealmTransferBalance = memo(
   }) => {
     const [input, setInput] = useState(0);
 
-    const resourceManager = useResourceManager(structure.entity_id, resource);
-    const donkeyManager = useResourceManager(structure.entity_id, ResourcesIds.Donkey);
+    const resourceManager = useResourceManager(structure.structure.entity_id, resource);
+    const donkeyManager = useResourceManager(structure.structure.entity_id, ResourcesIds.Donkey);
 
     const getBalance = useCallback(() => {
       return resourceManager.balance(tick);
@@ -218,7 +218,7 @@ const RealmTransferBalance = memo(
       return getDonkeyBalance() >= neededDonkeys;
     }, [getDonkeyBalance, neededDonkeys]);
 
-    if (structure.entity_id === selectedStructureEntityId) {
+    if (structure.structure.entity_id === selectedStructureEntityId) {
       return;
     }
 
@@ -240,16 +240,16 @@ const RealmTransferBalance = memo(
             onChange={(amount) => {
               setInput(amount);
               add((prev) => {
-                const existingIndex = prev.findIndex((call) => call.structureId === structure.entity_id);
+                const existingIndex = prev.findIndex((call) => call.structureId === structure.structure.entity_id);
 
                 if (amount === 0) {
                   return prev.filter((_, i) => i !== existingIndex);
                 }
 
                 const newCall = {
-                  structureId: structure.entity_id,
-                  sender_entity_id: type === "send" ? selectedStructureEntityId : structure.entity_id,
-                  recipient_entity_id: type === "send" ? structure.entity_id : selectedStructureEntityId,
+                  structureId: structure.structure.entity_id,
+                  sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
+                  recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
                   resources: [resource, amount],
                   realmName: structure.name,
                 };

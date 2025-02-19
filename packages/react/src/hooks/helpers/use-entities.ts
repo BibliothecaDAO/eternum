@@ -21,7 +21,7 @@ export const usePlayerStructures = (playerAddress?: ContractAddress) => {
     return entities
       .map((id) => getStructure(id, ContractAddress(account.address), components))
       .filter((structure): structure is Structure => structure !== undefined)
-      .sort((a, b) => a.category.localeCompare(b.category));
+      .sort((a, b) => a.structure.category.localeCompare(b.structure.category));
   }, [entities]);
 
   return playerStructures;

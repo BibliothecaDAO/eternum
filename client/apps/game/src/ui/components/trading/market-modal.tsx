@@ -208,7 +208,7 @@ export const MarketModal = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {playerStructures.map((structure, index) => (
-                    <SelectItem key={index} value={structure.entity_id.toString()}>
+                    <SelectItem key={index} value={structure.entityId.toString()}>
                       {structure.name}
                     </SelectItem>
                   ))}

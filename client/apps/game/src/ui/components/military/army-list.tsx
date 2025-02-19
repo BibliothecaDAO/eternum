@@ -20,7 +20,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const existingBuildings = tileManager.existingBuildings();
 
   const { entityArmies: structureArmies } = useArmiesByStructure({
-    structureEntityId: structure?.entity_id || 0,
+    structureEntityId: structure?.structure.entity_id || 0,
   });
 
   const {
@@ -60,11 +60,11 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const isRealm = structure.category === StructureType[StructureType.Realm];
 
   const handleCreateArmy = (is_defensive_army: boolean) => {
-    if (!structure.entity_id) throw new Error("Structure's entity id is undefined");
+    if (!structure.structure.entity_id) throw new Error("Structure's entity id is undefined");
     setLoading(true);
     create_army({
       signer: account,
-      army_owner_id: structure.entity_id,
+      army_owner_id: structure.structure.entity_id,
       is_defensive_army,
     }).finally(() => {
       setLoading(false);

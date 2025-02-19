@@ -60,8 +60,8 @@ const getStructureInfo = (
   const name = getEntityName(structure.entity_id, components);
 
   return {
-    ...structure,
     entityId: structure.entity_id,
+    structure,
     entityOwner,
     owner,
     name,
@@ -90,10 +90,10 @@ export const isStructureImmune = (
 };
 
 export const getStructureImmunityTimer = (structure: Structure | undefined, currentBlockTimestamp: number) => {
-  const structureType = StructureType[(structure?.category as keyof typeof StructureType) || 0];
+  const structureType = StructureType[(structure?.structure.category as keyof typeof StructureType) || 0];
 
   const immunityEndTimestamp =
-    Number(structure?.created_at || 0) +
+    Number(structure?.structure.created_at || 0) +
     (structure ? configManager.getBattleGraceTickCount(structureType) * configManager.getTick(TickIds.Armies) : 0);
 
   if (!currentBlockTimestamp) return 0;

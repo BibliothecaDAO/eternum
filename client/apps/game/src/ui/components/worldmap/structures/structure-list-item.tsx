@@ -29,11 +29,11 @@ export const StructureListItem = ({
 }: StructureListItemProps) => {
   const getHyperstructureProgress = useGetHyperstructureProgress();
 
-  const structureArmies = useArmiesByStructure({ structureEntityId: structure.entity_id });
+  const structureArmies = useArmiesByStructure({ structureEntityId: structure.entityId });
 
   const progress =
-    structure.category === StructureType[StructureType.Hyperstructure]
-      ? getHyperstructureProgress(structure.entity_id)
+    structure.structure.category === StructureType[StructureType.Hyperstructure]
+      ? getHyperstructureProgress(structure.entityId)
       : undefined;
 
   return (
@@ -48,12 +48,12 @@ export const StructureListItem = ({
             <div className="h4 text-xl flex flex-row justify-between ">
               <div className="mr-2 text-base">{structure.name}</div>
             </div>
-            {structure.category === StructureType[StructureType.Hyperstructure] && (
+            {structure.structure.category === StructureType[StructureType.Hyperstructure] && (
               <div className="text-xs">Progress: {progress?.percentage ?? 0}%</div>
             )}
 
-            {structure.category === StructureType[StructureType.Realm] && (
-              <RealmResourcesIO realmEntityId={structure.entity_id} />
+            {structure.structure.category === StructureType[StructureType.Realm] && (
+              <RealmResourcesIO realmEntityId={structure.entityId} />
             )}
           </div>
           <div className="flex flex-col content-center w-[55%]">
@@ -66,7 +66,7 @@ export const StructureListItem = ({
             />
             <InventoryResources
               max={maxInventory}
-              entityId={structure.entity_id}
+              entityId={structure.entityId}
               className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
               resourcesIconSize="xs"
             />
