@@ -514,7 +514,7 @@ impl BuildingConfigImpl of BuildingConfigTrait {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct BattleConfig {
     regular_immunity_ticks: u8,
-    hyperstructure_immunity_ticks: u8 // hyperstucture immunity
+    hyperstructure_immunity_ticks: u8, // hyperstucture immunity
 }
 
 #[generate_trait]
