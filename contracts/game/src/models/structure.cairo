@@ -149,7 +149,7 @@ impl StructureImpl of StructureTrait {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked, Default)]
+#[derive(PartialEq, Copy, Drop, Serde, Introspect, Default)]
 enum StructureCategory {
     #[default]
     None,

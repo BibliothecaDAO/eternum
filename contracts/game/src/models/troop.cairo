@@ -11,7 +11,7 @@ use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 use starknet::ContractAddress;
 
 
-#[derive(Copy, Drop, Serde, IntrospectPacked)]
+#[derive(Copy, Drop, Serde, Introspect)]
 enum TroopType {
     Knight,
     Paladin,
@@ -28,7 +28,7 @@ impl TroopTypeIntoFelt252 of Into<TroopType, felt252> {
     }
 }
 
-#[derive(Copy, Drop, Serde, IntrospectPacked)]
+#[derive(Copy, Drop, Serde, Introspect)]
 enum TroopTier {
     T1,
     T2,
@@ -46,7 +46,7 @@ impl TroopTierIntoFelt252 of Into<TroopTier, felt252> {
 }
 
 
-#[derive(Copy, Drop, Serde, IntrospectPacked)]
+#[derive(Copy, Drop, Serde, Introspect)]
 struct Troops {
     category: TroopType,
     tier: TroopTier,

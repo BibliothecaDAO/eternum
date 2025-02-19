@@ -204,7 +204,7 @@ export const EternumGlobalConfig: Config = {
   },
   carryCapacityGram: {
     [CapacityConfig.None]: 0,
-    [CapacityConfig.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
+    [CapacityConfig.Structure]: 400_000_000_000, // 400m kg
     [CapacityConfig.Donkey]: 500_000,
     // 10_000 gr per army
     [CapacityConfig.Army]: 10_000,

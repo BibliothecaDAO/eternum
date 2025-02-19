@@ -2,6 +2,7 @@ import {
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
   BuildingType,
+  CapacityConfig,
   EternumProvider,
   FELT_CENTER,
   QuestType,
@@ -830,10 +831,10 @@ export const setupGlobals = async (config: Config) => {
 export const setCapacityConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
-    structure_capacity: config.config.carryCapacityGram[CapacityConfigCategory.Structure],
-    troop_capacity: config.config.carryCapacityGram[CapacityConfigCategory.Army],
-    donkey_capacity: config.config.carryCapacityGram[CapacityConfigCategory.Donkey],
-    storehouse_boost_capacity: config.config.carryCapacityGram[CapacityConfigCategory.Storehouse],
+    structure_capacity: config.config.carryCapacityGram[CapacityConfig.Structure],
+    troop_capacity: config.config.carryCapacityGram[CapacityConfig.Army],
+    donkey_capacity: config.config.carryCapacityGram[CapacityConfig.Donkey],
+    storehouse_boost_capacity: config.config.carryCapacityGram[CapacityConfig.Storehouse],
   };
 
   console.log(
