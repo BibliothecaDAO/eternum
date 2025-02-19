@@ -4,7 +4,7 @@ import viteTsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   server: {
-    preset: "netlify", // change to 'node' or 'bun' or anyof the supported presets for nitro (nitro.unjs.io)
+    preset: "vercel", // change to 'node' or 'bun' or anyof the supported presets for nitro (nitro.unjs.io)
     experimental: {
       asyncContext: true,
     },
