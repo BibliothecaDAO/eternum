@@ -23,7 +23,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc  --noEmit",
     "dev": "tsc --watch",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "lint": "eslint",
