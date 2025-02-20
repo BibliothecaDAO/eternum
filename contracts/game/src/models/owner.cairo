@@ -1,3 +1,4 @@
+use debug::PrintTrait;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;

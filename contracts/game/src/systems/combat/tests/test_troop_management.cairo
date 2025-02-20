@@ -10,13 +10,14 @@ mod tests {
     };
 
     use s1_eternum::systems::combat::contracts::troop_management::{
-        troop_management_systems
+        troop_management_systems, 
+        ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait
     };
     use s1_eternum::systems::realm::contracts::realm_systems::{
         InternalRealmLogicImpl,
     };
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, ResourceTypes};
+    use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, ResourceTypes, RESOURCE_PRECISION};
         use s1_eternum::models::{
         position:: {
             Coord, Occupier, m_Occupier
@@ -28,10 +29,12 @@ mod tests {
             Realm, m_Realm
         },
         config::{
-            WorldConfig, m_WorldConfig, ProductionConfig, m_ProductionConfig, LaborBurnPrStrategy, MultipleResourceBurnPrStrategy
+            WorldConfig, m_WorldConfig, ProductionConfig, m_ProductionConfig, LaborBurnPrStrategy, MultipleResourceBurnPrStrategy,
+            CapacityConfig, WeightConfig, m_WeightConfig, WorldConfigUtilImpl
         },
         troop::{
-            ExplorerTroops, m_ExplorerTroops
+            ExplorerTroops, m_ExplorerTroops, 
+            TroopTier, TroopType
         },
         structure::{
             Structure, StructureImpl,
@@ -59,6 +62,7 @@ mod tests {
                 TestResource::Model(m_Occupier::TEST_CLASS_HASH),
                 TestResource::Model(m_ProductionConfig::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
+                TestResource::Model(m_WeightConfig::TEST_CLASS_HASH),
                 TestResource::Contract(troop_management_systems::TEST_CLASS_HASH),
 
             ]
@@ -115,11 +119,41 @@ mod tests {
     }
 
 
+    fn set_weight_config(ref world: WorldStorage) {
+        let capacity_config = CapacityConfig {
+            structure_capacity: 10000000, // grams
+            troop_capacity: 100000000, // grams
+            donkey_capacity: 10000000, // grams
+            storehouse_boost_capacity: 10000,
+        };
+        WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), capacity_config);
+
+        let weight_config = WeightConfig {
+            resource_type: ResourceTypes::KNIGHT_T1,
+            weight_gram: 100,
+        };
+        world.write_model_test(@weight_config);
+    }
+
+
     #[test]
     fn test_explorer_create_basic() {
         let caller = starknet::contract_address_const::<'realm_owner'>();
+        // spawn world
         let mut world = spawn_world();
+
+        // set weight config
+        set_weight_config(ref world);
+
         let realm_entity_id = spawn_realm(ref world, caller, 1, 1, Coord { x: 1, y: 1 });
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100 * RESOURCE_PRECISION;
+
+        // set caller address before calling the contract
+        starknet::testing::set_contract_address(caller);
+        let troop_entity_id 
+            = ITroopManagementSystemsDispatcher{contract_address: troop_management_system_addr}
+                .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount);
         // let structure = Structure {
         //     entity_id: 1,
         //     coord: Coord { x: 1, y: 1 },
