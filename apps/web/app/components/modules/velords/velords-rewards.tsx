@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import useVeLordsClaims from "@/hooks/use-velords-claims";
 import { useSimulateTransactions } from "@/hooks/useSimulateTransactions";
 import { formatNumber, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import {
@@ -33,33 +34,14 @@ export const VelordsRewards = () => {
   const { address } = useAccount();
 
   const rewardPoolAddress = StakingAddresses.rewardpool[SUPPORTED_L2_CHAIN_ID];
-  const [recipient, setRecipient] = useState<Address | undefined>(undefined);
-  const { contract: rewardPool } = useContract({
-    abi: RewardPool,
-    address: rewardPoolAddress as Address,
-  });
-
+  const {
+    recipient,
+    setRecipient,
+    lordsClaimable,
+    claimRewards,
+    claimIsSubmitting,
+  } = useVeLordsClaims();
   // Create the call to claim rewards. If no recipient is provided, use the current account.
-  const claimCall: Call[] | undefined = useMemo(() => {
-    const finalRecipient = recipient ?? address;
-    return finalRecipient != undefined && rewardPool
-      ? [rewardPool.populate("claim", [finalRecipient])]
-      : undefined;
-  }, [address, rewardPool, recipient]);
-
-  // Get simulation data for claim rewards (if available).
-  const { data: simulateData } = useSimulateTransactions({
-    calls: claimCall,
-  });
-  const lordsClaimable = BigInt(
-    simulateData?.[0]?.transaction_trace?.execute_invocation?.result[2] ?? 0,
-  );
-
-  // Setup sending claim reward transaction.
-  const { sendAsync: claimRewards, isPending: claimIsSubmitting } =
-    useSendTransaction({
-      calls: claimCall,
-    });
 
   // Handle the claim rewards click event.
   const handleClaimRewards = async () => {

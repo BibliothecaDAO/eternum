@@ -218,8 +218,13 @@ export interface BridgeRealm {
   name?: string;
   attributes?: TokenMetadataAttribute[];
 }
-export interface PortfolioCollectionApiResponse {
+export interface PortfolioTokensApiResponse {
   token_count: number;
   data: PortfolioToken[];
+  next_page: number | null;
+}
+export interface PortfolioCollectionsApiResponse {
+  token_count: number;
+  data: PortfolioCollection[];
   next_page: number | null;
 }

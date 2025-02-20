@@ -62,3 +62,47 @@ export const getL1RealmsQueryOptions = (
     queryKey: ["getL1Realms", input?.address],
     queryFn: () => getL1Realms({ data: input ?? {} }),
   });
+
+export const getL1UsersRealms = createServerFn<
+  "GET",
+  undefined,
+  z.infer<typeof GetL1RealmsInput>,
+  | paths["/users/{user}/collections/v4"]["get"]["responses"]["200"]["schema"]
+  | null
+>({ method: "GET" })
+  .validator((input: unknown) => GetL1RealmsInput.parse(input))
+  .handler(async (ctx) => {
+    if (ctx.data.address) {
+      console.log(
+        `${RESERVOIR_API_URL}/users/${ctx.data.address.toLowerCase()}/collections/v4?collection=${
+          CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID]
+        }&limit=100&includeAttributes=true`,
+      );
+      const response = await fetch(
+        `${RESERVOIR_API_URL}/users/${ctx.data.address}/collections/v4?collection=${
+          CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID]
+        }&limit=100&includeAttributes=true`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.VITE_RESERVOIR_API_KEY ?? "",
+            "Access-Control-Allow-Origin": "*",
+          },
+        },
+      );
+      const data = (await response.json()) as
+        | paths["/users/{user}/collections/v4"]["get"]["responses"]["200"]["schema"]
+        | null;
+      return data;
+    }
+    return null;
+  });
+
+export const getL1UsersRealmsQueryOptions = (
+  input?: z.infer<typeof GetL1RealmsInput>,
+) =>
+  queryOptions({
+    queryKey: ["getL1UsersRealms", input?.address],
+    queryFn: () => getL1UsersRealms({ data: input ?? {} }),
+  });

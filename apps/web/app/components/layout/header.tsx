@@ -21,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { SidebarTrigger, useSidebar } from "../ui/sidebar";
@@ -131,10 +132,14 @@ export function Header() {
                     </Button>
                   </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Connect to Ethereum</DropdownMenuLabel>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <StarknetWalletButton />
+            <>
+              <StarknetWalletButton />
+            </>
           )}
           <Dialog open={isWrongNetwork}>
             <DialogContent>

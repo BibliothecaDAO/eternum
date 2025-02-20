@@ -1,4 +1,4 @@
-import type { PortfolioTokensApiResponse } from "@/types/ark";
+import type { PortfolioCollectionsApiResponse } from "@/types/ark";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/start";
 import { z } from "zod";
@@ -11,15 +11,15 @@ const ARK_MARKETPLACE_API_URL = `https://api.marketplace${
 /*                             getRealms Endpoint                             */
 /* -------------------------------------------------------------------------- */
 
-const GetRealmsInput = z.object({
+const GetPortfolioCollectionsInput = z.object({
   address: z.string().optional(),
   collectionAddress: z.string().optional(),
   itemsPerPage: z.number().optional(),
   page: z.number().optional(),
 });
 
-export const getRealms = createServerFn({ method: "GET" })
-  .validator((input: unknown) => GetRealmsInput.parse(input))
+export const getPortfolioCollections = createServerFn({ method: "GET" })
+  .validator((input: unknown) => GetPortfolioCollectionsInput.parse(input))
   .handler(async (ctx) => {
     const {
       address,
@@ -27,6 +27,7 @@ export const getRealms = createServerFn({ method: "GET" })
       itemsPerPage = 100,
       page = 1,
     } = ctx.data;
+    console.log(address);
     if (address) {
       const queryParams = [
         `items_per_page=${itemsPerPage}`,
@@ -35,9 +36,11 @@ export const getRealms = createServerFn({ method: "GET" })
       ]
         .filter(Boolean)
         .join("&");
-
+      console.log(
+        `${ARK_MARKETPLACE_API_URL}/portfolio/${address}/collections`,
+      );
       const response = await fetch(
-        `${ARK_MARKETPLACE_API_URL}/portfolio/${address}?${queryParams}`,
+        `${ARK_MARKETPLACE_API_URL}/portfolio/${address}/collections`,
         {
           method: "GET",
           headers: {
@@ -46,20 +49,22 @@ export const getRealms = createServerFn({ method: "GET" })
           },
         },
       );
-      const data = (await response.json()) as PortfolioTokensApiResponse;
+      const data = (await response.json()) as PortfolioCollectionsApiResponse;
       return data;
     }
     return null;
   });
 
-export const getRealmsQueryOptions = (input: z.infer<typeof GetRealmsInput>) =>
+export const getPortfolioCollectionsQueryOptions = (
+  input: z.infer<typeof GetPortfolioCollectionsInput>,
+) =>
   queryOptions({
     queryKey: [
-      "getRealms",
+      "getPortfolioCollections",
       input.address,
       input.collectionAddress,
       input.page,
       input.itemsPerPage,
     ],
-    queryFn: () => getRealms({ data: input }),
+    queryFn: () => getPortfolioCollections({ data: input }),
   });
