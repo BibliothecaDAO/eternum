@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "pnpm --dir ./client/apps/game build",
-    "build:docs": "cd client/apps/game-docs && vocs build -o ../dist",
+    "build:docs": "cd client/apps/game-docs && pnpm build",
     "build:landing": "pnpm --dir ./client/apps/landing build",
     "build:packages": "pnpm --dir ./packages/core build && pnpm --dir ./packages/react build",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",

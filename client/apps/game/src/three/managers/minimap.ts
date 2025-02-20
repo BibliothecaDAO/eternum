@@ -20,7 +20,7 @@ const LABELS = {
   STRUCTURES: {
     [StructureType.Realm]: "/textures/realm_label.png",
     [StructureType.Hyperstructure]: "/textures/hyper_label.png",
-    [StructureType.Bank]: "/images/resources/coin.png",
+    [StructureType.Bank]: "/images/resources/31.png",
     [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
     [StructureType.Settlement]: "/textures/realm_label.png",
   },
