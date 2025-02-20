@@ -525,15 +525,15 @@ export class ArmyMovementManager {
 
   private readonly _getArmyRemainingCapacity = () => {
     const armyCapacity = getComponentValue(
-      this.components.CapacityConfig,
+      this.components.WorldConfig,
       getEntityIdFromKeys([BigInt(CapacityConfig.Army)]),
-    );
+    )?.capacity_config.troop_capacity;
     const armyWeight = getComponentValue(this.components.Weight, this.entity);
 
     const armyEntity = getComponentValue(this.components.Army, this.entity);
 
     if (!armyEntity || !armyCapacity) return 0n;
 
-    return getRemainingCapacityInKg(armyEntity, armyCapacity, armyWeight);
+    return getRemainingCapacityInKg(armyEntity, armyWeight);
   };
 }

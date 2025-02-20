@@ -1,6 +1,5 @@
 export * from "./use-armies";
 export * from "./use-bank";
-export * from "./use-battle-events";
 export * from "./use-buildings";
 export * from "./use-contributions";
 export * from "./use-entities";

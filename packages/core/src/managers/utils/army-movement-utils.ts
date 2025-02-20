@@ -1,26 +1,23 @@
 import { type ComponentValue } from "@dojoengine/recs";
 import { configManager } from "..";
-import { RESOURCE_PRECISION, ResourcesIds } from "../../constants";
+import { CapacityConfig, RESOURCE_PRECISION, ResourcesIds } from "../../constants";
 import { ClientComponents } from "../../dojo/create-client-components";
 import { Troops, TroopType } from "../../types";
 import { divideByPrecision, gramToKg } from "../../utils";
 
 export const getRemainingCapacityInKg = (
   army: ComponentValue<ClientComponents["Army"]["schema"]>,
-  capacity: ComponentValue<ClientComponents["CapacityConfig"]["schema"]>,
   armyWeight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined,
 ) => {
-  const totalCapacity = getArmyTotalCapacityInKg(army, capacity); // in kg
+  const totalCapacity = getArmyTotalCapacityInKg(army); // in kg
   const weight = getArmyWeightInKg(armyWeight); // in kg
   return totalCapacity - weight; // in kg
 };
 
-export const getArmyTotalCapacityInKg = (
-  army: ComponentValue<ClientComponents["Army"]["schema"]>,
-  capacity: ComponentValue<ClientComponents["CapacityConfig"]["schema"]>,
-) => {
+export const getArmyTotalCapacityInKg = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
   // Convert weight_gram to kg and multiply by number of troops
-  return BigInt(gramToKg(Number(capacity.weight_gram))) * getArmyNumberOfTroops(army); // in kg
+  const capacity = configManager.getCapacityConfig(CapacityConfig.Army);
+  return BigInt(gramToKg(Number(capacity))) * getArmyNumberOfTroops(army); // in kg
 };
 
 const getArmyWeightInKg = (weight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined) => {

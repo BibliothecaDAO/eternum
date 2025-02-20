@@ -40,11 +40,6 @@ export type ArrivalInfo = {
 
 export type DojoAccount = Account | AccountInterface;
 
-export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
-  isStructureBattle: boolean;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
-};
-
 export type ArmyInfo = {
   entityId: ID;
   troops: Troops;

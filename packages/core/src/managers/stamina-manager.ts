@@ -1,6 +1,6 @@
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ResourcesIds, WORLD_CONFIG_ID } from "../constants";
+import { WORLD_CONFIG_ID } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { ID } from "../types";
 
@@ -12,22 +12,22 @@ export class StaminaManager {
 
   public getStaminaConfig() {
     const knightConfig = getComponentValue(
-      this.components.StaminaConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Knight)]),
-    );
+      this.components.WorldConfig,
+      getEntityIdFromKeys([WORLD_CONFIG_ID]),
+    )?.troop_stamina_config;
     const crossbowmanConfig = getComponentValue(
-      this.components.StaminaConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowman)]),
-    );
+      this.components.WorldConfig,
+      getEntityIdFromKeys([WORLD_CONFIG_ID]),
+    )?.troop_stamina_config;
     const paladinConfig = getComponentValue(
-      this.components.StaminaConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Paladin)]),
-    );
+      this.components.WorldConfig,
+      getEntityIdFromKeys([WORLD_CONFIG_ID]),
+    )?.troop_stamina_config;
 
     return {
-      knightConfig: knightConfig?.max_stamina ?? 0,
-      crossbowmanConfig: crossbowmanConfig?.max_stamina ?? 0,
-      paladinConfig: paladinConfig?.max_stamina ?? 0,
+      knightConfig: knightConfig?.stamina_knight_max ?? 0,
+      crossbowmanConfig: crossbowmanConfig?.stamina_crossbowman_max ?? 0,
+      paladinConfig: paladinConfig?.stamina_paladin_max ?? 0,
     };
   }
 
@@ -99,8 +99,8 @@ export class StaminaManager {
     const staminaRefillConfig = getComponentValue(
       this.components.WorldConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID]),
-    )?.stamina_refill_config;
-    return staminaRefillConfig?.amount_per_tick || 0;
+    )?.troop_stamina_config;
+    return staminaRefillConfig?.stamina_gain_per_tick || 0;
   }
 }
 

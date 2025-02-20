@@ -74,134 +74,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Battle: (() => {
-      return defineComponent(
-        world,
-        {
-          entity_id: RecsType.Number,
-          attack_army: {
-            troops: {
-              knight_count: RecsType.BigInt,
-              paladin_count: RecsType.BigInt,
-              crossbowman_count: RecsType.BigInt,
-            },
-            battle_id: RecsType.Number,
-            battle_side: RecsType.String,
-          },
-          attack_army_lifetime: {
-            troops: {
-              knight_count: RecsType.BigInt,
-              paladin_count: RecsType.BigInt,
-              crossbowman_count: RecsType.BigInt,
-            },
-            battle_id: RecsType.Number,
-            battle_side: RecsType.String,
-          },
-          defence_army: {
-            troops: {
-              knight_count: RecsType.BigInt,
-              paladin_count: RecsType.BigInt,
-              crossbowman_count: RecsType.BigInt,
-            },
-            battle_id: RecsType.Number,
-            battle_side: RecsType.String,
-          },
-          defence_army_lifetime: {
-            troops: {
-              knight_count: RecsType.BigInt,
-              paladin_count: RecsType.BigInt,
-              crossbowman_count: RecsType.BigInt,
-            },
-            battle_id: RecsType.Number,
-            battle_side: RecsType.String,
-          },
-          attackers_resources_escrow_id: RecsType.Number,
-          defenders_resources_escrow_id: RecsType.Number,
-          attack_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
-          defence_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
-          attack_delta: RecsType.BigInt,
-          defence_delta: RecsType.BigInt,
-          last_updated: RecsType.BigInt,
-          duration_left: RecsType.BigInt,
-          start_at: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "Battle",
-            types: [
-              "u32",
-              "u64",
-              "u64",
-              "u64",
-              "u32",
-              "enum",
-              "u64",
-              "u64",
-              "u64",
-              "u32",
-              "enum",
-              "u64",
-              "u64",
-              "u64",
-              "u32",
-              "enum",
-              "u64",
-              "u64",
-              "u64",
-              "u32",
-              "enum",
-              "u32",
-              "u32",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u64",
-              "u64",
-              "u64",
-              "u64",
-              "u64",
-            ],
-            customTypes: [
-              "BattleArmy",
-              "Troops",
-              "BattleSide",
-              "BattleArmy",
-              "Troops",
-              "BattleSide",
-              "BattleArmy",
-              "Troops",
-              "BattleSide",
-              "BattleArmy",
-              "Troops",
-              "BattleSide",
-              "BattleHealth",
-              "BattleHealth",
-            ],
-          },
-        },
-      );
-    })(),
-    BattleConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          regular_immunity_ticks: RecsType.Number,
-          hyperstructure_immunity_ticks: RecsType.Number,
-          battle_delay_seconds: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "BattleConfig",
-            types: ["u32", "u8", "u8", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Building: (() => {
       return defineComponent(
         world,
@@ -276,23 +148,6 @@ export function defineContractComponents(world: World) {
             name: "BuildingQuantityv2",
             types: ["u32", "enum", "u8"],
             customTypes: ["BuildingCategory"],
-          },
-        },
-      );
-    })(),
-    CapacityConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          category: RecsType.String,
-          weight_gram: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "CapacityConfig",
-            types: ["enum", "u128"],
-            customTypes: ["CapacityConfig"],
           },
         },
       );
@@ -966,14 +821,14 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ResourceCost: (() => {
+    ResourceList: (() => {
       return defineComponent(
         world,
         { entity_id: RecsType.Number, index: RecsType.Number, resource_type: RecsType.Number, amount: RecsType.BigInt },
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "ResourceCost",
+            name: "ResourceList",
             types: ["u32", "u32", "u8", "u128"],
             customTypes: [],
           },
@@ -1022,20 +877,6 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "Stamina",
             types: ["u32", "u16", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    StaminaConfig: (() => {
-      return defineComponent(
-        world,
-        { config_id: RecsType.Number, unit_type: RecsType.Number, max_stamina: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "StaminaConfig",
-            types: ["u32", "u8", "u16"],
             customTypes: [],
           },
         },
@@ -1162,7 +1003,16 @@ export function defineContractComponents(world: World) {
               //explorers
               "Span<u32>",
             ],
-            customTypes: ["StructureCategory", "Coord", "GuardTroops","Troops",  "TroopType","TroopTier", "Stamina", "Limits"],
+            customTypes: [
+              "StructureCategory",
+              "Coord",
+              "GuardTroops",
+              "Troops",
+              "TroopType",
+              "TroopTier",
+              "Stamina",
+              "Limits",
+            ],
           },
         },
       );
@@ -1212,93 +1062,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    TravelFoodCostConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          unit_type: RecsType.Number,
-          explore_wheat_burn_amount: RecsType.BigInt,
-          explore_fish_burn_amount: RecsType.BigInt,
-          travel_wheat_burn_amount: RecsType.BigInt,
-          travel_fish_burn_amount: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "TravelFoodCostConfig",
-            types: ["u32", "u8", "u128", "u128", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    TravelStaminaCostConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          travel_type: RecsType.Number,
-          cost: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "TravelStaminaCostConfig",
-            types: ["u32", "u8", "u16"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    TroopConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          health: RecsType.Number,
-          knight_strength: RecsType.Number,
-          paladin_strength: RecsType.Number,
-          crossbowman_strength: RecsType.Number,
-          advantage_percent: RecsType.Number,
-          disadvantage_percent: RecsType.Number,
-          max_troop_count: RecsType.Number,
-          pillage_health_divisor: RecsType.Number,
-          army_free_per_structure: RecsType.Number,
-          army_extra_per_building: RecsType.Number,
-          army_max_per_structure: RecsType.Number,
-          battle_leave_slash_num: RecsType.Number,
-          battle_leave_slash_denom: RecsType.Number,
-          battle_time_scale: RecsType.Number,
-          battle_max_time_seconds: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "TroopConfig",
-            types: [
-              "u32",
-              "u32",
-              "u8",
-              "u8",
-              "u16",
-              "u16",
-              "u16",
-              "u64",
-              "u8",
-              "u8",
-              "u8",
-              "u8",
-              "u8",
-              "u8",
-              "u16",
-              "u64",
-            ],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Weight: (() => {
       return defineComponent(
         world,
@@ -1332,6 +1095,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+
     WorldConfig: (() => {
       return defineComponent(
         world,
@@ -1353,10 +1117,6 @@ export function defineContractComponents(world: World) {
             points_on_completion: RecsType.Number,
             time_between_shares_change: RecsType.Number,
           },
-          stamina_cost_config: {
-            travel_cost: RecsType.Number,
-            explore_cost: RecsType.Number,
-          },
           speed_config: {
             donkey_sec_per_km: RecsType.Number,
             army_sec_per_km: RecsType.Number,
@@ -1375,17 +1135,7 @@ export function defineContractComponents(world: World) {
             current_point_on_side: RecsType.Number,
           },
           tick_config: {
-            default_tick_in_seconds: RecsType.Number,
             armies_tick_in_seconds: RecsType.Number,
-          },
-          mercenaries_config: {
-            knights_lower_bound: RecsType.Number,
-            knights_upper_bound: RecsType.Number,
-            paladins_lower_bound: RecsType.Number,
-            paladins_upper_bound: RecsType.Number,
-            crossbowmen_lower_bound: RecsType.Number,
-            crossbowmen_upper_bound: RecsType.Number,
-            rewards: RecsType.StringArray,
           },
           bank_config: {
             lords_cost: RecsType.Number,
@@ -1414,12 +1164,55 @@ export function defineContractComponents(world: World) {
           realm_max_level_config: {
             max_level: RecsType.Number,
           },
-          stamina_refill_config: {
-            amount_per_tick: RecsType.Number,
-            start_boost_tick_count: RecsType.Number,
-          },
           building_general_config: {
             base_cost_percent_increase: RecsType.Number,
+          },
+          troop_damage_config: {
+            damage_biome_bonus_num: RecsType.Number,
+            damage_beta_small: RecsType.Number,
+            damage_beta_large: RecsType.Number,
+            damage_scaling_factor: RecsType.Number,
+            damage_c0: RecsType.Number,
+            damage_delta: RecsType.Number,
+            t1_damage_value: RecsType.Number,
+            t2_damage_multiplier: RecsType.Number,
+            t3_damage_multiplier: RecsType.Number,
+          },
+          troop_stamina_config: {
+            stamina_gain_per_tick: RecsType.Number,
+            stamina_initial: RecsType.Number,
+            stamina_bonus_value: RecsType.Number,
+            stamina_knight_max: RecsType.Number,
+            stamina_paladin_max: RecsType.Number,
+            stamina_crossbowman_max: RecsType.Number,
+            stamina_attack_req: RecsType.Number,
+            stamina_attack_max: RecsType.Number,
+            stamina_explore_wheat_cost: RecsType.Number,
+            stamina_explore_fish_cost: RecsType.Number,
+            stamina_explore_stamina_cost: RecsType.Number,
+            stamina_travel_wheat_cost: RecsType.Number,
+            stamina_travel_fish_cost: RecsType.Number,
+            stamina_travel_stamina_cost: RecsType.Number,
+          },
+          troop_limit_config: {
+            explorer_max_party_count: RecsType.Number,
+            explorer_max_troop_count: RecsType.Number,
+            guard_resurrection_delay: RecsType.Number,
+            mercenaries_troop_lower_bound: RecsType.Number,
+            mercenaries_troop_upper_bound: RecsType.Number,
+          },
+          capacity_config: {
+            structure_capacity: RecsType.Number,
+            troop_capacity: RecsType.Number,
+            donkey_capacity: RecsType.Number,
+            storehouse_boost_capacity: RecsType.Number,
+          },
+          trade_config: {
+            max_count: RecsType.Number,
+          },
+          battle_config: {
+            regular_immunity_ticks: RecsType.Number,
+            hyperstructure_immunity_ticks: RecsType.Number,
           },
         },
         {
@@ -1439,10 +1232,9 @@ export function defineContractComponents(world: World) {
               "u128", // HyperstructureConfig points_on_completion
               "u64", // HyperstructureConfig time_between_shares_change
               "u16", // SpeedConfig donkey_sec_per_km
+              "u16", // SpeedConfig army_sec_per_km
               "u128", // MapConfig reward_resource_amount
               "u128", // MapConfig shards_mines_fail_probability
-              "u128", // MapConfig mine_wheat_grant_amount
-              "u128", // MapConfig mine_fish_grant_amount
               "u32", // SettlementConfig center
               "u32", // SettlementConfig base_distance
               "u32", // SettlementConfig min_first_layer_distance
@@ -1477,7 +1269,7 @@ export function defineContractComponents(world: World) {
               "u128", // TroopDamageConfig damage_delta
               "u128", // TroopDamageConfig t1_damage_value
               "u128", // TroopDamageConfig t2_damage_multiplier
-              "u16", // TroopDamageConfig t3_damage_multiplier
+              "u128", // TroopDamageConfig t3_damage_multiplier
               "u16", // TroopStaminaConfig stamina_gain_per_tick
               "u16", // TroopStaminaConfig stamina_initial
               "u16", // TroopStaminaConfig stamina_bonus_value
@@ -1501,7 +1293,9 @@ export function defineContractComponents(world: World) {
               "u32", // CapacityConfig troop_capacity
               "u32", // CapacityConfig donkey_capacity
               "u32", // CapacityConfig storehouse_boost_capacity
-              "u8", // TradeCountConfig max_count
+              "u8", // TradeConfig max_count
+              "u8", // BattleConfig regular_immunity_ticks
+              "u8", // BattleConfig hyperstructure_immunity_ticks
             ],
             customTypes: [],
           },
@@ -1530,237 +1324,6 @@ const eventsComponents = (world: World) => {
               namespace: "s1_eternum",
               name: "AcceptOrder",
               types: ["u32", "u32", "u32", "u32", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      BattleClaimData: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            event_id: RecsType.String,
-            structure_entity_id: RecsType.Number,
-            claimer: RecsType.BigInt,
-            claimer_name: RecsType.BigInt,
-            claimer_army_entity_id: RecsType.Number,
-            claimee_address: RecsType.BigInt,
-            claimee_name: RecsType.BigInt,
-            x: RecsType.Number,
-            y: RecsType.Number,
-            structure_type: RecsType.String,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s1_eternum",
-              name: "BattleClaimData",
-              types: [
-                "u32",
-                "EventType",
-                "u32",
-                "ContractAddress",
-                "felt252",
-                "u32",
-                "ContractAddress",
-                "felt252",
-                "u32",
-                "u32",
-                "StructureCategory",
-                "u64",
-              ],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      BattleJoinData: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            event_id: RecsType.String,
-            battle_entity_id: RecsType.Number,
-            joiner: RecsType.BigInt,
-            joiner_name: RecsType.BigInt,
-            joiner_army_entity_id: RecsType.Number,
-            joiner_side: RecsType.String,
-            duration_left: RecsType.Number,
-            x: RecsType.Number,
-            y: RecsType.Number,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s1_eternum",
-              name: "BattleJoinData",
-              types: [
-                "u32",
-                "EventType",
-                "u32",
-                "ContractAddress",
-                "felt252",
-                "u32",
-                "BattleSide",
-                "u64",
-                "u32",
-                "u32",
-                "u64",
-              ],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      BattleLeaveData: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            event_id: RecsType.String,
-            battle_entity_id: RecsType.Number,
-            leaver: RecsType.BigInt,
-            leaver_name: RecsType.BigInt,
-            leaver_army_entity_id: RecsType.Number,
-            leaver_side: RecsType.String,
-            duration_left: RecsType.Number,
-            x: RecsType.Number,
-            y: RecsType.Number,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s1_eternum",
-              name: "BattleLeaveData",
-              types: [
-                "u32",
-                "EventType",
-                "u32",
-                "ContractAddress",
-                "felt252",
-                "u32",
-                "BattleSide",
-                "u64",
-                "u32",
-                "u32",
-                "u64",
-              ],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      BattlePillageData: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            event_id: RecsType.String,
-            pillager: RecsType.BigInt,
-            pillager_name: RecsType.BigInt,
-            pillager_realm_entity_id: RecsType.Number,
-            pillager_army_entity_id: RecsType.Number,
-            pillaged_structure_owner: RecsType.BigInt,
-            pillaged_structure_entity_id: RecsType.Number,
-            attacker_lost_troops: {
-              knight_count: RecsType.BigInt,
-              paladin_count: RecsType.BigInt,
-              crossbowman_count: RecsType.BigInt,
-            },
-            structure_lost_troops: {
-              knight_count: RecsType.BigInt,
-              paladin_count: RecsType.BigInt,
-              crossbowman_count: RecsType.BigInt,
-            },
-            pillaged_structure_owner_name: RecsType.BigInt,
-            winner: RecsType.String,
-            x: RecsType.Number,
-            y: RecsType.Number,
-            structure_type: RecsType.String,
-            pillaged_resources: RecsType.StringArray,
-            destroyed_building_category: RecsType.String,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s1_eternum",
-              name: "BattlePillageData",
-              types: [
-                "u32",
-                "EventType",
-                "ContractAddress",
-                "felt252",
-                "u32",
-                "u32",
-                "ContractAddress",
-                "u32",
-                // attacking troops
-                "u64",
-                "u64",
-                "u64",
-                // structure troops
-                "u64",
-                "u64",
-                "u64",
-                "felt252",
-                "BattleSide",
-                "u32",
-                "u32",
-                "StructureCategory",
-                "array",
-                "enum",
-                "u64",
-              ],
-              customTypes: ["Troops", "BuildingCategory"],
-            },
-          },
-        );
-      })(),
-
-      BattleStartData: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            event_id: RecsType.String,
-            battle_entity_id: RecsType.Number,
-            attacker: RecsType.BigInt,
-            attacker_name: RecsType.BigInt,
-            attacker_army_entity_id: RecsType.Number,
-            defender_name: RecsType.BigInt,
-            defender: RecsType.BigInt,
-            defender_army_entity_id: RecsType.Number,
-            duration_left: RecsType.Number,
-            x: RecsType.Number,
-            y: RecsType.Number,
-            structure_type: RecsType.String,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s1_eternum",
-              name: "BattleStartData",
-              types: [
-                "u32",
-                "EventType",
-                "u32",
-                "ContractAddress",
-                "felt252",
-                "u32",
-                "felt252",
-                "ContractAddress",
-                "u32",
-                "u64",
-                "u32",
-                "u32",
-                "StructureCategory",
-                "u64",
-              ],
               customTypes: [],
             },
           },
@@ -2073,6 +1636,7 @@ const eventsComponents = (world: World) => {
           },
         );
       })(),
+
       HyperstructureCoOwnersChange: (() => {
         return defineComponent(
           world,

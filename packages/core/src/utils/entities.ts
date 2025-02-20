@@ -4,6 +4,7 @@ import { shortString } from "starknet";
 import { divideByPrecision } from ".";
 import { CAPACITY_CONFIG_CATEGORY_STRING_MAP } from "../constants";
 import { ClientComponents } from "../dojo";
+import { configManager } from "../managers/config-manager";
 import { ContractAddress, EntityType, ID } from "../types";
 import { getRealmNameById } from "./realm";
 import { getResourcesFromBalance } from "./resources";
@@ -14,15 +15,14 @@ export const getEntityInfo = (
   currentDefaultTick: number,
   components: ClientComponents,
 ) => {
-  const { ArrivalTime, Movable, CapacityConfig, EntityOwner, Owner, Structure, Army, Position, Weight } =
-    components;
+  const { ArrivalTime, Movable, EntityOwner, Owner, Structure, Army, Position, Weight } = components;
   const entityIdBigInt = BigInt(entityId);
   const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityIdBigInt]));
   const movable = getComponentValue(Movable, getEntityIdFromKeys([entityIdBigInt]));
 
   const entityCapacityCategory = getComponentValue(Weight, getEntityIdFromKeys([entityIdBigInt]))?.capacity_category;
   const capacityCategoryId = entityCapacityCategory ? CAPACITY_CONFIG_CATEGORY_STRING_MAP[entityCapacityCategory] : 0;
-  const capacity = getComponentValue(CapacityConfig, getEntityIdFromKeys([BigInt(capacityCategoryId)]));
+  const capacity = configManager.getCapacityConfig(capacityCategoryId);
 
   const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityIdBigInt]));
   const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
@@ -50,7 +50,7 @@ export const getEntityInfo = (
     entityId,
     arrivalTime: arrivalTime?.arrives_at,
     blocked: Boolean(movable?.blocked),
-    capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
+    capacity: divideByPrecision(Number(capacity) || 0),
     intermediateDestination,
     position: position ? { x: position.x, y: position.y } : undefined,
     homePosition: homePosition ? { x: homePosition.x, y: homePosition.y } : undefined,

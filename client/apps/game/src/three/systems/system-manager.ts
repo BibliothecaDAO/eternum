@@ -231,49 +231,6 @@ export class SystemManager {
     };
   }
 
-  public get Battle() {
-    return {
-      onUpdate: (callback: (value: BattleSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Battle, callback, (update: any) => {
-          const battle = getComponentValue(this.setup.components.Battle, update.entity);
-          if (!battle) {
-            return {
-              entityId: update.value[1].entity_id,
-              hexCoords: new Position({ x: 0, y: 0 }),
-              isEmpty: false,
-              deleted: true,
-              isSiege: false,
-              isOngoing: false,
-            };
-          }
-
-          const position = getComponentValue(this.setup.components.Position, update.entity);
-          if (!position) return;
-
-          const healthMultiplier = BigInt(configManager.getResourcePrecision());
-          const isEmpty =
-            battle.attack_army_health.current < healthMultiplier &&
-            battle.defence_army_health.current < healthMultiplier;
-
-          const isSiege = battle.start_at > Date.now() / 1000;
-          const currentTimestamp = Math.floor(Date.now() / 1000);
-          const isOngoing =
-            battle.duration_left !== 0n &&
-            currentTimestamp - Number(battle.last_updated) < Number(battle.duration_left);
-
-          return {
-            entityId: battle.entity_id,
-            hexCoords: new Position({ x: position.x, y: position.y }),
-            isEmpty,
-            deleted: false,
-            isSiege,
-            isOngoing,
-          };
-        });
-      },
-    };
-  }
-
   public get Tile() {
     return {
       onUpdate: (callback: (value: TileSystemUpdate) => void) => {

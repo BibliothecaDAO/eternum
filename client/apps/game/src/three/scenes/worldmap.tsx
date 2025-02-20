@@ -3,7 +3,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { ArmyManager } from "@/three/managers/army-manager";
-import { BattleManager } from "@/three/managers/battle-manager";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
@@ -44,8 +43,6 @@ import { ArmySystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } 
 import { getWorldPositionForHex } from "../utils";
 
 export default class WorldmapScene extends HexagonScene {
-  private biome!: Biome;
-
   private chunkSize = 10; // Size of each chunk
   private renderChunkSize = {
     width: 40,
@@ -58,7 +55,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
-  private battleManager: BattleManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
   private armyHexes: Map<number, Map<number, boolean>> = new Map();
@@ -66,7 +62,6 @@ export default class WorldmapScene extends HexagonScene {
   private structureHexes: Map<number, Map<number, boolean>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<ID, HexPosition> = new Map();
-  private battles: Map<number, Set<number>> = new Map();
   private tileManager: TileManager;
   private structurePreview: StructurePreview | null = null;
   private structureEntityId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
@@ -125,7 +120,6 @@ export default class WorldmapScene extends HexagonScene {
 
     this.armyManager = new ArmyManager(this.scene, this.renderChunkSize);
     this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
-    this.battleManager = new BattleManager(this.scene);
 
     this.armySubscription?.unsubscribe();
     this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
@@ -136,7 +130,6 @@ export default class WorldmapScene extends HexagonScene {
       });
     });
 
-    this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
     this.systemManager.Army.onUpdate((value) => this.updateArmyHexes(value));
     this.systemManager.Structure.onUpdate((value) => {
@@ -186,14 +179,7 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     if (!IS_MOBILE) {
-      this.minimap = new Minimap(
-        this,
-        this.exploredTiles,
-        this.camera,
-        this.structureManager,
-        this.armyManager,
-        this.battleManager,
-      );
+      this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.armyManager);
     }
 
     // Add event listener for Escape key
@@ -233,7 +219,6 @@ export default class WorldmapScene extends HexagonScene {
     if (hex === null) {
       this.state.updateHoveredHex(null);
       this.state.setHoveredStructure(null);
-      this.state.setHoveredBattle(null);
       return;
     }
     const { hexCoords } = hex;
@@ -263,16 +248,6 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
-    const isBattle = this.battleManager.battles.hasByPosition(position);
-
-    if (isBattle) {
-      const contractPosition = position.getContract();
-      if (this.state.hoveredBattle?.x !== contractPosition.x || this.state.hoveredBattle?.y !== contractPosition.y) {
-        this.state.setHoveredBattle(position.getContract());
-      }
-    } else {
-      this.state.setHoveredBattle(null);
-    }
   }
 
   private _canBuildStructure(hexCoords: HexPosition) {
@@ -748,9 +723,8 @@ export default class WorldmapScene extends HexagonScene {
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
 
-        const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
-        if (isStructure || isBattle) {
+        if (isStructure) {
           dummy.scale.set(0, 0, 0);
         } else {
           dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
@@ -1047,7 +1021,6 @@ export default class WorldmapScene extends HexagonScene {
     super.update(deltaTime);
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
-    this.battleManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
     if (!IS_MOBILE) {
       this.minimap.update();
