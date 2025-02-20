@@ -21,7 +21,7 @@ import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
 import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
 import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
 import { useToast } from "@/hooks/use-toast";
-import { getBridgeTransactionsQueryOptions } from "@/lib/getRealms";
+import { getBridgeTransactionsQueryOptions } from "@/lib/getBridgeTransactions";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";

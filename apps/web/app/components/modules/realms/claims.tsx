@@ -4,7 +4,7 @@ import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
-import { getRealmsLordsClaimsQueryOptions } from "@/lib/getRealms";
+import { getRealmsLordsClaimsQueryOptions } from "@/lib/getRealmsLordsClaims";
 import {
   formatNumber,
   shortenAddress,

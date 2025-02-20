@@ -3,7 +3,7 @@ import { VeLords } from "@/abi/L2/VeLords";
 import { VeLordsRewardsChart } from "@/components/modules/velords/rewards-chart";
 import { StakeLords } from "@/components/modules/velords/stake-lords";
 import { VelordsRewards } from "@/components/modules/velords/velords-rewards";
-import { getVelordsBurnsQueryOptions } from "@/lib/getRealms";
+import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useReadContract } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
