@@ -225,7 +225,7 @@ export const EternumGlobalConfig: Config = {
   },
   troop: {
     damage: {
-      t1DamageValue: TROOP_BASE_DAMAGE * (BigInt(2) ** BigInt(64)),
+      t1DamageValue: TROOP_BASE_DAMAGE,
       t2DamageMultiplier: TROOP_T2_DAMAGE_MULTIPLIER,
       t3DamageMultiplier: TROOP_T3_DAMAGE_MULTIPLIER,
       damageBiomeBonusNum: TROOP_DAMAGE_BIOME_BONUS_NUM,
