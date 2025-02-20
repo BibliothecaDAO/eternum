@@ -42,7 +42,7 @@ export const TROOP_STAMINA_BIOME_BONUS_VALUE = TROOP_STAMINA_GAIN_PER_TICK; // g
 export const TROOP_STAMINA_MAX = {
   [ResourcesIds.Knight]: 120,
   [ResourcesIds.Crossbowman]: 120,
-  [ResourcesIds.Paladin]: 160,
+  [ResourcesIds.Paladin]: 140,
 };
 
 // Combat stamina requirements
