@@ -256,18 +256,17 @@ pub struct TickConfig {
 // todo: regroup meaningfully to avoid retrieving too many fields
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
 pub struct TroopDamageConfig {
-    // Base damage values for each troop type
-    knight_base_damage: u16,
-    crossbowman_base_damage: u16,
-    paladin_base_damage: u16,
-    // Damage bonuses for tiers In the contracts, we do Fixed::ONE * t2_damage_bonus
-    t2_damage_bonus: u16,
-    // In the contracts, we do Fixed::ONE * t3_damage_bonus
-    t3_damage_bonus: u16,
     // Combat modifiers. Used for biome damage calculations
     damage_biome_bonus_num: u16,
     // Used in damage calculations for troop scaling
-    damage_scaling_factor: u16,
+    damage_beta_small: u64, // Fixed
+    damage_beta_large: u64, // Fixed
+    damage_scaling_factor: u128,
+    damage_c0: u128, // Fixed
+    damage_delta: u128, // Fixed
+    t1_damage_value: u128,
+    t2_damage_multiplier: u128, // Fixed
+    t3_damage_multiplier: u128, // Fixed
 }
 
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]

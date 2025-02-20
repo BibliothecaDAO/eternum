@@ -333,7 +333,6 @@ export class ArmyMovementManager {
       value: {
         col,
         row,
-        explored_at: BigInt(Math.floor(Date.now() / 1000)),
         biome: Biome.getBiome(col, row),
       },
     });
