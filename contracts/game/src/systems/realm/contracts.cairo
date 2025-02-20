@@ -330,10 +330,7 @@ mod realm_systems {
                         has_wonder,
                     },
                 );
-
-            // place castle building
-            BuildingImpl::create(ref world, entity_id, BuildingCategory::Castle, Option::None, BuildingImpl::center());
-
+                
             // place castle building
             BuildingImpl::create(ref world, entity_id, BuildingCategory::Castle, Option::None, BuildingImpl::center(),);
 
