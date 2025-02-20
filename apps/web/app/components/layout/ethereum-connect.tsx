@@ -1,5 +1,5 @@
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export const EthereumConnect = () => {
-  return <ConnectButton showBalance={false} />;
+  return <ConnectButton label="Connect Ethereum Wallet" showBalance={false} />;
 };
