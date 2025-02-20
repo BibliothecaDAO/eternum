@@ -17,6 +17,9 @@ export default defineConfig({
   },
   vite: {
     ssr: { noExternal: ["starknet-types-07"] },
+    optimizeDeps: {
+      include: ["starknet-types-07"],
+    },
     plugins: [
       viteTsConfigPaths({
         projects: ["./tsconfig.json"],

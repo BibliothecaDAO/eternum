@@ -20,6 +20,7 @@ import type { trpcQueryUtils } from "../router";
 import "@rainbow-me/rainbowkit/styles.css";
 
 import { Toaster } from "@/components/ui/toaster";
+import { StarknetProvider } from "@/providers/starknet";
 import { seo } from "@/utils/seo";
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { env } from "env";
@@ -89,20 +90,22 @@ function RootComponent() {
       <body>
         <div className={`[--header-height:calc(--spacing(14))]`}>
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-            <WagmiProvider config={config}>
-              <SidebarProvider className="flex flex-col">
-                <Header />
-                <div className="flex flex-1">
-                  <AppSidebar />
-                  <SidebarInset>
-                    <RainbowKitProvider>
-                      <Outlet />
-                    </RainbowKitProvider>
-                  </SidebarInset>
-                </div>
-                <Toaster />
-              </SidebarProvider>
-            </WagmiProvider>
+            <StarknetProvider>
+              <WagmiProvider config={config}>
+                <SidebarProvider className="flex flex-col">
+                  <Header />
+                  <div className="flex flex-1">
+                    <AppSidebar />
+                    <SidebarInset>
+                      <RainbowKitProvider>
+                        <Outlet />
+                      </RainbowKitProvider>
+                    </SidebarInset>
+                  </div>
+                  <Toaster />
+                </SidebarProvider>
+              </WagmiProvider>
+            </StarknetProvider>
           </ThemeProvider>
         </div>
         <TanStackRouterDevtools position="bottom-left" />
