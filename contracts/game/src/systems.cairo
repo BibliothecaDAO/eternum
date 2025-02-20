@@ -38,11 +38,13 @@ pub mod dev {
 }
 pub mod combat {
     #[cfg(test)]
-    mod tests;
+    mod tests {
+        mod test_troop_management;
+    }
     pub mod contracts {
-        pub mod troop_battle_systems;
-        pub mod troop_management_systems;
-        pub mod troop_movement_systems;
+        pub mod troop_battle;
+        pub mod troop_management;
+        pub mod troop_movement;
     }
 }
 pub mod bank {
