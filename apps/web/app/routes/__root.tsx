@@ -14,7 +14,6 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
-import "starknet-types-07";
 import "@rainbow-me/rainbowkit/styles.css";
 
 import type { QueryClient } from "@tanstack/react-query";

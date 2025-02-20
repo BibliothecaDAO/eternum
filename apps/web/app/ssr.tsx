@@ -5,8 +5,6 @@ import {
   defaultStreamHandler,
 } from "@tanstack/start/server";
 
-import "starknet-types-07";
-
 import { createRouter } from "./router";
 
 export default createStartHandler({
