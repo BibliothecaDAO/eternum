@@ -1,8 +1,10 @@
 use core::poseidon::poseidon_hash_span;
 use core::zeroable::Zeroable;
-use dojo::model::ModelStorage;
+use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use alexandria_math::U128BitShift;
+
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::{
@@ -10,7 +12,6 @@ use s1_eternum::models::config::{
     PopulationConfig, ProductionConfig, TickConfig, TickImpl, TickTrait, WorldConfigUtilImpl,
 };
 use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
-use s1_eternum::models::population::{Population, PopulationTrait};
 use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, PositionTrait};
 use s1_eternum::models::realm::Realm;
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
@@ -44,16 +45,88 @@ pub struct Building {
     paused: bool,
 }
 
-#[derive(PartialEq, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
-pub struct BuildingQuantityv2 {
+pub struct StructureBuildings {
     #[key]
     entity_id: ID,
-    #[key]
-    category: BuildingCategory,
-    value: u8,
+    building_count: u128,
+    // population
+    population: Population,
 }
 
+#[derive(Copy, Drop, Serde, IntrospectPacked)]
+pub struct Population {
+    current: u32,
+    max: u32,
+}
+
+#[generate_trait]
+impl PopulationImpl of PopulationTrait {
+    fn increase_population(ref self: Population, amount: u32, base_population: u32) -> u32 {
+        self.current += amount;
+        self.assert_within_capacity(base_population);
+        self.current
+    }
+    fn decrease_population(ref self: Population, amount: u32) -> u32 {
+        if amount > self.current {
+            self.current = 0;
+        } else {
+            self.current -= amount;
+        }
+
+        self.current
+    }
+    fn assert_within_capacity(ref self: Population, base_population: u32) {
+        assert(self.max + base_population >= self.current, 'Population exceeds capacity')
+    }
+    fn increase_capacity(ref self: Population, amount: u32) -> u32 {
+        self.max += amount;
+        self.max
+    }
+    fn decrease_capacity(ref self: Population, amount: u32) -> u32 {
+        self.max -= amount;
+
+        // sanity
+        if (self.max < 0) {
+            self.max = 0;
+        }
+        self.max
+    }
+}
+
+
+
+#[generate_trait]
+impl BuildingCategoryCountImpl of BuildingCategoryCountTrait {
+    
+    fn building_count(self: BuildingCategory, packed: u128) -> u8 {
+        let category_felt: felt252 = self.into();
+        let category: u128 = category_felt.try_into().unwrap();
+
+        // the packed value contains the counts of all categories
+        // and can take up to 8 bits for each category. so we can store
+        // up to 128 / 8 = 16 categories
+        let mask: u128 = 0xFF; // al 8 bits set to 1
+        let shift_amount = (category - 1) * 8;
+        let count: u128 = U128BitShift::shr(packed, shift_amount) & mask;
+        count.try_into().unwrap()
+    }
+
+    fn set_building_count(self: BuildingCategory, packed: u128, count: u8) -> u128 {
+        assert!(count <= 255, "count must be able to fit in a u8");
+
+        let category_felt: felt252 = self.into();
+        let category: u128 = category_felt.try_into().unwrap();
+    
+        // Each category takes 8 bits
+        let shift_amount = (category - 1) * 8;
+        let mask: u128 = U128BitShift::shl(0xFF, shift_amount); // 8 bits set to 1, shifted to position
+        let shifted_count: u128 = U128BitShift::shl(count.into(), shift_amount);
+        let new_packed: u128 = (packed & ~mask) | shifted_count;
+        new_packed
+    }
+}
 
 #[derive(PartialEq, Copy, Drop, Serde, Introspect)]
 enum BuildingCategory {
@@ -429,19 +502,17 @@ impl BuildingImpl of BuildingTrait {
     fn create(
         ref world: WorldStorage,
         outer_entity_id: ID,
+        outer_entity_coord: Coord,
         category: BuildingCategory,
         produce_resource_type: Option<u8>,
         inner_coord: Coord,
-    ) -> (Building, BuildingQuantityv2) {
-        // check that the entity has a position
-        let outer_entity_position: Position = world.read_model(outer_entity_id);
-        outer_entity_position.assert_not_zero();
+    ) -> (Building, u8) {
 
         // todo@credence: ensure that the bounds are within the inner realm bounds
 
         // ensure that building is not occupied
         let mut building: Building = world
-            .read_model((outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y));
+            .read_model((outer_entity_coord.x, outer_entity_coord.y, inner_coord.x, inner_coord.y));
 
         assert!(!building.exists(), "space is occupied");
 
@@ -468,12 +539,22 @@ impl BuildingImpl of BuildingTrait {
         // give capacity bonus
         building.grant_capacity_bonus(ref world, true);
 
-        // increase building type count for realm
-        let mut building_quantity: BuildingQuantityv2 = world.read_model((outer_entity_id, building.category));
-        building_quantity.value += 1;
-        world.write_model(@building_quantity);
+        // increase building type count for structure
+        let structure_building_ptr = Model::<StructureBuildings>::ptr_from_keys(outer_entity_id);
+        let mut all_categories_quantity_packed: u128 = world
+            .read_member(structure_building_ptr, selector!("building_count"));
+        let new_building_category_count: u8 = category.building_count(all_categories_quantity_packed) + 1;
+        all_categories_quantity_packed = category.set_building_count(
+            all_categories_quantity_packed,
+            new_building_category_count,
+        );
+        world.write_member(structure_building_ptr, selector!("building_count"), all_categories_quantity_packed);
 
-        let mut population: Population = world.read_model(outer_entity_id);
+        // increase population
+        let mut population: Population = world.read_member(
+            Model::<StructureBuildings>::ptr_from_keys(outer_entity_id),
+            selector!("population"),
+        );
         let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
         let population_config: PopulationConfig = WorldConfigUtilImpl::get_member(
             world, selector!("population_config"),
@@ -491,11 +572,15 @@ impl BuildingImpl of BuildingTrait {
         population.assert_within_capacity(population_config.base_population);
 
         // set population
-        world.write_model(@population);
+        world.write_member(
+            Model::<StructureBuildings>::ptr_from_keys(outer_entity_id),
+            selector!("population"),
+            population,
+        );
 
         // todo:  increase structure weight when certain buildings are built
 
-        (building, building_quantity)
+        (building, new_building_category_count)
     }
 
     /// Pause building production without removing the building
@@ -575,12 +660,21 @@ impl BuildingImpl of BuildingTrait {
         building.grant_capacity_bonus(ref world, false);
 
         // decrease building type count for realm
-        let mut building_quantity: BuildingQuantityv2 = world.read_model((outer_entity_id, building.category));
-        building_quantity.value -= 1;
-        world.write_model(@building_quantity);
+        let structure_building_ptr = Model::<StructureBuildings>::ptr_from_keys(outer_entity_id);
+        let mut all_categories_quantity_packed: u128 = world
+            .read_member(structure_building_ptr, selector!("building_count"));
+        let new_building_category_count: u8 = building.category.building_count(all_categories_quantity_packed) - 1;
+        all_categories_quantity_packed = building.category.set_building_count(
+            all_categories_quantity_packed,
+            new_building_category_count,
+        );
+        world.write_member(structure_building_ptr, selector!("building_count"), all_categories_quantity_packed);
 
         // decrease population
-        let mut population: Population = world.read_model(outer_entity_id);
+        let mut population: Population = world.read_member(
+            Model::<StructureBuildings>::ptr_from_keys(outer_entity_id),
+            selector!("population"),
+        );
         let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
 
         // [check] If Workers hut
@@ -598,7 +692,11 @@ impl BuildingImpl of BuildingTrait {
         population.decrease_population(building_category_population_config.population);
 
         // set population
-        world.write_model(@population);
+        world.write_member(
+            Model::<StructureBuildings>::ptr_from_keys(outer_entity_id),
+            selector!("population"),
+            population,
+        );
 
         let destroyed_building_category = building.category;
 
@@ -610,7 +708,7 @@ impl BuildingImpl of BuildingTrait {
         destroyed_building_category
     }
 
-    fn make_payment(self: Building, building_quantity: BuildingQuantityv2, ref world: WorldStorage) {
+    fn make_payment(self: Building, building_count: u8, ref world: WorldStorage) {
         let building_general_config: BuildingGeneralConfig = WorldConfigUtilImpl::get_member(
             world, selector!("building_general_config"),
         );
@@ -647,7 +745,7 @@ impl BuildingImpl of BuildingTrait {
             let percentage_additional_cost = PercentageImpl::get(
                 resource_cost.amount, building_general_config.base_cost_percent_increase.into(),
             );
-            let scale_factor = building_quantity.value - 1;
+            let scale_factor = building_count - 1;
             let total_cost = resource_cost.amount
                 + (scale_factor.into() * scale_factor.into() * percentage_additional_cost);
 

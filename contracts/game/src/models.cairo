@@ -7,7 +7,6 @@ mod message;
 mod movable;
 mod name;
 mod owner;
-mod population;
 mod position;
 mod quantity;
 mod quest;

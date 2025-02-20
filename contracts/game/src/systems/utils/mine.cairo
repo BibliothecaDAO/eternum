@@ -100,6 +100,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         BuildingImpl::create(
             ref world,
             structure_id,
+            coord,
             BuildingCategory::Resource,
             Option::Some(ResourceTypes::EARTHEN_SHARD),
             BuildingImpl::center(),
