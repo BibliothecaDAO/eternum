@@ -95,6 +95,7 @@ export const getDelegateByIDQueryOptions = (
   queryOptions({
     queryKey: ["getDelegateByID", input.address],
     queryFn: () => getDelegateByID({ data: input }),
+    enabled: !!input.address,
   });
 
 /* -------------------------------------------------------------------------- */

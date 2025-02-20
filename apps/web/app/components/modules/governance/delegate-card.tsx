@@ -156,7 +156,11 @@ export function DelegateCard({
         </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={() => handleDelegate()} className="">
+        <Button
+          disabled={isCurrentDelegate}
+          onClick={() => handleDelegate()}
+          className=""
+        >
           <UserPen className="h-4 w-4" />
           Choose Delegate
         </Button>
