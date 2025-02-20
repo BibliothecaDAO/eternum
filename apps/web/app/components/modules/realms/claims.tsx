@@ -4,13 +4,14 @@ import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
-import { trpc } from "@/router";
+import { getRealmsLordsClaimsQueryOptions } from "@/lib/getRealms";
 import {
   formatNumber,
   shortenAddress,
   SUPPORTED_L2_CHAIN_ID,
 } from "@/utils/utils";
 import { useAccount, useExplorer, useReadContract } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { formatEther } from "viem";
 
@@ -28,9 +29,8 @@ interface ClaimTransaction {
 export const ClaimRewards = () => {
   const { address } = useAccount();
   const lordsPerWeek = 49;
-  const pastLordsClaimsQuery = trpc.realmsLordsClaims.useQuery(
-    { address: address as string },
-    { refetchInterval: 10000, enabled: !!address },
+  const pastLordsClaimsQuery = useQuery(
+    getRealmsLordsClaimsQueryOptions({ address: address as string }),
   );
   const pastLordsClaims = pastLordsClaimsQuery.data;
   const [claimTransactions, setClaimTransactions] = useState<

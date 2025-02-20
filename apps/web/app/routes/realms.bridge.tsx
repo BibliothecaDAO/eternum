@@ -8,10 +8,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
-import { trpc } from "@/router";
+import { getL1RealmsQueryOptions } from "@/lib/getL1Realms";
+import { getRealmsQueryOptions } from "@/lib/getRealms";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   getCoreRowModel,
@@ -31,20 +33,21 @@ function RouteComponent() {
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
 
-  const l1RealmsQuery = trpc.l1Realms.useQuery(
-    { address: l1Address },
-    { refetchInterval: 10000, enabled: !!l1Address },
+  const l1RealmsQuery = useQuery(
+    getL1RealmsQueryOptions(
+      { address: l1Address },
+      /*{ refetchInterval: 10000, enabled: !!l1Address },*/
+    ),
   );
   const l1Realms = l1RealmsQuery.data;
 
-  const l2RealmsQuery = trpc.realms.useQuery(
-    {
+  const l2RealmsQuery = useQuery(
+    getRealmsQueryOptions({
       address: l2Address,
       collectionAddress: CollectionAddresses.realms[
         SUPPORTED_L2_CHAIN_ID
       ] as string,
-    },
-    { refetchInterval: 10000, enabled: !!l2Address },
+    }),
   );
   const l2Realms = l2RealmsQuery.data;
 

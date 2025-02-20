@@ -9,16 +9,15 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Outlet,
+  ScriptOnce,
   Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
 import "starknet-types-07";
-
-import type { trpcQueryUtils } from "../router";
-
 import "@rainbow-me/rainbowkit/styles.css";
 
+import type { QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { StarknetProvider } from "@/providers/starknet";
 import { seo } from "@/utils/seo";
@@ -28,10 +27,10 @@ import { WagmiProvider } from "wagmi";
 import { mainnet, sepolia } from "wagmi/chains";
 
 export interface RouterAppContext {
-  trpcQueryUtils: typeof trpcQueryUtils;
   session: {
     address: string;
   };
+  queryClient: QueryClient;
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
@@ -88,6 +87,12 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body>
+        <ScriptOnce>
+          {`document.documentElement.classList.toggle(
+            'dark',
+            localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+            )`}
+        </ScriptOnce>
         <div className={`[--header-height:calc(--spacing(14))]`}>
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <StarknetProvider>

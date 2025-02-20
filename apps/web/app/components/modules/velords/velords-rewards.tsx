@@ -1,7 +1,6 @@
 import type { Address } from "@starknet-react/core";
 import type { Call } from "starknet";
-import React, { useEffect, useMemo, useState } from "react";
-import { ERC721 } from "@/abi/L2/ERC721";
+import { useMemo, useState } from "react";
 import { RewardPool } from "@/abi/L2/RewardPool";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
@@ -24,12 +23,11 @@ import { formatNumber, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import {
   useAccount,
   useContract,
-  useReadContract,
   useSendTransaction,
 } from "@starknet-react/core";
 import { formatEther } from "viem";
 
-import { CollectionAddresses, StakingAddresses } from "@realms-world/constants";
+import { StakingAddresses } from "@realms-world/constants";
 
 export const VelordsRewards = () => {
   const { address } = useAccount();

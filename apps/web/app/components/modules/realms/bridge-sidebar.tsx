@@ -1,5 +1,13 @@
+import type { BridgeRealm } from "@/types/ark";
+import type { Row, RowSelectionState } from "@tanstack/react-table";
+import { useMemo } from "react";
 import { EthereumConnect } from "@/components/layout/ethereum-connect";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -9,25 +17,17 @@ import {
   SidebarHeader,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-
-import type { Row, RowSelectionState } from "@tanstack/react-table";
-import { ChevronRight } from "lucide-react";
-import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
-import { useToast } from "@/hooks/use-toast";
-import { useAccount as useL1Account } from "wagmi";
-import { useAccount } from "@starknet-react/core";
-import { trpc } from "@/router";
-
-import { useMemo } from "react";
-import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
 import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
+import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
+import { useToast } from "@/hooks/use-toast";
+import { getBridgeTransactionsQueryOptions } from "@/lib/getRealms";
+import { useAccount } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
+import { useAccount as useL1Account } from "wagmi";
+
 import BridgeTransactionHistory from "./bridge-tx";
-import type { BridgeRealm } from "@/types/ark";
 
 interface BridgeSidebarProps {
   selectedRows: Row<BridgeRealm>[];
@@ -44,12 +44,14 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   const { address: l2Address } = useAccount();
   const { toast } = useToast();
 
-  const bridgeTxsQuery = trpc.bridgeTransactions.useQuery(
-    {
-      l1Account: l1Address?.toLowerCase(),
-      l2Account: l2Address,
-    },
-    { enabled: !!l1Address || !!l2Address, refetchInterval: 10000 }
+  const bridgeTxsQuery = useQuery(
+    getBridgeTransactionsQueryOptions(
+      {
+        l1Account: l1Address?.toLowerCase(),
+        l2Account: l2Address,
+      },
+      /*{ enabled: !!l1Address || !!l2Address, refetchInterval: 10000 }*/
+    ),
   );
   const bridgeTxs = bridgeTxsQuery.data ?? [];
 
@@ -65,7 +67,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
 
   const tokenIds: string[] = useMemo(
     () => selectedRows.map((row) => row.getValue("token_id")),
-    [selectedRows]
+    [selectedRows],
   );
 
   const {
@@ -111,21 +113,21 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
       variant="inset"
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
     >
-      <div className="flex text-sm items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-2 text-sm">
         Ethereum Wallet:
         <EthereumConnect />
       </div>
       <SidebarSeparator className="mx-0 mt-2" />
       <SidebarHeader>
-        <div className="text-xl border-b pb-2">
+        <div className="border-b pb-2 text-xl">
           Bridging {selectedRows.length} Realms to
           {selectedAsset === "Ethereum" ? " Starknet" : " Ethereum"}
         </div>
         <SidebarGroup>
-          <div className="flex gap-2 mb-4 flex-wrap">
+          <div className="mb-4 flex flex-wrap gap-2">
             {selectedRows.map((row) => (
               <span
-                className="border text-sm rounded p-1"
+                className="rounded border p-1 text-sm"
                 key={row.getValue("token_id")}
               >
                 #{row.getValue("token_id")}
@@ -166,7 +168,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
         <Collapsible defaultOpen className="group/collapsible">
           <SidebarGroupLabel
             asChild
-            className="group/label w-full text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
           >
             <CollapsibleTrigger className="bg-sidebar-accent h-10">
               Transaction History
