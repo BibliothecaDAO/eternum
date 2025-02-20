@@ -7,7 +7,6 @@ import {
   ContractAddress,
   divideByPrecision,
   getArmy,
-  getDominantTroopInfo,
   getEntityIdFromKeys,
   getStructure,
   ID,
@@ -18,18 +17,12 @@ import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { calculateRemainingTroops, formatBiomeBonus, getStaminaDisplay, getTroopResourceId } from "./combat-utils";
+import { formatBiomeBonus, getStaminaDisplay, getTroopResourceId } from "./combat-utils";
 
 enum TargetType {
   Structure,
   Army,
 }
-
-export type Troops = {
-  knight_count: number;
-  paladin_count: number;
-  crossbowman_count: number;
-};
 
 export const CombatContainer = ({
   attackerEntityId,
@@ -42,7 +35,7 @@ export const CombatContainer = ({
     account: { account },
     setup: {
       components,
-      components: { Position, Army, Structure, Health },
+      components: { Position, Structure, ExplorerTroops },
     },
   } = useDojo();
 
@@ -65,7 +58,7 @@ export const CombatContainer = ({
 
     const targetEntity = targetEntities[0];
     const structure = getComponentValue(Structure, targetEntity);
-    const army = getComponentValue(Army, targetEntity);
+    const explorer = getComponentValue(ExplorerTroops, targetEntity);
 
     if (structure) {
       return {
@@ -74,7 +67,7 @@ export const CombatContainer = ({
       };
     }
 
-    if (army) {
+    if (explorer) {
       return {
         info: getArmy(targetEntity, ContractAddress(account.address), components),
         targetType: TargetType.Army,
@@ -108,46 +101,27 @@ export const CombatContainer = ({
     const targetId = target.info?.entityId;
     if (!targetId) return null;
 
-    const targetArmy = getComponentValue(Army, getEntityIdFromKeys([BigInt(targetId)]));
-    const targetArmyEntity = {
-      ...targetArmy,
-      troops: {
-        knight_count: Number(targetArmy?.troops.knight_count || 0),
-        paladin_count: Number(targetArmy?.troops.paladin_count || 0),
-        crossbowman_count: Number(targetArmy?.troops.crossbowman_count || 0),
-      },
-    };
+    const targetArmy = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(targetId)]));
 
-    const attackerArmyComponent = getComponentValue(Army, getEntityIdFromKeys([BigInt(attackerEntityId)]));
-    const attackerArmyEntity = {
-      ...attackerArmyComponent,
-      troops: {
-        knight_count: Number(attackerArmyComponent?.troops.knight_count || 0),
-        paladin_count: Number(attackerArmyComponent?.troops.paladin_count || 0),
-        crossbowman_count: Number(attackerArmyComponent?.troops.crossbowman_count || 0),
-      },
-    };
+    const attackerArmyComponent = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
 
-    const attackerHealth = getComponentValue(Health, getEntityIdFromKeys([BigInt(attackerEntityId)]));
-    const targetHealth = getComponentValue(Health, getEntityIdFromKeys([BigInt(targetId)]));
-
-    if (!attackerArmyEntity || !targetArmyEntity || !attackerHealth || !targetHealth) return null;
+    if (!attackerArmyComponent || !targetArmy) return null;
 
     // Convert game armies to simulator armies
     const attackerArmy = {
       entity_id: attackerEntityId,
-      stamina: attackerStamina,
-      troopCount: getDominantTroopInfo(attackerArmyEntity.troops).count,
-      troopType: getDominantTroopInfo(attackerArmyEntity.troops).type,
-      tier: 1 as 1 | 2 | 3,
+      stamina: Number(attackerStamina),
+      troopCount: Number(attackerArmyComponent.troops.count),
+      troopType: attackerArmyComponent.troops.category as TroopType,
+      tier: Number(attackerArmyComponent.troops.tier) as 1 | 2 | 3,
     };
 
     const defenderArmy = {
       entity_id: targetId,
-      stamina: defenderStamina,
-      troopCount: getDominantTroopInfo(targetArmyEntity.troops).count,
-      troopType: getDominantTroopInfo(targetArmyEntity.troops).type,
-      tier: 1 as 1 | 2 | 3,
+      stamina: Number(defenderStamina),
+      troopCount: Number(targetArmy.troops.count),
+      troopType: targetArmy.troops.category as TroopType,
+      tier: Number(targetArmy.troops.tier) as 1 | 2 | 3,
     };
 
     const params = CombatSimulator.getDefaultParameters();
@@ -162,8 +136,9 @@ export const CombatContainer = ({
     const winner =
       attackerTroopsLeft === 0 ? defenderArmy.entity_id : defenderTroopsLeft === 0 ? attackerArmy.entity_id : null;
 
-    let newAttackerStamina = attackerStamina - staminaCombatConfig.staminaCost;
-    let newDefenderStamina = defenderStamina - Math.min(staminaCombatConfig.staminaCost, defenderStamina);
+    let newAttackerStamina = Number(attackerStamina) - staminaCombatConfig.staminaCost;
+    let newDefenderStamina =
+      Number(defenderStamina) - Math.min(staminaCombatConfig.staminaCost, Number(defenderStamina));
 
     if (attackerTroopsLeft <= 0 && defenderTroopsLeft > 0) {
       newDefenderStamina += staminaCombatConfig.staminaBonus;
@@ -180,12 +155,8 @@ export const CombatContainer = ({
       attackerDamage: result.attackerDamage,
       defenderDamage: result.defenderDamage,
       getRemainingTroops: () => ({
-        attackerTroops: calculateRemainingTroops(
-          attackerArmyEntity.troops,
-          attackerTroopsLost,
-          attackerArmy.troopCount,
-        ),
-        defenderTroops: calculateRemainingTroops(targetArmyEntity.troops, defenderTroopsLost, defenderArmy.troopCount),
+        attackerTroops: attackerArmy.troopCount - attackerTroopsLost,
+        defenderTroops: defenderArmy.troopCount - defenderTroopsLost,
       }),
     };
   }, [attackerEntityId, target, account, components, attackerStamina, defenderStamina]);
@@ -195,28 +166,28 @@ export const CombatContainer = ({
 
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
-    const army = getComponentValue(Army, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
 
     return {
       ...army,
       troops: {
-        knight_count: Number(army?.troops.knight_count || 0),
-        paladin_count: Number(army?.troops.paladin_count || 0),
-        crossbowman_count: Number(army?.troops.crossbowman_count || 0),
+        count: Number(army?.troops.count || 0),
+        category: army?.troops.category as TroopType,
+        tier: Number(army?.troops.tier) as 1 | 2 | 3,
       },
     };
   }, [attackerEntityId]);
 
   const targetArmyData = useMemo(() => {
     if (!target?.info?.entityId) return null;
-    const army = getComponentValue(Army, getEntityIdFromKeys([BigInt(target.info.entityId)]));
+    const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(target.info.entityId)]));
 
     return {
       ...army,
       troops: {
-        knight_count: Number(army?.troops.knight_count || 0),
-        paladin_count: Number(army?.troops.paladin_count || 0),
-        crossbowman_count: Number(army?.troops.crossbowman_count || 0),
+        count: Number(army?.troops.count || 0),
+        category: army?.troops.category as TroopType,
+        tier: Number(army?.troops.tier) as 1 | 2 | 3,
       },
     };
   }, [target]);
@@ -246,16 +217,12 @@ export const CombatContainer = ({
               <div className="mt-4 space-y-4">
                 <div className="text-gold/80">
                   <div className="text-sm font-medium mb-1">
-                    {getDominantTroopInfo(attackerArmyData.troops).label}
+                    {TroopType[attackerArmyData.troops.category]}
                     <span className="ml-2 text-xs">
-                      {formatBiomeBonus(
-                        CombatSimulator.getBiomeBonus(getDominantTroopInfo(attackerArmyData.troops).type, biome),
-                      )}
+                      {formatBiomeBonus(CombatSimulator.getBiomeBonus(attackerArmyData.troops.category, biome))}
                     </span>
                   </div>
-                  <div className="text-xl font-bold">
-                    {divideByPrecision(getDominantTroopInfo(attackerArmyData.troops).count)}
-                  </div>
+                  <div className="text-xl font-bold">{divideByPrecision(attackerArmyData.troops.count)}</div>
                 </div>
                 {battleSimulation && (
                   <div className="text-gold/80">
@@ -278,16 +245,12 @@ export const CombatContainer = ({
               <div className="mt-4 space-y-4">
                 <div className="text-gold/80">
                   <div className="text-sm font-medium mb-1">
-                    {getDominantTroopInfo(targetArmyData.troops).label}
+                    {TroopType[targetArmyData.troops.category]}
                     <span className="ml-2 text-xs">
-                      {formatBiomeBonus(
-                        CombatSimulator.getBiomeBonus(getDominantTroopInfo(targetArmyData.troops).type, biome),
-                      )}
+                      {formatBiomeBonus(CombatSimulator.getBiomeBonus(targetArmyData.troops.category, biome))}
                     </span>
                   </div>
-                  <div className="text-xl font-bold">
-                    {divideByPrecision(getDominantTroopInfo(targetArmyData.troops).count)}
-                  </div>
+                  <div className="text-xl font-bold">{divideByPrecision(targetArmyData.troops.count)}</div>
                 </div>
                 {battleSimulation && (
                   <div className="text-gold/80">
@@ -339,7 +302,7 @@ export const CombatContainer = ({
                 style={{
                   backgroundImage: originalTroops
                     ? `linear-gradient(rgba(20, 16, 13, 0.7), rgba(20, 16, 13, 0.7)), url(/images/resources/${getTroopResourceId(
-                        getDominantTroopInfo(originalTroops).type,
+                        originalTroops.category,
                       )}.png)`
                     : undefined,
                   backgroundSize: "cover",
@@ -360,9 +323,9 @@ export const CombatContainer = ({
                     <div className="text-gold/80">
                       <div className="text-sm font-medium mb-1">Remaining Forces</div>
                       <div className="text-xl font-bold flex items-baseline">
-                        {Math.floor(divideByPrecision(getDominantTroopInfo(troops).count))}
+                        {Math.floor(divideByPrecision(troops))}
                         <span className="text-xs ml-2 text-gold/50">
-                          / {Math.floor(divideByPrecision(getDominantTroopInfo(originalTroops).count))}
+                          / {Math.floor(divideByPrecision(originalTroops.count))}
                         </span>
                       </div>
                     </div>
@@ -372,11 +335,7 @@ export const CombatContainer = ({
 
                   <div className="text-gold/80">
                     <div className="text-sm font-medium mb-1">Biome Bonus</div>
-                    <div>
-                      {formatBiomeBonus(
-                        CombatSimulator.getBiomeBonus(getDominantTroopInfo(originalTroops).type, biome),
-                      )}
-                    </div>
+                    <div>{formatBiomeBonus(CombatSimulator.getBiomeBonus(originalTroops.category, biome))}</div>
                   </div>
                 </div>
               </div>

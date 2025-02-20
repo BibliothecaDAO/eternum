@@ -77,7 +77,7 @@ export const ArmyChip = ({
   return (
     <div
       className={`items-center text-xs px-2 hover:bg-gold/20 ${army.isMine ? "bg-blueish/20" : "bg-red/20"} ${
-        army.protectee ? "defensive-army-selector" : "attacking-army-selector"
+        army ? "defensive-army-selector" : "attacking-army-selector"
       } rounded-md border-gold/20 ${className}`}
     >
       {editMode ? (
@@ -88,7 +88,7 @@ export const ArmyChip = ({
               <span> Exit</span>
             </div>
           </Button>
-          <ArmyManagementCard army={army} owner_entity={army.entityOwner.entity_owner_id} />
+          <ArmyManagementCard army={army} owner_entity={army.entityId} />
         </>
       ) : showTroopSwap ? (
         <ArmyMergeTroopsPanel giverArmy={army} setShowMergeTroopsPopup={setShowTroopSwap} />
@@ -105,8 +105,8 @@ export const ArmyChip = ({
                         <React.Fragment>
                           <Plus
                             className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
-                              army.quantity.value === 0n ? "animate-pulse" : ""
-                            } ${army.protectee ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
+                              army.troops.count === 0n ? "animate-pulse" : ""
+                            } ${army ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
                             onClick={() => {
                               setTooltip(null);
                               setEditMode(!editMode);
@@ -121,7 +121,7 @@ export const ArmyChip = ({
                               setTooltip(null);
                             }}
                           />
-                          {army.quantity.value > 0 && (
+                          {army.troops.count > 0n && (
                             <>
                               <ViewOnMapIcon
                                 className="w-5 h-5 hover:scale-110 transition-all duration-300"
@@ -135,7 +135,7 @@ export const ArmyChip = ({
                               {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
                               <Swap
                                 className={`w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
-                                  army.protectee ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
+                                  army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
                                 }`}
                                 onClick={() => {
                                   setTooltip(null);
@@ -155,7 +155,7 @@ export const ArmyChip = ({
                           )}
                         </React.Fragment>
                       )}
-                      {army.quantity.value > 0 && (
+                      {army.troops.count > 0n && (
                         <Inventory
                           className="w-4 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300"
                           onClick={() => {
@@ -176,7 +176,7 @@ export const ArmyChip = ({
                     </div>
                   )}
                 </div>
-                {!army.protectee && armyHasTroops([army]) && (
+                {armyHasTroops([army]) && (
                   <div className="flex flex-row justify-between font-bold text-xs mr-2">
                     <div className="h-full flex items-end">
                       {isHome && <div className="text-xs px-2 text-green">At Base</div>}

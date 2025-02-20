@@ -2,7 +2,7 @@ import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { divideByPrecision } from ".";
-import { CAPACITY_CONFIG_CATEGORY_STRING_MAP } from "../constants";
+import { CapacityConfig } from "../constants";
 import { ClientComponents } from "../dojo";
 import { configManager } from "../managers/config-manager";
 import { ContractAddress, EntityType, ID } from "../types";
@@ -15,14 +15,10 @@ export const getEntityInfo = (
   currentDefaultTick: number,
   components: ClientComponents,
 ) => {
-  const { ArrivalTime, Movable, EntityOwner, Owner, Structure, Army, Position, Weight } = components;
+  const { EntityOwner, Owner, Structure, Position, ExplorerTroops, Realm } = components;
   const entityIdBigInt = BigInt(entityId);
-  const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityIdBigInt]));
-  const movable = getComponentValue(Movable, getEntityIdFromKeys([entityIdBigInt]));
 
-  const entityCapacityCategory = getComponentValue(Weight, getEntityIdFromKeys([entityIdBigInt]))?.capacity_category;
-  const capacityCategoryId = entityCapacityCategory ? CAPACITY_CONFIG_CATEGORY_STRING_MAP[entityCapacityCategory] : 0;
-  const capacity = configManager.getCapacityConfig(capacityCategoryId);
+  const explorer = getComponentValue(ExplorerTroops, getEntityIdFromKeys([entityIdBigInt]));
 
   const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityIdBigInt]));
   const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
@@ -30,16 +26,18 @@ export const getEntityInfo = (
   const name = getEntityName(entityId, components);
 
   const structure = getComponentValue(Structure, getEntityIdFromKeys([entityIdBigInt]));
+  const realm = getComponentValue(Realm, getEntityIdFromKeys([entityIdBigInt]));
+
+  const capacityCategoryId = explorer
+    ? CapacityConfig.Army
+    : realm
+      ? CapacityConfig.Storehouse
+      : structure
+        ? CapacityConfig.Structure
+        : CapacityConfig.None;
+  const capacity = configManager.getCapacityConfig(capacityCategoryId);
 
   const resources = getResourcesFromBalance(entityId, currentDefaultTick, components);
-  const army = getComponentValue(Army, getEntityIdFromKeys([entityIdBigInt]));
-  const rawIntermediateDestination = movable
-    ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y }
-    : undefined;
-  const intermediateDestination = rawIntermediateDestination
-    ? { x: rawIntermediateDestination.x, y: rawIntermediateDestination.y }
-    : undefined;
-
   const position = getComponentValue(Position, getEntityIdFromKeys([entityIdBigInt]));
 
   const homePosition = entityOwner
@@ -48,17 +46,13 @@ export const getEntityInfo = (
 
   return {
     entityId,
-    arrivalTime: arrivalTime?.arrives_at,
-    blocked: Boolean(movable?.blocked),
     capacity: divideByPrecision(Number(capacity) || 0),
-    intermediateDestination,
     position: position ? { x: position.x, y: position.y } : undefined,
     homePosition: homePosition ? { x: homePosition.x, y: homePosition.y } : undefined,
     owner: owner?.address,
     isMine: ContractAddress(owner?.address || 0n) === playerAccount,
-    isRoundTrip: movable?.round_trip || false,
     resources,
-    entityType: army ? EntityType.TROOP : EntityType.DONKEY,
+    entityType: explorer ? EntityType.TROOP : EntityType.DONKEY,
     structureCategory: structure?.category,
     structure,
     name,
@@ -71,7 +65,7 @@ const getRealmName = (realm: ComponentValue<ClientComponents["Realm"]["schema"]>
 };
 
 export const getEntityName = (entityId: ID, components: ClientComponents, abbreviate: boolean = false) => {
-  const entityName = getComponentValue(components.EntityName, getEntityIdFromKeys([BigInt(entityId)]));
+  const entityName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(entityId)]));
   const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(entityId)]));
   const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
   if (structure?.category === "Realm" && realm) {

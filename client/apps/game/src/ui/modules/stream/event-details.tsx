@@ -1,11 +1,6 @@
 import { ReactComponent as Check } from "@/assets/icons/check.svg";
-import { ReactComponent as Chest } from "@/assets/icons/chest.svg";
-import { ReactComponent as Coins } from "@/assets/icons/coins.svg";
-import { ReactComponent as Combat } from "@/assets/icons/combat.svg";
-import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
 import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Burn } from "@/assets/icons/fire.svg";
-import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { ReactComponent as Wrench } from "@/assets/icons/wrench.svg";
@@ -40,11 +35,6 @@ export const eventDetails: {
       `burnt ${currencyFormat(Number(componentValue.amount), 0)} donkeys`,
     emoji: <Burn className="w-6 self-center fill-current" />,
     color: "#A5D6A7",
-  },
-  [EventType.MapExplored]: {
-    getAction: (_: ComponentValue<ClientComponents["events"][EventType.MapExplored]["schema"]>) => `explored a tile`,
-    emoji: <Compass className="w-6 self-center fill-current" />,
-    color: "#ED9733",
   },
   [EventType.Swap]: {
     getAction: (componentValue: ComponentValue<ClientComponents["events"][EventType.Swap]["schema"]>) => {

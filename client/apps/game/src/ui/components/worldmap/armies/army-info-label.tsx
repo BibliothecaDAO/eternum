@@ -47,19 +47,19 @@ const ArmyInfoLabelCard = ({ army }: ArmyInfoLabelProps) => {
     setup: { components },
   } = useDojo();
 
-  const { realm, entityId, entityOwner, troops } = army;
+  const { realm, entityId, entity_owner_id, troops } = army;
 
   const realmId = realm?.realm_id || 0;
 
-  const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id, components) : "";
+  const attackerAddressName = entity_owner_id ? getRealmAddressName(entity_owner_id, components) : "";
 
   const originRealmName = getRealmNameById(realmId);
 
   const structure = useMemo(() => {
-    if (entityOwner.entity_owner_id) {
-      return getStructure(entityOwner.entity_owner_id, ContractAddress(address), components);
+    if (entity_owner_id) {
+      return getStructure(entity_owner_id, ContractAddress(address), components);
     }
-  }, [entityOwner.entity_owner_id]);
+  }, [entity_owner_id]);
 
   return (
     <BaseThreeTooltip

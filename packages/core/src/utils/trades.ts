@@ -1,7 +1,16 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { ContractComponents, ID, MarketInterface, Resource, ResourcesIds, getRealmNameById } from "..";
+import {
+  ClientComponents,
+  ContractComponents,
+  ID,
+  MarketInterface,
+  Resource,
+  ResourceManager,
+  ResourcesIds,
+  getRealmNameById,
+} from "..";
 
 export type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -16,14 +25,14 @@ export type TradeResources = {
 export const getDetachedResources = (entityId: ID, components: ContractComponents): Resource[] => {
   let resources = [];
   let index = 0n;
-  let detachedResource = getComponentValue(components.DetachedResource, getEntityIdFromKeys([BigInt(entityId), index]));
+  let detachedResource = getComponentValue(components.ResourceList, getEntityIdFromKeys([BigInt(entityId), index]));
   while (detachedResource) {
     resources.push({
       resourceId: detachedResource.resource_type,
-      amount: Number(detachedResource.resource_amount),
+      amount: Number(detachedResource.amount),
     });
     index++;
-    detachedResource = getComponentValue(components.DetachedResource, getEntityIdFromKeys([BigInt(entityId), index]));
+    detachedResource = getComponentValue(components.ResourceList, getEntityIdFromKeys([BigInt(entityId), index]));
   }
   return resources;
 };
@@ -33,8 +42,18 @@ export const getTradeResources = (tradeId: ID, components: ContractComponents): 
 
   if (!trade) return { takerGets: [], makerGets: [] };
 
-  let takerGets = getDetachedResources(trade.maker_gives_resources_id, components);
-  let makerGets = getDetachedResources(trade.taker_gives_resources_id, components);
+  let takerGets = [
+    {
+      resourceId: Number(trade.maker_gives_resource_type),
+      amount: Number(trade.maker_gives_min_resource_amount),
+    },
+  ];
+  let makerGets = [
+    {
+      resourceId: Number(trade.taker_pays_min_lords_amount),
+      amount: Number(trade.taker_pays_min_lords_amount),
+    },
+  ];
 
   return { takerGets, makerGets };
 };
@@ -50,13 +69,33 @@ export const getTradeResourcesFromEntityViewpoint = (
 
   let resourcesGet =
     trade.maker_id === entityId
-      ? getDetachedResources(trade.taker_gives_resources_id, components)
-      : getDetachedResources(trade.maker_gives_resources_id, components);
+      ? [
+          {
+            resourceId: Number(trade.taker_pays_min_lords_amount),
+            amount: Number(trade.taker_pays_min_lords_amount),
+          },
+        ]
+      : [
+          {
+            resourceId: Number(trade.maker_gives_resource_type),
+            amount: Number(trade.maker_gives_min_resource_amount),
+          },
+        ];
 
   let resourcesGive =
     trade.maker_id === entityId
-      ? getDetachedResources(trade.maker_gives_resources_id, components)
-      : getDetachedResources(trade.taker_gives_resources_id, components);
+      ? [
+          {
+            resourceId: Number(trade.maker_gives_resource_type),
+            amount: Number(trade.maker_gives_min_resource_amount),
+          },
+        ]
+      : [
+          {
+            resourceId: Number(trade.taker_pays_min_lords_amount),
+            amount: Number(trade.taker_pays_min_lords_amount),
+          },
+        ];
 
   return { resourcesGet, resourcesGive };
 };
@@ -69,7 +108,10 @@ export const computeTrades = (entityIds: Entity[], currentBlockTimestamp: number
         const { takerGets, makerGets } = getTradeResources(trade.trade_id, components);
 
         const makerRealm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
-        const makerName = getComponentValue(components.EntityName, getEntityIdFromKeys([BigInt(trade.maker_id)]))?.name;
+        const makerName = getComponentValue(
+          components.AddressName,
+          getEntityIdFromKeys([BigInt(trade.maker_id)]),
+        )?.name;
 
         const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
 
@@ -101,19 +143,18 @@ export const canAcceptOffer = (
   {
     realmEntityId,
     resourcesGive,
+    currentTick,
   }: {
     realmEntityId: ID;
     resourcesGive: Resource[];
+    currentTick: number;
   },
-  components: ContractComponents,
+  components: ClientComponents,
 ): boolean => {
   let canAccept = true;
   Object.values(resourcesGive).forEach((resource) => {
-    const realmResource = getComponentValue(
-      components.Resource,
-      getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resource.resourceId)]),
-    );
-    if (realmResource === undefined || realmResource.balance < resource.amount) {
+    const resourceManager = new ResourceManager(components, realmEntityId, resource.resourceId);
+    if (resourceManager.balanceWithProduction(currentTick) < resource.amount) {
       canAccept = false;
     }
   });

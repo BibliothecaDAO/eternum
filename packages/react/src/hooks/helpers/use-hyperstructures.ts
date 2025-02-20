@@ -30,7 +30,7 @@ export const useHyperstructures = () => {
     setup: { components },
   } = useDojo();
 
-  const { Structure, Contribution, Position, Owner, EntityName, Hyperstructure } = components;
+  const { Structure, Contribution, Position, Owner, AddressName, Hyperstructure } = components;
 
   const hyperstructures = useEntityQuery([Has(Structure), HasValue(Structure, { category: "Hyperstructure" })]).map(
     (hyperstructureEntityId) => {
@@ -47,7 +47,7 @@ export const useHyperstructures = () => {
       const ownerComponent = getComponentValue(Owner, ownerEntityIds || ("" as Entity));
       const owner = toHexString(ownerComponent?.address || 0n);
       const isOwner = ContractAddress(ownerComponent?.address ?? 0n) === ContractAddress(account.address);
-      const entityName = getComponentValue(EntityName, hyperstructureEntityId);
+      const entityName = getComponentValue(AddressName, hyperstructureEntityId);
       const ownerName = hyperstructure ? getAddressNameFromEntity(hyperstructure.entity_id!, components) : "";
 
       return {

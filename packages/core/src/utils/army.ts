@@ -1,21 +1,9 @@
-import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
+import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { ArmyInfo, getArmyTotalCapacityInKg } from "..";
-import { RESOURCE_PRECISION } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ContractAddress, ID, TroopInfo, TroopsLegacy, TroopType } from "../types";
-
-export const getArmyTroops = (troops: TroopsLegacy) => {
-  const troopInfo = getDominantTroopInfo(troops);
-
-  return {
-    count: troopInfo.count,
-    type: troopInfo.type,
-    // todo: get tier from troopInfo
-    tier: 1 as 1 | 2 | 3,
-  };
-};
 
 export const formatArmies = (
   armies: Entity[],
@@ -24,58 +12,27 @@ export const formatArmies = (
 ): ArmyInfo[] => {
   return armies
     .map((armyEntityId) => {
-      const army = getComponentValue(components.Army, armyEntityId);
-      if (!army) return undefined;
+      const explorerTroops = getComponentValue(components.ExplorerTroops, armyEntityId);
+      if (!explorerTroops) return undefined;
 
-      const position = getComponentValue(components.Position, armyEntityId);
-      if (!position) return undefined;
+      const position = explorerTroops.coord;
 
-      const entityOwner = getComponentValue(components.EntityOwner, armyEntityId);
-      if (!entityOwner) return undefined;
+      const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(explorerTroops.owner.entity_id)]));
 
-      const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
+      const totalCapacity = getArmyTotalCapacityInKg(Number(explorerTroops.troops.count));
 
-      let health = structuredClone(getComponentValue(components.Health, armyEntityId));
-      if (health) {
-        health.current = health.current / BigInt(RESOURCE_PRECISION);
-        health.lifetime = health.lifetime / BigInt(RESOURCE_PRECISION);
-      } else {
-        health = {
-          entity_id: army.entity_id,
-          current: 0n,
-          lifetime: 0n,
-        };
-      }
-      const protectee = getComponentValue(components.Protectee, armyEntityId);
+      const resource = getComponentValue(components.Resource, armyEntityId);
+      const weight = resource ? resource.weight : 0n;
 
-      let quantity = structuredClone(getComponentValue(components.Quantity, armyEntityId));
-      if (quantity) {
-        quantity.value = BigInt(quantity.value) / BigInt(RESOURCE_PRECISION);
-      } else {
-        quantity = {
-          entity_id: army.entity_id,
-          value: 0n,
-        };
-      }
-
-      const movable = getComponentValue(components.Movable, armyEntityId);
-
-      const totalCapacity = getArmyTotalCapacityInKg(army);
-
-      const weightComponentValue = getComponentValue(components.Weight, armyEntityId);
-      const weight = weightComponentValue ? weightComponentValue.value / BigInt(RESOURCE_PRECISION) : 0n;
-
-      const arrivalTime = getComponentValue(components.ArrivalTime, armyEntityId);
-      const stamina = getComponentValue(components.Stamina, armyEntityId);
-      const name = getComponentValue(components.EntityName, armyEntityId);
-      const realm =
-        entityOwner && getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
+      const stamina = explorerTroops.troops.stamina.amount;
+      const name = getComponentValue(components.AddressName, armyEntityId);
+      const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(explorerTroops.owner.entity_id)]));
       const homePosition =
         realm && getComponentValue(components.Position, getEntityIdFromKeys([BigInt(realm.entity_id)]));
 
       const structure = getComponentValue(
         components.Structure,
-        getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+        getEntityIdFromKeys([BigInt(explorerTroops.owner.entity_id)]),
       );
 
       const structurePosition =
@@ -87,17 +44,12 @@ export const formatArmies = (
       const isHome = structurePosition && position.x === structurePosition.x && position.y === structurePosition.y;
 
       return {
-        entityId: army.entity_id,
-        troops: getArmyTroops(army.troops),
-        protectee,
-        health,
-        movable,
-        quantity,
+        entityId: explorerTroops.explorer_id,
+        troops: explorerTroops.troops,
         totalCapacity,
         weight,
-        arrivalTime,
         position,
-        entityOwner,
+        entity_owner_id: explorerTroops.owner.entity_id,
         stamina,
         owner,
         realm,
@@ -105,9 +57,7 @@ export const formatArmies = (
         isMine,
         isMercenary,
         isHome,
-        name: name
-          ? shortString.decodeShortString(name.name.toString())
-          : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army.entity_id}`,
+        name: name ? shortString.decodeShortString(name.name.toString()) : `Army ${explorerTroops.explorer_id}`,
       };
     })
     .filter((army): army is ArmyInfo => army !== undefined);
@@ -122,21 +72,8 @@ export const getArmy = (
   return formatArmies([entityId], playerAddress, components)[0];
 };
 
-export const getArmiesInBattle = (battleEntityId: ID, playerAddress: ContractAddress, components: ClientComponents) => {
-  const armiesEntityIds = runQuery([
-    Has(components.Army),
-    NotValue(components.Health, { current: 0n }),
-    NotValue(components.Army, { battle_id: 0 }),
-    HasValue(components.Army, { battle_id: battleEntityId }),
-  ]);
-
-  const armies = formatArmies(Array.from(armiesEntityIds), playerAddress, components);
-
-  return armies;
-};
-
 export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
-  return entityArmies.some((army) => army && army.troops.count !== 0);
+  return entityArmies.some((army) => army && army.troops.count !== 0n);
 };
 
 export const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: number; y: number }) => {

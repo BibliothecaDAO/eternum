@@ -13,7 +13,6 @@ import {
   divideByPrecision,
   EntityType,
   getBalance,
-  getStructure,
   ID,
   MarketManager,
   multiplyByPrecision,
@@ -52,10 +51,11 @@ export const ResourceSwap = ({
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
-  const bankProtector = useMemo(() => {
-    const structure = getStructure(bankEntityId, ContractAddress(account.address), setup.components);
-    return structure?.protector;
-  }, [bankEntityId]);
+  // todo: fix this
+  // const bankProtector = useMemo(() => {
+  //   const structure = getStructure(bankEntityId, ContractAddress(account.address), setup.components);
+  //   return structure?.protector;
+  // }, [bankEntityId]);
 
   const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
@@ -124,7 +124,7 @@ export const ResourceSwap = ({
       setIsLoading(false);
       setOpenConfirmation(false);
     });
-  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, bankProtector]);
+  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 

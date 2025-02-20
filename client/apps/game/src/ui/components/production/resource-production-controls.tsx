@@ -111,7 +111,7 @@ export const ResourceProductionControls = ({
 
     allResources.forEach((resource) => {
       const resourceManager = new ResourceManager(components, realm.entityId, resource.resource);
-      const balance = resourceManager.balance(currentDefaultTick);
+      const balance = resourceManager.balanceWithProduction(currentDefaultTick);
       balances[resource.resource] = divideByPrecision(balance);
     });
     return balances;

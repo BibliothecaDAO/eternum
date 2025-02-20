@@ -1,4 +1,3 @@
-import { Position } from "@/types/position";
 import {
   BiomeType,
   ClientComponents,
@@ -26,7 +25,6 @@ import { shortString } from "starknet";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/constants";
 import {
   ArmySystemUpdate,
-  BattleSystemUpdate,
   BuildingSystemUpdate,
   RealmSystemUpdate,
   StructureProgress,
@@ -77,36 +75,19 @@ export class SystemManager {
   public get Army() {
     return {
       onUpdate: (callback: (value: ArmySystemUpdate) => void) => {
-        const query = defineQuery(
-          [
-            Has(this.setup.components.Army),
-            Has(this.setup.components.Position),
-            Has(this.setup.components.EntityOwner),
-            Has(this.setup.components.Health),
-          ],
-          { runOnInit: true },
-        );
+        const query = defineQuery([Has(this.setup.components.ExplorerTroops)], { runOnInit: true });
 
         return query.update$.subscribe((update) => {
-          if (
-            isComponentUpdate(update, this.setup.components.Army) ||
-            isComponentUpdate(update, this.setup.components.Position) ||
-            isComponentUpdate(update, this.setup.components.Health)
-          ) {
-            const army = getComponentValue(this.setup.components.Army, update.entity);
+          if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+            const army = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
 
             if (!army) return;
 
-            const position = getComponentValue(this.setup.components.Position, update.entity);
-            if (!position) return;
+            // const health = getComponentValue(this.setup.components.Health, update.entity);
+            // if (!health) return;
 
-            const health = getComponentValue(this.setup.components.Health, update.entity);
-            if (!health) return;
-
-            const protectee = getComponentValue(this.setup.components.Protectee, update.entity);
-            if (protectee) return;
-
-            const healthMultiplier = BigInt(configManager.getResourcePrecision());
+            // const protectee = getComponentValue(this.setup.components.Protectee, update.entity);
+            // if (protectee) return;
 
             const entityOwner = getComponentValue(this.setup.components.EntityOwner, update.entity);
             if (!entityOwner) return;
@@ -137,18 +118,20 @@ export class SystemManager {
             let guildName = "";
             if (guild?.guild_entity_id) {
               const guildEntityName = getComponentValue(
-                this.setup.components.EntityName,
+                this.setup.components.AddressName,
                 getEntityIdFromKeys([BigInt(guild.guild_entity_id)]),
               );
               guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
             }
 
             callback({
-              entityId: army.entity_id,
-              hexCoords: { col: position.x, row: position.y },
-              battleId: army.battle_id,
-              defender: Boolean(protectee),
-              currentHealth: health.current / healthMultiplier,
+              entityId: army.explorer_id,
+              hexCoords: { col: army.coord.x, row: army.coord.y },
+              // todo: fix this
+              battleId: 0,
+              defender: false,
+              // todo: fix this
+              currentHealth: 1n,
               order: realm.order,
               owner: { address: owner?.address || 0n, ownerName, guildName },
             });

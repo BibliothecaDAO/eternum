@@ -1,42 +1,24 @@
-import { type ComponentValue } from "@dojoengine/recs";
 import { configManager } from "..";
-import { CapacityConfig, RESOURCE_PRECISION, ResourcesIds } from "../../constants";
-import { ClientComponents } from "../../dojo/create-client-components";
+import { CapacityConfig, ResourcesIds } from "../../constants";
 import { Troops, TroopType } from "../../types";
 import { divideByPrecision, gramToKg } from "../../utils";
 
-export const getRemainingCapacityInKg = (
-  army: ComponentValue<ClientComponents["Army"]["schema"]>,
-  armyWeight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined,
-) => {
-  const totalCapacity = getArmyTotalCapacityInKg(army); // in kg
-  const weight = getArmyWeightInKg(armyWeight); // in kg
-  return totalCapacity - weight; // in kg
+export const getRemainingCapacityInKg = (troopsCount: number, weightInKg: number) => {
+  const totalCapacity = getArmyTotalCapacityInKg(troopsCount); // in kg
+  return totalCapacity - BigInt(weightInKg); // in kg
 };
 
-export const getArmyTotalCapacityInKg = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
+export const getArmyTotalCapacityInKg = (troopsCount: number) => {
   // Convert weight_gram to kg and multiply by number of troops
   const capacity = configManager.getCapacityConfig(CapacityConfig.Army);
-  return BigInt(gramToKg(Number(capacity))) * getArmyNumberOfTroops(army); // in kg
-};
-
-const getArmyWeightInKg = (weight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined) => {
-  if (!weight) return 0n;
-  return BigInt(gramToKg(Number(weight.value))); // in kg
-};
-
-export const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
-  const knights = army.troops.knight_count || 0n;
-  const crossbowmen = army.troops.crossbowman_count || 0n;
-  const paladins = army.troops.paladin_count || 0n;
-  return (knights + crossbowmen + paladins) / BigInt(RESOURCE_PRECISION);
+  return BigInt(gramToKg(Number(capacity))) * BigInt(troopsCount); // in kg
 };
 
 export const computeTravelFoodCosts = (troops: Troops) => {
   let foodConsumption;
-  const troopCount = divideByPrecision(troops.count);
+  const troopCount = divideByPrecision(Number(troops.count));
 
-  switch (troops.type) {
+  switch (troops.category) {
     case TroopType.Paladin:
       foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
       break;
@@ -61,9 +43,9 @@ export const computeTravelFoodCosts = (troops: Troops) => {
 
 export const computeExploreFoodCosts = (troops: Troops) => {
   let foodConsumption;
-  const troopCount = divideByPrecision(troops.count);
+  const troopCount = divideByPrecision(Number(troops.count));
 
-  switch (troops.type) {
+  switch (troops.category) {
     case TroopType.Paladin:
       foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
       break;

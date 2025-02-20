@@ -15,7 +15,7 @@ export const StaminaResource = ({ entityId, className }: { entityId: ID | undefi
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const maxStamina = staminaManager.getMaxStamina(
-    getComponentValue(setup.components.Army, getEntityIdFromKeys([BigInt(entityId || 0)]))?.troops,
+    getComponentValue(setup.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId || 0)]))?.troops,
   );
 
   const stamina = useMemo(

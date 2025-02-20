@@ -2,7 +2,7 @@ import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@d
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
-import { type DojoAccount } from "..";
+import { ResourceManager, type DojoAccount } from "..";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -205,22 +205,16 @@ export class TileManager {
 
     const resourceChange = configManager.buildingCosts[buildingType];
     resourceChange.forEach((resource) => {
-      this._overrideResource(realmEntity, resource.resource, -BigInt(resource.amount));
+      this._overrideResource(entityId, resource.resource, -BigInt(resource.amount));
     });
 
     return { overrideId, populationOverrideId, quantityOverrideId };
   };
 
-  private _overrideResource = (entity: Entity, resourceType: number, change: bigint) => {
-    const currentBalance = getComponentValue(this.components.Resource, entity)?.balance || 0n;
-    const resourceOverrideId = uuid();
-    this.components.Resource.addOverride(resourceOverrideId, {
-      entity,
-      value: {
-        resource_type: resourceType,
-        balance: currentBalance + change,
-      },
-    });
+  private _overrideResource = (entity: ID, resourceType: number, change: bigint) => {
+    const resourceManager = new ResourceManager(this.components, entity, resourceType);
+    const overrideId = uuid();
+    resourceManager.optimisticResourceUpdate(overrideId, change);
   };
 
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {

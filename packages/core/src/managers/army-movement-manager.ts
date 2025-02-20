@@ -2,14 +2,8 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, BiomeType, divideByPrecision, DojoAccount, getArmyTroops, multiplyByPrecision } from "..";
-import {
-  CapacityConfig,
-  FELT_CENTER,
-  getDirectionBetweenAdjacentHexes,
-  getNeighborHexes,
-  ResourcesIds,
-} from "../constants";
+import { Biome, BiomeType, divideByPrecision, DojoAccount, multiplyByPrecision } from "..";
+import { FELT_CENTER, getDirectionBetweenAdjacentHexes, getNeighborHexes, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
 import { ContractAddress, HexPosition, ID, TravelTypes, TroopType } from "../types";
@@ -40,17 +34,17 @@ export class ArmyMovementManager {
   }
 
   private _getTroopType(): TroopType {
-    const entityArmy = getComponentValue(this.components.Army, this.entity);
-    const knightCount = entityArmy?.troops?.knight_count ?? 0;
-    const crossbowmanCount = entityArmy?.troops?.crossbowman_count ?? 0;
-    const paladinCount = entityArmy?.troops?.paladin_count ?? 0;
+    // const entityArmy = getComponentValue(this.components.Army, this.entity);
+    // const knightCount = entityArmy?.troops?.knight_count ?? 0;
+    // const crossbowmanCount = entityArmy?.troops?.crossbowman_count ?? 0;
+    // const paladinCount = entityArmy?.troops?.paladin_count ?? 0;
 
-    if (knightCount >= crossbowmanCount && knightCount >= paladinCount) {
-      return TroopType.Knight;
-    }
-    if (crossbowmanCount >= knightCount && crossbowmanCount >= paladinCount) {
-      return TroopType.Crossbowman;
-    }
+    // if (knightCount >= crossbowmanCount && knightCount >= paladinCount) {
+    //   return TroopType.Knight;
+    // }
+    // if (crossbowmanCount >= knightCount && crossbowmanCount >= paladinCount) {
+    //   return TroopType.Crossbowman;
+    // }
     return TroopType.Paladin;
   }
 
@@ -61,9 +55,9 @@ export class ArmyMovementManager {
       return false;
     }
 
-    const entityArmy = getComponentValue(this.components.Army, this.entity);
+    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
     const exploreFoodCosts = entityArmy
-      ? computeExploreFoodCosts(getArmyTroops(entityArmy?.troops))
+      ? computeExploreFoodCosts(entityArmy?.troops)
       : {
           wheatPayAmount: 0,
           fishPayAmount: 0,
@@ -88,11 +82,11 @@ export class ArmyMovementManager {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
     // Calculate minimum stamina cost across all biomes for this troop type
     const minTravelStaminaCost = configManager.getMinTravelStaminaCost();
-    const maxStaminaSteps = Math.floor(stamina.amount / minTravelStaminaCost);
+    const maxStaminaSteps = Math.floor(Number(stamina.amount) / minTravelStaminaCost);
 
-    const entityArmy = getComponentValue(this.components.Army, this.entity);
+    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
     const travelFoodCosts = entityArmy
-      ? computeTravelFoodCosts(getArmyTroops(entityArmy.troops))
+      ? computeTravelFoodCosts(entityArmy.troops)
       : {
           wheatPayAmount: 0,
           fishPayAmount: 0,
@@ -111,8 +105,8 @@ export class ArmyMovementManager {
   };
 
   public getFood(currentDefaultTick: number) {
-    const wheatBalance = this.wheatManager.balance(currentDefaultTick);
-    const fishBalance = this.fishManager.balance(currentDefaultTick);
+    const wheatBalance = this.wheatManager.balanceWithProduction(currentDefaultTick);
+    const fishBalance = this.fishManager.balanceWithProduction(currentDefaultTick);
 
     return {
       wheat: divideByPrecision(wheatBalance),
@@ -171,7 +165,7 @@ export class ArmyMovementManager {
     currentArmiesTick: number,
   ): ActionPaths {
     const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
-    if (armyStamina === 0) return new ActionPaths();
+    if (armyStamina === 0n) return new ActionPaths();
 
     const troopType = this._getTroopType();
     const startPos = this._getCurrentPosition();
@@ -300,27 +294,37 @@ export class ArmyMovementManager {
   };
 
   private readonly _optimisticStaminaUpdate = (overrideId: string, cost: number, currentArmiesTick: number) => {
-    const stamina = this.staminaManager.getStamina(currentArmiesTick);
+    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const stamina = explorerTroops?.troops.stamina;
+
+    if (!stamina) return;
 
     // substract the costs
-    this.components.Stamina.addOverride(overrideId, {
+    this.components.ExplorerTroops.addOverride(overrideId, {
       entity: this.entity,
       value: {
-        entity_id: stamina.entity_id,
-        last_refill_tick: stamina.last_refill_tick,
-        amount: stamina.amount - cost,
+        ...explorerTroops,
+        troops: {
+          ...explorerTroops?.troops,
+          stamina: {
+            amount: stamina.amount - BigInt(cost),
+            updated_tick: stamina.updated_tick,
+          },
+        },
       },
     });
   };
 
   private readonly _optimisticCapacityUpdate = (overrideId: string, capacity: number) => {
-    const currentWeight = getComponentValue(this.components.Weight, this.entity);
+    const resource = getComponentValue(this.components.Resource, this.entity);
+    const weight = resource?.weight;
 
-    this.components.Weight.addOverride(overrideId, {
+    this.components.Resource.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: this.entityId,
-        value: (currentWeight?.value || 0n) + BigInt(capacity),
+        ...resource,
+        weight: (weight || 0) + capacity,
       },
     });
   };
@@ -349,16 +353,6 @@ export class ArmyMovementManager {
     });
   };
 
-  private readonly _optimisticArrivalTimeUpdate = (blockTimestamp: number, overrideId: string) => {
-    this.components.ArrivalTime.addOverride(overrideId, {
-      entity: this.entity,
-      value: {
-        entity_id: this.entityId,
-        arrives_at: BigInt(blockTimestamp || 0),
-      },
-    });
-  };
-
   private readonly _optimisticExplore = (
     blockTimestamp: number,
     col: number,
@@ -370,7 +364,6 @@ export class ArmyMovementManager {
     this._optimisticStaminaUpdate(overrideId, configManager.getExploreStaminaCost(), currentArmiesTick);
     this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticPositionUpdate(overrideId, col, row);
-    this._optimisticArrivalTimeUpdate(blockTimestamp, overrideId);
     this._optimisticCapacityUpdate(
       overrideId,
       // all resources you can find have the same weight as wood
@@ -428,7 +421,6 @@ export class ArmyMovementManager {
 
     this._optimisticStaminaUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, currentArmiesTick);
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
-    this._optimisticArrivalTimeUpdate(blockTimestamp, overrideId);
 
     this.components.Position.addOverride(overrideId, {
       entity: this.entity,
@@ -449,20 +441,18 @@ export class ArmyMovementManager {
 
   // you can remove all non visual overrides when the action fails or succeeds
   private readonly _removeNonVisualOverrides = (overrideId: string) => {
-    this.components.Stamina.removeOverride(overrideId);
     this.components.Resource.removeOverride(overrideId);
-    this.components.Weight.removeOverride(overrideId);
-    this.components.ArrivalTime.removeOverride(overrideId);
+    this.components.ExplorerTroops.removeOverride(overrideId);
   };
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
-    const entityArmy = getComponentValue(this.components.Army, this.entity);
+    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
     if (!entityArmy) return;
     let costs = { wheatPayAmount: 0, fishPayAmount: 0 };
     if (travelType === TravelTypes.Explore) {
-      costs = computeExploreFoodCosts(getArmyTroops(entityArmy.troops));
+      costs = computeExploreFoodCosts(entityArmy.troops);
     } else {
-      costs = computeTravelFoodCosts(getArmyTroops(entityArmy.troops));
+      costs = computeTravelFoodCosts(entityArmy.troops);
     }
 
     // need to add back precision for optimistic resource update
@@ -524,16 +514,13 @@ export class ArmyMovementManager {
   };
 
   private readonly _getArmyRemainingCapacity = () => {
-    const armyCapacity = getComponentValue(
-      this.components.WorldConfig,
-      getEntityIdFromKeys([BigInt(CapacityConfig.Army)]),
-    )?.capacity_config.troop_capacity;
-    const armyWeight = getComponentValue(this.components.Weight, this.entity);
+    const resource = getComponentValue(this.components.Resource, this.entity);
+    if (!resource) return 0;
 
-    const armyEntity = getComponentValue(this.components.Army, this.entity);
+    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
+    if (!explorerTroops) return 0;
+    const armyWeight = resource.weight;
 
-    if (!armyEntity || !armyCapacity) return 0n;
-
-    return getRemainingCapacityInKg(armyEntity, armyWeight);
+    return getRemainingCapacityInKg(Number(explorerTroops.troops.count), Number(armyWeight));
   };
 }

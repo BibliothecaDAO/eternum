@@ -14,7 +14,7 @@ import {
   WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
-import { Config, EntityType, TickIds } from "../types";
+import { Config, EntityType, TickIds, TroopType } from "../types";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
@@ -596,14 +596,42 @@ export class ClientConfigManager {
     };
   }
 
-  getTroopStaminaConfig(troopId: number) {
-    return this.getValueOrDefault(() => {
-      const staminaConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.troop_stamina_config;
-      return staminaConfig?.stamina_initial ?? 0;
-    }, 0);
+  getTroopStaminaConfig(troopType: TroopType) {
+    return this.getValueOrDefault(
+      () => {
+        const staminaConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.troop_stamina_config;
+
+        switch (troopType) {
+          case TroopType.Knight:
+            return {
+              staminaInitial: staminaConfig?.stamina_initial ?? 0,
+              staminaMax: staminaConfig?.stamina_knight_max ?? 0,
+            };
+          case TroopType.Crossbowman:
+            return {
+              staminaInitial: staminaConfig?.stamina_initial ?? 0,
+              staminaMax: staminaConfig?.stamina_crossbowman_max ?? 0,
+            };
+          case TroopType.Paladin:
+            return {
+              staminaInitial: staminaConfig?.stamina_initial ?? 0,
+              staminaMax: staminaConfig?.stamina_paladin_max ?? 0,
+            };
+          default:
+            return {
+              staminaInitial: 0,
+              staminaMax: 0,
+            };
+        }
+      },
+      {
+        staminaInitial: 0,
+        staminaMax: 0,
+      },
+    );
   }
 
   getResourceRarity(resourceId: ResourcesIds) {

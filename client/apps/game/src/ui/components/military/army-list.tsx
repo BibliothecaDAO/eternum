@@ -50,11 +50,12 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   }, [existingBuildings]);
 
   const numberAttackingArmies = useMemo(() => {
-    return structureArmies.filter((army) => !army.protectee).length;
+    return structureArmies.length;
   }, [structureArmies]);
 
+  // todo: fix this
   const numberDefensiveArmies = useMemo(() => {
-    return structureArmies.filter((army) => army.protectee).length;
+    return structureArmies.length;
   }, [structureArmies]);
 
   const isRealm = structure.category === StructureType[StructureType.Realm];

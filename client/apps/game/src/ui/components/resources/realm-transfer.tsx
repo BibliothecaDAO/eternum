@@ -42,7 +42,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const resourceManager = useResourceManager(selectedStructureEntityId, resource);
 
   const balance = useMemo(() => {
-    return resourceManager.balance(tick);
+    return resourceManager.balanceWithProduction(tick);
   }, [resourceManager, tick]);
 
   const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
@@ -191,11 +191,11 @@ const RealmTransferBalance = memo(
     const donkeyManager = useResourceManager(structure.structure.entity_id, ResourcesIds.Donkey);
 
     const getBalance = useCallback(() => {
-      return resourceManager.balance(tick);
+      return resourceManager.balanceWithProduction(tick);
     }, [resourceManager, tick]);
 
     const getDonkeyBalance = useCallback(() => {
-      return donkeyManager.balance(tick);
+      return donkeyManager.balanceWithProduction(tick);
     }, [donkeyManager, tick]);
 
     const [resourceWeight, setResourceWeight] = useState(0);

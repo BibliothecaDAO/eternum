@@ -4,8 +4,7 @@ import { shortString } from "starknet";
 import { configManager, Structure } from "..";
 import { StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
-import { ContractAddress, ID, Position, TickIds } from "../types";
-import { getArmy } from "./army";
+import { ArmyInfo, ContractAddress, ID, Position, TickIds } from "../types";
 import { getEntityName } from "./entities";
 import { currentTickCount } from "./utils";
 
@@ -51,8 +50,13 @@ const getStructureInfo = (
   );
   const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
 
-  const protectorArmy = getComponentValue(components.Protector, entity);
-  const protector = protectorArmy ? getArmy(protectorArmy.army_id, playerAddress, components) : undefined;
+  // const protectorArmies = [
+  //   structure.guards.alpha,
+  //   structure.guards.bravo,
+  //   structure.guards.charlie,
+  //   structure.guards.delta,
+  // ];
+  const protectors: ArmyInfo[] = [];
 
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([owner?.address]));
   const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
@@ -66,7 +70,7 @@ const getStructureInfo = (
     owner: owner as unknown as any,
     name,
     position,
-    protector,
+    protectors,
     isMine: ContractAddress(owner?.address || 0n) === playerAddress,
     isMercenary: owner.address === 0n,
     ownerName,

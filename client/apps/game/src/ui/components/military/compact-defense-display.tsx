@@ -16,7 +16,7 @@ export const CompactDefenseDisplay = ({ troops, className = "" }: CompactDefense
           className="flex items-center bg-brown-900/90 border border-gold/20 rounded-md px-1.5 py-0.5"
           title={`Defense Slot ${defense.id}`}
         >
-          <ResourceIcon withTooltip={false} resource={defense.troops.type} size="xs" className="w-3 h-3" />
+          <ResourceIcon withTooltip={false} resource={defense.troops.category} size="xs" className="w-3 h-3" />
           <span className="text-[10px] text-gold/90 font-medium ml-1">
             {currencyFormat(Number(defense.troops.count || 0), 0)}
           </span>

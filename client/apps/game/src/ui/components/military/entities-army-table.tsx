@@ -51,9 +51,9 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
   const totalTroops = entityArmies.reduce(
     (acc, army: ArmyInfo) => {
       return {
-        crossbowmen: Number(acc.crossbowmen) + (army.troops.type === TroopType.Crossbowman ? army.troops.count : 0),
-        paladins: Number(acc.paladins) + (army.troops.type === TroopType.Paladin ? army.troops.count : 0),
-        knights: Number(acc.knights) + (army.troops.type === TroopType.Knight ? army.troops.count : 0),
+        crossbowmen: acc.crossbowmen + (army.troops.category === TroopType.Crossbowman ? Number(army.troops.count) : 0),
+        paladins: acc.paladins + (army.troops.category === TroopType.Paladin ? Number(army.troops.count) : 0),
+        knights: acc.knights + (army.troops.category === TroopType.Knight ? Number(army.troops.count) : 0),
       };
     },
     { crossbowmen: 0, paladins: 0, knights: 0 },

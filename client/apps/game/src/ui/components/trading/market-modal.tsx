@@ -15,7 +15,7 @@ import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { Tabs } from "@/ui/elements/tab";
-import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ContractAddress,
@@ -25,8 +25,7 @@ import {
   getArmy,
   getStructureAtPosition,
 } from "@bibliothecadao/eternum";
-import { useBank, useDojo, useMarket, usePlayerStructures } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
+import { useBank, useDojo, useMarket, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 
 const MarketResourceSidebar = lazy(() =>
@@ -84,26 +83,20 @@ export const MarketModal = () => {
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
 
-  const lordsBalance =
-    useComponentValue(
-      dojo.setup.components.Resource,
-      getEntityIdFromKeys([BigInt(structureEntityId!), BigInt(ResourcesIds.Lords)]),
-    )?.balance || 0n;
+  const structureResourceManager = useResourceManager(structureEntityId, ResourcesIds.Lords);
+  const bankResourceManager = useResourceManager(bank?.entityId || 0, ResourcesIds.Lords);
 
-  const bankLordsBalance =
-    useComponentValue(
-      dojo.setup.components.Resource,
-      getEntityIdFromKeys([BigInt(bank?.entityId!), BigInt(ResourcesIds.Lords)]),
-    )?.balance || 0n;
+  const structureLordsBalance = useMemo(() => Number(structureResourceManager.balance()), [structureResourceManager]);
+  const bankLordsBalance = useMemo(() => Number(bankResourceManager.balance()), [bankResourceManager]);
 
   const bankArmy = useMemo(
     () =>
       getArmy(
-        bankStructure?.protector?.entityId || 0,
+        bankStructure?.protectors[0]?.entityId || 0,
         ContractAddress(dojo.account.account.address),
         dojo.setup.components,
       ),
-    [bankStructure?.protector?.entityId, dojo.account.account.address, dojo.setup.components],
+    [bankStructure, dojo.account.account.address, dojo.setup.components],
   );
 
   const tabs = useMemo(
@@ -216,7 +209,7 @@ export const MarketModal = () => {
               </Select>
             </div>
             <div className=" ml-2 bg-map align-middle flex gap-2">
-              {currencyFormat(Number(lordsBalance), 2)}{" "}
+              {currencyFormat(Number(structureLordsBalance), 2)}{" "}
               <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
             </div>
           </div>

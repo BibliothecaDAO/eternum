@@ -34,7 +34,7 @@ export const ResourceChip = ({
   const [balance, setBalance] = useState(0);
 
   const getBalance = useCallback(() => {
-    return resourceManager.balance(tick);
+    return resourceManager.balanceWithProduction(tick);
   }, [resourceManager, tick]);
 
   const production = useMemo(() => {
@@ -68,13 +68,13 @@ export const ResourceChip = ({
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
     let realTick = currentTick;
 
-    const newBalance = resourceManager.balance(realTick);
+    const newBalance = resourceManager.balanceWithProduction(realTick);
     setBalance(newBalance);
 
     if (isActive) {
       const interval = setInterval(() => {
         realTick += 1;
-        const newBalance = resourceManager.balance(realTick);
+        const newBalance = resourceManager.balanceWithProduction(realTick);
         setBalance(newBalance);
       }, tickTime);
       return () => clearInterval(interval);

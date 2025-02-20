@@ -43,22 +43,16 @@ export type DojoAccount = Account | AccountInterface;
 export type ArmyInfo = {
   entityId: ID;
   troops: Troops;
+  stamina: bigint;
   name: string;
   isMine: boolean;
   isMercenary: boolean;
   isHome: boolean;
-  offset: Position;
-  health: ComponentValue<ClientComponents["Health"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
-  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
-  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
-  protectee: ComponentValue<ClientComponents["Protectee"]["schema"]> | undefined;
-  movable: ComponentValue<ClientComponents["Movable"]["schema"]> | undefined;
+  entity_owner_id: ID;
   totalCapacity: bigint;
   weight: bigint;
-  arrivalTime: ComponentValue<ClientComponents["ArrivalTime"]["schema"]> | undefined;
-  stamina: ComponentValue<ClientComponents["Stamina"]["schema"]> | undefined;
   realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
   homePosition: ComponentValue<ClientComponents["Position"]["schema"]> | undefined;
 };
@@ -70,7 +64,7 @@ export type Structure = {
   isMercenary: boolean;
   name: string;
   ownerName?: string;
-  protector: ArmyInfo | undefined;
+  protectors: ArmyInfo[];
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
@@ -215,9 +209,13 @@ export interface Health {
 }
 
 export interface Troops {
-  count: number;
-  type: TroopType;
-  tier: 1 | 2 | 3;
+  category: string;
+  tier: string;
+  count: bigint;
+  stamina: {
+    amount: bigint;
+    updated_tick: bigint;
+  };
 }
 
 export enum TroopType {

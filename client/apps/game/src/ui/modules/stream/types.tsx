@@ -3,7 +3,6 @@ import { ContractAddress, Position } from "@bibliothecadao/eternum";
 export enum EventType {
   BurnDonkey = "BurnDonkey",
   SettleRealm = "SettleRealmData",
-  MapExplored = "MapExplored",
   Swap = "SwapEvent",
   HyperstructureFinished = "HyperstructureFinished",
   HyperstructureContribution = "HyperstructureContribution",
