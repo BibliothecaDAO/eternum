@@ -63,7 +63,7 @@ const getStructureInfo = (
     entityId: structure.entity_id,
     structure,
     entityOwner,
-    owner,
+    owner: owner as unknown as any,
     name,
     position,
     protector,

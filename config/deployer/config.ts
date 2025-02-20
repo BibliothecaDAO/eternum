@@ -652,13 +652,15 @@ export const setTroopConfig = async (config: Config) => {
 
   const {
     damage: {
-      knightBaseDamage: knight_strength,
-      paladinBaseDamage: paladin_strength,
-      crossbowmanBaseDamage: crossbowman_strength,
-      t2DamageBonus: t2_damage_bonus,
-      t3DamageBonus: t3_damage_bonus,
+      t1DamageValue: t1_damage_value,
+      t2DamageMultiplier: t2_damage_multiplier,
+      t3DamageMultiplier: t3_damage_multiplier,
       damageBiomeBonusNum: damage_biome_bonus_num,
       damageScalingFactor: damage_scaling_factor,
+      damageBetaSmall: damage_beta_small,
+      damageBetaLarge: damage_beta_large,
+      damageC0: damage_c0,
+      damageDelta: damage_delta,
     },
     stamina: {
       staminaGainPerTick: stamina_gain_per_tick,
@@ -688,13 +690,15 @@ export const setTroopConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
     damage_config: {
-      knight_base_damage: knight_strength,
-      crossbowman_base_damage: crossbowman_strength,
-      paladin_base_damage: paladin_strength,
-      t2_damage_bonus: t2_damage_bonus,
-      t3_damage_bonus: t3_damage_bonus,
+      t1_damage_value: t1_damage_value,
+      t2_damage_multiplier: t2_damage_multiplier,
+      t3_damage_multiplier: t3_damage_multiplier,
       damage_biome_bonus_num: damage_biome_bonus_num,
       damage_scaling_factor: damage_scaling_factor,
+      damage_beta_small: damage_beta_small,
+      damage_beta_large: damage_beta_large,
+      damage_c0: damage_c0,
+      damage_delta: damage_delta,
     },
     stamina_config: {
       stamina_gain_per_tick: stamina_gain_per_tick,
@@ -724,13 +728,15 @@ export const setTroopConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Damage Configuration")}
-    │  ${chalk.gray("Knight Base Damage:")}      ${chalk.white(calldata.damage_config.knight_base_damage)}
-    │  ${chalk.gray("Paladin Base Damage:")}     ${chalk.white(calldata.damage_config.paladin_base_damage)}
-    │  ${chalk.gray("Crossbow Base Damage:")}    ${chalk.white(calldata.damage_config.crossbowman_base_damage)}
-    │  ${chalk.gray("T2 Damage Bonus:")}         ${chalk.white(calldata.damage_config.t2_damage_bonus)}
-    │  ${chalk.gray("T3 Damage Bonus:")}         ${chalk.white(calldata.damage_config.t3_damage_bonus)}
-    │  ${chalk.gray("Biome Bonus:")}             ${chalk.white(calldata.damage_config.damage_biome_bonus_num)}
-    │  ${chalk.gray("Damage Scaling:")}          ${chalk.white(calldata.damage_config.damage_scaling_factor)}
+    │  ${chalk.gray("T1 Damage Value:")}      ${chalk.white(calldata.damage_config.t1_damage_value)}
+    │  ${chalk.gray("T2 Damage Multiplier:")}     ${chalk.white(calldata.damage_config.t2_damage_multiplier)}
+    │  ${chalk.gray("T3 Damage Multiplier:")}    ${chalk.white(calldata.damage_config.t3_damage_multiplier)}
+    │  ${chalk.gray("Damage Biome Bonus:")}         ${chalk.white(calldata.damage_config.damage_biome_bonus_num)}
+    │  ${chalk.gray("Damage Scaling Factor:")}         ${chalk.white(calldata.damage_config.damage_scaling_factor)}
+    │  ${chalk.gray("Damage Beta Small:")}             ${chalk.white(calldata.damage_config.damage_beta_small)}
+    │  ${chalk.gray("Damage Beta Large:")}             ${chalk.white(calldata.damage_config.damage_beta_large)}
+    │  ${chalk.gray("Damage C0:")}             ${chalk.white(calldata.damage_config.damage_c0)}
+    │  ${chalk.gray("Damage Delta:")}             ${chalk.white(calldata.damage_config.damage_delta)}
     │
     │  ${chalk.yellow("Stamina Configuration")}
     │  ${chalk.gray("Gain Per Tick:")}           ${chalk.white(calldata.stamina_config.stamina_gain_per_tick)}

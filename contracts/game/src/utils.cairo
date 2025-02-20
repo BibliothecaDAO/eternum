@@ -7,3 +7,4 @@ pub mod tasks;
 pub mod testing;
 pub mod trophies;
 pub mod vrgda;
+pub mod catridge;

@@ -509,13 +509,15 @@ export interface Config {
   };
   troop: {
     damage: {
-      knightBaseDamage: number;
-      crossbowmanBaseDamage: number;
-      paladinBaseDamage: number;
-      t2DamageBonus: number;
-      t3DamageBonus: number;
+      t1DamageValue: bigint;
+      t2DamageMultiplier: bigint;
+      t3DamageMultiplier: bigint;
       damageBiomeBonusNum: number;
-      damageScalingFactor: number;
+      damageScalingFactor: bigint;
+      damageC0: bigint;
+      damageDelta: bigint;
+      damageBetaSmall: bigint;
+      damageBetaLarge: bigint;
     };
     stamina: {
       staminaGainPerTick: number;
