@@ -1,7 +1,8 @@
 import { DelegateProfileForm } from "@/components/modules/governance/delegate-profile-form";
 import { Login } from "@/components/modules/governance/sign-in-with-starknet";
-import { trpc } from "@/router";
+import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { useAccount } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/delegate/profile")({
@@ -10,13 +11,15 @@ export const Route = createFileRoute("/delegate/profile")({
 
 function RouteComponent() {
   const { address } = useAccount();
-  const { data: delegate } = trpc.delegates.byID.useQuery(
-    { address: address ?? "0x" },
-    {
+  const { data: delegate } = useQuery(
+    getDelegateByIDQueryOptions(
+      { address: address ?? "0x" },
+      /* {
       refetchInterval: 60000,
       //initialData: initialDelegate,
       enabled: !!address,
-    },
+    },*/
+    ),
   );
   return (
     <div className="container p-6">
