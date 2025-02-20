@@ -31,7 +31,11 @@ import {
 } from "./utils/resource";
 import {
   TROOP_BASE_DAMAGE,
+  TROOP_DAMAGE_BETA_LARGE,
+  TROOP_DAMAGE_BETA_SMALL,
   TROOP_DAMAGE_BIOME_BONUS_NUM,
+  TROOP_DAMAGE_C0,
+  TROOP_DAMAGE_DELTA,
   TROOP_DAMAGE_SCALING_FACTOR,
   TROOP_EXPLORE_FISH_COST,
   TROOP_EXPLORE_STAMINA_COST,
@@ -47,11 +51,11 @@ import {
   TROOP_STAMINA_GAIN_PER_TICK,
   TROOP_STAMINA_INITIAL,
   TROOP_STAMINA_MAX,
-  TROOP_T2_DAMAGE_BONUS,
-  TROOP_T3_DAMAGE_BONUS,
+  TROOP_T2_DAMAGE_MULTIPLIER,
+  TROOP_T3_DAMAGE_MULTIPLIER,
   TROOP_TRAVEL_FISH_COST,
   TROOP_TRAVEL_STAMINA_COST,
-  TROOP_TRAVEL_WHEAT_COST,
+  TROOP_TRAVEL_WHEAT_COST
 } from "./utils/troop";
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
@@ -221,13 +225,15 @@ export const EternumGlobalConfig: Config = {
   },
   troop: {
     damage: {
-      knightBaseDamage: TROOP_BASE_DAMAGE[ResourcesIds.Knight],
-      crossbowmanBaseDamage: TROOP_BASE_DAMAGE[ResourcesIds.Crossbowman],
-      paladinBaseDamage: TROOP_BASE_DAMAGE[ResourcesIds.Paladin],
-      t2DamageBonus: TROOP_T2_DAMAGE_BONUS,
-      t3DamageBonus: TROOP_T3_DAMAGE_BONUS,
+      t1DamageValue: TROOP_BASE_DAMAGE * (BigInt(2) ** BigInt(64)),
+      t2DamageMultiplier: TROOP_T2_DAMAGE_MULTIPLIER,
+      t3DamageMultiplier: TROOP_T3_DAMAGE_MULTIPLIER,
       damageBiomeBonusNum: TROOP_DAMAGE_BIOME_BONUS_NUM,
       damageScalingFactor: TROOP_DAMAGE_SCALING_FACTOR,
+      damageBetaSmall: TROOP_DAMAGE_BETA_SMALL,
+      damageBetaLarge: TROOP_DAMAGE_BETA_LARGE,
+      damageC0: TROOP_DAMAGE_C0,
+      damageDelta: TROOP_DAMAGE_DELTA,
     },
     stamina: {
       staminaGainPerTick: TROOP_STAMINA_GAIN_PER_TICK,

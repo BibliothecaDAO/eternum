@@ -43,9 +43,28 @@ impl StaminaImpl of StaminaTrait {
         amount: u64,
         current_tick: u64,
     ) {
+        // reduce stamina
         self.refill(troop_type, troop_stamina_config, current_tick);
-        self.amount -= amount;
+        if amount > self.amount {
+            self.amount = 0;
+        } else {
+            self.amount -= amount;
+        }
     }
+
+    #[inline(always)]
+    fn add(
+        ref self: Stamina,
+        troop_type: TroopType,
+        troop_stamina_config: TroopStaminaConfig,
+        amount: u64,
+        current_tick: u64,
+    ) {
+        // increase stamina, limited to max of troop type stamina
+        self.refill(troop_type, troop_stamina_config, current_tick);
+        self.amount = core::cmp::min(self.amount + amount, Self::max(troop_type, troop_stamina_config));
+    }
+
 
     #[inline(always)]
     fn max(troop_type: TroopType, troop_stamina_config: TroopStaminaConfig) -> u64 {

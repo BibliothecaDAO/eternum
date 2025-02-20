@@ -520,13 +520,15 @@ export interface TroopLimitConfigProps {
 }
 
 export interface TroopDamageConfigProps {
-  knight_base_damage: num.BigNumberish;
-  crossbowman_base_damage: num.BigNumberish;
-  paladin_base_damage: num.BigNumberish;
-  t2_damage_bonus: num.BigNumberish;
-  t3_damage_bonus: num.BigNumberish;
   damage_biome_bonus_num: num.BigNumberish;
+  damage_beta_small: num.BigNumberish;
+  damage_beta_large: num.BigNumberish;
   damage_scaling_factor: num.BigNumberish;
+  damage_c0: num.BigNumberish;
+  damage_delta: num.BigNumberish;
+  t1_damage_value: num.BigNumberish;
+  t2_damage_multiplier: num.BigNumberish;
+  t3_damage_multiplier: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {

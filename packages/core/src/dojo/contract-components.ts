@@ -1338,7 +1338,6 @@ export function defineContractComponents(world: World) {
         {
           config_id: RecsType.Number,
           admin_address: RecsType.BigInt,
-          realm_l2_contract: RecsType.BigInt,
           vrf_provider_address: RecsType.BigInt,
           season_addresses_config: {
             season_pass_address: RecsType.BigInt,
@@ -1470,13 +1469,15 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
               "u8", // RealmMaxLevelConfig max_level
               "u16", // BuildingGeneralConfig base_cost_percent_increase
-              "u16", // TroopDamageConfig knight_base_damage
-              "u16", // TroopDamageConfig crossbowman_base_damage
-              "u16", // TroopDamageConfig paladin_base_damage
-              "u16", // TroopDamageConfig t2_damage_bonus
-              "u16", // TroopDamageConfig t3_damage_bonus
-              "u16", // TroopDamageConfig damage_bonus_num
-              "u16", // TroopDamageConfig damage_scaling_factor
+              "u16", // TroopDamageConfig damage_biome_bonus_num
+              "u64", // TroopDamageConfig damage_beta_small
+              "u64", // TroopDamageConfig damage_beta_large
+              "u128", // TroopDamageConfig damage_scaling_factor
+              "u128", // TroopDamageConfig damage_c0
+              "u128", // TroopDamageConfig damage_delta
+              "u128", // TroopDamageConfig t1_damage_value
+              "u128", // TroopDamageConfig t2_damage_multiplier
+              "u16", // TroopDamageConfig t3_damage_multiplier
               "u16", // TroopStaminaConfig stamina_gain_per_tick
               "u16", // TroopStaminaConfig stamina_initial
               "u16", // TroopStaminaConfig stamina_bonus_value

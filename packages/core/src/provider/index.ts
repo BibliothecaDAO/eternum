@@ -1960,13 +1960,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "set_troop_config",
       calldata: [
         // damage config
-        damage_config.knight_base_damage,
-        damage_config.crossbowman_base_damage,
-        damage_config.paladin_base_damage,
-        damage_config.t2_damage_bonus,
-        damage_config.t3_damage_bonus,
         damage_config.damage_biome_bonus_num,
+        damage_config.damage_beta_small,
+        damage_config.damage_beta_large,
         damage_config.damage_scaling_factor,
+        damage_config.damage_c0,
+        damage_config.damage_delta,
+        damage_config.t1_damage_value,
+        damage_config.t2_damage_multiplier,
+        damage_config.t3_damage_multiplier,
 
         // stamina config
         stamina_config.stamina_gain_per_tick,

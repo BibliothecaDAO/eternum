@@ -23,16 +23,16 @@ export const TROOPS_FOOD_CONSUMPTION: Record<number, TroopFoodConsumption> = {
   },
 };
 
-export const TROOP_BASE_DAMAGE = {
-  [ResourcesIds.Paladin]: 10,
-  [ResourcesIds.Knight]: 10,
-  [ResourcesIds.Crossbowman]: 10,
-};
 
-export const TROOP_T2_DAMAGE_BONUS = 250; // 250/10_000 = 2.5% of T1
-export const TROOP_T3_DAMAGE_BONUS = 280; // 280/10_000 = 2.8% of T2
+export const TROOP_BASE_DAMAGE = 1844674407370955161600n; // 100
+export const TROOP_T2_DAMAGE_MULTIPLIER = 46116860184273879040n; // 2.5
+export const TROOP_T3_DAMAGE_MULTIPLIER = 129127208515966861312n; // 7
 export const TROOP_DAMAGE_BIOME_BONUS_NUM = 3_000; // 3_000/10_000 = 30%
-export const TROOP_DAMAGE_SCALING_FACTOR = 10; // Must be a Fixed type
+export const TROOP_DAMAGE_SCALING_FACTOR = 64563604257983430656n; // 3.5
+export const TROOP_DAMAGE_BETA_SMALL = 4611686018427387904n; // 0.25
+export const TROOP_DAMAGE_BETA_LARGE = 2213609288845146193n; // 0.12
+export const TROOP_DAMAGE_C0 = 100_000n * (BigInt(2) ** BigInt(64));
+export const TROOP_DAMAGE_DELTA = 50_000n * (BigInt(2) ** BigInt(64));
 
 // Stamina config
 export const TROOP_STAMINA_INITIAL = 20;
