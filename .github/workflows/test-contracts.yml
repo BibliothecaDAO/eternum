@@ -1,8 +1,5 @@
 name: test-contracts
 
-env:
-  SCARB_VERSION: v2.9.2
-
 on:
   pull_request:
     paths-ignore:
@@ -60,4 +57,7 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: "2.9.2"
-      - run: cd contracts/game && scarb fmt --check
+      - name: Set Scarb environment variable
+        run: echo "SCARB=$(which scarb)" >> $GITHUB_ENV
+      - name: Run scarb fmt check
+        run: cd contracts/game && scarb fmt --check
