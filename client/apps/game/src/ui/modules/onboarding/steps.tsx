@@ -86,7 +86,6 @@ export const StepOne = () => {
   const setShowToS = useUIStore((state) => state.setShowToS);
 
   const realms = usePlayerOwnedRealms();
-  console.log({ realms });
 
   const navigateToHexView = useNavigateToHexView();
 

@@ -1,12 +1,6 @@
-import {
-  debouncedGetDonkeysAndArmiesFromTorii,
-  debouncedGetEntitiesFromTorii,
-  debouncedGetMarketFromTorii,
-  debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii,
-} from "@/dojo/debounced-queries";
+import { syncMarketAndBankData, syncPlayerStructuresData, syncStructureData } from "@/dojo/sync";
 import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { ADMIN_BANK_ENTITY_ID, PlayerStructure } from "@bibliothecadao/eternum";
@@ -124,136 +118,31 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     }
 
     const position = getComponentValue(
-      dojo.setup.components.Position,
+      dojo.setup.components.Structure,
       getEntityIdFromKeys([BigInt(structureEntityId)]),
-    );
+    )?.coord;
 
     setSubscriptions((prev) => ({
       ...prev,
       [structureEntityId.toString()]: true,
       [ADMIN_BANK_ENTITY_ID.toString()]: true,
-      ...Object.fromEntries(filteredStructures.map((structure) => [structure.entityId.toString(), true])),
+      ...Object.fromEntries(filteredStructures.map((structure) => [structure.structure.entity_id.toString(), true])),
     }));
 
-    setLoading(LoadingStateKey.SelectedStructure, true);
-    const fetch = async () => {
-      try {
-        let start = performance.now();
-        await Promise.all([
-          debouncedGetEntitiesFromTorii(
-            dojo.network.toriiClient,
-            dojo.network.contractComponents as any,
-            [structureEntityId.toString()],
-            [
-              "s1_eternum-BuildingQuantityv2",
-              "s1_eternum-Hyperstructure",
-              "s1_eternum-Resource",
-              "s1_eternum-Building",
-              "s1_eternum-Quest",
-            ],
-            [{ x: position?.x || 0, y: position?.y || 0 }],
-            () => setLoading(LoadingStateKey.SelectedStructure, false),
-          ),
-        ]);
-        let end = performance.now();
-        console.log("[composite] structure query", end - start);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      }
-    };
-
-    fetch();
+    syncStructureData(
+      dojo.setup,
+      structureEntityId.toString(),
+      setLoading,
+      position ? { x: position.x, y: position.y } : undefined,
+    );
   }, [structureEntityId, subscriptions]);
 
   useEffect(() => {
-    const fetch = async () => {
-      setLoading(LoadingStateKey.PlayerStructuresOneKey, true);
-      setLoading(LoadingStateKey.PlayerStructuresTwoKey, true);
-      setLoading(LoadingStateKey.DonkeysAndArmies, true);
-
-      try {
-        let start = performance.now();
-        await debouncedGetEntitiesFromTorii(
-          dojo.network.toriiClient,
-          dojo.network.contractComponents as any,
-          [...filteredStructures.map((structure) => structure.entityId.toString())],
-          [
-            "s1_eternum-BuildingQuantityv2",
-            "s1_eternum-Hyperstructure",
-            "s1_eternum-Resource",
-            "s1_eternum-Building",
-            "s1_eternum-Quest",
-          ],
-          [...filteredStructures.map((structure) => ({ x: structure.position.x, y: structure.position.y }))],
-          () => setLoading(LoadingStateKey.PlayerStructuresOneKey, false),
-        );
-        let end = performance.now();
-        console.log("[composite] buildings query", end - start);
-
-        start = performance.now();
-        await debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii(
-          dojo.network.toriiClient,
-          dojo.network.contractComponents as any,
-          [...filteredStructures.map((structure) => structure.entityId.toString())],
-          () => setLoading(LoadingStateKey.PlayerStructuresTwoKey, false),
-        );
-        end = performance.now();
-        console.log("[composite] realm one key query", end - start);
-
-        start = performance.now();
-        await debouncedGetDonkeysAndArmiesFromTorii(
-          dojo.network.toriiClient,
-          dojo.network.contractComponents as any,
-          [...playerStructures.map((structure) => structure.entityId)],
-          () => setLoading(LoadingStateKey.DonkeysAndArmies, false),
-        );
-        end = performance.now();
-        console.log("[composite] donkeys and armies query", end - start);
-      } catch (error) {
-        console.error("Fetch failed", error);
-      }
-    };
-
-    fetch();
+    syncPlayerStructuresData(dojo.setup, filteredStructures, setLoading);
   }, [playerStructures.length]);
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        setLoading(LoadingStateKey.Market, true);
-        setLoading(LoadingStateKey.Bank, true);
-
-        let start = performance.now();
-        await debouncedGetEntitiesFromTorii(
-          dojo.network.toriiClient,
-          dojo.network.contractComponents as any,
-          [ADMIN_BANK_ENTITY_ID.toString()],
-          [
-            "s1_eternum-BuildingQuantityv2",
-            "s1_eternum-Hyperstructure",
-            "s1_eternum-Resource",
-            "s1_eternum-Building",
-            "s1_eternum-Quest",
-          ],
-          undefined,
-          () => setLoading(LoadingStateKey.Bank, false),
-        );
-        let end = performance.now();
-        console.log("[keys] bank query", end - start);
-
-        await debouncedGetMarketFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
-          setLoading(LoadingStateKey.Market, false),
-        );
-      } catch (error) {
-        console.error("Fetch failed", error);
-      } finally {
-        // Ensure loading states are reset even if there's an error
-        setLoading(LoadingStateKey.Bank, false);
-        setLoading(LoadingStateKey.Market, false);
-      }
-    };
-
-    fetch();
+    syncMarketAndBankData(dojo.setup, setLoading);
   }, []);
 
   return (
