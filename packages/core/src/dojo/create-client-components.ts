@@ -10,9 +10,8 @@ export function createClientComponents({ contractComponents }: { contractCompone
     Building: overridableComponent(contractComponents.Building),
     Position: overridableComponent(contractComponents.Position),
     Tile: overridableComponent(contractComponents.Tile),
-    Population: overridableComponent(contractComponents.Population),
     Resource: overridableComponent(contractComponents.Resource),
-    BuildingQuantityv2: overridableComponent(contractComponents.BuildingQuantityv2),
     Structure: overridableComponent(contractComponents.Structure),
+    StructureBuildings: overridableComponent(contractComponents.StructureBuildings),
   };
 }

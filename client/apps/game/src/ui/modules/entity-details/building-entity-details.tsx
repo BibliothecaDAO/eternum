@@ -144,10 +144,10 @@ export const BuildingEntityDetails = () => {
     const populationImpact = configManager.getBuildingPopConfig(buildingState.buildingType).capacity;
 
     const population = getComponentValue(
-      dojo.setup.components.Population,
+      dojo.setup.components.StructureBuildings,
       getEntityIdFromKeys([BigInt(realmId?.entity_owner_id || 0)]),
     );
-    return (population?.capacity || 0) - (population?.population || 0) >= populationImpact;
+    return (population?.population.max || 0) - (population?.population.current || 0) >= populationImpact;
   }, [buildingState.buildingType, buildingState.ownerEntityId]);
 
   return (

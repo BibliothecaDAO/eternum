@@ -235,7 +235,7 @@ const configClauses: Clause[] = [
 ];
 
 const configModels = [
-  // "s1_eternum-WorldConfig",
+  "s1_eternum-WorldConfig",
   "s1_eternum-HyperstructureResourceConfig",
   "s1_eternum-WeightConfig",
   "s1_eternum-ProductionConfig",
@@ -252,18 +252,15 @@ const configModels = [
 const singleKeyModels = [
   "s1_eternum-AddressName",
   "s1_eternum-Realm",
-  // todo: issue with Bank sync
-  // "s1_eternum-Bank",
+  "s1_eternum-Bank",
   "s1_eternum-Trade",
   "s1_eternum-Structure",
   "s1_eternum-Owner",
   "s1_eternum-Position",
-  "s1_eternum-Population",
   "s1_eternum-Hyperstructure",
   "s1_eternum-Guild",
   "s1_eternum-GuildMember",
-  // todo: issue with Season sync
-  // "s1_eternum-Season",
+  "s1_eternum-Season",
   "s1_eternum-Leaderboard",
   "s1_eternum-LeaderboardRegistered",
   "s1_eternum-LeaderboardRewardClaimed",
@@ -275,8 +272,7 @@ const eventModels = [
   "s1_eternum-HyperstructureFinished",
   "s1_eternum-AcceptOrder",
   "s1_eternum-SwapEvent",
-  // todo: issue with LiquidityEvent sync
-  // "s1_eternum-LiquidityEvent",
+  "s1_eternum-LiquidityEvent",
   "s1_eternum-HyperstructureContribution",
 ];
 

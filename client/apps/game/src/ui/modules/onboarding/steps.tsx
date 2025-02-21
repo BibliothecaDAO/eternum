@@ -31,24 +31,42 @@ export const LocalStepOne = () => {
   return (
     <Button
       onClick={async () => {
-        await mint_test_realm({
-          token_id: random,
-          signer: account,
-          realms_address: getRealmsAddress(),
-        });
-        await mint_season_passes({
-          recipient: account.address,
-          token_ids: [random],
-          signer: account,
-          season_pass_address: getSeasonPassAddress(),
-        });
-        await create_multiple_realms({
-          realm_ids: [random],
-          owner: account.address,
-          frontend: account.address,
-          signer: account,
-          season_pass_address: getSeasonPassAddress(),
-        });
+        try {
+          await mint_test_realm({
+            token_id: random,
+            signer: account,
+            realms_address: getRealmsAddress(),
+          });
+        } catch (error) {
+          console.error("Error minting test realm:", error);
+          return; // Exit early if first step fails
+        }
+
+        try {
+          await mint_season_passes({
+            recipient: account.address,
+            token_ids: [random],
+            signer: account,
+            season_pass_address: getSeasonPassAddress(),
+          });
+        } catch (error) {
+          console.error("Error minting season passes:", error);
+          return; // Exit early if second step fails
+        }
+
+        try {
+          await create_multiple_realms({
+            realm_ids: [random],
+            owner: account.address,
+            frontend: account.address,
+            lords_resource_index: 0,
+            signer: account,
+            season_pass_address: getSeasonPassAddress(),
+          });
+        } catch (error) {
+          console.error("Error creating realms:", error);
+          // TODO: Show error toast/notification to user
+        }
       }}
       className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 animate-pulse`}
     >
@@ -68,6 +86,7 @@ export const StepOne = () => {
   const setShowToS = useUIStore((state) => state.setShowToS);
 
   const realms = usePlayerOwnedRealms();
+  console.log({ realms });
 
   const navigateToHexView = useNavigateToHexView();
 
@@ -132,6 +151,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         realm_ids: realmIds,
         owner: account.address,
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
+        lords_resource_index: 0,
         signer: account,
         season_pass_address: getSeasonPassAddress(),
       });

@@ -2,7 +2,6 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
-  BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   BuildingType,
   CapacityConfig,
   GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
@@ -439,7 +438,7 @@ export class ClientConfigManager {
       () => {
         const buildingConfig = getComponentValue(
           this.components.BuildingCategoryPopConfig,
-          getEntityIdFromKeys([BUILDING_CATEGORY_POPULATION_CONFIG_ID, BigInt(buildingId)]),
+          getEntityIdFromKeys([BigInt(buildingId)]),
         );
 
         return {

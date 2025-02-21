@@ -1,6 +1,7 @@
 export * from "./action-paths";
 export * from "./army";
 export * from "./biome";
+export * from "./bulidings";
 export * from "./combat-simulator";
 export * from "./entities";
 export * from "./guild";

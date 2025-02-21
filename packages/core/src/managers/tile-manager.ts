@@ -2,7 +2,7 @@ import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@d
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
-import { ResourceManager, type DojoAccount } from "..";
+import { ResourceManager, packValues, unpackValue, type DojoAccount } from "..";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -177,29 +177,31 @@ export class TileManager {
     const populationOverrideId = uuid();
 
     const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
+    const structureBuildings = getComponentValue(this.components.StructureBuildings, realmEntity);
 
-    this.components.Population.addOverride(populationOverrideId, {
+    this.components.StructureBuildings.addOverride(populationOverrideId, {
       entity: realmEntity,
       value: {
-        population:
-          (getComponentValue(this.components.Population, realmEntity)?.population || 0) +
-          configManager.getBuildingPopConfig(buildingType).population,
-        capacity:
-          (getComponentValue(this.components.Population, realmEntity)?.capacity || 0) +
-          configManager.getBuildingPopConfig(buildingType).capacity,
+        ...structureBuildings,
+        population: {
+          current:
+            (structureBuildings?.population.current || 0) + configManager.getBuildingPopConfig(buildingType).population,
+          max: (structureBuildings?.population.max || 0) + configManager.getBuildingPopConfig(buildingType).capacity,
+        },
       },
     });
     const quantityOverrideId = uuid();
 
-    const buildingQuantityEntity = getEntityIdFromKeys([BigInt(entityId), BigInt(buildingType)]);
+    const buildingCounts = unpackValue(structureBuildings?.building_count || 0n);
 
-    const storehouseQuantity =
-      getComponentValue(this.components.BuildingQuantityv2, buildingQuantityEntity)?.value || 0;
+    buildingCounts[buildingType] = (buildingCounts[buildingType] || 0) + 1;
 
-    this.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
-      entity: buildingQuantityEntity,
+    const packedBuildingCount = packValues(buildingCounts);
+
+    this.components.StructureBuildings.addOverride(quantityOverrideId, {
+      entity: realmEntity,
       value: {
-        value: storehouseQuantity + 1,
+        building_count: BigInt(packedBuildingCount),
       },
     });
 
@@ -246,15 +248,17 @@ export class TileManager {
 
     const type = BuildingType[currentBuilding?.category as keyof typeof BuildingType];
 
-    this.components.Population.addOverride(populationOverrideId, {
+    this.components.StructureBuildings.addOverride(populationOverrideId, {
       entity: realmEntityId,
       value: {
-        population:
-          (getComponentValue(this.components.Population, realmEntityId)?.population || 0) -
-          configManager.getBuildingPopConfig(type).population,
-        capacity:
-          (getComponentValue(this.components.Population, realmEntityId)?.capacity || 0) -
-          configManager.getBuildingPopConfig(type).capacity,
+        population: {
+          current:
+            (getComponentValue(this.components.StructureBuildings, realmEntityId)?.population.current || 0) -
+            configManager.getBuildingPopConfig(type).population,
+          max:
+            (getComponentValue(this.components.StructureBuildings, realmEntityId)?.population.max || 0) -
+            configManager.getBuildingPopConfig(type).capacity,
+        },
       },
     });
 
@@ -344,7 +348,7 @@ export class TileManager {
     const directions = getDirectionsArray(startingPosition, endPosition);
 
     // add optimistic rendering
-    const { overrideId, populationOverrideId, quantityOverrideId } = this._optimisticBuilding(
+    const { overrideId, populationOverrideId } = this._optimisticBuilding(
       structureEntityId,
       col,
       row,
@@ -365,8 +369,7 @@ export class TileManager {
       });
     } catch (error) {
       this.components.Building.removeOverride(overrideId);
-      this.components.Population.removeOverride(populationOverrideId);
-      this.components.BuildingQuantityv2.removeOverride(quantityOverrideId);
+      this.components.StructureBuildings.removeOverride(populationOverrideId);
 
       console.error(error);
       throw error;

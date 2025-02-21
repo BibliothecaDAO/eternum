@@ -4,7 +4,7 @@ import { BuildingType, RESOURCE_PRECISION, resources, ResourcesIds } from "../co
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../managers";
 import { ID, ProductionByLaborParams, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
-import { unpackResources } from "./packed-data";
+import { unpackValue } from "./packed-data";
 
 // used for entities that don't have any production
 export const getInventoryResources = (entityId: ID, components: ClientComponents): Resource[] => {
@@ -63,7 +63,7 @@ export const getResourcesFromBalance = (
 
 export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
   const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
-  const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
+  const resourcesProduced = realm ? unpackValue(realm.produced_resources) : [];
 
   // todo: fix
   return getStartingResources(resourcesProduced, [], []);

@@ -104,20 +104,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    BuildingQuantityv2: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, category: RecsType.String, value: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "BuildingQuantityv2",
-            types: ["u32", "enum", "u8"],
-            customTypes: ["BuildingCategory"],
-          },
-        },
-      );
-    })(),
     Contribution: (() => {
       return defineComponent(
         world,
@@ -441,20 +427,28 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
-    Population: (() => {
+    StructureBuildings: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, population: RecsType.Number, capacity: RecsType.Number },
+        {
+          entity_id: RecsType.Number,
+          building_count: RecsType.BigInt,
+          population: {
+            current: RecsType.Number,
+            max: RecsType.Number,
+          },
+        },
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "Population",
-            types: ["u32", "u32", "u32"],
-            customTypes: [],
+            name: "StructureBuildings",
+            types: ["u32", "u128", "u32", "u32"],
+            customTypes: ["Population"],
           },
         },
       );
     })(),
+
     Position: (() => {
       return defineComponent(
         world,

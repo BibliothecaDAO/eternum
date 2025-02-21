@@ -13,11 +13,11 @@ import {
   BuildingEnumToString,
   BuildingType,
   CapacityConfig,
-  ClientComponents,
   configManager,
   divideByPrecision,
   findResourceById,
   getBalance,
+  getBuildingQuantity,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
   ID,
@@ -28,7 +28,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { DojoResult, useDojo } from "@bibliothecadao/react";
-import { Component, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
@@ -678,11 +678,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
   }
   const buildingType = resourceIdToBuildingCategory(resourceId);
 
-  const buildingQuantity = getBuildingQuantity(
-    realmEntityId,
-    buildingType ?? 0,
-    dojo.setup.components.BuildingQuantityv2,
-  );
+  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingType, dojo.setup.components);
 
   let updatedCosts: ResourceCostType[] = [];
 
@@ -699,11 +695,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
 const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory: BuildingType) => {
   const buildingBaseCostPercentIncrease = configManager.getBuildingBaseCostPercentIncrease();
 
-  const buildingQuantity = getBuildingQuantity(
-    realmEntityId,
-    buildingCategory,
-    dojo.setup.components.BuildingQuantityv2,
-  );
+  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingCategory, dojo.setup.components);
 
   let updatedCosts: ResourceCostType[] = [];
 
@@ -715,18 +707,6 @@ const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory:
     updatedCosts.push({ resource: cost.resource, amount: totalCost });
   });
   return updatedCosts;
-};
-
-const getBuildingQuantity = (
-  outerEntityId: ID,
-  buildingCategory: BuildingType,
-  buildingQuantityComponent: Component<ClientComponents["BuildingQuantityv2"]["schema"]>,
-) => {
-  const buildingQuantity = getComponentValue(
-    buildingQuantityComponent,
-    getEntityIdFromKeys([BigInt(outerEntityId), BigInt(buildingCategory)]),
-  );
-  return buildingQuantity?.value;
 };
 
 const resourceIdToBuildingCategory = (resourceId: ResourcesIds): BuildingType => {
