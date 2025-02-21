@@ -266,7 +266,7 @@ pub struct TroopDamageConfig {
     damage_delta: u128, // Fixed
     t1_damage_value: u128,
     t2_damage_multiplier: u128, // Fixed
-    t3_damage_multiplier: u128 // Fixed
+    t3_damage_multiplier: u128,
 }
 
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
@@ -513,7 +513,7 @@ impl BuildingConfigImpl of BuildingConfigTrait {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct BattleConfig {
     regular_immunity_ticks: u8,
-    hyperstructure_immunity_ticks: u8 // hyperstucture immunity
+    hyperstructure_immunity_ticks: u8,
 }
 
 #[generate_trait]
