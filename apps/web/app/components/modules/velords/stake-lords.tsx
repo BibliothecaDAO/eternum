@@ -3,6 +3,7 @@ import type { Address } from "@starknet-react/core";
 import type { BlockNumber } from "starknet";
 import { useMemo } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
+import LordsIcon from "@/components/icons/lords.svg?react";
 import {
   Card,
   CardContent,
@@ -16,7 +17,11 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { abbreviateNumber, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import {
+  abbreviateNumber,
+  formatNumber,
+  SUPPORTED_L2_CHAIN_ID,
+} from "@/utils/utils";
 import {
   useAccount,
   useBalance,
@@ -103,6 +108,15 @@ export const StakeLords = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 items-center pb-0">
+        <Card>
+          <CardContent className="flex items-center px-4 pb-0 pt-2 text-lg font-semibold md:text-2xl">
+            <LordsIcon className="mr-2 h-6 w-6" />
+            {formatNumber(Number(data?.formatted))}
+          </CardContent>
+          <CardFooter className="text-muted-foreground px-4 pb-3 text-sm">
+            Lords Available
+          </CardFooter>
+        </Card>
         <ChartContainer
           config={chartConfig}
           className="relative h-[180px] w-full"

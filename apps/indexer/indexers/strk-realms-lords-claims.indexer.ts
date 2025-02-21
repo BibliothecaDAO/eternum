@@ -9,8 +9,6 @@ import { defineIndexer } from "@apibara/indexer";
 import { useLogger } from "@apibara/indexer/plugins";
 import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
 import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
-import { uint256 } from "starknet";
-import { numberToHex } from "viem";
 
 import { ChainId, CollectionAddresses } from "@realms-world/constants";
 import { db } from "@realms-world/db/poolClient";
@@ -21,8 +19,6 @@ import { env } from "../env";
 export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({ database: db });
 }
-const chainId =
-  env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
 const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 

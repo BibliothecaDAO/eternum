@@ -34,7 +34,7 @@ export function Header() {
   const { open } = useSidebar();
   const { disconnect } = useDisconnect();
   const explorer = useExplorer();
-  const { isWrongNetwork, setIsWrongNetwork } = useIsWrongNetwork();
+  const { isWrongNetwork /*, setIsWrongNetwork */ } = useIsWrongNetwork();
 
   return (
     <header

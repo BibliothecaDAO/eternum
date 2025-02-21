@@ -49,7 +49,10 @@ export const getBridgeTransactionsQueryOptions = (
 ) =>
   queryOptions({
     queryKey: ["getBridgeTransactions", input],
-    queryFn: () => getBridgeTransactions({ data: input ?? {} }),
+    queryFn: () =>
+      !!input?.l2Account || !!input?.l1Account
+        ? getBridgeTransactions({ data: input })
+        : null,
     enabled: !!input?.l2Account || !!input?.l1Account,
     refetchInterval: 10000,
   });

@@ -20,7 +20,7 @@ export async function execute<TResult, TVariables>(
     throw new Error("Network response was not ok");
   }
 
-  const result = await response.json();
+  const result = (await response.json()) as { data: TResult };
   // Extract the data property from the GraphQL response
-  return result.data as TResult;
+  return result.data;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ERC721 } from "@/abi/L2/ERC721";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 import { useAccount, useExplorer, useReadContract } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
+import Confetti from "react-confetti";
 import { formatEther } from "viem";
 
 import { CollectionAddresses } from "@realms-world/constants";
@@ -33,27 +34,9 @@ export const ClaimRewards = () => {
     getRealmsLordsClaimsQueryOptions({ address: address as string }),
   );
   const pastLordsClaims = pastLordsClaimsQuery.data;
-  const [claimTransactions, setClaimTransactions] = useState<
+  /*const [claimTransactions, setClaimTransactions] = useState<
     ClaimTransaction[]
-  >([]);
-  useEffect(() => {
-    setClaimTransactions([
-      {
-        id: 1,
-        transactionHash: "0xabc123",
-        date: new Date().toLocaleString(),
-        amount: "49",
-        status: "Successful",
-      },
-      {
-        id: 2,
-        transactionHash: "0xdef456",
-        date: new Date().toLocaleString(),
-        amount: "49",
-        status: "Successful",
-      },
-    ]);
-  }, []);
+  >([]);*/
 
   const { data: realmsBalance } = useReadContract({
     address: CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as `0x${string}`,
@@ -64,14 +47,13 @@ export const ClaimRewards = () => {
     refetchInterval: 10000,
   });
 
-  const { balance, isFetching, isSubmitting, claimRewards } =
-    useL2RealmsClaims();
+  const { balance, isSubmitting, claimRewards } = useL2RealmsClaims();
 
   // Handle the claim rewards click event.
   const handleClaimRewards = async () => {
-    const hash = await claimRewards();
+    await claimRewards();
     // Optionally update the transactions table with the new claim.
-    setClaimTransactions((prev) => [
+    /*setClaimTransactions((prev) => [
       {
         id: prev.length + 1,
         transactionHash: hash.transaction_hash,
@@ -80,9 +62,11 @@ export const ClaimRewards = () => {
         status: "Pending", // You might update this once confirmed.
       },
       ...prev,
-    ]);
+    ]);*/
   };
   const explorer = useExplorer();
+
+  const totalLordsEarnedPerWeek = Number(realmsBalance ?? 0) * lordsPerWeek;
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -96,7 +80,7 @@ export const ClaimRewards = () => {
           <CardContent>
             <div className="mb-2">
               <span className="mr-2 text-4xl font-bold">
-                {Number(realmsBalance)}
+                {Number(realmsBalance ?? 0)}
               </span>
             </div>
             <div className="text-muted-foreground flex flex-col gap-2 text-sm">
@@ -123,7 +107,47 @@ export const ClaimRewards = () => {
             </span>
           </CardContent>
         </Card>
+
+        {/* Total Lords Earned Per Week Card */}
+        <Card className="relative overflow-hidden">
+          {totalLordsEarnedPerWeek > 0 && (
+            <Confetti
+              colors={[
+                "#f6c297",
+                "#f8d0a8",
+                "#f4b688",
+                "#f7c8a0",
+                "#f5c09f",
+                "#f9d8b0",
+                "#f3ae80",
+                "#f2a670",
+                "#f1b080",
+                "#f0c0a0",
+                "#f8e0c0",
+                "#f6b090",
+              ]}
+              opacity={0.5}
+              width={400} // Adjust width as needed
+              height={200} // Adjust height as needed
+              numberOfPieces={100}
+              recycle={true}
+              gravity={0.055}
+            />
+          )}
+          <CardHeader>
+            <CardTitle>Total Lords Earned Per Week</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <LordsIcon className="w-9" />
+              <span className="text-4xl font-bold">
+                {formatNumber(totalLordsEarnedPerWeek)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
       {/* Claim Rewards Section */}
       <Card className="w-1/3">
         <CardHeader>

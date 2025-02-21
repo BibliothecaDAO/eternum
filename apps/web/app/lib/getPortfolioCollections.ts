@@ -8,11 +8,11 @@ const ARK_MARKETPLACE_API_URL = `https://api.marketplace${
 }.arkproject.dev`;
 
 /* -------------------------------------------------------------------------- */
-/*                             getRealms Endpoint                             */
+/*                             getPortfolioCollections Endpoint                             */
 /* -------------------------------------------------------------------------- */
 
 const GetPortfolioCollectionsInput = z.object({
-  address: z.string().optional(),
+  address: z.string(),
   collectionAddress: z.string().optional(),
   itemsPerPage: z.number().optional(),
   page: z.number().optional(),
@@ -27,32 +27,26 @@ export const getPortfolioCollections = createServerFn({ method: "GET" })
       itemsPerPage = 100,
       page = 1,
     } = ctx.data;
-    console.log(address);
-    if (address) {
-      const queryParams = [
-        `items_per_page=${itemsPerPage}`,
-        `page=${page}`,
-        collectionAddress ? `collection=${collectionAddress}` : null,
-      ]
-        .filter(Boolean)
-        .join("&");
-      console.log(
-        `${ARK_MARKETPLACE_API_URL}/portfolio/${address}/collections`,
-      );
-      const response = await fetch(
-        `${ARK_MARKETPLACE_API_URL}/portfolio/${address}/collections`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
+    const queryParams = [
+      `items_per_page=${itemsPerPage}`,
+      `page=${page}`,
+      collectionAddress ? `collection=${collectionAddress}` : null,
+    ]
+      .filter(Boolean)
+      .join("&");
+
+    const response = await fetch(
+      `${ARK_MARKETPLACE_API_URL}/portfolio/${address}/collections?${queryParams}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
-      );
-      const data = (await response.json()) as PortfolioCollectionsApiResponse;
-      return data;
-    }
-    return null;
+      },
+    );
+    const data = (await response.json()) as PortfolioCollectionsApiResponse;
+    return data;
   });
 
 export const getPortfolioCollectionsQueryOptions = (

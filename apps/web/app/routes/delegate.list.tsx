@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { DelegateCardSkeleton } from "@/components/modules/governance/delegate-card-skeleton";
 import DelegateList from "@/components/modules/governance/delegate-list";
 import { DelegateListActions } from "@/components/modules/governance/delegate-list-actions";
 import { Input } from "@/components/ui/input";
 import { getDelegatesQueryOptions } from "@/lib/getDelegates";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/delegate/list")({
@@ -25,14 +25,6 @@ function RouteComponent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMethod, setSortMethod] = useState<"desc" | "random">("random");
 
-  const delegatesQuery = useSuspenseQuery(
-    getDelegatesQueryOptions({
-      limit: 200,
-      cursor: 0,
-      search: searchQuery,
-      orderBy: sortMethod,
-    }),
-  );
   return (
     <div className="h-screen overflow-auto">
       {/* Sticky search input */}
@@ -46,7 +38,17 @@ function RouteComponent() {
         />
         <DelegateListActions onSortChange={setSortMethod} />
       </div>
-      <DelegateList delegates={delegatesQuery.data?.items ?? []} />
+      <Suspense
+        fallback={
+          <div className="grid grid-cols-1 gap-6 p-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <DelegateCardSkeleton key={index} />
+            ))}
+          </div>
+        }
+      >
+        <DelegateList searchQuery={searchQuery} sortMethod={sortMethod} />
+      </Suspense>
     </div>
   );
 }

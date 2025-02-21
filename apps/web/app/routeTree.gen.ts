@@ -11,7 +11,6 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as AuthedImport } from './routes/_authed'
 import { Route as IndexImport } from './routes/index'
 import { Route as VelordsIndexImport } from './routes/velords.index'
 import { Route as RealmsIndexImport } from './routes/realms.index'
@@ -23,11 +22,6 @@ import { Route as DelegateProfileImport } from './routes/delegate.profile'
 import { Route as DelegateListImport } from './routes/delegate.list'
 
 // Create/Update Routes
-
-const AuthedRoute = AuthedImport.update({
-  id: '/_authed',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -94,13 +88,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/_authed': {
-      id: '/_authed'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof AuthedImport
-      parentRoute: typeof rootRoute
-    }
     '/delegate/list': {
       id: '/delegate/list'
       path: '/delegate/list'
@@ -164,7 +151,6 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '': typeof AuthedRoute
   '/delegate/list': typeof DelegateListRoute
   '/delegate/profile': typeof DelegateProfileRoute
   '/realms/bridge': typeof RealmsBridgeRoute
@@ -177,7 +163,6 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '': typeof AuthedRoute
   '/delegate/list': typeof DelegateListRoute
   '/delegate/profile': typeof DelegateProfileRoute
   '/realms/bridge': typeof RealmsBridgeRoute
@@ -191,7 +176,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/_authed': typeof AuthedRoute
   '/delegate/list': typeof DelegateListRoute
   '/delegate/profile': typeof DelegateProfileRoute
   '/realms/bridge': typeof RealmsBridgeRoute
@@ -206,7 +190,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | ''
     | '/delegate/list'
     | '/delegate/profile'
     | '/realms/bridge'
@@ -218,7 +201,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | ''
     | '/delegate/list'
     | '/delegate/profile'
     | '/realms/bridge'
@@ -230,7 +212,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/_authed'
     | '/delegate/list'
     | '/delegate/profile'
     | '/realms/bridge'
@@ -244,7 +225,6 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthedRoute: typeof AuthedRoute
   DelegateListRoute: typeof DelegateListRoute
   DelegateProfileRoute: typeof DelegateProfileRoute
   RealmsBridgeRoute: typeof RealmsBridgeRoute
@@ -257,7 +237,6 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthedRoute: AuthedRoute,
   DelegateListRoute: DelegateListRoute,
   DelegateProfileRoute: DelegateProfileRoute,
   RealmsBridgeRoute: RealmsBridgeRoute,
@@ -279,7 +258,6 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/_authed",
         "/delegate/list",
         "/delegate/profile",
         "/realms/bridge",
@@ -292,9 +270,6 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.tsx"
-    },
-    "/_authed": {
-      "filePath": "_authed.tsx"
     },
     "/delegate/list": {
       "filePath": "delegate.list.tsx"

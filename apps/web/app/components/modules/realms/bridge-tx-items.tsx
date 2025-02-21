@@ -1,5 +1,3 @@
-import type { RouterOutputs } from "@/router";
-import React from "react";
 import {
   Accordion,
   AccordionContent,
@@ -9,7 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useWriteFinalizeWithdrawRealms } from "@/hooks/bridge/useWriteFinalizeWithdrawRealms";
-import { toast, useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { getBridgeTransactionsQueryOptions } from "@/lib/getBridgeTransactions";
 import { cn, shortenAddress } from "@/utils/utils";
 import { useAccount, useExplorer } from "@starknet-react/core";
@@ -30,19 +28,19 @@ const BridgeTransactionItems = () => {
   const { toast } = useToast();
 
   const bridgeTxsQuery = useSuspenseQuery(
-    getBridgeTransactionsQueryOptions(
-      {
-        l1Account: l1Address?.toLowerCase(),
-        l2Account: l2Address,
-      },
-      /*{ enabled: !!l1Address || !!l2Address, refetchInterval: 10000 }*/
-    ),
+    getBridgeTransactionsQueryOptions({
+      l1Account: l1Address?.toLowerCase(),
+      l2Account: l2Address,
+    }),
   );
   const transactions = bridgeTxsQuery.data;
 
-  const handleCompleteWithdraw = async (
-    transaction: RouterOutputs["bridgeTransactions"][number],
-  ) => {
+  const handleCompleteWithdraw = async (transaction: {
+    token_ids: number[];
+    from_address: string;
+    to_address: string;
+    req_hash: string;
+  }) => {
     const hash = await writeAsync({
       hash: transaction.req_hash,
       l1Address: transaction.to_address,
@@ -58,7 +56,7 @@ const BridgeTransactionItems = () => {
   };
   return (
     <Accordion type="single" collapsible>
-      {transactions.map((transaction) => {
+      {transactions?.map((transaction) => {
         const isCompleted = transaction.events.some(
           (event) =>
             event.type === "withdraw_completed_l1" ||
@@ -98,9 +96,9 @@ const BridgeTransactionItems = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        handleCompleteWithdraw(transaction);
+                        await handleCompleteWithdraw(transaction);
                       }}
                       className="z-20 mt-2 rounded border-green-500"
                       disabled={isWithdrawPending}

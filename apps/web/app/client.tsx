@@ -6,4 +6,5 @@ import { createRouter } from "./router";
 
 const router = createRouter();
 
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unnecessary-type-assertion
 hydrateRoot(document!, <StartClient router={router} />);

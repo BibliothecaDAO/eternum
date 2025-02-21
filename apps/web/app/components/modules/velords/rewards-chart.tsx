@@ -5,8 +5,6 @@ import {
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, Line, XAxis, YAxis } from "recharts";
 
@@ -81,7 +79,6 @@ export function VeLordsRewardsChart({
         )
         .sort((a, b) => a.week.localeCompare(b.week))
     : [];
-  console.log(parsedData);
   return (
     <Card>
       <CardHeader>Lords Rewards per Week</CardHeader>

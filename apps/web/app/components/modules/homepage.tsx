@@ -32,9 +32,9 @@ import {
   SUPPORTED_L2_CHAIN_ID,
 } from "@/utils/utils";
 import { useAccount, useBalance, useReadContract } from "@starknet-react/core";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { Gavel, Plus } from "lucide-react";
 import { num } from "starknet";
 import { formatEther } from "viem";
 import { useAccount as useL1Account, useBalance as useL1Balance } from "wagmi";
@@ -45,8 +45,8 @@ import {
   StakingAddresses,
 } from "@realms-world/constants";
 
-export function Homepage() {
-  const { address } = useAccount();
+export function Homepage({ address }: { address: `0x${string}` }) {
+  //const { address } = useAccount();
   const { address: l1Address } = useL1Account();
   const l2RealmsQuery = useSuspenseQuery(
     getRealmsQueryOptions({
@@ -60,7 +60,7 @@ export function Homepage() {
 
   const l1UsersRealmsQuery = useSuspenseQuery(
     getL1UsersRealmsQueryOptions({
-      address: l1Address,
+      address: l1Address ?? "",
     }),
   );
   const l1UsersRealms = l1UsersRealmsQuery.data;
@@ -112,9 +112,8 @@ export function Homepage() {
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as Address,
     abi: VeLords,
     functionName: "get_lock_for",
-    //enabled: !!l2Address,
     watch: true,
-    args: address ? [address] : undefined,
+    args: [address],
   });
 
   return (
@@ -153,6 +152,13 @@ export function Homepage() {
                   </span>
                 </p>
               </CardContent>
+              <CardFooter className="flex justify-end">
+                <a href="https://market.realms.world/" target="__blank">
+                  <Button variant="outline" size={"sm"}>
+                    <Gavel /> Marketplace
+                  </Button>
+                </a>
+              </CardFooter>
             </Card>
             <Card>
               <CardHeader>
@@ -236,7 +242,11 @@ export function Homepage() {
           <h2 className="mb-2 text-xl font-semibold">Your Delegate</h2>
           <div className="flex flex-col gap-4">
             <Suspense fallback={<DelegateCardSkeleton />}>
-              <DelegateCard delegate={currentDelegate} />
+              {currentDelegate?.user && BigInt(currentDelegate.user) == 0n ? (
+                <Card>Choose a Delegate</Card>
+              ) : (
+                <DelegateCard delegate={currentDelegate} />
+              )}
             </Suspense>
           </div>
         </div>

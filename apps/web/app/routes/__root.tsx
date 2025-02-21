@@ -78,29 +78,31 @@ function RootComponent() {
     appName: "Realms.World",
     projectId: "c8d27e7d62b1bb4d1ea2e6d4ed1604ee",
     chains: [env.VITE_PUBLIC_CHAIN === "sepolia" ? sepolia : mainnet],
-    //ssr: true, // If your dApp uses server side rendering (SSR)
+    ssr: true,
   });
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="overflow-hidden">
         <ScriptOnce>
           {`document.documentElement.classList.toggle(
             'dark',
             localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
             )`}
         </ScriptOnce>
-        <div className={`[--header-height:calc(--spacing(14))]`}>
+        <div
+          className={`flex h-screen flex-col [--header-height:calc(--spacing(14))]`}
+        >
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <StarknetProvider>
               <WagmiProvider config={config}>
-                <SidebarProvider className="flex flex-col">
+                <SidebarProvider className="flex h-full flex-col">
                   <Header />
-                  <div className="flex flex-1">
+                  <div className="flex min-h-0 flex-1">
                     <AppSidebar />
-                    <SidebarInset>
+                    <SidebarInset className="overflow-auto">
                       <RainbowKitProvider>
                         <Outlet />
                       </RainbowKitProvider>

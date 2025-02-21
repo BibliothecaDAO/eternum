@@ -84,7 +84,12 @@ const LoadProposalsInput = z.object({
   limit: z.number().min(1),
   skip: z.number().min(0).default(0),
   current: z.number(),
-  filters: z.any().optional(), // Replace with a more specific schema if available
+  filters: z
+    .object({
+      state: z.enum(["any", "active", "pending", "closed"]).optional(),
+      labels: z.string().array().optional(),
+    })
+    .optional(),
   searchQuery: z.string().default(""),
 });
 
@@ -98,15 +103,15 @@ export const getProposals = createServerFn({ method: "POST" })
     const { spaceIds, limit, skip, current, filters, searchQuery } = ctx.data;
     console.log(spaceIds, limit, skip, current, filters, searchQuery);
     // Clone filters to avoid mutations.
-    const _filters: any = JSON.parse(JSON.stringify(filters || {}));
-    const metadataFilters: Record<string, any> = {
+    //const _filters: any = JSON.parse(JSON.stringify(filters || {}));
+    const metadataFilters: Record<string, string> = {
       title_contains_nocase: searchQuery,
     };
 
     // Apply state-based filtering.
-    const state = _filters.state;
+    /*const state = filters?.state;
     if (state === "active") {
-      _filters.start_lte = current;
+      filters.start_lte = current;
       _filters.max_end_gte = current;
     } else if (state === "pending") {
       _filters.start_gt = current;
@@ -120,7 +125,7 @@ export const getProposals = createServerFn({ method: "POST" })
       metadataFilters.labels_contains = _filters.labels;
     }
     delete _filters.labels;
-
+*/
     // Define variables for the proposals query.
     const variables = {
       first: limit,
@@ -129,11 +134,9 @@ export const getProposals = createServerFn({ method: "POST" })
         space_in: spaceIds,
         cancelled: false,
         metadata_: metadataFilters,
-        ..._filters,
+        //..._filters,
       },
     };
-
-    console.log(variables);
 
     // Fetch proposals using the generic fetch helper.
     const proposalsData = await execute(PROPOSALS_QUERY, variables);

@@ -34,10 +34,7 @@ function RouteComponent() {
   const { address: l2Address } = useAccount();
 
   const l1RealmsQuery = useQuery(
-    getL1RealmsQueryOptions(
-      { address: l1Address },
-      /*{ refetchInterval: 10000, enabled: !!l1Address },*/
-    ),
+    getL1RealmsQueryOptions({ address: l1Address }),
   );
   const l1Realms = l1RealmsQuery.data;
 

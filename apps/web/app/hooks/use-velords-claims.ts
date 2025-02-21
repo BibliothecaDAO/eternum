@@ -41,12 +41,13 @@ export default function useVeLordsClaims() {
     calls: claimCall,
   });
 
-  // Retrieve the claimable amount (ensure this aligns with your contract’s response shape).
+  // Retrieve the claimable amount (ensure this aligns with your contract's response shape).
   const lordsClaimable = useMemo(
     () =>
       BigInt(
-        simulateData?.[0]?.transaction_trace?.execute_invocation?.result[2] ??
-          0,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+        (simulateData as any)?.[0]?.transaction_trace?.execute_invocation
+          ?.result[2] as string,
       ),
     [simulateData],
   );

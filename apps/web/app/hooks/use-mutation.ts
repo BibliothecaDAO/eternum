@@ -25,11 +25,14 @@ export function useMutation<TVariables, TData, TError = Error>(opts: {
         setError(undefined);
         setData(data);
         return data;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         setStatus("error");
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         setError(err);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [opts.fn],
   );
 

@@ -1,4 +1,4 @@
-import { formatAddress } from "@/utils/utils";
+//import { formatAddress } from "@/utils/utils";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/start";
 import { z } from "zod";
@@ -42,6 +42,9 @@ export const getDelegates = createServerFn({ method: "GET" })
       with: {
         delegateProfile: true,
       },
+      columns: {
+        block_range: false,
+      },
     });
 
     let nextCursor = undefined;
@@ -49,7 +52,6 @@ export const getDelegates = createServerFn({ method: "GET" })
       const nextItem = items.pop();
       nextCursor = parseInt(nextItem?.delegatedVotes ?? "0");
     }
-    console.log(nextCursor);
 
     return { items, nextCursor };
   });
@@ -83,9 +85,12 @@ export const getDelegateByID = createServerFn({ method: "GET" })
     return db.query.delegates.findFirst({
       where: and(
         eq(delegates.user, ctx.data.address),
-        /*sql`upper_inf(block_range)`,*/
+        sql`upper_inf(block_range)`,
       ),
       with: { delegateProfile: true },
+      columns: {
+        block_range: false,
+      },
     });
   });
 
@@ -105,10 +110,10 @@ export const getDelegateByIDQueryOptions = (
 export const createDelegateProfile = createServerFn({ method: "POST" })
   .validator((input: unknown) => CreateDelegateProfileSchema.parse(input))
   .handler(async (ctx) => {
-    const delegateId = formatAddress(ctx.session.user.name);
+    //const delegateId = formatAddress(ctx.session.user.name);
     return db
       .insert(delegateProfiles)
-      .values({ ...ctx.data, delegateId })
+      .values({ ...ctx.data /*delegateId */ })
       .onConflictDoUpdate({
         target: delegateProfiles.delegateId,
         set: { ...ctx.data },

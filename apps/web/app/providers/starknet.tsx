@@ -1,10 +1,10 @@
 import type { ColorMode } from "@cartridge/controller";
-import type { Connector } from "@starknet-react/core";
-import React, { useCallback } from "react";
+//import { getStarknet } from "@starknet-io/get-starknet-core";
+import type { Chain } from "@starknet-react/chains";
+import React from "react";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import ControllerConnector from "@cartridge/connector/controller";
-//import { getStarknet } from "@starknet-io/get-starknet-core";
-import { Chain, mainnet, sepolia } from "@starknet-react/chains";
+import { mainnet, sepolia } from "@starknet-react/chains";
 import {
   argent,
   braavos,
@@ -62,7 +62,6 @@ const cartridgeController = new ControllerConnector({
 
 const getConnectors = () => {
   // For Metamask
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   //getStarknet();
   const connectors = [
     new InjectedConnector({ options: { id: "okxwallet" } }),

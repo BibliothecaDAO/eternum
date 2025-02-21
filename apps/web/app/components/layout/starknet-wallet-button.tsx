@@ -5,7 +5,13 @@ import { ArrowDownIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 
-export const StarknetWalletButton = ({ className }: { className?: string }) => {
+export const StarknetWalletButton = ({
+  className,
+  label,
+}: {
+  className?: string;
+  label?: string;
+}) => {
   const { lastConnector, openStarknetKitModal, connectWallet } =
     useStarknetWallet();
 
@@ -22,7 +28,7 @@ export const StarknetWalletButton = ({ className }: { className?: string }) => {
         {lastConnector ? (
           <img className="pr-2" src={getConnectorIcon(lastConnector.id)} />
         ) : null}
-        <p className="mx-auto">Connect wallet</p>
+        <p className="mx-auto">{label ?? "Connect wallet"}</p>
         {lastConnector ? (
           <>
             <Separator orientation="vertical" className="ml-3 mr-1.5 h-6" />

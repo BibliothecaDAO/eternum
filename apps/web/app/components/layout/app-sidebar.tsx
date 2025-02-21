@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { NavMain } from "@/components/layout/nav-main";
 import {
@@ -16,11 +14,8 @@ import {
   ClipboardPen,
   Earth,
   ExternalLink,
-  Frame,
   HandCoins,
-  Map,
   Newspaper,
-  PieChart,
 } from "lucide-react";
 
 const data = {

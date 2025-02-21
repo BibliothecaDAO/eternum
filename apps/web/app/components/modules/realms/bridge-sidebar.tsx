@@ -2,6 +2,7 @@ import type { BridgeRealm } from "@/types/ark";
 import type { Row, RowSelectionState } from "@tanstack/react-table";
 import { Suspense, useMemo } from "react";
 import { EthereumConnect } from "@/components/layout/ethereum-connect";
+import { StarknetWalletButton } from "@/components/layout/starknet-wallet-button";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -122,7 +123,11 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
               </span>
             ))}
           </div>
-          {selectedAsset === "Ethereum" && !isApprovedForAll ? (
+          {!l1Address ? (
+            <EthereumConnect label="Connect Ethereum To Bridge" />
+          ) : !l2Address ? (
+            <StarknetWalletButton label="Connect Starknet To Bridge" />
+          ) : selectedAsset === "Ethereum" && !isApprovedForAll ? (
             <Button
               disabled={approveForAllLoading || isApproveForAllPending}
               className="w-full"
@@ -133,19 +138,12 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           ) : (
             <Button
               disabled={
-                !selectedRows.length ||
-                isDepositPending ||
-                !l2Address ||
-                isWithdrawPending
+                !selectedRows.length || isDepositPending || isWithdrawPending
               }
               className="w-full"
               onClick={onBridge}
             >
-              {!l2Address
-                ? "Connect Starknet"
-                : !selectedRows.length
-                  ? "Select Realms"
-                  : `Bridge`}
+              {!selectedRows.length ? "Select Realms" : `Bridge`}
             </Button>
           )}
         </SidebarGroup>
@@ -166,7 +164,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           <CollapsibleContent>
             <SidebarGroupContent>
               <Suspense fallback={<BridgeTransactionHistorySkeleton />}>
-                {l1Address ?? (l2Address && <BridgeTransactionItems />)}
+                {(l1Address ?? l2Address) && <BridgeTransactionItems />}
               </Suspense>
             </SidebarGroupContent>
           </CollapsibleContent>

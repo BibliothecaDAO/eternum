@@ -12,14 +12,7 @@ export const Route = createFileRoute("/delegate/profile")({
 function RouteComponent() {
   const { address } = useAccount();
   const { data: delegate } = useQuery(
-    getDelegateByIDQueryOptions(
-      { address: address ?? "0x" },
-      /* {
-      refetchInterval: 60000,
-      //initialData: initialDelegate,
-      enabled: !!address,
-    },*/
-    ),
+    getDelegateByIDQueryOptions({ address: address ?? "0x" }),
   );
   return (
     <div className="container p-6">
@@ -27,7 +20,7 @@ function RouteComponent() {
       <Login />
       {delegate?.user}
       {delegate && (
-        <DelegateProfileForm delegate={delegate} onSubmit={() => {}} />
+        <DelegateProfileForm delegate={delegate} onSubmit={() => void 0} />
       )}
     </div>
   );

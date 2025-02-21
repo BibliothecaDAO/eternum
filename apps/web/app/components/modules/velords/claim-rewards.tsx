@@ -1,7 +1,4 @@
 import type { Address } from "@starknet-react/core";
-import type { Call } from "starknet";
-import { useMemo, useState } from "react";
-import { RewardPool } from "@/abi/L2/RewardPool";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,21 +16,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
-import { useSimulateTransactions } from "@/hooks/useSimulateTransactions";
-import { formatNumber, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import {
-  useAccount,
-  useContract,
-  useSendTransaction,
-} from "@starknet-react/core";
+import { formatNumber } from "@/utils/utils";
+import Confetti from "react-confetti";
 import { formatEther } from "viem";
 
-import { StakingAddresses } from "@realms-world/constants";
-
 export const VelordsRewards = () => {
-  const { address } = useAccount();
-
-  const rewardPoolAddress = StakingAddresses.rewardpool[SUPPORTED_L2_CHAIN_ID];
   const {
     recipient,
     setRecipient,
@@ -41,12 +28,8 @@ export const VelordsRewards = () => {
     claimRewards,
     claimIsSubmitting,
   } = useVeLordsClaims();
-  // Create the call to claim rewards. If no recipient is provided, use the current account.
-
-  // Handle the claim rewards click event.
   const handleClaimRewards = async () => {
     const hash = await claimRewards();
-
     toast({
       description: (
         <div className="flex items-center gap-2">
@@ -57,7 +40,31 @@ export const VelordsRewards = () => {
   };
 
   return (
-    <Card>
+    <Card className="relative overflow-hidden">
+      {lordsClaimable && Number(lordsClaimable) > 0 && (
+        <Confetti
+          colors={[
+            "#f6c297",
+            "#f8d0a8",
+            "#f4b688",
+            "#f7c8a0",
+            "#f5c09f",
+            "#f9d8b0",
+            "#f3ae80",
+            "#f2a670",
+            "#f1b080",
+            "#f0c0a0",
+            "#f8e0c0",
+            "#f6b090",
+          ]}
+          opacity={0.5}
+          width={600} // Adjust width as needed
+          height={300} // Adjust height as needed
+          numberOfPieces={100}
+          recycle={true}
+          gravity={0.055}
+        />
+      )}
       <CardHeader>
         <CardTitle>Your Claimable Lords</CardTitle>
       </CardHeader>
@@ -69,12 +76,12 @@ export const VelordsRewards = () => {
               {lordsClaimable &&
                 formatNumber(Number(formatEther(lordsClaimable)))}
             </span>{" "}
-            Lords to claim.
+            Lords to claim
           </div>
           <Collapsible>
             <CollapsibleTrigger asChild>
               <Button className="p-0" variant={"link"}>
-                Change Recipient
+                + Change Recipient
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent>

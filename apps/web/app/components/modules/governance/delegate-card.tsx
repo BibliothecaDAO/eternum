@@ -1,4 +1,3 @@
-import type { RouterOutputs } from "@/router";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,11 +25,23 @@ import { num } from "starknet";
 export function DelegateCard({
   delegate,
 }: {
-  delegate: RouterOutputs["delegates"]["all"]["items"][number];
+  delegate: {
+    user: string;
+    delegateProfile?: {
+      twitter?: string;
+      github?: string;
+      telegram?: string;
+      discord?: string;
+      interests?: string[];
+      statement?: string;
+    };
+    delegatedVotes: string;
+    id: string;
+  };
 }) {
   const { data: currentDelegate } = useCurrentDelegate();
   const isCurrentDelegate =
-    currentDelegate &&
+    !!currentDelegate &&
     formatAddress(num.toHex(currentDelegate)) === delegate.user;
 
   const { sendAsync: delegateRealms } = useDelegateRealms({

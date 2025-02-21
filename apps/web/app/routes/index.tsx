@@ -24,7 +24,7 @@ function IndexComponent() {
           <EthereumConnect />
         </div>
         <Suspense fallback={<HomepageSkeleton />}>
-          <Homepage />
+          <Homepage address={address} />
         </Suspense>
       </div>
     </div>
