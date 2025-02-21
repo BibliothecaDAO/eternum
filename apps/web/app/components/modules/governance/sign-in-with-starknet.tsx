@@ -2,8 +2,9 @@ import type { ISiwsDomain, ISiwsMessage } from "@realms-world/siws";
 import { useEffect, useState } from "react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
 import { Button } from "@/components/ui/button";
-import { useMutation } from "@/hooks/use-mutation";
-import { loginFn } from "@/routes/_authed";
+//import authClient from "@/utils/auth-client";
+//import { useMutation } from "@/hooks/use-mutation";
+//import { loginFn } from "@/routes/_authed";
 import { formatAddress } from "@/utils/utils";
 import { useAccount, useSignTypedData } from "@starknet-react/core";
 import { useRouter } from "@tanstack/react-router";
@@ -62,16 +63,16 @@ export function Login() {
     params: signInData,
   });
 
-  const loginMutation = useMutation({
-    fn: loginFn,
+  /*const loginMutation = useMutation({
+    //fn: loginFn,
     onSuccess: async (ctx) => {
       /*if (!ctx.data?.error) {
         await router.invalidate();
         await router.navigate({ to: "/" });
         return;
-      }*/
+      }
     },
-  });
+  });*/
 
   return (
     <form
@@ -80,7 +81,14 @@ export function Login() {
       onSubmit={async (e) => {
         e.preventDefault();
         const signature = await signTypedDataAsync(signInData);
-        await loginFn({
+        /*const response = await authClient.signIn("starknet", {
+          credentials: {
+            message: JSON.stringify(signInData),
+            signature: signature,
+          },
+          redirectTo: "/", // Optional: specify where to redirect after successful login
+        });*/
+        /*await loginFn({
           data: {
             credentials: {
               message: JSON.stringify(signInData),
@@ -88,12 +96,9 @@ export function Login() {
               signature: signature,
             },
           },
-        });
+        });*/
       }}
     >
-      {loginMutation.status == "error" && (
-        <div className="text-red-400">{loginMutation.error?.message}</div>
-      )}
       <Button /* disabled={isPending}*/>
         <StarknetIcon className="mr-2 h-6 w-6" />
         Sign in with Starknet
