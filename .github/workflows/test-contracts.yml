@@ -44,9 +44,6 @@ jobs:
           curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.1.2/dojo_v1.1.2_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
-      - name: Run Dojo Build
-        run: |
-          cd contracts/game && sozo build
       - name: Run Dojo Test for ${{ matrix.test }}
         run: |
           cd contracts/game && sozo test -f ${{ matrix.test }} --print-resource-usage
