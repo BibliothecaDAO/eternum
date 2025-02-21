@@ -62,7 +62,9 @@ mod realm_systems {
     };
     use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
+    use s1_eternum::models::structure::{
+        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+    };
     use s1_eternum::models::weight::{Weight, WeightImpl};
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
@@ -166,11 +168,11 @@ mod realm_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure caller owns the realm
-            let mut structure: Structure = world.read_model(realm_id);
+            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm_id);
             structure.owner.assert_caller_owner();
 
             // ensure entity is a realm
-            assert(structure.category == StructureCategory::Realm, 'entity is not a realm');
+            assert(structure.category == StructureCategory::Realm.into(), 'entity is not a realm');
 
             // ensure realm is not already at max level
             let mut realm: Realm = world.read_model(realm_id);
@@ -216,8 +218,8 @@ mod realm_systems {
             world.write_model(@realm);
 
             // allow structure one more guard
-            structure.limits.max_guard_count += 1;
-            world.write_model(@structure);
+            structure.troop_max_guard_count += 1;
+            StructureBaseStoreImpl::store(ref structure, ref world, realm_id);
 
             // [Achievement] Upgrade to max level
             if realm.level == max_level {
@@ -234,8 +236,8 @@ mod realm_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure entity is a realm
-            let structure: Structure = world.read_model(entity_id);
-            assert(structure.category == StructureCategory::Realm, 'entity is not a realm');
+            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            assert(structure.category == StructureCategory::Realm.into(), 'entity is not a realm');
 
             // ensure caller owns the realm
             structure.owner.assert_caller_owner();
@@ -330,9 +332,11 @@ mod realm_systems {
                         has_wonder,
                     },
                 );
-                
+
             // place castle building
-            BuildingImpl::create(ref world, entity_id, coord, BuildingCategory::Castle, Option::None, BuildingImpl::center(),);
+            BuildingImpl::create(
+                ref world, entity_id, coord, BuildingCategory::Castle, Option::None, BuildingImpl::center(),
+            );
 
             (entity_id, realm_produced_resources_packed)
         }

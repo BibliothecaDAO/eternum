@@ -294,7 +294,6 @@ impl PositionImpl of PositionTrait {
         assert(self.x != 0 || self.y != 0, 'Coord: zero');
     }
 }
-
 // #[cfg(test)]
 // mod tests {
 //     use debug::PrintTrait;
@@ -323,7 +322,6 @@ impl PositionImpl of PositionTrait {
 //         assert(cube.s == -2, 'incorrect cube.s');
 //     }
 
-
 //     #[test]
 //     fn position_test_position_into_cube_2_1() {
 //         let pos = Position { entity_id: 0, x: 2, y: 1 };
@@ -333,7 +331,6 @@ impl PositionImpl of PositionTrait {
 //         assert(cube.r == 1, 'incorrect cube.r');
 //         assert(cube.s == -3, 'incorrect cube.s');
 //     }
-
 
 //     #[test]
 //     fn position_test_position_into_cube_2_2() {
@@ -345,7 +342,6 @@ impl PositionImpl of PositionTrait {
 //         assert(cube.s == -3, 'incorrect cube.s');
 //     }
 
-
 //     #[test]
 //     #[available_gas(30000000)]
 //     fn position_test_calculate_distance() {
@@ -355,7 +351,6 @@ impl PositionImpl of PositionTrait {
 
 //         assert(distance == 2, 'wrong distance');
 //     }
-
 
 //     #[test]
 //     #[available_gas(30000000)]
@@ -378,7 +373,6 @@ impl PositionImpl of PositionTrait {
 //         assert(time == 497861754480, 'time should be 57600');
 //     }
 
-
 //     // #[test]
 //     // fn position_test_get_zone() {
 //     //     let a = Position { entity_id: 0, x: 1333333, y: 200000 };
@@ -389,7 +383,6 @@ impl PositionImpl of PositionTrait {
 //     mod coord {
 //         use super::super::{Coord, CoordTrait, Direction};
 
-
 //         fn odd_row_coord() -> Coord {
 //             Coord { x: 7, y: 7 }
 //         }
@@ -397,7 +390,6 @@ impl PositionImpl of PositionTrait {
 //         fn even_row_coord() -> Coord {
 //             Coord { x: 7, y: 6 }
 //         }
-
 
 //         //- Even row
 
@@ -429,7 +421,6 @@ impl PositionImpl of PositionTrait {
 //             assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
 //         }
 
-
 //         #[test]
 //         fn position_test_neighbor_even_row_south_west() {
 //             let start = even_row_coord();
@@ -437,14 +428,12 @@ impl PositionImpl of PositionTrait {
 //             assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x, y: start.y - 1 });
 //         }
 
-
 //         #[test]
 //         fn position_test_neighbor_even_row_south_east() {
 //             let start = even_row_coord();
 
 //             assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 });
 //         }
-
 
 //         //- Odd row
 
@@ -476,14 +465,12 @@ impl PositionImpl of PositionTrait {
 //             assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
 //         }
 
-
 //         #[test]
 //         fn position_test_neighbor_odd_row_south_west() {
 //             let start = odd_row_coord();
 
 //             assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 });
 //         }
-
 
 //         #[test]
 //         fn position_test_neighbor_odd_row_south_east() {
@@ -493,4 +480,5 @@ impl PositionImpl of PositionTrait {
 //         }
 //     }
 // }
+
 

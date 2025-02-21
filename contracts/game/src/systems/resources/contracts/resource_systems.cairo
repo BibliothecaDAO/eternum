@@ -49,7 +49,9 @@ mod resource_systems {
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
+    use s1_eternum::models::structure::{
+        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
+    };
     use s1_eternum::models::troop::{ExplorerTroops};
     use s1_eternum::models::weight::{Weight, WeightTrait};
     use s1_eternum::systems::utils::distance::{iDistanceImpl};
@@ -89,7 +91,7 @@ mod resource_systems {
             assert(caller_structure_id != recipient_structure_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
 
-            let mut caller_structure: Structure = world.read_model(caller_structure_id);
+            let mut caller_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, caller_structure_id);
             caller_structure.owner.assert_caller_owner();
 
             let mut resources = resources;
@@ -142,19 +144,23 @@ mod resource_systems {
             assert(resources.len() != 0, 'no resource to transfer');
 
             // ensure sender is a structure
-            let mut sender_structure: Structure = world.read_model(sender_structure_id);
+            let mut sender_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, sender_structure_id);
             sender_structure.owner.assert_caller_owner();
 
             // ensure recipient is a structure
-            let mut recipient_structure: Structure = world.read_model(recipient_structure_id);
+            let mut recipient_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, recipient_structure_id,
+            );
             recipient_structure.assert_exists();
 
             let mut sender_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, sender_structure_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
-                ref sender_structure,
+                sender_structure_id,
+                sender_structure,
                 ref sender_structure_weight,
-                ref recipient_structure,
+                recipient_structure_id,
+                recipient_structure.coord(),
                 recipient_resource_indexes,
                 resources,
                 false,
@@ -189,7 +195,9 @@ mod resource_systems {
             assert(resources.len() != 0, 'no resource to transfer');
 
             // ensure sender is a structure
-            let mut recipient_structure: Structure = world.read_model(recipient_structure_id);
+            let mut recipient_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, recipient_structure_id,
+            );
             recipient_structure.owner.assert_caller_owner();
 
             // check and update allowance
@@ -216,13 +224,15 @@ mod resource_systems {
                 };
             };
 
-            let mut owner_structure: Structure = world.read_model(owner_structure_id);
+            let mut owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, owner_structure_id);
             let mut owner_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, owner_structure_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
-                ref owner_structure,
+                owner_structure_id,
+                owner_structure,
                 ref owner_structure_weight,
-                ref recipient_structure,
+                recipient_structure_id,
+                recipient_structure.coord(),
                 recipient_resource_indexes,
                 resources,
                 false,
@@ -238,13 +248,13 @@ mod resource_systems {
             assert!(from_structure_id.is_non_zero(), "from_structure_id does not exist");
 
             // ensure from_structure is owned by caller
-            let mut from_structure: Structure = world.read_model(from_structure_id);
+            let mut from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
             from_structure.owner.assert_caller_owner();
 
             // move balance from resource arrivals to structure balance
             let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
             iResourceTransferImpl::deliver_arrivals(
-                ref world, ref from_structure, ref from_structure_weight, day, slot, resource_count,
+                ref world, from_structure_id, ref from_structure_weight, day, slot, resource_count,
             );
         }
     }

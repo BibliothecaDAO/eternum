@@ -44,9 +44,12 @@ mod production_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
+    use s1_eternum::models::structure::{
+        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+        StructureTrait,
+    };
     use s1_eternum::models::{
-        owner::{EntityOwner, EntityOwnerTrait}, position::{Coord, CoordTrait, Direction, Position, PositionTrait},
+        owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, Direction, Position, PositionTrait},
         realm::{Realm, RealmImpl, RealmResourcesTrait},
         resource::production::building::{Building, BuildingCategory, BuildingImpl},
         resource::production::production::{Production, ProductionStrategyImpl, ProductionTrait},
@@ -68,8 +71,8 @@ mod production_systems {
             assert!(realm.realm_id != 0, "entity is not a realm");
 
             // ensure caller owns the realm
-            let entity_owner: EntityOwner = world.read_model(entity_id);
-            entity_owner.assert_caller_owner(world);
+            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            structure.owner.assert_caller_owner();
 
             // ensure buildings can't be made outside
             // the range of what the realm level allows
@@ -95,9 +98,8 @@ mod production_systems {
                 }
             };
 
-            let structure: Structure = world.read_model(entity_id);
             let (building, building_count) = BuildingImpl::create(
-                ref world, entity_id, structure.coord, building_category, produce_resource_type, building_coord,
+                ref world, entity_id, structure.coord(), building_category, produce_resource_type, building_coord,
             );
 
             // pay one time cost of the building
@@ -133,12 +135,10 @@ mod production_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let entity_owner: EntityOwner = world.read_model(entity_id);
-            entity_owner.assert_caller_owner(world);
-
             // ensure entity is a structure
-            let entity_structure: Structure = world.read_model(entity_id);
-            assert!(entity_structure.category == StructureCategory::Realm, "structure is not a realm");
+            let entity_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            entity_structure.owner.assert_caller_owner();
+            assert!(entity_structure.category == StructureCategory::Realm.into(), "structure is not a realm");
 
             assert!(
                 resource_types.len() == resource_amounts.len(),
@@ -159,11 +159,9 @@ mod production_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let entity_owner: EntityOwner = world.read_model(from_entity_id);
-            entity_owner.assert_caller_owner(world);
-
-            let entity_structure: Structure = world.read_model(from_entity_id);
-            assert!(entity_structure.category == StructureCategory::Realm, "structure is not a realm");
+            let entity_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_entity_id);
+            entity_structure.owner.assert_caller_owner();
+            assert!(entity_structure.category == StructureCategory::Realm.into(), "structure is not a realm");
 
             assert!(
                 labor_amounts.len() == produced_resource_types.len(),
@@ -189,11 +187,9 @@ mod production_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let entity_owner: EntityOwner = world.read_model(from_entity_id);
-            entity_owner.assert_caller_owner(world);
-
-            let entity_structure: Structure = world.read_model(from_entity_id);
-            assert!(entity_structure.category == StructureCategory::Realm, "structure is not a realm");
+            let entity_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_entity_id);
+            entity_structure.owner.assert_caller_owner();
+            assert!(entity_structure.category == StructureCategory::Realm.into(), "structure is not a realm");
 
             assert!(
                 produced_resource_types.len() == production_tick_counts.len(),

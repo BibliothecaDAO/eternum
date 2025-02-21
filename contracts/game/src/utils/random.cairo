@@ -1,7 +1,7 @@
+use core::poseidon::poseidon_hash_span;
 use s1_eternum::utils::catridge::vrf::IVrfProviderDispatcher;
 use s1_eternum::utils::catridge::vrf::IVrfProviderDispatcherTrait;
 use s1_eternum::utils::catridge::vrf::Source;
-use core::poseidon::poseidon_hash_span;
 use starknet::ContractAddress;
 use starknet::TxInfo;
 

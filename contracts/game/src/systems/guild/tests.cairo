@@ -18,7 +18,6 @@
 // use s1_eternum::utils::testing::{systems::deploy_system, world::spawn_eternum};
 // use starknet::contract_address_const;
 
-
 // const PUBLIC: felt252 = 1;
 // const PRIVATE: felt252 = 0;
 // const GUILD_NAME: felt252 = 'Guildname';

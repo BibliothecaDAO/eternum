@@ -12,7 +12,10 @@ use s1_eternum::models::resource::resource::{
     WeightStoreImpl,
 };
 use s1_eternum::models::stamina::{Stamina, StaminaImpl};
-use s1_eternum::models::structure::Structure;
+use s1_eternum::models::structure::{
+    Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl,
+    StructureTroopGuardStoreImpl,
+};
 use s1_eternum::models::troop::{
     ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopTier, TroopType, Troops, TroopsImpl,
 };
@@ -128,9 +131,31 @@ pub impl iExplorerImpl of iExplorerTrait {
     }
 
 
-    fn explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
+    fn explorer_delete(
+        ref world: WorldStorage,
+        ref explorer: ExplorerTroops,
+        structure_explorers: Array<ID>,
+        ref structure_base: StructureBase,
+        structure_id: ID,
+    ) {
         // ensure army is dead
         assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
+
+        // todo: check if this will cause panic if explorer count is too high
+        //       and delete is called after another army wins a battle against this
+
+        // remove explorer from structure
+        let mut new_explorers: Array<ID> = array![];
+        for explorer_id in structure_explorers {
+            if explorer_id != explorer.explorer_id {
+                new_explorers.append(explorer_id);
+            }
+        };
+        StructureTroopExplorerStoreImpl::store(new_explorers.span(), ref world, structure_id);
+
+        // update structure base
+        structure_base.troop_explorer_count -= 1;
+        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
 
         let occupier: Occupier = OccupierImpl::key_only(explorer.coord);
         let resource: Resource = ResourceImpl::key_only(explorer.explorer_id);
@@ -160,12 +185,7 @@ pub impl iExplorerImpl of iExplorerTrait {
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
     fn make_payment(
-        ref world: WorldStorage,
-        from_structure_id: ID,
-        amount: u128,
-        category: TroopType,
-        tier: TroopTier,
-        current_tick: u64,
+        ref world: WorldStorage, from_structure_id: ID, amount: u128, category: TroopType, tier: TroopTier,
     ) {
         let resource_type = match tier {
             TroopTier::T1 => {
@@ -191,6 +211,10 @@ pub impl iTroopImpl of iTroopTrait {
             },
         };
 
+        // ensure amount is fully divisible by resource precision
+        assert!(amount % RESOURCE_PRECISION == 0, "amount must be divisible by resource precision");
+        assert!(amount > 0, "amount must be greater than 0");
+
         // burn troop resource to pay for troop
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
         let troop_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
@@ -214,9 +238,9 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         troop_stamina_config: TroopStaminaConfig,
         current_tick: u64,
     ) {
-        let mut structure: Structure = world.read_model(structure_id);
+        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+        let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
         let mut salt: u128 = 1;
-        let mut guards: GuardTroops = structure.guards;
 
         loop {
             match slot_tiers.pop_front() {
@@ -232,24 +256,26 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                     troop_amount += lower_bound;
 
                     // update guard count
-                    structure.guard_count += 1;
+                    structure_base.troop_guard_count += 1;
 
                     // set category and tier
-                    let (mut troops, _): (Troops, u32) = guards.from_slot(*slot);
+                    let (mut troops, _): (Troops, u32) = structure_guards.from_slot(*slot);
                     troops.category = *category;
                     troops.tier = *tier;
                     troops.count += troop_amount;
                     troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
                     // update troop in guard slot
-                    guards.to_slot(*slot, troops, current_tick);
+                    structure_guards.to_slot(*slot, troops, current_tick);
                 },
                 Option::None => { break; },
             }
         };
 
-        // update related models
-        structure.guards = guards;
-        world.write_model(@structure);
+        // update structure guard store
+        StructureTroopGuardStoreImpl::store(ref structure_guards, ref world, structure_id);
+
+        // update structure base
+        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
     }
 }

@@ -32,7 +32,6 @@
 // };
 // use starknet::contract_address_const;
 
-
 // fn setup() -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
 //     let mut world = spawn_eternum();
 //     world.dispatcher.uuid();
@@ -113,7 +112,6 @@
 //     (world, trade_id, maker_id, taker_id, trade_systems_dispatcher)
 // }
 
-
 // #[test]
 // #[available_gas(3000000000000)]
 // fn trade_test_cancel() {
@@ -136,7 +134,6 @@
 //     assert(trade.status == TradeStatus::CANCELLED, 'wrong trade status');
 // }
 
-
 // #[test]
 // #[available_gas(3000000000000)]
 // #[should_panic(expected: ('trade must be open', 'ENTRYPOINT_FAILED'))]
@@ -155,7 +152,6 @@
 //     trade_systems_dispatcher
 //         .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100)].span());
 // }
-
 
 // #[test]
 // #[available_gas(3000000000000)]

@@ -18,7 +18,8 @@
 //     use s1_eternum::models::quantity::Quantity;
 //     use s1_eternum::models::resource::resource::{Resource, ResourceAllowance};
 
-//     use s1_eternum::systems::config::contracts::{IWeightConfigDispatcher, IWeightConfigDispatcherTrait, config_systems};
+//     use s1_eternum::systems::config::contracts::{IWeightConfigDispatcher, IWeightConfigDispatcherTrait,
+//     config_systems};
 
 //     use s1_eternum::systems::resources::contracts::resource_systems::{
 //         IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait, resource_systems,
@@ -26,7 +27,6 @@
 
 //     use s1_eternum::utils::testing::{config::set_capacity_config, systems::deploy_system, world::spawn_eternum};
 //     use starknet::contract_address_const;
-
 
 //     fn setup() -> (WorldStorage, IResourceSystemsDispatcher) {
 //         let mut world = spawn_eternum();
@@ -52,7 +52,6 @@
 
 //         (world, resource_systems_dispatcher)
 //     }
-
 
 //     fn make_owner_and_receiver(ref world: WorldStorage, sender_entity_id: ID, receiver_entity_id: ID) {
 //         let sender_entity_position = Position { x: 100_000, y: 200_000, entity_id: sender_entity_id.into() };
@@ -96,14 +95,14 @@
 //         world
 //             .write_model_test(
 //                 @Resource {
-//                     entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1_000_000_000,
+//                     entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance:
+//                     1_000_000_000,
 //                 },
 //             );
 
 //         // call world.dispatcher.uuid() to ensure next id isn't 0
 //         world.dispatcher.uuid();
 //     }
-
 
 //     ////////////////////////////
 //     // Test transfer
@@ -134,7 +133,6 @@
 //         assert(sender_entity_resource_stone.balance == 600, 'stone balance mismatch');
 //         assert(sender_entity_resource_wood.balance == 300, 'wood balance mismatch');
 //     }
-
 
 //     #[test]
 //     #[available_gas(30000000000000)]
@@ -191,7 +189,6 @@
 //             );
 //     }
 
-
 //     #[test]
 //     #[available_gas(30000000000000)]
 //     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
@@ -201,9 +198,9 @@
 //         // transfer resources
 //         starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
-//         resource_systems_dispatcher.send(1, 2, array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700)].span());
+//         resource_systems_dispatcher.send(1, 2, array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD,
+//         700)].span());
 //     }
-
 
 //     #[test]
 //     #[available_gas(30000000000000)]
@@ -232,7 +229,6 @@
 //             );
 //     }
 
-
 //     ////////////////////////////
 //     // Test transfer_from
 //     ////////////////////////////
@@ -249,7 +245,8 @@
 
 //         world
 //             .write_model_test(
-//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
+//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into()
+//                 },
 //             );
 //         world
 //             .write_model_test(
@@ -291,7 +288,6 @@
 //         assert(owner_entity_resource_wood.balance == 300, 'wood balance mismatch');
 //     }
 
-
 //     #[test]
 //     #[available_gas(30000000000000)]
 //     fn resources_test_transfer_from__with_infinite_approval() {
@@ -305,7 +301,8 @@
 
 //         world
 //             .write_model_test(
-//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
+//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into()
+//                 },
 //             );
 //         world
 //             .write_model_test(

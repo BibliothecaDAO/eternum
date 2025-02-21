@@ -1,6 +1,5 @@
 // use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
-
 // use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
 
 // use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
@@ -12,7 +11,6 @@
 // use s1_eternum::models::bank::market::{Market, MarketImpl};
 
 // use s1_eternum::models::config::{CapacityCategory, CapacityConfig};
-
 
 // use s1_eternum::models::owner::{Owner};
 // use s1_eternum::models::position::{Coord};
@@ -95,7 +93,8 @@
 //     // donkeys
 //     world
 //         .write_model_test(
-//             @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE },
+//             @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE
+//             },
 //         );
 //     world
 //         .write_model_test(
@@ -118,7 +117,8 @@
 //     // donkeys
 //     world
 //         .write_model_test(
-//             @Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE },
+//             @Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE
+//             },
 //         );
 //     world
 //         .write_model_test(
@@ -237,7 +237,8 @@
 
 //     world
 //         .write_model_test(
-//             @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE },
+//             @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE
+//             },
 //         );
 //     world
 //         .write_model_test(
@@ -307,7 +308,6 @@
 //     assert_eq!(bank_lords.balance, 1111);
 //     assert(bank_wood.balance == 0, 'bank wood');
 // }
-
 
 // #[test]
 // fn bank_test_liquidity_sell() {
@@ -427,4 +427,5 @@
 //     assert(market.lords_amount == lords_amount + 1, 'market.lords_amount');
 //     assert(market.resource_amount == resource_amount + 1, 'market.resource_amount');
 // }
+
 

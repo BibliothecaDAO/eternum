@@ -36,7 +36,6 @@
 
 // use starknet::contract_address_const;
 
-
 // fn setup(direct_trade: bool) -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
 //     let mut world = spawn_eternum();
 
@@ -119,7 +118,6 @@
 //     (world, trade_id, maker_id, taker_id, trade_systems_dispatcher)
 // }
 
-
 // #[test]
 // #[available_gas(3000000000000)]
 // fn trade_test_accept_order_free_trade() {
@@ -183,7 +181,8 @@
 //     // who wants to accept is the intended recepient
 
 //     let taker_id = 9999; // set arbitrarily
-//     world.write_model_test(@Owner { entity_id: taker_id, address: contract_address_const::<'takers_other_realm'>() });
+//     world.write_model_test(@Owner { entity_id: taker_id, address: contract_address_const::<'takers_other_realm'>()
+//     });
 
 //     // create order with a caller that isnt the owner of maker_id
 //     starknet::testing::set_contract_address(contract_address_const::<'takers_other_realm'>());
@@ -244,4 +243,5 @@
 //             array![(ResourceTypes::WOOD, 200), (ResourceTypes::SILVER, 200)].span(),
 //         );
 // }
+
 

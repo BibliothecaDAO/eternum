@@ -22,7 +22,7 @@ use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
 use s1_eternum::models::season::SeasonImpl;
-use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
+use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTrait};
 use s1_eternum::models::troop::{ExplorerTroops};
 use s1_eternum::models::weight::{Weight, WeightTrait};
 use s1_eternum::systems::utils::distance::{iDistanceImpl};
@@ -33,17 +33,19 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     #[inline(always)]
     fn structure_to_structure_instant(
         ref world: WorldStorage,
-        ref from_structure: Structure,
+        from_structure_id: ID,
+        from_structure: StructureBase,
         ref from_structure_weight: Weight,
-        ref to_structure: Structure,
+        to_structure_id: ID,
+        to_structure: StructureBase,
         ref to_structure_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
         Self::_instant_transfer(
             ref world,
-            ref from_structure.entity_id,
+            from_structure_id,
             ref from_structure_weight,
-            ref to_structure.entity_id,
+            to_structure_id,
             ref to_structure_weight,
             resources,
             false,
@@ -54,9 +56,11 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     #[inline(always)]
     fn structure_to_structure_delayed(
         ref world: WorldStorage,
-        ref from_structure: Structure,
+        from_structure_id: ID,
+        from_structure: StructureBase,
         ref from_structure_weight: Weight,
-        ref to_structure: Structure,
+        to_structure_id: ID,
+        to_structure_coord: Coord,
         mut to_structure_resource_indexes: Span<u8>,
         mut resources: Span<(u8, u128)>,
         free: bool,
@@ -65,11 +69,12 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         Self::_delayed_transfer(
             ref world,
             true,
-            ref from_structure.entity_id,
-            ref from_structure.owner,
-            ref from_structure.coord,
+            from_structure_id,
+            from_structure.owner,
+            from_structure.coord(),
             ref from_structure_weight,
-            ref to_structure,
+            to_structure_id,
+            to_structure_coord,
             to_structure_resource_indexes,
             resources,
             free,
@@ -81,17 +86,17 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     #[inline(always)]
     fn troop_to_troop_instant(
         ref world: WorldStorage,
-        ref from_troop: ExplorerTroops,
+        from_troop: ExplorerTroops,
         ref from_troop_weight: Weight,
-        ref to_troop: ExplorerTroops,
+        to_troop: ExplorerTroops,
         ref to_troop_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
         Self::_instant_transfer(
             ref world,
-            ref from_troop.explorer_id,
+            from_troop.explorer_id,
             ref from_troop_weight,
-            ref to_troop.explorer_id,
+            to_troop.explorer_id,
             ref to_troop_weight,
             resources,
             false,
@@ -104,7 +109,8 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref from_troop: ExplorerTroops,
         ref from_troop_owner: starknet::ContractAddress,
         ref from_troop_weight: Weight,
-        ref to_structure: Structure,
+        to_structure_id: ID,
+        to_structure_coord: Coord,
         mut to_structure_resource_indexes: Span<u8>,
         mut resources: Span<(u8, u128)>,
         pickup: bool,
@@ -112,11 +118,12 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         Self::_delayed_transfer(
             ref world,
             true,
-            ref from_troop.explorer_id,
-            ref from_troop_owner,
-            ref from_troop.coord,
+            from_troop.explorer_id,
+            from_troop_owner,
+            from_troop.coord,
             ref from_troop_weight,
-            ref to_structure,
+            to_structure_id,
+            to_structure_coord,
             to_structure_resource_indexes,
             resources,
             false,
@@ -127,9 +134,9 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
 
     fn _instant_transfer(
         ref world: WorldStorage,
-        ref from_id: ID,
+        from_id: ID,
         ref from_weight: Weight,
-        ref to_id: ID,
+        to_id: ID,
         ref to_weight: Weight,
         mut resources: Span<(u8, u128)>,
         free: bool,
@@ -176,29 +183,29 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     fn _delayed_transfer(
         ref world: WorldStorage,
         from_structure: bool,
-        ref from_id: ID,
-        ref from_owner: starknet::ContractAddress,
-        ref from_coord: Coord,
+        from_id: ID,
+        from_owner: starknet::ContractAddress,
+        from_coord: Coord,
         ref from_weight: Weight,
-        ref to_structure: Structure,
+        to_id: ID,
+        to_coord: Coord,
         mut to_structure_resource_indexes: Span<u8>,
         mut resources: Span<(u8, u128)>,
         free: bool,
         pickup: bool,
     ) {
         assert!(from_id != 0, "from entity does not exist");
-        assert!(to_structure.entity_id != 0, "to_structure does not exist");
-        assert!(to_structure.entity_id != from_id, "from_structure and to_structure are the same");
+        assert!(to_id != 0, "to_structure does not exist");
+        assert!(to_id != from_id, "from_structure and to_structure are the same");
 
         assert!(from_coord.is_non_zero(), "from_entity is not stationary");
-        assert!(to_structure.coord.is_non_zero(), "to_entity is not stationary");
-        assert!(from_coord != to_structure.coord, "from_entity and to_entity are in the same location");
+        assert!(to_coord.is_non_zero(), "to_entity is not stationary");
+        assert!(from_coord != to_coord, "from_entity and to_entity are in the same location");
 
         let mut resources_clone = resources.clone();
-        let to_structure_id = to_structure.entity_id;
         let donkey_speed = SpeedImpl::for_donkey(ref world);
         let travel_time = starknet::get_block_timestamp()
-            + iDistanceImpl::time_required(ref world, from_coord, to_structure.coord, donkey_speed, pickup);
+            + iDistanceImpl::time_required(ref world, from_coord, to_coord, donkey_speed, pickup);
         let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
         let (
@@ -207,7 +214,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             mut to_structure_resource_arrival_total_amount,
         ) =
             ResourceArrivalImpl::read_resources(
-            ref world, to_structure_id, arrival_day, arrival_slot,
+            ref world, to_id, arrival_day, arrival_slot,
         );
         let mut total_resources_weight: u128 = 0;
         loop {
@@ -247,7 +254,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         // update to_structure resource arrivals
         ResourceArrivalImpl::write_resources(
             ref world,
-            to_structure_id,
+            to_id,
             arrival_day,
             arrival_slot,
             to_structure_resources_array,
@@ -268,7 +275,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
 
     fn deliver_arrivals(
         ref world: WorldStorage,
-        ref to_structure: Structure,
+        to_structure_id: ID,
         ref to_structure_weight: Weight,
         mut day: u64,
         mut slot: u8,
@@ -282,7 +289,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             mut to_structure_resource_arrival_total_amount,
         ) =
             ResourceArrivalImpl::read_resources(
-            ref world, to_structure.entity_id, day, slot,
+            ref world, to_structure_id, day, slot,
         );
         let mut resource_index: u8 = 0;
         loop {
@@ -300,12 +307,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     // add resource to to_structure balance
                     let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
                     let mut to_structure_resource = SingleResourceStoreImpl::retrieve(
-                        ref world,
-                        to_structure.entity_id,
-                        resource_type,
-                        ref to_structure_weight,
-                        resource_weight_grams,
-                        true,
+                        ref world, to_structure_id, resource_type, ref to_structure_weight, resource_weight_grams, true,
                     );
                     to_structure_resource.spend(resource_amount, ref to_structure_weight, resource_weight_grams);
                     to_structure_resource.store(ref world);
@@ -327,16 +329,16 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         };
 
         // update to_structure weight
-        to_structure_weight.store(ref world, to_structure.entity_id);
+        to_structure_weight.store(ref world, to_structure_id);
 
         if to_structure_resource_arrival_total_amount.is_zero() {
             // delete to_structure resource arrivals
-            ResourceArrivalImpl::delete(ref world, to_structure.entity_id, day);
+            ResourceArrivalImpl::delete(ref world, to_structure_id, day);
         } else {
             // update to_structure resource arrivals
             ResourceArrivalImpl::write_resources(
                 ref world,
-                to_structure.entity_id,
+                to_structure_id,
                 day,
                 slot,
                 to_structure_resources_array,

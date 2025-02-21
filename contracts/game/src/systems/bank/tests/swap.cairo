@@ -29,7 +29,6 @@
 
 // use traits::Into;
 
-
 // const INITIAL_RESOURCE_BALANCE: u128 = 100_000;
 // const LIQUIDITY_AMOUNT: u128 = 10_000;
 // const SWAP_AMOUNT: u128 = 1_000;
@@ -81,7 +80,8 @@
 //     // wood, lords, donkeys
 //     world
 //         .write_model_test(
-//             @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE },
+//             @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE
+//             },
 //         );
 //     world
 //         .write_model_test(

@@ -259,7 +259,6 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
     let available: u128 = (*market.resource_amount).into();
     (quantity, available, *market.lords_amount)
 }
-
 // #[cfg(test)]
 // mod tests {
 //     use debug::PrintTrait;
@@ -275,7 +274,6 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 
 //     const LP_FEE_NUM: u128 = 3;
 //     const LP_FEE_DENOM: u128 = 1000; // 3/1000  = 0.3% lp fee
-
 
 //     fn assert_constant_product_check(
 //         initial_reserve_x: u128,
@@ -377,7 +375,6 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             LP_FEE_DENOM,
 //         )
 //     }
-
 
 //     #[test]
 //     fn bank_test_market_sell_no_fee() {
@@ -578,3 +575,5 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //         let (_amount_remove, _quantity_remove, _) = market.remove_liquidity(liquidity_remove);
 //     }
 // }
+
+

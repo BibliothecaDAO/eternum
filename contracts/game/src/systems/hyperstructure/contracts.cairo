@@ -67,10 +67,12 @@ mod hyperstructure_systems {
             },
             guild::{GuildMember},
             hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress}, map::Tile,
-            name::{AddressName}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait},
+            name::{AddressName}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait},
             position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position, PositionIntoCoord}, realm::{Realm},
             resource::resource::{ResourceList}, season::{Leaderboard},
-            structure::{Structure, StructureCategory, StructureImpl},
+            structure::{
+                Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+            },
         },
     };
 
@@ -140,15 +142,13 @@ mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let creator_owner: Owner = world.read_model(creator_entity_id);
-            creator_owner.assert_caller_owner();
-
             let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
             let shard_resource_tier: u32 = get_resource_tier(ResourceTypes::EARTHEN_SHARD).into();
             let shards_resource_config = hyperstructure_resource_configs.at(shard_resource_tier - 1);
             let required_shards_amount = shards_resource_config.get_required_amount(0);
 
-            let creator_structure: Structure = world.read_model(creator_entity_id);
+            let creator_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, creator_entity_id);
+            creator_structure.owner.assert_caller_owner();
             creator_structure.assert_exists();
 
             let mut creator_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, creator_entity_id);
@@ -228,7 +228,7 @@ mod hyperstructure_systems {
                 );
 
             // [Achievement] Hyperstructure Creation
-            let player_id: felt252 = creator_owner.address.into();
+            let player_id: felt252 = creator_structure.owner.into();
             let task_id: felt252 = Task::Builder.identifier();
             let store = StoreTrait::new(world);
             store.progress(player_id, task_id, count: 1, time: current_time);
@@ -245,11 +245,9 @@ mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let contributor_owner: Owner = world.read_model(contributor_entity_id);
-            contributor_owner.assert_caller_owner();
-
-            let structure: Structure = world.read_model(hyperstructure_entity_id);
-            assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
+            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
+            structure.owner.assert_caller_owner();
+            assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
             let hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
             hyperstructure.assert_access(ref world);
@@ -308,7 +306,7 @@ mod hyperstructure_systems {
             }
 
             // [Achievement] Hyperstructure Contribution
-            let player_id: felt252 = contributor_owner.address.into();
+            let player_id: felt252 = structure.owner.into();
             let task_id: felt252 = Task::Opportunist.identifier();
             let store = StoreTrait::new(world);
             store.progress(player_id, task_id, count: 1, time: timestamp);
@@ -323,13 +321,11 @@ mod hyperstructure_systems {
             assert!(co_owners.len() <= 10, "too many co-owners");
 
             // ensure the structure is a hyperstructure
-            let structure: Structure = world.read_model(hyperstructure_entity_id);
-            assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
+            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
+            structure.owner.assert_caller_owner();
+            assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
             let caller = starknet::get_caller_address();
-
-            let owner: Owner = world.read_model(hyperstructure_entity_id);
-            owner.assert_caller_owner();
 
             let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("hyperstructure_config"),
@@ -380,12 +376,11 @@ mod hyperstructure_systems {
 
         fn set_access(ref self: ContractState, hyperstructure_entity_id: ID, access: Access) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let owner: Owner = world.read_model(hyperstructure_entity_id);
-            owner.assert_caller_owner();
 
             // ensure the structure is a hyperstructure
-            let structure: Structure = world.read_model(hyperstructure_entity_id);
-            assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
+            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
+            structure.owner.assert_caller_owner();
+            assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
             hyperstructure.access = access;
@@ -696,8 +691,8 @@ mod hyperstructure_systems {
             while (i < hyperstructures_contributed_to.len()) {
                 let hyperstructure_entity_id = *hyperstructures_contributed_to.at(i);
                 // ensure the structure is a hyperstructure
-                let structure: Structure = world.read_model(hyperstructure_entity_id);
-                assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
+                let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
+                assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
                 let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
 

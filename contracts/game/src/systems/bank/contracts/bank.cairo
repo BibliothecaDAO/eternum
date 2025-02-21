@@ -28,7 +28,9 @@ mod bank_systems {
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
+    use s1_eternum::models::structure::{
+        Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+    };
     use s1_eternum::models::structure::{StructureTrait};
     use s1_eternum::models::troop::{ExplorerTroops};
     use s1_eternum::models::weight::{Weight, WeightTrait};
@@ -46,8 +48,8 @@ mod bank_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let bank_structure: Structure = world.read_model(bank_entity_id);
-            bank_structure.owner.assert_caller_owner();
+            let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            bank_structure_base.owner.assert_caller_owner();
 
             let mut bank: Bank = world.read_model(bank_entity_id);
             bank.owner_fee_num = new_owner_fee_num;
@@ -65,8 +67,8 @@ mod bank_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let bank_structure: Structure = world.read_model(bank_entity_id);
-            bank_structure.owner.assert_caller_owner();
+            let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            bank_structure_base.owner.assert_caller_owner();
 
             let mut bank: Bank = world.read_model(bank_entity_id);
             bank.owner_bridge_fee_dpt_percent = owner_bridge_fee_dpt_percent;

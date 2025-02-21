@@ -23,14 +23,12 @@
 //     ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait, trade_systems,
 // };
 
-
 // use s1_eternum::utils::testing::{
 //     config::{set_capacity_config, set_resource_weight_config, set_settlement_config},
 //     general::{get_default_realm_pos, spawn_realm},
 //     systems::{deploy_dev_resource_systems, deploy_realm_systems, deploy_system}, world::spawn_eternum,
 // };
 // use starknet::contract_address_const;
-
 
 // fn setup() -> (WorldStorage, ID, ID, ITradeSystemsDispatcher) {
 //     let mut world = spawn_eternum();
@@ -66,7 +64,6 @@
 
 //     (world, maker_id, taker_id, trade_systems_dispatcher)
 // }
-
 
 // #[test]
 // #[available_gas(3000000000000)]
@@ -106,7 +103,6 @@
 //     assert(trade.status == TradeStatus::OPEN, 'wrong trade status');
 // }
 
-
 // #[test]
 // #[available_gas(3000000000000)]
 // #[should_panic(expected: ('caller not maker', 'ENTRYPOINT_FAILED'))]
@@ -125,7 +121,6 @@
 //             100,
 //         );
 // }
-
 
 // #[test]
 // #[available_gas(3000000000000)]

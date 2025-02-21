@@ -19,13 +19,13 @@
 
 // use starknet::contract_address::contract_address_const;
 
-
 // fn setup() -> (WorldStorage, IHyperstructureConfigDispatcher) {
 //     let mut world = spawn_eternum();
 
 //     let config_systems_address = deploy_system(ref world, "config_systems");
 
-//     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address };
+//     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address
+//     };
 
 //     (world, hyperstructure_config_dispatcher)
 // }

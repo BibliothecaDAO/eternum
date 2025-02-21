@@ -1,9 +1,9 @@
+use alexandria_math::U128BitShift;
 use core::poseidon::poseidon_hash_span;
 use core::zeroable::Zeroable;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use alexandria_math::U128BitShift;
 
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
@@ -11,7 +11,7 @@ use s1_eternum::models::config::{
     BuildingCategoryPopConfigTrait, BuildingConfig, BuildingConfigImpl, BuildingGeneralConfig, CapacityConfig,
     PopulationConfig, ProductionConfig, TickConfig, TickImpl, TickTrait, WorldConfigUtilImpl,
 };
-use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
+use s1_eternum::models::owner::{OwnerAddressTrait};
 use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, PositionTrait};
 use s1_eternum::models::realm::Realm;
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
@@ -20,7 +20,10 @@ use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
     WeightStoreImpl,
 };
-use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
+use s1_eternum::models::structure::{
+    Structure, StructureBase, StructureBaseStoreImpl, StructureBaseTrait, StructureCategory, StructureImpl,
+    StructureTrait,
+};
 use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
@@ -96,10 +99,8 @@ impl PopulationImpl of PopulationTrait {
 }
 
 
-
 #[generate_trait]
 impl BuildingCategoryCountImpl of BuildingCategoryCountTrait {
-    
     fn building_count(self: BuildingCategory, packed: u128) -> u8 {
         let category_felt: felt252 = self.into();
         let category: u128 = category_felt.try_into().unwrap();
@@ -118,7 +119,7 @@ impl BuildingCategoryCountImpl of BuildingCategoryCountTrait {
 
         let category_felt: felt252 = self.into();
         let category: u128 = category_felt.try_into().unwrap();
-    
+
         // Each category takes 8 bits
         let shift_amount = (category - 1) * 8;
         let mask: u128 = U128BitShift::shl(0xFF, shift_amount); // 8 bits set to 1, shifted to position
@@ -209,19 +210,19 @@ impl BuildingPerksImpl of BuildingPerksTrait {
     }
 
     fn _boost_explorer_capacity(self: Building, ref world: WorldStorage, add: bool) {
-        let mut structure: Structure = world.read_model(self.outer_entity_id);
+        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, self.outer_entity_id);
         if add {
-            structure.limits.max_explorer_count += 1;
+            structure_base.troop_max_explorer_count += 1;
         } else {
-            structure.limits.max_explorer_count -= 1;
+            structure_base.troop_max_explorer_count -= 1;
 
-            // ensure current troop count does not exceed new troop capacity
-            let total_troops_available = structure.guard_count + structure.explorers.len();
+            // ensure explorer count does not exceed troop capacity
             assert!(
-                total_troops_available <= structure.limits.max_explorer_count, "cannot reduce troop capacity below 0",
+                structure_base.troop_explorer_count <= structure_base.troop_max_explorer_count,
+                "delete an explorer troop unit before removing this building",
             );
         }
-        world.write_model(@structure);
+        StructureBaseStoreImpl::store(ref structure_base, ref world, self.outer_entity_id);
     }
 }
 
@@ -507,7 +508,6 @@ impl BuildingImpl of BuildingTrait {
         produce_resource_type: Option<u8>,
         inner_coord: Coord,
     ) -> (Building, u8) {
-
         // todo@credence: ensure that the bounds are within the inner realm bounds
 
         // ensure that building is not occupied
@@ -544,17 +544,13 @@ impl BuildingImpl of BuildingTrait {
         let mut all_categories_quantity_packed: u128 = world
             .read_member(structure_building_ptr, selector!("building_count"));
         let new_building_category_count: u8 = category.building_count(all_categories_quantity_packed) + 1;
-        all_categories_quantity_packed = category.set_building_count(
-            all_categories_quantity_packed,
-            new_building_category_count,
-        );
+        all_categories_quantity_packed = category
+            .set_building_count(all_categories_quantity_packed, new_building_category_count);
         world.write_member(structure_building_ptr, selector!("building_count"), all_categories_quantity_packed);
 
         // increase population
-        let mut population: Population = world.read_member(
-            Model::<StructureBuildings>::ptr_from_keys(outer_entity_id),
-            selector!("population"),
-        );
+        let mut population: Population = world
+            .read_member(Model::<StructureBuildings>::ptr_from_keys(outer_entity_id), selector!("population"));
         let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
         let population_config: PopulationConfig = WorldConfigUtilImpl::get_member(
             world, selector!("population_config"),
@@ -572,11 +568,10 @@ impl BuildingImpl of BuildingTrait {
         population.assert_within_capacity(population_config.base_population);
 
         // set population
-        world.write_member(
-            Model::<StructureBuildings>::ptr_from_keys(outer_entity_id),
-            selector!("population"),
-            population,
-        );
+        world
+            .write_member(
+                Model::<StructureBuildings>::ptr_from_keys(outer_entity_id), selector!("population"), population,
+            );
 
         // todo:  increase structure weight when certain buildings are built
 
@@ -590,8 +585,8 @@ impl BuildingImpl of BuildingTrait {
     /// and stops receiving bonuses from adjacent buildings.
     ///
     fn pause_production(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) {
-        let entity_owner: EntityOwner = world.read_model(outer_entity_id);
-        entity_owner.assert_caller_owner(world);
+        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, outer_entity_id);
+        structure.owner.assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position: Position = world.read_model(outer_entity_id);
@@ -615,8 +610,8 @@ impl BuildingImpl of BuildingTrait {
     /// resumes giving bonuses to adjacent buildings, and resumes consuming resources.
     ///
     fn resume_production(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) {
-        let entity_owner: EntityOwner = world.read_model(outer_entity_id);
-        entity_owner.assert_caller_owner(world);
+        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, outer_entity_id);
+        structure.owner.assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position: Position = world.read_model(outer_entity_id);
@@ -639,8 +634,8 @@ impl BuildingImpl of BuildingTrait {
     /// Destroy building and remove it from the structure
     ///
     fn destroy(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
-        let entity_owner: EntityOwner = world.read_model(outer_entity_id);
-        entity_owner.assert_caller_owner(world);
+        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, outer_entity_id);
+        structure.owner.assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position: Position = world.read_model(outer_entity_id);
@@ -664,17 +659,14 @@ impl BuildingImpl of BuildingTrait {
         let mut all_categories_quantity_packed: u128 = world
             .read_member(structure_building_ptr, selector!("building_count"));
         let new_building_category_count: u8 = building.category.building_count(all_categories_quantity_packed) - 1;
-        all_categories_quantity_packed = building.category.set_building_count(
-            all_categories_quantity_packed,
-            new_building_category_count,
-        );
+        all_categories_quantity_packed = building
+            .category
+            .set_building_count(all_categories_quantity_packed, new_building_category_count);
         world.write_member(structure_building_ptr, selector!("building_count"), all_categories_quantity_packed);
 
         // decrease population
-        let mut population: Population = world.read_member(
-            Model::<StructureBuildings>::ptr_from_keys(outer_entity_id),
-            selector!("population"),
-        );
+        let mut population: Population = world
+            .read_member(Model::<StructureBuildings>::ptr_from_keys(outer_entity_id), selector!("population"));
         let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
 
         // [check] If Workers hut
@@ -692,11 +684,10 @@ impl BuildingImpl of BuildingTrait {
         population.decrease_population(building_category_population_config.population);
 
         // set population
-        world.write_member(
-            Model::<StructureBuildings>::ptr_from_keys(outer_entity_id),
-            selector!("population"),
-            population,
-        );
+        world
+            .write_member(
+                Model::<StructureBuildings>::ptr_from_keys(outer_entity_id), selector!("population"), population,
+            );
 
         let destroyed_building_category = building.category;
 

@@ -10,7 +10,8 @@
 //     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 //     use s1_eternum::models::bank::{bank::Bank};
 //     use s1_eternum::models::config::{CapacityCategory, WeightConfig};
-//     use s1_eternum::models::config::{ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig};
+//     use s1_eternum::models::config::{ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+//     ResourceBridgeWhitelistConfig};
 //     use s1_eternum::models::owner::{EntityOwner, Owner};
 //     use s1_eternum::models::position::{Coord, Position};
 //     use s1_eternum::models::resource::resource::{RESOURCE_PRECISION, Resource};
@@ -26,7 +27,6 @@
 //     };
 //     use starknet::testing::set_contract_address;
 //     use starknet::{ContractAddress, contract_address_const};
-
 
 //     fn REALM_ID() -> ID {
 //         9899
@@ -177,7 +177,8 @@
 //             );
 //             world
 //                 .write_model_test(
-//                     @ResourceBridgeWhitelistConfig { token: mock_erc20_address, resource_type: ResourceTypes::LORDS },
+//                     @ResourceBridgeWhitelistConfig { token: mock_erc20_address, resource_type: ResourceTypes::LORDS
+//                     },
 //                 );
 //             WorldConfigUtilImpl::set_member(
 //                 ref world,
@@ -245,7 +246,6 @@
 //         }
 //     }
 
-
 //     #[test]
 //     fn resource_bridge_test_deposit_success() {
 //         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
@@ -296,18 +296,21 @@
 
 //         // check that the season pool address received the correct amount of season pool fees
 //         let season_pool_fee_amount = (deposit_amount_token_precision * 5) / 1000; // 0.5% season pool fee
-//         assert_eq!(token.balance_of(SEASON_POOL_ADDRESS()), season_pool_fee_amount, "Incorrect season pool fee amount");
+//         assert_eq!(token.balance_of(SEASON_POOL_ADDRESS()), season_pool_fee_amount, "Incorrect season pool fee
+//         amount");
 
 //         // check that the client fee recipient received the correct amount of client fees
 //         let client_fee_amount = (deposit_amount_token_precision * 5) / 1000; // 0.5% client fee
-//         assert_eq!(token.balance_of(CLIENT_FEE_RECIPIENT_ADDRESS()), client_fee_amount, "Incorrect client fee amount");
+//         assert_eq!(token.balance_of(CLIENT_FEE_RECIPIENT_ADDRESS()), client_fee_amount, "Incorrect client fee
+//         amount");
 
 //         // check that bank received the correct amount of bridge fees
 //         let bank_lords_resource: Resource = world.read_model((bank_id, ResourceTypes::LORDS));
 //         let deposit_amount_resource_precision: u128 = deposit_amount_no_decimals * RESOURCE_PRECISION;
 //         let expected_bank_lords_balance = deposit_amount_resource_precision * 1 / 100; // 1% bank fee
 //         assert_eq!(
-//             bank_lords_resource.balance, expected_bank_lords_balance, "Incorrect bank resource balance after deposit",
+//             bank_lords_resource.balance, expected_bank_lords_balance, "Incorrect bank resource balance after
+//             deposit",
 //         );
 
 //         // check that the bank received the correct in game lords resource amount
@@ -332,7 +335,6 @@
 //             realm_donkey_resource.balance, REALM_INITIAL_DONKEY_BALANCE(), "Realm donkey balance did not decrease",
 //         );
 //     }
-
 
 //     #[test]
 //     fn resource_bridge_test_deposit_success_bank_owner_no_fees() {
@@ -388,11 +390,13 @@
 
 //         // Check that the season pool address received the correct amount of season pool fees
 //         let season_pool_fee_amount = (deposit_amount_token_precision * 5) / 1000; // 0.5% season pool fee
-//         assert_eq!(token.balance_of(SEASON_POOL_ADDRESS()), season_pool_fee_amount, "Incorrect season pool fee amount");
+//         assert_eq!(token.balance_of(SEASON_POOL_ADDRESS()), season_pool_fee_amount, "Incorrect season pool fee
+//         amount");
 
 //         // Check that the client fee recipient received the correct amount of client fees
 //         let client_fee_amount = (deposit_amount_token_precision * 5) / 1000; // 0.5% client fee
-//         assert_eq!(token.balance_of(CLIENT_FEE_RECIPIENT_ADDRESS()), client_fee_amount, "Incorrect client fee amount");
+//         assert_eq!(token.balance_of(CLIENT_FEE_RECIPIENT_ADDRESS()), client_fee_amount, "Incorrect client fee
+//         amount");
 
 //         // Check that bank did not receive any bridge fees
 //         let bank_lords_resource: Resource = world.read_model((bank_id, ResourceTypes::LORDS));
@@ -628,7 +632,6 @@
 //             );
 //     }
 
-
 //     #[test]
 //     fn resource_bridge_test_start_withdraw_success() {
 //         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
@@ -732,7 +735,8 @@
 //             .write_model_test(
 //                 @Structure { entity_id: not_realm_id.into(), category: StructureCategory::Bank, created_at: 1 },
 //             );
-//         world.write_model_test(@EntityOwner { entity_id: not_realm_id.into(), entity_owner_id: not_realm_id.into() });
+//         world.write_model_test(@EntityOwner { entity_id: not_realm_id.into(), entity_owner_id: not_realm_id.into()
+//         });
 //         world.write_model_test(@Owner { entity_id: not_realm_id.into(), address: REALM_OWNER_ADDRESS() });
 
 //         // Make realm owner the caller
@@ -783,14 +787,15 @@
 //         // Attempt withdrawal with a non-whitelisted token
 //         let non_whitelisted_token = contract_address_const::<'non_whitelisted'>();
 //         let withdraw_amount: u128 = 500 * RESOURCE_PRECISION;
-//         resource_bridge_systems.start_withdraw(bank_id.into(), realm_id.into(), non_whitelisted_token, withdraw_amount);
+//         resource_bridge_systems.start_withdraw(bank_id.into(), realm_id.into(), non_whitelisted_token,
+//         withdraw_amount);
 //     }
 
 //     #[test]
 //     #[should_panic(
 //         expected: (
-//             "not enough resources, Resource (entity id: 9899, resource type: LORDS, balance: 100000). deduction: 500000",
-//             'ENTRYPOINT_FAILED',
+//             "not enough resources, Resource (entity id: 9899, resource type: LORDS, balance: 100000). deduction:
+//             500000", 'ENTRYPOINT_FAILED',
 //         ),
 //     )]
 //     fn resource_bridge_test_start_withdraw_insufficient_balance() {
@@ -817,7 +822,6 @@
 //         resource_bridge_systems
 //             .start_withdraw(bank_id.into(), realm_id.into(), token.contract_address, withdraw_amount);
 //     }
-
 
 //     #[test]
 //     fn resource_bridge_test_finish_withdraw_success() {
@@ -850,7 +854,8 @@
 //         // Perform withdrawal
 //         resource_bridge_systems
 //             .finish_withdraw(
-//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
+//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(),
+//                 CLIENT_FEE_RECIPIENT_ADDRESS(),
 //             );
 
 //         // Check that LORDS were transferred from the donkey to the bridge
@@ -882,16 +887,20 @@
 //         let season_pool_fee_amount = (expected_withdraw_amount
 //             * fee_split_config.season_pool_fee_on_wtdr_percent.into())
 //             / 10000;
-//         let client_fee_amount = (expected_withdraw_amount * fee_split_config.client_fee_on_wtdr_percent.into()) / 10000;
+//         let client_fee_amount = (expected_withdraw_amount * fee_split_config.client_fee_on_wtdr_percent.into()) /
+//         10000;
 
 //         assert_eq!(token.balance_of(VELORDS_ADDRESS()), velords_fee_amount, "Incorrect velords fee amount");
-//         assert_eq!(token.balance_of(SEASON_POOL_ADDRESS()), season_pool_fee_amount, "Incorrect season pool fee amount");
-//         assert_eq!(token.balance_of(CLIENT_FEE_RECIPIENT_ADDRESS()), client_fee_amount, "Incorrect client fee amount");
+//         assert_eq!(token.balance_of(SEASON_POOL_ADDRESS()), season_pool_fee_amount, "Incorrect season pool fee
+//         amount");
+//         assert_eq!(token.balance_of(CLIENT_FEE_RECIPIENT_ADDRESS()), client_fee_amount, "Incorrect client fee
+//         amount");
 
 //         // Check that bank received the correct amount of bridge fees
 //         let bank_lords_resource: Resource = world.read_model((bank_id, ResourceTypes::LORDS));
 //         let expected_bank_fee = (initial_lords_balance * BANK_BRIDGE_FEE_WTDR_PERCENT().into()) / 10000;
-//         assert_eq!(bank_lords_resource.balance, expected_bank_fee, "Incorrect bank resource balance after withdrawal");
+//         assert_eq!(bank_lords_resource.balance, expected_bank_fee, "Incorrect bank resource balance after
+//         withdrawal");
 //     }
 
 //     #[test]
@@ -921,7 +930,8 @@
 //         // Attempt withdrawal
 //         resource_bridge_systems
 //             .finish_withdraw(
-//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
+//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(),
+//                 CLIENT_FEE_RECIPIENT_ADDRESS(),
 //             );
 //     }
 
@@ -992,7 +1002,8 @@
 //         // Attempt withdrawal
 //         resource_bridge_systems
 //             .finish_withdraw(
-//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
+//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(),
+//                 CLIENT_FEE_RECIPIENT_ADDRESS(),
 //             );
 //     }
 
@@ -1029,7 +1040,8 @@
 //         // Attempt withdrawal
 //         resource_bridge_systems
 //             .finish_withdraw(
-//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
+//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(),
+//                 CLIENT_FEE_RECIPIENT_ADDRESS(),
 //             );
 //     }
 
@@ -1061,10 +1073,10 @@
 //         let non_whitelisted_token = contract_address_const::<'non_whitelisted'>();
 //         resource_bridge_systems
 //             .finish_withdraw(
-//                 bank_id, donkey_id, non_whitelisted_token, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
+//                 bank_id, donkey_id, non_whitelisted_token, BRIDGER_WITHDRAW_ADDRESS(),
+//                 CLIENT_FEE_RECIPIENT_ADDRESS(),
 //             );
 //     }
-
 
 //     #[test]
 //     fn resource_bridge_test_finish_withdraw_bank_owner_no_fees() {
@@ -1100,7 +1112,8 @@
 //         // Perform withdrawal
 //         resource_bridge_systems
 //             .finish_withdraw(
-//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(), CLIENT_FEE_RECIPIENT_ADDRESS(),
+//                 bank_id, donkey_id, token.contract_address, BRIDGER_WITHDRAW_ADDRESS(),
+//                 CLIENT_FEE_RECIPIENT_ADDRESS(),
 //             );
 
 //         // Check that LORDS were transferred from the donkey to the bridge
@@ -1132,11 +1145,14 @@
 //         let season_pool_fee_amount = (expected_withdraw_amount
 //             * fee_split_config.season_pool_fee_on_wtdr_percent.into())
 //             / 10000;
-//         let client_fee_amount = (expected_withdraw_amount * fee_split_config.client_fee_on_wtdr_percent.into()) / 10000;
+//         let client_fee_amount = (expected_withdraw_amount * fee_split_config.client_fee_on_wtdr_percent.into()) /
+//         10000;
 
 //         assert_eq!(token.balance_of(VELORDS_ADDRESS()), velords_fee_amount, "Incorrect velords fee amount");
-//         assert_eq!(token.balance_of(SEASON_POOL_ADDRESS()), season_pool_fee_amount, "Incorrect season pool fee amount");
-//         assert_eq!(token.balance_of(CLIENT_FEE_RECIPIENT_ADDRESS()), client_fee_amount, "Incorrect client fee amount");
+//         assert_eq!(token.balance_of(SEASON_POOL_ADDRESS()), season_pool_fee_amount, "Incorrect season pool fee
+//         amount");
+//         assert_eq!(token.balance_of(CLIENT_FEE_RECIPIENT_ADDRESS()), client_fee_amount, "Incorrect client fee
+//         amount");
 
 //         // Check that bank did not receive any fees
 //         let bank_lords_resource: Resource = world.read_model((bank_id, ResourceTypes::LORDS));

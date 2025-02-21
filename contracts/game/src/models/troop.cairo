@@ -1,7 +1,7 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait, HALF_u128, ONE_u128};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::RESOURCE_PRECISION;
-use s1_eternum::models::config::{TroopDamageConfig, TroopStaminaConfig, TroopLimitConfig};
+use s1_eternum::models::config::{TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig};
 use s1_eternum::models::owner::EntityOwner;
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
@@ -11,7 +11,7 @@ use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 use starknet::ContractAddress;
 
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect)]
 enum TroopType {
     Knight,
     Paladin,
@@ -28,7 +28,7 @@ impl TroopTypeIntoFelt252 of Into<TroopType, felt252> {
     }
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect)]
 enum TroopTier {
     T1,
     T2,
@@ -133,12 +133,12 @@ pub impl GuardImpl of GuardTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ExplorerTroops {
     #[key]
     explorer_id: ID,
-    owner: EntityOwner,
+    owner: ID,
     troops: Troops,
     coord: Coord,
 }
@@ -146,7 +146,6 @@ pub struct ExplorerTroops {
 
 #[generate_trait]
 impl TroopsImpl of TroopsTrait {
-
     fn _tier_bonus(ref self: Troops, troop_damage_config: TroopDamageConfig) -> Fixed {
         let T1_DAMAGE_VALUE: Fixed = FixedTrait::new(troop_damage_config.t1_damage_value.into(), false);
         match self.tier {
@@ -442,7 +441,7 @@ impl TroopsImpl of TroopsTrait {
         assert!(self.count.is_non_zero(), "you have no troops");
         assert!(bravo.count.is_non_zero(), "the defender has no troops");
         assert!(biome != Biome::None, "biome is not set");
-        
+
         let mut alpha = self;
 
         // update alpha and bravo's staminas
@@ -452,8 +451,9 @@ impl TroopsImpl of TroopsTrait {
         // ensure alpha has enough stamina to launch attack
         assert!(
             alpha.stamina.amount >= troop_stamina_config.stamina_attack_req.into(),
-            "you have {} stamina, but need {} to launch attack", 
-            alpha.stamina.amount, troop_stamina_config.stamina_attack_req,
+            "you have {} stamina, but need {} to launch attack",
+            alpha.stamina.amount,
+            troop_stamina_config.stamina_attack_req,
         );
 
         // calculate alpha's stamina based damage boost
@@ -487,8 +487,7 @@ impl TroopsImpl of TroopsTrait {
         let BRAVO_BIOME_BONUS_DAMAGE_MULTIPLIER: Fixed = bravo._biome_damage_bonus(biome, troop_damage_config);
         let TOTAL_NUM_TROOPS: Fixed = ALPHA_NUM_TROOPS + BRAVO_NUM_TROOPS;
         let EFFECTIVE_BETA: Fixed = Self::_effective_beta(TOTAL_NUM_TROOPS, troop_damage_config);
-        let BRAVO_DAMAGE_DEALT: Fixed = (
-            BASE_DAMAGE_FACTOR
+        let BRAVO_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
             * BRAVO_NUM_TROOPS
             * BRAVO_TIER_BONUS
             * BRAVO_BIOME_BONUS_DAMAGE_MULTIPLIER
@@ -496,8 +495,7 @@ impl TroopsImpl of TroopsTrait {
             / ALPHA_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
 
-        let ALPHA_DAMAGE_DEALT: Fixed = (
-            BASE_DAMAGE_FACTOR
+        let ALPHA_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
             * ALPHA_NUM_TROOPS
             * ALPHA_TIER_BONUS
             * ALPHA_STAMINA_BONUS_DAMAGE_MULTIPLIER
@@ -510,37 +508,53 @@ impl TroopsImpl of TroopsTrait {
         bravo.count -= core::cmp::min(bravo.count, ALPHA_DAMAGE_DEALT.round().try_into().unwrap() * RESOURCE_PRECISION);
 
         // deduct stamina spent
-        alpha.stamina.spend(alpha.category, troop_stamina_config, troop_stamina_config.stamina_attack_req.into(), current_tick);
-        bravo.stamina.spend(bravo.category, troop_stamina_config, troop_stamina_config.stamina_attack_req.into(), current_tick);
+        alpha
+            .stamina
+            .spend(alpha.category, troop_stamina_config, troop_stamina_config.stamina_attack_req.into(), current_tick);
+        bravo
+            .stamina
+            .spend(bravo.category, troop_stamina_config, troop_stamina_config.stamina_attack_req.into(), current_tick);
 
         // grant stamina to victor
         if alpha.count.is_zero() || bravo.count.is_zero() {
             if alpha.count.is_non_zero() {
-                alpha.stamina.add(alpha.category, troop_stamina_config, troop_stamina_config.stamina_attack_req.into(), current_tick);
+                alpha
+                    .stamina
+                    .add(
+                        alpha.category,
+                        troop_stamina_config,
+                        troop_stamina_config.stamina_attack_req.into(),
+                        current_tick,
+                    );
             }
             if bravo.count.is_non_zero() {
-                bravo.stamina.add(bravo.category, troop_stamina_config, troop_stamina_config.stamina_attack_req.into(), current_tick);
+                bravo
+                    .stamina
+                    .add(
+                        bravo.category,
+                        troop_stamina_config,
+                        troop_stamina_config.stamina_attack_req.into(),
+                        current_tick,
+                    );
             }
         }
 
         self = alpha;
-
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        Troops, TroopsTrait, TroopType, TroopTier, Biome, TroopDamageConfig, TroopStaminaConfig, TroopLimitConfig,
-        RESOURCE_PRECISION, Stamina, StaminaImpl, FixedTrait
-    };
-    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+    use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
     use dojo::world::{WorldStorageTrait};
     use dojo_cairo_test::{
-        spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef,
-        WorldStorageTestTrait,
+        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
-    
+    use super::{
+        Biome, FixedTrait, RESOURCE_PRECISION, Stamina, StaminaImpl, TroopDamageConfig, TroopLimitConfig,
+        TroopStaminaConfig, TroopTier, TroopType, Troops, TroopsTrait,
+    };
+
     const KNIGHT_MAX_STAMINA: u16 = 120;
     const CROSSBOWMAN_MAX_STAMINA: u16 = 120;
     const PALADIN_MAX_STAMINA: u16 = 140;
@@ -575,7 +589,7 @@ mod tests {
             stamina_explore_stamina_cost: 30, // 30 stamina per hex
             stamina_travel_wheat_cost: 234,
             stamina_travel_fish_cost: 885,
-            stamina_travel_stamina_cost: 20, // 20 stamina per hex 
+            stamina_travel_stamina_cost: 20 // 20 stamina per hex 
         }
     }
 
@@ -585,7 +599,7 @@ mod tests {
             explorer_max_troop_count: 500_000, // hard max of troops per party
             guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
             mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-            mercenaries_troop_upper_bound: 100_000, // max of troops per mercenary
+            mercenaries_troop_upper_bound: 100_000 // max of troops per mercenary
         }
     }
 
@@ -596,23 +610,16 @@ mod tests {
             category: TroopType::Crossbowman,
             tier: TroopTier::T1,
             count: 1 * RESOURCE_PRECISION,
-            stamina: Stamina {
-                amount: 100,
-                updated_tick: 1,
-            }
+            stamina: Stamina { amount: 100, updated_tick: 1 },
         };
         let mut bravo = Troops {
             category: TroopType::Paladin,
             tier: TroopTier::T1,
             count: 500_000 * RESOURCE_PRECISION,
-            stamina: Stamina {
-                amount: 100,
-                updated_tick: 1,
-            }
+            stamina: Stamina { amount: 100, updated_tick: 1 },
         };
 
-        alpha.attack(
-            ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
+        alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
 
         assert_eq!(alpha.count, 0);
         assert_eq!(bravo.count, 499_999 * RESOURCE_PRECISION);
@@ -621,32 +628,23 @@ mod tests {
 
     #[test]
     fn tests_troop_attack_simple_2() {
-
         let mut alpha = Troops {
             category: TroopType::Knight,
             tier: TroopTier::T2, // Tier 2
             count: 61_293 * RESOURCE_PRECISION,
-            stamina: Stamina {
-                amount: 100,
-                updated_tick: 1,
-            }
+            stamina: Stamina { amount: 100, updated_tick: 1 },
         };
         let mut bravo = Troops {
             category: TroopType::Crossbowman,
             tier: TroopTier::T1, // Tier 1
             count: 159_303 * RESOURCE_PRECISION,
-            stamina: Stamina {
-                amount: 100,
-                updated_tick: 1,
-            }
+            stamina: Stamina { amount: 100, updated_tick: 1 },
         };
 
-        alpha.attack(
-            ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
+        alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
 
         assert_eq!(alpha.count, 0);
         assert_eq!(bravo.count, 2_052 * RESOURCE_PRECISION);
         assert_eq!(bravo.stamina.amount, 100);
     }
-    
 }
