@@ -1,31 +1,24 @@
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-use dojo::world::{WorldStorageTrait, WorldStorage};
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use dojo_cairo_test::{
-    spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef,
-    WorldStorageTestTrait,
-};
-
 use cubit::f128::types::fixed::{FixedTrait};
+use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{
+    ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
+};
 
 use s1_eternum::alias::ID;
-use s1_eternum::systems::realm::contracts::realm_systems::{
-    InternalRealmLogicImpl,
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
+use s1_eternum::models::config::{
+    CapacityConfig, LaborBurnPrStrategy, MultipleResourceBurnPrStrategy, ProductionConfig, TickConfig,
+    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfigUtilImpl,
 };
+use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
     WeightStoreImpl,
 };
 use s1_eternum::models::weight::{Weight};
-use s1_eternum::models::position::{Coord};
-use s1_eternum::constants::{ResourceTypes, RESOURCE_PRECISION};
-use s1_eternum::models::config::{
-    ProductionConfig, LaborBurnPrStrategy, MultipleResourceBurnPrStrategy,
-    CapacityConfig, WeightConfig,
-    TickConfig, WorldConfigUtilImpl, TroopLimitConfig, TroopStaminaConfig, TroopDamageConfig
-};
-
-
+use s1_eternum::systems::realm::contracts::realm_systems::{InternalRealmLogicImpl};
 
 
 pub fn MOCK_TROOP_DAMAGE_CONFIG() -> TroopDamageConfig {
@@ -57,7 +50,7 @@ pub fn MOCK_TROOP_STAMINA_CONFIG() -> TroopStaminaConfig {
         stamina_explore_stamina_cost: 30, // 30 stamina per hex
         stamina_travel_wheat_cost: 234,
         stamina_travel_fish_cost: 885,
-        stamina_travel_stamina_cost: 20, // 20 stamina per hex 
+        stamina_travel_stamina_cost: 20 // 20 stamina per hex 
     }
 }
 
@@ -67,7 +60,7 @@ pub fn MOCK_TROOP_LIMIT_CONFIG() -> TroopLimitConfig {
         explorer_max_troop_count: 500_000, // hard max of troops per party
         guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
         mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-        mercenaries_troop_upper_bound: 100_000, // max of troops per mercenary
+        mercenaries_troop_upper_bound: 100_000 // max of troops per mercenary
     }
 }
 
@@ -81,16 +74,11 @@ pub fn MOCK_CAPACITY_CONFIG() -> CapacityConfig {
 }
 
 pub fn MOCK_WEIGHT_CONFIG(resource_type: u8) -> WeightConfig {
-    WeightConfig {
-        resource_type,
-        weight_gram: 100,
-    }
+    WeightConfig { resource_type, weight_gram: 100 }
 }
 
 pub fn MOCK_TICK_CONFIG() -> TickConfig {
-    TickConfig {
-        armies_tick_in_seconds: 1,
-    }
+    TickConfig { armies_tick_in_seconds: 1 }
 }
 
 pub fn MOCK_LABOR_BURN_STRATEGY() -> LaborBurnPrStrategy {
@@ -105,17 +93,14 @@ pub fn MOCK_LABOR_BURN_STRATEGY() -> LaborBurnPrStrategy {
 
 
 pub fn MOCK_MULTIPLE_RESOURCE_BURN_STRATEGY() -> MultipleResourceBurnPrStrategy {
-    MultipleResourceBurnPrStrategy {
-        required_resources_id: 0,
-        required_resources_count: 0,
-    }
+    MultipleResourceBurnPrStrategy { required_resources_id: 0, required_resources_count: 0 }
 }
 
 pub fn MOCK_PRODUCTION_CONFIG(
-    resource_type: u8, 
+    resource_type: u8,
     produced_amount: u128,
     labor_burn_strategy: LaborBurnPrStrategy,
-    multiple_resource_burn_strategy: MultipleResourceBurnPrStrategy
+    multiple_resource_burn_strategy: MultipleResourceBurnPrStrategy,
 ) -> ProductionConfig {
     ProductionConfig {
         resource_type,
@@ -137,9 +122,8 @@ pub fn MOCK_LABOR_PRODUCTION_CONFIG() -> ProductionConfig {
             depreciation_percent_denom: 0,
         },
         multiple_resource_burn_strategy: MultipleResourceBurnPrStrategy {
-            required_resources_id: 0,
-            required_resources_count: 0,
-        }
+            required_resources_id: 0, required_resources_count: 0,
+        },
     }
 }
 
@@ -179,8 +163,7 @@ pub fn tgrant_resources(ref world: WorldStorage, to: ID, resources: Span<(u8, u1
         let mut resource = SingleResourceStoreImpl::retrieve(
             ref world, to, resource_type, ref to_weight, resource_weight_grams, true,
         );
-        resource
-            .add(amount, ref to_weight, resource_weight_grams);
+        resource.add(amount, ref to_weight, resource_weight_grams);
         resource.store(ref world);
     };
 
@@ -196,14 +179,14 @@ pub fn tspawn_world(namespace_def: NamespaceDef, contract_defs: Span<ContractDef
 }
 
 
-
 pub fn tstore_production_config(ref world: WorldStorage, production_config: ProductionConfig) {
     world.write_model_test(@production_config);
 }
 
 
-pub fn tspawn_simple_realm(ref world: WorldStorage,  realm_id: ID, owner: starknet::ContractAddress, coord: Coord) -> ID {
-
+pub fn tspawn_simple_realm(
+    ref world: WorldStorage, realm_id: ID, owner: starknet::ContractAddress, coord: Coord,
+) -> ID {
     // set labor production config
     tstore_production_config(ref world, MOCK_LABOR_PRODUCTION_CONFIG());
 
@@ -216,7 +199,16 @@ pub fn tspawn_simple_realm(ref world: WorldStorage,  realm_id: ID, owner: starkn
 }
 
 
-pub fn tspawn_realm(ref world: WorldStorage, owner: starknet::ContractAddress, realm_id: ID, order: u8, produced_resources: Array<u8>, level: u8, wonder: u8, coord: Coord) -> ID {
+pub fn tspawn_realm(
+    ref world: WorldStorage,
+    owner: starknet::ContractAddress,
+    realm_id: ID,
+    order: u8,
+    produced_resources: Array<u8>,
+    level: u8,
+    wonder: u8,
+    coord: Coord,
+) -> ID {
     // create realm
     let (realm_entity_id, _) = InternalRealmLogicImpl::create_realm(
         ref world, owner, realm_id, produced_resources, order, level, wonder, coord.into(),

@@ -23,7 +23,6 @@
 //     use s1_eternum::utils::testing::{systems::deploy_system, world::spawn_eternum};
 //     use starknet::contract_address_const;
 
-
 //     fn setup() -> (WorldStorage, IResourceSystemsDispatcher) {
 //         let mut world = spawn_eternum();
 
@@ -33,7 +32,6 @@
 
 //         (world, resource_systems_dispatcher)
 //     }
-
 
 //     fn make_owner_and_receiver(ref world: WorldStorage, owner_entity_id: ID, receiver_entity_id: ID) {
 //         let owner_entity_position = Position { x: 100_000, y: 200_000, entity_id: owner_entity_id.into() };
@@ -60,14 +58,15 @@
 //         world.write_model_test(@receiver_entity_position);
 //         world
 //             .write_model_test(
-//                 @Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 },
+//                 @Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000
+//                 },
 //             );
 //         world
 //             .write_model_test(
-//                 @Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 },
+//                 @Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000
+//                 },
 //             );
 //     }
-
 
 //     #[test]
 //     #[available_gas(30000000000000)]
@@ -82,7 +81,8 @@
 
 //         world
 //             .write_model_test(
-//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
+//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into()
+//                 },
 //             );
 //         world
 //             .write_model_test(
@@ -107,7 +107,6 @@
 //         assert(approved_entity_wood_allowance.amount == 800, 'wood allowance mismatch');
 //     }
 
-
 //     #[test]
 //     #[available_gas(30000000000000)]
 //     fn resources_test_approve__infinite_approval() {
@@ -120,7 +119,8 @@
 //         let approved_entity_id: ID = 13;
 //         world
 //             .write_model_test(
-//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
+//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into()
+//                 },
 //             );
 //         world
 //             .write_model_test(
@@ -145,7 +145,6 @@
 //         assert(approved_entity_wood_allowance.amount == Bounded::MAX, 'wood allowance mismatch');
 //     }
 
-
 //     #[test]
 //     #[available_gas(30000000000000)]
 //     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
@@ -160,7 +159,8 @@
 
 //         world
 //             .write_model_test(
-//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
+//                 @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into()
+//                 },
 //             );
 
 //         // some unknown entity calls approve

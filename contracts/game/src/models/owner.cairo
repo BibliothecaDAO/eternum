@@ -68,7 +68,6 @@ impl EntityOwnerImpl of EntityOwnerTrait {
         realm.realm_id
     }
 }
-
 // #[cfg(test)]
 // mod tests {
 //     use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
@@ -104,7 +103,6 @@ impl EntityOwnerImpl of EntityOwnerTrait {
 //         owner.transfer(contract_address_const::<0>());
 //     }
 
-
 //     #[test]
 //     #[should_panic(expected: "current owner and new owner are the same")]
 //     fn owner_test_set_same_owner() {
@@ -112,3 +110,5 @@ impl EntityOwnerImpl of EntityOwnerTrait {
 //         owner.transfer(contract_address_const::<1>());
 //     }
 // }
+
+

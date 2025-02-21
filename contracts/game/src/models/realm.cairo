@@ -282,11 +282,9 @@ impl RealmResourcesImpl of RealmResourcesTrait {
         contains_resource
     }
 }
-
 // #[cfg(test)]
 // mod test_realm_name_and_attrs_decode_impl {
 //     use super::{RealmNameAndAttrsDecodingImpl};
-
 
 //     fn DATA_ONE() -> felt252 {
 //         0x53746f6c736c69010102011a1108060708
@@ -298,7 +296,8 @@ impl RealmResourcesImpl of RealmResourcesTrait {
 
 //     #[test]
 //     fn test_decode_name_and_attrs_one() {
-//         let (name, region, cities, harbors, rivers, wonder, order, resources) = RealmNameAndAttrsDecodingImpl::decode(
+//         let (name, region, cities, harbors, rivers, wonder, order, resources) =
+//         RealmNameAndAttrsDecodingImpl::decode(
 //             DATA_ONE(),
 //         );
 //         assert_eq!(name, 'Stolsli');
@@ -311,10 +310,10 @@ impl RealmResourcesImpl of RealmResourcesTrait {
 //         assert_eq!(resources, array![1, 2]); // stone and coal
 //     }
 
-
 //     #[test]
 //     fn test_decode_name_and_attrs_two() {
-//         let (name, region, cities, harbors, rivers, wonder, order, resources) = RealmNameAndAttrsDecodingImpl::decode(
+//         let (name, region, cities, harbors, rivers, wonder, order, resources) =
+//         RealmNameAndAttrsDecodingImpl::decode(
 //             DATA_TWO(),
 //         );
 //         assert_eq!(name, 'Qeujqeujwouw');
@@ -336,7 +335,6 @@ impl RealmResourcesImpl of RealmResourcesTrait {
 //     fn mock_realm() -> Realm {
 //         Realm { entity_id: 1, realm_id: 1, order: 0, level: 0, produced_resources: 0, has_wonder: false }
 //     }
-
 
 //     #[test]
 //     fn test_pack_resource_types_empty() {
@@ -386,7 +384,6 @@ impl RealmResourcesImpl of RealmResourcesTrait {
 //         assert_eq!(unpacked, expected.span(), "Unpacked resources should match maximum packed value");
 //     }
 
-
 //     #[test]
 //     fn test_contains_resource_present() {
 //         let resource_types: Array<u8> = array![10, 20, 30, 40];
@@ -430,3 +427,5 @@ impl RealmResourcesImpl of RealmResourcesTrait {
 //         assert!(realm.produces_resource(128), "Resource 128 should be present");
 //     }
 // }
+
+

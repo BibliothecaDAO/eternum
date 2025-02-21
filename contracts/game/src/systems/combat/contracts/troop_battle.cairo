@@ -24,7 +24,7 @@ mod troop_battle_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{CombatConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig};
-    use s1_eternum::models::owner::{EntityOwnerTrait, OwnerTrait, OwnerAddressTrait};
+    use s1_eternum::models::owner::{EntityOwnerTrait, OwnerAddressTrait, OwnerTrait};
     use s1_eternum::models::position::{Coord, CoordTrait, Direction};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};

@@ -18,7 +18,6 @@
 // const FIRST_OWNER: felt252 = 'first_owner';
 // const SECOND_OWNER: felt252 = 'second_owner';
 
-
 // fn setup() -> (WorldStorage, ContractAddress, Owner) {
 //     let mut world = spawn_eternum();
 
@@ -35,7 +34,6 @@
 //     (world, ownership_systems_address, owner)
 // }
 
-
 // #[test]
 // fn test_ownership_systems_set_owner() {
 //     let (mut world, ownership_systems_address, _owner) = setup();
@@ -47,7 +45,6 @@
 //     let new_owner: Owner = world.read_model(OWNER_ENTITY_ID);
 //     assert_eq!(new_owner.address, contract_address_const::<SECOND_OWNER>());
 // }
-
 
 // #[test]
 // #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]

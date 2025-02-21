@@ -1,3 +1,4 @@
+pub mod catridge;
 pub mod map;
 pub mod math;
 pub mod number;
@@ -7,4 +8,3 @@ pub mod tasks;
 pub mod testing;
 pub mod trophies;
 pub mod vrgda;
-pub mod catridge;

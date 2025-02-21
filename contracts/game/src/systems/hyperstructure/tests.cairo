@@ -26,7 +26,6 @@
 //     systems::{deploy_hyperstructure_systems, deploy_realm_systems, deploy_system}, world::spawn_eternum,
 // };
 
-
 // use starknet::contract_address_const;
 
 // const TEST_AMOUNT: u128 = 1_000_000;
@@ -49,7 +48,8 @@
 
 //     let realm_entity_id = spawn_realm(ref world, 1, get_default_realm_pos().into());
 
-//     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address };
+//     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address
+//     };
 
 //     world
 //         .write_model_test(
@@ -118,13 +118,12 @@
 //     assert(contribution.resource_type == ResourceTypes::EARTHEN_SHARD, 'invalid contribution resource');
 // }
 
-
 // #[test]
 // #[available_gas(3000000000000)]
 // #[should_panic(
 //     expected: (
-//         "not enough resources, Resource (entity id: 1, resource type: EARTHEN SHARD, balance: 0). deduction: 1000000",
-//         'ENTRYPOINT_FAILED',
+//         "not enough resources, Resource (entity id: 1, resource type: EARTHEN SHARD, balance: 0). deduction:
+//         1000000", 'ENTRYPOINT_FAILED',
 //     ),
 // )]
 // fn hyperstructure_test_create_hyperstructure_not_enough_eartenshards() {
@@ -280,7 +279,6 @@
 
 //     hyperstructure_systems_dispatcher.end_game(array![hyperstructure_entity_id].span(), array![].span());
 // }
-
 
 // #[test]
 // #[available_gas(3000000000000)]

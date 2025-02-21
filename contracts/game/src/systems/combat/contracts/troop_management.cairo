@@ -18,7 +18,12 @@ trait ITroopManagementSystems<TContractState> {
 
     // explorer
     fn explorer_create(
-        ref self: TContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128, spawn_direction: Direction
+        ref self: TContractState,
+        for_structure_id: ID,
+        category: TroopType,
+        tier: TroopTier,
+        amount: u128,
+        spawn_direction: Direction,
     ) -> ID;
     fn explorer_add(ref self: TContractState, to_explorer_id: ID, amount: u128, home_direction: Direction);
     fn explorer_swap(
@@ -174,9 +179,13 @@ mod troop_management_systems {
 
 
         fn explorer_create(
-            ref self: ContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128, spawn_direction: Direction
+            ref self: ContractState,
+            for_structure_id: ID,
+            category: TroopType,
+            tier: TroopTier,
+            amount: u128,
+            spawn_direction: Direction,
         ) -> ID {
-
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -234,15 +243,9 @@ mod troop_management_systems {
 
             // set explorer
             let explorer: ExplorerTroops = ExplorerTroops {
-                explorer_id,
-                coord: spawn_coord,
-                troops,
-                owner: structure.entity_id,
+                explorer_id, coord: spawn_coord, troops, owner: structure.entity_id,
             };
-            world
-                .write_model(
-                    @explorer,
-                );
+            world.write_model(@explorer);
 
             // increase troop capacity
             iExplorerImpl::update_capacity(ref world, explorer_id, explorer, amount, true);
@@ -250,9 +253,7 @@ mod troop_management_systems {
             explorer_id
         }
 
-        fn explorer_add(
-            ref self: ContractState, to_explorer_id: ID, amount: u128, home_direction: Direction
-        ) {
+        fn explorer_add(ref self: ContractState, to_explorer_id: ID, amount: u128, home_direction: Direction) {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
 
             let mut world = self.world(DEFAULT_NS());
@@ -264,7 +265,10 @@ mod troop_management_systems {
             explorer_owner_structure.owner.assert_caller_owner();
 
             // ensure explorer is adjacent to home structure
-            assert!(explorer_owner_structure.coord == explorer.coord.neighbor(home_direction), "explorer not adjacent to home structure");
+            assert!(
+                explorer_owner_structure.coord == explorer.coord.neighbor(home_direction),
+                "explorer not adjacent to home structure",
+            );
 
             // deduct resources used to create explorer
             iTroopImpl::make_payment(ref world, explorer.owner, amount, explorer.troops.category, explorer.troops.tier);

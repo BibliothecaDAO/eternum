@@ -38,7 +38,6 @@
 //     world::spawn_eternum,
 // };
 
-
 // use starknet::contract_address_const;
 
 // const TEST_AMOUNT: u128 = 1_000_000;
@@ -76,7 +75,8 @@
 
 //     let realm_entity_id = spawn_realm(ref world, 1, get_default_realm_pos().into());
 
-//     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address };
+//     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address
+//     };
 
 //     world
 //         .write_model_test(
@@ -155,7 +155,8 @@
 // #[test]
 // #[should_panic(expected: ("Claiming period hasn't started yet", 'ENTRYPOINT_FAILED'))]
 // fn season_test_claim_too_early() {
-//     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
+//     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher,
+//     mock_erc20_address) =
 //         setup();
 
 //     let (hyperstructures_contributed_to, hyperstructure_shareholder_epochs) = finish_season(
@@ -183,7 +184,8 @@
 
 // #[test]
 // fn season_test_claim_success() {
-//     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
+//     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher,
+//     mock_erc20_address) =
 //         setup();
 
 //     let (hyperstructures_contributed_to, hyperstructure_shareholder_epochs) = finish_season(
@@ -217,11 +219,11 @@
 //     assert!(balance > 0, "Player balance should be greater than 0");
 // }
 
-
 // #[test]
 // #[should_panic(expected: ("Reward already claimed by caller", 'ENTRYPOINT_FAILED'))]
 // fn season_test_claim_twice() {
-//     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
+//     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher,
+//     mock_erc20_address) =
 //         setup();
 
 //     let (hyperstructures_contributed_to, hyperstructure_shareholder_epochs) = finish_season(
@@ -271,7 +273,8 @@
 // #[should_panic(expected: ("Registration period is over", 'ENTRYPOINT_FAILED'))]
 // fn season_test_register_too_late() {
 //     let (
-//         mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address,
+//         mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher,
+//         _mock_erc20_address,
 //     ) =
 //         setup();
 
@@ -288,7 +291,8 @@
 // #[test]
 // fn season_test_register_with_no_points() {
 //     let (
-//         mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address,
+//         mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher,
+//         _mock_erc20_address,
 //     ) =
 //         setup();
 
@@ -313,7 +317,8 @@
 // #[test]
 // #[should_panic(expected: ("No points to claim", 'ENTRYPOINT_FAILED'))]
 // fn season_test_claim_with_no_points() {
-//     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
+//     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher,
+//     mock_erc20_address) =
 //         setup();
 
 //     let (_, _) = finish_season(ref world, realm_entity_id, hyperstructure_systems_dispatcher);
@@ -338,9 +343,9 @@
 //     season_systems_dispatcher.claim_leaderboard_rewards(mock_erc20_address);
 // }
 
-
 // fn finish_season(
-//     ref world: WorldStorage, realm_entity_id: ID, hyperstructure_systems_dispatcher: IHyperstructureSystemsDispatcher,
+//     ref world: WorldStorage, realm_entity_id: ID, hyperstructure_systems_dispatcher:
+//     IHyperstructureSystemsDispatcher,
 // ) -> (Span<ID>, Span<(ID, u16)>) {
 //     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 //     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());

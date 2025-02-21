@@ -160,11 +160,7 @@ pub impl iExplorerImpl of iExplorerTrait {
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
     fn make_payment(
-        ref world: WorldStorage,
-        from_structure_id: ID,
-        amount: u128,
-        category: TroopType,
-        tier: TroopTier,
+        ref world: WorldStorage, from_structure_id: ID, amount: u128, category: TroopType, tier: TroopTier,
     ) {
         let resource_type = match tier {
             TroopTier::T1 => {

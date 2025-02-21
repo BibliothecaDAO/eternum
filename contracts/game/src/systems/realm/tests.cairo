@@ -89,7 +89,6 @@
 //     assert_eq!(tile.explored_at, TIMESTAMP, "wrong exploration time");
 // }
 
-
 // #[test]
 // #[available_gas(3000000000000)]
 // fn realm_test_claim_quest_reward() {
