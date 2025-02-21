@@ -37,7 +37,7 @@ export const RealmDetails = () => {
   }, [structure]);
 
   const address = useMemo(() => {
-    return toHexString(structure?.owner?.address || 0n);
+    return toHexString(structure?.owner || 0n);
   }, [structure]);
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -103,7 +103,7 @@ export const RealmDetails = () => {
           <div>
             <span
               className="ml-1 hover:text-white cursor-pointer"
-              onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName || "")}
+              onClick={() => copyPlayerAddressToClipboard(structure.owner, structure.ownerName || "")}
             >
               {displayAddress(address)}
             </span>

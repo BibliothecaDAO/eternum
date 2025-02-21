@@ -43,8 +43,8 @@ export const StructureCard = ({
   );
 
   const playerGuild = useMemo(
-    () => getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n), dojo.setup.components),
-    [structure?.owner.address],
+    () => getGuildFromPlayerAddress(ContractAddress(structure?.owner || 0n), dojo.setup.components),
+    [structure?.owner],
   );
 
   return (

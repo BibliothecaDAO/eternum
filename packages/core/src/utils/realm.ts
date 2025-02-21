@@ -9,19 +9,18 @@ import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
 import { packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
-  const { Realm, Owner, Position } = components;
+  const { Realm, Structure } = components;
   const realm = getComponentValue(Realm, entity);
   if (!realm) return undefined;
 
-  const position = getComponentValue(Position, entity);
-  const owner = getComponentValue(Owner, entity);
+  const structure = getComponentValue(Structure, entity);
 
   return {
     ...realm,
     resources: unpackValue(BigInt(realm.produced_resources)),
-    position,
+    position: structure?.coord,
     name: getRealmNameById(realm.realm_id),
-    owner,
+    owner: structure?.owner,
   } as RealmWithPosition;
 };
 
@@ -63,8 +62,7 @@ export const getRealmNameById = (realmId: ID): string => {
 
 export function getRealmInfo(entity: Entity, components: ClientComponents): RealmInfo | undefined {
   const realm = getComponentValue(components.Realm, entity);
-  const owner = getComponentValue(components.Owner, entity);
-  const position = getComponentValue(components.Position, entity);
+  const structure = getComponentValue(components.Structure, entity);
   const structureBuildings = getComponentValue(components.StructureBuildings, entity);
 
   const buildingCounts = unpackValue(structureBuildings?.building_count || 0n);
@@ -75,14 +73,12 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
     return { capacityKg: (storehouseQuantity + 1) * gramToKg(storehouseCapacity), quantity: storehouseQuantity };
   })();
 
-  if (realm && owner && position) {
+  if (realm && structure) {
     const { realm_id, entity_id, produced_resources, order, level } = realm;
 
     const name = getRealmNameById(realm_id);
 
     const resources = unpackValue(BigInt(produced_resources));
-
-    const { address } = owner;
 
     return {
       realmId: realm_id,
@@ -92,14 +88,14 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       level,
       resources,
       order,
-      position,
+      position: structure.coord,
       population: structureBuildings?.population.current,
       capacity: structureBuildings?.population.max,
       hasCapacity:
         !structureBuildings?.population ||
         structureBuildings.population.max + configManager.getBasePopulationCapacity() >
           structureBuildings.population.current,
-      owner: address,
+      owner: structure?.owner,
       ownerName: getRealmAddressName(realm.entity_id, components),
       hasWonder: realm.has_wonder,
     };
