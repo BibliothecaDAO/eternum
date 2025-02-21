@@ -102,7 +102,7 @@ function RootComponent() {
                   <Header />
                   <div className="flex min-h-0 flex-1">
                     <AppSidebar />
-                    <SidebarInset className="overflow-auto">
+                    <SidebarInset className="min-h-auto overflow-auto">
                       <RainbowKitProvider>
                         <Outlet />
                       </RainbowKitProvider>

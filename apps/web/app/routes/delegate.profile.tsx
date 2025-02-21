@@ -18,7 +18,6 @@ function RouteComponent() {
     <div className="container p-6">
       <h1 className="text-2xl font-semibold">Your Profile</h1>
       <Login />
-      {delegate?.user}
       {delegate && (
         <DelegateProfileForm delegate={delegate} onSubmit={() => void 0} />
       )}

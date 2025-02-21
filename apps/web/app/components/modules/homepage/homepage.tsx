@@ -6,7 +6,6 @@ import LordsIcon from "@/components/icons/lords.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
 import { DelegateCard } from "@/components/modules/governance/delegate-card";
 import { DelegateCardSkeleton } from "@/components/modules/governance/delegate-card-skeleton";
-import { ProposalListItem } from "@/components/modules/governance/proposal-list-item";
 import { RealmCard } from "@/components/modules/realms/realm-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,6 @@ import useVeLordsClaims from "@/hooks/use-velords-claims";
 import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
 import { getPortfolioCollectionsQueryOptions } from "@/lib/getPortfolioCollections";
-import { getProposalsQueryOptions } from "@/lib/getProposals";
 import { getRealmsQueryOptions } from "@/lib/getRealms";
 import {
   formatAddress,
@@ -31,7 +29,7 @@ import {
   SUPPORTED_L1_CHAIN_ID,
   SUPPORTED_L2_CHAIN_ID,
 } from "@/utils/utils";
-import { useAccount, useBalance, useReadContract } from "@starknet-react/core";
+import { useBalance, useReadContract } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Gavel, Plus } from "lucide-react";
@@ -44,6 +42,8 @@ import {
   LORDS,
   StakingAddresses,
 } from "@realms-world/constants";
+
+import { ProposalList } from "../governance/proposal-list";
 
 export function Homepage({ address }: { address: `0x${string}` }) {
   //const { address } = useAccount();
@@ -80,19 +80,6 @@ export function Homepage({ address }: { address: `0x${string}` }) {
     }),
   );
   const currentDelegate = currentDelegateQuery.data;
-
-  const { data: proposalsQuery } = useSuspenseQuery(
-    getProposalsQueryOptions({
-      spaceIds: [
-        "0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62",
-      ],
-      limit: 5,
-      skip: 0,
-      current: 1,
-      searchQuery: "",
-    }),
-  );
-  const proposals = proposalsQuery.proposals;
 
   const { data: starknetBalance } = useBalance({
     address,
@@ -141,7 +128,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </p>
                 <p className="flex justify-between gap-2">
                   <span className="text-3xl">
-                    {usersCollections?.data.find(
+                    {usersCollections.data.find(
                       (collection) =>
                         collection.address ==
                         CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID],
@@ -242,11 +229,26 @@ export function Homepage({ address }: { address: `0x${string}` }) {
           <h2 className="mb-2 text-xl font-semibold">Your Delegate</h2>
           <div className="flex flex-col gap-4">
             <Suspense fallback={<DelegateCardSkeleton />}>
-              {currentDelegate?.user && BigInt(currentDelegate.user) == 0n ? (
-                <Card>Choose a Delegate</Card>
-              ) : (
-                <DelegateCard delegate={currentDelegate} />
-              )}
+              {currentDelegate?.user &&
+                (BigInt(currentDelegate.user) == 0n ? (
+                  <Card>
+                    <CardHeader className="text-2xl">
+                      No delegate selected
+                    </CardHeader>
+
+                    <CardContent>
+                      You must delegate your Realms for governance in order to
+                      vote on proposals and receive $LORDS emissions
+                    </CardContent>
+                    <CardFooter>
+                      <Link to={`/delegate/list`}>
+                        <Button>Choose a Delegate</Button>
+                      </Link>
+                    </CardFooter>
+                  </Card>
+                ) : (
+                  <DelegateCard delegate={currentDelegate} />
+                ))}
             </Suspense>
           </div>
         </div>
@@ -254,21 +256,21 @@ export function Homepage({ address }: { address: `0x${string}` }) {
         {/* Recent Proposals */}
         <div className="mb-4">
           <h2 className="mb-2 text-xl font-semibold">Recent Proposals</h2>
-          <Card className="flex flex-col">
-            {proposals?.map((proposal) => (
-              <>{proposal && <ProposalListItem proposal={proposal} />}</>
-            ))}
-            <CardFooter className="mt-2 flex justify-end">
-              <a
-                href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62/proposals"
-                target="__blank"
-              >
-                <Button variant="outline" size={"sm"}>
-                  View All
-                </Button>
-              </a>
-            </CardFooter>
+          <Card>
+            <Suspense fallback={<div>Loading...</div>}>
+              <ProposalList delegateId={currentDelegate?.user} />
+            </Suspense>
           </Card>
+          <div className="mt-2 flex justify-end">
+            <a
+              href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62/proposals"
+              target="__blank"
+            >
+              <Button variant="outline" size={"sm"}>
+                View All
+              </Button>
+            </a>
+          </div>
         </div>
       </div>
       {/* Realms Grid */}

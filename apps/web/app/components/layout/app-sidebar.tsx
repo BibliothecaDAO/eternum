@@ -16,6 +16,7 @@ import {
   ExternalLink,
   HandCoins,
   Newspaper,
+  Vote,
 } from "lucide-react";
 
 const data = {
@@ -116,9 +117,18 @@ const data = {
     },
     {
       title: "Proposals",
-      url: "/coming-soon",
-      icon: BookOpen,
-      items: [],
+      url: "/proposal/list",
+      icon: Vote,
+      items: [
+        {
+          title: "List",
+          url: "/proposal/list",
+        },
+        {
+          title: "Create",
+          url: "/coming-soon",
+        },
+      ],
     },
   ],
   information: [

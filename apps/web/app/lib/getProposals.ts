@@ -100,8 +100,8 @@ const LoadProposalsInput = z.object({
 export const getProposals = createServerFn({ method: "POST" })
   .validator((input: unknown) => LoadProposalsInput.parse(input))
   .handler(async (ctx) => {
-    const { spaceIds, limit, skip, current, filters, searchQuery } = ctx.data;
-    console.log(spaceIds, limit, skip, current, filters, searchQuery);
+    const { spaceIds, limit, skip, /* current, filters,*/ searchQuery } =
+      ctx.data;
     // Clone filters to avoid mutations.
     //const _filters: any = JSON.parse(JSON.stringify(filters || {}));
     const metadataFilters: Record<string, string> = {

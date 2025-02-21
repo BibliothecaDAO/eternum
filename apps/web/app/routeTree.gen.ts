@@ -18,6 +18,7 @@ import { Route as ComingSoonIndexImport } from './routes/coming-soon.index'
 import { Route as VelordsClaimImport } from './routes/velords.claim'
 import { Route as RealmsClaimsImport } from './routes/realms.claims'
 import { Route as RealmsBridgeImport } from './routes/realms.bridge'
+import { Route as ProposalListImport } from './routes/proposal.list'
 import { Route as DelegateProfileImport } from './routes/delegate.profile'
 import { Route as DelegateListImport } from './routes/delegate.list'
 
@@ -65,6 +66,12 @@ const RealmsBridgeRoute = RealmsBridgeImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ProposalListRoute = ProposalListImport.update({
+  id: '/proposal/list',
+  path: '/proposal/list',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const DelegateProfileRoute = DelegateProfileImport.update({
   id: '/delegate/profile',
   path: '/delegate/profile',
@@ -100,6 +107,13 @@ declare module '@tanstack/react-router' {
       path: '/delegate/profile'
       fullPath: '/delegate/profile'
       preLoaderRoute: typeof DelegateProfileImport
+      parentRoute: typeof rootRoute
+    }
+    '/proposal/list': {
+      id: '/proposal/list'
+      path: '/proposal/list'
+      fullPath: '/proposal/list'
+      preLoaderRoute: typeof ProposalListImport
       parentRoute: typeof rootRoute
     }
     '/realms/bridge': {
@@ -153,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/delegate/list': typeof DelegateListRoute
   '/delegate/profile': typeof DelegateProfileRoute
+  '/proposal/list': typeof ProposalListRoute
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
   '/velords/claim': typeof VelordsClaimRoute
@@ -165,6 +180,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/delegate/list': typeof DelegateListRoute
   '/delegate/profile': typeof DelegateProfileRoute
+  '/proposal/list': typeof ProposalListRoute
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
   '/velords/claim': typeof VelordsClaimRoute
@@ -178,6 +194,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/delegate/list': typeof DelegateListRoute
   '/delegate/profile': typeof DelegateProfileRoute
+  '/proposal/list': typeof ProposalListRoute
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
   '/velords/claim': typeof VelordsClaimRoute
@@ -192,6 +209,7 @@ export interface FileRouteTypes {
     | '/'
     | '/delegate/list'
     | '/delegate/profile'
+    | '/proposal/list'
     | '/realms/bridge'
     | '/realms/claims'
     | '/velords/claim'
@@ -203,6 +221,7 @@ export interface FileRouteTypes {
     | '/'
     | '/delegate/list'
     | '/delegate/profile'
+    | '/proposal/list'
     | '/realms/bridge'
     | '/realms/claims'
     | '/velords/claim'
@@ -214,6 +233,7 @@ export interface FileRouteTypes {
     | '/'
     | '/delegate/list'
     | '/delegate/profile'
+    | '/proposal/list'
     | '/realms/bridge'
     | '/realms/claims'
     | '/velords/claim'
@@ -227,6 +247,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DelegateListRoute: typeof DelegateListRoute
   DelegateProfileRoute: typeof DelegateProfileRoute
+  ProposalListRoute: typeof ProposalListRoute
   RealmsBridgeRoute: typeof RealmsBridgeRoute
   RealmsClaimsRoute: typeof RealmsClaimsRoute
   VelordsClaimRoute: typeof VelordsClaimRoute
@@ -239,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DelegateListRoute: DelegateListRoute,
   DelegateProfileRoute: DelegateProfileRoute,
+  ProposalListRoute: ProposalListRoute,
   RealmsBridgeRoute: RealmsBridgeRoute,
   RealmsClaimsRoute: RealmsClaimsRoute,
   VelordsClaimRoute: VelordsClaimRoute,
@@ -260,6 +282,7 @@ export const routeTree = rootRoute
         "/",
         "/delegate/list",
         "/delegate/profile",
+        "/proposal/list",
         "/realms/bridge",
         "/realms/claims",
         "/velords/claim",
@@ -276,6 +299,9 @@ export const routeTree = rootRoute
     },
     "/delegate/profile": {
       "filePath": "delegate.profile.tsx"
+    },
+    "/proposal/list": {
+      "filePath": "proposal.list.tsx"
     },
     "/realms/bridge": {
       "filePath": "realms.bridge.tsx"

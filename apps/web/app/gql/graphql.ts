@@ -2976,6 +2976,21 @@ export type ProposalsQuery = { __typename?: 'Query', proposals?: Array<(
     & { ' $fragmentRefs'?: { 'ProposalFieldsFragment': ProposalFieldsFragment } }
   ) | null> | null };
 
+export type VoteFieldsFragment = { __typename?: 'Vote', id: string, proposal: number, choice: number, vp: any, created: number, tx: string, voter: { __typename?: 'User', id: string }, space: { __typename?: 'Space', id: string }, metadata?: { __typename?: 'VoteMetadataItem', reason: any } | null } & { ' $fragmentName'?: 'VoteFieldsFragment' };
+
+export type UserVotesQueryVariables = Exact<{
+  first?: InputMaybe<Scalars['Int']['input']>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  spaceIds?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>> | InputMaybe<Scalars['String']['input']>>;
+  voter?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type UserVotesQuery = { __typename?: 'Query', votes?: Array<(
+    { __typename?: 'Vote' }
+    & { ' $fragmentRefs'?: { 'VoteFieldsFragment': VoteFieldsFragment } }
+  ) | null> | null };
+
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -3038,6 +3053,25 @@ export const ProposalFieldsFragmentDoc = new TypedDocumentString(`
   cancelled
 }
     `, {"fragmentName":"proposalFields"}) as unknown as TypedDocumentString<ProposalFieldsFragment, unknown>;
+export const VoteFieldsFragmentDoc = new TypedDocumentString(`
+    fragment voteFields on Vote {
+  id
+  voter {
+    id
+  }
+  space {
+    id
+  }
+  metadata {
+    reason
+  }
+  proposal
+  choice
+  vp
+  created
+  tx
+}
+    `, {"fragmentName":"voteFields"}) as unknown as TypedDocumentString<VoteFieldsFragment, unknown>;
 export const ProposalsDocument = new TypedDocumentString(`
     query Proposals($first: Int!, $skip: Int!, $where: Proposal_filter) {
   proposals(
@@ -3096,3 +3130,32 @@ export const ProposalsDocument = new TypedDocumentString(`
   completed
   cancelled
 }`) as unknown as TypedDocumentString<ProposalsQuery, ProposalsQueryVariables>;
+export const UserVotesDocument = new TypedDocumentString(`
+    query UserVotes($first: Int, $skip: Int, $spaceIds: [String], $voter: String) {
+  votes(
+    first: $first
+    skip: $skip
+    orderBy: proposal
+    orderDirection: desc
+    where: {space_in: $spaceIds, voter: $voter}
+  ) {
+    ...voteFields
+  }
+}
+    fragment voteFields on Vote {
+  id
+  voter {
+    id
+  }
+  space {
+    id
+  }
+  metadata {
+    reason
+  }
+  proposal
+  choice
+  vp
+  created
+  tx
+}`) as unknown as TypedDocumentString<UserVotesQuery, UserVotesQueryVariables>;

@@ -5,8 +5,15 @@ import { formatLockEndTime } from "@/utils/time";
 import { shortenAddress } from "@/utils/utils";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
+import { CheckCircle2 } from "lucide-react";
 
-export const ProposalListItem = ({ proposal }: { proposal: Proposal }) => {
+export const ProposalListItem = ({
+  proposal,
+  voteChoice,
+}: {
+  proposal: Proposal;
+  voteChoice: number;
+}) => {
   const name = useStarkDisplayName(proposal.author.id as `0x${string}`);
 
   function getProposalId(proposal: Proposal) {
@@ -23,8 +30,10 @@ export const ProposalListItem = ({ proposal }: { proposal: Proposal }) => {
     return `#${proposalId}`;
   }
 
+  const isActive = proposal.max_end * 1000 > Date.now();
+
   return (
-    <div className="mx-4 flex border-b py-[14px]">
+    <div className="mx-4 flex items-center border-b py-[14px] last:border-b-0">
       <div className="mr-4 w-0 flex-auto">
         <div className="flex space-x-2">
           <div className="my-1 items-center leading-6 md:flex md:min-w-0">
@@ -37,17 +46,43 @@ export const ProposalListItem = ({ proposal }: { proposal: Proposal }) => {
           {getProposalId(proposal)} by{" "}
           {name || shortenAddress(proposal.author.id)}
         </div>
-        <span className="mr-4">{proposal.vote_count} votes</span>
-        {formatDistanceToNow(proposal.max_end * 1000, { addSuffix: true })}
+        <div className="text-muted-foreground inline space-x-4">
+          <span>{proposal.vote_count} voters</span>
+          <span>{proposal.scores_total} votes</span>
+          <span>
+            {formatDistanceToNow(proposal.max_end * 1000)}{" "}
+            {isActive ? "left" : "ago"}
+          </span>
+        </div>
       </div>
 
-      <Progress
-        value={
-          (Number(proposal.scores_1) / Number(proposal.scores_total)) * 100
-        }
-        max={Number(proposal.scores_total)}
-        className="w-30"
-      />
+      {isActive ? (
+        "Vote"
+      ) : (
+        <div className="flex flex-col items-end gap-2">
+          <Progress
+            value={
+              (Number(proposal.scores_1) / Number(proposal.scores_total)) * 100
+            }
+            max={Number(proposal.scores_total)}
+            className="w-30"
+          />
+
+          <div>
+            <div className="text-muted-foreground flex w-full items-center justify-end gap-2 text-sm">
+              Delegate
+              {voteChoice === 1 ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  For
+                </>
+              ) : (
+                " did not vote"
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

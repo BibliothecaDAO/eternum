@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { EthereumConnect } from "@/components/layout/ethereum-connect";
 import { LoginCard } from "@/components/layout/login-card";
-import { Homepage } from "@/components/modules/homepage";
+import { Homepage } from "@/components/modules/homepage/homepage";
 import { HomepageSkeleton } from "@/components/modules/homepage/homepage-skeleteon";
 import { useAccount } from "@starknet-react/core";
 import { createFileRoute } from "@tanstack/react-router";
