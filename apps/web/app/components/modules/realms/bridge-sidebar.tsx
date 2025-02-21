@@ -1,6 +1,6 @@
 import type { BridgeRealm } from "@/types/ark";
 import type { Row, RowSelectionState } from "@tanstack/react-table";
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { EthereumConnect } from "@/components/layout/ethereum-connect";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,13 +21,12 @@ import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
 import { useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
 import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
 import { useToast } from "@/hooks/use-toast";
-import { getBridgeTransactionsQueryOptions } from "@/lib/getBridgeTransactions";
 import { useAccount } from "@starknet-react/core";
-import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
-import BridgeTransactionHistory from "./bridge-tx";
+import BridgeTransactionItems from "./bridge-tx-items";
+import BridgeTransactionHistorySkeleton from "./bridge-tx-skeleton";
 
 interface BridgeSidebarProps {
   selectedRows: Row<BridgeRealm>[];
@@ -43,17 +42,6 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
   const { toast } = useToast();
-
-  const bridgeTxsQuery = useQuery(
-    getBridgeTransactionsQueryOptions(
-      {
-        l1Account: l1Address?.toLowerCase(),
-        l2Account: l2Address,
-      },
-      /*{ enabled: !!l1Address || !!l2Address, refetchInterval: 10000 }*/
-    ),
-  );
-  const bridgeTxs = bridgeTxsQuery.data ?? [];
 
   const { writeAsync: depositRealms, isPending: isDepositPending } =
     useWriteDepositRealms({
@@ -177,7 +165,9 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           </SidebarGroupLabel>
           <CollapsibleContent>
             <SidebarGroupContent>
-              <BridgeTransactionHistory transactions={bridgeTxs} />
+              <Suspense fallback={<BridgeTransactionHistorySkeleton />}>
+                {l1Address ?? (l2Address && <BridgeTransactionItems />)}
+              </Suspense>
             </SidebarGroupContent>
           </CollapsibleContent>
         </Collapsible>

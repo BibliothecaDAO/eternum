@@ -9,20 +9,36 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useWriteFinalizeWithdrawRealms } from "@/hooks/bridge/useWriteFinalizeWithdrawRealms";
-import { toast } from "@/hooks/use-toast";
+import { toast, useToast } from "@/hooks/use-toast";
+import { getBridgeTransactionsQueryOptions } from "@/lib/getBridgeTransactions";
 import { cn, shortenAddress } from "@/utils/utils";
-import { useExplorer } from "@starknet-react/core";
+import { useAccount, useExplorer } from "@starknet-react/core";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { useAccount as useL1Account } from "wagmi";
 
 import { TransactionChains } from "./bridge-tx-chains";
 
-const BridgeTransactionHistory: React.FC<{
-  transactions: RouterOutputs["bridgeTransactions"];
-}> = ({ transactions }) => {
+const BridgeTransactionItems = () => {
   const explorer = useExplorer();
   const { writeAsync, isPending: isWithdrawPending } =
     useWriteFinalizeWithdrawRealms();
+
+  const { address: l1Address } = useL1Account();
+  const { address: l2Address } = useAccount();
+  const { toast } = useToast();
+
+  const bridgeTxsQuery = useSuspenseQuery(
+    getBridgeTransactionsQueryOptions(
+      {
+        l1Account: l1Address?.toLowerCase(),
+        l2Account: l2Address,
+      },
+      /*{ enabled: !!l1Address || !!l2Address, refetchInterval: 10000 }*/
+    ),
+  );
+  const transactions = bridgeTxsQuery.data;
 
   const handleCompleteWithdraw = async (
     transaction: RouterOutputs["bridgeTransactions"][number],
@@ -136,4 +152,4 @@ const BridgeTransactionHistory: React.FC<{
   );
 };
 
-export default BridgeTransactionHistory;
+export default BridgeTransactionItems;

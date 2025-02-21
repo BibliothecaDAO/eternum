@@ -4,8 +4,6 @@ import { VeLords } from "@/abi/L2/VeLords";
 import EthereumIcon from "@/components/icons/ethereum.svg?react";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
-import { EthereumConnect } from "@/components/layout/ethereum-connect";
-import { LoginCard } from "@/components/layout/login-card";
 import { DelegateCard } from "@/components/modules/governance/delegate-card";
 import { DelegateCardSkeleton } from "@/components/modules/governance/delegate-card-skeleton";
 import { ProposalListItem } from "@/components/modules/governance/proposal-list-item";
@@ -133,8 +131,10 @@ export function Homepage() {
               <CardContent>
                 <p className="flex w-full justify-between gap-2">
                   <span className="text-3xl">
-                    {l1UsersRealms?.collections?.[0]?.ownership?.tokenCount ??
-                      0}
+                    <Suspense fallback={<div>Loading...</div>}>
+                      {l1UsersRealms?.collections?.[0]?.ownership?.tokenCount ??
+                        0}
+                    </Suspense>
                   </span>
                   <span className="flex items-center gap-2">
                     on <EthereumIcon className="h-6 w-6" /> Ethereum
