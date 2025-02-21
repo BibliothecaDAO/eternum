@@ -84,13 +84,17 @@ mod troop_battle_systems {
 
             // save or delete explorer
             if explorer_aggressor_troops.count.is_zero() {
-                iExplorerImpl::explorer_delete(ref world, ref explorer_aggressor);
+                let mut explorer_aggressor_owner_structure: Structure = world.read_model(explorer_aggressor.owner);
+                iExplorerImpl::explorer_delete(
+                    ref world, ref explorer_aggressor, ref explorer_aggressor_owner_structure,
+                );
             } else {
                 world.write_model(@explorer_aggressor);
             }
 
             if explorer_defender_troops.count.is_zero() {
-                iExplorerImpl::explorer_delete(ref world, ref explorer_defender);
+                let mut explorer_defender_owner_structure: Structure = world.read_model(explorer_defender.owner);
+                iExplorerImpl::explorer_delete(ref world, ref explorer_defender, ref explorer_defender_owner_structure);
             } else {
                 world.write_model(@explorer_defender);
             }
@@ -155,7 +159,10 @@ mod troop_battle_systems {
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
             if explorer_aggressor_troops.count.is_zero() {
-                iExplorerImpl::explorer_delete(ref world, ref explorer_aggressor);
+                let mut explorer_aggressor_owner_structure: Structure = world.read_model(explorer_aggressor.owner);
+                iExplorerImpl::explorer_delete(
+                    ref world, ref explorer_aggressor, ref explorer_aggressor_owner_structure,
+                );
             } else {
                 world.write_model(@explorer_aggressor);
             }

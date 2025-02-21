@@ -128,9 +128,23 @@ pub impl iExplorerImpl of iExplorerTrait {
     }
 
 
-    fn explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
+    fn explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops, ref structure: Structure) {
         // ensure army is dead
         assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
+
+        // todo: check if this will cause panic if explorer count is too high
+        //       and delete is called after another army wins a battle against this
+
+        // remove explorer from structure
+        let old_explorers: Array<ID> = structure.explorers.into();
+        let mut new_explorers: Array<ID> = array![];
+        for explorer_id in old_explorers {
+            if explorer_id != explorer.explorer_id {
+                new_explorers.append(explorer_id);
+            }
+        };
+        structure.explorers = new_explorers.span();
+        world.write_model(@structure);
 
         let occupier: Occupier = OccupierImpl::key_only(explorer.coord);
         let resource: Resource = ResourceImpl::key_only(explorer.explorer_id);

@@ -7,7 +7,7 @@ mod tests {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::position::{Coord, CoordTrait, Direction, Occupier};
+    use s1_eternum::models::position::{Coord, CoordTrait, Direction, Occupier, OccupierImpl};
     use s1_eternum::models::resource::resource::{
         SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -666,5 +666,137 @@ mod tests {
         // set structure direction
         let structure_direction = Direction::SouthEast;
         troop_systems.explorer_add(explorer_id, troop_amount, structure_direction);
+    }
+
+    #[test]
+    fn test_explorer_delete() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // grant troop resources to the structure
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+
+        // set caller address before calling the contract
+        starknet::testing::set_contract_address(owner);
+        starknet::testing::set_block_timestamp(1);
+
+        // create explorer
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let troop_spawn_direction = Direction::NorthWest;
+        let explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, troop_spawn_direction);
+
+        // kill all troops (required for deletion)
+        let mut explorer: ExplorerTroops = world.read_model(explorer_id);
+        explorer.troops.count = 0;
+        world.write_model_test(@explorer);
+
+        // delete explorer
+        troop_systems.explorer_delete(explorer_id);
+
+        // verify explorer was removed from structure
+        let structure: Structure = world.read_model(realm_entity_id);
+        assert!(structure.explorers.len() == 0, "explorer not removed from structure");
+
+        // verify occupier was cleared
+        let spawn_coord = realm_coord.neighbor(troop_spawn_direction);
+        let occupier: Occupier = world.read_model((spawn_coord.x, spawn_coord.y));
+        assert!(occupier.not_occupied(), "occupier not cleared");
+
+        // verify explorer model was deleted
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert!(explorer.owner == Zeroable::zero(), "explorer model was not deleted");
+    }
+
+    #[test]
+    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_delete__fails_not_owner() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // grant troop resources to the structure
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+
+        // create explorer as owner
+        starknet::testing::set_contract_address(owner);
+        starknet::testing::set_block_timestamp(1);
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let troop_spawn_direction = Direction::NorthWest;
+        let explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, troop_spawn_direction);
+
+        // kill all troops (required for deletion)
+        let mut explorer: ExplorerTroops = world.read_model(explorer_id);
+        explorer.troops.count = 0;
+        world.write_model_test(@explorer);
+
+        // try to delete explorer as non-owner
+        starknet::testing::set_contract_address(starknet::contract_address_const::<'not_owner'>());
+        troop_systems.explorer_delete(explorer_id);
+    }
+
+    #[test]
+    #[should_panic(expected: ("explorer unit is alive", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_delete__fails_troops_alive() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // grant troop resources to the structure
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+
+        // set caller address before calling the contract
+        starknet::testing::set_contract_address(owner);
+        starknet::testing::set_block_timestamp(1);
+
+        // create explorer
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let troop_spawn_direction = Direction::NorthWest;
+        let explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, troop_spawn_direction);
+
+        // try to delete explorer while troops are still alive
+        troop_systems.explorer_delete(explorer_id);
     }
 }

@@ -360,11 +360,11 @@ mod troop_management_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-            let explorer_owner_structure: Structure = world.read_model(explorer.owner);
+            let mut explorer_owner_structure: Structure = world.read_model(explorer.owner);
             explorer_owner_structure.owner.assert_caller_owner();
 
             // delete explorer
-            iExplorerImpl::explorer_delete(ref world, ref explorer);
+            iExplorerImpl::explorer_delete(ref world, ref explorer, ref explorer_owner_structure);
         }
     }
 }
