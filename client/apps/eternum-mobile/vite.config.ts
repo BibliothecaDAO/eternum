@@ -12,6 +12,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@/assets": path.resolve(__dirname, "../../public/assets"),
       "@config": path.resolve(__dirname, "../../../config/utils/utils"),
+      "@contracts": path.resolve(__dirname, "../../../contracts/utils/utils"),
     },
   },
   build: {

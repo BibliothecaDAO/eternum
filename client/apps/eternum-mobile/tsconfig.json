@@ -4,7 +4,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@config": ["../../../config/utils/utils"],
+      "@contracts": ["../../../contracts/utils/utils"]
     }
   }
 }
