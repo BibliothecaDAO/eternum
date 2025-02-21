@@ -95,13 +95,13 @@ mod production_systems {
                 }
             };
 
-            // todo: check that entity is a realm
-            let (building, building_quantity) = BuildingImpl::create(
-                ref world, entity_id, building_category, produce_resource_type, building_coord,
+            let structure: Structure = world.read_model(entity_id);
+            let (building, building_count) = BuildingImpl::create(
+                ref world, entity_id, structure.coord, building_category, produce_resource_type, building_coord,
             );
 
             // pay one time cost of the building
-            building.make_payment(building_quantity, ref world);
+            building.make_payment(building_count, ref world);
         }
 
 
